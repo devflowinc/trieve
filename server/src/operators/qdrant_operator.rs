@@ -12,9 +12,9 @@ use qdrant_client::{
         group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization,
         BinaryQuantization, CountPoints, CreateCollection, Distance, FieldType, Filter,
         HnswConfigDiff, PointId, PointStruct, QuantizationConfig, RecommendPointGroups,
-        RecommendPoints, RecommendStrategy, SearchPointGroups, SearchPoints, SparseIndexConfig,
-        SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap,
-        VectorsConfig,
+        RecommendPoints, RecommendStrategy, SearchParams, SearchPointGroups, SearchPoints,
+        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams,
+        VectorParamsMap, VectorsConfig,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -781,6 +781,10 @@ pub async fn search_qdrant_query(
                     with_payload: None,
                     filter: Some(filter),
                     timeout: Some(60),
+                    params: Some(SearchParams {
+                        indexed_only: Some(true),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 })
                 .await
@@ -800,6 +804,10 @@ pub async fn search_qdrant_query(
                     with_payload: None,
                     filter: Some(filter),
                     timeout: Some(60),
+                    params: Some(SearchParams {
+                        indexed_only: Some(true),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 })
                 .await
@@ -907,7 +915,10 @@ pub async fn recommend_qdrant_query(
         filter: Some(filter),
         limit,
         with_payload: None,
-        params: None,
+        params: Some(SearchParams {
+            indexed_only: Some(true),
+            ..Default::default()
+        }),
         score_threshold: None,
         offset: None,
         using: Some(vector_name.to_string()),
@@ -1032,7 +1043,10 @@ pub async fn recommend_qdrant_groups_query(
         filter: Some(filters),
         limit: limit.try_into().unwrap_or(10),
         with_payload: None,
-        params: None,
+        params: Some(SearchParams {
+            indexed_only: Some(true),
+            ..Default::default()
+        }),
         score_threshold: None,
         using: Some(vector_name.to_string()),
         with_vectors: None,

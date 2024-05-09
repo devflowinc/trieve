@@ -133,7 +133,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.8.3",
+        version = "0.8.4",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -810,9 +810,17 @@ pub fn main() -> std::io::Result<()> {
                                 ),
                         )
                         .service(
-                            web::resource("/invitation")
-                                .route(web::post().to(handlers::invitation_handler::post_invitation)),
-                        )
+                            web::scope("/invitation")
+                                .service(
+                                    web::resource("")
+                                        .route(web::post().to(handlers::invitation_handler::post_invitation)),
+                                )
+                                .service(
+                                    web::resource("/{organization_id}")
+                                        .route(web::get().to(handlers::invitation_handler::get_invitations))
+                                        .route(web::delete().to(handlers::invitation_handler::delete_invitation)),
+                                ),  
+                            )
                         .service(
                             web::scope("/stripe")
                                 .service(
