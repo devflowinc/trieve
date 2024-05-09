@@ -143,7 +143,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
             ...prev_recommendations,
             ...deduped_data,
           ];
-          console.log(new_recommendations);
           setRecommendedChunks(new_recommendations);
         });
       }
