@@ -11,7 +11,7 @@ on:
       - 'main'
     paths:
     - 'server/**'
-    - '.github/workflows'
+    - '.github/workflows/**'
 
 jobs:
   build_server:
@@ -38,7 +38,9 @@ jobs:
           images: |
             trieve/server
           tags: |
-            type=raw,no-ocr,latest
+            type=raw,no-ocr
+            type=raw,latest
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -76,6 +78,7 @@ jobs:
             trieve/ingest
           tags: |
             type=raw,latest
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -113,6 +116,7 @@ jobs:
             trieve/file_worker
           tags: |
             type=raw,latest
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -150,6 +154,7 @@ jobs:
             trieve/server
           tags: |
             type=raw,ocr
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
