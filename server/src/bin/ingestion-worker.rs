@@ -1008,8 +1008,8 @@ pub async fn readd_error_to_queue(
 
         payload.attempt_number += 1;
 
-        if payload.attempt_number == 3 {
-            log::error!("Failed to insert data 3 times quitting {:?}", error);
+        if payload.attempt_number == 10 {
+            log::error!("Failed to insert data 10 times quitting {:?}", error);
             let count = payload.ingestion_messages.len();
             let chunk_ids = payload
                 .ingestion_messages
