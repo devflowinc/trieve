@@ -76,6 +76,7 @@ async fn convert_group_tracking_ids_to_group_ids(
         Ok(FieldCondition {
             field: "group_ids".to_string(),
             r#match: Some(correct_matches),
+            date_range: None,
             range: None,
             geo_bounding_box: None,
             geo_polygon: None,

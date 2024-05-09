@@ -90,7 +90,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     setTopLevelError("This chunk could not be found.");
   }
 
-  const updateEvidence = () => {
+  const updateChunk = () => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
@@ -106,6 +106,13 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       setFormErrorText(errorMessage);
       setFormErrorFields(errors);
       return;
+    }
+
+    let body_timestamp = timestamp();
+
+    if (timestamp()) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      body_timestamp = timestamp() + " 00:00:00";
     }
 
     setFormErrorFields([]);
@@ -131,7 +138,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
           lat: locationLat(),
           lon: locationLon(),
         },
-        time_stamp: timestamp(),
+        time_stamp: body_timestamp,
       }),
     }).then((response) => {
       if (response.ok) {
@@ -193,6 +200,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
           setTagSet(data.tag_set ?? "");
           setMetadata(data.metadata);
           setTrackingId(data.tracking_id ?? "");
+          setTimestamp(data.time_stamp?.split("T")[0] ?? null);
           setChunkHtml(data.chunk_html ?? "");
           setWeight(data.weight ?? 0);
           setTopLevelError("");
@@ -352,7 +360,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
               class="my-8 flex h-full w-full flex-col space-y-4 text-neutral-800 dark:text-white"
               onSubmit={(e) => {
                 e.preventDefault();
-                updateEvidence();
+                updateChunk();
               }}
             >
               <div class="text-center text-red-500">{formErrorText()}</div>

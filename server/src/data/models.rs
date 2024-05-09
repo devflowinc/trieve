@@ -2220,7 +2220,6 @@ impl From<UploadFileData> for FileDataDTO {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(untagged)]
 pub enum RangeCondition {
-    String(String),
     Float(f64),
     Int(i64),
 }
@@ -2241,6 +2240,24 @@ pub struct Range {
     pub gt: Option<RangeCondition>,
     // lt is the upper bound of the range. This is exclusive.
     pub lt: Option<RangeCondition>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "gte": "2021-01-01T00:00:00",
+    "lte": "2021-01-01T00:00:00",
+    "gt": "2021-01-01T00:00:00",
+    "lt": "2021-01-01T00:00:00"
+}))]
+pub struct DateRange {
+    // gte is the lower bound of the range. This is inclusive.
+    pub gte: Option<String>,
+    // lte is the upper bound of the range. This is inclusive.
+    pub lte: Option<String>,
+    // gt is the lower bound of the range. This is exclusive.
+    pub gt: Option<String>,
+    // lt is the upper bound of the range. This is exclusive.
+    pub lt: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -2303,6 +2320,8 @@ pub struct FieldCondition {
     pub r#match: Option<Vec<MatchCondition>>,
     /// Range is a JSON object which can be used to filter chunks by a range of values. This only works for numerical fields. You can specify this if you want values in a certain range.
     pub range: Option<Range>,
+    /// Date range is a JSON object which can be used to filter chunks by a range of dates. This only works for date fields. You can specify this if you want values in a certain range. You must provide ISO 8601 combined date and time without timezone.
+    pub date_range: Option<DateRange>,
     /// Geo Bounding Box search is useful for when you want to find points inside a rectangular area. This is useful for when you want to filter chunks by location. The bounding box is defined by two points: the top-left and bottom-right corners of the box.
     pub geo_bounding_box: Option<LocationBoundingBox>,
     /// Geo Radius search is useful for when you want to find points within a certain distance of a point. This is useful for when you want to filter chunks by location. The radius is in meters.
@@ -2311,23 +2330,35 @@ pub struct FieldCondition {
     pub geo_polygon: Option<LocationPolygon>,
 }
 
-fn convert_to_date_time(time_stamp: String) -> Result<Option<f64>, ServiceError> {
-    Ok(Some(
-        time_stamp
-            .parse::<DateTimeUtc>()
-            .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
-            .0
-            .with_timezone(&chrono::Local)
-            .naive_local()
-            .timestamp() as f64,
-    ))
+fn get_date_range(date_range: DateRange) -> Result<qdrant::Range, ServiceError> {
+    fn convert_to_date_time(time_stamp: Option<String>) -> Result<Option<f64>, ServiceError> {
+        match time_stamp {
+            Some(time_stamp) => Ok(Some(
+                time_stamp
+                    .parse::<DateTimeUtc>()
+                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
+                    .0
+                    .with_timezone(&chrono::Local)
+                    .naive_local()
+                    .timestamp() as f64,
+            )),
+            None => Ok(None),
+        }
+    }
+
+    // Based on the determined type, process the values
+    let gt = convert_to_date_time(date_range.gt)?;
+    let gte = convert_to_date_time(date_range.gte)?;
+    let lt = convert_to_date_time(date_range.lt)?;
+    let lte = convert_to_date_time(date_range.lte)?;
+
+    Ok(qdrant::Range { gt, gte, lt, lte })
 }
 
 pub fn get_range(range: Range) -> Result<qdrant::Range, ServiceError> {
     fn convert_range(range: Option<RangeCondition>) -> Result<Option<f64>, ServiceError> {
         match range {
             Some(RangeCondition::Float(val)) => Ok(Some(val)),
-            Some(RangeCondition::String(val)) => convert_to_date_time(val.to_string()),
             Some(RangeCondition::Int(val)) => Ok(Some(val as f64)),
             None => Ok(None),
         }
@@ -2377,6 +2408,14 @@ impl FieldCondition {
                     .await?
                     .into(),
             ));
+        }
+
+        if let Some(date_range) = self.date_range.clone() {
+            let time_range = get_date_range(date_range)?;
+            return Ok(Some(qdrant::Condition::range(
+                self.field.as_str(),
+                time_range,
+            )));
         }
 
         if let Some(range) = self.range.clone() {
