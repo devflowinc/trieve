@@ -339,19 +339,52 @@ export const FilterItem = (props: FilterItemProps) => {
 
   return (
     <div class="flex flex-col gap-y-2 py-1">
-      <div>
+      <div class="flex items-center gap-y-1">
         <label aria-label="Change Filter Field">
           <span class="p-1">Filter Field:</span>
         </label>
-        <input
-          type="text"
-          placeholder="Filter Field"
-          class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+        <select
+          class="h-fit w-48 rounded-md border border-neutral-400 bg-neutral-100 p-1 pl-1 dark:border-neutral-900 dark:bg-neutral-800"
           onChange={(e) => {
             setTempFilterField(e.currentTarget.value);
           }}
-          value={tempFilterField()}
-        />
+          value={
+            tempFilterField().startsWith("metadata")
+              ? "metadata"
+              : tempFilterField()
+          }
+        >
+          <For each={["tag_set", "link", "time_stamp", "location", "metadata"]}>
+            {(filter_field) => {
+              return (
+                <option
+                  classList={{
+                    "flex w-full items-center justify-between rounded p-1":
+                      true,
+                    "bg-neutral-300 dark:bg-neutral-900":
+                      tempFilterField().startsWith(filter_field),
+                  }}
+                >
+                  {filter_field}
+                </option>
+              );
+            }}
+          </For>
+        </select>
+        <Show when={tempFilterField().startsWith("metadata")}>
+          <div>
+            <span class="p-2">.</span>
+            <input
+              type="text"
+              placeholder="field"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+              onChange={(e) => {
+                setTempFilterField("metadata." + e.currentTarget.value);
+              }}
+              value={tempFilterField().replace("metadata", "").replace(".", "")}
+            />
+          </div>
+        </Show>
       </div>
       <div class="w-full">
         <label aria-label="Change Filter Mode">
