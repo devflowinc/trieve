@@ -119,3 +119,36 @@ pub async fn check_inv_valid(
 
     Ok(invitation)
 }
+
+pub async fn get_invitations_for_organization_query(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<Invitation>, ServiceError> {
+    use crate::data::schema::invitations::dsl as invitations_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let invitations = invitations_columns::invitations
+        .filter(invitations_columns::organization_id.eq(organization_id))
+        .load::<Invitation>(&mut conn)
+        .await
+        .map_err(|_db_error| ServiceError::BadRequest("Error getting invitations.".to_string()))?;
+
+    Ok(invitations)
+}
+
+pub async fn delete_invitation_by_id_query(
+    id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::invitations::dsl as invitations_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    diesel::delete(invitations_columns::invitations.filter(invitations_columns::id.eq(id)))
+        .execute(&mut conn)
+        .await
+        .map_err(|_db_error| ServiceError::BadRequest("Error deleting invitation.".to_string()))?;
+
+    Ok(())
+}

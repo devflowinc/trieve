@@ -3,7 +3,10 @@ use crate::{
     data::models::{Invitation, Pool},
     errors::ServiceError,
     operators::{
-        invitation_operator::{create_invitation_query, send_invitation},
+        invitation_operator::{
+            create_invitation_query, delete_invitation_by_id_query,
+            get_invitations_for_organization_query, send_invitation,
+        },
         user_operator::add_existing_user_to_org,
     },
 };
@@ -136,4 +139,56 @@ pub async fn create_invitation(
         invitation,
         registration_url,
     })
+}
+
+/// Get Invitations
+///
+/// Get all invitations for the organization.
+#[utoipa::path(
+    get,
+    path = "/invitation/{organization_id}",
+    context_path = "/api",
+    tag = "invitation",
+    responses(
+        (status = 200, description = "Invitations for the dataset", body = Vec<Invitation>),
+        (status = 400, description = "Service error relating to getting invitations for the dataset", body = ErrorResponseBody),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn get_invitations(
+    _user: AdminOnly,
+    org_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, ServiceError> {
+    let invitations = get_invitations_for_organization_query(org_id.into_inner(), pool).await?;
+    Ok(HttpResponse::Ok().json(invitations))
+}
+
+/// Delete Invitation
+///
+/// Delete an invitation by id.
+#[utoipa::path(
+    delete,
+    path = "/invitation/{invitation_id}",
+    context_path = "/api",
+    tag = "invitation",
+    responses(
+        (status = 204, description = "Ok response. Indicates that invitation was deleted."),
+        (status = 400, description = "Service error relating to deleting invitation", body = ErrorResponseBody),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn delete_invitation(
+    _user: AdminOnly,
+    invitation_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, ServiceError> {
+    delete_invitation_by_id_query(invitation_id.into_inner(), pool).await?;
+    Ok(HttpResponse::NoContent().finish())
 }

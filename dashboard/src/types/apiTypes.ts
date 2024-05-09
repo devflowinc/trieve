@@ -341,3 +341,48 @@ export const isEvent = (data: unknown): data is Event => {
 
   return true;
 };
+export interface Invitation {
+  id: string;
+  email: string;
+  organization_id: string;
+  used: boolean;
+  created_at: string;
+  updated_at: string;
+  role: number;
+}
+
+export const isInvitation = (data: unknown): data is Invitation => {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  if (typeof (data as Invitation).id !== "string") {
+    return false;
+  }
+
+  if (typeof (data as Invitation).email !== "string") {
+    return false;
+  }
+
+  if (typeof (data as Invitation).organization_id !== "string") {
+    return false;
+  }
+
+  if (typeof (data as Invitation).used !== "boolean") {
+    return false;
+  }
+
+  if (typeof (data as Invitation).created_at !== "string") {
+    return false;
+  }
+
+  if (typeof (data as Invitation).updated_at !== "string") {
+    return false;
+  }
+
+  if (typeof (data as Invitation).role !== "number") {
+    return false;
+  }
+
+  return true;
+};
