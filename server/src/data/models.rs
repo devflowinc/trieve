@@ -1815,7 +1815,6 @@ impl OrganizationWithSubAndPlan {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Ord, PartialOrd)]
 pub enum UserRole {
     Owner = 2,
