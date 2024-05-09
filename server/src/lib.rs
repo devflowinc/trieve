@@ -819,7 +819,7 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("/{organization_id}")
                                         .route(web::get().to(handlers::invitation_handler::get_invitations))
                                         .route(web::delete().to(handlers::invitation_handler::delete_invitation)),
-                                ),  
+                                ),
                             )
                         .service(
                             web::scope("/stripe")
