@@ -1125,7 +1125,7 @@ pub fn find_relevant_sentence(
         .collect::<Vec<String>>();
 
     //insert all sentences into the engine
-    split_content.iter().for_each(|(sentence)| {
+    split_content.iter().for_each(|sentence| {
         engine.insert(sentence.clone(), &sentence.clone());
     });
 
