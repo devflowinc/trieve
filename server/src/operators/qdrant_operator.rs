@@ -35,6 +35,7 @@ pub async fn get_qdrant_connection(
     ));
     let mut config = QdrantClientConfig::from_url(qdrant_url);
     config.api_key = Some(qdrant_api_key.to_owned());
+    config.timeout = std::time::Duration::from_secs(60);
     QdrantClient::new(Some(config))
         .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))
 }
