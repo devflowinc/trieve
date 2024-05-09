@@ -141,8 +141,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   });
 
   const useExpand = createMemo(() => {
+    if (!props.chunk.chunk_html) return false;
     return (
-      props.chunk.content.split(" ").length >
+      props.chunk.chunk_html.split(" ").length >
       20 * ($envs().LINES_BEFORE_SHOW_MORE ?? 0)
     );
   });

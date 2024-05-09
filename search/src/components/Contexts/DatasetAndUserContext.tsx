@@ -147,7 +147,7 @@ export const DatasetAndUserContextWrapper = (
           if (foundParamsOrg) {
             organization = foundParamsOrg;
           } else {
-            window.history.pushState({}, "", `${window.location.pathname}`);
+            window.history.replaceState({}, "", `${window.location.pathname}`);
           }
         } else if (storedOrganization) {
           const storedOrgJson = JSON.parse(
@@ -169,7 +169,7 @@ export const DatasetAndUserContextWrapper = (
       const params = new URLSearchParams(window.location.search);
 
       params.set("organization", organization.id);
-      window.history.pushState(
+      window.history.replaceState(
         {},
         "",
         `${window.location.pathname}?${params.toString()}`,
