@@ -1,6 +1,5 @@
 export interface ChunkMetadata {
   id: string;
-  content: string;
   chunk_html?: string;
   link: string | null;
   qdrant_point_id: string;
@@ -33,8 +32,6 @@ export const isChunkMetadata = (chunk: unknown): chunk is ChunkMetadata => {
   return (
     indirectHasOwnProperty(chunk, "id") &&
     typeof (chunk as ChunkMetadata).id === "string" &&
-    indirectHasOwnProperty(chunk, "content") &&
-    typeof (chunk as ChunkMetadata).content === "string" &&
     indirectHasOwnProperty(chunk, "qdrant_point_id") &&
     typeof (chunk as ChunkMetadata).qdrant_point_id === "string" &&
     indirectHasOwnProperty(chunk, "created_at") &&
@@ -61,8 +58,6 @@ export const isChunkMetadataWithVotes = (
   return (
     indirectHasOwnProperty(chunk, "id") &&
     typeof (chunk as ChunkMetadataWithVotes).id === "string" &&
-    indirectHasOwnProperty(chunk, "content") &&
-    typeof (chunk as ChunkMetadataWithVotes).content === "string" &&
     indirectHasOwnProperty(chunk, "qdrant_point_id") &&
     typeof (chunk as ChunkMetadataWithVotes).qdrant_point_id === "string" &&
     indirectHasOwnProperty(chunk, "created_at") &&

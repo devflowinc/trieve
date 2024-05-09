@@ -82,9 +82,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           "text/html": new Blob([props.chunk.chunk_html ?? ""], {
             type: "text/html",
           }),
-          "text/plain": new Blob([props.chunk.content], {
-            type: "text/plain",
-          }),
         }),
       ])
       .then(() => {
@@ -99,7 +96,8 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   };
 
   const useExpand = createMemo(() => {
-    return props.chunk.content.split(" ").length > 20 * linesBeforeShowMore;
+    if (!props.chunk.chunk_html) return false;
+    return props.chunk.chunk_html.split(" ").length > 20 * linesBeforeShowMore;
   });
 
   return (
