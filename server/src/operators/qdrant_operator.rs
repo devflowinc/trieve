@@ -665,6 +665,7 @@ pub async fn search_over_groups_query(
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
                     group_size: if group_size == 0 { 1 } else { group_size },
+                    timeout: Some(60),
                     ..Default::default()
                 })
                 .await
@@ -684,6 +685,7 @@ pub async fn search_over_groups_query(
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
                     group_size: if group_size == 0 { 1 } else { group_size },
+                    timeout: Some(60),
                     ..Default::default()
                 })
                 .await
@@ -777,6 +779,7 @@ pub async fn search_qdrant_query(
                     offset: Some((page - 1) * 10),
                     with_payload: None,
                     filter: Some(filter),
+                    timeout: Some(60),
                     ..Default::default()
                 })
                 .await
@@ -795,6 +798,7 @@ pub async fn search_qdrant_query(
                     offset: Some((page - 1) * 10),
                     with_payload: None,
                     filter: Some(filter),
+                    timeout: Some(60),
                     ..Default::default()
                 })
                 .await
@@ -912,7 +916,7 @@ pub async fn recommend_qdrant_query(
         positive_vectors: vec![],
         negative_vectors: vec![],
         strategy: recommend_strategy,
-        timeout: None,
+        timeout: Some(60),
         shard_key_selector: None,
     };
 
@@ -1036,7 +1040,7 @@ pub async fn recommend_qdrant_groups_query(
         positive_vectors: vec![],
         negative_vectors: vec![],
         strategy: recommend_strategy,
-        timeout: None,
+        timeout: Some(60),
         shard_key_selector: None,
         group_by: "group_ids".to_string(),
         group_size: if group_size == 0 { 1 } else { group_size },
