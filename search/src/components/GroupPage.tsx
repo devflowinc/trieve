@@ -422,7 +422,7 @@ export const GroupPage = (props: GroupPageProps) => {
           </Show>
 
           <Show when={editing()}>
-            <div class="vertical-align-left mt-8 grid w-full max-w-7xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
+            <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
               <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
                 Name:
               </h1>
@@ -440,6 +440,9 @@ export const GroupPage = (props: GroupPageProps) => {
                   }
                 }}
               />
+              <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
+                Description:
+              </h1>
               <textarea
                 class="max-md w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
                 value={groupInfo()?.description}
