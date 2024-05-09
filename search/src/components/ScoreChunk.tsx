@@ -225,9 +225,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           "text/html": new Blob([props.chunk.chunk_html ?? ""], {
             type: "text/html",
           }),
-          "text/plain": new Blob([props.chunk.content], {
-            type: "text/plain",
-          }),
         }),
       ])
       .then(() => {
@@ -242,9 +239,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   };
 
   const useExpand = createMemo(() => {
-    if (!props.chunk.content) return false;
+    if (!props.chunk.chunk_html) return false;
     return (
-      props.chunk.content.split(" ").length >
+      props.chunk.chunk_html.split(" ").length >
       20 * ($envs().LINES_BEFORE_SHOW_MORE ?? 0)
     );
   });
@@ -434,7 +431,11 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </Show>
               <Tooltip
                 body={
-                  <a title="Open" href={`/chunk/${props.chunk.id}`}>
+                  <a
+                    title="Open"
+                    href={`/chunk/${props.chunk.id}`}
+                    target="_blank"
+                  >
                     <VsFileSymlinkFile class="h-5 w-5 fill-current" />
                   </a>
                 }
