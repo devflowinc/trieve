@@ -1174,7 +1174,7 @@ pub async fn point_id_exists_in_qdrant(
             ServiceError::BadRequest("Failed to fetch points from qdrant".to_string())
         })?;
 
-    Ok(data.result.len() > 0)
+    Ok(!data.result.is_empty())
 }
 
 #[tracing::instrument]

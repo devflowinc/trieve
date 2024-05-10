@@ -204,7 +204,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                 metadata: chunk.0.metadata.clone(),
                 tracking_id: chunk.0.tracking_id.clone(),
                 time_stamp: chunk.0.time_stamp,
-                location: chunk.0.location.clone(),
+                location: chunk.0.location,
                 dataset_id: chunk.0.dataset_id,
                 weight: chunk.0.weight,
             })
@@ -251,7 +251,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         metadata: chunk.0.metadata.clone(),
                         tracking_id: chunk.0.tracking_id.clone(),
                         time_stamp: chunk.0.time_stamp,
-                        location: chunk.0.location.clone(),
+                        location: chunk.0.location,
                         dataset_id: chunk.0.dataset_id,
                         weight: chunk.0.weight,
                     };
@@ -341,7 +341,7 @@ pub async fn get_slim_chunks_from_point_ids_query(
                 metadata: slim_chunk.metadata.clone(),
                 tracking_id: slim_chunk.tracking_id.clone(),
                 time_stamp: slim_chunk.time_stamp,
-                location: slim_chunk.location.clone(),
+                location: slim_chunk.location,
                 dataset_id: slim_chunk.dataset_id,
                 weight: slim_chunk.weight,
             })
@@ -1214,7 +1214,7 @@ pub async fn create_chunk_metadata(
             chunk.metadata.clone(),
             chunk_tracking_id,
             timestamp,
-            chunk.location.clone(),
+            chunk.location,
             dataset_uuid,
             chunk.weight.unwrap_or(0.0),
         );

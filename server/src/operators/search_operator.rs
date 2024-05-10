@@ -872,7 +872,7 @@ pub async fn retrieve_chunks_for_groups(
         .collect_vec();
 
     let (metadata_chunks, collided_chunks) = match data.slim_chunks.unwrap_or(false)
-        && !(data.search_type == "hybrid")
+        && data.search_type != "hybrid"
     {
         true => {
             let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
@@ -1139,7 +1139,7 @@ pub async fn retrieve_chunks_from_point_ids(
         .collect::<Vec<_>>();
 
     let (metadata_chunks, collided_chunks) = match data.slim_chunks.unwrap_or(false)
-        && !(data.search_type == "hybrid")
+        && data.search_type != "hybrid"
     {
         true => {
             let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
@@ -1315,8 +1315,6 @@ pub fn rerank_chunks(
 pub async fn search_semantic_chunks(
     data: SearchChunkData,
     parsed_query: ParsedQuery,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1346,8 +1344,8 @@ pub async fn search_semantic_chunks(
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         data.page_size.unwrap_or(10),
         data.score_threshold,
         data.filters.clone(),
@@ -1377,12 +1375,11 @@ pub async fn search_semantic_chunks(
     Ok(result_chunks)
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(timer, pool))]
 pub async fn search_full_text_chunks(
     data: SearchChunkData,
     parsed_query: ParsedQuery,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1411,8 +1408,8 @@ pub async fn search_full_text_chunks(
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Sparse(sparse_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         data.page_size.unwrap_or(10),
         data.score_threshold,
         data.filters.clone(),
@@ -1458,8 +1455,6 @@ pub async fn search_full_text_chunks(
 pub async fn search_hybrid_chunks(
     data: SearchChunkData,
     parsed_query: ParsedQuery,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1483,8 +1478,6 @@ pub async fn search_hybrid_chunks(
     let semantic_handler_results = search_semantic_chunks(
         data.clone(),
         parsed_query.clone(),
-        page,
-        get_total_pages,
         pool.clone(),
         dataset.clone(),
         config.clone(),
@@ -1494,8 +1487,6 @@ pub async fn search_hybrid_chunks(
     let full_text_handler_results = search_full_text_chunks(
         data.clone(),
         parsed_query,
-        page,
-        get_total_pages,
         pool.clone(),
         dataset,
         config,
@@ -1579,8 +1570,6 @@ pub async fn search_semantic_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1593,8 +1582,8 @@ pub async fn search_semantic_groups(
 
     let search_semantic_chunk_query_results = search_within_chunk_group_query(
         VectorType::Dense(embedding_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         pool.clone(),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1632,8 +1621,6 @@ pub async fn search_full_text_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1645,8 +1632,8 @@ pub async fn search_full_text_groups(
 
     let search_chunk_query_results = search_within_chunk_group_query(
         VectorType::Sparse(sparse_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         pool.clone(),
         data_inner.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1684,8 +1671,6 @@ pub async fn search_hybrid_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1703,8 +1688,8 @@ pub async fn search_hybrid_groups(
 
     let semantic_future = search_within_chunk_group_query(
         VectorType::Dense(dense_embedding_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         pool.clone(),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1717,8 +1702,8 @@ pub async fn search_hybrid_groups(
 
     let full_text_future = search_within_chunk_group_query(
         VectorType::Sparse(sparse_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         pool.clone(),
         data_inner.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1809,8 +1794,6 @@ pub async fn search_hybrid_groups(
 pub async fn semantic_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1828,8 +1811,8 @@ pub async fn semantic_search_over_groups(
 
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         VectorType::Dense(embedding_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
@@ -1873,8 +1856,6 @@ pub async fn semantic_search_over_groups(
 pub async fn full_text_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1890,8 +1871,8 @@ pub async fn full_text_search_over_groups(
 
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         VectorType::Sparse(sparse_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
@@ -1982,8 +1963,6 @@ async fn cross_encoder_for_groups(
 pub async fn hybrid_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
-    page: u64,
-    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -2013,8 +1992,8 @@ pub async fn hybrid_search_over_groups(
 
     let semantic_future = retrieve_group_qdrant_points_query(
         VectorType::Dense(dense_embedding_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
@@ -2027,8 +2006,8 @@ pub async fn hybrid_search_over_groups(
 
     let full_text_future = retrieve_group_qdrant_points_query(
         VectorType::Sparse(sparse_embedding_vector),
-        page,
-        get_total_pages,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,

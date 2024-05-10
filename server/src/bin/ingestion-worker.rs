@@ -439,7 +439,7 @@ pub async fn bulk_upload_chunks(
                 metadata: message.chunk.metadata.clone(),
                 tracking_id: chunk_tracking_id,
                 time_stamp: timestamp,
-                location: message.chunk.location.clone(),
+                location: message.chunk.location,
                 dataset_id: payload.dataset_id,
                 weight: message.chunk.weight.unwrap_or(0.0),
             };
@@ -658,7 +658,7 @@ async fn upload_chunk(
         metadata: payload.chunk.metadata.clone(),
         tracking_id: chunk_tracking_id,
         time_stamp: timestamp,
-        location: payload.chunk.location.clone(),
+        location: payload.chunk.location,
         dataset_id: payload.ingest_specific_chunk_metadata.dataset_id,
         weight: payload.chunk.weight.unwrap_or(0.0),
     };

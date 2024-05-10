@@ -558,7 +558,7 @@ pub async fn update_chunk(
             })
             .transpose()?
             .or(chunk_metadata.time_stamp),
-        update_chunk_data.location.clone(),
+        update_chunk_data.location,
         dataset_id,
         update_chunk_data.weight.unwrap_or(1.0),
     );
@@ -1011,9 +1011,6 @@ pub async fn search_chunks(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let page = data.page.unwrap_or(1);
-    let get_total_pages = data.get_total_pages.unwrap_or(false);
-
     let parsed_query = parse_query(data.query.clone());
 
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
@@ -1033,8 +1030,6 @@ pub async fn search_chunks(
             search_full_text_chunks(
                 data.clone(),
                 parsed_query,
-                page,
-                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1046,8 +1041,6 @@ pub async fn search_chunks(
             search_hybrid_chunks(
                 data.clone(),
                 parsed_query,
-                page,
-                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1059,8 +1052,6 @@ pub async fn search_chunks(
             search_semantic_chunks(
                 data.clone(),
                 parsed_query,
-                page,
-                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1503,7 +1494,7 @@ pub async fn get_recommended_chunks(
 
             slim_chunks
                 .into_iter()
-                .map(|chunk| ChunkMetadata::from(chunk))
+                .map(ChunkMetadata::from)
                 .collect::<Vec<ChunkMetadata>>()
         }
         _ => get_chunk_metadatas_from_point_ids(
