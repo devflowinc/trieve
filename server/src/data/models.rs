@@ -224,9 +224,9 @@ pub enum GeoTypes {
     Float(f64),
 }
 
-impl Into<f64> for GeoTypes {
-    fn into(self) -> f64 {
-        match self {
+impl From<GeoTypes> for f64 {
+    fn from(val: GeoTypes) -> Self {
+        match val {
             GeoTypes::Int(i) => i as f64,
             GeoTypes::Float(f) => f,
         }
@@ -2063,7 +2063,7 @@ impl QdrantPayload {
             time_stamp: chunk_metadata.time_stamp.map(|x| x.timestamp()),
             dataset_id: dataset_id.unwrap_or(chunk_metadata.dataset_id),
             content: convert_html_to_text(&chunk_metadata.chunk_html.unwrap_or_default()),
-            group_ids: group_ids,
+            group_ids,
             location: chunk_metadata.location,
         }
     }
@@ -2096,7 +2096,7 @@ impl QdrantPayload {
                 .as_str()
                 .map(|s| uuid::Uuid::parse_str(s).unwrap())
                 .unwrap_or_default(),
-            group_ids: group_ids,
+            group_ids,
             content: point
                 .payload
                 .get("content")

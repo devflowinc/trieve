@@ -243,6 +243,7 @@ impl Modify for SecurityAddon {
             handlers::group_handler::SearchWithinGroupResults,
             handlers::chunk_handler::SearchChunkQueryResponseBody,
             handlers::chunk_handler::ChunkFilter,
+            data::models::DateRange,
             data::models::FieldCondition,
             data::models::Range,
             handlers::chunk_handler::GetChunksData,

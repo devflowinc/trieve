@@ -665,8 +665,6 @@ pub async fn stream_response(
     let result_chunks = search_hybrid_chunks(
         search_chunk_data,
         parsed_query,
-        1,
-        false,
         pool.clone(),
         dataset.clone(),
         dataset_config,
@@ -919,8 +917,6 @@ pub async fn create_suggested_queries_handler(
             quote_words: None,
             negated_words: None,
         },
-        1,
-        false,
         pool,
         dataset_org_plan_sub.dataset.clone(),
         dataset_config,

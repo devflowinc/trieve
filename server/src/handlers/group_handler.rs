@@ -1192,8 +1192,6 @@ pub async fn search_within_group(
     );
 
     //search over the links as well
-    let page = data.page.unwrap_or(1);
-    let get_total_pages = data.get_total_pages.unwrap_or(false);
     let group_id = data.group_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let search_pool = pool.clone();
@@ -1226,8 +1224,6 @@ pub async fn search_within_group(
                 data.clone(),
                 parsed_query,
                 group,
-                page,
-                get_total_pages,
                 search_pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1239,8 +1235,6 @@ pub async fn search_within_group(
                 data.clone(),
                 parsed_query,
                 group,
-                page,
-                get_total_pages,
                 search_pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1252,8 +1246,6 @@ pub async fn search_within_group(
                 data.clone(),
                 parsed_query,
                 group,
-                page,
-                get_total_pages,
                 search_pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1341,9 +1333,6 @@ pub async fn search_over_groups(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let page = data.page.unwrap_or(1);
-    let get_total_pages = data.get_total_pages.unwrap_or(false);
-
     let parsed_query = parse_query(data.query.clone());
 
     let mut timer = Timer::new();
@@ -1360,8 +1349,6 @@ pub async fn search_over_groups(
             full_text_search_over_groups(
                 data.clone(),
                 parsed_query,
-                page,
-                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1373,8 +1360,6 @@ pub async fn search_over_groups(
             hybrid_search_over_groups(
                 data.clone(),
                 parsed_query,
-                page,
-                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1386,8 +1371,6 @@ pub async fn search_over_groups(
             semantic_search_over_groups(
                 data.clone(),
                 parsed_query,
-                page,
-                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
