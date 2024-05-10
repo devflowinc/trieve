@@ -781,10 +781,7 @@ pub async fn search_qdrant_query(
                     with_payload: None,
                     filter: Some(filter),
                     timeout: Some(60),
-                    params: Some(SearchParams {
-                        indexed_only: Some(true),
-                        ..Default::default()
-                    }),
+                    params: None,
                     ..Default::default()
                 })
                 .await
@@ -804,10 +801,7 @@ pub async fn search_qdrant_query(
                     with_payload: None,
                     filter: Some(filter),
                     timeout: Some(60),
-                    params: Some(SearchParams {
-                        indexed_only: Some(true),
-                        ..Default::default()
-                    }),
+                    params: None,
                     ..Default::default()
                 })
                 .await
