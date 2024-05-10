@@ -12,7 +12,7 @@ use qdrant_client::{
         group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization,
         BinaryQuantization, CountPoints, CreateCollection, Distance, FieldType, Filter,
         HnswConfigDiff, PointId, PointStruct, QuantizationConfig, RecommendPointGroups,
-        RecommendPoints, RecommendStrategy, SearchParams, SearchPointGroups, SearchPoints,
+        RecommendPoints, RecommendStrategy, SearchPointGroups, SearchPoints,
         SparseIndexConfig, SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams,
         VectorParamsMap, VectorsConfig,
     },
