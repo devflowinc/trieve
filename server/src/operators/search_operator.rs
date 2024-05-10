@@ -972,6 +972,7 @@ pub async fn retrieve_chunks_for_groups(
                         score: search_result.score.into(),
                     }
                 })
+                .sorted_by(|a, b| b.score.partial_cmp(&a.score).unwrap())
                 .collect_vec();
 
             let group_data = groups.iter().find(|group| group.id == group_search_result.group_id);
@@ -1947,6 +1948,19 @@ async fn cross_encoder_for_groups(
             group
         })
         .collect_vec();
+
+    group_results = group_results
+        .into_iter()
+        .map(|mut group| {
+            group.metadata = group
+                .metadata
+                .into_iter()
+                .sorted_by(|a, b| b.score.partial_cmp(&a.score).unwrap())
+                .collect();
+            group
+        })
+        .collect_vec();
+
     group_results.dedup_by(|a, b| a.group_id == b.group_id);
 
     group_results.sort_by(|a, b| {
