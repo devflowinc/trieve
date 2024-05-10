@@ -915,10 +915,7 @@ pub async fn recommend_qdrant_query(
         filter: Some(filter),
         limit,
         with_payload: None,
-        params: Some(SearchParams {
-            indexed_only: Some(true),
-            ..Default::default()
-        }),
+        params: None,
         score_threshold: None,
         offset: None,
         using: Some(vector_name.to_string()),
@@ -1043,10 +1040,7 @@ pub async fn recommend_qdrant_groups_query(
         filter: Some(filters),
         limit: limit.try_into().unwrap_or(10),
         with_payload: None,
-        params: Some(SearchParams {
-            indexed_only: Some(true),
-            ..Default::default()
-        }),
+        params: None,
         score_threshold: None,
         using: Some(vector_name.to_string()),
         with_vectors: None,
