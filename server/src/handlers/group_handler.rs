@@ -34,7 +34,7 @@ pub async fn dataset_owns_group(
     unified_group_id: UnifiedId,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, ServiceError> {
+) -> Result<ChunkGroupAndFile, ServiceError> {
     let group = match unified_group_id {
         UnifiedId::TrieveUuid(group_id) => {
             get_group_by_id_query(group_id, dataset_id, pool).await?
@@ -168,6 +168,8 @@ pub async fn get_specific_dataset_chunk_groups(
                 dataset_id: group.dataset_id,
                 name: group.name.clone(),
                 description: group.description.clone(),
+                metadata: group.metadata.clone(),
+                tag_set: group.tag_set.clone(),
                 created_at: group.created_at,
                 updated_at: group.updated_at,
                 file_id: group.file_id,
@@ -1080,6 +1082,7 @@ pub async fn get_recommended_groups(
                 group_id: metadata.group_id,
                 group_tracking_id: metadata.group_tracking_id,
                 group_name: metadata.group_name,
+                file_id: metadata.file_id,
                 metadata: metadata
                     .metadata
                     .into_iter()
@@ -1154,7 +1157,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchWithinGroupResults {
     pub bookmarks: Vec<ScoreChunkDTO>,
-    pub group: ChunkGroup,
+    pub group: ChunkGroupAndFile,
     pub total_pages: i64,
 }
 
@@ -1388,6 +1391,7 @@ pub async fn search_over_groups(
                 group_id: metadata.group_id,
                 group_tracking_id: metadata.group_tracking_id,
                 group_name: metadata.group_name,
+                file_id: metadata.file_id,
                 metadata: metadata
                     .metadata
                     .into_iter()

@@ -9,7 +9,7 @@ use super::model_operator::{create_embedding, cross_encoder, get_sparse_vector};
 use super::qdrant_operator::{
     get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
 };
-use crate::data::models::{ChunkGroup, ChunkMetadata, Dataset, ServerDatasetConfiguration};
+use crate::data::models::{ChunkGroupAndFile, ChunkMetadata, Dataset, ServerDatasetConfiguration};
 use crate::handlers::chunk_handler::{
     ChunkFilter, ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody,
 };
@@ -849,6 +849,7 @@ pub struct GroupScoreChunk {
     pub group_id: uuid::Uuid,
     pub group_tracking_id: Option<String>,
     pub group_name: Option<String>,
+    pub file_id: Option<uuid::Uuid>,
     pub metadata: Vec<ScoreChunkDTO>,
 }
 
@@ -977,11 +978,13 @@ pub async fn retrieve_chunks_for_groups(
             let group_data = groups.iter().find(|group| group.id == group_search_result.group_id);
             let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
             let group_name = group_data.map(|group| group.name.clone());
+            let group_file_id = group_data.and_then(|group| group.file_id);
 
             GroupScoreChunk {
                 group_id: group_search_result.group_id,
                 group_name,
                 group_tracking_id,
+                file_id: group_file_id,
                 metadata: score_chunks,
             }
         })
@@ -1094,11 +1097,13 @@ pub async fn get_metadata_from_groups(
             let group_data = groups.iter().find(|group| group.id == group_search_result.group_id);
             let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
             let group_name = group_data.map(|group| group.name.clone());
+            let group_file_id = group_data.and_then(|group| group.file_id);
 
             GroupScoreChunk {
                 group_id: group_search_result.group_id,
                 group_name,
                 group_tracking_id,
+                file_id: group_file_id,
                 metadata: score_chunk,
             }
         })
@@ -1569,7 +1574,7 @@ pub async fn search_hybrid_chunks(
 pub async fn search_semantic_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroup,
+    group: ChunkGroupAndFile,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1620,7 +1625,7 @@ pub async fn search_semantic_groups(
 pub async fn search_full_text_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroup,
+    group: ChunkGroupAndFile,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1670,7 +1675,7 @@ pub async fn search_full_text_groups(
 pub async fn search_hybrid_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroup,
+    group: ChunkGroupAndFile,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,

@@ -636,13 +636,14 @@ pub struct GroupScoreSlimChunks {
     pub group_id: uuid::Uuid,
     pub group_tracking_id: Option<String>,
     pub group_name: Option<String>,
+    pub file_id: Option<uuid::Uuid>,
     pub metadata: Vec<ScoreSlimChunks>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchWithinGroupSlimResults {
     pub bookmarks: Vec<ScoreSlimChunks>,
-    pub group: ChunkGroup,
+    pub group: ChunkGroupAndFile,
     pub total_pages: i64,
 }
 
@@ -785,6 +786,8 @@ pub struct ChunkGroupAndFile {
     pub dataset_id: uuid::Uuid,
     pub name: String,
     pub description: String,
+    pub metadata: Option<serde_json::Value>,
+    pub tag_set: Option<String>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub file_id: Option<uuid::Uuid>,

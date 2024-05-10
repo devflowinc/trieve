@@ -242,7 +242,7 @@ async fn file_worker(
 }
 
 async fn upload_file(
-    file_worker_message: FileWorkerMessage,
+    mut file_worker_message: FileWorkerMessage,
     web_pool: actix_web::web::Data<models::Pool>,
     redis_conn: MultiplexedConnection,
 ) -> Result<Option<uuid::Uuid>, ServiceError> {
@@ -277,7 +277,7 @@ async fn upload_file(
 
     let tika_response = tika_client
         .put(&format!("{}/tika", tika_url))
-        .header("Accept", "text/html")
+        .header("Accept", "application/json")
         .body(file_data.clone())
         .send()
         .await
@@ -286,21 +286,42 @@ async fn upload_file(
             ServiceError::BadRequest("Could not send file to tika".to_string())
         })?;
 
-    let tike_html_converted_file_bytes = tika_response
-        .bytes()
-        .await
-        .map_err(|err| {
-            log::error!("Could not get tika response bytes {:?}", err);
-            ServiceError::BadRequest("Could not get tika response bytes".to_string())
-        })?
-        .to_vec();
+    let tika_response_json: serde_json::Value = tika_response.json().await.map_err(|err| {
+        log::error!("Could not get tika response json {:?}", err);
+        ServiceError::BadRequest("Could not get tika response json".to_string())
+    })?;
+
+    let html_content = match tika_response_json.get("X-TIKA:content") {
+        Some(content) => content.as_str().unwrap_or("").to_string(),
+        None => {
+            return Err(ServiceError::BadRequest(
+                "Could not parse file with tika".to_string(),
+            ));
+        }
+    };
+
+    let mut metadata = match tika_response_json.as_object() {
+        Some(metadata) => metadata.clone(),
+        None => {
+            return Err(ServiceError::BadRequest(
+                "Could not parse file with tika".to_string(),
+            ));
+        }
+    };
+    metadata.remove("X-TIKA:content");
+
     tika_html_parse_span.finish();
 
-    let html_content = String::from_utf8_lossy(&tike_html_converted_file_bytes).to_string();
     if html_content.is_empty() {
         return Err(ServiceError::BadRequest(
             "Could not parse file with tika".to_string(),
         ));
+    }
+
+    if let Some(metadata) = &mut file_worker_message.upload_file_data.metadata {
+        if let Some(metadata_map) = metadata.as_object_mut() {
+            metadata_map.extend(metadata_map.clone());
+        }
     }
 
     let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;

@@ -26,15 +26,32 @@ pub async fn get_group_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, ServiceError> {
+) -> Result<ChunkGroupAndFile, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
 
     let group = chunk_group_columns::chunk_group
+        .left_outer_join(
+            crate::data::schema::groups_from_files::dsl::groups_from_files
+                .on(chunk_group_columns::id
+                    .eq(crate::data::schema::groups_from_files::dsl::group_id)),
+        )
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
         .filter(chunk_group_columns::tracking_id.eq(tracking_id))
-        .first::<ChunkGroup>(&mut conn)
+        .select((
+            chunk_group_columns::id,
+            chunk_group_columns::dataset_id,
+            chunk_group_columns::name,
+            chunk_group_columns::description,
+            chunk_group_columns::metadata,
+            chunk_group_columns::tag_set,
+            chunk_group_columns::created_at,
+            chunk_group_columns::updated_at,
+            crate::data::schema::groups_from_files::dsl::file_id.nullable(),
+            chunk_group_columns::tracking_id,
+        ))
+        .first::<ChunkGroupAndFile>(&mut conn)
         .await
         .map_err(|_| ServiceError::NotFound("Group with tracking_id not found".to_string()))?;
 
@@ -156,6 +173,8 @@ pub async fn get_groups_for_specific_dataset_query(
                 dataset_id,
                 name,
                 description,
+                metadata,
+                tag_set,
                 created_at,
                 updated_at,
                 groups_from_files_columns::file_id.nullable(),
@@ -182,15 +201,31 @@ pub async fn get_group_by_id_query(
     group_id: uuid::Uuid,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, ServiceError> {
+) -> Result<ChunkGroupAndFile, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
 
     let group = chunk_group
+        .left_outer_join(
+            crate::data::schema::groups_from_files::dsl::groups_from_files
+                .on(id.eq(crate::data::schema::groups_from_files::dsl::group_id)),
+        )
         .filter(dataset_id.eq(dataset_uuid))
         .filter(id.eq(group_id))
-        .first::<ChunkGroup>(&mut conn)
+        .select((
+            id,
+            dataset_id,
+            name,
+            description,
+            metadata,
+            tag_set,
+            created_at,
+            updated_at,
+            crate::data::schema::groups_from_files::dsl::file_id.nullable(),
+            tracking_id,
+        ))
+        .first::<ChunkGroupAndFile>(&mut conn)
         .await
         .map_err(|_| ServiceError::NotFound(format!("Group with id not found {:?}", group_id)))?;
 
@@ -659,14 +694,31 @@ pub async fn get_point_ids_from_unified_group_ids(
 pub async fn get_groups_from_group_ids_query(
     group_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkGroup>, ServiceError> {
+) -> Result<Vec<ChunkGroupAndFile>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
 
     chunk_group_columns::chunk_group
+        .left_join(
+            crate::data::schema::groups_from_files::dsl::groups_from_files
+                .on(chunk_group_columns::id
+                    .eq(crate::data::schema::groups_from_files::dsl::group_id)),
+        )
         .filter(chunk_group_columns::id.eq_any(&group_ids))
-        .load::<ChunkGroup>(&mut conn)
+        .select((
+            chunk_group_columns::id,
+            chunk_group_columns::dataset_id,
+            chunk_group_columns::name,
+            chunk_group_columns::description,
+            chunk_group_columns::metadata,
+            chunk_group_columns::tag_set,
+            chunk_group_columns::created_at,
+            chunk_group_columns::updated_at,
+            crate::data::schema::groups_from_files::dsl::file_id.nullable(),
+            chunk_group_columns::tracking_id,
+        ))
+        .load::<ChunkGroupAndFile>(&mut conn)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to fetch group".to_string()))
 }
