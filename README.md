@@ -22,7 +22,7 @@
 </p>
 
 <h2 align="center">
-    <b>Trieve is an Advanced Relevance API for hybrid search, recommendations, and RAG</b>
+    <b>Trieve is all-in-one infrastructure for building hybrid vector search, recommendations, and RAG</b>
 </h2>
 
 ![Trieve OG tag](https://cdn.trieve.ai/trieve-og.png)
