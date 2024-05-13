@@ -1,13 +1,11 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{parse_query, ChunkFilter, ScoreChunkDTO, SearchChunkData},
+    chunk_handler::{parse_query, ChunkFilter, SearchChunkData},
 };
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadata,
-        DatasetAndOrgWithSubAndPlan, GroupScoreSlimChunks, Pool, ScoreSlimChunks,
-        SearchOverGroupsSlimResults, SearchWithinGroupSlimResults, ServerDatasetConfiguration,
-        UnifiedId,
+        DatasetAndOrgWithSubAndPlan, Pool, ScoreChunkDTO, ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -911,8 +909,7 @@ pub struct RecommendGroupChunksRequest {
     tag = "chunk_group",
     request_body(content = RecommendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones if slim_chunks is false in the request", body = Vec<GroupScoreChunk>),
-        (status = 206, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones if slim_chunks is false in the request", body = Vec<GroupScoreSlimChunks>),
+        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = Vec<GroupScoreChunk>),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
@@ -1073,26 +1070,6 @@ pub async fn get_recommended_groups(
 
     timer.add("finish to get_metadata_from_groups from postgres and return results");
 
-    if data.slim_chunks.unwrap_or(false) {
-        let res = recommended_chunk_metadatas
-            .into_iter()
-            .map(|metadata| GroupScoreSlimChunks {
-                group_id: metadata.group_id,
-                group_tracking_id: metadata.group_tracking_id,
-                group_name: metadata.group_name,
-                metadata: metadata
-                    .metadata
-                    .into_iter()
-                    .map(|chunk| chunk.into())
-                    .collect::<Vec<ScoreSlimChunks>>(),
-            })
-            .collect::<Vec<GroupScoreSlimChunks>>();
-
-        return Ok(HttpResponse::Ok()
-            .insert_header((Timer::header_key(), timer.header_value()))
-            .json(res));
-    }
-
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
         .json(recommended_chunk_metadatas))
@@ -1168,8 +1145,7 @@ pub struct SearchWithinGroupResults {
     tag = "chunk_group",
     request_body(content = SearchWithinGroupData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query if slim_chunks is false in the request", body = SearchWithinGroupResults),
-        (status = 206, description = "Group chunks which are similar to the embedding vector of the search query if slim_chunks is true in the request", body = SearchWithinGroupSlimResults),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchWithinGroupResults),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
@@ -1254,22 +1230,6 @@ pub async fn search_within_group(
         }
     };
 
-    if data.slim_chunks.unwrap_or(false) {
-        let ids = result_chunks
-            .bookmarks
-            .into_iter()
-            .map(|metadata| metadata.into())
-            .collect::<Vec<ScoreSlimChunks>>();
-
-        let res = SearchWithinGroupSlimResults {
-            bookmarks: ids,
-            group: result_chunks.group,
-            total_pages: result_chunks.total_pages,
-        };
-
-        return Ok(HttpResponse::PartialContent().json(res));
-    }
-
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
@@ -1311,8 +1271,7 @@ pub struct SearchOverGroupsData {
     tag = "chunk_group",
     request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query if slim_chunks is false or unspecified in the request body", body = SearchOverGroupsResults),
-        (status = 206, description = "Group chunks which are similar to the embedding vector of the search query if slim_chunks is true in the request body", body = SearchOverGroupsSlimResults),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResults),
         (status = 400, description = "Service error relating to searching over groups", body = ErrorResponseBody),
     ),
     params(
@@ -1379,32 +1338,6 @@ pub async fn search_over_groups(
             .await?
         }
     };
-
-    if data.slim_chunks.unwrap_or(false) {
-        let ids = result_chunks
-            .group_chunks
-            .into_iter()
-            .map(|metadata| GroupScoreSlimChunks {
-                group_id: metadata.group_id,
-                group_tracking_id: metadata.group_tracking_id,
-                group_name: metadata.group_name,
-                metadata: metadata
-                    .metadata
-                    .into_iter()
-                    .map(|chunk| chunk.into())
-                    .collect::<Vec<ScoreSlimChunks>>(),
-            })
-            .collect::<Vec<GroupScoreSlimChunks>>();
-
-        let res = SearchOverGroupsSlimResults {
-            group_chunks: ids,
-            total_chunk_pages: result_chunks.total_chunk_pages,
-        };
-
-        return Ok(HttpResponse::PartialContent()
-            .insert_header((Timer::header_key(), timer.header_value()))
-            .json(res));
-    }
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))

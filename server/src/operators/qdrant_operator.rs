@@ -6,15 +6,17 @@ use crate::{
     handlers::chunk_handler::ChunkFilter,
 };
 use actix_web::web;
+use itertools::Itertools;
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
-        group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization,
-        BinaryQuantization, CountPoints, CreateCollection, Distance, FieldType, Filter,
-        HnswConfigDiff, PointId, PointStruct, QuantizationConfig, RecommendPointGroups,
-        RecommendPoints, RecommendStrategy, SearchPointGroups, SearchPoints, SparseIndexConfig,
-        SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap,
-        VectorsConfig,
+        group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
+        quantization_config::Quantization, BinaryQuantization, CountPoints, CreateCollection,
+        Distance, FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
+        QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy,
+        SearchBatchPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig,
+        SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector, VectorParams,
+        VectorParamsMap, VectorsConfig,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -47,6 +49,7 @@ pub async fn create_new_qdrant_collection_query(
     qdrant_api_key: Option<&str>,
     qdrant_collection: Option<&str>,
     quantize: bool,
+    recreate_indexes: bool,
 ) -> Result<(), ServiceError> {
     let qdrant_collection = qdrant_collection
         .unwrap_or(get_env!(
@@ -78,6 +81,7 @@ pub async fn create_new_qdrant_collection_query(
             );
 
             let quantization_config = if quantize {
+                //TODO: make this scalar
                 Some(QuantizationConfig {
                     quantization: Some(Quantization::Binary(BinaryQuantization {
                         always_ram: Some(true),
@@ -174,6 +178,48 @@ pub async fn create_new_qdrant_collection_query(
         }
     };
 
+    if recreate_indexes {
+        qdrant_client
+            .delete_field_index(qdrant_collection.clone(), "link", None)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+        qdrant_client
+            .delete_field_index(qdrant_collection.clone(), "tag_set", None)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+        qdrant_client
+            .delete_field_index(qdrant_collection.clone(), "dataset_id", None)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+        qdrant_client
+            .delete_field_index(qdrant_collection.clone(), "metadata", None)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+        qdrant_client
+            .delete_field_index(qdrant_collection.clone(), "time_stamp", None)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+        qdrant_client
+            .delete_field_index(qdrant_collection.clone(), "group_ids", None)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+        qdrant_client
+            .delete_field_index(qdrant_collection.clone(), "location", None)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+        qdrant_client
+            .delete_field_index(qdrant_collection.clone(), "content", None)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+    }
+
     qdrant_client
         .create_field_index(
             qdrant_collection.clone(),
@@ -255,8 +301,15 @@ pub async fn create_new_qdrant_collection_query(
         .create_field_index(
             qdrant_collection.clone(),
             "content",
-            FieldType::Keyword,
-            None,
+            FieldType::Text,
+            Some(&PayloadIndexParams {
+                index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
+                    tokenizer: TokenizerType::Prefix as i32,
+                    min_token_len: Some(2),
+                    max_token_len: Some(10),
+                    lowercase: Some(true),
+                })),
+            }),
             None,
         )
         .await
@@ -621,6 +674,13 @@ pub enum VectorType {
     Dense(Vec<f32>),
 }
 
+#[derive(Debug)]
+pub struct QdrantSearchQuery {
+    pub filter: Filter,
+    pub score_threshold: Option<f32>,
+    pub vector: VectorType,
+}
+
 #[tracing::instrument]
 pub async fn search_over_groups_query(
     page: u64,
@@ -740,88 +800,143 @@ pub async fn search_over_groups_query(
 #[tracing::instrument]
 pub async fn search_qdrant_query(
     page: u64,
-    filter: Filter,
     limit: u64,
-    score_threshold: Option<f32>,
-    vector: VectorType,
+    queries: Vec<QdrantSearchQuery>,
     config: ServerDatasetConfiguration,
-) -> Result<Vec<SearchResult>, ServiceError> {
+    get_total_pages: bool,
+) -> Result<(Vec<SearchResult>, u64), ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
-    let vector_name = match vector {
-        VectorType::Sparse(_) => "sparse_vectors",
-        VectorType::Dense(ref embedding_vector) => match embedding_vector.len() {
-            384 => "384_vectors",
-            512 => "512_vectors",
-            768 => "768_vectors",
-            1024 => "1024_vectors",
-            3072 => "3072_vectors",
-            1536 => "1536_vectors",
-            _ => {
-                return Err(ServiceError::BadRequest(
-                    "Invalid embedding vector size".to_string(),
-                ))
+    let data: Vec<SearchPoints> = queries
+        .into_iter()
+        .map(|query| match query.vector {
+            VectorType::Sparse(vector) => {
+                let sparse_vector: Vector = vector.into();
+                Ok(SearchPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: sparse_vector.data,
+                    sparse_indices: sparse_vector.indices,
+                    vector_name: Some("sparse_vectors".to_string()),
+                    limit,
+                    score_threshold: query.score_threshold,
+                    offset: Some((page - 1) * 10),
+                    with_payload: None,
+                    filter: Some(query.filter.clone()),
+                    timeout: Some(60),
+                    params: None,
+                    ..Default::default()
+                })
             }
-        },
-    };
-
-    let data = match vector {
-        VectorType::Dense(embedding_vector) => {
-            qdrant
-                .search_points(&SearchPoints {
+            VectorType::Dense(embedding_vector) => {
+                let vector_name = match embedding_vector.len() {
+                    384 => "384_vectors",
+                    512 => "512_vectors",
+                    768 => "768_vectors",
+                    1024 => "1024_vectors",
+                    3072 => "3072_vectors",
+                    1536 => "1536_vectors",
+                    _ => {
+                        return Err(ServiceError::BadRequest(
+                            "Invalid embedding vector size".to_string(),
+                        ))
+                    }
+                };
+                Ok(SearchPoints {
                     collection_name: qdrant_collection.to_string(),
                     vector: embedding_vector,
                     vector_name: Some(vector_name.to_string()),
                     limit,
-                    score_threshold,
+                    score_threshold: query.score_threshold,
                     offset: Some((page - 1) * 10),
                     with_payload: None,
-                    filter: Some(filter),
+                    filter: Some(query.filter.clone()),
                     timeout: Some(60),
                     params: None,
                     ..Default::default()
                 })
-                .await
-        }
+            }
+        })
+        .collect::<Result<Vec<SearchPoints>, ServiceError>>()?;
 
-        VectorType::Sparse(sparse_vector) => {
-            let sparse_vector: Vector = sparse_vector.into();
-            qdrant
-                .search_points(&SearchPoints {
-                    collection_name: qdrant_collection.to_string(),
-                    vector: sparse_vector.data,
-                    sparse_indices: sparse_vector.indices,
-                    vector_name: Some(vector_name.to_string()),
-                    limit,
-                    score_threshold,
-                    offset: Some((page - 1) * 10),
-                    with_payload: None,
-                    filter: Some(filter),
-                    timeout: Some(60),
-                    params: None,
-                    ..Default::default()
-                })
-                .await
-        }
-    }
-    .map_err(|e| ServiceError::BadRequest(format!("Failed to search points on Qdrant {:?}", e)))?;
+    let batch_points = SearchBatchPoints {
+        collection_name: qdrant_collection.to_string(),
+        search_points: data.clone(),
+        timeout: Some(60),
+        ..Default::default()
+    };
 
-    let point_ids: Vec<SearchResult> = data
+    let search_response_future = qdrant.search_batch_points(&batch_points);
+
+    let count_query = data
+        .iter()
+        .map(|query| CountPoints {
+            collection_name: qdrant_collection.to_string(),
+            filter: query.filter.clone(),
+            exact: Some(true),
+            read_consistency: None,
+            shard_key_selector: None,
+        })
+        .collect::<Vec<_>>();
+
+    let point_count_futures = count_query
+        .iter()
+        .map(|query| async {
+            if !get_total_pages {
+                return Ok(0);
+            }
+
+            Ok(qdrant
+                .count(query)
+                .await
+                .map_err(|e| {
+                    log::error!("Failed to count points on Qdrant {:?}", e);
+                    ServiceError::BadRequest("Failed to count points on Qdrant".to_string())
+                })?
+                .result
+                .map(|count| count.count)
+                .unwrap_or(0))
+        })
+        .collect::<Vec<_>>();
+
+    let (search_response, point_count_response) = futures::join!(
+        search_response_future,
+        futures::future::join_all(point_count_futures)
+    );
+
+    let point_ids: Vec<SearchResult> = search_response
+        .map_err(|e| {
+            log::error!("Failed to search points on Qdrant {:?}", e);
+            ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
+        })?
         .result
         .iter()
-        .filter_map(|point| match point.clone().id?.point_id_options? {
-            PointIdOptions::Uuid(id) => Some(SearchResult {
-                score: point.score,
-                point_id: uuid::Uuid::parse_str(&id).ok()?,
-            }),
-            PointIdOptions::Num(_) => None,
+        .flat_map(|result| {
+            result
+                .result
+                .iter()
+                .filter_map(|point| match point.id.clone()?.point_id_options? {
+                    PointIdOptions::Uuid(id) => Some(SearchResult {
+                        score: point.score,
+                        point_id: uuid::Uuid::parse_str(&id).ok()?,
+                    }),
+                    PointIdOptions::Num(_) => None,
+                })
+                .collect::<Vec<SearchResult>>()
         })
+        .unique_by(|point| point.point_id)
+        .take(limit as usize)
         .collect();
 
-    Ok(point_ids)
+    let point_count = point_count_response
+        .into_iter()
+        .map(|count: Result<u64, ServiceError>| count.unwrap_or(0))
+        .min()
+        .unwrap_or(0);
+
+    Ok((point_ids, point_count))
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1135,34 +1250,6 @@ pub async fn get_point_count_qdrant_query(
         })?;
 
     Ok(data.result.expect("Failed to get result from qdrant").count)
-}
-
-#[tracing::instrument]
-pub async fn point_id_exists_in_qdrant(
-    point_id: uuid::Uuid,
-    config: ServerDatasetConfiguration,
-) -> Result<bool, ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
-
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
-
-    let data = qdrant
-        .get_points(
-            qdrant_collection,
-            None,
-            &[point_id.to_string().into()],
-            false.into(),
-            false.into(),
-            None,
-        )
-        .await
-        .map_err(|err| {
-            log::info!("Failed to fetch points from qdrant {:?}", err);
-            ServiceError::BadRequest("Failed to fetch points from qdrant".to_string())
-        })?;
-
-    Ok(!data.result.is_empty())
 }
 
 #[tracing::instrument]

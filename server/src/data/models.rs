@@ -7,7 +7,6 @@ use crate::get_env;
 use crate::operators::parse_operator::convert_html_to_text;
 
 use super::schema::*;
-use crate::handlers::chunk_handler::ScoreChunkDTO;
 use crate::handlers::file_handler::UploadFileData;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
@@ -388,6 +387,26 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
     }
 }
 
+impl From<ContentChunkMetadata> for ChunkMetadata {
+    fn from(content_chunk: ContentChunkMetadata) -> Self {
+        ChunkMetadata {
+            id: content_chunk.id,
+            chunk_html: content_chunk.chunk_html,
+            link: None,
+            qdrant_point_id: content_chunk.qdrant_point_id,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+            tag_set: None,
+            metadata: None,
+            tracking_id: content_chunk.tracking_id,
+            time_stamp: content_chunk.time_stamp,
+            location: None,
+            dataset_id: uuid::Uuid::new_v4(),
+            weight: content_chunk.weight,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
@@ -467,6 +486,94 @@ impl From<(ChunkMetadata, f32)> for ChunkMetadataWithScore {
             dataset_id: chunk.dataset_id,
             weight: chunk.weight,
             score,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "metadata": [
+        {
+            "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+            "content": "Some content",
+            "link": "https://example.com",
+            "chunk_html": "<p>Some HTML content</p>",
+            "metadata": {"key1": "value1", "key2": "value2"},
+            "time_stamp": "2021-01-01T00:00:00",
+            "weight": 0.5,
+        }
+    ],
+    "score": 0.5
+}))]
+pub struct ScoreChunkDTO {
+    pub metadata: Vec<ChunkMetadataTypes>,
+    pub score: f64,
+}
+
+impl ScoreChunkDTO {
+    pub fn slim(&self) -> ScoreChunkDTO {
+        let mut slim_chunk_dto = self.clone();
+        slim_chunk_dto.metadata = slim_chunk_dto
+            .metadata
+            .into_iter()
+            .map(|metadata| match metadata {
+                ChunkMetadataTypes::ID(slim_chunk_metadata) => {
+                    ChunkMetadataTypes::ID(slim_chunk_metadata)
+                }
+                ChunkMetadataTypes::Metadata(chunk_metadata) => {
+                    ChunkMetadataTypes::ID(chunk_metadata.into())
+                }
+                ChunkMetadataTypes::Content(content_chunk_metadata) => {
+                    ChunkMetadataTypes::ID(content_chunk_metadata.into())
+                }
+            })
+            .collect();
+        slim_chunk_dto
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[serde(untagged)]
+pub enum ChunkMetadataTypes {
+    ID(SlimChunkMetadata),
+    Metadata(ChunkMetadata),
+    Content(ContentChunkMetadata),
+}
+
+impl From<ChunkMetadataTypes> for ChunkMetadata {
+    fn from(val: ChunkMetadataTypes) -> Self {
+        match val {
+            ChunkMetadataTypes::ID(slim_chunk_metadata) => slim_chunk_metadata.into(),
+            ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata,
+            ChunkMetadataTypes::Content(content_chunk_metadata) => content_chunk_metadata.into(),
+        }
+    }
+}
+
+impl From<ChunkMetadata> for ChunkMetadataTypes {
+    fn from(chunk_metadata: ChunkMetadata) -> Self {
+        ChunkMetadataTypes::Metadata(chunk_metadata)
+    }
+}
+
+impl From<SlimChunkMetadata> for ChunkMetadataTypes {
+    fn from(slim_chunk_metadata: SlimChunkMetadata) -> Self {
+        ChunkMetadataTypes::ID(slim_chunk_metadata)
+    }
+}
+
+impl From<ContentChunkMetadata> for ChunkMetadataTypes {
+    fn from(content_chunk_metadata: ContentChunkMetadata) -> Self {
+        ChunkMetadataTypes::Content(content_chunk_metadata)
+    }
+}
+
+impl ChunkMetadataTypes {
+    pub fn metadata(&self) -> ChunkMetadata {
+        match self {
+            ChunkMetadataTypes::Metadata(metadata) => metadata.clone(),
+            ChunkMetadataTypes::ID(slim_metadata) => slim_metadata.clone().into(),
+            ChunkMetadataTypes::Content(content_metadata) => content_metadata.clone().into(),
         }
     }
 }
@@ -566,90 +673,59 @@ impl From<ChunkMetadata> for SlimChunkMetadata {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
-#[schema(
-    example = json!({
-        "metadata": [
-            {
-                "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                "link": "https://trieve.ai",
-                "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                "created_at": "2021-01-01T00:00:00",
-                "updated_at": "2021-01-01T00:00:00",
-                "tag_set": "tag1,tag2",
-                "metadata": {"key": "value"},
-                "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                "time_stamp": "2021-01-01T00:00:00",
-                "weight": 0.5,
-            }
-        ],
-        "score": 0.5,
-    })
-
-)]
-pub struct ScoreSlimChunks {
-    pub metadata: Vec<SlimChunkMetadata>,
-    pub score: f64,
-}
-
-impl From<ScoreChunkDTO> for ScoreSlimChunks {
-    fn from(score: ScoreChunkDTO) -> Self {
-        ScoreSlimChunks {
-            metadata: score.metadata.into_iter().map(|m| m.into()).collect(),
-            score: score.score,
+impl From<ContentChunkMetadata> for SlimChunkMetadata {
+    fn from(chunk: ContentChunkMetadata) -> Self {
+        SlimChunkMetadata {
+            id: chunk.id,
+            link: None,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+            tag_set: None,
+            metadata: None,
+            tracking_id: chunk.tracking_id,
+            time_stamp: None,
+            location: None,
+            dataset_id: uuid::Uuid::new_v4(),
+            weight: chunk.weight,
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct SearchSlimChunkQueryResponseBody {
-    pub score_chunks: Vec<ScoreSlimChunks>,
-    pub total_chunk_pages: i64,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
 #[schema(example = json!({
-    "group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "group_tracking_id": "example_tracking_id",
-    "group_name": "Example Group",
-    "metadata": [
-        {
-            "metadata": [
-                {
-                    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                    "link": "https://trieve.ai",
-                    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                    "created_at": "2021-01-01T00:00:00",
-                    "updated_at": "2021-01-01T00:00:00",
-                    "tag_set": "tag1,tag2",
-                    "metadata": {"key": "value"},
-                    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                    "time_stamp": "2021-01-01T00:00:00",
-                    "weight": 0.5,
-                }
-            ],
-            "score": 0.5,
-        }
-    ],
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "tag1,tag2",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "weight": 0.5,
 }))]
-pub struct GroupScoreSlimChunks {
-    pub group_id: uuid::Uuid,
-    pub group_tracking_id: Option<String>,
-    pub group_name: Option<String>,
-    pub metadata: Vec<ScoreSlimChunks>,
+pub struct ContentChunkMetadata {
+    pub id: uuid::Uuid,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub chunk_html: Option<String>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub weight: f64,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchWithinGroupSlimResults {
-    pub bookmarks: Vec<ScoreSlimChunks>,
-    pub group: ChunkGroup,
-    pub total_pages: i64,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchOverGroupsSlimResults {
-    pub group_chunks: Vec<GroupScoreSlimChunks>,
-    pub total_chunk_pages: i64,
+impl From<ChunkMetadata> for ContentChunkMetadata {
+    fn from(chunk: ChunkMetadata) -> Self {
+        ContentChunkMetadata {
+            id: chunk.id,
+            qdrant_point_id: chunk.qdrant_point_id,
+            chunk_html: chunk.chunk_html,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            weight: chunk.weight,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]

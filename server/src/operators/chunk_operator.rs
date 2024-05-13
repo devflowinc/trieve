@@ -1,6 +1,6 @@
 use crate::data::models::{
-    ChunkCollision, ChunkGroupBookmark, Dataset, IngestSpecificChunkMetadata,
-    ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
+    ChunkCollision, ChunkGroupBookmark, ChunkMetadataTypes, ContentChunkMetadata, Dataset,
+    IngestSpecificChunkMetadata, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::handlers::chunk_handler::UploadIngestionMessage;
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkData};
@@ -143,7 +143,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     get_collisions: bool,
     pool: web::Data<Pool>,
-) -> Result<(Vec<ChunkMetadata>, Vec<ChunkMetadataWithQdrantId>), ServiceError> {
+) -> Result<(Vec<ChunkMetadataTypes>, Vec<ChunkMetadataTypes>), ServiceError> {
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -189,26 +189,29 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
 
         chunk_metadata
             .iter()
-            .map(|chunk| ChunkMetadata {
-                id: chunk.0.id,
-                link: chunk.0.link.clone(),
-                tag_set: chunk.0.tag_set.clone(),
-                qdrant_point_id: Some(chunk.0.qdrant_point_id.unwrap_or_else(|| {
-                    chunk
-                        .1
-                        .expect("Must have qdrant_id from collision or metadata")
-                })),
-                created_at: chunk.0.created_at,
-                updated_at: chunk.0.updated_at,
-                chunk_html: chunk.0.chunk_html.clone(),
-                metadata: chunk.0.metadata.clone(),
-                tracking_id: chunk.0.tracking_id.clone(),
-                time_stamp: chunk.0.time_stamp,
-                location: chunk.0.location,
-                dataset_id: chunk.0.dataset_id,
-                weight: chunk.0.weight,
+            .map(|chunk| {
+                ChunkMetadata {
+                    id: chunk.0.id,
+                    link: chunk.0.link.clone(),
+                    tag_set: chunk.0.tag_set.clone(),
+                    qdrant_point_id: Some(chunk.0.qdrant_point_id.unwrap_or_else(|| {
+                        chunk
+                            .1
+                            .expect("Must have qdrant_id from collision or metadata")
+                    })),
+                    created_at: chunk.0.created_at,
+                    updated_at: chunk.0.updated_at,
+                    chunk_html: chunk.0.chunk_html.clone(),
+                    metadata: chunk.0.metadata.clone(),
+                    tracking_id: chunk.0.tracking_id.clone(),
+                    time_stamp: chunk.0.time_stamp,
+                    location: chunk.0.location,
+                    dataset_id: chunk.0.dataset_id,
+                    weight: chunk.0.weight,
+                }
+                .into()
             })
-            .collect::<Vec<ChunkMetadata>>()
+            .collect::<Vec<ChunkMetadataTypes>>()
     };
 
     chunk_search_span.finish();
@@ -240,7 +243,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
             chunk_metadata
                 .iter()
                 .map(|chunk| {
-                    let chunk_metadata = ChunkMetadata {
+                    ChunkMetadata {
                         id: chunk.0.id,
                         link: chunk.0.link.clone(),
                         tag_set: chunk.0.tag_set.clone(),
@@ -254,13 +257,10 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         location: chunk.0.location,
                         dataset_id: chunk.0.dataset_id,
                         weight: chunk.0.weight,
-                    };
-                    ChunkMetadataWithQdrantId {
-                        metadata: chunk_metadata,
-                        qdrant_id: chunk.1,
                     }
+                    .into()
                 })
-                .collect::<Vec<ChunkMetadataWithQdrantId>>()
+                .collect::<Vec<ChunkMetadataTypes>>()
         };
 
         collision_search_span.finish();
@@ -279,7 +279,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
 pub async fn get_slim_chunks_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<SlimChunkMetadata>, ServiceError> {
+) -> Result<Vec<ChunkMetadataTypes>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -331,26 +331,73 @@ pub async fn get_slim_chunks_from_point_ids_query(
 
         slim_chunk_metadatas
             .iter()
-            .map(|slim_chunk| SlimChunkMetadata {
-                id: slim_chunk.id,
-                link: slim_chunk.link.clone(),
-                tag_set: slim_chunk.tag_set.clone(),
-                qdrant_point_id: slim_chunk.qdrant_point_id,
-                created_at: slim_chunk.created_at,
-                updated_at: slim_chunk.updated_at,
-                metadata: slim_chunk.metadata.clone(),
-                tracking_id: slim_chunk.tracking_id.clone(),
-                time_stamp: slim_chunk.time_stamp,
-                location: slim_chunk.location,
-                dataset_id: slim_chunk.dataset_id,
-                weight: slim_chunk.weight,
-            })
-            .collect::<Vec<SlimChunkMetadata>>()
+            .map(|slim_chunk| slim_chunk.clone().into())
+            .collect::<Vec<ChunkMetadataTypes>>()
     };
 
     get_slim_chunks_span.finish();
 
     Ok(slim_chunks)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_content_chunk_from_point_ids_query(
+    point_ids: Vec<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ChunkMetadataTypes>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child(
+                "Get content chunk metadata of points",
+                "Hitting Postgres to fetch content chunk metadata",
+            )
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "Get content chunk metadata of points",
+                "Hitting Postgres to fetch content chunk metadata",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    let get_content_chunks_span = transaction.start_child(
+        "Fetching matching points to content chunks from qdrant",
+        "Fetching matching points to content chunks from qdrant",
+    );
+
+    let content_chunks = {
+        let mut conn = pool.get().await.unwrap();
+        let content_chunk_metadatas: Vec<ContentChunkMetadata> =
+            chunk_metadata_columns::chunk_metadata
+                .select((
+                    chunk_metadata_columns::id,
+                    chunk_metadata_columns::qdrant_point_id,
+                    chunk_metadata_columns::chunk_html,
+                    chunk_metadata_columns::tracking_id,
+                    chunk_metadata_columns::time_stamp,
+                    chunk_metadata_columns::weight,
+                ))
+                .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
+                .load(&mut conn)
+                .await
+                .map_err(|_| {
+                    ServiceError::BadRequest("Failed to load content chunk metadatas".to_string())
+                })?;
+
+        content_chunk_metadatas
+            .iter()
+            .map(|content_chunk| content_chunk.clone().into())
+            .collect::<Vec<ChunkMetadataTypes>>()
+    };
+
+    get_content_chunks_span.finish();
+
+    Ok(content_chunks)
 }
 
 #[tracing::instrument(skip(pool))]
@@ -1145,6 +1192,11 @@ pub fn find_relevant_sentence(
             .clone()
             .map(|x| x.replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase)));
     }
+
+    // combine adjacent <mark><b> tags
+    new_output.chunk_html = new_output
+        .chunk_html
+        .map(|x| x.replace("</b></mark><mark><b>", ""));
 
     Ok(new_output)
 }

@@ -1,20 +1,17 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithScore, DatasetAndOrgWithSubAndPlan,
-    FieldCondition, GeoInfo, IngestSpecificChunkMetadata, Pool, RedisPool, ScoreSlimChunks,
-    SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata,
-    SlimChunkMetadataWithScore, UnifiedId,
+    FieldCondition, GeoInfo, IngestSpecificChunkMetadata, Pool, RedisPool, ScoreChunkDTO,
+    ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::parse_operator::convert_html_to_text;
-use crate::operators::qdrant_operator::{
-    point_id_exists_in_qdrant, point_ids_exists_in_qdrant, recommend_qdrant_query,
-};
+use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
-    search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
+    autocomplete_chunks, search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -900,32 +897,6 @@ impl Default for SearchChunkData {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
-#[schema(example = json!({
-    "metadata": [
-        {
-            "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-            "content": "Some content",
-            "link": "https://example.com",
-            "chunk_html": "<p>Some HTML content</p>",
-            "metadata": {"key1": "value1", "key2": "value2"},
-            "time_stamp": "2021-01-01T00:00:00",
-            "weight": 0.5,
-        }
-    ],
-    "score": 0.5
-}))]
-pub struct ScoreChunkDTO {
-    pub metadata: Vec<ChunkMetadata>,
-    pub score: f64,
-}
-
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
-pub enum ChunkMetadataTypes {
-    IDs(Vec<SlimChunkMetadata>),
-    Metadata(Vec<ChunkMetadata>),
-}
-
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct SearchChunkQueryResponseBody {
     pub score_chunks: Vec<ScoreChunkDTO>,
@@ -971,13 +942,6 @@ pub fn parse_query(query: String) -> ParsedQuery {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
-#[serde(untagged)]
-pub enum SearchChunkResponseTypes {
-    SearchSlimChunkQueryResponseBody(SearchSlimChunkQueryResponseBody),
-    SearchChunkQueryResponseBody(SearchChunkQueryResponseBody),
-}
-
 /// Search
 ///
 /// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<b><mark>` tags for sub-sentence highlighting.
@@ -988,8 +952,7 @@ pub enum SearchChunkResponseTypes {
     tag = "chunk",
     request_body(content = SearchChunkData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body if slim_chunks is false or not specified in the request body", body = SearchChunkQueryResponseBody),
-        (status = 206, description = "Chunks with embedding vectors which are similar to those in the request body if slim_chunks is true in the request body", body = SearchSlimChunkQueryResponseBody),
+        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkQueryResponseBody),
 
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
@@ -1063,22 +1026,125 @@ pub async fn search_chunks(
 
     transaction.finish();
 
-    if data.slim_chunks.unwrap_or(false) {
-        let ids = result_chunks
-            .score_chunks
-            .iter()
-            .map(|score_chunk| <ScoreChunkDTO as Clone>::clone(score_chunk).into())
-            .collect::<Vec<ScoreSlimChunks>>();
+    Ok(HttpResponse::Ok()
+        .insert_header((Timer::header_key(), timer.header_value()))
+        .json(result_chunks))
+}
 
-        let res = SearchSlimChunkQueryResponseBody {
-            score_chunks: ids,
-            total_chunk_pages: result_chunks.total_chunk_pages,
-        };
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[schema(example = json!({
+    "query": "Some search query",
+    "page_size": 10,
+    "filters": {
+        "should": [
+            {
+                "field": "metadata.key1",
+                "match": ["value1", "value2"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ],
+        "must": [
+            {
+                "field": "metadata.key2",
+                "match": ["value3", "value4"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ],
+        "must_not": [
+            {
+                "field": "metadata.key3",
+                "match": ["value5", "value6"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ]
+    },
+    "date_bias": true,
+    "use_weights": true,
+    "score_threshold": 0.5
+}))]
+pub struct AutocompleteData {
+    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
+    pub query: String,
+    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+    pub page_size: Option<u64>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
+    /// Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
+    pub recency_bias: Option<f32>,
+    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
+    pub use_weights: Option<bool>,
+    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
+    pub highlight_delimiters: Option<Vec<String>>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    pub score_threshold: Option<f32>,
+    /// Set content_only to true to only return the content of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is true.
+    pub content_only: Option<bool>,
+}
 
-        return Ok(HttpResponse::PartialContent()
-            .insert_header((Timer::header_key(), timer.header_value()))
-            .json(res));
+impl From<AutocompleteData> for SearchChunkData {
+    fn from(data: AutocompleteData) -> Self {
+        SearchChunkData {
+            search_type: "semantic".to_string(),
+            query: data.query,
+            page: Some(1),
+            get_total_pages: Some(false),
+            page_size: data.page_size,
+            filters: data.filters,
+            recency_bias: data.recency_bias,
+            use_weights: data.use_weights,
+            get_collisions: Some(false),
+            highlight_results: Some(true),
+            highlight_delimiters: Some(data.highlight_delimiters.unwrap_or(vec![" ".to_string()])),
+            score_threshold: data.score_threshold,
+            slim_chunks: Some(false),
+        }
     }
+}
+
+pub async fn autocomplete(
+    data: web::Json<AutocompleteData>,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+
+    let parsed_query = parse_query(data.query.clone());
+
+    let tx_ctx = sentry::TransactionContext::new("autocomplete", "autocomplete_chunks");
+    let transaction = sentry::start_transaction(tx_ctx);
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
+    let mut timer = Timer::new();
+
+    let result_chunks = autocomplete_chunks(
+        data.clone().into(),
+        parsed_query,
+        data.content_only.unwrap_or(true),
+        pool,
+        dataset_org_plan_sub.dataset,
+        server_dataset_config,
+        &mut timer,
+    )
+    .await?;
+
+    transaction.finish();
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
@@ -1123,7 +1189,7 @@ pub async fn get_chunk_by_id(
 
     let point_id = chunk.qdrant_point_id;
     let pointid_exists = if let Some(point_id) = point_id {
-        point_id_exists_in_qdrant(point_id, dataset_configuration).await?
+        point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?
     } else {
         // This is a collision, assume collisions always exist in qdrant
         true
@@ -1178,7 +1244,7 @@ pub async fn get_chunk_by_tracking_id(
     let point_id = chunk.qdrant_point_id;
 
     let pointid_exists = if let Some(point_id) = point_id {
-        point_id_exists_in_qdrant(point_id, dataset_configuration).await?
+        point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?
     } else {
         // This is a collision, assume collisions always exist in qdrant
         true
@@ -1338,8 +1404,7 @@ pub struct RecommendChunksRequest {
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
 
-        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives if slim_chunks is false in the request", body = Vec<ChunkMetadataWithScore>),
-        (status = 206, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives if slim_chunks is true in the request", body = Vec<SlimChunkMetadataWithScore>),
+        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives", body = Vec<ChunkMetadataWithScore>),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(

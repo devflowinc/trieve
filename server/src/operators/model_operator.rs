@@ -1,6 +1,7 @@
 use crate::{
-    data::models::ServerDatasetConfiguration, errors::ServiceError, get_env,
-    handlers::chunk_handler::ScoreChunkDTO,
+    data::models::{ChunkMetadataTypes, ScoreChunkDTO, ServerDatasetConfiguration},
+    errors::ServiceError,
+    get_env,
 };
 use openai_dive::v1::{
     helpers::format_response,
@@ -554,8 +555,17 @@ pub async fn cross_encoder(
     let request_docs = results
         .clone()
         .into_iter()
-        .map(|x| convert_html_to_text(&(x.metadata[0].clone().chunk_html.unwrap_or_default())))
-        .collect::<Vec<String>>();
+        .map(|x| {
+            let chunk = match x.metadata[0].clone() {
+                ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
+                _ => Err(ServiceError::BadRequest("Metadata not found".to_string())),
+            }?;
+
+            Ok(convert_html_to_text(
+                &(chunk.chunk_html.unwrap_or_default()),
+            ))
+        })
+        .collect::<Result<Vec<String>, ServiceError>>()?;
 
     let resp = ureq::post(&embedding_server_call)
         .set("Content-Type", "application/json")
