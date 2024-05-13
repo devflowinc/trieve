@@ -237,7 +237,6 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::SearchChunkQueryResponseBody,
             handlers::chunk_handler::GenerateChunksRequest,
             handlers::chunk_handler::SearchChunkData,
-            handlers::chunk_handler::ScoreChunkDTO,
             handlers::group_handler::SearchWithinGroupData,
             handlers::group_handler::SearchOverGroupsData,
             handlers::group_handler::SearchWithinGroupResults,
@@ -294,12 +293,7 @@ impl Modify for SecurityAddon {
             data::models::DatasetUsageCount,
             data::models::ClientDatasetConfiguration,
             data::models::StripePlan,
-            data::models::SearchSlimChunkQueryResponseBody,
-            data::models::ScoreSlimChunks,
             data::models::SlimChunkMetadata,
-            data::models::SearchWithinGroupSlimResults,
-            data::models::SearchOverGroupsSlimResults,
-            data::models::GroupScoreSlimChunks,
             data::models::RangeCondition,
             data::models::LocationBoundingBox,
             data::models::LocationPolygon,
@@ -308,6 +302,9 @@ impl Modify for SecurityAddon {
             data::models::SlimChunkMetadataWithScore,
             data::models::GeoInfo,
             data::models::GeoTypes,
+            data::models::ScoreChunkDTO,
+            data::models::ChunkMetadataTypes,
+            data::models::ContentChunkMetadata,
             errors::ErrorResponseBody,
         )
     ),
@@ -415,7 +412,7 @@ pub fn main() -> std::io::Result<()> {
             .parse()
             .unwrap_or(false);
 
-        let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors)
+        let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors, false)
             .await
             .map_err(|err| {
                 log::error!("Failed to create new qdrant collection: {:?}", err);
@@ -609,13 +606,16 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("/search")
                                         .route(web::post().to(handlers::chunk_handler::search_chunks)),
                                 )
-                                .service(web::resource("/gen_suggestions").route(
+                                .service(web::resource("/suggestions").route(
                                     web::post().to(
                                         handlers::message_handler::create_suggested_queries_handler,
                                     ),
                                 ))
                                 .service(web::resource("/generate").route(
                                     web::post().to(handlers::chunk_handler::generate_off_chunks),
+                                ))
+                                .service(web::resource("/autocomplete").route(
+                                    web::post().to(handlers::chunk_handler::autocomplete),
                                 ))
                                 .service(web::resource("/tracking_id/update").route(
                                     web::put().to(handlers::chunk_handler::update_chunk_by_tracking_id),

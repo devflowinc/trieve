@@ -4,7 +4,8 @@ use super::{
 };
 use crate::{
     data::models::{
-        self, ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
+        self, ChunkMetadata, ChunkMetadataTypes, Dataset, DatasetAndOrgWithSubAndPlan, Pool,
+        ServerDatasetConfiguration,
     },
     errors::ServiceError,
     get_env,
@@ -674,13 +675,12 @@ pub async fn stream_response(
     let chunk_metadatas = result_chunks
         .score_chunks
         .iter()
-        .map(|score_chunk| {
-            score_chunk
-                .metadata
-                .first()
-                .expect("No metadata found")
-                .clone()
-        })
+        .map(
+            |score_chunk| match score_chunk.metadata.first().expect("No metadata found") {
+                ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.clone(),
+                _ => unreachable!("The operator should never return slim chunks for this"),
+            },
+        )
         .collect::<Vec<ChunkMetadata>>();
 
     let mut chunk_metadatas_stringified =
@@ -930,18 +930,15 @@ pub async fn create_suggested_queries_handler(
         .iter()
         .enumerate()
         .map(|(idx, chunk)| {
+            let chunk = match chunk.metadata.first().unwrap() {
+                ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata,
+                _ => unreachable!("The operator should never return slim chunks for this"),
+            };
+
             format!(
                 "Doc {}: {}",
                 idx + 1,
-                convert_html_to_text(
-                    &(chunk
-                        .metadata
-                        .first()
-                        .unwrap()
-                        .chunk_html
-                        .clone()
-                        .unwrap_or_default())
-                )
+                convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default()))
             )
         })
         .collect::<Vec<String>>()
@@ -1042,15 +1039,11 @@ pub async fn create_suggested_queries_handler(
     let mut engine: SimSearch<String> = SimSearch::new();
 
     chunk_metadatas.iter().for_each(|chunk| {
-        let content = convert_html_to_text(
-            &chunk
-                .metadata
-                .first()
-                .unwrap()
-                .chunk_html
-                .clone()
-                .unwrap_or_default(),
-        );
+        let chunk = match chunk.metadata.first().unwrap() {
+            ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata,
+            _ => unreachable!("The operator should never return slim chunks for this"),
+        };
+        let content = convert_html_to_text(&chunk.chunk_html.clone().unwrap_or_default());
 
         engine.insert(content.clone(), &content);
     });
