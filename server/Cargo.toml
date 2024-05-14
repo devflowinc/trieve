@@ -43,7 +43,7 @@ actix-session = { version = "0.9.0", features = [
 actix-web = { version = "4.3" }
 actix-cors = { version = "0.7" }
 
-async-stripe = { version = "0.34.1", features = [
+async-stripe = { version = "0.37.0", features = [
     "runtime-tokio-hyper",
     "checkout",
     "webhook-events",
@@ -95,8 +95,8 @@ utoipa = { version = "4.2", features = [
     "chrono",
     "debug",
 ] }
-utoipa-redoc = { version = "3.0", features = ["actix-web"] }
-magick_rust = { version = "0.20", optional = true }
+utoipa-redoc = { version = "4.0", features = ["actix-web"] }
+magick_rust = { version = "0.21", optional = true }
 pyo3 = { version = "0.21.1", features = [
     "full",
     "auto-initialize",
@@ -124,7 +124,7 @@ sentry-tracing = "0.32.2"
 tokio-postgres = "0.7.10"
 postgres-openssl = "0.5.0"
 openssl = "0.10.64"
-utoipa-swagger-ui = { version = "6.0.0", features = ["actix-web"] }
+utoipa-swagger-ui = { version = "7.0.1", features = ["actix-web"] }
 bb8-redis = "0.15.0"
 signal-hook = "0.3.17"
 blake3 = "1.5.1"
