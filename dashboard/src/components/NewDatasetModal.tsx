@@ -206,8 +206,8 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             availableEmbeddingModels.find(
                               (model) =>
                                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                                model.dimension ===
-                                serverConfig().EMBEDDING_SIZE,
+                                model.id ===
+                                serverConfig().EMBEDDING_MODEL_NAME,
                               // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             )?.name ?? availableEmbeddingModels[0].name
                           }
