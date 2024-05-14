@@ -181,8 +181,6 @@ pub async fn assemble_qdrant_filter(
         }
     }
 
-    println!("Filter: {:?}", filter);
-
     Ok(filter)
 }
 
