@@ -261,11 +261,13 @@ pub async fn create_embeddings(
             .filter(|s| !s.is_empty())
             .unwrap_or("https://embedding.trieve.ai/bge-m3".to_string())
             .to_string(),
-        "https://embedding.trieve.ai/jina-code" => std::env::var("EMBEDDING_SERVER_ORIGIN_JINA_CODE")
-            .ok()
-            .filter(|s| !s.is_empty())
-            .unwrap_or("https://embedding.trieve.ai/jina-code".to_string())
-            .to_string(),
+        "https://embedding.trieve.ai/jina-code" => {
+            std::env::var("EMBEDDING_SERVER_ORIGIN_JINA_CODE")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .unwrap_or("https://embedding.trieve.ai/jina-code".to_string())
+                .to_string()
+        }
         _ => config_embedding_base_url,
     };
 
