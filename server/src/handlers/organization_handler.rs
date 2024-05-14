@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    data::models::{Pool, UserOrganization, UserRole},
+    data::models::{Pool, RedisPool, UserOrganization, UserRole},
     operators::{
         organization_operator::{
             create_organization_query, delete_organization_query, get_org_from_id_query,
@@ -72,11 +72,19 @@ pub async fn delete_organization_by_id(
     req: HttpRequest,
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let org = delete_organization_query(Some(&req), Some(user.0.id), organization_id, pool).await?;
+    let org = delete_organization_query(
+        Some(&req),
+        Some(user.0.id),
+        organization_id,
+        pool,
+        redis_pool,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(org))
 }
@@ -113,6 +121,7 @@ pub struct UpdateOrganizationData {
 pub async fn update_organization(
     organization: web::Json<UpdateOrganizationData>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
@@ -126,6 +135,7 @@ pub async fn update_organization(
             .unwrap_or(old_organization.organization.name)
             .as_str(),
         pool,
+        redis_pool,
     )
     .await?;
 
@@ -161,6 +171,7 @@ pub async fn create_organization(
     organization: web::Json<CreateOrganizationData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_create_data = organization.into_inner();
 
@@ -172,6 +183,7 @@ pub async fn create_organization(
         Some(user.id),
         UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
         pool,
+        redis_pool,
     )
     .await?;
 

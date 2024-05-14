@@ -1,18 +1,19 @@
 use crate::data::models::{
-    ApiKeyDTO, ApiKeyRole, Organization, SlimUser, UserApiKey, UserOrganization, UserRole,
+    ApiKeyDTO, ApiKeyRole, Organization, RedisPool, SlimUser, UserApiKey, UserOrganization,
+    UserRole,
 };
 use crate::{
     data::models::{Pool, User},
     errors::ServiceError,
 };
-use actix_identity::Identity;
-use actix_web::{web, HttpMessage, HttpRequest};
+use actix_web::{web, HttpRequest};
 use argon2::Config;
 use diesel::prelude::*;
 use diesel_async::{scoped_futures::ScopedFutureExt, AsyncConnection, RunQueryDsl};
 use once_cell::sync::Lazy;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use redis::AsyncCommands;
 
 #[tracing::instrument(skip(pool))]
 pub async fn get_user_by_id_query(
@@ -82,6 +83,7 @@ pub async fn add_existing_user_to_org(
     organization_id: uuid::Uuid,
     user_role: UserRole,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<bool, ServiceError> {
     use crate::data::schema::users::dsl as users_columns;
 
@@ -103,6 +105,7 @@ pub async fn add_existing_user_to_org(
             None,
             UserOrganization::from_details(user.id, organization_id, user_role),
             pool,
+            redis_pool,
         )
         .await
         .is_ok()),
@@ -116,6 +119,7 @@ pub async fn update_user_org_role_query(
     organization_id: uuid::Uuid,
     role: UserRole,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
@@ -130,6 +134,14 @@ pub async fn update_user_org_role_query(
     .execute(&mut conn)
     .await
     .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
+
+    let mut redis_conn = redis_pool.get().await.map_err(|_| {
+        ServiceError::InternalServerError("Failed to get redis connection".to_string())
+    })?;
+
+    redis_conn.del(user_id.to_string()).await.map_err(|_| {
+        ServiceError::InternalServerError("Failed to delete user from redis".to_string())
+    })?;
 
     Ok(())
 }
@@ -443,11 +455,11 @@ pub async fn add_user_to_organization(
     calling_user_id: Option<uuid::Uuid>,
     user_org: UserOrganization,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
     let user_id_refresh = user_org.user_id;
-    let user_id_refresh_pool = pool.clone();
 
     let mut conn = pool.get().await.unwrap();
 
@@ -459,26 +471,16 @@ pub async fn add_user_to_organization(
             ServiceError::InternalServerError("Failed to add user to organization".to_string())
         })?;
 
-    if req.is_some() && calling_user_id.is_some_and(|id| id == user_id_refresh) {
-        let user = get_user_by_id_query(&user_id_refresh, user_id_refresh_pool)
-            .await
-            .map_err(|e| {
-                log::error!("Error getting user by id: {:?}", e);
-                ServiceError::InternalServerError("Failed to get user by id".to_string())
-            })?;
+    let mut redis_conn = redis_pool.get().await.map_err(|_| {
+        ServiceError::InternalServerError("Failed to get redis connection".to_string())
+    })?;
 
-        let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
-
-        let user_string = serde_json::to_string(&slim_user).map_err(|_| {
-            ServiceError::InternalServerError("Failed to serialize user to JSON".into())
+    redis_conn
+        .del(user_id_refresh.to_string())
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to delete user from redis".to_string())
         })?;
-
-        Identity::login(
-            &req.expect("Cannot be none at this point").extensions(),
-            user_string,
-        )
-        .expect("Failed to refresh login for user");
-    }
 
     Ok(())
 }

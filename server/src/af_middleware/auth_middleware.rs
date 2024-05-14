@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{Pool, UnifiedId, UserRole},
+    data::models::{Pool, RedisPool, SlimUser, UnifiedId, User, UserRole},
     errors::ServiceError,
     handlers::auth_handler::{LoggedUser, OrganizationRole},
     operators::{
@@ -7,7 +7,7 @@ use crate::{
         organization_operator::{
             get_arbitrary_org_owner_from_dataset_id, get_arbitrary_org_owner_from_org_id,
         },
-        user_operator::get_user_from_api_key_query,
+        user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
 use actix_identity::Identity;
@@ -16,6 +16,7 @@ use actix_web::{
     web, Error, FromRequest, HttpMessage, HttpRequest,
 };
 use futures_util::future::LocalBoxFuture;
+use redis::AsyncCommands;
 use sentry::Transaction;
 use std::{
     future::{ready, Ready},
@@ -51,7 +52,7 @@ where
             let get_user_span = transaction.start_child("get_user", "Getting user");
 
             let (http_req, pl) = req.parts_mut();
-            let user = get_user(http_req, pl, transaction.clone()).await;
+            let user = get_user(http_req, pl, transaction.clone(), pool.clone()).await;
             if let Some(ref user) = user {
                 req.extensions_mut().insert(user.clone());
             };
@@ -149,13 +150,44 @@ where
     }
 }
 
-async fn get_user(req: &HttpRequest, pl: &mut Payload, tx: Transaction) -> Option<LoggedUser> {
+async fn get_user(
+    req: &HttpRequest,
+    pl: &mut Payload,
+    tx: Transaction,
+    pool: web::Data<Pool>,
+) -> Option<LoggedUser> {
     let get_user_from_identity_span =
         tx.start_child("get_user_from_identity", "Getting user from identity");
     if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
         if let Ok(user_json) = identity.id() {
-            if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                return Some(user);
+            if let Ok(user) = serde_json::from_str::<User>(&user_json) {
+                let redis_pool = req.app_data::<web::Data<RedisPool>>().unwrap().to_owned();
+
+                let mut redis_conn = redis_pool.get().await.ok()?;
+
+                let slim_user_string: Result<String, _> =
+                    redis_conn.get(&user.id.to_string()).await;
+
+                match slim_user_string {
+                    Ok(slim_user_string) => {
+                        let slim_user = serde_json::from_str::<SlimUser>(&slim_user_string).ok()?;
+
+                        return Some(slim_user);
+                    }
+                    Err(_) => {
+                        let (user, user_orgs, orgs) =
+                            get_user_by_id_query(&user.id, pool).await.ok()?;
+                        let slim_user = SlimUser::from_details(user, user_orgs, orgs);
+
+                        let slim_user_string = serde_json::to_string(&slim_user).ok()?;
+                        redis_conn
+                            .set(&slim_user.id.to_string(), slim_user_string)
+                            .await
+                            .ok()?;
+
+                        return Some(slim_user);
+                    }
+                }
             }
         }
     }

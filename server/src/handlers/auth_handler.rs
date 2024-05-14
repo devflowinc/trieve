@@ -1,4 +1,4 @@
-use crate::data::models::{Organization, StripePlan, UserRole};
+use crate::data::models::{Organization, RedisPool, StripePlan, UserRole};
 use crate::get_env;
 use crate::operators::invitation_operator::check_inv_valid;
 use crate::operators::organization_operator::{get_org_from_id_query, get_user_org_count};
@@ -22,6 +22,7 @@ use oauth2::{
 };
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
+use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs::read_to_string;
@@ -384,6 +385,7 @@ pub async fn callback(
     req: HttpRequest,
     session: Session,
     oidc_client: web::Data<CoreClient>,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     query: web::Query<OpCallback>,
 ) -> Result<HttpResponse, Error> {
@@ -462,7 +464,7 @@ pub async fn callback(
         .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
         .ok_or(ServiceError::Unauthorized)?;
 
-    let user = match get_user_by_id_query(&user_id, pool.clone()).await {
+    let (user, user_orgs, orgs) = match get_user_by_id_query(&user_id, pool.clone()).await {
         Ok(user) => user,
         Err(_) => {
             create_account(
@@ -477,10 +479,8 @@ pub async fn callback(
         }
     };
 
-    let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
-
     if login_state.organization_id.is_some()
-        && !slim_user.user_orgs.iter().any(|org| {
+        && !user_orgs.iter().any(|org| {
             org.organization_id == login_state.organization_id.unwrap_or(uuid::Uuid::default())
         })
     {
@@ -493,17 +493,33 @@ pub async fn callback(
             )
             .await?;
             let user_org = UserOrganization::from_details(
-                slim_user.id,
+                user.id,
                 invitation.organization_id,
                 invitation.role.into(),
             );
-            add_user_to_organization(None, None, user_org, pool).await?;
+            add_user_to_organization(None, None, user_org, pool, redis_pool.clone()).await?;
         }
     }
 
-    let user_string = serde_json::to_string(&slim_user).map_err(|_| {
+    let user_string = serde_json::to_string(&user).map_err(|_| {
         ServiceError::InternalServerError("Failed to serialize user to JSON".into())
     })?;
+
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let slim_user = SlimUser::from_details(user, user_orgs, orgs);
+
+    let slim_user_string = serde_json::to_string(&slim_user).map_err(|_| {
+        ServiceError::InternalServerError("Failed to serialize slim user to JSON".into())
+    })?;
+
+    redis_conn
+        .set(slim_user.id.to_string(), slim_user_string)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Identity::login(&req.extensions(), user_string).expect("Failed to set login state for user");
     session.remove(OIDC_SESSION_KEY);
