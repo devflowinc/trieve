@@ -2120,13 +2120,6 @@ pub async fn autocomplete_chunks(
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
         .await,
-        RetrievePointQuery {
-            vector: VectorType::Dense(embedding_vector),
-            score_threshold: data.score_threshold,
-            filter: data.filters.clone(),
-        }
-        .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
-        .await,
     ];
 
     qdrant_query[0]
@@ -2144,18 +2137,9 @@ pub async fn autocomplete_chunks(
         data.highlight_delimiters = Some(vec![" ".to_string()]);
     }
 
-    let mut result_chunks =
+    let result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
-    timer.add("finish fetching from postgres; start to rerank");
-
-    result_chunks.score_chunks = rerank_chunks(
-        result_chunks.score_chunks,
-        data.recency_bias,
-        data.use_weights,
-    );
-
-    timer.add("finish reranking and return result");
     transaction.finish();
 
     Ok(result_chunks)
