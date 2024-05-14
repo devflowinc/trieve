@@ -1116,6 +1116,28 @@ impl From<AutocompleteData> for SearchChunkData {
     }
 }
 
+/// Autocomplete
+///
+/// This route provides the primary autocomplete functionality for the API. It can be used to autocomplete chunks by semantic similarity.
+#[utoipa::path(
+    post,
+    path = "/chunk/autocomplete",
+    context_path = "/api",
+    tag = "chunk",
+    request_body(content = AutocompleteData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = Vec<ChunkMetadataTypes>),
+
+        (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
 pub async fn autocomplete(
     data: web::Json<AutocompleteData>,
     _user: LoggedUser,
