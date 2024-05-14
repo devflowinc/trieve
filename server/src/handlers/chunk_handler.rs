@@ -849,7 +849,7 @@ pub struct ChunkFilter {
     "score_threshold": 0.5
 }))]
 pub struct SearchChunkData {
-    /// Can be either "semantic", "fulltext", "hybrid", or "autocomplete". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. "autocomplete" will prioritize prefix matching but uses semantic search for similarity score.
+    /// Can be either "semantic", "fulltext", "hybrid", or "autocomplete". If specified as "hybrid", it will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. "autocomplete" will prioritize prefix matching but uses semantic search for similarity score.
     pub search_type: String,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
