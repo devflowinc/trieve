@@ -1,17 +1,14 @@
 use crate::{
     data::models::{
-        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool,
+        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool,
         ServerDatasetConfiguration, SlimUser, StripePlan, StripeSubscription, User,
         UserOrganization,
     },
     errors::ServiceError,
-    operators::{
-        dataset_operator::delete_dataset_by_id_query, user_operator::get_user_by_id_query,
-    },
+    operators::dataset_operator::delete_dataset_by_id_query,
     randutil,
 };
-use actix_identity::Identity;
-use actix_web::{web, HttpMessage, HttpRequest};
+use actix_web::{web, HttpRequest};
 use diesel::prelude::*;
 use diesel::{
     result::DatabaseErrorKind, ExpressionMethods, JoinOnDsl, NullableExpressionMethods,
@@ -19,6 +16,7 @@ use diesel::{
 };
 use diesel_async::RunQueryDsl;
 use itertools::Itertools;
+use redis::AsyncCommands;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
 /// for the user
@@ -65,6 +63,7 @@ pub async fn update_organization_query(
     id: uuid::Uuid,
     name: &str,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<Organization, ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
 
@@ -88,6 +87,27 @@ pub async fn update_organization_query(
             _ => ServiceError::BadRequest("Failed to update organization, try again".to_string()),
         })?;
 
+    let users: Vec<String> = crate::data::schema::user_organizations::dsl::user_organizations
+        .filter(crate::data::schema::user_organizations::dsl::organization_id.eq(id))
+        .select(crate::data::schema::user_organizations::dsl::user_id)
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Error loading users in delete_organization_query: {:?}", e);
+            ServiceError::BadRequest("Error loading users".to_string())
+        })?
+        .into_iter()
+        .map(|id| id.to_string())
+        .collect();
+
+    let mut redis_conn = redis_pool.get().await.map_err(|_| {
+        ServiceError::InternalServerError("Failed to get redis connection".to_string())
+    })?;
+
+    redis_conn.del(users).await.map_err(|_| {
+        ServiceError::InternalServerError("Failed to delete user from redis".to_string())
+    })?;
+
     Ok(updated_organization)
 }
 
@@ -97,6 +117,7 @@ pub async fn delete_organization_query(
     calling_user_id: Option<uuid::Uuid>,
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<Organization, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
     use crate::data::schema::organizations::dsl as organizations_columns;
@@ -106,6 +127,27 @@ pub async fn delete_organization_query(
         .get()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let users: Vec<String> = crate::data::schema::user_organizations::dsl::user_organizations
+        .filter(crate::data::schema::user_organizations::dsl::organization_id.eq(org_id))
+        .select(crate::data::schema::user_organizations::dsl::user_id)
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Error loading users in delete_organization_query: {:?}", e);
+            ServiceError::BadRequest("Error loading users".to_string())
+        })?
+        .into_iter()
+        .map(|id| id.to_string())
+        .collect();
+
+    let mut redis_conn = redis_pool.get().await.map_err(|_| {
+        ServiceError::InternalServerError("Failed to get redis connection".to_string())
+    })?;
+
+    redis_conn.del(users).await.map_err(|_| {
+        ServiceError::InternalServerError("Failed to delete user from redis".to_string())
+    })?;
 
     let existing_subscription: Option<StripeSubscription> =
         stripe_subscriptions_columns::stripe_subscriptions
@@ -175,30 +217,6 @@ pub async fn delete_organization_query(
         );
         ServiceError::BadRequest("Could not delete organization, try again".to_string())
     })?;
-
-    if req.is_some() && calling_user_id.is_some() {
-        let user = get_user_by_id_query(
-            &calling_user_id.expect("calling_user_id cannot be null here"),
-            pool,
-        )
-        .await?;
-
-        let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
-
-        let user_string = serde_json::to_string(&slim_user).map_err(|e| {
-            log::error!(
-                "Error serializing user in delete_organization_query: {:?}",
-                e
-            );
-            ServiceError::BadRequest("Could not serialize user".to_string())
-        })?;
-
-        Identity::login(
-            &req.expect("Cannot be none at this point").extensions(),
-            user_string,
-        )
-        .expect("Failed to refresh login for user");
-    }
 
     Ok(deleted_organization)
 }

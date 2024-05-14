@@ -1,6 +1,6 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{Pool, UserRole},
+    data::models::{Pool, RedisPool, UserRole},
     errors::ServiceError,
     operators::user_operator::{
         delete_user_api_keys_query, get_user_api_keys_query, get_user_by_id_query,
@@ -51,6 +51,7 @@ pub async fn update_user(
     data: web::Json<UpdateUserOrgRoleData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, ServiceError> {
     let update_user_data = data.into_inner();
     let org_role = user
@@ -97,6 +98,7 @@ pub async fn update_user(
         update_user_data.organization_id,
         user_role,
         pool,
+        redis_pool,
     )
     .await?;
 
