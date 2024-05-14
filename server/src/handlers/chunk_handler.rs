@@ -867,7 +867,7 @@ pub struct SearchChunkData {
     pub use_weights: Option<bool>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add <b><mark> tags to the chunk_html of the chunks to highlight matching sub-sentences.
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,
@@ -1542,6 +1542,8 @@ pub struct GenerateChunksRequest {
     pub prompt: Option<String>,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream_response: Option<bool>,
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>`` tags to the chunk_html of the chunks to highlight matching sub-sentences.
+    pub highlight_results: Option<bool>,
 }
 
 /// RAG on Specified Chunks
@@ -1644,15 +1646,15 @@ pub async fn generate_off_chunks(
     });
     chunks.iter().enumerate().for_each(|(idx, bookmark)| {
         let content = convert_html_to_text(&(bookmark.chunk_html.clone().unwrap_or_default()));
-        let first_240_words = content
+        let first_2000_words = content
             .split_whitespace()
-            .take(240)
+            .take(2000)
             .collect::<Vec<_>>()
             .join(" ");
 
         messages.push(ChatMessage {
             role: Role::User,
-            content: ChatMessageContent::Text(format!("Doc {}: {}", idx + 1, first_240_words)),
+            content: ChatMessageContent::Text(format!("Doc {}: {}", idx + 1, first_2000_words)),
             tool_calls: None,
             name: None,
             tool_call_id: None,

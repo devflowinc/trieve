@@ -49,8 +49,8 @@ pub struct CreateMessageData {
     pub topic_id: uuid::Uuid,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream_response: Option<bool>,
-    /// Whether or not to highlight the citations in the response. If this is set to true or not included, the citations will be highlighted. If this is set to false, the citations will not be highlighted. Default is true.
-    pub highlight_citations: Option<bool>,
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
+    pub highlight_results: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
     pub highlight_delimiters: Option<Vec<String>>,
 }
@@ -169,7 +169,7 @@ pub async fn create_message_completion_handler(
         user.id,
         topic_id,
         create_message_data.stream_response,
-        create_message_data.highlight_citations,
+        create_message_data.highlight_results,
         create_message_data.highlight_delimiters,
         dataset_org_plan_sub.dataset,
         stream_response_pool,
@@ -308,7 +308,7 @@ pub async fn edit_message_handler(
             new_message_content: new_message_content.to_string(),
             topic_id,
             stream_response,
-            highlight_citations: data.highlight_citations,
+            highlight_results: data.highlight_citations,
             highlight_delimiters: data.highlight_delimiters.clone(),
         }),
         user,
@@ -534,7 +534,7 @@ pub async fn stream_response(
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
     should_stream: Option<bool>,
-    highlight_citations: Option<bool>,
+    highlight_results: Option<bool>,
     highlight_delimiters: Option<Vec<String>>,
     dataset: Dataset,
     pool: web::Data<Pool>,
@@ -655,6 +655,8 @@ pub async fn stream_response(
         search_type: "hybrid".to_string(),
         query: query.clone(),
         page_size: Some(n_retrievals_to_include.try_into().unwrap_or(8)),
+        highlight_results,
+        highlight_delimiters,
         ..Default::default()
     };
     let parsed_query = ParsedQuery {
@@ -803,8 +805,9 @@ pub async fn stream_response(
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
     if !chunk_metadatas_stringified.is_empty() {
-        chunk_metadatas_stringified = format!("{}||", chunk_metadatas_stringified);
-        chunk_metadatas_stringified1 = chunk_metadatas_stringified.clone();
+        chunk_metadatas_stringified =
+            format!("{}||", chunk_metadatas_stringified.replace("||", ""));
+        chunk_metadatas_stringified1 = chunk_metadatas_stringified.clone().replace("||", "");
     }
 
     Arbiter::new().spawn(async move {
