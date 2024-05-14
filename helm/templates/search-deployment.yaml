@@ -28,3 +28,6 @@ spec:
             value: {{ $.Values.config.vite.apiHost }}
           - name: VITE_SEARCH_UI_URL
             value: {{ $.Values.config.vite.searchUiUrl }}
+          - name: VITE_DASHBOARD_URL
+            value: {{ $.Values.config.vite.dashboardUrl }}
+
