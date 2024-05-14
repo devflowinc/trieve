@@ -904,8 +904,8 @@ pub async fn retrieve_chunks_for_groups(
                             },
                         };
 
-                    if data.highlight_results.unwrap_or(true) && data.slim_chunks.unwrap_or(false) {
-                        chunk = find_relevant_sentence(
+                    if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
+                       let highlighted_chunk = find_relevant_sentence(
                             chunk.clone().into(),
                             data.query.clone(),
                             data.highlight_delimiters.clone().unwrap_or(vec![
@@ -917,7 +917,19 @@ pub async fn retrieve_chunks_for_groups(
                                 ",".to_string(),
                             ]),
                         )
-                        .unwrap_or(chunk.into()).into();
+                        .unwrap_or(chunk.clone().into());
+
+                        match chunk {
+                            ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
+                            ChunkMetadataTypes::Content(_) => {
+                                chunk =
+                                    <ChunkMetadata as Into<ContentChunkMetadata>>::into(highlighted_chunk)
+                                        .into()
+                            }
+                            _ => unreachable!(
+                                "If slim_chunks is false, then chunk must be either Metadata or Content"
+                            ),
+                        }
                     }
 
                     let mut collided_chunks: Vec<ChunkMetadataTypes> = collided_chunks
@@ -1927,6 +1939,15 @@ async fn cross_encoder_for_groups(
         })
         .collect_vec();
 
+    group_results.dedup_by(|a, b| a.group_id == b.group_id);
+
+    group_results.sort_by(|a, b| {
+        b.metadata[0]
+            .score
+            .partial_cmp(&a.metadata[0].score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
     group_results = group_results
         .into_iter()
         .map(|mut group| {
@@ -1938,15 +1959,6 @@ async fn cross_encoder_for_groups(
             group
         })
         .collect_vec();
-
-    group_results.dedup_by(|a, b| a.group_id == b.group_id);
-
-    group_results.sort_by(|a, b| {
-        b.metadata[0]
-            .score
-            .partial_cmp(&a.metadata[0].score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
 
     Ok(group_results)
 }
