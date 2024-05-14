@@ -1124,6 +1124,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             highlight_delimiters: data.highlight_delimiters,
             score_threshold: data.score_threshold,
             slim_chunks: data.slim_chunks,
+            content_only: Some(false),
         }
     }
 }

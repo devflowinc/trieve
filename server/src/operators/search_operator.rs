@@ -1070,7 +1070,6 @@ pub async fn get_metadata_from_groups(
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
     data: &SearchChunkData,
-    content_only: Option<bool>,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1102,7 +1101,7 @@ pub async fn retrieve_chunks_from_point_ids(
     {
         let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
         (slim_chunks, vec![])
-    } else if content_only.unwrap_or(false) {
+    } else if data.content_only.unwrap_or(false) {
         let content_only = get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?;
         (content_only, vec![])
     } else {
@@ -1335,13 +1334,8 @@ pub async fn search_semantic_chunks(
 
     timer.add("finish fetching from qdrant; start to fetch from postgres");
 
-    let mut result_chunks = retrieve_chunks_from_point_ids(
-        search_chunk_query_results,
-        &data,
-        Some(false),
-        pool.clone(),
-    )
-    .await?;
+    let mut result_chunks =
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
     timer.add("finish fetching from postgres; start to rerank");
 
@@ -1408,8 +1402,7 @@ pub async fn search_full_text_chunks(
     timer.add("finish fetching from qdrant; start to fetch from postgres");
 
     let mut result_chunks =
-        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, Some(false), pool)
-            .await?;
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
 
     timer.add("finish fetching from postgres; start to rerank");
 
@@ -1498,13 +1491,8 @@ pub async fn search_hybrid_chunks(
     )
     .await?;
 
-    let result_chunks = retrieve_chunks_from_point_ids(
-        search_chunk_query_results,
-        &data,
-        Some(false),
-        pool.clone(),
-    )
-    .await?;
+    let result_chunks =
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
     timer.add("finish searching semantic and full text chunks; start to rerank results");
 
@@ -1595,7 +1583,6 @@ pub async fn search_semantic_groups(
     let mut result_chunks = retrieve_chunks_from_point_ids(
         search_semantic_chunk_query_results,
         &web::Json(data.clone().into()),
-        Some(false),
         pool.clone(),
     )
     .await?;
@@ -1647,7 +1634,6 @@ pub async fn search_full_text_groups(
     let mut result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results,
         &web::Json(data.clone().into()),
-        Some(false),
         pool.clone(),
     )
     .await?;
@@ -1731,7 +1717,6 @@ pub async fn search_hybrid_groups(
     let result_chunks = retrieve_chunks_from_point_ids(
         qdrant_results,
         &web::Json(data.clone().into()),
-        Some(false),
         pool.clone(),
     )
     .await?;
@@ -2098,14 +2083,13 @@ pub async fn hybrid_search_over_groups(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn autocomplete_chunks(
-    data: SearchChunkData,
+    mut data: SearchChunkData,
     parsed_query: ParsedQuery,
-    content_only: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
     timer: &mut Timer,
-) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
+) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -2156,13 +2140,12 @@ pub async fn autocomplete_chunks(
 
     timer.add("finish fetching from qdrant; start to fetch from postgres");
 
-    let mut result_chunks = retrieve_chunks_from_point_ids(
-        search_chunk_query_results,
-        &data,
-        Some(content_only),
-        pool.clone(),
-    )
-    .await?;
+    if data.highlight_delimiters.is_none() {
+        data.highlight_delimiters = Some(vec![" ".to_string()]);
+    }
+
+    let mut result_chunks =
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
     timer.add("finish fetching from postgres; start to rerank");
 
@@ -2175,5 +2158,5 @@ pub async fn autocomplete_chunks(
     timer.add("finish reranking and return result");
     transaction.finish();
 
-    Ok(result_chunks.score_chunks)
+    Ok(result_chunks)
 }

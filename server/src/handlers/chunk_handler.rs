@@ -849,7 +849,7 @@ pub struct ChunkFilter {
     "score_threshold": 0.5
 }))]
 pub struct SearchChunkData {
-    /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
+    /// Can be either "semantic", "fulltext", "hybrid", or "autocomplete". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. "autocomplete" will prioritize prefix matching but uses semantic search for similarity score.
     pub search_type: String,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
@@ -873,8 +873,10 @@ pub struct SearchChunkData {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
-    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
+    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
+    /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
+    pub content_only: Option<bool>,
 }
 
 impl Default for SearchChunkData {
@@ -893,6 +895,7 @@ impl Default for SearchChunkData {
             highlight_delimiters: None,
             score_threshold: None,
             slim_chunks: None,
+            content_only: None,
         }
     }
 }
@@ -982,7 +985,7 @@ pub async fn search_chunks(
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type.as_str() {
-        "fulltext" => {
+        "fulltext" | "full-text" | "full_text" | "full text" => {
             if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
@@ -1011,7 +1014,18 @@ pub async fn search_chunks(
             )
             .await?
         }
-        _ => {
+        "autocomplete" => {
+            autocomplete_chunks(
+                data.clone(),
+                parsed_query,
+                pool,
+                dataset_org_plan_sub.dataset,
+                server_dataset_config,
+                &mut timer,
+            )
+            .await?
+        }
+        "semantic" => {
             search_semantic_chunks(
                 data.clone(),
                 parsed_query,
@@ -1022,149 +1036,13 @@ pub async fn search_chunks(
             )
             .await?
         }
-    };
-
-    transaction.finish();
-
-    Ok(HttpResponse::Ok()
-        .insert_header((Timer::header_key(), timer.header_value()))
-        .json(result_chunks))
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-#[schema(example = json!({
-    "query": "Some search query",
-    "page_size": 10,
-    "filters": {
-        "should": [
-            {
-                "field": "metadata.key1",
-                "match": ["value1", "value2"],
-                "range": {
-                    "gte": 0.0,
-                    "lte": 1.0,
-                    "gt": 0.0,
-                    "lt": 1.0
-                }
-            }
-        ],
-        "must": [
-            {
-                "field": "metadata.key2",
-                "match": ["value3", "value4"],
-                "range": {
-                    "gte": 0.0,
-                    "lte": 1.0,
-                    "gt": 0.0,
-                    "lt": 1.0
-                }
-            }
-        ],
-        "must_not": [
-            {
-                "field": "metadata.key3",
-                "match": ["value5", "value6"],
-                "range": {
-                    "gte": 0.0,
-                    "lte": 1.0,
-                    "gt": 0.0,
-                    "lt": 1.0
-                }
-            }
-        ]
-    },
-    "date_bias": true,
-    "use_weights": true,
-    "score_threshold": 0.5
-}))]
-pub struct AutocompleteData {
-    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
-    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
-    pub page_size: Option<u64>,
-    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<ChunkFilter>,
-    /// Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
-    pub recency_bias: Option<f32>,
-    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
-    pub use_weights: Option<bool>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
-    pub highlight_delimiters: Option<Vec<String>>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
-    pub score_threshold: Option<f32>,
-    /// Set content_only to true to only return the content of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is true.
-    pub content_only: Option<bool>,
-}
-
-impl From<AutocompleteData> for SearchChunkData {
-    fn from(data: AutocompleteData) -> Self {
-        SearchChunkData {
-            search_type: "semantic".to_string(),
-            query: data.query,
-            page: Some(1),
-            get_total_pages: Some(false),
-            page_size: data.page_size,
-            filters: data.filters,
-            recency_bias: data.recency_bias,
-            use_weights: data.use_weights,
-            get_collisions: Some(false),
-            highlight_results: Some(true),
-            highlight_delimiters: Some(data.highlight_delimiters.unwrap_or(vec![" ".to_string()])),
-            score_threshold: data.score_threshold,
-            slim_chunks: Some(false),
+        _ => {
+            return Err(ServiceError::BadRequest(
+                "Invalid search type. Must be one of 'semantic', 'fulltext', 'hybrid', or 'autocomplete'".into(),
+            )
+            .into())
         }
-    }
-}
-
-/// Autocomplete
-///
-/// This route provides the primary autocomplete functionality for the API. It can be used to autocomplete chunks by semantic similarity.
-#[utoipa::path(
-    post,
-    path = "/chunk/autocomplete",
-    context_path = "/api",
-    tag = "chunk",
-    request_body(content = AutocompleteData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
-    responses(
-        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = Vec<ChunkMetadataTypes>),
-
-        (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
-    ),
-    params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-    ),
-    security(
-        ("ApiKey" = ["readonly"]),
-    )
-)]
-#[tracing::instrument(skip(pool))]
-pub async fn autocomplete(
-    data: web::Json<AutocompleteData>,
-    _user: LoggedUser,
-    pool: web::Data<Pool>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
-
-    let parsed_query = parse_query(data.query.clone());
-
-    let tx_ctx = sentry::TransactionContext::new("autocomplete", "autocomplete_chunks");
-    let transaction = sentry::start_transaction(tx_ctx);
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
-    let mut timer = Timer::new();
-
-    let result_chunks = autocomplete_chunks(
-        data.clone().into(),
-        parsed_query,
-        data.content_only.unwrap_or(true),
-        pool,
-        dataset_org_plan_sub.dataset,
-        server_dataset_config,
-        &mut timer,
-    )
-    .await?;
+    };
 
     transaction.finish();
 
