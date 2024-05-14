@@ -97,14 +97,29 @@ module "eks" {
     #   }
     # }
 
-    trieve-nodegroup-general = {
-      name = "nodegroup-general"
+    # trieve-nodegroup-general = {
+    #   name = "nodegroup-general"
+    #
+    #   instance_types = ["m7i.xlarge"]
+    #
+    #   desired_size = 1
+    #   min_size     = 1
+    #   max_size     = 5
+    #
+    #   # Needed by the aws-ebs-csi-driver
+    #   iam_role_additional_policies = {
+    #     AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+    #   }
+    # }
 
-      instance_types = ["m7i.xlarge"]
+    trieve-nodegroup-highmem = {
+      name = "nodegroup-highmem"
 
-      desired_size = 5
-      min_size     = 3
-      max_size     = 8
+      instance_types = ["m7i.4xlarge"]
+
+      desired_size = 3
+      min_size     = 2
+      max_size     = 3
 
       # Needed by the aws-ebs-csi-driver
       iam_role_additional_policies = {
@@ -112,14 +127,14 @@ module "eks" {
       }
     }
 
-    trieve-nodegroup-highmem = {
-      name = "nodegroup-highmem"
+    trieve-nodegroup-r3 = {
+      name = "nodegroup-r5"
 
-      instance_types = ["m7i.4xlarge"]
+      instance_types = ["r5.4xlarge"]
 
-      desired_size = 2
-      min_size     = 2
-      max_size     = 3
+      desired_size = 5
+      min_size     = 1
+      max_size     = 7
 
       # Needed by the aws-ebs-csi-driver
       iam_role_additional_policies = {
@@ -178,3 +193,11 @@ module "alb_controller" {
   cluster_identity_oidc_issuer_arn = data.aws_iam_openid_connect_provider.oidc_provider.arn
   aws_region                       = var.region
 }
+
+
+# resource "helm_release" "metrics" {
+#   name      = "metrics-server"
+#   namespace = "kube-system"
+#
+#   chart = "https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml"
+# }

@@ -21,6 +21,9 @@ spec:
     spec:
       containers:
       - name: ingest
+        resources:
+          limits:
+            cpu: 5
         replicas: {{ .Values.config.ingest.replicas }}
         image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (eq .Values.environment "aws")) "ingest" .Values.containers.ingest.tag }}
         env:
@@ -104,3 +107,5 @@ spec:
             value: {{ .Values.config.trieve.unlimited | quote }}
           - name: REDIS_CONNECTIONS
             value: {{ .Values.config.redis.connections | quote }}
+          - name: NUM_THREADS
+            value: {{ .Values.config.ingest.num_threads | quote }}
