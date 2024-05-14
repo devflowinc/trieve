@@ -2137,9 +2137,18 @@ pub async fn autocomplete_chunks(
         data.highlight_delimiters = Some(vec![" ".to_string()]);
     }
 
-    let result_chunks =
+    let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
+    timer.add("finish fetching from postgres; start to rerank");
+
+    result_chunks.score_chunks = rerank_chunks(
+        result_chunks.score_chunks,
+        data.recency_bias,
+        data.use_weights,
+    );
+
+    timer.add("finish reranking and return result");
     transaction.finish();
 
     Ok(result_chunks)
