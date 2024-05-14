@@ -2453,6 +2453,7 @@ pub fn get_range(range: Range) -> Result<qdrant::Range, ServiceError> {
 impl FieldCondition {
     pub async fn convert_to_qdrant_condition(
         &self,
+        condition_type: &str,
         pool: web::Data<Pool>,
         dataset_id: uuid::Uuid,
     ) -> Result<Option<qdrant::Condition>, ServiceError> {
@@ -2580,14 +2581,52 @@ impl FieldCondition {
         match matches.first().ok_or(ServiceError::BadRequest(
             "Should have at least one value for match".to_string(),
         ))? {
-            MatchCondition::Text(_) => Ok(Some(qdrant::Condition::matches(
-                self.field.as_str(),
-                matches.iter().map(|x| x.to_string()).collect_vec(),
-            ))),
-            MatchCondition::Integer(_) => Ok(Some(qdrant::Condition::matches(
-                self.field.as_str(),
-                matches.iter().map(|x| x.to_i64()).collect_vec(),
-            ))),
+            MatchCondition::Text(_) => match condition_type {
+                "must" | "should" => Ok(Some(qdrant::Condition::matches(
+                    self.field.as_str(),
+                    matches.iter().map(|x| x.to_string()).collect_vec(),
+                ))),
+                "must_not" => Ok(Some(
+                    qdrant::Filter::must(
+                        matches
+                            .into_iter()
+                            .map(|cond| {
+                                qdrant::Condition::matches(
+                                    self.field.as_str(),
+                                    vec![cond.to_string()],
+                                )
+                            })
+                            .collect_vec(),
+                    )
+                    .into(),
+                )),
+                _ => Err(ServiceError::BadRequest(
+                    "Invalid condition type".to_string(),
+                )),
+            },
+            MatchCondition::Integer(_) => match condition_type {
+                "must" | "should" => Ok(Some(qdrant::Condition::matches(
+                    self.field.as_str(),
+                    matches
+                        .iter()
+                        .map(|x: &MatchCondition| x.to_i64())
+                        .collect_vec(),
+                ))),
+                "must_not" => Ok(Some(
+                    qdrant::Filter::must(
+                        matches
+                            .into_iter()
+                            .map(|cond| {
+                                qdrant::Condition::matches(self.field.as_str(), vec![cond.to_i64()])
+                            })
+                            .collect_vec(),
+                    )
+                    .into(),
+                )),
+                _ => Err(ServiceError::BadRequest(
+                    "Invalid condition type".to_string(),
+                )),
+            },
         }
     }
 }
