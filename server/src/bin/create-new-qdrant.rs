@@ -5,6 +5,8 @@ use trieve_server::{
 
 #[tokio::main]
 async fn main() -> Result<(), ServiceError> {
+    dotenvy::dotenv().ok();
+
     let qdrant_url = std::env::var("QDRANT_URL").unwrap_or("http://localhost:6333".to_string());
     let qdrant_api_key = std::env::var("QDRANT_API_KEY").unwrap_or("qdrant_api_key".to_string());
     let qdrant_collection =
