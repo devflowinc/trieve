@@ -71,6 +71,12 @@ pub async fn create_embedding(
                 .filter(|s| !s.is_empty())
                 .unwrap_or("https://embedding.trieve.ai/jinaai-code".to_string())
         }
+        "https://embedding.trieve.ai/jina-code" => {
+            std::env::var("EMBEDDING_SERVER_ORIGIN_JINA_CODE")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .unwrap_or("https://embedding.trieve.ai/jina-code".to_string())
+        }
         _ => config_embedding_base_url,
     };
 
