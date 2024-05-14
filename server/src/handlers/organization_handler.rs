@@ -6,7 +6,7 @@ use crate::{
             create_organization_query, delete_organization_query, get_org_from_id_query,
             get_org_usage_by_id_query, get_org_users_by_id_query, update_organization_query,
         },
-        user_operator::add_user_to_organization,
+        user_operator::{add_user_to_organization, remove_user_from_org_query},
     },
 };
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -254,4 +254,43 @@ pub async fn get_organization_users(
     let usage = get_org_users_by_id_query(org_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(usage))
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct RemoveUserFromOrgData {
+    /// The id of the organization to remove the user from.
+    organization_id: uuid::Uuid,
+    /// The id of the user to remove from the organization.
+    user_id: uuid::Uuid,
+}
+
+/// Remove User From Organization
+///
+/// Remove a user from an organization. The auth'ed user must be an admin or owner of the organization to remove a user.
+#[utoipa::path(
+    delete,
+    path = "/organization/{organization_id}/user/{user_id}",
+    context_path = "/api",
+    tag = "organization",
+    responses(
+        (status = 204, description = "Confirmation that the user was removed from the organization"),
+        (status = 400, description = "Service error relating to removing the user from the organization", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("user_id" = Option<uuid::Uuid>, Path, description = "The id of the user you want to remove from the organization."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn remove_user_from_org(
+    data: web::Path<RemoveUserFromOrgData>,
+    pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
+    _admin: OwnerOnly,
+) -> Result<HttpResponse, actix_web::Error> {
+    remove_user_from_org_query(data.user_id, data.organization_id, pool, redis_pool).await?;
+
+    Ok(HttpResponse::NoContent().finish())
 }

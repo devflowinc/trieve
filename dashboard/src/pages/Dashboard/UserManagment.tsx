@@ -9,6 +9,7 @@ import {
 import { InviteUserModal } from "../../components/InviteUserModal";
 import { EditUserModal } from "../../components/EditUserModal";
 import { createToast } from "../../components/ShowToasts";
+import { FaRegularTrashCan } from "solid-icons/fa";
 
 export const UserManagement = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -93,6 +94,46 @@ export const UserManagement = () => {
       })
       .catch((err) => {
         console.error(err);
+      });
+  };
+
+  const removeUser = (id: string) => {
+    const confirm = window.confirm(
+      "Are you sure you want to remove this user?",
+    );
+    if (!confirm) {
+      return;
+    }
+
+    fetch(
+      `${apiHost}/organization/${
+        userContext.selectedOrganizationId?.() as string
+      }/user/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "TR-Organization": userContext.selectedOrganizationId?.() as string,
+        },
+        credentials: "include",
+      },
+    )
+      .then((res) => {
+        if (res.ok) {
+          getUsers();
+          createToast({
+            title: "Success",
+            type: "success",
+            message: "User removed successfully!",
+          });
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        createToast({
+          title: "Error",
+          type: "error",
+          message: "Error removing user!",
+        });
       });
   };
 
@@ -228,9 +269,15 @@ export const UserManagement = () => {
                     </th>
                     <th
                       scope="col"
-                      class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 py-3.5 pl-3 pr-4 backdrop-blur backdrop-filter sm:pr-6 lg:pr-8"
+                      class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 py-3.5 pl-3 backdrop-blur backdrop-filter"
                     >
                       <span class="sr-only">Edit</span>
+                    </th>
+                    <th
+                      scope="col"
+                      class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 pr-4 backdrop-blur backdrop-filter sm:pr-6 lg:pr-8"
+                    >
+                      <span class="sr-only">Delete</span>
                     </th>
                   </tr>
                 </thead>
@@ -247,7 +294,7 @@ export const UserManagement = () => {
                         <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
                           {fromI32ToUserRole(user.user_orgs[0].role) as string}
                         </td>
-                        <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 pr-4 text-right font-medium sm:pr-8 lg:pr-36 xl:pr-48">
+                        <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 text-right font-medium ">
                           <button
                             onClick={() => {
                               setEditingUser(user);
@@ -261,6 +308,22 @@ export const UserManagement = () => {
                             }}
                           >
                             Edit
+                          </button>
+                        </td>
+                        <td class="whitespace-nowrap border-b border-neutral-200 py-4 pr-4 text-right text-sm font-medium">
+                          <button
+                            onClick={() => {
+                              removeUser(user.id);
+                            }}
+                            disabled={user.id === userContext.user?.()?.id}
+                            classList={{
+                              "text-neutral-200 cursor-not-allowed":
+                                user.id === userContext.user?.()?.id,
+                              "text-red-500 hover:text-red-900":
+                                user.id !== userContext.user?.()?.id,
+                            }}
+                          >
+                            <FaRegularTrashCan />
                           </button>
                         </td>
                       </tr>
