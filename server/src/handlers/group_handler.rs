@@ -1098,7 +1098,7 @@ pub struct SearchWithinGroupData {
     pub recency_bias: Option<f32>,
     /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
     pub use_weights: Option<bool>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add <b><mark> tags to the chunk_html of the chunks to highlight matching sub-sentences.
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,
@@ -1250,7 +1250,7 @@ pub struct SearchOverGroupsData {
     pub filters: Option<ChunkFilter>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add <b><mark> tags to the chunk_html of the chunks to highlight matching sub-sentences.
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,
