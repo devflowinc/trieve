@@ -783,6 +783,10 @@ pub fn main() -> std::io::Result<()> {
                                         )),
                                 )
                                 .service(
+                                    web::resource("/{organization_id}/user/{user_id}")
+                                        .route(web::delete().to(handlers::organization_handler::remove_user_from_org)),
+                                )
+                                .service(
                                     web::resource("/{organization_id}")
                                         .route(
                                             web::get().to(
