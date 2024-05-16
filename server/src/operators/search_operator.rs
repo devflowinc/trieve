@@ -41,7 +41,7 @@ use qdrant_client::qdrant::{
     point_id::PointIdOptions, Condition, HasIdCondition, PointId, SearchPoints,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SearchResult {
@@ -1231,6 +1231,7 @@ pub async fn retrieve_chunks_from_point_ids(
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
     recency_weight: Option<f32>,
+    tag_weights: Option<HashMap<String, f32>>,
     use_weights: Option<bool>,
 ) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
@@ -1291,6 +1292,26 @@ pub fn rerank_chunks(
                 })
                 .collect::<Vec<ScoreChunkDTO>>();
         }
+    }
+
+    if let Some(tag_weights) = tag_weights {
+        reranked_chunks = reranked_chunks
+            .iter_mut()
+            .map(|chunk| {
+                let mut tag_score = 1.0;
+                for (tag, weight) in tag_weights.iter() {
+                    if let Some(metadata) = chunk.metadata.get(0) {
+                        if let Some(metadata_tags) = metadata.metadata().tag_set {
+                            if metadata_tags.contains(tag) {
+                                tag_score *= weight;
+                            }
+                        }
+                    }
+                }
+                chunk.score *= tag_score as f64;
+                chunk.clone()
+            })
+            .collect::<Vec<ScoreChunkDTO>>();
     }
 
     reranked_chunks.sort_by(|a, b| {
@@ -1360,6 +1381,7 @@ pub async fn search_semantic_chunks(
     result_chunks.score_chunks = rerank_chunks(
         result_chunks.score_chunks,
         data.recency_bias,
+        data.tag_weights,
         data.use_weights,
     );
 
@@ -1427,6 +1449,7 @@ pub async fn search_full_text_chunks(
     result_chunks.score_chunks = rerank_chunks(
         result_chunks.score_chunks,
         data.recency_bias,
+        data.tag_weights,
         data.use_weights,
     );
 
@@ -1532,8 +1555,12 @@ pub async fn search_hybrid_chunks(
             )
             .await?;
 
-            let score_chunks =
-                rerank_chunks(cross_encoder_results, data.recency_bias, data.use_weights);
+            let score_chunks = rerank_chunks(
+                cross_encoder_results,
+                data.recency_bias,
+                data.tag_weights,
+                data.use_weights,
+            );
 
             score_chunks
                 .iter()
@@ -1548,7 +1575,12 @@ pub async fn search_hybrid_chunks(
             )
             .await?;
 
-            rerank_chunks(cross_encoder_results, data.recency_bias, data.use_weights)
+            rerank_chunks(
+                cross_encoder_results,
+                data.recency_bias,
+                data.tag_weights,
+                data.use_weights,
+            )
         };
 
         reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
@@ -1608,6 +1640,7 @@ pub async fn search_semantic_groups(
     result_chunks.score_chunks = rerank_chunks(
         result_chunks.score_chunks,
         data.recency_bias,
+        data.tag_weights,
         data.use_weights,
     );
 
@@ -1659,6 +1692,7 @@ pub async fn search_full_text_groups(
     result_chunks.score_chunks = rerank_chunks(
         result_chunks.score_chunks,
         data.recency_bias,
+        data.tag_weights,
         data.use_weights,
     );
 
@@ -1756,8 +1790,12 @@ pub async fn search_hybrid_groups(
                     .to_vec(),
             )
             .await?;
-            let score_chunks =
-                rerank_chunks(cross_encoder_results, data.recency_bias, data.use_weights);
+            let score_chunks = rerank_chunks(
+                cross_encoder_results,
+                data.recency_bias,
+                data.tag_weights,
+                data.use_weights,
+            );
 
             score_chunks
                 .iter()
@@ -1772,7 +1810,12 @@ pub async fn search_hybrid_groups(
             )
             .await?;
 
-            rerank_chunks(cross_encoder_results, data.recency_bias, data.use_weights)
+            rerank_chunks(
+                cross_encoder_results,
+                data.recency_bias,
+                data.tag_weights,
+                data.use_weights,
+            )
         };
 
         SearchChunkQueryResponseBody {
@@ -2163,6 +2206,7 @@ pub async fn autocomplete_chunks(
     result_chunks.score_chunks = rerank_chunks(
         result_chunks.score_chunks,
         data.recency_bias,
+        data.tag_weights,
         data.use_weights,
     );
 

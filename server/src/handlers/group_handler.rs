@@ -25,6 +25,7 @@ use crate::{
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
+use std::collections::HashMap;
 use utoipa::{IntoParams, ToSchema};
 
 #[tracing::instrument(skip(pool))]
@@ -330,7 +331,7 @@ pub async fn update_group_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct DeleteGroupByTrackingIDData {
     pub delete_chunks: Option<bool>,
 }
@@ -350,6 +351,7 @@ pub struct DeleteGroupByTrackingIDData {
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("tracking_id" = uuid::Uuid, description = "Tracking id of the chunk_group to delete"),
+        ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -1099,6 +1101,8 @@ pub struct SearchWithinGroupData {
     pub recency_bias: Option<f32>,
     /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
     pub use_weights: Option<bool>,
+    /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
+    pub tag_weights: Option<HashMap<String, f32>>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
     pub highlight_results: Option<bool>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
@@ -1122,6 +1126,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             search_type: data.search_type,
             recency_bias: data.recency_bias,
             use_weights: data.use_weights,
+            tag_weights: data.tag_weights,
             get_collisions: Some(false),
             highlight_results: data.highlight_results,
             highlight_threshold: data.highlight_threshold,
