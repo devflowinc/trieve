@@ -514,7 +514,8 @@ pub async fn update_chunk_group(
         return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
     };
 
-    let new_chunk_group = ChunkGroup::from_details(
+    let new_chunk_group = ChunkGroup::from_details_with_id(
+        group.id,
         name.unwrap_or(group.name.clone()),
         description.or(Some(group.description.clone())),
         dataset_org_plan_sub.dataset.id,

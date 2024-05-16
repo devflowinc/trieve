@@ -85,7 +85,7 @@ pub async fn update_group_by_tracking_id_query(
     ))
     .execute(&mut conn)
     .await
-    .map_err(|_err| ServiceError::BadRequest("Error updating group".to_string()))?;
+    .map_err(|err| ServiceError::BadRequest(format!("Error updating group {:?}", err)))?;
 
     Ok(())
 }
@@ -344,7 +344,7 @@ pub async fn update_chunk_group_query(
     ))
     .get_result(&mut conn)
     .await
-    .map_err(|_err| ServiceError::BadRequest("Error updating group".to_string()))?;
+    .map_err(|err| ServiceError::BadRequest(format!("Error updating group {:?}", err)))?;
 
     Ok(updated_group)
 }
