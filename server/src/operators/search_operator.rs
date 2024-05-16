@@ -908,14 +908,15 @@ pub async fn retrieve_chunks_for_groups(
                        let highlighted_chunk = find_relevant_sentence(
                             chunk.clone().into(),
                             data.query.clone(),
+                            data.highlight_threshold,
                             data.highlight_delimiters.clone().unwrap_or(vec![
-                                ".".to_string(),
-                                "!".to_string(),
-                                "?".to_string(),
-                                "\n".to_string(),
-                                "\t".to_string(),
-                                ",".to_string(),
-                            ]),
+                        ".".to_string(),
+                        "!".to_string(),
+                        "?".to_string(),
+                        "\n".to_string(),
+                        "\t".to_string(),
+                        ",".to_string(),
+                    ]),
                         )
                         .unwrap_or(chunk.clone().into());
 
@@ -1174,6 +1175,7 @@ pub async fn retrieve_chunks_from_point_ids(
                 let highlighted_chunk = find_relevant_sentence(
                     chunk.clone().into(),
                     data.query.clone(),
+                    data.highlight_threshold,
                     data.highlight_delimiters.clone().unwrap_or(vec![
                         ".".to_string(),
                         "!".to_string(),
