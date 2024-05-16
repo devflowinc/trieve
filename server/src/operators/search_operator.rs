@@ -2231,7 +2231,8 @@ pub async fn autocomplete_fulltext_chunks(
             .start_child("full text search", "Search Full Text Chunks")
             .into(),
         None => {
-            let ctx = sentry::TransactionContext::new("full text search", "Search Full Text Chunks");
+            let ctx =
+                sentry::TransactionContext::new("full text search", "Search Full Text Chunks");
             sentry::start_transaction(ctx).into()
         }
     };
