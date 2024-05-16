@@ -519,8 +519,8 @@ pub async fn update_chunk_group(
         name.unwrap_or(group.name.clone()),
         description.or(Some(group.description.clone())),
         dataset_org_plan_sub.dataset.id,
-        body.tracking_id.clone().or(group.tracking_id.clone()),
-        body.metadata.clone().or(group.metadata.clone()),
+        body.tracking_id.clone(),
+        body.metadata.clone(),
         tag_set.or(group.tag_set.clone()),
     );
 

@@ -327,20 +327,21 @@ pub async fn update_chunk_group_query(
     group: ChunkGroup,
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, ServiceError> {
-    use crate::data::schema::chunk_group::dsl::*;
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
 
     let updated_group: ChunkGroup = diesel::update(
-        chunk_group
-            .filter(id.eq(group.id))
-            .filter(dataset_id.eq(group.dataset_id)),
+        chunk_group_columns::chunk_group
+            .filter(chunk_group_columns::id.eq(group.id))
+            .filter(chunk_group_columns::dataset_id.eq(group.dataset_id)),
     )
     .set((
-        name.eq(group.name),
-        description.eq(group.description),
-        metadata.eq(group.metadata),
-        tag_set.eq(group.tag_set),
+        chunk_group_columns::name.eq(group.name),
+        chunk_group_columns::description.eq(group.description),
+        chunk_group_columns::tracking_id.eq(group.tracking_id),
+        chunk_group_columns::metadata.eq(group.metadata),
+        chunk_group_columns::tag_set.eq(group.tag_set),
     ))
     .get_result(&mut conn)
     .await
