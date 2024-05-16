@@ -169,6 +169,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::get_chunks_by_tracking_ids,
         handlers::chunk_handler::delete_chunk_by_tracking_id,
         handlers::chunk_handler::get_chunk_by_id,
+        handlers::chunk_handler::autocomplete,
         handlers::chunk_handler::get_chunks_by_ids,
         handlers::user_handler::update_user,
         handlers::user_handler::set_user_api_key,
@@ -237,6 +238,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::SearchChunkQueryResponseBody,
             handlers::chunk_handler::GenerateChunksRequest,
             handlers::chunk_handler::SearchChunkData,
+            handlers::chunk_handler::AutocompleteData,
             handlers::group_handler::SearchWithinGroupData,
             handlers::group_handler::SearchOverGroupsData,
             handlers::group_handler::SearchWithinGroupResults,
@@ -602,6 +604,10 @@ pub fn main() -> std::io::Result<()> {
                                 .service(web::resource("/recommend").route(
                                     web::post().to(handlers::chunk_handler::get_recommended_chunks),
                                 ))
+                                .service(
+                                    web::resource("/autocomplete")
+                                        .route(web::post().to(handlers::chunk_handler::autocomplete)),
+                                )
                                 .service(
                                     web::resource("/search")
                                         .route(web::post().to(handlers::chunk_handler::search_chunks)),

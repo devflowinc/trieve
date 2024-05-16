@@ -2143,7 +2143,7 @@ pub async fn hybrid_search_over_groups(
 }
 
 #[tracing::instrument(skip(timer, pool))]
-pub async fn autocomplete_chunks(
+pub async fn autocomplete_semantic_chunks(
     mut data: SearchChunkData,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
@@ -2176,6 +2176,78 @@ pub async fn autocomplete_chunks(
     let mut qdrant_query = vec![
         RetrievePointQuery {
             vector: VectorType::Dense(embedding_vector.clone()),
+            score_threshold: data.score_threshold,
+            filter: data.filters.clone(),
+        }
+        .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
+        .await,
+    ];
+
+    qdrant_query[0]
+        .filter
+        .must
+        .push(Condition::matches_text("content", data.query.clone()));
+
+    let search_chunk_query_results =
+        retrieve_qdrant_points_query(qdrant_query, 1, false, data.page_size.unwrap_or(10), config)
+            .await?;
+
+    timer.add("finish fetching from qdrant; start to fetch from postgres");
+
+    if data.highlight_delimiters.is_none() {
+        data.highlight_delimiters = Some(vec![" ".to_string()]);
+    }
+
+    let mut result_chunks =
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
+
+    timer.add("finish fetching from postgres; start to rerank");
+
+    result_chunks.score_chunks = rerank_chunks(
+        result_chunks.score_chunks,
+        data.recency_bias,
+        data.tag_weights,
+        data.use_weights,
+    );
+
+    timer.add("finish reranking and return result");
+    transaction.finish();
+
+    Ok(result_chunks)
+}
+
+#[tracing::instrument(skip(timer, pool))]
+pub async fn autocomplete_fulltext_chunks(
+    mut data: SearchChunkData,
+    parsed_query: ParsedQuery,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+    config: ServerDatasetConfiguration,
+    timer: &mut Timer,
+) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("full text search", "Search Full Text Chunks")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new("full text search", "Search Full Text Chunks");
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    timer.add("start to create sparse embedding vector");
+
+    let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    timer.add("finish creating dense embedding vector; start to fetch from qdrant");
+
+    let mut qdrant_query = vec![
+        RetrievePointQuery {
+            vector: VectorType::Sparse(sparse_vector.clone()),
             score_threshold: data.score_threshold,
             filter: data.filters.clone(),
         }
