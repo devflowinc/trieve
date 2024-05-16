@@ -39,6 +39,7 @@ export interface ChunkMetadataWithScore {
     lon: number;
   } | null;
   score: number;
+  image_urls: string[] | null;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
