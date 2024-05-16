@@ -1188,8 +1188,6 @@ pub fn find_relevant_sentence(
         })
         .collect::<Vec<String>>();
 
-    println!("Split content: {:?}", split_content);
-
     //insert all sentences into the engine
     split_content.iter().for_each(|sentence| {
         engine.insert(sentence.clone(), &sentence.clone());

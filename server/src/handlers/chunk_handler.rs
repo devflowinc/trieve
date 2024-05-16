@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithScore, DatasetAndOrgWithSubAndPlan,
@@ -872,6 +874,8 @@ pub struct SearchChunkData {
     pub recency_bias: Option<f32>,
     /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
     pub use_weights: Option<bool>,
+    /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
+    pub tag_weights: Option<HashMap<String, f32>>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
@@ -899,6 +903,7 @@ impl Default for SearchChunkData {
             filters: None,
             recency_bias: None,
             use_weights: None,
+            tag_weights: None,
             get_collisions: None,
             highlight_results: None,
             highlight_threshold: None,
