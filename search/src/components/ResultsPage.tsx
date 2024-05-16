@@ -138,7 +138,9 @@ const ResultsPage = (props: ResultsPageProps) => {
       query: props.query,
       page: props.page,
       filters: filters(),
-      search_type: props.searchType,
+      search_type: props.searchType.includes("autocomplete")
+        ? props.searchType.replace("autocomplete-", "")
+        : props.searchType,
       get_collisions: true,
       slim_chunks: props.slimChunks ?? false,
       get_total_pages: props.getTotalPages ?? false,
@@ -150,6 +152,10 @@ const ResultsPage = (props: ResultsPageProps) => {
     const groupUnique = props.groupUnique;
     if (groupUnique) {
       searchRoute = "chunk_group/group_oriented_search";
+    }
+
+    if (props.searchType.includes("autocomplete")) {
+      searchRoute = "chunk/autocomplete";
     }
 
     props.setLoading(true);

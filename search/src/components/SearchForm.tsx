@@ -43,7 +43,16 @@ const SearchForm = (props: {
     { name: "FullText", isSelected: false, route: "fulltext" },
     { name: "Semantic", isSelected: true, route: "semantic" },
     { name: "Hybrid", isSelected: false, route: "hybrid" },
-    { name: "AutoComplete", isSelected: false, route: "autocomplete" },
+    {
+      name: "AutoComplete Semantic",
+      isSelected: false,
+      route: "autocomplete-semantic",
+    },
+    {
+      name: "AutoComplete FullText",
+      isSelected: false,
+      route: "autocomplete-fulltext",
+    },
   ]);
   const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
