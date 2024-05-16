@@ -300,6 +300,7 @@ pub struct ChunkMetadata {
     pub dataset_id: uuid::Uuid,
     pub weight: f64,
     pub location: Option<GeoInfo>,
+    pub image_urls: Option<Vec<Option<String>>>,
 }
 
 impl ChunkMetadata {
@@ -313,6 +314,7 @@ impl ChunkMetadata {
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
         location: Option<GeoInfo>,
+        image_urls: Option<Vec<String>>,
         dataset_id: uuid::Uuid,
         weight: f64,
     ) -> Self {
@@ -330,6 +332,7 @@ impl ChunkMetadata {
             location,
             dataset_id,
             weight,
+            image_urls: image_urls.map(|urls| urls.into_iter().map(Some).collect()),
         }
     }
 }
@@ -346,6 +349,7 @@ impl ChunkMetadata {
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
         location: Option<GeoInfo>,
+        image_urls: Option<Vec<String>>,
         dataset_id: uuid::Uuid,
         weight: f64,
     ) -> Self {
@@ -363,6 +367,7 @@ impl ChunkMetadata {
             location,
             dataset_id,
             weight,
+            image_urls: image_urls.map(|urls| urls.into_iter().map(Some).collect()),
         }
     }
 }
@@ -383,6 +388,7 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
             location: slim_chunk.location,
             dataset_id: slim_chunk.dataset_id,
             weight: slim_chunk.weight,
+            image_urls: slim_chunk.image_urls,
         }
     }
 }
@@ -403,6 +409,7 @@ impl From<ContentChunkMetadata> for ChunkMetadata {
             location: None,
             dataset_id: uuid::Uuid::new_v4(),
             weight: content_chunk.weight,
+            image_urls: content_chunk.image_urls,
         }
     }
 }
@@ -652,6 +659,7 @@ pub struct SlimChunkMetadata {
     pub location: Option<GeoInfo>,
     pub dataset_id: uuid::Uuid,
     pub weight: f64,
+    pub image_urls: Option<Vec<Option<String>>>,
 }
 
 impl From<ChunkMetadata> for SlimChunkMetadata {
@@ -669,6 +677,7 @@ impl From<ChunkMetadata> for SlimChunkMetadata {
             location: chunk.location,
             dataset_id: chunk.dataset_id,
             weight: chunk.weight,
+            image_urls: chunk.image_urls,
         }
     }
 }
@@ -688,6 +697,7 @@ impl From<ContentChunkMetadata> for SlimChunkMetadata {
             location: None,
             dataset_id: uuid::Uuid::new_v4(),
             weight: chunk.weight,
+            image_urls: chunk.image_urls,
         }
     }
 }
@@ -713,6 +723,7 @@ pub struct ContentChunkMetadata {
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
     pub weight: f64,
+    pub image_urls: Option<Vec<Option<String>>>,
 }
 
 impl From<ChunkMetadata> for ContentChunkMetadata {
@@ -724,6 +735,7 @@ impl From<ChunkMetadata> for ContentChunkMetadata {
             tracking_id: chunk.tracking_id,
             time_stamp: chunk.time_stamp,
             weight: chunk.weight,
+            image_urls: chunk.image_urls,
         }
     }
 }
@@ -1553,7 +1565,6 @@ impl ServerDatasetConfiguration {
     "IMAGE_RANGE_END_KEY": "image range end key",
     "DOCUMENT_UPLOAD_FEATURE": true,
     "FILE_NAME_KEY": "file_name_key",
-    "IMAGE_METADATA_KEY": ".image_url"
 }))]
 #[allow(non_snake_case)]
 pub struct ClientDatasetConfiguration {
@@ -1568,7 +1579,6 @@ pub struct ClientDatasetConfiguration {
     pub IMAGE_RANGE_END_KEY: Option<String>,
     pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
     pub FILE_NAME_KEY: String,
-    pub IMAGE_METADATA_KEY: String,
 }
 
 impl ClientDatasetConfiguration {
@@ -1632,12 +1642,6 @@ impl ClientDatasetConfiguration {
                 .unwrap_or(&json!(""))
                 .as_str()
                 .expect("FILE_NAME_KEY should exist")
-                .to_string(),
-            IMAGE_METADATA_KEY: configuration
-                .get("IMAGE_METADATA_KEY")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .unwrap_or("")
                 .to_string(),
         }
     }

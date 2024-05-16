@@ -131,18 +131,15 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   });
 
   createEffect(() => {
-    const imageMetadataKey = $envs().IMAGE_METADATA_KEY;
-
     if (
-      !imageMetadataKey ||
       !props.chunk.metadata ||
-      !indirectHasOwnProperty(props.chunk.metadata, imageMetadataKey)
+      !indirectHasOwnProperty(props.chunk, "image_urls")
     ) {
       return null;
     }
 
-    const imageMetadata = props.chunk.metadata[imageMetadataKey] as string;
-    setImageLink(imageMetadata);
+    const imageLink = props.chunk.image_urls?.[0] as string;
+    setImageLink(imageLink);
   });
 
   const imgInformation = createMemo(() => {

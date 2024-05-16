@@ -442,6 +442,11 @@ pub async fn bulk_upload_chunks(
                 location: message.chunk.location,
                 dataset_id: payload.dataset_id,
                 weight: message.chunk.weight.unwrap_or(0.0),
+                image_urls: message
+                    .chunk
+                    .image_urls
+                    .clone()
+                    .map(|urls| urls.into_iter().map(Some).collect()),
             };
 
             (
@@ -661,6 +666,10 @@ async fn upload_chunk(
         location: payload.chunk.location,
         dataset_id: payload.ingest_specific_chunk_metadata.dataset_id,
         weight: payload.chunk.weight.unwrap_or(0.0),
+        image_urls: payload
+            .chunk
+            .image_urls
+            .map(|urls| urls.into_iter().map(Some).collect()),
     };
 
     let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
