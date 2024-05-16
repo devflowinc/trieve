@@ -68,6 +68,8 @@ pub struct ChunkData {
     pub time_stamp: Option<String>,
     /// Location is a GeoInfo object which lets you specify a latitude and longitude which can be used later to filter results.
     pub location: Option<GeoInfo>,
+    /// Image urls are a list of urls to images that are associated with the chunk. This is useful for when you want to associate images with a chunk.
+    pub image_urls: Option<Vec<String>>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
     pub weight: Option<f64>,
     /// Split avg is a boolean which tells the server to split the text in the chunk_html into smaller chunks and average their resulting vectors. This is useful for when you want to create a chunk from a large piece of text and want to split it into smaller chunks to create a more fuzzy average dense vector. The sparse vector will be generated normally with no averaging. By default this is false.
@@ -453,9 +455,11 @@ pub struct UpdateChunkData {
     /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
     group_tracking_ids: Option<Vec<String>>,
     /// Location is a GeoInfo object which lets you specify a latitude and longitude which can be used later to filter results.
-    pub location: Option<GeoInfo>,
+    location: Option<GeoInfo>,
+    /// Image urls are a list of urls to images that are associated with the chunk. This is useful for when you want to associate images with a chunk. If no image_urls are provided, the existing image_urls will be used.
+    image_urls: Option<Vec<String>>,
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
-    pub convert_html_to_text: Option<bool>,
+    convert_html_to_text: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -517,6 +521,7 @@ pub async fn update_chunk(
         .link
         .clone()
         .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
+
     let chunk_tracking_id = update_chunk_data
         .tracking_id
         .clone()
@@ -556,6 +561,7 @@ pub async fn update_chunk(
             .transpose()?
             .or(chunk_metadata.time_stamp),
         update_chunk_data.location,
+        update_chunk_data.image_urls.clone(),
         dataset_id,
         update_chunk_data.weight.unwrap_or(1.0),
     );
@@ -703,6 +709,7 @@ pub async fn update_chunk_by_tracking_id(
             })
             .transpose()?
             .or(chunk_metadata.time_stamp),
+        None,
         None,
         dataset_org_plan_sub.dataset.id,
         update_chunk_data.weight.unwrap_or(1.0),

@@ -18,6 +18,7 @@ export interface ChunkMetadata {
     lat: number;
     lon: number;
   } | null;
+  image_urls: string[] | null;
 }
 
 export interface ChunkMetadataWithScore {

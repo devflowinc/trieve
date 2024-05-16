@@ -774,7 +774,8 @@ pub async fn get_metadata_query(
                 time_stamp: metadata.time_stamp,
                 location: metadata.location,
                 dataset_id: metadata.dataset_id,
-                weight: metadata.weight
+                weight: metadata.weight,
+                image_urls: metadata.image_urls,
             }
         })
         .collect();
@@ -900,6 +901,7 @@ pub async fn retrieve_chunks_for_groups(
                                     location: None,
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
+                                    image_urls: None
                                 }.into()
                             },
                         };
@@ -1043,6 +1045,7 @@ pub async fn get_metadata_from_groups(
                                     location: None,
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
+                                    image_urls: None
                                 }.into()
                             },
                         };
@@ -1166,6 +1169,7 @@ pub async fn retrieve_chunks_from_point_ids(
                             location: None,
                             dataset_id: uuid::Uuid::default(),
                             weight: 1.0,
+                            image_urls: None,
                         }
                         .into()
                     }

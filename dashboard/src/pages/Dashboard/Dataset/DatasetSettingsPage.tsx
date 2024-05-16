@@ -24,7 +24,6 @@ export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
   SHOW_GITHUB_STARS: false,
   IMAGE_RANGE_START_KEY: "",
   IMAGE_RANGE_END_KEY: "",
-  IMAGE_METADATA_KEY: "",
   FILE_NAME_KEY: "",
 };
 
@@ -324,31 +323,6 @@ export const FrontendSettingsForm = () => {
                 }
               />
             </div>
-
-            <div class="col-span-4">
-              <label
-                for="imageMetadataKey"
-                class="block text-sm font-medium leading-6"
-              >
-                Image Metadata Key
-              </label>
-              <input
-                type="text"
-                name="imageMetadataKey"
-                id="imageMetadataKey"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().IMAGE_METADATA_KEY ?? ""}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      IMAGE_METADATA_KEY: e.target.value,
-                    };
-                  })
-                }
-              />
-            </div>
-
             <div class="col-span-4">
               <label
                 for="imageRangeStartKey"

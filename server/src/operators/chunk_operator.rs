@@ -75,6 +75,7 @@ pub async fn get_slim_chunk_metadatas_from_point_ids(
             chunk_metadata_columns::location,
             chunk_metadata_columns::dataset_id,
             chunk_metadata_columns::weight,
+            chunk_metadata_columns::image_urls,
         ))
         .load::<SlimChunkMetadata>(&mut conn)
         .await
@@ -208,6 +209,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                     location: chunk.0.location,
                     dataset_id: chunk.0.dataset_id,
                     weight: chunk.0.weight,
+                    image_urls: chunk.0.image_urls.clone(),
                 }
                 .into()
             })
@@ -257,6 +259,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         location: chunk.0.location,
                         dataset_id: chunk.0.dataset_id,
                         weight: chunk.0.weight,
+                        image_urls: chunk.0.image_urls.clone(),
                     }
                     .into()
                 })
@@ -321,6 +324,7 @@ pub async fn get_slim_chunks_from_point_ids_query(
                 chunk_metadata_columns::location,
                 chunk_metadata_columns::dataset_id,
                 chunk_metadata_columns::weight,
+                chunk_metadata_columns::image_urls,
             ))
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
             .load(&mut conn)
@@ -381,6 +385,7 @@ pub async fn get_content_chunk_from_point_ids_query(
                     chunk_metadata_columns::tracking_id,
                     chunk_metadata_columns::time_stamp,
                     chunk_metadata_columns::weight,
+                    chunk_metadata_columns::image_urls,
                 ))
                 .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
                 .load(&mut conn)
@@ -1281,6 +1286,7 @@ pub async fn create_chunk_metadata(
             chunk_tracking_id,
             timestamp,
             chunk.location,
+            chunk.image_urls.clone(),
             dataset_uuid,
             chunk.weight.unwrap_or(0.0),
         );
