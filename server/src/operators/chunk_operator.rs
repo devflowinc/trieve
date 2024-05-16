@@ -24,7 +24,7 @@ use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use itertools::Itertools;
 use qdrant_client::qdrant::{PointId, PointVectors};
-use simsearch::SimSearch;
+use simsearch::{SearchOptions, SimSearch};
 
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_metadatas_from_point_ids(
@@ -1162,14 +1162,28 @@ pub async fn get_qdrant_id_from_chunk_id_query(
 pub fn find_relevant_sentence(
     input: ChunkMetadata,
     query: String,
+    threshold: Option<f64>,
     split_chars: Vec<String>,
 ) -> Result<ChunkMetadata, ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
-    let mut engine: SimSearch<String> = SimSearch::new();
+
+    let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
+    let mut engine: SimSearch<String> = SimSearch::new_with(search_options);
+
     let split_content = content
         .split_inclusive(|c: char| split_chars.contains(&c.to_string()))
-        .map(|x| x.to_string())
+        .flat_map(|x| {
+            x.to_string()
+                .split_whitespace()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()
+                .chunks(5)
+                .map(|x| x.join(" "))
+                .collect::<Vec<String>>()
+        })
         .collect::<Vec<String>>();
+
+    println!("Split content: {:?}", split_content);
 
     //insert all sentences into the engine
     split_content.iter().for_each(|sentence| {

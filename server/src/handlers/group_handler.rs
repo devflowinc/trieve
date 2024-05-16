@@ -1101,6 +1101,8 @@ pub struct SearchWithinGroupData {
     pub use_weights: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
     pub highlight_results: Option<bool>,
+    /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the chunk_html. If not specified, this defaults to 0.8.
+    pub highlight_threshold: Option<f64>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
@@ -1122,6 +1124,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             use_weights: data.use_weights,
             get_collisions: Some(false),
             highlight_results: data.highlight_results,
+            highlight_threshold: data.highlight_threshold,
             highlight_delimiters: data.highlight_delimiters,
             score_threshold: data.score_threshold,
             slim_chunks: data.slim_chunks,
@@ -1253,6 +1256,8 @@ pub struct SearchOverGroupsData {
     pub get_collisions: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
     pub highlight_results: Option<bool>,
+    /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the chunk_html. If not specified, this defaults to 0.8.
+    pub highlight_threshold: Option<f64>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
