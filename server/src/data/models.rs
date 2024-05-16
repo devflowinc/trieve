@@ -829,6 +829,28 @@ impl ChunkGroup {
             tag_set,
         }
     }
+
+    pub fn from_details_with_id(
+        id: uuid::Uuid,
+        name: String,
+        description: Option<String>,
+        dataset_id: uuid::Uuid,
+        tracking_id: Option<String>,
+        metadata: Option<serde_json::Value>,
+        tag_set: Option<String>,
+    ) -> Self {
+        ChunkGroup {
+            id,
+            name,
+            description: description.unwrap_or_default(),
+            dataset_id,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+            tracking_id,
+            metadata,
+            tag_set,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
