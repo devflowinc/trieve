@@ -5,7 +5,6 @@ import {
   ClientEnvsConfiguration,
   ServerEnvsConfiguration,
   availableEmbeddingModels,
-  isComboboxValues,
 } from "../../../types/apiTypes";
 import { UserContext } from "../../../contexts/UserContext";
 import { createToast } from "../../../components/ShowToasts";
@@ -155,174 +154,6 @@ export const FrontendSettingsForm = () => {
               />
             </div>
 
-            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
-              <input
-                type="checkbox"
-                name="documentUploadFeatureClient"
-                id="documentUploadFeatureClient"
-                checked={clientConfig().DOCUMENT_UPLOAD_FEATURE}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      DOCUMENT_UPLOAD_FEATURE: e.currentTarget.checked,
-                    };
-                  })
-                }
-              />
-              <label
-                for="documentUploadFeature"
-                class="block text-sm font-medium"
-              >
-                Document upload feature
-              </label>
-            </div>
-
-            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
-              <input
-                type="checkbox"
-                name="documentUploadFeatureClient"
-                id="documentUploadFeatureClient"
-                checked={clientConfig().CREATE_CHUNK_FEATURE}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      CREATE_CHUNK_FEATURE: e.currentTarget.checked,
-                    };
-                  })
-                }
-              />
-              <label
-                for="documentUploadFeature"
-                class="block text-sm font-medium"
-              >
-                Create chunk feature
-              </label>
-            </div>
-
-            <div class="col-span-4 sm:col-span-2">
-              <label
-                for="dateRangeValue"
-                class="block text-sm font-medium leading-6"
-              >
-                Date range value
-              </label>
-              <input
-                type="text"
-                name="dateRangeValue"
-                id="dateRangeValue"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().DATE_RANGE_VALUE}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      DATE_RANGE_VALUE: e.target.value,
-                    };
-                  })
-                }
-              />
-            </div>
-
-            <div class="col-span-4">
-              <label
-                for="searchQueries"
-                class="block text-sm font-medium leading-6"
-              >
-                Search Queries
-              </label>
-              <input
-                type="text"
-                name="searchQueries"
-                id="searchQueries"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().SEARCH_QUERIES}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      SEARCH_QUERIES: e.target.value,
-                    };
-                  })
-                }
-              />
-            </div>
-
-            <div class="col-span-4">
-              <label
-                for="frontmatterVals"
-                class="block text-sm font-medium leading-6"
-              >
-                Frontmatter Values
-              </label>
-              <input
-                type="text"
-                name="frontmatterVals"
-                id="frontmatterVals"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().FRONTMATTER_VALS}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      FRONTMATTER_VALS: e.target.value,
-                    };
-                  })
-                }
-              />
-            </div>
-            {/** TODO: change to a modal to set filters and generate json from that */}
-            <div class="col-span-4">
-              <label
-                for="filterItems"
-                class="block text-sm font-medium leading-6"
-              >
-                Filter Items
-              </label>
-              <input
-                type="text"
-                name="filterItems"
-                id="filterItems"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={JSON.stringify(clientConfig().FILTER_ITEMS)}
-                onInput={(e) => {
-                  const value = JSON.parse(e.target.value) as object[];
-                  if (isComboboxValues(value)) {
-                    setClientConfig((prev) => {
-                      return {
-                        ...prev,
-                        FILTER_ITEMS: value,
-                      };
-                    });
-                  }
-                }}
-              />
-            </div>
-
-            <div class="col-span-4">
-              <label
-                for="suggestedQueries"
-                class="block text-sm font-medium leading-6"
-              >
-                Suggested Queries
-              </label>
-              <input
-                type="text"
-                name="suggestedQueries"
-                id="suggestedQueries"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().SUGGESTED_QUERIES}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      SUGGESTED_QUERIES: e.target.value,
-                    };
-                  })
-                }
-              />
-            </div>
             <div class="col-span-4">
               <label
                 for="imageRangeStartKey"
@@ -365,30 +196,6 @@ export const FrontendSettingsForm = () => {
                     return {
                       ...prev,
                       IMAGE_RANGE_END_KEY: e.target.value,
-                    };
-                  })
-                }
-              />
-            </div>
-
-            <div class="col-span-4">
-              <label
-                for="fileNameKey"
-                class="block text-sm font-medium leading-6"
-              >
-                File Name Key
-              </label>
-              <input
-                type="text"
-                name="suggestedQueries"
-                id="suggestedQueries"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().FILE_NAME_KEY}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      FILE_NAME_KEY: e.target.value,
                     };
                   })
                 }
@@ -905,12 +712,12 @@ export const DangerZoneForm = () => {
 
 export const DatasetSettingsPage = () => {
   return (
-    <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
-      <div>
-        <FrontendSettingsForm />
-      </div>
+    <div class="grid grid-cols-1 gap-3">
       <div>
         <ServerSettingsForm />
+      </div>
+      <div>
+        <FrontendSettingsForm />
       </div>
       <div>
         <DangerZoneForm />

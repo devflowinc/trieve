@@ -52,6 +52,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
   const [slimChunks, setSlimChunks] = createSignal(false);
+  const [pageSize, setPageSize] = createSignal<number>(10);
   const [getTotalPages, setGetTotalPages] = createSignal(false);
   const [highlightResults, setHighlightResults] = createSignal(true);
   const [highlightDelimiters, setHighlightDelimiters] = createSignal<string[]>([
@@ -60,6 +61,7 @@ export const GroupPage = (props: GroupPageProps) => {
     ".",
     "!",
   ]);
+  const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<ChunkMetadata[]>([]);
   const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
@@ -109,11 +111,13 @@ export const GroupPage = (props: GroupPageProps) => {
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
     setSlimChunks(location.query.slimChunks === "true");
+    setPageSize(Number(location.query.pageSize) || 10);
     setGetTotalPages(location.query.getTotalPages === "true");
     setHighlightResults(location.query.highlightResults === "true");
     setHighlightDelimiters(
       location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
     );
+    setRecencyBias(Number(location.query.recencyBias) || 0.0);
   });
 
   createEffect(() => {
@@ -166,9 +170,11 @@ export const GroupPage = (props: GroupPageProps) => {
           group_id: props.groupID,
           search_type: searchType(),
           slim_chunks: slimChunks(),
+          page_size: pageSize(),
           get_total_pages: getTotalPages(),
           highlight_results: highlightResults(),
           highlight_delimiters: highlightDelimiters(),
+          recency_bias: recencyBias(),
         }),
       }).then((response) => {
         if (response.ok) {
@@ -503,7 +509,11 @@ export const GroupPage = (props: GroupPageProps) => {
                   <SearchForm
                     query={query()}
                     searchType={searchType()}
+                    pageSize={pageSize()}
                     getTotalPages={getTotalPages()}
+                    highlightResults={highlightResults()}
+                    highlightDelimiters={highlightDelimiters()}
+                    recencyBias={recencyBias()}
                     groupID={props.groupID}
                     slimChunks={slimChunks()}
                   />

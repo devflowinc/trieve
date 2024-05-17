@@ -14,6 +14,7 @@ import {
   BiRegularChevronRight,
 } from "solid-icons/bi";
 import { MultiSelect } from "../../../components/MultiSelect";
+import { FiInfo } from "solid-icons/fi";
 
 export const DatasetEvents = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -78,6 +79,16 @@ export const DatasetEvents = () => {
   return (
     <div class="mb-3">
       <main class="mx-auto">
+        <div class="rounded-md bg-blue-50 p-4 dark:bg-blue-900">
+          <div class="flex space-x-2">
+            <FiInfo class="h-5 w-5 text-blue-400 dark:text-blue-50" />
+            <p class="text-sm text-blue-700 dark:text-blue-50">
+              Events are logged by the server and displayed here for chunk and
+              file CRUD operations. You can filter by event type. The list
+              refreshes every 5 seconds.
+            </p>
+          </div>
+        </div>
         <div class="mx-auto mt-8 pb-8">
           <div class="">
             <div class="sm:flex sm:items-center">
