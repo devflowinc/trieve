@@ -12,8 +12,8 @@ use super::qdrant_operator::{
     VectorType,
 };
 use crate::data::models::{
-    ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ConditionType, ContentChunkMetadata, Dataset,
-    HasIDCondition, ScoreChunkDTO, ServerDatasetConfiguration, UnifiedId,
+    convert_to_date_time, ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ContentChunkMetadata,
+    Dataset, ScoreChunkDTO, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     ChunkFilter, ParsedQuery, SearchChunkData, SearchChunkQueryResponseBody,
@@ -28,7 +28,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::dsl::sql;
-use diesel::sql_types::Text;
+use diesel::sql_types::{Bool, Text};
 use diesel::{ExpressionMethods, JoinOnDsl, PgTextExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 
@@ -344,16 +344,16 @@ pub async fn get_metadata_filter_condition(
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Text(string_val) => {
-                    query = query.filter(
-                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", string_val)),
-                    );
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, string_val
+                    )));
                 }
                 MatchCondition::Integer(id_val) => {
-                    query = query.filter(
-                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
-                            .eq(id_val.to_string()),
-                    );
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
                 }
             }
         }
@@ -361,16 +361,16 @@ pub async fn get_metadata_filter_condition(
         for match_condition in matches.iter().skip(1) {
             match match_condition {
                 MatchCondition::Text(string_val) => {
-                    query = query.or_filter(
-                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", string_val)),
-                    );
+                    query = query.or_filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, string_val
+                    )));
                 }
                 MatchCondition::Integer(id_val) => {
-                    query = query.or_filter(
-                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
-                            .eq(id_val.to_string()),
-                    );
+                    query = query.or_filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
                 }
             }
         }
@@ -402,6 +402,44 @@ pub async fn get_metadata_filter_condition(
             );
         };
     }
+
+    if let Some(date_range) = &filter.date_range {
+        if let Some(gt) = &date_range.gt {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
+                    .gt(convert_to_date_time(Some(gt.clone()))?.unwrap().to_string()),
+            );
+        };
+
+        if let Some(gte) = &date_range.gte {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).ge(
+                    convert_to_date_time(Some(gte.clone()))?
+                        .unwrap()
+                        .to_string(),
+                ),
+            );
+        };
+
+        if let Some(lt) = &date_range.lt {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
+                    .lt(convert_to_date_time(Some(lt.clone()))?.unwrap().to_string()),
+            );
+        };
+
+        if let Some(lte) = &date_range.lte {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).le(
+                    convert_to_date_time(Some(lte.clone()))?
+                        .unwrap()
+                        .to_string(),
+                ),
+            );
+        };
+    }
+
+    println!("query: {:?}", diesel::debug_query(&query));
 
     let qdrant_point_ids: Vec<uuid::Uuid> = query
         .load::<Option<uuid::Uuid>>(&mut conn)

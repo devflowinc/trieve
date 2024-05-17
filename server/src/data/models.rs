@@ -2445,22 +2445,22 @@ pub struct FieldCondition {
     pub geo_polygon: Option<LocationPolygon>,
 }
 
-fn get_date_range(date_range: DateRange) -> Result<qdrant::Range, ServiceError> {
-    fn convert_to_date_time(time_stamp: Option<String>) -> Result<Option<f64>, ServiceError> {
-        match time_stamp {
-            Some(time_stamp) => Ok(Some(
-                time_stamp
-                    .parse::<DateTimeUtc>()
-                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
-                    .0
-                    .with_timezone(&chrono::Local)
-                    .naive_local()
-                    .timestamp() as f64,
-            )),
-            None => Ok(None),
-        }
+pub fn convert_to_date_time(time_stamp: Option<String>) -> Result<Option<f64>, ServiceError> {
+    match time_stamp {
+        Some(time_stamp) => Ok(Some(
+            time_stamp
+                .parse::<DateTimeUtc>()
+                .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
+                .0
+                .with_timezone(&chrono::Local)
+                .naive_local()
+                .timestamp() as f64,
+        )),
+        None => Ok(None),
     }
+}
 
+fn get_date_range(date_range: DateRange) -> Result<qdrant::Range, ServiceError> {
     // Based on the determined type, process the values
     let gt = convert_to_date_time(date_range.gt)?;
     let gte = convert_to_date_time(date_range.gte)?;
