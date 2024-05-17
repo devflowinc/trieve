@@ -37,7 +37,6 @@ use utoipa::ToSchema;
     "chunk_html": "<p>Some HTML content</p>",
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
-    "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
     "metadata": {"key1": "value1", "key2": "value2"},
     "chunk_vector": [0.1, 0.2, 0.3],
     "tracking_id": "tracking_id",
@@ -45,8 +44,14 @@ use utoipa::ToSchema;
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
     "time_stamp": "2021-01-01T00:00:00",
+    "location": {
+        "lat": -34,
+        "lon": 151
+    },
+    "image_urls": ["https://example.com/red", "https://example.com/blue"],
     "weight": 0.5,
-    "split_avg": false
+    "split_avg": false,
+    "convert_html_to_text": false,
 }))]
 pub struct ChunkData {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
@@ -101,7 +106,6 @@ pub enum ReturnQueuedChunk {
         "content": "Some content",
         "link": "https://example.com",
         "tag_set": ["tag1", "tag2"],
-        "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
         "metadata": {"key1": "value1", "key2": "value2"},
         "chunk_vector": [0.1, 0.2, 0.3],
         "tracking_id": "tracking_id",
@@ -172,7 +176,6 @@ pub struct BulkUploadIngestionMessage {
     "chunk_html": "<p>Some HTML content</p>",
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
-    "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
     "metadata": {"key1": "value1", "key2": "value2"},
     "chunk_vector": [0.1, 0.2, 0.3],
     "tracking_id": "tracking_id",
@@ -180,8 +183,13 @@ pub struct BulkUploadIngestionMessage {
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
     "time_stamp": "2021-01-01T00:00:00",
+    "location": {
+        "lat": -34,
+        "lon": 151
+    },
     "weight": 0.5,
-    "split_avg": false
+    "split_avg": false,
+    "convert_html_to_text": false,
 }))]
 pub struct CreateSingleChunkData(pub ChunkData);
 
@@ -190,7 +198,6 @@ pub struct CreateSingleChunkData(pub ChunkData);
     "chunk_html": "<p>Some HTML content</p>",
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
-    "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
     "metadata": {"key1": "value1", "key2": "value2"},
     "chunk_vector": [0.1, 0.2, 0.3],
     "tracking_id": "tracking_id",
@@ -198,13 +205,18 @@ pub struct CreateSingleChunkData(pub ChunkData);
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
     "time_stamp": "2021-01-01T00:00:00",
+    "image_urls": ["https://example.com/red", "https://example.com/blue"],
+    "location": {
+        "lat": -34,
+        "lon": 151
+    },
     "weight": 0.5,
-    "split_avg": false
+    "split_avg": false,
+    "convert_html_to_text": false,
 }, {
     "chunk_html": "<p>Some more HTML content</p>",
     "link": "https://explain.com",
     "tag_set": ["tag3", "tag4"],
-    "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
     "metadata": {"key1": "value1", "key2": "value2"},
     "chunk_vector": [0.1, 0.2, 0.3],
     "tracking_id": "tracking_id",
@@ -212,8 +224,14 @@ pub struct CreateSingleChunkData(pub ChunkData);
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
     "time_stamp": "2021-01-01T00:00:00",
+    "image_urls": [],
+    "location": {
+        "lat": -34,
+        "lon": 151
+    },
     "weight": 0.5,
-    "split_avg": false
+    "split_avg": false,
+    "convert_html_to_text": false,
 }]
 ))]
 pub struct CreateBatchChunkData(pub Vec<ChunkData>);
