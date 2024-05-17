@@ -38,9 +38,11 @@ export interface ResultsPageProps {
   searchType: string;
   groupUnique?: boolean;
   slimChunks?: boolean;
+  pageSize?: number;
   getTotalPages?: boolean;
   highlightResults?: boolean;
   highlightDelimiters?: string[];
+  recencyBias?: number;
   loading: Accessor<boolean>;
   setLoading: Setter<boolean>;
 }
@@ -143,9 +145,11 @@ const ResultsPage = (props: ResultsPageProps) => {
         : props.searchType,
       get_collisions: true,
       slim_chunks: props.slimChunks ?? false,
+      page_size: props.pageSize ?? 10,
       get_total_pages: props.getTotalPages ?? false,
       highlight_results: props.highlightResults ?? true,
       highlight_delimiters: props.highlightDelimiters ?? ["?", ".", "!"],
+      recency_bias: props.recencyBias ?? 0.0,
     };
 
     let searchRoute = "chunk/search";

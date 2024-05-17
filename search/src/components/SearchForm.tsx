@@ -28,9 +28,11 @@ const SearchForm = (props: {
   searchType: string;
   groupUniqueSearch?: boolean;
   slimChunks?: boolean;
+  pageSize?: number;
   getTotalPages?: boolean;
   highlightResults?: boolean;
   highlightDelimiters?: string[];
+  recencyBias?: number;
   groupID?: string;
 }) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -63,6 +65,10 @@ const SearchForm = (props: {
   );
   // eslint-disable-next-line solid/reactivity
   const [slimChunks, setSlimChunks] = createSignal(props.slimChunks ?? false);
+  const [pageSize, setPageSize] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.pageSize ?? 10,
+  );
   const [getTotalPages, setGetTotalPages] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.getTotalPages ?? false,
@@ -74,6 +80,10 @@ const SearchForm = (props: {
   const [highlightDelimiters, setHighlightDelimiters] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.highlightDelimiters ?? ["?", ".", "!"],
+  );
+  const [recencyBias, setRecencyBias] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.recencyBias ?? 0.0,
   );
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
@@ -101,6 +111,7 @@ const SearchForm = (props: {
 
     const groupUniqueUrlParam = groupUniqueSearch() ? "&groupUnique=true" : "";
     const slimChunksUrlParam = slimChunks() ? "&slimChunks=true" : "";
+    const pageSizeUrlParam = pageSize() ? `&pageSize=${pageSize()}` : "";
     const getTotalPagesUrlParam = getTotalPages() ? "&getTotalPages=true" : "";
     const highlightResultsUrlParam = highlightResults()
       ? "&highlightResults=true"
@@ -108,21 +119,28 @@ const SearchForm = (props: {
     const highlightDelimitersUrlParam = highlightDelimiters().length
       ? `&highlightDelimiters=${highlightDelimiters().join(",")}`
       : "";
+    const recencyBiasUrlParam = recencyBias()
+      ? `&recencyBias=${recencyBias()}`
+      : "";
 
     const urlToNavigateTo = props.groupID
       ? `/group/${props.groupID}?q=${searchQuery}` +
         searchTypeUrlParam +
         slimChunksUrlParam +
+        pageSizeUrlParam +
         getTotalPagesUrlParam +
         highlightDelimitersUrlParam +
-        highlightResultsUrlParam
+        highlightResultsUrlParam +
+        recencyBiasUrlParam
       : `/search?q=${searchQuery}` +
         searchTypeUrlParam +
         groupUniqueUrlParam +
         slimChunksUrlParam +
+        pageSizeUrlParam +
         getTotalPagesUrlParam +
         highlightDelimitersUrlParam +
-        highlightResultsUrlParam;
+        highlightResultsUrlParam +
+        recencyBiasUrlParam;
 
     navigate(urlToNavigateTo);
   };
@@ -425,9 +443,11 @@ const SearchForm = (props: {
                             onClick={(e) => {
                               e.preventDefault();
                               setSlimChunks(false);
+                              setPageSize(10);
                               setGetTotalPages(false);
                               setHighlightResults(true);
                               setHighlightDelimiters(["?", ".", "!"]);
+                              setRecencyBias(0.0);
                               setState(false);
                               onSubmit(e);
                             }}
@@ -448,6 +468,20 @@ const SearchForm = (props: {
                                 setSlimChunks(false);
                               }
 
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Page Size:</label>
+                          <input
+                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            value={props.pageSize}
+                            onInput={(e) => {
+                              setPageSize(parseInt(e.currentTarget.value));
+                            }}
+                            onBlur={(e) => {
                               onSubmit(e);
                             }}
                           />
@@ -489,7 +523,7 @@ const SearchForm = (props: {
                         <div class="items flex justify-between space-x-2 p-1">
                           <label>Highlight Delimiters (Comma Separated):</label>
                           <input
-                            class="w-32 rounded border border-neutral-400 p-0.5 text-black"
+                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
                             type="text"
                             value={highlightDelimiters().join(",")}
                             onInput={(e) => {
@@ -500,6 +534,23 @@ const SearchForm = (props: {
                               setHighlightDelimiters(
                                 e.currentTarget.value.split(","),
                               );
+                            }}
+                            onBlur={(e) => {
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Recency Bias (0.0 to 1.0):</label>
+                          <input
+                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            min="0.0"
+                            max="1.0"
+                            step="0.1"
+                            value={props.recencyBias}
+                            onInput={(e) => {
+                              setRecencyBias(parseFloat(e.currentTarget.value));
                             }}
                             onBlur={(e) => {
                               onSubmit(e);

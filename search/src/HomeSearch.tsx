@@ -21,12 +21,14 @@ export const HomeSearch = () => {
   const searchType: string = params.get("searchType") ?? "search";
   const groupUnique = params.get("groupUnique") === "true" || false;
   const slimChunks = params.get("slimChunks") === "true" || false;
+  const pageSize = Number(params.get("pageSize")) || 10;
   const getTotalPages = params.get("getTotalPages") === "true" || false;
   const highlightResults = params.get("highlightResults") === "true" || true;
   const highlightDelimiters = params
     .get("highlightDelimiters")
     ?.split(",")
     .filter((delimiter) => delimiter !== "") ?? ["?", ".", "!"];
+  const recencyBias = Number(params.get("recencyBias")) || 0.0;
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
@@ -55,9 +57,11 @@ export const HomeSearch = () => {
             searchType={searchType}
             groupUniqueSearch={groupUnique}
             slimChunks={slimChunks}
+            pageSize={pageSize}
             getTotalPages={getTotalPages}
             highlightDelimiters={highlightDelimiters}
             highlightResults={highlightResults}
+            recencyBias={recencyBias}
           />
         </div>
       </div>
