@@ -1,6 +1,7 @@
 use super::chunk_operator::{
     find_relevant_sentence, get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
-    get_content_chunk_from_point_ids_query, get_slim_chunks_from_point_ids_query,
+    get_content_chunk_from_point_ids_query, get_qdrant_ids_from_chunk_ids_query,
+    get_slim_chunks_from_point_ids_query,
 };
 use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
@@ -11,8 +12,8 @@ use super::qdrant_operator::{
     VectorType,
 };
 use crate::data::models::{
-    ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ContentChunkMetadata, Dataset, ScoreChunkDTO,
-    ServerDatasetConfiguration,
+    ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ConditionType, ContentChunkMetadata, Dataset,
+    HasIDCondition, ScoreChunkDTO, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     ChunkFilter, ParsedQuery, SearchChunkData, SearchChunkQueryResponseBody,
@@ -91,6 +92,40 @@ async fn convert_group_tracking_ids_to_group_ids(
     }
 }
 
+pub async fn get_qdrant_ids_from_condition(
+    cond: HasIDCondition,
+    pool: web::Data<Pool>,
+) -> Result<Vec<String>, ServiceError> {
+    if let Some(ids) = cond.ids {
+        Ok(get_qdrant_ids_from_chunk_ids_query(
+            ids.into_iter()
+                .map(|id| UnifiedId::TrieveUuid(id))
+                .collect(),
+            pool.clone(),
+        )
+        .await?
+        .into_iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<String>>())
+    } else if let Some(tracking_ids) = cond.tracking_ids {
+        Ok(get_qdrant_ids_from_chunk_ids_query(
+            tracking_ids
+                .into_iter()
+                .map(|id| UnifiedId::TrackingId(id))
+                .collect(),
+            pool.clone(),
+        )
+        .await?
+        .into_iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<String>>())
+    } else {
+        Err(ServiceError::BadRequest(
+            "ids or tracking_ids must be provided".to_string(),
+        ))?
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn assemble_qdrant_filter(
@@ -109,57 +144,75 @@ pub async fn assemble_qdrant_filter(
     if let Some(filters) = filters {
         if let Some(should_filters) = filters.should {
             for should_condition in should_filters {
-                let should_condition = convert_group_tracking_ids_to_group_ids(
-                    should_condition,
-                    dataset_id,
-                    pool.clone(),
-                )
-                .await?;
+                match should_condition {
+                    ConditionType::Field(cond) => {
+                        let should_condition =
+                            convert_group_tracking_ids_to_group_ids(cond, dataset_id, pool.clone())
+                                .await?;
 
-                let qdrant_condition = should_condition
-                    .convert_to_qdrant_condition("should", pool.clone(), dataset_id)
-                    .await?;
+                        let qdrant_condition = should_condition
+                            .convert_to_qdrant_condition("should", pool.clone(), dataset_id)
+                            .await?;
 
-                if let Some(condition) = qdrant_condition {
-                    filter.should.push(condition);
+                        if let Some(condition) = qdrant_condition {
+                            filter.should.push(condition);
+                        }
+                    }
+                    ConditionType::HasID(cond) => {
+                        filter.should.push(Condition::has_id(
+                            get_qdrant_ids_from_condition(cond, pool.clone()).await?,
+                        ));
+                    }
                 }
             }
         }
 
         if let Some(must_filters) = filters.must {
             for must_condition in must_filters {
-                let must_condition = convert_group_tracking_ids_to_group_ids(
-                    must_condition,
-                    dataset_id,
-                    pool.clone(),
-                )
-                .await?;
+                match must_condition {
+                    ConditionType::Field(cond) => {
+                        let must_condition =
+                            convert_group_tracking_ids_to_group_ids(cond, dataset_id, pool.clone())
+                                .await?;
 
-                let qdrant_condition = must_condition
-                    .convert_to_qdrant_condition("must", pool.clone(), dataset_id)
-                    .await?;
+                        let qdrant_condition = must_condition
+                            .convert_to_qdrant_condition("must", pool.clone(), dataset_id)
+                            .await?;
 
-                if let Some(condition) = qdrant_condition {
-                    filter.must.push(condition);
+                        if let Some(condition) = qdrant_condition {
+                            filter.must.push(condition);
+                        }
+                    }
+                    ConditionType::HasID(cond) => {
+                        filter.must.push(Condition::has_id(
+                            get_qdrant_ids_from_condition(cond, pool.clone()).await?,
+                        ));
+                    }
                 }
             }
         }
 
         if let Some(must_not_filters) = filters.must_not {
             for must_not_condition in must_not_filters {
-                let must_not_condition = convert_group_tracking_ids_to_group_ids(
-                    must_not_condition,
-                    dataset_id,
-                    pool.clone(),
-                )
-                .await?;
+                match must_not_condition {
+                    ConditionType::Field(cond) => {
+                        let must_not_condition =
+                            convert_group_tracking_ids_to_group_ids(cond, dataset_id, pool.clone())
+                                .await?;
 
-                let qdrant_condition = must_not_condition
-                    .convert_to_qdrant_condition("must_not", pool.clone(), dataset_id)
-                    .await?;
+                        let qdrant_condition = must_not_condition
+                            .convert_to_qdrant_condition("must_not", pool.clone(), dataset_id)
+                            .await?;
 
-                if let Some(condition) = qdrant_condition {
-                    filter.must_not.push(condition);
+                        if let Some(condition) = qdrant_condition {
+                            filter.must_not.push(condition);
+                        }
+                    }
+                    ConditionType::HasID(cond) => {
+                        filter.must_not.push(Condition::has_id(
+                            get_qdrant_ids_from_condition(cond, pool.clone()).await?,
+                        ));
+                    }
                 }
             }
         }
