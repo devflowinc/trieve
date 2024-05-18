@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithScore, DatasetAndOrgWithSubAndPlan,
-    FieldCondition, GeoInfo, IngestSpecificChunkMetadata, Pool, RedisPool, ScoreChunkDTO,
-    ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithScore, ConditionType,
+    DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Pool, RedisPool,
+    ScoreChunkDTO, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -818,11 +818,11 @@ pub async fn update_chunk_by_tracking_id(
 }))]
 pub struct ChunkFilter {
     /// Only one of these field conditions has to match for the chunk to be included in the result set.
-    pub should: Option<Vec<FieldCondition>>,
+    pub should: Option<Vec<ConditionType>>,
     /// All of these field conditions have to match for the chunk to be included in the result set.
-    pub must: Option<Vec<FieldCondition>>,
+    pub must: Option<Vec<ConditionType>>,
     /// None of these field conditions can match for the chunk to be included in the result set.
-    pub must_not: Option<Vec<FieldCondition>>,
+    pub must_not: Option<Vec<ConditionType>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]

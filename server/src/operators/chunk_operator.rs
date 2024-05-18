@@ -1163,6 +1163,64 @@ pub async fn get_qdrant_id_from_chunk_id_query(
     }
 }
 
+#[tracing::instrument(skip(pool))]
+pub async fn get_qdrant_ids_from_chunk_ids_query(
+    chunk_ids: Vec<UnifiedId>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let qdrant_point_ids: Vec<Option<uuid::Uuid>> = match chunk_ids.get(0) {
+        Some(UnifiedId::TrieveUuid(_)) => chunk_metadata_columns::chunk_metadata
+            .select(chunk_metadata_columns::qdrant_point_id)
+            .filter(
+                chunk_metadata_columns::id.eq_any(
+                    chunk_ids
+                        .iter()
+                        .map(|x| x.as_uuid().unwrap())
+                        .collect::<Vec<uuid::Uuid>>(),
+                ),
+            )
+            .load(&mut conn)
+            .await
+            .map_err(|_err| {
+                ServiceError::BadRequest(
+                    "Failed to get qdrant_point_id and collision_qdrant_id".to_string(),
+                )
+            })?,
+        Some(UnifiedId::TrackingId(_)) => chunk_metadata_columns::chunk_metadata
+            .select(chunk_metadata_columns::qdrant_point_id)
+            .filter(
+                chunk_metadata_columns::tracking_id.eq_any(
+                    chunk_ids
+                        .iter()
+                        .map(|x| x.as_tracking_id().unwrap())
+                        .collect::<Vec<String>>(),
+                ),
+            )
+            .load(&mut conn)
+            .await
+            .map_err(|_err| {
+                ServiceError::BadRequest(
+                    "Failed to get qdrant_point_id and collision_qdrant_id".to_string(),
+                )
+            })?,
+        None => {
+            return Err(ServiceError::BadRequest(
+                "Must pass in an ID to the condition".to_string(),
+            ))
+        }
+    };
+
+    Ok(qdrant_point_ids
+        .into_iter()
+        .filter(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .collect())
+}
+
 #[tracing::instrument]
 pub fn find_relevant_sentence(
     input: ChunkMetadata,

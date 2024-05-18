@@ -2097,8 +2097,8 @@ impl From<UserApiKey> for ApiKeyDTO {
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub enum UnifiedId {
-    TrackingId(String),
     TrieveUuid(uuid::Uuid),
+    TrackingId(String),
 }
 
 impl UnifiedId {
@@ -2402,6 +2402,19 @@ pub struct LocationRadius {
 pub struct LocationPolygon {
     pub exterior: Vec<GeoInfo>,
     pub interior: Option<Vec<Vec<GeoInfo>>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum ConditionType {
+    Field(FieldCondition),
+    HasID(HasIDCondition),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct HasIDCondition {
+    pub ids: Option<Vec<uuid::Uuid>>,
+    pub tracking_ids: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
