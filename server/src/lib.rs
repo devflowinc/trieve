@@ -307,6 +307,8 @@ impl Modify for SecurityAddon {
             data::models::ScoreChunkDTO,
             data::models::ChunkMetadataTypes,
             data::models::ContentChunkMetadata,
+            data::models::ConditionType,
+            data::models::HasIDCondition,
             errors::ErrorResponseBody,
         )
     ),
