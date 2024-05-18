@@ -12,8 +12,9 @@ use super::qdrant_operator::{
     VectorType,
 };
 use crate::data::models::{
-    convert_to_date_time, ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ContentChunkMetadata,
-    Dataset, ScoreChunkDTO, ServerDatasetConfiguration, UnifiedId,
+    convert_to_date_time, ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ConditionType,
+    ContentChunkMetadata, Dataset, HasIDCondition, ScoreChunkDTO, ServerDatasetConfiguration,
+    UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     ChunkFilter, ParsedQuery, SearchChunkData, SearchChunkQueryResponseBody,
