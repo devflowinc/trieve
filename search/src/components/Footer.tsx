@@ -28,7 +28,7 @@ export const Footer = () => {
           <BiLogosTwitter size={30} class="fill-current" />
         </a>
         <a
-          href="https://github.com/orgs/devflowinc/trieve"
+          href="https://github.com/devflowinc/trieve"
           target="_blank"
           class="hover:text-turquoise-500 dark:hover:text-acid-500"
         >
