@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use itertools::{izip, Itertools};
+use itertools::izip;
 use qdrant_client::qdrant::{PointStruct, Vector};
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
@@ -408,7 +408,7 @@ pub async fn bulk_upload_chunks(
                 .chunk
                 .tag_set
                 .clone()
-                .map(|tags| tags.into_iter().map(Some).collect_vec());
+                .map(|tag_set| tag_set.join(","));
 
             let timestamp = {
                 message
@@ -628,7 +628,7 @@ async fn upload_chunk(
         .chunk
         .tag_set
         .clone()
-        .map(|tags| tags.into_iter().map(Some).collect_vec());
+        .map(|tag_set| tag_set.join(","));
 
     let chunk_tracking_id = payload
         .chunk
