@@ -234,8 +234,14 @@ async fn ingestion_worker(
             "ingestion worker processing chunk",
         );
         let transaction = sentry::start_transaction(processing_chunk_ctx);
-        let ingestion_message: IngestionMessage =
-            serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
+        let ingestion_message: IngestionMessage = match serde_json::from_str(&serialized_message) {
+            Ok(message) => message,
+            Err(err) => {
+                log::error!("Failed to deserialize message, was not an IngestionMessage: {:?}", err);
+                transaction.finish();
+                continue;
+            }
+        };
         match ingestion_message.clone() {
             IngestionMessage::BulkUpload(payload) => {
                 match bulk_upload_chunks(payload.clone(), web_pool.clone(), reqwest_client.clone())
