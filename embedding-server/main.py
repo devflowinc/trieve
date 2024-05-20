@@ -19,12 +19,18 @@ class OpenAIEmbeddingInput(BaseModel):
         str
     ]
 
+class _EmbeddingObject(BaseModel):
+    object: Literal["embedding"] = "embedding"
+    embedding: list[float]
+    index: int
+
 class OpenAIEmbeddingResult(BaseModel):
-    data: list[list[float]]
+    data: List[_EmbeddingObject]
+    object: Literal["embedding"] = "embedding"
+
 
 @app.post(
     "/embeddings",
-    response_model=OpenAIEmbeddingResult,
     response_class=responses.ORJSONResponse,
 )
 def embed(data: OpenAIEmbeddingInput):
@@ -36,10 +42,22 @@ def embed(data: OpenAIEmbeddingInput):
     print(embeddings)
     if type(data.input) == str:
         return {
-            "data": [embeddings.tolist()]
+            "data": [{
+                "embedding": embeddings.tolist(),
+                "object": "embedding",
+                "index": 0
+            }],
+            "object": "embedding",
+            "model": model_name,
         }
     else:
         return {
-            "data": embeddings.tolist()
+            "data": [{
+                "embedding": embedding,
+                "object": "embedding",
+                "index": i,
+                } for (i, embedding) in enumerate(embeddings.tolist())
+            ],
+            "object": "embedding",
+            "model": model_name,
         }
-
