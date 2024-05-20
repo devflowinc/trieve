@@ -42,7 +42,7 @@ pub async fn create_embedding(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
+    let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
     let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
     transaction.set_data(
         "EMBEDDING_SERVER",
@@ -78,8 +78,18 @@ pub async fn create_embedding(
                 .filter(|s| !s.is_empty())
                 .unwrap_or("https://embedding.trieve.ai/jina-code".to_string())
         }
-        _ => config_embedding_base_url,
+        _ => config_embedding_base_url.clone(),
     };
+
+    let embedding_api_key =
+        if config_embedding_base_url.as_str() == "https://embedding.trieve.ai/jinaai-code" {
+            std::env::var("JINA_CODE_API_KEY")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .unwrap_or(embedding_api_key.to_string())
+        } else {
+            embedding_api_key.to_string()
+        };
 
     let clipped_message = if message.len() > 7000 {
         message.chars().take(20000).collect()
@@ -108,8 +118,8 @@ pub async fn create_embedding(
         "{}/embeddings?api-version=2023-05-15",
         embedding_base_url
     ))
-    .set("Authorization", &format!("Bearer {}", open_ai_api_key))
-    .set("api-key", open_ai_api_key)
+    .set("Authorization", &format!("Bearer {}", &embedding_api_key))
+    .set("api-key", &embedding_api_key)
     .set("Content-Type", "application/json")
     .send_json(serde_json::to_value(parameters).unwrap())
     .map_err(|e| {
@@ -244,7 +254,7 @@ pub async fn create_embeddings(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
+    let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
     let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
 
     let embedding_base_url = match config_embedding_base_url.as_str() {
@@ -268,8 +278,18 @@ pub async fn create_embeddings(
                 .unwrap_or("https://embedding.trieve.ai/jina-code".to_string())
                 .to_string()
         }
-        _ => config_embedding_base_url,
+        _ => config_embedding_base_url.clone(),
     };
+
+    let embedding_api_key =
+        if config_embedding_base_url.as_str() == "https://embedding.trieve.ai/jinaai-code" {
+            std::env::var("JINA_CODE_API_KEY")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .unwrap_or(embedding_api_key.to_string())
+        } else {
+            embedding_api_key.to_string()
+        };
 
     let thirty_message_groups = messages.chunks(30);
 
@@ -307,11 +327,13 @@ pub async fn create_embeddings(
             let cur_client = reqwest_client.clone();
             let url = embedding_base_url.clone();
 
+            let embedding_api_key = embedding_api_key.clone();
+
             let vectors_resp = async move {
                 let embeddings_resp = cur_client
                 .post(&format!("{}/embeddings?api-version=2023-05-15", url))
-                .header("Authorization", &format!("Bearer {}", open_ai_api_key))
-                .header("api-key", open_ai_api_key)
+                .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
+                .header("api-key", &embedding_api_key.clone())
                 .header("Content-Type", "application/json")
                 .json(&parameters)
                 .send()
