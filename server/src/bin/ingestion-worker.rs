@@ -237,7 +237,10 @@ async fn ingestion_worker(
         let ingestion_message: IngestionMessage = match serde_json::from_str(&serialized_message) {
             Ok(message) => message,
             Err(err) => {
-                log::error!("Failed to deserialize message, was not an IngestionMessage: {:?}", err);
+                log::error!(
+                    "Failed to deserialize message, was not an IngestionMessage: {:?}",
+                    err
+                );
                 transaction.finish();
                 continue;
             }
