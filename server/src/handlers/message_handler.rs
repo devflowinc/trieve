@@ -1,6 +1,6 @@
 use super::{
     auth_handler::LoggedUser,
-    chunk_handler::{ParsedQuery, SearchChunkData},
+    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunkData},
 };
 use crate::{
     data::models::{
@@ -53,6 +53,8 @@ pub struct CreateMessageData {
     pub highlight_results: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
     pub highlight_delimiters: Option<Vec<String>>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
 }
 
 /// Create a message
@@ -171,6 +173,7 @@ pub async fn create_message_completion_handler(
         create_message_data.stream_response,
         create_message_data.highlight_results,
         create_message_data.highlight_delimiters,
+        create_message_data.filters,
         dataset_org_plan_sub.dataset,
         stream_response_pool,
         server_dataset_configuration,
@@ -310,6 +313,7 @@ pub async fn edit_message_handler(
             stream_response,
             highlight_results: data.highlight_citations,
             highlight_delimiters: data.highlight_delimiters.clone(),
+            filters: None,
         }),
         user,
         dataset_org_plan_sub,
@@ -378,6 +382,7 @@ pub async fn regenerate_message_handler(
             should_stream,
             data.highlight_citations,
             data.highlight_delimiters.clone(),
+            None,
             dataset_org_plan_sub.dataset,
             create_message_pool,
             server_dataset_configuration,
@@ -434,6 +439,7 @@ pub async fn regenerate_message_handler(
         should_stream,
         data.highlight_citations,
         data.highlight_delimiters.clone(),
+        None,
         dataset_org_plan_sub.dataset,
         create_message_pool,
         server_dataset_configuration,
@@ -536,6 +542,7 @@ pub async fn stream_response(
     should_stream: Option<bool>,
     highlight_results: Option<bool>,
     highlight_delimiters: Option<Vec<String>>,
+    filters: Option<ChunkFilter>,
     dataset: Dataset,
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
@@ -657,6 +664,7 @@ pub async fn stream_response(
         page_size: Some(n_retrievals_to_include.try_into().unwrap_or(8)),
         highlight_results,
         highlight_delimiters,
+        filters: filters,
         ..Default::default()
     };
     let parsed_query = ParsedQuery {
