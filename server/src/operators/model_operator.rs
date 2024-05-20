@@ -525,6 +525,7 @@ pub async fn cross_encoder(
     query: String,
     page_size: u64,
     results: Vec<ScoreChunkDTO>,
+    dataset_config: ServerDatasetConfiguration,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -541,12 +542,7 @@ pub async fn cross_encoder(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let server_origin: String = std::env::var("RERANKER_SERVER_ORIGIN")
-        .ok()
-        .filter(|s| !s.is_empty())
-        .ok_or(ServiceError::BadRequest(
-            "env flag RERANKER_SERVER_ORIGIN is not set".to_string(),
-        ))?;
+    let server_origin: String = dataset_config.RERANKER_BASE_URL.clone();
 
     let embedding_server_call = format!("{}/rerank", server_origin);
 

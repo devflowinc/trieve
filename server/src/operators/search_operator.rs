@@ -1620,7 +1620,7 @@ pub async fn search_hybrid_chunks(
         data.page.unwrap_or(1),
         data.get_total_pages.unwrap_or(false),
         data.page_size.unwrap_or(10),
-        config,
+        config.clone(),
     )
     .await?;
 
@@ -1644,6 +1644,7 @@ pub async fn search_hybrid_chunks(
                     .get(0)
                     .expect("Split results must exist")
                     .to_vec(),
+                config.clone(),
             )
             .await?;
 
@@ -1664,6 +1665,7 @@ pub async fn search_hybrid_chunks(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks,
+                config,
             )
             .await?;
 
@@ -1880,6 +1882,7 @@ pub async fn search_hybrid_groups(
                     .get(0)
                     .expect("Split results must exist")
                     .to_vec(),
+                config.clone(),
             )
             .await?;
             let score_chunks = rerank_chunks(
@@ -1899,6 +1902,7 @@ pub async fn search_hybrid_groups(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks.clone(),
+                config.clone(),
             )
             .await?;
 
@@ -2049,6 +2053,7 @@ async fn cross_encoder_for_groups(
     query: String,
     page_size: u64,
     groups_chunks: Vec<GroupScoreChunk>,
+    config: ServerDatasetConfiguration,
 ) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
@@ -2062,7 +2067,7 @@ async fn cross_encoder_for_groups(
         })
         .collect_vec();
 
-    let cross_encoder_results = cross_encoder(query, page_size, score_chunks).await?;
+    let cross_encoder_results = cross_encoder(query, page_size, score_chunks, config).await?;
     let mut group_results = cross_encoder_results
         .into_iter()
         .map(|score_chunk| {
@@ -2157,7 +2162,7 @@ pub async fn hybrid_search_over_groups(
         parsed_query.clone(),
         dataset.id,
         pool.clone(),
-        config,
+        config.clone(),
     );
 
     let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
@@ -2205,6 +2210,7 @@ pub async fn hybrid_search_over_groups(
                 .get(0)
                 .expect("Split results must exist")
                 .to_vec(),
+            config.clone(),
         )
         .await?;
 
@@ -2218,6 +2224,7 @@ pub async fn hybrid_search_over_groups(
             data.query.clone(),
             data.page_size.unwrap_or(10).into(),
             combined_result_chunks.group_chunks.clone(),
+            config.clone(),
         )
         .await?
     };

@@ -1353,6 +1353,7 @@ pub struct ServerDatasetConfiguration {
     pub LLM_BASE_URL: String,
     pub EMBEDDING_BASE_URL: String,
     pub EMBEDDING_MODEL_NAME: String,
+    pub RERANKER_BASE_URL: String,
     pub QDRANT_URL: String,
     pub QDRANT_API_KEY: String,
     pub QDRANT_COLLECTION_NAME: String,
@@ -1461,6 +1462,17 @@ impl ServerDatasetConfiguration {
                     }
                 })
                 .unwrap_or("text-embedding-3-small".to_string()),
+            RERANKER_BASE_URL: configuration
+                .get("RERANKER_SERVER_ORIGIN")
+                .unwrap_or(&json!(get_env!("RERANKER_SERVER_ORIGIN", "RERANKER_SERVER_ORIGIN must be set").to_string()))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        get_env!("RERANKER_SERVER_ORIGIN", "RERANKER_BASE_URL must be set").to_string()
+                    } else {
+                        s.to_string()
+                    }
+                }).expect("RERANKER_SERVER_ORIGIN should exist"),
             LLM_DEFAULT_MODEL: configuration
                 .get("LLM_DEFAULT_MODEL")
                 .unwrap_or(&json!("gpt-3.5-turbo-1106"))
