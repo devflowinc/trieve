@@ -620,16 +620,12 @@ pub async fn get_group_tag_set_filter_condition(
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Text(string_val) => {
-                    query = query.filter(sql::<Bool>(&format!(
-                        "{} = ANY(chunk_group.tag_set)",
-                        string_val
-                    )));
+                    query = query
+                        .filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
                 }
                 MatchCondition::Integer(id_val) => {
-                    query = query.filter(sql::<Bool>(&format!(
-                        "{} = ANY(chunk_group.tag_set)",
-                        id_val
-                    )));
+                    query =
+                        query.filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
                 }
             }
         }
@@ -637,16 +633,12 @@ pub async fn get_group_tag_set_filter_condition(
         for match_condition in matches.iter().skip(1) {
             match match_condition {
                 MatchCondition::Text(string_val) => {
-                    query = query.or_filter(sql::<Bool>(&format!(
-                        "{} = ANY(chunk_group.tag_set)",
-                        string_val
-                    )));
+                    query = query
+                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
                 }
                 MatchCondition::Integer(id_val) => {
-                    query = query.or_filter(sql::<Bool>(&format!(
-                        "{} = ANY(chunk_group.tag_set)",
-                        id_val
-                    )));
+                    query = query
+                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
                 }
             }
         }
@@ -994,7 +986,7 @@ pub async fn retrieve_chunks_for_groups(
                                     updated_at: chrono::Utc::now().naive_local(),
                                     chunk_html: Some("".to_string()),
                                     link: Some("".to_string()),
-                                    tag_set: Some(vec![Some("".to_string())]),
+                                    tag_set: Some("".to_string()),
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
@@ -1138,7 +1130,7 @@ pub async fn get_metadata_from_groups(
                                     updated_at: chrono::Utc::now().naive_local(),
                                     chunk_html: Some("".to_string()),
                                     link: Some("".to_string()),
-                                    tag_set: Some(vec![Some("".to_string())]),
+                                    tag_set: Some("".to_string()),
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
@@ -1262,7 +1254,7 @@ pub async fn retrieve_chunks_from_point_ids(
                             updated_at: chrono::Utc::now().naive_local(),
                             chunk_html: Some("".to_string()),
                             link: Some("".to_string()),
-                            tag_set: Some(vec![Some("".to_string())]),
+                            tag_set: Some("".to_string()),
                             metadata: None,
                             tracking_id: None,
                             time_stamp: None,
@@ -1402,7 +1394,7 @@ pub fn rerank_chunks(
                 for (tag, weight) in tag_weights.iter() {
                     if let Some(metadata) = chunk.metadata.get(0) {
                         if let Some(metadata_tags) = metadata.metadata().tag_set {
-                            if metadata_tags.contains(&Some(tag.clone())) {
+                            if metadata_tags.contains(tag) {
                                 tag_score *= weight;
                             }
                         }

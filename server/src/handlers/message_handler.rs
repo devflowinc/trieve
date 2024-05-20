@@ -1,6 +1,6 @@
 use super::{
     auth_handler::LoggedUser,
-    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunkData},
+    chunk_handler::{ParsedQuery, SearchChunkData},
 };
 use crate::{
     data::models::{
@@ -53,8 +53,6 @@ pub struct CreateMessageData {
     pub highlight_results: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
     pub highlight_delimiters: Option<Vec<String>>,
-    /// The filters to apply to the chunks that are going to be used for the RAG.
-    pub filters: Option<ChunkFilter>,
 }
 
 /// Create a message
@@ -173,7 +171,6 @@ pub async fn create_message_completion_handler(
         create_message_data.stream_response,
         create_message_data.highlight_results,
         create_message_data.highlight_delimiters,
-        create_message_data.filters,
         dataset_org_plan_sub.dataset,
         stream_response_pool,
         server_dataset_configuration,
@@ -236,8 +233,6 @@ pub struct RegenerateMessageData {
     pub highlight_citations: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.  
     pub highlight_delimiters: Option<Vec<String>>,
-    /// The filters to apply to the chunks that are going to be used for the RAG.
-    pub filters: Option<ChunkFilter>,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -254,8 +249,6 @@ pub struct EditMessageData {
     pub highlight_citations: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
     pub highlight_delimiters: Option<Vec<String>>,
-    /// The filters to apply to the chunks that are going to be used for the RAG.
-    pub filters: Option<ChunkFilter>,
 }
 
 /// Edit a message
@@ -315,7 +308,6 @@ pub async fn edit_message_handler(
             new_message_content: new_message_content.to_string(),
             topic_id,
             stream_response,
-            filters: data.filters.clone(),
             highlight_results: data.highlight_citations,
             highlight_delimiters: data.highlight_delimiters.clone(),
         }),
@@ -386,7 +378,6 @@ pub async fn regenerate_message_handler(
             should_stream,
             data.highlight_citations,
             data.highlight_delimiters.clone(),
-            data.filters.clone(),
             dataset_org_plan_sub.dataset,
             create_message_pool,
             server_dataset_configuration,
@@ -443,7 +434,6 @@ pub async fn regenerate_message_handler(
         should_stream,
         data.highlight_citations,
         data.highlight_delimiters.clone(),
-        data.filters.clone(),
         dataset_org_plan_sub.dataset,
         create_message_pool,
         server_dataset_configuration,
@@ -546,7 +536,6 @@ pub async fn stream_response(
     should_stream: Option<bool>,
     highlight_results: Option<bool>,
     highlight_delimiters: Option<Vec<String>>,
-    filters: Option<ChunkFilter>,
     dataset: Dataset,
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
@@ -668,7 +657,6 @@ pub async fn stream_response(
         page_size: Some(n_retrievals_to_include.try_into().unwrap_or(8)),
         highlight_results,
         highlight_delimiters,
-        filters,
         ..Default::default()
     };
     let parsed_query = ParsedQuery {
