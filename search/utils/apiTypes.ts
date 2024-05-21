@@ -551,6 +551,7 @@ export const isDatasetAndUsageDTO = (
 export interface GroupScoreChunkDTO {
   group_id: string;
   group_name: string;
+  group_tracking_id: string;
   metadata: ScoreChunkDTO[];
 }
 
