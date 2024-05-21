@@ -398,7 +398,7 @@ const MainLayout = (props: LayoutProps) => {
                 disabled={streamingCompletion()}
                 onInput={(e) => resizeTextarea(e.target)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     const new_message_content = newMessageContent();
                     if (!new_message_content) {
