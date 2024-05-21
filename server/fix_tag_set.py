@@ -9,6 +9,7 @@ dotenv.load_dotenv()
 conn = psycopg2.connect(
     os.getenv("DATABASE_URL"),
 )
+print("Connected to the PostgreSQL database at", os.getenv("DATABASE_URL"))
 
 
 # Create a cursor object to interact with the database
@@ -38,21 +39,22 @@ for table in tables:
         # Convert the tag_set field from a comma-separated string to an array within PostgreSQL
         for row in rows:
             tag_set = row[5]
+            print(tag_set)
             if tag_set:
                 tag_set_array = tag_set.split(",")
-                tag_set = tag_set.replace("'", "\\'")
+                print(row[0])
                 cur.execute(
-                    f"UPDATE {table} SET tag_set_array = %s WHERE tag_set = (E'%s')::text",
+                    f"UPDATE {table} SET tag_set_array = %s WHERE id = %s",
                     (
                         tag_set_array,
-                        psycopg2.extensions.AsIs(tag_set),
+                        row[0],
                     ),
                 )
 
             # Fetch the next 10000 rows from the result set
-
         lastRecord = rows[-1]
         lastBusiness_id = lastRecord[0]
+        print(lastBusiness_id)
 
 # Commit the changes to the database
 conn.commit()

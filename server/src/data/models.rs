@@ -10,7 +10,7 @@ use super::schema::*;
 use crate::handlers::file_handler::UploadFileData;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
-    get_metadata_filter_condition,
+    get_metadata_filter_condition, get_tag_set_filter,
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
@@ -2643,10 +2643,20 @@ impl FieldCondition {
             "Should have at least one value for match".to_string(),
         ))? {
             MatchCondition::Text(_) => match condition_type {
-                "must" | "should" => Ok(Some(qdrant::Condition::matches(
-                    self.field.as_str(),
-                    matches.iter().map(|x| x.to_string()).collect_vec(),
-                ))),
+                "must" | "should" => {
+                    if self.field == "tag_set" {
+                        return Ok(Some(
+                            get_tag_set_filter(self, dataset_id, pool.clone())
+                                .await?
+                                .into(),
+                        ));
+                    }
+
+                    Ok(Some(qdrant::Condition::matches(
+                        self.field.as_str(),
+                        matches.iter().map(|x| x.to_string()).collect_vec(),
+                    )))
+                }
                 "must_not" => Ok(Some(
                     qdrant::Filter::must(
                         matches
