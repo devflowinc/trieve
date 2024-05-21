@@ -1477,7 +1477,7 @@ pub fn rerank_chunks(
                 for (tag, weight) in tag_weights.iter() {
                     if let Some(metadata) = chunk.metadata.get(0) {
                         if let Some(metadata_tags) = metadata.metadata().tag_set {
-                            if metadata_tags.contains(tag) {
+                            if metadata_tags.contains(&Some(tag.clone())) {
                                 tag_score *= weight;
                             }
                         }
