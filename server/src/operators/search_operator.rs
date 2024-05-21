@@ -343,7 +343,7 @@ pub async fn get_tag_set_filter(
                         string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(_) => {
                     Err(ServiceError::BadRequest(
                         "Integer match not supported for tag_set".to_string(),
                     ))?;
@@ -359,7 +359,7 @@ pub async fn get_tag_set_filter(
                         string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(_) => {
                     Err(ServiceError::BadRequest(
                         "Integer match not supported for tag_set".to_string(),
                     ))?;
@@ -699,32 +699,36 @@ pub async fn get_group_tag_set_filter_condition(
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Text(string_val) => {
-                    query = query
-                        .filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.tag_set @> ARRAY['{}']",
+                        string_val
+                    )));
                 }
-                MatchCondition::Integer(id_val) => {
-                    query =
-                        query.filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
-                }
+                MatchCondition::Integer(_) => Err(ServiceError::BadRequest(
+                    "Integer match not supported for tag_set".to_string(),
+                ))?,
             }
         }
 
         for match_condition in matches.iter().skip(1) {
             match match_condition {
                 MatchCondition::Text(string_val) => {
-                    query = query
-                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.tag_set @> ARRAY['{}']",
+                        string_val
+                    )));
                 }
-                MatchCondition::Integer(id_val) => {
-                    query = query
-                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
-                }
+                MatchCondition::Integer(_) => Err(ServiceError::BadRequest(
+                    "Integer match not supported for tag_set".to_string(),
+                ))?,
             }
         }
     };
 
     if filter.range.is_some() {
-        "Range filter not supported for group_tag_set".to_string();
+        Err(ServiceError::BadRequest(
+            "Range filter not supported for tag_set".to_string(),
+        ))?;
     }
 
     let qdrant_point_ids: Vec<uuid::Uuid> = query
@@ -947,7 +951,6 @@ pub async fn get_metadata_query(
                 dataset_id: metadata.dataset_id,
                 weight: metadata.weight,
                 image_urls: metadata.image_urls,
-                tag_set_array: None,
             }
         })
         .collect();
@@ -1066,7 +1069,7 @@ pub async fn retrieve_chunks_for_groups(
                                     updated_at: chrono::Utc::now().naive_local(),
                                     chunk_html: Some("".to_string()),
                                     link: Some("".to_string()),
-                                    tag_set: Some("".to_string()),
+                                    tag_set: Some(vec![Some("".to_string())]),
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
@@ -1074,7 +1077,6 @@ pub async fn retrieve_chunks_for_groups(
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
                                     image_urls: None,
-                                    tag_set_array: None
                                 }.into()
                             },
                         };
@@ -1211,7 +1213,7 @@ pub async fn get_metadata_from_groups(
                                     updated_at: chrono::Utc::now().naive_local(),
                                     chunk_html: Some("".to_string()),
                                     link: Some("".to_string()),
-                                    tag_set: Some("".to_string()),
+                                    tag_set: Some(vec![Some("".to_string())]),
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
@@ -1219,7 +1221,6 @@ pub async fn get_metadata_from_groups(
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
                                     image_urls: None,
-                                    tag_set_array: None
                                 }.into()
                             },
                         };
@@ -1336,7 +1337,7 @@ pub async fn retrieve_chunks_from_point_ids(
                             updated_at: chrono::Utc::now().naive_local(),
                             chunk_html: Some("".to_string()),
                             link: Some("".to_string()),
-                            tag_set: Some("".to_string()),
+                            tag_set: Some(vec![Some("".to_string())]),
                             metadata: None,
                             tracking_id: None,
                             time_stamp: None,
@@ -1344,7 +1345,6 @@ pub async fn retrieve_chunks_from_point_ids(
                             dataset_id: uuid::Uuid::default(),
                             weight: 1.0,
                             image_urls: None,
-                            tag_set_array: None,
                         }
                         .into()
                     }
