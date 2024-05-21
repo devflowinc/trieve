@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Show,
   createEffect,
@@ -19,6 +20,7 @@ import {
   isChunkGroupPageDTO,
   ChunkMetadata,
   ChunkBookmarksDTO,
+  GroupScoreChunkDTO,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { FiEdit, FiTrash } from "solid-icons/fi";
@@ -33,6 +35,7 @@ import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
 
 export interface GroupPageProps {
   groupID: string;
@@ -94,6 +97,10 @@ export const GroupPage = (props: GroupPageProps) => {
   const [onGroupDelete, setOnGroupDelete] = createSignal(() => {});
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
+  const [groupRecommendations, setGroupRecommendations] = createSignal(false);
+  const [groupRecommendedChunks, setGroupRecommendedChunks] = createSignal<
+    GroupScoreChunkDTO[]
+  >([]);
 
   onMount(() => {
     fetchBookmarks();
@@ -104,6 +111,18 @@ export const GroupPage = (props: GroupPageProps) => {
     if (!openChat()) {
       setSelectedIds((prev) => (prev.length < resultsLength ? prev : []));
     }
+  });
+
+  createEffect((prevGroupRecVal) => {
+    const curGroupRecVal = groupRecommendations();
+
+    if (curGroupRecVal && !prevGroupRecVal) {
+      setRecommendedChunks([]);
+    } else {
+      setGroupRecommendedChunks([]);
+    }
+
+    return curGroupRecVal;
   });
 
   createEffect(() => {
@@ -312,35 +331,66 @@ export const GroupPage = (props: GroupPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prev_recommendations: ChunkMetadata[],
+    prevRecommendations: ChunkMetadata[],
+    prevGroupRecommendations: GroupScoreChunkDTO[],
+    groupRecommendations: boolean,
   ) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     setLoadingRecommendations(true);
-    void fetch(`${apiHost}/chunk/recommend`, {
+
+    let apiPath = `/chunk/recommend`;
+    let reqPayload: any = {
+      positive_chunk_ids: ids,
+      limit: prevRecommendations.length + 10,
+    };
+
+    if (groupRecommendations) {
+      apiPath = `/chunk_group/recommend`;
+
+      reqPayload = {
+        positive_group_ids: [props.groupID],
+        limit: prevRecommendations.length + 10,
+        group_size: 3,
+      };
+
+      setRecommendedChunks([]);
+    } else {
+      setGroupRecommendedChunks([]);
+    }
+
+    void fetch(`${apiHost}${apiPath}`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
-      body: JSON.stringify({
-        positive_chunk_ids: ids,
-        limit: prev_recommendations.length + 10,
-      }),
+      body: JSON.stringify(reqPayload),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const typed_data = data as ChunkMetadata[];
-          const deduped_data = typed_data.filter((d) => {
-            return !prev_recommendations.some((c) => c.id == d.id);
-          });
-          const new_recommendations = [
-            ...prev_recommendations,
-            ...deduped_data,
-          ];
-          setRecommendedChunks(new_recommendations);
+          if (groupRecommendations) {
+            const typedData = data as GroupScoreChunkDTO[];
+            const dedupedData = typedData.filter((d) => {
+              return !prevGroupRecommendations.some(
+                (c) => c.group_id == d.group_id,
+              );
+            });
+            const newRecommendations = [
+              ...prevGroupRecommendations,
+              ...dedupedData,
+            ];
+            setGroupRecommendedChunks(newRecommendations);
+          } else {
+            const typedData = data as ChunkMetadata[];
+            const dedupedData = typedData.filter((d) => {
+              return !prevRecommendations.some((c) => c.id == d.id);
+            });
+            const newRecommendations = [...prevRecommendations, ...dedupedData];
+            setRecommendedChunks(newRecommendations);
+          }
         });
       } else {
         const newEvent = new CustomEvent("show-toast", {
@@ -466,7 +516,7 @@ export const GroupPage = (props: GroupPageProps) => {
             <div class="mt-4 flex w-full max-w-7xl justify-end px-4 sm:px-8 md:px-20">
               <button
                 classList={{
-                  "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
+                  "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
                     true,
                   "animate-pulse": fetchingGroups(),
                 }}
@@ -476,7 +526,7 @@ export const GroupPage = (props: GroupPageProps) => {
               </button>
               <button
                 classList={{
-                  "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
+                  "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
                     true,
                   "animate-pulse": fetchingGroups(),
                 }}
@@ -497,11 +547,10 @@ export const GroupPage = (props: GroupPageProps) => {
             </button>
           </Show>
           <Show when={chunkMetadatas().length > 0}>
-            <div class="mx-auto w-full max-w-7xl">
+            <div class="mx-auto w-full">
               <div
                 classList={{
-                  "mx-auto w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]":
-                    true,
+                  "mx-auto w-full": true,
                   "mt-8": query() == "",
                 }}
               >
@@ -600,8 +649,87 @@ export const GroupPage = (props: GroupPageProps) => {
               </For>
             </div>
           </Show>
-          <Show when={chunkMetadatas().length > 0}>
+          <Show when={groupRecommendedChunks().length > 0}>
             <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+              <div class="flex w-full flex-col items-center rounded-md p-2">
+                <div class="text-xl font-semibold">Related Chunks</div>
+              </div>
+              <For each={groupRecommendedChunks()}>
+                {(group) => {
+                  const [groupExpanded, setGroupExpanded] = createSignal(true);
+
+                  const toggle = () => {
+                    setGroupExpanded(!groupExpanded());
+                  };
+
+                  return (
+                    <div class="flex w-full max-w-7xl flex-col space-y-4">
+                      <div
+                        onClick={toggle}
+                        classList={{
+                          "flex items-center space-x-4 rounded bg-neutral-100 py-4 dark:bg-neutral-800 px-4 mt-4":
+                            true,
+                          "-mb-2": groupExpanded(),
+                        }}
+                      >
+                        <Show when={groupExpanded()}>
+                          <FaSolidChevronUp />
+                        </Show>
+                        <Show when={!groupExpanded()}>
+                          <FaSolidChevronDown />
+                        </Show>
+                        <div>
+                          <Show when={group.group_name}>
+                            <div class="flex space-x-2">
+                              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                Name:{" "}
+                              </span>
+                              <span class="line-clamp-1 break-all">
+                                {group.group_name}
+                              </span>
+                            </div>
+                          </Show>
+                          <Show when={group.group_tracking_id}>
+                            <div class="flex space-x-2">
+                              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                Tracking ID:{" "}
+                              </span>
+                              <span class="line-clamp-1 break-all">
+                                {group.group_tracking_id}
+                              </span>
+                            </div>
+                          </Show>
+                        </div>
+                      </div>
+                      <Show when={groupExpanded()}>
+                        <For each={group.metadata}>
+                          {(chunk) => (
+                            <div class="ml-5 flex space-y-4">
+                              <ScoreChunkArray
+                                totalGroupPages={totalGroupPages()}
+                                chunkGroups={chunkGroups()}
+                                chunks={chunk.metadata}
+                                score={chunk.score}
+                                bookmarks={bookmarks()}
+                                setOnDelete={setOnDelete}
+                                setShowConfirmModal={setShowConfirmDeleteModal}
+                                showExpand={clientSideRequestFinished()}
+                                setChunkGroups={setChunkGroups}
+                                setSelectedIds={setSelectedIds}
+                                selectedIds={selectedIds}
+                              />
+                            </div>
+                          )}
+                        </For>
+                      </Show>
+                    </div>
+                  );
+                }}
+              </For>
+            </div>
+          </Show>
+          <Show when={chunkMetadatas().length > 0}>
+            <div class="mx-auto mt-8 flex w-full max-w-[calc(100%-32px)] space-x-2 min-[360px]:max-w-[calc(100%-64px)]">
               <button
                 classList={{
                   "w-full rounded  bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":
@@ -612,12 +740,29 @@ export const GroupPage = (props: GroupPageProps) => {
                   fetchRecommendations(
                     chunkMetadatas().map((m) => m.id),
                     recommendedChunks(),
+                    groupRecommendedChunks(),
+                    groupRecommendations(),
                   )
                 }
               >
                 {recommendedChunks().length == 0 ? "Get" : "Get More"} Related
-                Chunks
+                {groupRecommendations() ? " Groups" : " Chunks"}
               </button>
+              <div class="flex items-center space-x-2 justify-self-center">
+                <label class="text-sm">Groups</label>
+                <input
+                  class="h-4 w-4"
+                  type="checkbox"
+                  checked={groupRecommendations()}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setGroupRecommendations(true);
+                    } else {
+                      setGroupRecommendations(false);
+                    }
+                  }}
+                />
+              </div>
             </div>
           </Show>
           <Show when={error().length > 0}>

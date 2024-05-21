@@ -426,7 +426,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                     <div
                       onClick={toggle}
                       classList={{
-                        "mx-8 flex items-center space-x-2 rounded bg-neutral-100 px-4 py-4 dark:bg-neutral-800":
+                        "mx-8 flex items-center space-x-4 rounded bg-neutral-100 px-4 py-4 dark:bg-neutral-800":
                           true,
                         "-mb-2": groupExpanded(),
                       }}
@@ -437,7 +437,28 @@ const ResultsPage = (props: ResultsPageProps) => {
                       <Show when={!groupExpanded()}>
                         <FaSolidChevronDown />
                       </Show>
-                      <div>{group.group_name}</div>
+                      <div>
+                        <Show when={group.group_name}>
+                          <div class="flex space-x-2">
+                            <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                              Name:{" "}
+                            </span>
+                            <span class="line-clamp-1 break-all">
+                              {group.group_name}
+                            </span>
+                          </div>
+                        </Show>
+                        <Show when={group.group_tracking_id}>
+                          <div class="flex space-x-2">
+                            <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                              Tracking ID:{" "}
+                            </span>
+                            <span class="line-clamp-1 break-all">
+                              {group.group_tracking_id}
+                            </span>
+                          </div>
+                        </Show>
+                      </div>
                     </div>
                     <Show when={groupExpanded()}>
                       <For each={group.metadata}>
