@@ -28,7 +28,7 @@ import { ScoreChunkArray } from "./ScoreChunkArray";
 import SearchForm from "./SearchForm";
 import ChunkMetadataDisplay from "./ChunkMetadataDisplay";
 import { Portal } from "solid-js/web";
-import ChatPopup from "./ChatPopup";
+import { ChatPopup } from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { useLocation, useNavigate } from "@solidjs/router";
