@@ -301,6 +301,7 @@ pub struct ChunkMetadata {
     pub weight: f64,
     pub location: Option<GeoInfo>,
     pub image_urls: Option<Vec<Option<String>>>,
+    pub tag_set_array: Option<Vec<Option<String>>>,
 }
 
 impl ChunkMetadata {
@@ -333,6 +334,7 @@ impl ChunkMetadata {
             dataset_id,
             weight,
             image_urls: image_urls.map(|urls| urls.into_iter().map(Some).collect()),
+            tag_set_array: None,
         }
     }
 }
@@ -368,6 +370,7 @@ impl ChunkMetadata {
             dataset_id,
             weight,
             image_urls: image_urls.map(|urls| urls.into_iter().map(Some).collect()),
+            tag_set_array: None,
         }
     }
 }
@@ -389,6 +392,7 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
             dataset_id: slim_chunk.dataset_id,
             weight: slim_chunk.weight,
             image_urls: slim_chunk.image_urls,
+            tag_set_array: None,
         }
     }
 }
@@ -410,6 +414,7 @@ impl From<ContentChunkMetadata> for ChunkMetadata {
             dataset_id: uuid::Uuid::new_v4(),
             weight: content_chunk.weight,
             image_urls: content_chunk.image_urls,
+            tag_set_array: None,
         }
     }
 }
@@ -818,6 +823,7 @@ pub struct ChunkGroup {
     pub tracking_id: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tag_set: Option<String>,
+    pub tag_set_array: Option<Vec<Option<String>>>,
 }
 
 impl ChunkGroup {
@@ -839,6 +845,7 @@ impl ChunkGroup {
             tracking_id,
             metadata,
             tag_set,
+            tag_set_array: None,
         }
     }
 
@@ -861,6 +868,7 @@ impl ChunkGroup {
             tracking_id,
             metadata,
             tag_set,
+            tag_set_array: None,
         }
     }
 }
@@ -999,6 +1007,7 @@ pub struct File {
     pub link: Option<String>,
     pub time_stamp: Option<chrono::NaiveDateTime>,
     pub dataset_id: uuid::Uuid,
+    pub tag_set_array: Option<Vec<Option<String>>>,
 }
 
 impl File {
@@ -1030,6 +1039,7 @@ impl File {
                     .naive_local()
             }),
             dataset_id,
+            tag_set_array: None,
         }
     }
 }

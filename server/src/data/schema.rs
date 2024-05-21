@@ -21,6 +21,7 @@ diesel::table! {
         tracking_id -> Nullable<Text>,
         metadata -> Nullable<Jsonb>,
         tag_set -> Nullable<Text>,
+        tag_set_array -> Nullable<Array<Nullable<Text>>>,
     }
 }
 
@@ -50,6 +51,7 @@ diesel::table! {
         weight -> Float8,
         location -> Nullable<Jsonb>,
         image_urls -> Nullable<Array<Nullable<Text>>>,
+        tag_set_array -> Nullable<Array<Nullable<Text>>>,
     }
 }
 
@@ -114,6 +116,7 @@ diesel::table! {
         link -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
         dataset_id -> Uuid,
+        tag_set_array -> Nullable<Array<Nullable<Text>>>,
     }
 }
 
