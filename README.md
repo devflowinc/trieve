@@ -124,6 +124,7 @@ cargo install cargo-watch
 cp .env.chat ./chat/.env
 cp .env.search ./search/.env
 cp .env.server ./server/.env
+cp .env.dashboard ./dashboard/.env
 ```
 
 ### Add your `LLM_API_KEY` to `./server/.env`
