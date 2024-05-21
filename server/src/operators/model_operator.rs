@@ -66,12 +66,6 @@ pub async fn create_embedding(
             .ok()
             .filter(|s| !s.is_empty())
             .unwrap_or("https://embedding.trieve.ai/bge-m3".to_string()),
-        "https://embedding.trieve.ai/jinaai-code" => {
-            std::env::var("EMBEDDING_SERVER_ORIGIN_JINA_CODE")
-                .ok()
-                .filter(|s| !s.is_empty())
-                .unwrap_or("https://embedding.trieve.ai/jinaai-code".to_string())
-        }
         "https://embedding.trieve.ai/jina-code" => {
             std::env::var("EMBEDDING_SERVER_ORIGIN_JINA_CODE")
                 .ok()
@@ -82,7 +76,7 @@ pub async fn create_embedding(
     };
 
     let embedding_api_key =
-        if config_embedding_base_url.as_str() == "https://embedding.trieve.ai/jinaai-code" {
+        if config_embedding_base_url.as_str() == "https://embedding.trieve.ai/jina-code" {
             std::env::var("JINA_CODE_API_KEY")
                 .ok()
                 .filter(|s| !s.is_empty())
@@ -282,7 +276,7 @@ pub async fn create_embeddings(
     };
 
     let embedding_api_key =
-        if config_embedding_base_url.as_str() == "https://embedding.trieve.ai/jinaai-code" {
+        if config_embedding_base_url.as_str() == "https://embedding.trieve.ai/jina-code" {
             std::env::var("JINA_CODE_API_KEY")
                 .ok()
                 .filter(|s| !s.is_empty())
