@@ -29,7 +29,13 @@ reset_script_redis() {
 
 start_local_services() {
     echo "Starting local services..."
-    docker compose up -d db redis qdrant-database s3 s3-client keycloak keycloak-db
+    docker compose up -d db
+    docker compose up -d redis
+    docker compose up -d qdrant-database
+    docker compose up -d s3
+    docker compose up -d s3-client
+    docker compose up -d keycloak
+    docker compose up -d keycloak-db
 }
 
 # Main script logic

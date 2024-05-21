@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use itertools::{izip, Itertools};
+use itertools::izip;
 use qdrant_client::qdrant::{PointStruct, Vector};
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
@@ -234,8 +234,17 @@ async fn ingestion_worker(
             "ingestion worker processing chunk",
         );
         let transaction = sentry::start_transaction(processing_chunk_ctx);
-        let ingestion_message: IngestionMessage =
-            serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
+        let ingestion_message: IngestionMessage = match serde_json::from_str(&serialized_message) {
+            Ok(message) => message,
+            Err(err) => {
+                log::error!(
+                    "Failed to deserialize message, was not an IngestionMessage: {:?}",
+                    err
+                );
+                transaction.finish();
+                continue;
+            }
+        };
         match ingestion_message.clone() {
             IngestionMessage::BulkUpload(payload) => {
                 match bulk_upload_chunks(payload.clone(), web_pool.clone(), reqwest_client.clone())
@@ -408,7 +417,7 @@ pub async fn bulk_upload_chunks(
                 .chunk
                 .tag_set
                 .clone()
-                .map(|tags| tags.into_iter().map(Some).collect_vec());
+                .map(|tag_set| tag_set.join(","));
 
             let timestamp = {
                 message
@@ -628,7 +637,7 @@ async fn upload_chunk(
         .chunk
         .tag_set
         .clone()
-        .map(|tags| tags.into_iter().map(Some).collect_vec());
+        .map(|tag_set| tag_set.join(","));
 
     let chunk_tracking_id = payload
         .chunk

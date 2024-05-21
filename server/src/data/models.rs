@@ -292,6 +292,7 @@ pub struct ChunkMetadata {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<String>,
     pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
@@ -300,7 +301,6 @@ pub struct ChunkMetadata {
     pub weight: f64,
     pub location: Option<GeoInfo>,
     pub image_urls: Option<Vec<Option<String>>>,
-    pub tag_set: Option<Vec<Option<String>>>,
 }
 
 impl ChunkMetadata {
@@ -308,7 +308,7 @@ impl ChunkMetadata {
     pub fn from_details(
         chunk_html: &Option<String>,
         link: &Option<String>,
-        tag_set: &Option<Vec<String>>,
+        tag_set: &Option<String>,
         qdrant_point_id: Option<uuid::Uuid>,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
@@ -325,9 +325,7 @@ impl ChunkMetadata {
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            tag_set: tag_set
-                .clone()
-                .map(|tags| tags.into_iter().map(Some).collect()),
+            tag_set: tag_set.clone(),
             metadata,
             tracking_id,
             time_stamp,
@@ -345,7 +343,7 @@ impl ChunkMetadata {
         id: T,
         chunk_html: Option<String>,
         link: &Option<String>,
-        tag_set: &Option<Vec<String>>,
+        tag_set: &Option<String>,
         qdrant_point_id: Option<uuid::Uuid>,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
@@ -362,9 +360,7 @@ impl ChunkMetadata {
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            tag_set: tag_set
-                .clone()
-                .map(|tags| tags.into_iter().map(Some).collect()),
+            tag_set: tag_set.clone(),
             metadata,
             tracking_id,
             time_stamp,
@@ -471,7 +467,7 @@ pub struct ChunkMetadataWithScore {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
     pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
@@ -610,7 +606,7 @@ pub struct SlimChunkMetadataWithScore {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -656,7 +652,7 @@ pub struct SlimChunkMetadata {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -821,7 +817,7 @@ pub struct ChunkGroup {
     pub dataset_id: uuid::Uuid,
     pub tracking_id: Option<String>,
     pub metadata: Option<serde_json::Value>,
-    pub tag_set: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
 }
 
 impl ChunkGroup {
@@ -831,7 +827,7 @@ impl ChunkGroup {
         dataset_id: uuid::Uuid,
         tracking_id: Option<String>,
         metadata: Option<serde_json::Value>,
-        tag_set: Option<Vec<String>>,
+        tag_set: Option<String>,
     ) -> Self {
         ChunkGroup {
             id: uuid::Uuid::new_v4(),
@@ -842,7 +838,7 @@ impl ChunkGroup {
             updated_at: chrono::Utc::now().naive_local(),
             tracking_id,
             metadata,
-            tag_set: tag_set.map(|tags| tags.into_iter().map(Some).collect()),
+            tag_set,
         }
     }
 
@@ -853,7 +849,7 @@ impl ChunkGroup {
         dataset_id: uuid::Uuid,
         tracking_id: Option<String>,
         metadata: Option<serde_json::Value>,
-        tag_set: Option<Vec<String>>,
+        tag_set: Option<String>,
     ) -> Self {
         ChunkGroup {
             id,
@@ -864,7 +860,7 @@ impl ChunkGroup {
             updated_at: chrono::Utc::now().naive_local(),
             tracking_id,
             metadata,
-            tag_set: tag_set.map(|tags| tags.into_iter().map(Some).collect()),
+            tag_set,
         }
     }
 }
@@ -998,11 +994,11 @@ pub struct File {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub size: i64,
+    pub tag_set: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub link: Option<String>,
     pub time_stamp: Option<chrono::NaiveDateTime>,
     pub dataset_id: uuid::Uuid,
-    pub tag_set: Option<Vec<Option<String>>>,
 }
 
 impl File {
@@ -1011,7 +1007,7 @@ impl File {
         file_id: Option<uuid::Uuid>,
         file_name: &str,
         size: i64,
-        tag_set: Option<Vec<String>>,
+        tag_set: Option<String>,
         metadata: Option<serde_json::Value>,
         link: Option<String>,
         time_stamp: Option<String>,
@@ -1023,7 +1019,7 @@ impl File {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             size,
-            tag_set: tag_set.map(|tags| tags.into_iter().map(Some).collect()),
+            tag_set,
             metadata,
             link,
             time_stamp: time_stamp.map(|ts| {
@@ -1357,6 +1353,7 @@ pub struct ServerDatasetConfiguration {
     pub LLM_BASE_URL: String,
     pub EMBEDDING_BASE_URL: String,
     pub EMBEDDING_MODEL_NAME: String,
+    pub RERANKER_BASE_URL: String,
     pub QDRANT_URL: String,
     pub QDRANT_API_KEY: String,
     pub QDRANT_COLLECTION_NAME: String,
@@ -1465,6 +1462,17 @@ impl ServerDatasetConfiguration {
                     }
                 })
                 .unwrap_or("text-embedding-3-small".to_string()),
+            RERANKER_BASE_URL: configuration
+                .get("RERANKER_SERVER_ORIGIN")
+                .unwrap_or(&json!(get_env!("RERANKER_SERVER_ORIGIN", "RERANKER_SERVER_ORIGIN must be set").to_string()))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        get_env!("RERANKER_SERVER_ORIGIN", "RERANKER_BASE_URL must be set").to_string()
+                    } else {
+                        s.to_string()
+                    }
+                }).expect("RERANKER_SERVER_ORIGIN should exist"),
             LLM_DEFAULT_MODEL: configuration
                 .get("LLM_DEFAULT_MODEL")
                 .unwrap_or(&json!("gpt-3.5-turbo-1106"))
@@ -2163,7 +2171,7 @@ impl QdrantPayload {
         QdrantPayload {
             tag_set: chunk_metadata
                 .tag_set
-                .map(|x| x.into_iter().map(|value| value.unwrap()).collect()),
+                .map(|x| x.split(',').map(|s| s.to_string()).collect()),
             link: chunk_metadata.link,
             metadata: chunk_metadata.metadata,
             time_stamp: chunk_metadata.time_stamp.map(|x| x.timestamp()),

@@ -53,7 +53,7 @@ pub struct CreateMessageData {
     pub highlight_results: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
     pub highlight_delimiters: Option<Vec<String>>,
-    /// The filters to apply to the chunks that are going to be used for the RAG.
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
 }
 
@@ -236,7 +236,7 @@ pub struct RegenerateMessageData {
     pub highlight_citations: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.  
     pub highlight_delimiters: Option<Vec<String>>,
-    /// The filters to apply to the chunks that are going to be used for the RAG.
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
 }
 
@@ -254,7 +254,7 @@ pub struct EditMessageData {
     pub highlight_citations: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
     pub highlight_delimiters: Option<Vec<String>>,
-    /// The filters to apply to the chunks that are going to be used for the RAG.
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
 }
 
@@ -289,6 +289,8 @@ pub async fn edit_message_handler(
     let stream_response = data.stream_response;
     let message_sort_order = data.message_sort_order;
     let new_message_content = &data.new_message_content;
+    let filters = data.filters.clone();
+
     let second_pool = pool.clone();
     let third_pool = pool.clone();
 
@@ -301,23 +303,23 @@ pub async fn edit_message_handler(
     .await?
     .id;
 
-    let _ = delete_message_query(
+    delete_message_query(
         &user.id,
         message_id,
         topic_id,
         dataset_org_plan_sub.dataset.id,
         &second_pool,
     )
-    .await;
+    .await?;
 
     create_message_completion_handler(
         actix_web::web::Json(CreateMessageData {
             new_message_content: new_message_content.to_string(),
             topic_id,
             stream_response,
-            filters: data.filters.clone(),
             highlight_results: data.highlight_citations,
             highlight_delimiters: data.highlight_delimiters.clone(),
+            filters,
         }),
         user,
         dataset_org_plan_sub,
@@ -356,6 +358,7 @@ pub async fn regenerate_message_handler(
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let should_stream = data.stream_response;
+    let filters = data.filters.clone();
     let server_dataset_configuration = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
@@ -386,7 +389,7 @@ pub async fn regenerate_message_handler(
             should_stream,
             data.highlight_citations,
             data.highlight_delimiters.clone(),
-            data.filters.clone(),
+            filters,
             dataset_org_plan_sub.dataset,
             create_message_pool,
             server_dataset_configuration,
@@ -443,7 +446,7 @@ pub async fn regenerate_message_handler(
         should_stream,
         data.highlight_citations,
         data.highlight_delimiters.clone(),
-        data.filters.clone(),
+        filters,
         dataset_org_plan_sub.dataset,
         create_message_pool,
         server_dataset_configuration,

@@ -13,6 +13,7 @@ import {
 } from "solid-js";
 import { FiSend, FiStopCircle } from "solid-icons/fi";
 import {
+  GroupScoreChunkDTO,
   type Message,
   messageRoleFromIndex,
   ScoreChunkDTO,
@@ -23,10 +24,11 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 export interface LayoutProps {
   selectedIds: Accessor<string[]>;
   chunks: Accessor<ScoreChunkDTO[]>;
+  groupChunks?: Accessor<GroupScoreChunkDTO[]>;
   setOpenChat: Setter<boolean>;
 }
 
-const ChatPopup = (props: LayoutProps) => {
+export const ChatPopup = (props: LayoutProps) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
   const datasetAndUserContext = useContext(DatasetAndUserContext);
   const $dataset = datasetAndUserContext.currentDataset;
@@ -166,7 +168,17 @@ const ChatPopup = (props: LayoutProps) => {
 
   const messageChunks = createMemo(() => {
     const selectedIds = props.selectedIds();
-    const chunks = props.chunks();
+    let chunks = props.chunks();
+    if (!chunks.length) {
+      chunks =
+        props
+          .groupChunks?.()
+          ?.flatMap((group) =>
+            group.metadata.flatMap((metadata) => metadata),
+          ) ?? [];
+
+      console.log("groups", chunks);
+    }
 
     return chunks.filter((chunk) => selectedIds.includes(chunk.metadata[0].id));
   });
@@ -273,5 +285,3 @@ const ChatPopup = (props: LayoutProps) => {
     </div>
   );
 };
-
-export default ChatPopup;
