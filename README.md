@@ -285,4 +285,4 @@ Install Stripe CLI.
 
 ## SelfHosting / Deploy to AWS
 
-Refert to the self hosting guide [here](self-hosting.md)
+Refer to the self hosting guide [here](self-hosting.md)
