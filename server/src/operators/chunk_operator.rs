@@ -210,6 +210,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                     dataset_id: chunk.0.dataset_id,
                     weight: chunk.0.weight,
                     image_urls: chunk.0.image_urls.clone(),
+                    tag_set_array: None,
                 }
                 .into()
             })
@@ -260,6 +261,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         dataset_id: chunk.0.dataset_id,
                         weight: chunk.0.weight,
                         image_urls: chunk.0.image_urls.clone(),
+                        tag_set_array: None,
                     }
                     .into()
                 })
