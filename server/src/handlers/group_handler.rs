@@ -23,6 +23,7 @@ use crate::{
     },
 };
 use actix_web::{web, HttpResponse};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 use std::collections::HashMap;
@@ -102,7 +103,7 @@ pub async fn create_chunk_group(
         dataset_org_plan_sub.dataset.id,
         body.tracking_id.clone(),
         body.metadata.clone(),
-        body.tag_set.clone().map(|tags| tags.join(",")),
+        body.tag_set.clone(),
     );
     {
         let group = group.clone();
@@ -323,7 +324,7 @@ pub async fn update_group_by_tracking_id(
         dataset_org_plan_sub.dataset.id,
         Some(data.tracking_id.clone()),
         data.metadata.clone().or(group.metadata.clone()),
-        data.tag_set.clone().map(|tags| tags.join(",")),
+        data.tag_set.clone(),
     );
 
     update_chunk_group_query(new_group, pool).await?;
@@ -496,7 +497,7 @@ pub async fn update_chunk_group(
     let name = body.name.clone();
     let description = body.description.clone();
     let group_id = body.group_id;
-    let tag_set = body.tag_set.clone().map(|tags| tags.join(","));
+    let tag_set = body.tag_set.clone();
 
     let group = if let Some(group_id) = group_id {
         dataset_owns_group(
@@ -523,7 +524,11 @@ pub async fn update_chunk_group(
         dataset_org_plan_sub.dataset.id,
         body.tracking_id.clone(),
         body.metadata.clone(),
-        tag_set.or(group.tag_set.clone()),
+        tag_set.or(group.tag_set.clone().map(|x| {
+            x.into_iter()
+                .map(|x| x.unwrap_or("".to_string()))
+                .collect_vec()
+        })),
     );
 
     update_chunk_group_query(new_chunk_group, pool).await?;
