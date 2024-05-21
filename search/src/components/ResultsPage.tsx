@@ -25,7 +25,7 @@ import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { ScoreChunkArray } from "./ScoreChunkArray";
 import { Portal } from "solid-js/web";
 import { AiOutlineRobot } from "solid-icons/ai";
-import ChatPopup from "./ChatPopup";
+import { ChatPopup } from "./ChatPopup";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
@@ -283,6 +283,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
                 chunks={resultChunks}
+                groupChunks={groupResultChunks}
                 selectedIds={selectedIds}
                 setOpenChat={setOpenChat}
               />
@@ -501,11 +502,13 @@ const ResultsPage = (props: ResultsPageProps) => {
                     class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
                     onClick={() => {
                       setSelectedIds(
-                        resultChunks()
+                        groupResultChunks()
+                          .flatMap((g) => {
+                            return g.metadata;
+                          })
                           .flatMap((c) => {
                             return c.metadata.map((m) => m.id);
-                          })
-                          .slice(0, 10),
+                          }),
                       );
                       setOpenChat(true);
                     }}

@@ -20,7 +20,7 @@ import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import ChunkMetadataDisplay from "./ChunkMetadataDisplay";
 import { Portal } from "solid-js/web";
-import ChatPopup from "./ChatPopup";
+import { ChatPopup } from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline } from "solid-icons/io";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
