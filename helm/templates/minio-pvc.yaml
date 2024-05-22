@@ -9,7 +9,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce  
-{{- if eq .Values.environment "aws" }}
+{{- if ne .Values.environment "local" }}
   storageClassName: gp2
 {{- else }}
   storageClassName: ""  

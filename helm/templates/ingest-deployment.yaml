@@ -25,7 +25,7 @@ spec:
           limits:
             cpu: 5
         replicas: {{ .Values.config.ingest.replicas }}
-        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (eq .Values.environment "aws")) "ingest" .Values.containers.ingest.tag }}
+        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (ne .Values.environment "local")) "ingest" .Values.containers.ingest.tag }}
         env:
           - name: ADMIN_API_KEY
             value: {{ .Values.config.trieve.adminApiKey }}

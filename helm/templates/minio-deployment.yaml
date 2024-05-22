@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: minio
-        image: {{ printf "%s%s:%s" (ternary "minio/" "localhost:5000/" (eq .Values.environment "aws")) "minio" .Values.containers.minio.tag }}
+        image: {{ printf "%s%s:%s" (ternary "minio/" "localhost:5000/" (ne .Values.environment "local")) "minio" .Values.containers.minio.tag }}
         ports:
           - containerPort: 9000
           - containerPort: 42625
