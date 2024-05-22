@@ -13,6 +13,7 @@ import {
   FiArrowRight,
   FiInfo,
   FiRefreshCcw,
+  FiFilter,
   FiSend,
   FiStopCircle,
 } from "solid-icons/fi";
@@ -26,6 +27,8 @@ import { UserContext } from "../contexts/UserContext";
 import { Topic } from "../../utils/apiTypes";
 import { HiOutlineAdjustmentsHorizontal } from "solid-icons/hi";
 import { FullScreenModal } from "../Atoms/FullScreenModal";
+import { FilterModal } from "../FilterModal";
+import { Popover, PopoverButton, PopoverPanel } from "terracotta";
 
 export interface LayoutProps {
   setTopics: Setter<Topic[]>;
@@ -69,6 +72,7 @@ const MainLayout = (props: LayoutProps) => {
     createSignal<boolean>(false);
   const [showChatTuningParams, setShowChatTuningParams] =
     createSignal<boolean>(false);
+  const [showFilterModal, setShowFilterModal] = createSignal<boolean>(false);
   const [modelName, setModelName] = createSignal<string>("");
 
   createEffect(() => {
@@ -389,56 +393,74 @@ const MainLayout = (props: LayoutProps) => {
             </div>
           </Show>
           <div class="flex w-full flex-row items-center space-x-2">
-            <form class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white">
-              <textarea
-                id="new-message-content-textarea"
-                class="w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
-                placeholder="Write a question or prompt for the assistant..."
-                value={newMessageContent()}
-                disabled={streamingCompletion()}
-                onInput={(e) => resizeTextarea(e.target)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    const new_message_content = newMessageContent();
-                    if (!new_message_content) {
+            <Popover
+              as="form"
+              class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white"
+              defaultOpen={false}
+            >
+              <form class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white">
+                <PopoverPanel class="relative left-0 top-0">
+                  <FilterModal
+                    setShowFilterModal={setShowFilterModal}
+                    showFilterModal={showFilterModal}
+                  />
+                </PopoverPanel>
+                <textarea
+                  id="new-message-content-textarea"
+                  class="w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
+                  placeholder="Write a question or prompt for the assistant..."
+                  value={newMessageContent()}
+                  disabled={streamingCompletion()}
+                  onInput={(e) => resizeTextarea(e.target)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      const new_message_content = newMessageContent();
+                      if (!new_message_content) {
+                        return;
+                      }
+                      const topic_id = props.selectedTopic?.id;
+                      void fetchCompletion({
+                        new_message_content,
+                        topic_id,
+                      });
                       return;
                     }
-                    const topic_id = props.selectedTopic?.id;
-                    void fetchCompletion({
-                      new_message_content,
-                      topic_id,
-                    });
-                    return;
-                  }
-                }}
-                rows="1"
-              />
-              <button
-                type="submit"
-                classList={{
-                  "flex h-10 w-10 items-center justify-center absolute right-[30px] bottom-0":
-                    true,
-                  "text-neutral-400": !newMessageContent(),
-                }}
-                disabled={!newMessageContent() || streamingCompletion()}
-                onClick={(e) => {
-                  e.preventDefault();
-                  submitNewMessage();
-                }}
-              >
-                <FiSend />
-              </button>
-              <button
-                class="absolute bottom-0 right-[0px] flex h-10 w-10 items-center justify-center"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowChatTuningParams(true);
-                }}
-              >
-                <HiOutlineAdjustmentsHorizontal />
-              </button>
-            </form>
+                  }}
+                  rows="1"
+                />
+                <button
+                  type="submit"
+                  classList={{
+                    "flex h-10 w-10 items-center justify-center absolute right-[60px] bottom-0":
+                      true,
+                    "text-neutral-400": !newMessageContent(),
+                  }}
+                  disabled={!newMessageContent() || streamingCompletion()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    submitNewMessage();
+                  }}
+                >
+                  <FiSend />
+                </button>
+                <PopoverButton
+                  type="button"
+                  class="absolute bottom-0 right-[30px] flex h-10 w-10 items-center justify-center"
+                >
+                  <FiFilter />
+                </PopoverButton>
+                <button
+                  class="absolute bottom-0 right-[0px] flex h-10 w-10 items-center justify-center"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowChatTuningParams(true);
+                  }}
+                >
+                  <HiOutlineAdjustmentsHorizontal />
+                </button>
+              </form>
+            </Popover>
           </div>
         </div>
       </div>
