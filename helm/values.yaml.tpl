@@ -41,6 +41,7 @@ config:
     password: redis
   qdrant:
     collection: collection
+    apiKey: "qdrant_password"
   ingest:
     replicas: 5
   trieve:
