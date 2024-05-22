@@ -554,7 +554,7 @@ export const GroupPage = (props: GroupPageProps) => {
                   "mt-8": query() == "",
                 }}
               >
-                <Show when={query()}>
+                <Show when={!query()}>
                   <SearchForm
                     query={query()}
                     searchType={searchType()}
