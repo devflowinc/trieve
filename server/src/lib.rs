@@ -492,6 +492,10 @@ pub fn main() -> std::io::Result<()> {
                     web::resource("/auth/cli")
                         .route(web::get().to(handlers::auth_handler::login_cli))
                 )
+                .service(
+                    web::resource("/")
+                    .route(web::get().to(handlers::auth_handler::health_check))
+                )
                 // everything under '/api/' route
                 .service(
                     web::scope("/api")
