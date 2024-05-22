@@ -42,13 +42,15 @@ resource "google_compute_subnetwork" "vpc_subnet" {
 ###############################################################
 resource "google_container_cluster" "cluster" {
   name             = "${var.cluster_name}"
-  location         = var.region
+  location         = "${var.region}-a"
 
   # We can't create a cluster with no node pool defined, but we want to only use
   # separately managed node pools. So we create the smallest possible default
   # node pool and immediately delete it.
   remove_default_node_pool = true
   initial_node_count       = 1
+
+  # deletion_protection = false
 
   vertical_pod_autoscaling {
     enabled = true
@@ -57,7 +59,7 @@ resource "google_container_cluster" "cluster" {
 
 resource "google_container_node_pool" "primary_preemptible_nodes" {
   name       = "general-compute"
-  location   = var.region
+  location   = "${var.region}-a"
   cluster    = google_container_cluster.cluster.name
   node_count = 3
 
@@ -69,7 +71,7 @@ resource "google_container_node_pool" "primary_preemptible_nodes" {
 
 resource "google_container_node_pool" "gpu_nodes" {
   name       = "gpu-compute"
-  location   = var.region
+  location   = "${var.region}-a"
   cluster    = google_container_cluster.cluster.name
   node_count = 1
 

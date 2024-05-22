@@ -187,7 +187,7 @@ podDisruptionBudget:
 # false: no api key will be configured
 # true: an api key will be auto-generated
 # string: the given string will be set as an apikey
-apiKey: "therealestshitever"
+apiKey: "qdrant_password"
 # read-only api key for authentication at qdrant
 # false: no read-only api key will be configured
 # true: an read-only api key will be auto-generated
