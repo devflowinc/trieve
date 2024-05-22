@@ -90,8 +90,8 @@ export const FilterModal = (props: FilterModalProps) => {
   }, "");
 
   return (
-    <div class="debug flex max-h-[50vh] min-w-[70vw] max-w-[75vw] flex-col space-y-2 overflow-auto px-2 pr-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 xl:min-w-[50vw] 2xl:min-w-[40vw]">
-      <div class="flex w-full items-center space-x-2 border-b border-neutral-400 py-2 dark:border-neutral-900">
+    <div class="flex max-h-[300px] grow flex-col space-y-2 overflow-auto px-2 pr-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 xl:min-w-[50vw] 2xl:min-w-[40vw]">
+      <div class="mb-4 flex w-full items-center space-x-2 border-b border-neutral-400 py-2 pb-4 dark:border-neutral-900">
         <label aria-label="Change Filter Type">
           <span class="p-1">Filter Type:</span>
         </label>
@@ -120,6 +120,7 @@ export const FilterModal = (props: FilterModalProps) => {
           </For>
         </select>
         <button
+          type="button"
           class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => {
             const curFilterType = tempFilterType();
@@ -138,6 +139,7 @@ export const FilterModal = (props: FilterModalProps) => {
         </button>
         <div class="flex-1" />
         <button
+          type="button"
           class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => {
             setMustFilters([]);
@@ -148,14 +150,26 @@ export const FilterModal = (props: FilterModalProps) => {
           Reset Filters
         </button>
         <button
+          type="button"
           class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => saveFilters()}
         >
           Apply Filters
         </button>
       </div>
+      <Show
+        when={
+          mustFilters().length === 0 &&
+          mustNotFilters().length === 0 &&
+          shouldFilters().length === 0
+        }
+      >
+        <div class="h-full pt-4 text-center text-neutral-500">
+          You have no filters in effect.
+        </div>
+      </Show>
       <Show when={mustFilters().length > 0}>
-        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
+        <div class="py-2 dark:border-neutral-900">
           must: [
           <div class="flex flex-col gap-y-2">
             <For each={mustFilters()}>
