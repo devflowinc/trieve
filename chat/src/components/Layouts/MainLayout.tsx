@@ -13,7 +13,6 @@ import {
   FiArrowRight,
   FiInfo,
   FiRefreshCcw,
-  FiFilter,
   FiSend,
   FiStopCircle,
 } from "solid-icons/fi";
@@ -26,8 +25,7 @@ import { AfMessage } from "../Atoms/AfMessage";
 import { UserContext } from "../contexts/UserContext";
 import { Topic } from "../../utils/apiTypes";
 import { HiOutlineAdjustmentsHorizontal } from "solid-icons/hi";
-import { FullScreenModal } from "../Atoms/FullScreenModal";
-import { FilterModal } from "../FilterModal";
+import { FilterModal, Filters } from "../FilterModal";
 import { Popover, PopoverButton, PopoverPanel } from "terracotta";
 
 export interface LayoutProps {
@@ -47,6 +45,23 @@ const scrollToBottomOfMessages = () => {
   //   return;
   // }
   // element.scrollIntoView({ block: "end" });
+};
+
+const getFiltersFromStorage = (datasetId: string) => {
+  const filters = window.localStorage.getItem(`filters-${datasetId}`);
+  if (!filters) {
+    return undefined;
+  }
+  const parsedFilters: Filters = JSON.parse(filters);
+  // TODO: This should probably be done server side instead?
+  const filteredFilters = {
+    must: parsedFilters.must.length > 0 ? parsedFilters.must : undefined,
+    must_not:
+      parsedFilters.must_not.length > 0 ? parsedFilters.must_not : undefined,
+    should: parsedFilters.should.length > 0 ? parsedFilters.should : undefined,
+  };
+  console.log("Filtered Filters: ", filteredFilters);
+  return filteredFilters;
 };
 
 const MainLayout = (props: LayoutProps) => {
@@ -69,8 +84,6 @@ const MainLayout = (props: LayoutProps) => {
   const [disableAutoScroll, setDisableAutoScroll] =
     createSignal<boolean>(false);
   const [triggerScrollToBottom, setTriggerScrollToBottom] =
-    createSignal<boolean>(false);
-  const [showChatTuningParams, setShowChatTuningParams] =
     createSignal<boolean>(false);
   const [showFilterModal, setShowFilterModal] = createSignal<boolean>(false);
   const [modelName, setModelName] = createSignal<string>("");
@@ -215,6 +228,7 @@ const MainLayout = (props: LayoutProps) => {
         },
         credentials: "include",
         body: JSON.stringify({
+          filters: getFiltersFromStorage(dataset.dataset.id),
           new_message_content,
           topic_id: finalTopicId,
           model: modelName(),
@@ -309,6 +323,7 @@ const MainLayout = (props: LayoutProps) => {
                     });
                     completionAbortController().abort();
                     setCompletionAbortController(new AbortController());
+
                     fetch(`${apiHost}/message`, {
                       method: "PUT",
                       headers: {
@@ -318,6 +333,7 @@ const MainLayout = (props: LayoutProps) => {
                       credentials: "include",
                       signal: completionAbortController().signal,
                       body: JSON.stringify({
+                        filters: false,
                         new_message_content: content,
                         message_sort_order: idx(),
                         topic_id: props.selectedTopic?.id,
@@ -395,113 +411,102 @@ const MainLayout = (props: LayoutProps) => {
           <div class="flex w-full flex-row items-center space-x-2">
             <Popover
               as="form"
-              class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white"
+              class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 px-4 py-1 text-neutral-800 dark:bg-neutral-700 dark:text-white"
               defaultOpen={false}
             >
-              <form class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white">
-                <PopoverPanel class="relative left-0 top-0">
-                  <FilterModal
-                    setShowFilterModal={setShowFilterModal}
-                    showFilterModal={showFilterModal}
+              <PopoverPanel class="mb-1 flex w-full gap-2 border-b border-b-neutral-400 py-4">
+                <FilterModal
+                  setShowFilterModal={setShowFilterModal}
+                  showFilterModal={showFilterModal}
+                />
+                <div class="max-w-[360px] flex-grow border-l border-neutral-400 pl-4">
+                  <div class="rounded-md bg-blue-50 p-4 dark:bg-blue-900">
+                    <div class="flex justify-between">
+                      <div class="flex-shrink-0">
+                        <FiInfo class="h-5 w-5 text-blue-400 dark:text-blue-50" />
+                      </div>
+                      <p class="mt-3 text-sm md:ml-6 md:mt-0">
+                        <a
+                          href="https://openrouter.ai/docs#models"
+                          class="flex items-center space-x-1 whitespace-nowrap font-medium text-blue-700 underline hover:text-blue-600 dark:text-blue-50"
+                        >
+                          <span>Supported Models</span>
+                          <FiArrowRight />
+                        </a>
+                      </p>
+                    </div>
+                    <div class="mt-2 flex-1 md:flex md:justify-between">
+                      <p class="text-sm text-blue-700 dark:text-blue-50">
+                        Copy and paste any model name from OpenRouter to use it
+                        here.
+                      </p>
+                    </div>
+                  </div>
+                  <label class="mt-4 block text-sm font-semibold dark:text-white">
+                    Model Name
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    class="mt-1 w-full rounded-md border border-neutral-300 p-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                    value={
+                      modelName() == ""
+                        ? "Using Default Model for Dataset"
+                        : modelName()
+                    }
+                    onInput={(e) => setModelName(e.currentTarget.value)}
                   />
-                </PopoverPanel>
-                <textarea
-                  id="new-message-content-textarea"
-                  class="w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
-                  placeholder="Write a question or prompt for the assistant..."
-                  value={newMessageContent()}
-                  disabled={streamingCompletion()}
-                  onInput={(e) => resizeTextarea(e.target)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      const new_message_content = newMessageContent();
-                      if (!new_message_content) {
-                        return;
-                      }
-                      const topic_id = props.selectedTopic?.id;
-                      void fetchCompletion({
-                        new_message_content,
-                        topic_id,
-                      });
+                </div>
+              </PopoverPanel>
+              <textarea
+                id="new-message-content-textarea"
+                class="w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
+                placeholder="Write a question or prompt for the assistant..."
+                value={newMessageContent()}
+                disabled={streamingCompletion()}
+                onInput={(e) => resizeTextarea(e.target)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    const new_message_content = newMessageContent();
+                    if (!new_message_content) {
                       return;
                     }
-                  }}
-                  rows="1"
-                />
-                <button
-                  type="submit"
-                  classList={{
-                    "flex h-10 w-10 items-center justify-center absolute right-[60px] bottom-0":
-                      true,
-                    "text-neutral-400": !newMessageContent(),
-                  }}
-                  disabled={!newMessageContent() || streamingCompletion()}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    submitNewMessage();
-                  }}
-                >
-                  <FiSend />
-                </button>
-                <PopoverButton
-                  type="button"
-                  class="absolute bottom-0 right-[30px] flex h-10 w-10 items-center justify-center"
-                >
-                  <FiFilter />
-                </PopoverButton>
-                <button
-                  class="absolute bottom-0 right-[0px] flex h-10 w-10 items-center justify-center"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowChatTuningParams(true);
-                  }}
-                >
-                  <HiOutlineAdjustmentsHorizontal />
-                </button>
-              </form>
+                    const topic_id = props.selectedTopic?.id;
+                    void fetchCompletion({
+                      new_message_content,
+                      topic_id,
+                    });
+                    return;
+                  }
+                }}
+                rows="1"
+              />
+              <button
+                type="submit"
+                classList={{
+                  "flex h-10 w-10 items-center justify-center absolute right-[30px] bottom-0":
+                    true,
+                  "text-neutral-400": !newMessageContent(),
+                }}
+                disabled={!newMessageContent() || streamingCompletion()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  submitNewMessage();
+                }}
+              >
+                <FiSend />
+              </button>
+              <PopoverButton
+                type="button"
+                class="absolute bottom-0 right-[0px] flex h-10 w-10 items-center justify-center"
+              >
+                <HiOutlineAdjustmentsHorizontal />
+              </PopoverButton>
             </Popover>
           </div>
         </div>
       </div>
-      <FullScreenModal
-        isOpen={showChatTuningParams}
-        setIsOpen={setShowChatTuningParams}
-      >
-        <div class="rounded-md bg-blue-50 p-4 dark:bg-blue-900">
-          <div class="flex justify-between">
-            <div class="flex-shrink-0">
-              <FiInfo class="h-5 w-5 text-blue-400 dark:text-blue-50" />
-            </div>
-            <p class="mt-3 text-sm md:ml-6 md:mt-0">
-              <a
-                href="https://openrouter.ai/docs#models"
-                class="flex items-center space-x-1 whitespace-nowrap font-medium text-blue-700 underline hover:text-blue-600 dark:text-blue-50"
-              >
-                <span>Supported Models</span>
-                <FiArrowRight />
-              </a>
-            </p>
-          </div>
-          <div class="mt-2 flex-1 md:flex md:justify-between">
-            <p class="text-sm text-blue-700 dark:text-blue-50">
-              Copy and paste any model name from OpenRouter to use it here.
-            </p>
-          </div>
-        </div>
-        <label class="mt-4 block text-sm font-semibold dark:text-white">
-          Model Name
-        </label>
-        <input
-          type="text"
-          disabled
-          class="mt-1 w-full rounded-md border border-neutral-300 p-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-          value={
-            modelName() == "" ? "Using Default Model for Dataset" : modelName()
-          }
-          onInput={(e) => setModelName(e.currentTarget.value)}
-        />
-      </FullScreenModal>
     </>
   );
 };
