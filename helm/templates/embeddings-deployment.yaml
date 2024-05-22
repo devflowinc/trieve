@@ -28,21 +28,18 @@ spec:
     spec:
       containers:
         - name: embedding-{{ $name }}
-          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:turing-1.2" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $.Values.useGpu }}
+          readinessProbe:
+            httpGet:
+              path: "/"
+              port: 80
+          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:89-1.2" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $.Values.useGpu }}
           args: 
             {{ (concat (list "--model-id" $model "--revision" $revision) $args) | toJson }}
           ports:
             - containerPort: 80
-          volumeMounts:
-            - name: embedding-data
-              mountPath: /data
 {{- if $.Values.useGpu }}
           resources:
             limits:
               nvidia.com/gpu: 1
 {{- end }}
-      volumes:
-        - name: embedding-data
-          persistentVolumeClaim:
-            claimName: embedding-{{ $name }}-pvc
 {{- end }}

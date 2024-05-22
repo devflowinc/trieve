@@ -1,6 +1,6 @@
 {{- if eq $.Values.environment "local" }}
 {{- $name := "keycloak-pv" }}
-{{- $storage := ternary "10Gi" "50Gi" (eq .Values.environment "local") }}
+{{- $storage := ternary "10Gi" "20Gi" (eq .Values.environment "local") }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:

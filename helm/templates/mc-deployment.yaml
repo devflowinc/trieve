@@ -24,7 +24,7 @@ spec:
           command: ["sh", "-c", "echo MINIO INITSCRIPT . . .; sleep 4294967296"] 
       initContainers:
         - name: init-mc
-          image: {{ printf "%s%s:%s" (ternary "minio/" "localhost:5000/" (eq .Values.environment "aws")) "mc" .Values.containers.mc.tag }}
+          image: {{ printf "%s%s:%s" (ternary "minio/" "localhost:5000/" (ne .Values.environment "local")) "mc" .Values.containers.mc.tag }}
           env:
             - name: MINIO_ROOT_USER
               value: {{ .Values.config.minio.rootUser }}

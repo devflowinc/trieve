@@ -1,9 +1,23 @@
 {{- $name := "server-service" }}
 {{- $selector := "server" }}
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: server-backend-config
+spec:
+  healthCheck:
+    checkIntervalSec: 15
+    port: 8090
+    type: HTTP
+    requestPath: /api/health
+---
 kind: Service
 apiVersion: v1
 metadata:
   name: {{ $name }}
+  annotations:
+    cloud.google.com/backend-config: '{"ports": {"80":"server-backend-config"}}'
   labels:
     app.kubernetes.io/instance: trieve
     app.kubernetes.io/managed-by: Helm

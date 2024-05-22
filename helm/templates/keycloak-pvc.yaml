@@ -1,5 +1,5 @@
 {{- if eq .Values.environment "local" }}
-{{ $storage := (ternary "10Gi" "50Gi" (eq .Values.environment  "local")) }}
+{{ $storage := (ternary "10Gi" "20Gi" (eq .Values.environment  "local")) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -10,7 +10,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce  
-{{- if eq .Values.environment "aws" }}
+{{- if ne .Values.environment "local" }}
   storageClassName: gp2
 {{- else }}
   storageClassName: ""  

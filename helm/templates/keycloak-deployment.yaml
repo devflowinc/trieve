@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: keycloak
-        image: {{ printf "%s%s:%s" (ternary "quay.io/keycloak/" "localhost:5000/" (eq .Values.environment "aws")) "keycloak" .Values.containers.keycloak.tag }}
+        image: {{ printf "%s%s:%s" (ternary "quay.io/keycloak/" "localhost:5000/" (ne .Values.environment "local")) "keycloak" .Values.containers.keycloak.tag }}
         ports:
           - containerPort: 8080
           - containerPort: 42625

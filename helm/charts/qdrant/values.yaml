@@ -1,4 +1,4 @@
-replicaCount: 10
+replicaCount: 3
 
 image:
   repository: docker.io/qdrant/qdrant

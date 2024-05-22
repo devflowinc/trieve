@@ -1,0 +1,162 @@
+{{- $domain := .Values.domain }}
+{{- $externalDomain := .Values.externalDomain }}
+{{- if (eq .Values.environment "gcloud") }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-dashboard
+  labels:
+    app: trieve
+  annotations:
+    kubernetes.io/ingress.class: gce
+    external-dns.alpha.kubernetes.io/hostname: "dashboard.{{ $externalDomain }}"
+spec:
+  rules:
+    - host: "dashboard.{{ $externalDomain }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dashboard-service
+                port:
+                  number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-chat
+  labels:
+    app: trieve
+  annotations:
+    kubernetes.io/ingress.class: gce
+    external-dns.alpha.kubernetes.io/hostname: "chat.{{ $externalDomain }}"
+spec:
+  rules:
+    - host: "chat.{{ $externalDomain }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-server
+  labels:
+    app: trieve
+  annotations:
+    kubernetes.io/ingress.class: gce
+    external-dns.alpha.kubernetes.io/hostname: "api.{{ $externalDomain }}"
+spec:
+  rules:
+    - host: "api.{{ $externalDomain }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: server-service
+                port:
+                  number: 8090
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-search
+  labels:
+    app: trieve
+  annotations:
+    kubernetes.io/ingress.class: gce
+    external-dns.alpha.kubernetes.io/hostname: "search.{{ $externalDomain }}"
+spec:
+  rules:
+    - host: "search.{{ $externalDomain }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: search-service
+                port:
+                  number: 3001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-keycloak
+  labels:
+    app: trieve
+  annotations:
+    kubernetes.io/ingress.class: gce
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    external-dns.alpha.kubernetes.io/hostname: "oidc.{{ $externalDomain }}"
+spec:
+  tls:
+    - hosts:
+        - "oidc.{{ $externalDomain }}"
+  rules:
+    - host: "oidc.{{ $externalDomain }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak-service
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-s3
+  labels:
+    app: trieve
+  annotations:
+    kubernetes.io/ingress.class: gce
+    external-dns.alpha.kubernetes.io/hostname: "data.{{ $externalDomain }}"
+spec:
+  rules:
+    - host: "data.{{ $externalDomain }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio-service
+                port:
+                  number: 9000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-ingress
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-egress
+spec:
+  podSelector: {}
+  egress:
+  - {}
+  policyTypes:
+  - Egress
+{{- end }}

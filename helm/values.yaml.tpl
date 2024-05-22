@@ -1,5 +1,4 @@
 region: $AWS_REGION
-accountId: $AWS_ACCOUNT_ID
 environment: $ENVIRONMENT # Set to aws if deploying to 
 domain: $DOMAIN # Only used if environment = local
 externalDomain: $EXTERNAL_DOMAIN
