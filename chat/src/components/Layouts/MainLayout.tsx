@@ -52,7 +52,7 @@ const getFiltersFromStorage = (datasetId: string) => {
   if (!filters) {
     return undefined;
   }
-  const parsedFilters: Filters = JSON.parse(filters);
+  const parsedFilters = JSON.parse(filters) as unknown as Filters;
   // TODO: This should probably be done server side instead?
   const filteredFilters = {
     must: parsedFilters.must.length > 0 ? parsedFilters.must : undefined,
