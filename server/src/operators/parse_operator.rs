@@ -51,7 +51,7 @@ pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
 pub fn build_chunking_regex(delimiters: Vec<String>) -> Result<Regex, regex::Error> {
     let mut regex_string = r"[".to_string();
     for delimiter in delimiters.iter() {
-        regex_string.push_str(regex::escape(delimiter.as_str()).as_str());
+        regex_string.push_str(delimiter.as_str());
     }
     regex_string.push_str("]+");
     return Ok(Regex::new(&regex_string)?);
