@@ -22,8 +22,11 @@ containers:
     tag: latest
   dashboard:
     tag: latest
+
+postgres:
+  useSubchart: true
+  dbURI: postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432 # Only used if useSubchart is false
 config:
-  quantizeVectors: false
   vite:
     apiHost: https://api.$EXTERNAL_DOMAIN/api
     searchUiUrl: https://search.trieve.ai
@@ -40,32 +43,32 @@ config:
     connections: 30
     password: redis
   qdrant:
+    useSubchart: true
+    qdrantUrl: http://trieve-qdrant.default.svc.cluster.local:6334 # Only used if useSubchart is false
     collection: collection
     apiKey: "qdrant_password"
     quantizeVectors: false # If set to true will binary quantize
     replicationFactor: 2
   ingest:
-    replicas: 5
+    num_threads: 1
   trieve:
     unlimited: true
     cookieSecure: false
     baseServerUrl: https://api.$EXTERNAL_DOMAIN
     gpuServerOrigin: http://localhost:7070
-    embeddingServerOrigin: http://embedding-jina-service.default.cluster.local:80
-    sparseServerQueryOrigin: http://embedding-splade-query-service.default.cluster.local:80
-    sparseServerDocOrigin: http://embedding-splade-doc-service.default.cluster.local:80
-    embeddingServerOriginBGEM3: http://embedding-bgem3-service.default.cluster.local:80
-    rerankerServerOrigin: http://embedding-reranker-service.default.cluster.local:80
+    embeddingServerOrigin: http://embedding-jina.default.cluster.local
+    sparseServerQueryOrigin: http://embedding-splade-query.default.cluster.local
+    sparseServerDocOrigin: http://embedding-splade-doc.default.cluster.local
+    embeddingServerOriginBGEM3: http://embedding-bgem3.default.cluster.local
+    rerankerServerOrigin: http://embedding-reranker.default.cluster.local
     salt: $SALT
     secretKey: $SECRET_KEY
-    apiAdminKey: $ADMIN_API_KEY
+    adminApiKey: $ADMIN_API_KEY 
   oidc:
     clientSecret: $OIDC_CLIENT_SECRET
-    clientId: vault
+    clientId: trieve
     issuerUrl: $ISSUER_URL
     authRedirectUrl: $AUTH_REDIRECT_URL
-    redirectUrl: $REDIRECT_URL
-  
   smtp:
     relay: $SMTP_RELAY
     username: $SMTP_USERNAME
@@ -88,24 +91,20 @@ config:
 embeddings:
   - name: jina
     revision: main
-    port: 80
-    model: jinaai/jina-embeddings-v2-small-en
+    model: jinaai/jina-embeddings-v2-base-en
     revision: main
     args: []
   - name: reranker
     model: BAAI/bge-reranker-large
     revision: refs/pr/4
-    port: 80
     args: []
   - name: splade-doc
     model: naver/efficient-splade-VI-BT-large-doc
     revision: main
-    port: 80
     args: ["--pooling", "splade"]
   - name: splade-query
     model: naver/efficient-splade-VI-BT-large-query
     revision: main
-    port: 80
     args: ["--pooling", "splade"]
 redis:
   enabled: true

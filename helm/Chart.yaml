@@ -12,6 +12,8 @@ dependencies:
   - name: postgresql
     repository: https://charts.bitnami.com/bitnami
     version: 15.2.5
+    condition: postgres.useSubchart
   - name: qdrant
     repository: https://qdrant.github.io/qdrant-helm
     version: 0.8.4
+    condition: config.qdrant.useSubchart
