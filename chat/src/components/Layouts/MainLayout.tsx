@@ -9,13 +9,7 @@ import {
   Match,
   Accessor,
 } from "solid-js";
-import {
-  FiArrowRight,
-  FiInfo,
-  FiRefreshCcw,
-  FiSend,
-  FiStopCircle,
-} from "solid-icons/fi";
+import { FiRefreshCcw, FiSend, FiStopCircle } from "solid-icons/fi";
 import {
   isMessageArray,
   messageRoleFromIndex,
@@ -53,15 +47,8 @@ const getFiltersFromStorage = (datasetId: string) => {
     return undefined;
   }
   const parsedFilters = JSON.parse(filters) as unknown as Filters;
-  // TODO: This should probably be done server side instead?
-  const filteredFilters = {
-    must: parsedFilters.must.length > 0 ? parsedFilters.must : undefined,
-    must_not:
-      parsedFilters.must_not.length > 0 ? parsedFilters.must_not : undefined,
-    should: parsedFilters.should.length > 0 ? parsedFilters.should : undefined,
-  };
-  console.log("Filtered Filters: ", filteredFilters);
-  return filteredFilters;
+
+  return parsedFilters;
 };
 
 const MainLayout = (props: LayoutProps) => {
@@ -86,7 +73,6 @@ const MainLayout = (props: LayoutProps) => {
   const [triggerScrollToBottom, setTriggerScrollToBottom] =
     createSignal<boolean>(false);
   const [showFilterModal, setShowFilterModal] = createSignal<boolean>(false);
-  const [modelName, setModelName] = createSignal<string>("");
 
   createEffect(() => {
     window.addEventListener("wheel", (event) => {
@@ -166,7 +152,6 @@ const MainLayout = (props: LayoutProps) => {
         credentials: "include",
         body: JSON.stringify({
           first_user_message: new_message_content,
-          model: modelName(),
           owner_id: userContext.user?.()?.id,
         }),
       });
@@ -231,7 +216,6 @@ const MainLayout = (props: LayoutProps) => {
           filters: getFiltersFromStorage(dataset.dataset.id),
           new_message_content,
           topic_id: finalTopicId,
-          model: modelName(),
         }),
         signal: completionAbortController().signal,
       });
@@ -337,7 +321,6 @@ const MainLayout = (props: LayoutProps) => {
                         new_message_content: content,
                         message_sort_order: idx(),
                         topic_id: props.selectedTopic?.id,
-                        model: modelName(),
                       }),
                     })
                       .then((response) => {
@@ -419,44 +402,6 @@ const MainLayout = (props: LayoutProps) => {
                   setShowFilterModal={setShowFilterModal}
                   showFilterModal={showFilterModal}
                 />
-                <div class="max-w-[360px] flex-grow border-l border-neutral-400 pl-4">
-                  <div class="rounded-md bg-blue-50 p-4 dark:bg-blue-900">
-                    <div class="flex justify-between">
-                      <div class="flex-shrink-0">
-                        <FiInfo class="h-5 w-5 text-blue-400 dark:text-blue-50" />
-                      </div>
-                      <p class="mt-3 text-sm md:ml-6 md:mt-0">
-                        <a
-                          href="https://openrouter.ai/docs#models"
-                          class="flex items-center space-x-1 whitespace-nowrap font-medium text-blue-700 underline hover:text-blue-600 dark:text-blue-50"
-                        >
-                          <span>Supported Models</span>
-                          <FiArrowRight />
-                        </a>
-                      </p>
-                    </div>
-                    <div class="mt-2 flex-1 md:flex md:justify-between">
-                      <p class="text-sm text-blue-700 dark:text-blue-50">
-                        Copy and paste any model name from OpenRouter to use it
-                        here.
-                      </p>
-                    </div>
-                  </div>
-                  <label class="mt-4 block text-sm font-semibold dark:text-white">
-                    Model Name
-                  </label>
-                  <input
-                    type="text"
-                    disabled
-                    class="mt-1 w-full rounded-md border border-neutral-300 p-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                    value={
-                      modelName() == ""
-                        ? "Using Default Model for Dataset"
-                        : modelName()
-                    }
-                    onInput={(e) => setModelName(e.currentTarget.value)}
-                  />
-                </div>
               </PopoverPanel>
               <textarea
                 id="new-message-content-textarea"
