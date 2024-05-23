@@ -1,4 +1,3 @@
-# unused
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,11 +33,15 @@ spec:
           - name: REDIS_URL
             value: "redis://:redis@trieve-redis-master.default.svc.cluster.local:6379"
           - name: QDRANT_URL
-            value: http://trieve-qdrant.default.svc.cluster.local:6334
+            value: {{ ( ternary "http://trieve-qdrant.default.svc.cluster.local:6334" .Values.config.qdrant.qdrantUrl (eq .Values.config.qdrant.useSubchart true)) }}
           - name: QDRANT_API_KEY
             value: {{ .Values.config.qdrant.apiKey }}
+          - name: QUANTIZE_VECTORS
+            value: {{ .Values.config.qdrant.quantizeVectors | quote }}
+          - name: REPLICATION_FACTOR
+            value: {{ .Values.config.qdrant.replicationFactor | quote }}
           - name: DATABASE_URL
-            value: postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432
+            value: {{ ( ternary "postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432" .Values.postgres.dbURI (eq .Values.postgres.useSubchart true)) }}
           - name: SMTP_RELAY
             value: {{ .Values.config.smtp.relay }}
           - name: SMTP_USERNAME
