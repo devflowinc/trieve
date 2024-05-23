@@ -1,7 +1,7 @@
 use super::chunk_operator::{create_chunk_metadata, get_row_count_for_dataset_id_query};
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
-use super::parse_operator::{coarse_doc_chunker, convert_html_to_text};
+use super::parse_operator::{build_chunking_regex, coarse_doc_chunker, convert_html_to_text};
 use crate::data::models::FileDTO;
 use crate::data::models::{ChunkGroup, FileDataDTO};
 use crate::data::models::{
@@ -20,6 +20,7 @@ use diesel::sql_types::BigInt;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use redis::aio::MultiplexedConnection;
+use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
 
 #[tracing::instrument]
@@ -107,7 +108,16 @@ pub async fn create_chunks_with_handler(
     mut redis_conn: MultiplexedConnection,
 ) -> Result<(), ServiceError> {
     let file_text = convert_html_to_text(&html_content);
-    let chunk_htmls = coarse_doc_chunker(file_text);
+
+    let chunking_regex: Option<Regex> = match upload_file_data.chunk_delimiters {
+        Some(delimiters) => Some(build_chunking_regex(delimiters).map_err(|e| {
+            log::error!("Could not parse chunking delimiters {:?}", e);
+            ServiceError::BadRequest("Could not parse chunking delimiters".to_string())
+        })?),
+        None => None,
+    };
+
+    let chunk_htmls = coarse_doc_chunker(file_text, chunking_regex);
 
     let mut chunks: Vec<ChunkData> = [].to_vec();
 
