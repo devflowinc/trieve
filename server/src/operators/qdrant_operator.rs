@@ -50,6 +50,7 @@ pub async fn create_new_qdrant_collection_query(
     qdrant_collection: Option<&str>,
     quantize: bool,
     recreate_indexes: bool,
+    replication_factor: u32,
 ) -> Result<(), ServiceError> {
     let qdrant_collection = qdrant_collection
         .unwrap_or(get_env!(
@@ -164,8 +165,8 @@ pub async fn create_new_qdrant_collection_query(
                     sparse_vectors_config: Some(SparseVectorConfig {
                         map: sparse_vector_config,
                     }),
-                    write_consistency_factor: Some(2),
-                    replication_factor: Some(2),
+                    write_consistency_factor: Some(1),
+                    replication_factor: Some(replication_factor),
                     ..Default::default()
                 })
                 .await

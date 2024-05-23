@@ -42,6 +42,8 @@ config:
   qdrant:
     collection: collection
     apiKey: "qdrant_password"
+    quantizeVectors: false # If set to true will binary quantize
+    replicationFactor: 2
   ingest:
     replicas: 5
   trieve:
