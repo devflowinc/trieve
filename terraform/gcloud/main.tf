@@ -50,7 +50,7 @@ resource "google_container_cluster" "cluster" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
-  # deletion_protection = false
+  deletion_protection = false
 
   vertical_pod_autoscaling {
     enabled = true
@@ -61,7 +61,14 @@ resource "google_container_node_pool" "primary_preemptible_nodes" {
   name       = "general-compute"
   location   = "${var.region}-a"
   cluster    = google_container_cluster.cluster.name
+
+  # enable_autopilot = true
   node_count = 3
+
+  autoscaling {
+    min_node_count = 3
+    max_node_count = 20
+  }
 
   node_config {
     preemptible  = true
@@ -74,6 +81,11 @@ resource "google_container_node_pool" "gpu_nodes" {
   location   = "${var.region}-a"
   cluster    = google_container_cluster.cluster.name
   node_count = 1
+
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 3
+  }
 
   node_config {
     preemptible  = true

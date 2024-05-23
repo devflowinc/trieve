@@ -12,6 +12,11 @@ async fn main() -> Result<(), ServiceError> {
     let qdrant_collection =
         std::env::var("QDRANT_COLLECTION").unwrap_or("qdrant_collection".to_string());
 
+    let replication_factor: u32 = std::env::var("REPLICATION_FACTOR")
+        .unwrap_or("2".to_string())
+        .parse()
+        .unwrap_or(2);
+
     let qdrant_client = get_qdrant_connection(Some(&qdrant_url), Some(&qdrant_api_key)).await?;
 
     qdrant_client
@@ -25,6 +30,7 @@ async fn main() -> Result<(), ServiceError> {
         Some(&qdrant_collection),
         false,
         false,
+        2,
     )
     .await?;
     Ok(())

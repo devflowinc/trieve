@@ -416,7 +416,12 @@ pub fn main() -> std::io::Result<()> {
             .parse()
             .unwrap_or(false);
 
-        let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors, false)
+        let replication_factor: u32 = std::env::var("REPLICATION_FACTOR")
+            .unwrap_or("2".to_string())
+            .parse()
+            .unwrap_or(2);
+
+        let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors, false, replication_factor)
             .await
             .map_err(|err| {
                 log::error!("Failed to create new qdrant collection: {:?}", err);
