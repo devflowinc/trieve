@@ -80,7 +80,7 @@ pub async fn create_file_query(
         Some(file_id),
         &upload_file_data.file_name,
         file_size,
-        upload_file_data.tag_set.clone(),
+        upload_file_data.tag_set.map(|tag_set| tag_set.join(",")),
         upload_file_data.metadata,
         upload_file_data.link,
         upload_file_data.time_stamp,

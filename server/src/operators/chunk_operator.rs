@@ -210,6 +210,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                     dataset_id: chunk.0.dataset_id,
                     weight: chunk.0.weight,
                     image_urls: chunk.0.image_urls.clone(),
+                    tag_set_array: None,
                 }
                 .into()
             })
@@ -260,6 +261,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         dataset_id: chunk.0.dataset_id,
                         weight: chunk.0.weight,
                         image_urls: chunk.0.image_urls.clone(),
+                        tag_set_array: None,
                     }
                     .into()
                 })
@@ -1309,7 +1311,7 @@ pub async fn create_chunk_metadata(
     let mut chunk_metadatas = vec![];
 
     for chunk in chunks {
-        let chunk_tag_set = chunk.tag_set.clone();
+        let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
 
         let chunk_tracking_id = chunk
             .tracking_id
