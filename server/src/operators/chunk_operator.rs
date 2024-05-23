@@ -76,6 +76,7 @@ pub async fn get_slim_chunk_metadatas_from_point_ids(
             chunk_metadata_columns::dataset_id,
             chunk_metadata_columns::weight,
             chunk_metadata_columns::image_urls,
+            chunk_metadata_columns::num_value,
         ))
         .load::<SlimChunkMetadata>(&mut conn)
         .await
@@ -211,6 +212,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                     weight: chunk.0.weight,
                     image_urls: chunk.0.image_urls.clone(),
                     tag_set_array: None,
+                    num_value: chunk.0.num_value,
                 }
                 .into()
             })
@@ -262,6 +264,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         weight: chunk.0.weight,
                         image_urls: chunk.0.image_urls.clone(),
                         tag_set_array: None,
+                        num_value: chunk.0.num_value,
                     }
                     .into()
                 })
@@ -327,6 +330,7 @@ pub async fn get_slim_chunks_from_point_ids_query(
                 chunk_metadata_columns::dataset_id,
                 chunk_metadata_columns::weight,
                 chunk_metadata_columns::image_urls,
+                chunk_metadata_columns::num_value,
             ))
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
             .load(&mut conn)
@@ -388,6 +392,7 @@ pub async fn get_content_chunk_from_point_ids_query(
                     chunk_metadata_columns::time_stamp,
                     chunk_metadata_columns::weight,
                     chunk_metadata_columns::image_urls,
+                    chunk_metadata_columns::num_value,
                 ))
                 .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
                 .load(&mut conn)
@@ -831,6 +836,8 @@ pub async fn update_chunk_metadata_query(
         chunk_metadata_columns::time_stamp.eq(chunk_data.time_stamp),
         chunk_metadata_columns::location.eq(chunk_data.location),
         chunk_metadata_columns::weight.eq(chunk_data.weight),
+        chunk_metadata_columns::image_urls.eq(chunk_data.image_urls),
+        chunk_metadata_columns::num_value.eq(chunk_data.num_value),
     ))
     .get_result::<ChunkMetadata>(&mut conn)
     .await
@@ -1347,6 +1354,7 @@ pub async fn create_chunk_metadata(
             chunk.image_urls.clone(),
             dataset_uuid,
             chunk.weight.unwrap_or(0.0),
+            chunk.num_value,
         );
         chunk_metadatas.push(chunk_metadata.clone());
 

@@ -158,6 +158,7 @@ pub async fn create_chunks_with_handler(
             split_avg: None,
             convert_html_to_text: None,
             image_urls: None,
+            num_value: None,
         };
         chunks.push(create_chunk_data);
     }

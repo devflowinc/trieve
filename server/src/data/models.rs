@@ -10,7 +10,7 @@ use super::schema::*;
 use crate::handlers::file_handler::UploadFileData;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
-    get_metadata_filter_condition,
+    get_metadata_filter_condition, get_num_value_filter_condition,
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
@@ -302,6 +302,7 @@ pub struct ChunkMetadata {
     pub location: Option<GeoInfo>,
     pub image_urls: Option<Vec<Option<String>>>,
     pub tag_set_array: Option<Vec<Option<String>>>,
+    pub num_value: Option<f64>,
 }
 
 impl ChunkMetadata {
@@ -318,6 +319,7 @@ impl ChunkMetadata {
         image_urls: Option<Vec<String>>,
         dataset_id: uuid::Uuid,
         weight: f64,
+        num_value: Option<f64>,
     ) -> Self {
         ChunkMetadata {
             id: uuid::Uuid::new_v4(),
@@ -335,6 +337,7 @@ impl ChunkMetadata {
             weight,
             image_urls: image_urls.map(|urls| urls.into_iter().map(Some).collect()),
             tag_set_array: None,
+            num_value,
         }
     }
 }
@@ -354,6 +357,7 @@ impl ChunkMetadata {
         image_urls: Option<Vec<String>>,
         dataset_id: uuid::Uuid,
         weight: f64,
+        num_value: Option<f64>,
     ) -> Self {
         ChunkMetadata {
             id: id.into(),
@@ -371,6 +375,7 @@ impl ChunkMetadata {
             weight,
             image_urls: image_urls.map(|urls| urls.into_iter().map(Some).collect()),
             tag_set_array: None,
+            num_value,
         }
     }
 }
@@ -393,6 +398,7 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
             weight: slim_chunk.weight,
             image_urls: slim_chunk.image_urls,
             tag_set_array: None,
+            num_value: slim_chunk.num_value,
         }
     }
 }
@@ -415,6 +421,7 @@ impl From<ContentChunkMetadata> for ChunkMetadata {
             weight: content_chunk.weight,
             image_urls: content_chunk.image_urls,
             tag_set_array: None,
+            num_value: content_chunk.num_value,
         }
     }
 }
@@ -665,6 +672,7 @@ pub struct SlimChunkMetadata {
     pub dataset_id: uuid::Uuid,
     pub weight: f64,
     pub image_urls: Option<Vec<Option<String>>>,
+    pub num_value: Option<f64>,
 }
 
 impl From<ChunkMetadata> for SlimChunkMetadata {
@@ -683,6 +691,7 @@ impl From<ChunkMetadata> for SlimChunkMetadata {
             dataset_id: chunk.dataset_id,
             weight: chunk.weight,
             image_urls: chunk.image_urls,
+            num_value: chunk.num_value,
         }
     }
 }
@@ -703,6 +712,7 @@ impl From<ContentChunkMetadata> for SlimChunkMetadata {
             dataset_id: uuid::Uuid::new_v4(),
             weight: chunk.weight,
             image_urls: chunk.image_urls,
+            num_value: chunk.num_value,
         }
     }
 }
@@ -729,6 +739,7 @@ pub struct ContentChunkMetadata {
     pub time_stamp: Option<NaiveDateTime>,
     pub weight: f64,
     pub image_urls: Option<Vec<Option<String>>>,
+    pub num_value: Option<f64>,
 }
 
 impl From<ChunkMetadata> for ContentChunkMetadata {
@@ -741,6 +752,7 @@ impl From<ChunkMetadata> for ContentChunkMetadata {
             time_stamp: chunk.time_stamp,
             weight: chunk.weight,
             image_urls: chunk.image_urls,
+            num_value: chunk.num_value,
         }
     }
 }
@@ -2161,6 +2173,7 @@ pub struct QdrantPayload {
     pub content: String,
     pub group_ids: Option<Vec<uuid::Uuid>>,
     pub location: Option<GeoInfo>,
+    pub num_value: Option<f64>,
 }
 
 impl From<QdrantPayload> for Payload {
@@ -2189,6 +2202,7 @@ impl QdrantPayload {
             content: convert_html_to_text(&chunk_metadata.chunk_html.unwrap_or_default()),
             group_ids,
             location: chunk_metadata.location,
+            num_value: chunk_metadata.num_value,
         }
     }
 
@@ -2235,6 +2249,11 @@ impl QdrantPayload {
                     serde_json::from_value(value.into()).expect("Failed to parse location")
                 })
                 .unwrap_or_default(),
+            num_value: point
+                .payload
+                .get("num_value")
+                .cloned()
+                .map(|x| x.as_double().expect("num_value should be a float")),
         }
     }
 }
@@ -2294,6 +2313,11 @@ impl From<RetrievedPoint> for QdrantPayload {
                     serde_json::from_value(value.into()).expect("Failed to parse location")
                 })
                 .unwrap_or_default(),
+            num_value: point
+                .payload
+                .get("num_value")
+                .cloned()
+                .map(|x| x.as_double().expect("num_value should be a float")),
         }
     }
 }
@@ -2389,6 +2413,7 @@ pub struct DateRange {
 pub enum MatchCondition {
     Text(String),
     Integer(i64),
+    Float(f64),
 }
 
 impl MatchCondition {
@@ -2397,6 +2422,7 @@ impl MatchCondition {
         match self {
             MatchCondition::Text(text) => text.clone(),
             MatchCondition::Integer(int) => int.to_string(),
+            MatchCondition::Float(float) => float.to_string(),
         }
     }
 
@@ -2404,6 +2430,15 @@ impl MatchCondition {
         match self {
             MatchCondition::Text(text) => text.parse().unwrap(),
             MatchCondition::Integer(int) => *int,
+            MatchCondition::Float(float) => *float as i64,
+        }
+    }
+
+    pub fn to_f64(&self) -> f64 {
+        match self {
+            MatchCondition::Text(text) => text.parse().unwrap(),
+            MatchCondition::Integer(int) => *int as f64,
+            MatchCondition::Float(float) => *float,
         }
     }
 }
@@ -2548,6 +2583,14 @@ impl FieldCondition {
             ));
         }
 
+        if self.field == "num_value" {
+            return Ok(Some(
+                get_num_value_filter_condition(self, dataset_id, pool)
+                    .await?
+                    .into(),
+            ));
+        }
+
         if let Some(date_range) = self.date_range.clone() {
             let time_range = get_date_range(date_range)?;
             return Ok(Some(qdrant::Condition::range(
@@ -2665,7 +2708,7 @@ impl FieldCondition {
                     "Invalid condition type".to_string(),
                 )),
             },
-            MatchCondition::Integer(_) => match condition_type {
+            MatchCondition::Integer(_) | MatchCondition::Float(_) => match condition_type {
                 "must" | "should" => Ok(Some(qdrant::Condition::matches(
                     self.field.as_str(),
                     matches

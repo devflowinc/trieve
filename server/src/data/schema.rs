@@ -52,6 +52,7 @@ diesel::table! {
         location -> Nullable<Jsonb>,
         image_urls -> Nullable<Array<Nullable<Text>>>,
         tag_set_array -> Nullable<Array<Nullable<Text>>>,
+        num_value -> Nullable<Float8>,
     }
 }
 
