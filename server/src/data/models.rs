@@ -2346,6 +2346,8 @@ pub struct FileDataDTO {
     pub metadata: Option<serde_json::Value>,
     /// Create chunks is a boolean which determines whether or not to create chunks from the file. If false, you can manually chunk the file and send the chunks to the create_chunk endpoint with the file_id to associate chunks with the file. Meant mostly for advanced users.
     pub create_chunks: Option<bool>,
+    /// Chunk delimiters is an optional field which allows you to specify the delimiters to use when chunking the file. If not specified, the default delimiters are used.
+    pub chunk_delimiters: Option<Vec<String>>,
     /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
     pub group_tracking_id: Option<String>,
 }
@@ -2360,6 +2362,7 @@ impl From<UploadFileData> for FileDataDTO {
             time_stamp: upload_file_data.time_stamp,
             metadata: upload_file_data.metadata,
             create_chunks: upload_file_data.create_chunks,
+            chunk_delimiters: upload_file_data.chunk_delimiters,
             group_tracking_id: upload_file_data.group_tracking_id,
         }
     }

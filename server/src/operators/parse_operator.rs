@@ -48,17 +48,30 @@ pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
     new_chunks
 }
 
+pub fn build_chunking_regex(delimiters: Vec<String>) -> Result<Regex, regex::Error> {
+    let mut regex_string = r"[".to_string();
+    for delimiter in delimiters.iter() {
+        regex_string.push_str(regex::escape(delimiter.as_str()).as_str());
+    }
+    regex_string.push_str("]+");
+    return Ok(Regex::new(&regex_string)?);
+}
+
 #[tracing::instrument]
-pub fn coarse_doc_chunker(document: String) -> Vec<String> {
+pub fn coarse_doc_chunker(document: String, chunking_pattern: Option<Regex>) -> Vec<String> {
     let document_without_newlines = document.replace('\n', " ");
     let dom = Html::parse_fragment(&document_without_newlines);
 
     // get the raw text from the HTML
     let clean_text = dom.root_element().text().collect::<String>();
 
+    let pattern = match chunking_pattern {
+        Some(pattern) => pattern,
+        None => Regex::new(r"[.!?\n]+").expect("Invalid regex"),
+    };
+
     // split the text into sentences
-    let split_sentence_regex = Regex::new(r"[.!?\n]+").expect("Invalid regex");
-    let mut sentences: Vec<&str> = split_sentence_regex.split_inclusive(&clean_text).collect();
+    let mut sentences: Vec<&str> = pattern.split_inclusive(&clean_text).collect();
 
     let mut groups: Vec<String> = vec![];
     let target_group_size = 20;
