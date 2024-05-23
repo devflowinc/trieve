@@ -456,6 +456,7 @@ pub async fn bulk_upload_chunks(
                     .image_urls
                     .clone()
                     .map(|urls| urls.into_iter().map(Some).collect()),
+                tag_set_array: None,
             };
 
             (
@@ -679,6 +680,7 @@ async fn upload_chunk(
             .chunk
             .image_urls
             .map(|urls| urls.into_iter().map(Some).collect()),
+        tag_set_array: None,
     };
 
     let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
