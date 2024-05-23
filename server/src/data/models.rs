@@ -471,7 +471,7 @@ pub struct ChunkMetadataWithScore {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
     pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
@@ -610,7 +610,7 @@ pub struct SlimChunkMetadataWithScore {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -2179,11 +2179,9 @@ impl QdrantPayload {
         dataset_id: Option<uuid::Uuid>,
     ) -> Self {
         QdrantPayload {
-            tag_set: chunk_metadata.tag_set.map(|x| {
-                x.into_iter()
-                    .map(|x| x.unwrap_or("".to_string()))
-                    .collect_vec()
-            }),
+            tag_set: chunk_metadata
+                .tag_set
+                .map(|x| x.split(',').map(|s| s.to_string()).collect()),
             link: chunk_metadata.link,
             metadata: chunk_metadata.metadata,
             time_stamp: chunk_metadata.time_stamp.map(|x| x.timestamp()),
