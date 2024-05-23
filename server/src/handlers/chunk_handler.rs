@@ -60,6 +60,8 @@ pub struct ChunkData {
     pub link: Option<String>,
     /// Tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
     pub tag_set: Option<Vec<String>>,
+    /// Num value is an arbitrary numerical value that can be used to filter chunks. This is useful for when you want to filter chunks by numerical value. There is no performance hit for filtering on num_value.
+    pub num_value: Option<f64>,
     /// Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub metadata: Option<serde_json::Value>,
     /// Chunk_vector is a vector of floats which can be used instead of generating a new embedding. This is useful for when you are using a pre-embedded dataset. If this is not provided, the innerText of the chunk_html will be used to create the embedding.
@@ -463,6 +465,8 @@ pub struct UpdateChunkData {
     tag_set: Option<Vec<String>>,
     /// Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
     link: Option<String>,
+    ///Num value is an arbitrary numerical value that can be used to filter chunks. This is useful for when you want to filter chunks by numerical value. If no num_value is provided, the existing num_value will be used.
+    num_value: Option<f64>,
     /// HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
     chunk_html: Option<String>,
     /// The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. If no metadata is provided, the existing metadata will be used.
@@ -581,10 +585,16 @@ pub async fn update_chunk(
             })
             .transpose()?
             .or(chunk_metadata.time_stamp),
-        update_chunk_data.location,
-        update_chunk_data.image_urls.clone(),
+        update_chunk_data
+            .location
+            .clone()
+            .or(chunk_metadata.location),
+        update_chunk_data.image_urls.clone().or(chunk_metadata
+            .image_urls
+            .map(|x| x.into_iter().map(|x| x.unwrap()).collect())),
         dataset_id,
-        update_chunk_data.weight.unwrap_or(1.0),
+        update_chunk_data.weight.unwrap_or(chunk_metadata.weight),
+        update_chunk_data.num_value.or(chunk_metadata.num_value),
     );
 
     let group_ids = if let Some(group_ids) = update_chunk_data.group_ids.clone() {
@@ -734,6 +744,7 @@ pub async fn update_chunk_by_tracking_id(
         None,
         dataset_org_plan_sub.dataset.id,
         update_chunk_data.weight.unwrap_or(1.0),
+        None,
     );
     let group_ids = if let Some(group_ids) = update_chunk_data.group_ids.clone() {
         Some(

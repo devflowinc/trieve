@@ -320,6 +320,98 @@ pub async fn retrieve_qdrant_points_query(
     })
 }
 
+pub async fn get_num_value_filter_condition(
+    filter: &FieldCondition,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Filter, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let mut query = chunk_metadata_columns::chunk_metadata
+        .select(chunk_metadata_columns::qdrant_point_id)
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+        .into_boxed();
+
+    if let Some(matches) = &filter.r#match {
+        if let Some(first_val) = matches.get(0) {
+            match first_val {
+                MatchCondition::Integer(id_val) => {
+                    query =
+                        query.filter(chunk_metadata_columns::num_value.eq(id_val.clone() as f64));
+                }
+                MatchCondition::Float(id_val) => {
+                    query = query.filter(chunk_metadata_columns::num_value.eq(id_val.clone()));
+                }
+                MatchCondition::Text(_) => {
+                    return Err(ServiceError::BadRequest(
+                        "Invalid match condition for num_value".to_string(),
+                    ));
+                }
+            }
+        }
+
+        for match_condition in matches.iter().skip(1) {
+            match match_condition {
+                MatchCondition::Integer(id_val) => {
+                    query = query
+                        .or_filter(chunk_metadata_columns::num_value.eq(id_val.clone() as f64));
+                }
+                MatchCondition::Float(id_val) => {
+                    query = query.or_filter(chunk_metadata_columns::num_value.eq(id_val));
+                }
+                MatchCondition::Text(_) => {
+                    return Err(ServiceError::BadRequest(
+                        "Invalid match condition for num_value".to_string(),
+                    ));
+                }
+            }
+        }
+    };
+
+    if filter.range.is_some() {
+        let range_filter = get_range(filter.range.clone().unwrap())?;
+        if let Some(gt) = range_filter.gt {
+            query = query.filter(chunk_metadata_columns::num_value.gt(gt));
+        };
+        if let Some(gte) = range_filter.gte {
+            query = query.filter(chunk_metadata_columns::num_value.ge(gte));
+        };
+        if let Some(lt) = range_filter.lt {
+            query = query.filter(chunk_metadata_columns::num_value.lt(lt));
+        };
+        if let Some(lte) = range_filter.lte {
+            query = query.filter(chunk_metadata_columns::num_value.le(lte));
+        };
+    }
+
+    let qdrant_point_ids: Vec<uuid::Uuid> = query
+        .load::<Option<uuid::Uuid>>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
+        .into_iter()
+        .flatten()
+        .collect();
+
+    let matching_point_ids: Vec<PointId> = qdrant_point_ids
+        .iter()
+        .map(|uuid| uuid.to_string())
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
+        .collect::<Vec<PointId>>();
+
+    let mut num_value_filter = Filter::default();
+    num_value_filter.must.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: matching_point_ids,
+        })),
+    });
+
+    Ok(num_value_filter)
+}
+
 #[tracing::instrument(skip(pool))]
 pub async fn get_metadata_filter_condition(
     filter: &FieldCondition,
@@ -356,6 +448,12 @@ pub async fn get_metadata_filter_condition(
                         key, id_val
                     )));
                 }
+                MatchCondition::Float(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
             }
         }
 
@@ -368,6 +466,12 @@ pub async fn get_metadata_filter_condition(
                     )));
                 }
                 MatchCondition::Integer(id_val) => {
+                    query = query.or_filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
+                MatchCondition::Float(id_val) => {
                     query = query.or_filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
                         key, id_val
@@ -505,16 +609,22 @@ pub async fn get_group_metadata_filter_condition(
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Text(string_val) => {
-                    query = query.filter(
-                        sql::<Text>(&format!("chunk_group.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", string_val)),
-                    );
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, string_val
+                    )))
                 }
                 MatchCondition::Integer(id_val) => {
-                    query = query.filter(
-                        sql::<Text>(&format!("chunk_group.metadata->>'{}'", key))
-                            .eq(id_val.to_string()),
-                    );
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )))
+                }
+                MatchCondition::Float(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )))
                 }
             }
         }
@@ -522,16 +632,22 @@ pub async fn get_group_metadata_filter_condition(
         for match_condition in matches.iter().skip(1) {
             match match_condition {
                 MatchCondition::Text(string_val) => {
-                    query = query.or_filter(
-                        sql::<Text>(&format!("chunk_group.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", string_val)),
-                    );
+                    query = query.or_filter(sql::<Bool>(&format!(
+                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, string_val
+                    )))
                 }
                 MatchCondition::Integer(id_val) => {
-                    query = query.or_filter(
-                        sql::<Text>(&format!("chunk_group.metadata->>'{}'", key))
-                            .eq(id_val.to_string()),
-                    );
+                    query = query.or_filter(sql::<Bool>(&format!(
+                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )))
+                }
+                MatchCondition::Float(id_val) => {
+                    query = query.or_filter(sql::<Bool>(&format!(
+                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )))
                 }
             }
         }
@@ -627,6 +743,10 @@ pub async fn get_group_tag_set_filter_condition(
                     query =
                         query.filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
                 }
+                MatchCondition::Float(id_val) => {
+                    query =
+                        query.filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
+                }
             }
         }
 
@@ -637,6 +757,10 @@ pub async fn get_group_tag_set_filter_condition(
                         .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
                 }
                 MatchCondition::Integer(id_val) => {
+                    query = query
+                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
+                }
+                MatchCondition::Float(id_val) => {
                     query = query
                         .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
                 }
@@ -869,6 +993,7 @@ pub async fn get_metadata_query(
                 weight: metadata.weight,
                 image_urls: metadata.image_urls,
                 tag_set_array: None,
+                num_value: metadata.num_value,
             }
         })
         .collect();
@@ -995,7 +1120,8 @@ pub async fn retrieve_chunks_for_groups(
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
                                     image_urls: None,
-                                    tag_set_array: None
+                                    tag_set_array: None,
+                                    num_value: None
                                 }.into()
                             },
                         };
@@ -1140,7 +1266,8 @@ pub async fn get_metadata_from_groups(
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
                                     image_urls: None,
-                                    tag_set_array: None
+                                    tag_set_array: None,
+                                    num_value: None
                                 }.into()
                             },
                         };
@@ -1266,6 +1393,7 @@ pub async fn retrieve_chunks_from_point_ids(
                             weight: 1.0,
                             image_urls: None,
                             tag_set_array: None,
+                            num_value: None,
                         }
                         .into()
                     }
