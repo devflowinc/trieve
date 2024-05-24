@@ -1,7 +1,7 @@
 use crate::{
     data::models::{Pool, RedisPool, SlimUser, UnifiedId, User, UserRole},
     errors::ServiceError,
-    handlers::auth_handler::{LoggedUser, OrganizationRole},
+    handlers::auth_handler::{LoggedUser, OrganizationRole, OwnerOnly},
     operators::{
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
         organization_operator::{
@@ -262,4 +262,10 @@ where
             service: Rc::new(service),
         }))
     }
+}
+
+pub fn verify_owner(user: &OwnerOnly, org_id: &uuid::Uuid) -> bool {
+    return user.0.user_orgs.iter().any(|org_conn| {
+        org_conn.organization_id == *org_id && org_conn.role == Into::<i32>::into(UserRole::Owner)
+    });
 }

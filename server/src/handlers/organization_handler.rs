@@ -1,5 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
+    af_middleware::auth_middleware::verify_owner,
     data::models::{Pool, RedisPool, UserOrganization, UserRole},
     operators::{
         organization_operator::{
@@ -76,6 +77,10 @@ pub async fn delete_organization_by_id(
     user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
+
+    if !verify_owner(&user, &organization_id) {
+        return Ok(HttpResponse::Forbidden().finish());
+    }
 
     let org = delete_organization_query(
         Some(&req),
