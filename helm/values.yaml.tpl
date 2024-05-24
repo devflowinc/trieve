@@ -49,6 +49,13 @@ config:
     apiKey: "qdrant_password"
     quantizeVectors: false # If set to true will binary quantize
     replicationFactor: 2
+    vectorSizes:
+      - 384
+      - 512
+      - 768
+      - 1024
+      - 1536
+      - 3072
   ingest:
     num_threads: 1
   trieve:
