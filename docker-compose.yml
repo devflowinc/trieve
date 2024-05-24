@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   db:
     image: postgres:15
@@ -101,7 +99,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget --spider -S 'http://tika:9998/version' 2>&1 | grep 'HTTP/' | awk '{print $2}' | grep 200 || exit 1",
+          "wget -qO- -S 'http://tika:9998/version' 2>&1 | grep 'HTTP/' | awk '{print $2}' | grep 200 || exit 1",
         ]
       interval: 10s
       timeout: 5s
@@ -128,10 +126,7 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    networks:
-      - app-network
-    ports:
-      - 8090:8090
+    network_mode: "host"
     restart: always
     environment:
       - ADMIN_API_KEY=${ADMIN_API_KEY}
@@ -165,20 +160,21 @@ services:
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
       - GPU_SERVER_ORIGIN=${GPU_SERVER_ORIGIN}
       - AWS_REGION=${AWS_REGION}
-      - SPARSE_SERVER_ORIGIN=${SPARSE_SERVER_ORIGIN}
+      - SPARSE_SERVER_QUERY_ORIGIN=${SPARSE_SERVER_QUERY_ORIGIN}
       - EMBEDDING_SERVER_ORIGIN=${EMBEDDING_SERVER_ORIGIN}
       - EMBEDDING_SERVER_ORIGIN_BGEM3=${EMBEDDING_SERVER_ORIGIN_BGEM3}
       - RERANKER_SERVER_ORIGIN=${RERANKER_SERVER_ORIGIN}
       - UNLIMITED=${UNLIMITED}
       - REDIS_CONNECTIONS=${REDIS_CONNECTIONS}
 
-  ingestion-service:
+  ingestion-worker:
     image: trieve/ingest
-    container_name: ingestion-service
+    container_name: ingestion-worker
     build:
       context: ./server/
-      dockerfile: Dockerfile.microservice
+      dockerfile: Dockerfile.ingestion-worker
     restart: always
+    network_mode: "host"    
     depends_on:
       tika:
         condition: service_healthy
@@ -190,6 +186,25 @@ services:
         condition: service_healthy
     env_file: .env
 
+  file-worker:
+    image: trieve/file
+    container_name: file-worker
+    build:
+      context: ./server/
+      dockerfile: Dockerfile.file-worker
+    restart: always
+    network_mode: "host"
+    depends_on:
+      tika:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      qdrant-database:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    env_file: .env 
+
   chat:
     image: trieve/chat
     container_name: chat
@@ -197,7 +212,7 @@ services:
     networks:
       - app-network
     ports:
-      - 3000:80
+      - 5175:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
       - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
@@ -209,9 +224,22 @@ services:
     networks:
       - app-network
     ports:
-      - 3001:80
+      - 5174:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
+
+  dashboard:
+    image: trieve/dashboard
+    container_name: dashboard
+    build: ./dashboard/
+    networks:
+      - app-network
+    ports:
+      - 5173:80
+    environment:
+      - VITE_API_HOST=${VITE_API_HOST}
+      - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
+      - VITE_CHAT_UI_URL=${VITE_CHAT_UI_URL}      
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7
