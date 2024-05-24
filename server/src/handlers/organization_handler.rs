@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    af_middleware::auth_middleware::verify_owner,
+    af_middleware::auth_middleware::{verify_admin, verify_owner},
     data::models::{Pool, RedisPool, UserOrganization, UserRole},
     operators::{
         organization_operator::{
@@ -39,8 +39,11 @@ use utoipa::ToSchema;
 pub async fn get_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    _user: AdminOnly,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if !verify_admin(&user, &organization_id) {
+        return Ok(HttpResponse::Forbidden().finish());
+    };
     let organization_id = organization_id.into_inner();
 
     let org_plan_sub = get_org_from_id_query(organization_id, pool).await?;
@@ -127,8 +130,11 @@ pub async fn update_organization(
     organization: web::Json<UpdateOrganizationData>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
-    _user: OwnerOnly,
+    user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if !verify_owner(&user, &organization.organization_id) {
+        return Ok(HttpResponse::Forbidden().finish());
+    }
     let organization_update_data = organization.into_inner();
     let old_organization =
         get_org_from_id_query(organization_update_data.organization_id, pool.clone()).await?;
@@ -219,8 +225,12 @@ pub async fn create_organization(
 pub async fn get_organization_usage(
     organization: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    _user: AdminOnly,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if !verify_admin(&user, &organization) {
+        return Ok(HttpResponse::Forbidden().finish());
+    };
+
     let org_id = organization.into_inner();
 
     let usage = get_org_usage_by_id_query(org_id, pool).await?;
@@ -252,8 +262,12 @@ pub async fn get_organization_usage(
 pub async fn get_organization_users(
     organization: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    _user: AdminOnly,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if !verify_admin(&user, &organization) {
+        return Ok(HttpResponse::Forbidden().finish());
+    };
+
     let org_id = organization.into_inner();
 
     let usage = get_org_users_by_id_query(org_id, pool).await?;
@@ -293,8 +307,11 @@ pub async fn remove_user_from_org(
     data: web::Path<RemoveUserFromOrgData>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
-    _admin: OwnerOnly,
+    admin: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if !verify_admin(&admin, &data.organization_id) {
+        return Ok(HttpResponse::Forbidden().finish());
+    };
     remove_user_from_org_query(data.user_id, data.organization_id, pool, redis_pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
