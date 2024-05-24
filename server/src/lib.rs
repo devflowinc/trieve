@@ -421,7 +421,14 @@ pub fn main() -> std::io::Result<()> {
             .parse()
             .unwrap_or(2);
 
-        let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors, false, replication_factor)
+        let vector_sizes: Vec<u64> = std::env::var("VECTOR_SIZES")
+            .unwrap_or("384,512,768,1024,1536,3072".to_string())
+            .split(',')
+            .map(|x| x.parse().ok())
+            .collect::<Option<Vec<u64>>>()
+            .unwrap_or(vec![384,512,768,1024,1536,3072]);
+
+        let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors, false, replication_factor, vector_sizes)
             .await
             .map_err(|err| {
                 log::error!("Failed to create new qdrant collection: {:?}", err);
