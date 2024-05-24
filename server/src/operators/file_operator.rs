@@ -2,12 +2,13 @@ use super::chunk_operator::{create_chunk_metadata, get_row_count_for_dataset_id_
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
 use super::parse_operator::{build_chunking_regex, coarse_doc_chunker, convert_html_to_text};
+use crate::data::models::ChunkGroup;
 use crate::data::models::FileDTO;
-use crate::data::models::{ChunkGroup, FileDataDTO};
 use crate::data::models::{
     Dataset, DatasetAndOrgWithSubAndPlan, EventType, ServerDatasetConfiguration,
 };
 use crate::handlers::chunk_handler::ChunkData;
+use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::{data::models::Event, get_env};
 use crate::{
     data::models::{File, Pool},
@@ -66,7 +67,7 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
 pub async fn create_file_query(
     file_id: uuid::Uuid,
     file_size: i64,
-    upload_file_data: FileDataDTO,
+    upload_file_data: UploadFileReqPayload,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<File, ServiceError> {
@@ -99,9 +100,9 @@ pub async fn create_file_query(
 
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool, redis_conn))]
-pub async fn create_chunks_with_handler(
+pub async fn create_file_chunks(
     created_file_id: uuid::Uuid,
-    upload_file_data: FileDataDTO,
+    upload_file_data: UploadFileReqPayload,
     html_content: String,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -109,15 +110,17 @@ pub async fn create_chunks_with_handler(
 ) -> Result<(), ServiceError> {
     let file_text = convert_html_to_text(&html_content);
 
-    let chunking_regex: Option<Regex> = match upload_file_data.chunk_delimiters {
-        Some(delimiters) => Some(build_chunking_regex(delimiters).map_err(|e| {
-            log::error!("Could not parse chunking delimiters {:?}", e);
-            ServiceError::BadRequest("Could not parse chunking delimiters".to_string())
-        })?),
-        None => None,
-    };
-
-    let chunk_htmls = coarse_doc_chunker(file_text, chunking_regex);
+    let split_regex: Option<Regex> = upload_file_data
+        .split_delimiters
+        .map(|delimiters| {
+            build_chunking_regex(delimiters).map_err(|e| {
+                log::error!("Could not parse chunking delimiters {:?}", e);
+                ServiceError::BadRequest("Could not parse chunking delimiters".to_string())
+            })
+        })
+        .transpose()?;
+    let target_splits_per_chunk = upload_file_data.target_splits_per_chunk.unwrap_or(20);
+    let chunk_htmls = coarse_doc_chunker(file_text, split_regex, target_splits_per_chunk);
 
     let mut chunks: Vec<ChunkData> = [].to_vec();
 

@@ -11,7 +11,7 @@ use trieve_server::{
     data::models::{self, FileWorkerMessage},
     errors::ServiceError,
     establish_connection, get_env,
-    operators::file_operator::{create_chunks_with_handler, create_file_query, get_aws_bucket},
+    operators::file_operator::{create_file_chunks, create_file_query, get_aws_bucket},
 };
 
 fn main() {
@@ -327,7 +327,7 @@ async fn upload_file(
         "Queue chunks for creation for file",
     );
 
-    create_chunks_with_handler(
+    create_file_chunks(
         created_file.id,
         file_worker_message.upload_file_data,
         html_content,

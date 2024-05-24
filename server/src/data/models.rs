@@ -7,7 +7,7 @@ use crate::get_env;
 use crate::operators::parse_operator::convert_html_to_text;
 
 use super::schema::*;
-use crate::handlers::file_handler::UploadFileData;
+use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
     get_metadata_filter_condition, get_num_value_filter_condition,
@@ -2326,46 +2326,8 @@ impl From<RetrievedPoint> for QdrantPayload {
 pub struct FileWorkerMessage {
     pub file_id: uuid::Uuid,
     pub dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    pub upload_file_data: FileDataDTO,
+    pub upload_file_data: UploadFileReqPayload,
     pub attempt_number: u8,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct FileDataDTO {
-    /// Name of the file being uploaded, including the extension.
-    pub file_name: String,
-    /// Tag set is a comma separated list of tags which will be passed down to the chunks made from the file. Tags are used to filter chunks when searching. HNSW indices are created for each tag such that there is no performance loss when filtering on them.
-    pub tag_set: Option<Vec<String>>,
-    /// Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the group resulting from the file which will hold its chunk.
-    pub description: Option<String>,
-    /// Link to the file. This can also be any string. This can be used to filter when searching for the file's resulting chunks. The link value will not affect embedding creation.
-    pub link: Option<String>,
-    /// Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.
-    pub time_stamp: Option<String>,
-    /// Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. Will be passed down to the file's chunks.
-    pub metadata: Option<serde_json::Value>,
-    /// Create chunks is a boolean which determines whether or not to create chunks from the file. If false, you can manually chunk the file and send the chunks to the create_chunk endpoint with the file_id to associate chunks with the file. Meant mostly for advanced users.
-    pub create_chunks: Option<bool>,
-    /// Chunk delimiters is an optional field which allows you to specify the delimiters to use when chunking the file. If not specified, the default delimiters are used.
-    pub chunk_delimiters: Option<Vec<String>>,
-    /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
-    pub group_tracking_id: Option<String>,
-}
-
-impl From<UploadFileData> for FileDataDTO {
-    fn from(upload_file_data: UploadFileData) -> Self {
-        FileDataDTO {
-            file_name: upload_file_data.file_name,
-            tag_set: upload_file_data.tag_set,
-            description: upload_file_data.description,
-            link: upload_file_data.link,
-            time_stamp: upload_file_data.time_stamp,
-            metadata: upload_file_data.metadata,
-            create_chunks: upload_file_data.create_chunks,
-            chunk_delimiters: upload_file_data.chunk_delimiters,
-            group_tracking_id: upload_file_data.group_tracking_id,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]

@@ -2,8 +2,8 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     af_middleware::auth_middleware::verify_member,
     data::models::{
-        DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, FileDataDTO, FileWorkerMessage, Pool,
-        RedisPool, ServerDatasetConfiguration,
+        DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, FileWorkerMessage, Pool, RedisPool,
+        ServerDatasetConfiguration,
     },
     errors::ServiceError,
     operators::{
@@ -58,10 +58,11 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
         "key2": "value2"
     },
     "create_chunks": true,
-    "chunk_delimiters": [",",".","\n"]
+    "split_delimiters": [",",".","\n"],
+    "target_splits_per_chunk": 20,
 }))]
-pub struct UploadFileData {
-    /// Base64 encoded file. Convert + to -, / to _, and remove the ending = if present. This is the standard base64url encoding.
+pub struct UploadFileReqPayload {
+    /// Base64 encoded file. This is the standard base64url encoding.
     pub base64_file: String,
     /// Name of the file being uploaded, including the extension.
     pub file_name: String,
@@ -77,8 +78,10 @@ pub struct UploadFileData {
     pub metadata: Option<serde_json::Value>,
     /// Create chunks is a boolean which determines whether or not to create chunks from the file. If false, you can manually chunk the file and send the chunks to the create_chunk endpoint with the file_id to associate chunks with the file. Meant mostly for advanced users.
     pub create_chunks: Option<bool>,
-    /// Chunk delimiters is an optional field which allows you to specify the delimiters to use when chunking the file. If not specified, the default delimiters are used.
-    pub chunk_delimiters: Option<Vec<String>>,
+    /// Split delimiters is an optional field which allows you to specify the delimiters to use when splitting the file before chunking the text. If not specified, the default [.!?\n] are used to split into sentences. However, you may want to use spaces or other delimiters.
+    pub split_delimiters: Option<Vec<String>>,
+    /// Target splits per chunk. This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number. Trieve will evenly distribute remainder splits across chunks such that 66 splits with a `target_splits_per_chunk` of 20 will result in 3 chunks with 22 splits each.
+    pub target_splits_per_chunk: Option<i32>,
     /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
     pub group_tracking_id: Option<String>,
 }
@@ -96,7 +99,7 @@ pub struct UploadFileResult {
     path = "/file",
     context_path = "/api",
     tag = "file",
-    request_body(content = UploadFileData, description = "JSON request payload to upload a file", content_type = "application/json"),
+    request_body(content = UploadFileReqPayload, description = "JSON request payload to upload a file", content_type = "application/json"),
     responses(
         (status = 200, description = "Confirmation that the file is uploading", body = UploadFileResult),
         (status = 400, description = "Service error relating to uploading the file", body = ErrorResponseBody),
@@ -110,7 +113,7 @@ pub struct UploadFileResult {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn upload_file_handler(
-    data: web::Json<UploadFileData>,
+    data: web::Json<UploadFileReqPayload>,
     pool: web::Data<Pool>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -161,6 +164,13 @@ pub async fn upload_file_handler(
     let upload_file_data = data.into_inner();
 
     let base64_decode_span = transaction.start_child("base64_decode", "base64_decode");
+    let mut cleaned_base64 = upload_file_data
+        .base64_file
+        .replace("+", "-")
+        .replace("/", "_");
+    if cleaned_base64.ends_with('=') {
+        cleaned_base64.pop();
+    }
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
     let decoded_file_data = base64_engine
@@ -184,11 +194,10 @@ pub async fn upload_file_handler(
 
     bucket_upload_span.finish();
 
-    let file_data: FileDataDTO = upload_file_data.clone().into();
     let message = FileWorkerMessage {
         file_id,
         dataset_org_plan_sub: dataset_org_plan_sub.clone(),
-        upload_file_data: file_data,
+        upload_file_data: upload_file_data.clone(),
         attempt_number: 0,
     };
 
