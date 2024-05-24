@@ -58,14 +58,18 @@ pub fn build_chunking_regex(delimiters: Vec<String>) -> Result<Regex, regex::Err
 }
 
 #[tracing::instrument]
-pub fn coarse_doc_chunker(document: String, chunking_pattern: Option<Regex>) -> Vec<String> {
+pub fn coarse_doc_chunker(
+    document: String,
+    split_pattern: Option<Regex>,
+    num_splits: i32,
+) -> Vec<String> {
     let document_without_newlines = document.replace('\n', " ");
     let dom = Html::parse_fragment(&document_without_newlines);
 
     // get the raw text from the HTML
     let clean_text = dom.root_element().text().collect::<String>();
 
-    let pattern = match chunking_pattern {
+    let pattern = match split_pattern {
         Some(pattern) => pattern,
         None => Regex::new(r"[.!?\n]+").expect("Invalid regex"),
     };

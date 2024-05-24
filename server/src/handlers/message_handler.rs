@@ -862,8 +862,8 @@ pub async fn stream_response(
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct SuggestedQueriesRequest {
-    /// The query to base the generated suggested queries off of.
+pub struct SuggestedQueriesReqPayload {
+    /// The query to base the generated suggested queries off of using RAG. A hybrid search for 10 chunks from your dataset using this query will be performed and the context of the chunks will be used to generate the suggested queries.
     pub query: String,
 }
 
@@ -874,13 +874,13 @@ pub struct SuggestedQueriesResponse {
 
 /// Generate suggested queries
 ///
-/// This endpoint will generate 3 suggested queries based off the query provided in the request body and return them as a JSON object.
+/// This endpoint will generate 3 suggested queries based off a hybrid search using RAG with the query provided in the request body and return them as a JSON object.
 #[utoipa::path(
     post,
     path = "/chunk/gen_suggestions",
     context_path = "/api",
     tag = "chunk",
-    request_body(content = SuggestedQueriesRequest, description = "JSON request payload to get alternative suggested queries", content_type = "application/json"),
+    request_body(content = SuggestedQueriesReqPayload, description = "JSON request payload to get alternative suggested queries", content_type = "application/json"),
     responses(
         (status = 200, description = "A JSON object containing a list of alternative suggested queries", body = SuggestedQueriesResponse),
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
@@ -895,7 +895,7 @@ pub struct SuggestedQueriesResponse {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn create_suggested_queries_handler(
-    data: web::Json<SuggestedQueriesRequest>,
+    data: web::Json<SuggestedQueriesReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,

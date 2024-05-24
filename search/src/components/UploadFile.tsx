@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Show, createSignal, useContext } from "solid-js";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { BiSolidFile } from "solid-icons/bi";
+import { Tooltip } from "./Atoms/Tooltip";
+import { BsInfoCircle } from "solid-icons/bs";
 
 export const UploadFile = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -14,18 +17,20 @@ export const UploadFile = () => {
   const [errorText, setErrorText] = createSignal("");
   const [submitted, setSubmitted] = createSignal(false);
   const [timestamp, setTimestamp] = createSignal("");
+  const [splitDelimiters, setSplitDelimiters] = createSignal([".", "?", "\\n"]);
+  const [targetSplitsPerChunk, setTargetSplitsPerChunk] = createSignal(20);
 
   const handleDragUpload = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFile(e.dataTransfer?.files[0]);
+    setFile(e.dataTransfer?.files[0] as any);
   };
   const handleDirectUpload = (e: Event & { target: HTMLInputElement }) => {
     e.preventDefault();
     e.stopPropagation();
-    setFile(e.target.files ? e.target.files[0] : undefined);
+    setFile(e.target.files ? (e.target.files[0] as any) : undefined);
   };
-  const submitEvidence = async (e: Event) => {
+  const uploadFile = async (e: Event) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
@@ -61,6 +66,8 @@ export const UploadFile = () => {
       file_name: file_name,
       link: link(),
       tag_set: tagSet().split(","),
+      split_delimiters: splitDelimiters(),
+      target_splits_per_chunk: targetSplitsPerChunk(),
     };
 
     if (timestamp()) {
@@ -129,6 +136,38 @@ export const UploadFile = () => {
             }}
           />
         </div>
+        <div class="flex flex-col space-y-2">
+          <div class="flex flex-row items-center space-x-2">
+            <div>Split Delimiters</div>
+            <Tooltip
+              body={<BsInfoCircle />}
+              tooltipText="Split delimiters is an optional field which allows you to specify the delimiters to use when splitting the file before chunking the text. If not specified, the default [.!?\n] are used to split into sentences. However, you may want to use spaces or other delimiters."
+            />
+          </div>
+          <input
+            type="text"
+            placeholder="optional - separate with commas"
+            value={splitDelimiters().join(",")}
+            onInput={(e) => setSplitDelimiters(e.target.value.split(","))}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+        </div>
+        <div class="flex flex-col space-y-2">
+          <div class="flex flex-row items-center space-x-2">
+            <div>Target Splits Per Chunk</div>
+            <Tooltip
+              body={<BsInfoCircle />}
+              tooltipText="Target splits per chunk. This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number. Trieve will evenly distribute remainder splits across chunks such that 46 splits with a target_splits_per_chunk of 20 will result in 3 chunks with 22 splits each."
+            />
+          </div>
+          <input
+            type="number"
+            placeholder="optional"
+            value={targetSplitsPerChunk()}
+            onInput={(e) => setTargetSplitsPerChunk(parseInt(e.target.value))}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+        </div>
         <label
           for="dropzone-file"
           class="dark:hover:bg-bray-800 flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-neutral-100 hover:bg-neutral-200 dark:border-gray-600 dark:bg-neutral-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"
@@ -189,7 +228,7 @@ export const UploadFile = () => {
             class="w-fit rounded bg-neutral-100 p-2 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             type="submit"
             disabled={isSubmitting()}
-            onClick={(e) => void submitEvidence(e)}
+            onClick={(e) => void uploadFile(e)}
           >
             <Show when={!isSubmitting()}>Upload and Chunk New File</Show>
             <Show when={isSubmitting()}>
