@@ -51,6 +51,7 @@ pub async fn create_new_qdrant_collection_query(
     quantize: bool,
     recreate_indexes: bool,
     replication_factor: u32,
+    accepted_vectors: Vec<u64>,
 ) -> Result<(), ServiceError> {
     let qdrant_collection = qdrant_collection
         .unwrap_or(get_env!(
@@ -92,70 +93,33 @@ pub async fn create_new_qdrant_collection_query(
                 None
             };
 
+            let on_disk = if quantize {
+                //TODO: make this scalar
+                Some(true)
+            } else {
+                None
+            };
+            let vector_params_map =
+                qdrant_client::qdrant::vectors_config::Config::ParamsMap(VectorParamsMap {
+                    map: HashMap::from_iter(accepted_vectors.into_iter().map(|size| {
+                        (
+                            format!("{}_vectors", size),
+                            VectorParams {
+                                size,
+                                distance: Distance::Cosine.into(),
+                                quantization_config: quantization_config.clone(),
+                                on_disk,
+                                ..Default::default()
+                            },
+                        )
+                    })),
+                });
+
             qdrant_client
                 .create_collection(&CreateCollection {
                     collection_name: qdrant_collection.clone(),
                     vectors_config: Some(VectorsConfig {
-                        config: Some(qdrant_client::qdrant::vectors_config::Config::ParamsMap(
-                            VectorParamsMap {
-                                map: HashMap::from([
-                                    (
-                                        "384_vectors".to_string(),
-                                        VectorParams {
-                                            size: 384,
-                                            distance: Distance::Cosine.into(),
-                                            quantization_config: quantization_config.clone(),
-                                            ..Default::default()
-                                        },
-                                    ),
-                                    (
-                                        "512_vectors".to_string(),
-                                        VectorParams {
-                                            size: 512,
-                                            distance: Distance::Cosine.into(),
-                                            quantization_config: quantization_config.clone(),
-                                            ..Default::default()
-                                        },
-                                    ),
-                                    (
-                                        "768_vectors".to_string(),
-                                        VectorParams {
-                                            size: 768,
-                                            distance: Distance::Cosine.into(),
-                                            quantization_config: quantization_config.clone(),
-                                            ..Default::default()
-                                        },
-                                    ),
-                                    (
-                                        "1024_vectors".to_string(),
-                                        VectorParams {
-                                            size: 1024,
-                                            distance: Distance::Cosine.into(),
-                                            quantization_config: quantization_config.clone(),
-                                            ..Default::default()
-                                        },
-                                    ),
-                                    (
-                                        "3072_vectors".to_string(),
-                                        VectorParams {
-                                            size: 3072,
-                                            distance: Distance::Cosine.into(),
-                                            quantization_config: quantization_config.clone(),
-                                            ..Default::default()
-                                        },
-                                    ),
-                                    (
-                                        "1536_vectors".to_string(),
-                                        VectorParams {
-                                            size: 1536,
-                                            distance: Distance::Cosine.into(),
-                                            quantization_config,
-                                            ..Default::default()
-                                        },
-                                    ),
-                                ]),
-                            },
-                        )),
+                        config: Some(vector_params_map),
                     }),
                     hnsw_config: Some(HnswConfigDiff {
                         payload_m: Some(16),
