@@ -264,14 +264,29 @@ where
     }
 }
 
+pub fn get_role_for_org(user: &SlimUser, org_id: &uuid::Uuid) -> Option<UserRole> {
+    match user
+        .user_orgs
+        .iter()
+        .find(|org_conn| org_conn.organization_id == *org_id)
+    {
+        Some(org_conn) => Some(UserRole::from(org_conn.role)),
+        None => None,
+    }
+}
+
 pub fn verify_owner(user: &OwnerOnly, org_id: &uuid::Uuid) -> bool {
-    return user.0.user_orgs.iter().any(|org_conn| {
-        org_conn.organization_id == *org_id && org_conn.role == Into::<i32>::into(UserRole::Owner)
-    });
+    if let Some(user_role) = get_role_for_org(&user.0, org_id) {
+        return user_role >= UserRole::Owner;
+    }
+
+    return false;
 }
 
 pub fn verify_admin(user: &AdminOnly, org_id: &uuid::Uuid) -> bool {
-    return user.0.user_orgs.iter().any(|org_conn| {
-        org_conn.organization_id == *org_id && org_conn.role >= Into::<i32>::into(UserRole::Admin)
-    });
+    if let Some(user_role) = get_role_for_org(&user.0, org_id) {
+        return user_role >= UserRole::Admin;
+    }
+
+    return false;
 }

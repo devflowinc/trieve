@@ -1,7 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    af_middleware::auth_middleware::{verify_admin, verify_owner},
+    af_middleware::auth_middleware::{get_role_for_org, verify_admin, verify_owner},
     data::models::{Pool, RedisPool, UserOrganization, UserRole},
+    errors::ServiceError,
     operators::{
         organization_operator::{
             create_organization_query, delete_organization_query, get_org_from_id_query,
@@ -36,7 +37,7 @@ use utoipa::ToSchema;
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn get_organization_by_id(
+pub async fn get_organization(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     user: AdminOnly,
@@ -72,7 +73,7 @@ pub async fn get_organization_by_id(
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn delete_organization_by_id(
+pub async fn delete_organization(
     req: HttpRequest,
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -312,7 +313,14 @@ pub async fn remove_user_from_org(
     if !verify_admin(&admin, &data.organization_id) {
         return Ok(HttpResponse::Forbidden().finish());
     };
-    remove_user_from_org_query(data.user_id, data.organization_id, pool, redis_pool).await?;
+
+    let org_id = data.organization_id;
+    let user_role = match get_role_for_org(&admin.0, &org_id.clone()) {
+        Some(role) => role,
+        None => return Err(ServiceError::Forbidden.into()),
+    };
+
+    remove_user_from_org_query(data.user_id, user_role, org_id, pool, redis_pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

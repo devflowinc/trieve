@@ -562,6 +562,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
 
 pub async fn remove_user_from_org_query(
     user_id: uuid::Uuid,
+    max_allowed_role: UserRole,
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -569,6 +570,18 @@ pub async fn remove_user_from_org_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
     let mut conn = pool.get().await.unwrap();
+
+    let user_role_being_removed: i32 = user_organizations_columns::user_organizations
+        .filter(user_organizations_columns::user_id.eq(user_id))
+        .filter(user_organizations_columns::organization_id.eq(organization_id))
+        .select(user_organizations_columns::role)
+        .first::<i32>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Error loading user role".to_string()))?;
+
+    if user_role_being_removed > max_allowed_role.into() {
+        return Err(ServiceError::Forbidden);
+    }
 
     diesel::delete(
         user_organizations_columns::user_organizations
