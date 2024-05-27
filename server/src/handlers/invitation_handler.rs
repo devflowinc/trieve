@@ -1,10 +1,11 @@
 use super::auth_handler::AdminOnly;
 use crate::{
+    af_middleware::auth_middleware::verify_admin,
     data::models::{Invitation, Pool, RedisPool},
     errors::ServiceError,
     operators::{
         invitation_operator::{
-            create_invitation_query, delete_invitation_by_id_query,
+            create_invitation_query, delete_invitation_by_id_query, get_invitation_by_id_query,
             get_invitations_for_organization_query, send_invitation,
         },
         user_operator::add_existing_user_to_org,
@@ -161,10 +162,13 @@ pub async fn create_invitation(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_invitations(
-    _user: AdminOnly,
+    user: AdminOnly,
     org_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
+    if !verify_admin(&user, &org_id.clone()) {
+        return Err(ServiceError::Forbidden);
+    }
     let invitations = get_invitations_for_organization_query(org_id.into_inner(), pool).await?;
     Ok(HttpResponse::Ok().json(invitations))
 }
@@ -187,10 +191,17 @@ pub async fn get_invitations(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_invitation(
-    _user: AdminOnly,
+    user: AdminOnly,
     invitation_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
-    delete_invitation_by_id_query(invitation_id.into_inner(), pool).await?;
+    let invite_id = invitation_id.into_inner();
+    let invite = get_invitation_by_id_query(invite_id.clone(), &pool).await?;
+
+    if !verify_admin(&user, &invite.organization_id) {
+        return Err(ServiceError::Forbidden);
+    }
+
+    delete_invitation_by_id_query(invite_id, pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
