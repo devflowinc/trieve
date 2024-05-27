@@ -1,5 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
+    af_middleware::auth_middleware::verify_member,
     data::models::{
         DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, FileDataDTO, FileWorkerMessage, Pool,
         RedisPool, ServerDatasetConfiguration,
@@ -298,10 +299,22 @@ pub struct FileData {
 pub async fn get_dataset_files_handler(
     data: web::Path<DatasetFileQuery>,
     pool: web::Data<Pool>,
-    _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    _required_user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data = data.into_inner();
+    if dataset_org_plan_sub.organization.organization.id != data.dataset_id.clone() {
+        return Err(ServiceError::BadRequest(
+            "Organization ID does not match dataset ID".to_string(),
+        )
+        .into());
+    }
+    if !verify_member(
+        &required_user,
+        &dataset_org_plan_sub.organization.organization.id,
+    ) {
+        return Err(ServiceError::Forbidden.into());
+    }
 
     let files = get_dataset_file_query(data.dataset_id, data.page, pool).await?;
 

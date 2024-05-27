@@ -290,3 +290,11 @@ pub fn verify_admin(user: &AdminOnly, org_id: &uuid::Uuid) -> bool {
 
     return false;
 }
+
+pub fn verify_member(user: &LoggedUser, org_id: &uuid::Uuid) -> bool {
+    if let Some(user_role) = get_role_for_org(&user, org_id) {
+        return user_role >= UserRole::User;
+    }
+
+    return false;
+}
