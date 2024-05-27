@@ -1,4 +1,5 @@
 use crate::{
+    af_middleware::auth_middleware::verify_owner,
     data::models::Pool,
     errors::ServiceError,
     get_env,
@@ -224,12 +225,17 @@ pub async fn direct_to_payment_link(
 #[tracing::instrument(skip(pool))]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
-    _user: OwnerOnly,
+    user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_sub_pool = pool.clone();
     let subscription =
         get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool).await?;
+
+    // Verify the user is the owner of the subscription's organization
+    if !verify_owner(&user, &subscription.organization_id) {
+        return Err(ServiceError::Forbidden.into());
+    };
 
     cancel_stripe_subscription(subscription.stripe_id).await?;
 
@@ -266,7 +272,7 @@ pub struct UpdateSubscriptionData {
 #[tracing::instrument(skip(pool))]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,
-    _user: OwnerOnly,
+    user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_subscription_pool = pool.clone();
@@ -275,6 +281,10 @@ pub async fn update_subscription_plan(
 
     let subscription_id = path_data.subscription_id;
     let subscription = get_subscription_by_id_query(subscription_id, get_subscription_pool).await?;
+
+    if !verify_owner(&user, &subscription.organization_id) {
+        return Err(ServiceError::Forbidden.into());
+    };
 
     let plan_id = path_data.plan_id;
     let plan = get_plan_by_id_query(plan_id, get_plan_pool).await?;
