@@ -169,7 +169,6 @@ pub async fn update_dataset(
         ));
     };
 
-    // Verify the dataset is owned by the user.
     if !verify_owner(&user, &curr_dataset.organization_id) {
         return Err(ServiceError::Forbidden);
     }
@@ -262,7 +261,6 @@ pub async fn delete_dataset_by_tracking_id(
 ) -> Result<HttpResponse, ServiceError> {
     let dataset = get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id), pool.clone()).await?;
 
-    // Verify the user is owner of organization
     if !verify_owner(&user, &dataset.organization_id) {
         return Err(ServiceError::Forbidden);
     }
