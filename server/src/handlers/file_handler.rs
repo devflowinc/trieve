@@ -303,9 +303,9 @@ pub async fn get_dataset_files_handler(
     required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data = data.into_inner();
-    if dataset_org_plan_sub.organization.organization.id != data.dataset_id.clone() {
+    if dataset_org_plan_sub.dataset.id != data.dataset_id.clone() {
         return Err(ServiceError::BadRequest(
-            "Organization ID does not match dataset ID".to_string(),
+            "Dataset header does not match given path".to_string(),
         )
         .into());
     }

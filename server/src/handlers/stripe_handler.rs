@@ -232,7 +232,6 @@ pub async fn cancel_subscription(
     let subscription =
         get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool).await?;
 
-    // Verify the user is the owner of the subscription's organization
     if !verify_owner(&user, &subscription.organization_id) {
         return Err(ServiceError::Forbidden.into());
     };

@@ -31,7 +31,7 @@ pub async fn create_invitation_query(
 #[tracing::instrument(skip(pool))]
 pub async fn get_invitation_by_id_query(
     id: uuid::Uuid,
-    pool: &web::Data<Pool>,
+    pool: web::Data<Pool>,
 ) -> Result<Invitation, ServiceError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
@@ -88,7 +88,7 @@ pub async fn check_inv_valid(
     organization_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Invitation, ServiceError> {
-    let invitation = get_invitation_by_id_query(inv_code, &pool.clone())
+    let invitation = get_invitation_by_id_query(inv_code, pool.clone())
         .await
         .map_err(|_| {
             ServiceError::InternalServerError("Could not find invitation for user".to_string())
