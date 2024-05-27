@@ -217,9 +217,9 @@ pub async fn delete_dataset(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    if dataset_org_plan_sub.organization.organization.id != data.clone() {
+    if dataset_org_plan_sub.dataset.id != data.clone() {
         return Err(ServiceError::BadRequest(
-            "Organization ID does not match dataset ID".to_string(),
+            "Dataset header does not match provided dataset ID".to_string(),
         ));
     }
     if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
