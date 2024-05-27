@@ -1,5 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
+    af_middleware::auth_middleware::{verify_admin, verify_owner},
     data::models::{
         ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool,
         ServerDatasetConfiguration, StripePlan, UnifiedId,
@@ -156,7 +157,7 @@ pub struct UpdateDatasetRequest {
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetRequest>,
     pool: web::Data<Pool>,
-    _user: OwnerOnly,
+    user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let curr_dataset = if let Some(dataset_id) = data.dataset_id {
         get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id), pool.clone()).await?
@@ -167,6 +168,11 @@ pub async fn update_dataset(
             "You must provide a dataset_id or tracking_id to update a dataset".to_string(),
         ));
     };
+
+    // Verify the dataset is owned by the user.
+    if !verify_owner(&user, &curr_dataset.organization_id) {
+        return Err(ServiceError::Forbidden);
+    }
 
     let d = update_dataset_query(
         curr_dataset.id,
@@ -210,8 +216,17 @@ pub async fn delete_dataset(
     data: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    _user: OwnerOnly,
+    user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
+    if dataset_org_plan_sub.organization.organization.id != data.clone() {
+        return Err(ServiceError::BadRequest(
+            "Organization ID does not match dataset ID".to_string(),
+        ));
+    }
+    if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
+        return Err(ServiceError::Forbidden);
+    }
+
     let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
@@ -243,9 +258,15 @@ pub async fn delete_dataset(
 pub async fn delete_dataset_by_tracking_id(
     tracking_id: String,
     pool: web::Data<Pool>,
-    _user: OwnerOnly,
+    user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset = get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id), pool.clone()).await?;
+
+    // Verify the user is owner of organization
+    if !verify_owner(&user, &dataset.organization_id) {
+        return Err(ServiceError::Forbidden);
+    }
+
     let server_dataset_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
     delete_dataset_by_id_query(dataset.id, pool, server_dataset_config).await?;
     Ok(HttpResponse::NoContent().finish())
@@ -276,10 +297,15 @@ pub async fn delete_dataset_by_tracking_id(
 pub async fn get_dataset(
     pool: web::Data<Pool>,
     dataset_id: web::Path<uuid::Uuid>,
-    _user: AdminOnly,
+    user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let mut d =
         get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id.into_inner()), pool).await?;
+
+    if !verify_admin(&user, &d.organization_id) {
+        return Err(ServiceError::Forbidden);
+    }
+
     d.server_configuration = json!(ServerDatasetConfiguration::from_json(
         d.server_configuration
     ));
@@ -314,11 +340,16 @@ pub async fn get_dataset(
 pub async fn get_dataset_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
-    _user: AdminOnly,
+    user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let mut d = get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id.into_inner()), pool)
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    if !verify_admin(&user, &d.organization_id) {
+        return Err(ServiceError::Forbidden);
+    }
+
     d.server_configuration = json!(ServerDatasetConfiguration::from_json(
         d.server_configuration
     ));
