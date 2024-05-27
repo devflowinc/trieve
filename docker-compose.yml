@@ -110,7 +110,7 @@ services:
       - 9998:9998
 
   server:
-    image: trieve/server:no-ocr
+    image: trieve/server
     container_name: server
     build:
       context: ./server/
@@ -187,7 +187,7 @@ services:
     env_file: .env
 
   file-worker:
-    image: trieve/file
+    image: trieve/file_worker
     container_name: file-worker
     build:
       context: ./server/
