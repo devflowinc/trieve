@@ -57,24 +57,62 @@ resource "google_container_cluster" "cluster" {
   }
 }
 
-resource "google_container_node_pool" "primary_preemptible_nodes" {
-  name       = "general-compute"
+resource "google_container_node_pool" "larger_nodes" {
+  name       = "larger-compute"
   location   = "${var.region}-a"
   cluster    = google_container_cluster.cluster.name
 
   # enable_autopilot = true
-  node_count = 3
+  node_count = 4
 
   autoscaling {
     min_node_count = 3
-    max_node_count = 20
+    max_node_count = 4
   }
 
   node_config {
     preemptible  = true
-    machine_type = "e2-highmem-8"
+    machine_type = "c2d-highmem-32"
   }
 }
+
+resource "google_container_node_pool" "simple_nodes" {
+  name       = "simple-compute"
+  location   = "${var.region}-a"
+  cluster    = google_container_cluster.cluster.name
+
+  # enable_autopilot = true
+  node_count = 1
+
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 2
+  }
+
+  node_config {
+    preemptible  = true
+    machine_type = "c2d-standard-4"
+  }
+}
+
+# resource "google_container_node_pool" "primary_preemptible_nodes" {
+#   name       = "general-compute"
+#   location   = "${var.region}-a"
+#   cluster    = google_container_cluster.cluster.name
+#
+#   # enable_autopilot = true
+#   node_count = 3
+#
+#   autoscaling {
+#     min_node_count = 3
+#     max_node_count = 20
+#   }
+#
+#   node_config {
+#     preemptible  = true
+#     machine_type = "e2-highmem-8"
+#   }
+# }
 
 resource "google_container_node_pool" "gpu_nodes" {
   name       = "gpu-compute"
@@ -84,7 +122,7 @@ resource "google_container_node_pool" "gpu_nodes" {
 
   autoscaling {
     min_node_count = 1
-    max_node_count = 3
+    max_node_count = 2
   }
 
   node_config {

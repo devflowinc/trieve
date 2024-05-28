@@ -1,4 +1,3 @@
-region: $AWS_REGION
 environment: $ENVIRONMENT # Set to aws if deploying to 
 domain: $DOMAIN # Only used if environment = local
 externalDomain: $EXTERNAL_DOMAIN
