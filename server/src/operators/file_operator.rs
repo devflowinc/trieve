@@ -119,8 +119,15 @@ pub async fn create_file_chunks(
             })
         })
         .transpose()?;
+
+    let rebalance_chunks = upload_file_data.rebalance_chunks.unwrap_or(false);
     let target_splits_per_chunk = upload_file_data.target_splits_per_chunk.unwrap_or(20);
-    let chunk_htmls = coarse_doc_chunker(file_text, split_regex, target_splits_per_chunk);
+    let chunk_htmls = coarse_doc_chunker(
+        file_text,
+        split_regex,
+        rebalance_chunks,
+        target_splits_per_chunk,
+    );
 
     let mut chunks: Vec<ChunkData> = [].to_vec();
 

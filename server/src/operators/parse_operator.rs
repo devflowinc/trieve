@@ -49,19 +49,18 @@ pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
 }
 
 pub fn build_chunking_regex(delimiters: Vec<String>) -> Result<Regex, regex::Error> {
-    let mut regex_string = r"[".to_string();
-    for delimiter in delimiters.iter() {
-        regex_string.push_str(delimiter.as_str());
-    }
-    regex_string.push_str("]+");
-    return Ok(Regex::new(&regex_string)?);
+    let escaped_delimiters: Vec<String> = delimiters.iter().map(|x| regex::escape(x)).collect();
+    let pattern = escaped_delimiters.join("|");
+    let re = Regex::new(&pattern)?;
+    return Ok(re);
 }
 
 #[tracing::instrument]
 pub fn coarse_doc_chunker(
     document: String,
     split_pattern: Option<Regex>,
-    num_splits: i32,
+    rebalance_chunks: bool,
+    num_splits: usize,
 ) -> Vec<String> {
     let document_without_newlines = document.replace('\n', " ");
     let dom = Html::parse_fragment(&document_without_newlines);
@@ -77,8 +76,12 @@ pub fn coarse_doc_chunker(
     // split the text into sentences
     let mut sentences: Vec<&str> = pattern.split_inclusive(&clean_text).collect();
 
+    if !rebalance_chunks {
+        return sentences.iter().map(|x| x.to_string()).collect();
+    }
+
     let mut groups: Vec<String> = vec![];
-    let target_group_size = 20;
+    let target_group_size = num_splits;
 
     if sentences.len() < target_group_size {
         groups.push(sentences.join(""));
