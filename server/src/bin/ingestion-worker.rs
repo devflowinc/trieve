@@ -690,7 +690,7 @@ async fn upload_chunk(
     } else {
         match payload.chunk.split_avg.unwrap_or(false) {
             true => {
-                let chunks = coarse_doc_chunker(content.clone(), None, 20);
+                let chunks = coarse_doc_chunker(content.clone(), None, false, 20);
 
                 let embeddings = create_embeddings(
                     chunks,
