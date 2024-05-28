@@ -272,11 +272,11 @@ master:
   ##
   resources:
     limits: 
-      cpu: 8
-      memory: 64Gi
-    requests: 
       cpu: 4
-      memory: 32Gi
+      memory: 16Gi
+    requests: 
+      cpu: 2
+      memory: 8Gi
   ## Configure Pods Security Context
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
   ## @param master.podSecurityContext.enabled Enabled Redis&reg; master pods' Security Context

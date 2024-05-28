@@ -68,8 +68,6 @@ spec:
             value: {{ .Values.config.s3.bucket }}
           - name: COOKIE_SECURE
             value: {{ .Values.config.trieve.cookieSecure | quote }}
-          - name: AWS_REGION
-            value: {{ .Values.region }}
           - name: QDRANT_COLLECTION
             value: {{ .Values.config.qdrant.collection }}
           - name: TIKA_URL
@@ -92,8 +90,6 @@ spec:
             value: {{ .Values.config.oidc.issuerUrl }}
           - name: GPU_SERVER_ORIGIN
             value: {{ .Values.config.trieve.gpuServerOrigin }}
-          - name: AWS_REGION
-            value: {{ .Values.region }}
           - name: SPARSE_SERVER_QUERY_ORIGIN
             value: {{ .Values.config.trieve.sparseServerQueryOrigin }}
           - name: SPARSE_SERVER_DOC_ORIGIN

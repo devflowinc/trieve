@@ -78,41 +78,6 @@ module "eks" {
 
   eks_managed_node_groups = {
 
-    # trieve-nodegroup-gpu = {
-    #   name = "nodegroup-gpu"
-    #
-    #   instance_types = ["g4dn.xlarge"]
-    #   ami_type       = "BOTTLEROCKET_x86_64_NVIDIA"
-    #
-    #
-    #   min_size     = 2
-    #   max_size     = 5
-    #   desired_size = 4
-    #
-    #   # Argument for GPU inference
-    #   kubelet_extra_args = "--node-labels=k8s.amazonaws.com/accelerator=vgpu"
-    #
-    #   # Needed by the aws-ebs-csi-driver
-    #   iam_role_additional_policies = {
-    #     AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-    #   }
-    # }
-
-    # trieve-nodegroup-general = {
-    #   name = "nodegroup-general"
-    #
-    #   instance_types = ["m7i.xlarge"]
-    #
-    #   desired_size = 1
-    #   min_size     = 1
-    #   max_size     = 5
-    #
-    #   # Needed by the aws-ebs-csi-driver
-    #   iam_role_additional_policies = {
-    #     AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-    #   }
-    # }
-
     trieve-nodegroup-highmem = {
       name = "nodegroup-highmem"
 
