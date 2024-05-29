@@ -174,7 +174,7 @@ services:
       context: ./server/
       dockerfile: Dockerfile.ingestion-worker
     restart: always
-    network_mode: "host"    
+    network_mode: "host"
     depends_on:
       tika:
         condition: service_healthy
@@ -203,7 +203,7 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
-    env_file: .env 
+    env_file: .env
 
   chat:
     image: trieve/chat
@@ -239,7 +239,7 @@ services:
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
       - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
-      - VITE_CHAT_UI_URL=${VITE_CHAT_UI_URL}      
+      - VITE_CHAT_UI_URL=${VITE_CHAT_UI_URL}
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7
@@ -255,8 +255,8 @@ services:
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=password
       - KC_HEALTH_ENABLED=true
-      - KC_PROXY=edge
-      - KC_HOSTNAME=${KEYCLOAK_BASE_URL-localhost}
+      - KC_PROXY=edge # Remove for local dev
+      - KC_HOSTNAME=${KEYCLOAK_BASE_URL-localhost} # Remove for local dev
     healthcheck:
       test:
         [
