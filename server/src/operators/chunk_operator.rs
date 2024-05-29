@@ -1052,7 +1052,6 @@ pub async fn delete_chunk_metadata_query(
     match transaction_result {
         Ok(result) => match result {
             TransactionResult::ChunkCollisionNotDetected => {
-
                 let _ = qdrant
                     .delete_points(
                         qdrant_collection,
