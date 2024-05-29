@@ -1045,13 +1045,14 @@ pub async fn delete_chunk_metadata_query(
         })
         .await;
 
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
     match transaction_result {
         Ok(result) => match result {
             TransactionResult::ChunkCollisionNotDetected => {
+
                 let _ = qdrant
                     .delete_points(
                         qdrant_collection,
