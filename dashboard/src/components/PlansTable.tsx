@@ -191,10 +191,6 @@ export const PlansTable = (props: PlansTableProps) => {
             <BsCheck class="fill-current text-magenta-500" />
             <p> SSO/SAML </p>
           </div>
-          <div class="flex items-center space-x-2">
-            <BsCheck class="fill-current text-magenta-500" />
-            <p> 24x7x365 support </p>
-          </div>
         </div>
       </div>
       <div class="mt-10 space-y-4">
