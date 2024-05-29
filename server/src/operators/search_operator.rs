@@ -865,7 +865,7 @@ pub async fn global_unfiltered_top_match_query(
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
 ) -> Result<SearchResult, ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;

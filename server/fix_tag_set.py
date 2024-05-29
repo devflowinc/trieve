@@ -7,7 +7,10 @@ dotenv.load_dotenv()
 # Connect to the PostgreSQL database
 # Get the PostgreSQL connection details from environment variables
 conn = psycopg2.connect(
-    os.getenv("DATABASE_URL"),
+    dbname="trievedb",
+    user="foo",
+    password="foobarbaz",
+    host="localhost",
 )
 
 
@@ -25,37 +28,41 @@ for table in tables:
     while True:
         # Execute the query to retrieve the tag_set column
         cur.execute(
-            f"SELECT * FROM {table} WHERE id > (%s)::uuid ORDER BY id LIMIT 1000",
+            f"SELECT id, tag_set FROM {table} WHERE id > (%s)::uuid AND array_length(tag_set_array, 1) IS NULL AND tag_set <> '' ORDER BY id LIMIT 1000",
             (str(lastBusiness_id),),
         )
 
         # Fetch the first 10000 rows from the result set
-        rows = cur.fetchmany(1000)
+        rows = cur.fetchall()
 
         if not rows:
             break
 
         # Convert the tag_set field from a comma-separated string to an array within PostgreSQL
         for row in rows:
-            tag_set = row[5]
+            tag_set = row[1]
+            print(tag_set)
+            print(row[0])
             if tag_set:
                 tag_set_array = tag_set.split(",")
                 tag_set = tag_set.replace("'", "\\'")
+
                 cur.execute(
-                    f"UPDATE {table} SET tag_set_array = %s WHERE tag_set = (E'%s')::text",
+                    f"UPDATE {table} SET tag_set_array = %s WHERE id = %s",
                     (
                         tag_set_array,
-                        psycopg2.extensions.AsIs(tag_set),
+                        row[0],
                     ),
                 )
+        print("committing changes")
+        conn.commit()
 
-            # Fetch the next 10000 rows from the result set
+        # Fetch the next 10000 rows from the result set
 
         lastRecord = rows[-1]
         lastBusiness_id = lastRecord[0]
 
 # Commit the changes to the database
-conn.commit()
 
 # Close the cursor and connection
 cur.close()

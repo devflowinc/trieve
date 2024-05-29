@@ -428,7 +428,7 @@ pub fn main() -> std::io::Result<()> {
             .collect::<Option<Vec<u64>>>()
             .unwrap_or(vec![384,512,768,1024,1536,3072]);
 
-        let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors, false, replication_factor, vector_sizes)
+        let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes)
             .await
             .map_err(|err| {
                 log::error!("Failed to create new qdrant collection: {:?}", err);

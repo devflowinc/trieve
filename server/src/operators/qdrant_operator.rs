@@ -47,238 +47,235 @@ pub async fn get_qdrant_connection(
 pub async fn create_new_qdrant_collection_query(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
-    qdrant_collection: Option<&str>,
     quantize: bool,
     recreate_indexes: bool,
     replication_factor: u32,
     accepted_vectors: Vec<u64>,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = qdrant_collection
-        .unwrap_or(get_env!(
-            "QDRANT_COLLECTION",
-            "QDRANT_COLLECTION should be set if this is called"
-        ))
-        .to_string();
-
     let qdrant_client = get_qdrant_connection(qdrant_url, qdrant_api_key).await?;
+    for vector in accepted_vectors.iter() {
+        let qdrant_collection = format!("{}_vectors", vector);
+        // check if collection exists
+        let collection = qdrant_client
+            .collection_exists(qdrant_collection.clone())
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
-    // check if collection exists
-    let collection = qdrant_client
-        .collection_exists(qdrant_collection.clone())
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+        match collection {
+            true => log::info!("Avoided creating collection as it already exists"),
+            false => {
+                let mut sparse_vector_config = HashMap::new();
+                sparse_vector_config.insert(
+                    "sparse_vectors".to_string(),
+                    SparseVectorParams {
+                        index: Some(SparseIndexConfig {
+                            on_disk: Some(false),
+                            ..Default::default()
+                        }),
+                    },
+                );
 
-    match collection {
-        true => log::info!("Avoided creating collection as it already exists"),
-        false => {
-            let mut sparse_vector_config = HashMap::new();
-            sparse_vector_config.insert(
-                "sparse_vectors".to_string(),
-                SparseVectorParams {
-                    index: Some(SparseIndexConfig {
-                        on_disk: Some(false),
+                let quantization_config = if quantize {
+                    //TODO: make this scalar
+                    Some(QuantizationConfig {
+                        quantization: Some(Quantization::Binary(BinaryQuantization {
+                            always_ram: Some(true),
+                        })),
+                    })
+                } else {
+                    None
+                };
+
+                let on_disk = if quantize {
+                    //TODO: make this scalar
+                    Some(true)
+                } else {
+                    None
+                };
+
+                let vectors_hash_map = HashMap::from_iter(
+                    vec![(
+                        qdrant_collection.to_string(),
+                        VectorParams {
+                            size: vector.clone(),
+                            distance: Distance::Cosine.into(),
+                            quantization_config: quantization_config.clone(),
+                            on_disk,
+                            ..Default::default()
+                        },
+                    )]
+                    .into_iter(),
+                );
+
+                qdrant_client
+                    .create_collection(&CreateCollection {
+                        collection_name: qdrant_collection.clone(),
+                        vectors_config: Some(VectorsConfig {
+                            config: Some(qdrant_client::qdrant::vectors_config::Config::ParamsMap(
+                                VectorParamsMap {
+                                    map: vectors_hash_map,
+                                },
+                            )),
+                        }),
+                        hnsw_config: Some(HnswConfigDiff {
+                            payload_m: Some(16),
+                            m: Some(0),
+                            ..Default::default()
+                        }),
+                        sparse_vectors_config: Some(SparseVectorConfig {
+                            map: sparse_vector_config,
+                        }),
+                        write_consistency_factor: Some(1),
+                        replication_factor: Some(replication_factor),
                         ..Default::default()
-                    }),
-                },
-            );
+                    })
+                    .await
+                    .map_err(|err| {
+                        if err.to_string().contains("already exists") {
+                            return ServiceError::BadRequest("Collection already exists".into());
+                        }
+                        ServiceError::BadRequest(err.to_string())
+                    })?;
+            }
+        };
 
-            let quantization_config = if quantize {
-                //TODO: make this scalar
-                Some(QuantizationConfig {
-                    quantization: Some(Quantization::Binary(BinaryQuantization {
-                        always_ram: Some(true),
-                    })),
-                })
-            } else {
-                None
-            };
-
-            let on_disk = if quantize {
-                //TODO: make this scalar
-                Some(true)
-            } else {
-                None
-            };
-            let vector_params_map =
-                qdrant_client::qdrant::vectors_config::Config::ParamsMap(VectorParamsMap {
-                    map: HashMap::from_iter(accepted_vectors.into_iter().map(|size| {
-                        (
-                            format!("{}_vectors", size),
-                            VectorParams {
-                                size,
-                                distance: Distance::Cosine.into(),
-                                quantization_config: quantization_config.clone(),
-                                on_disk,
-                                ..Default::default()
-                            },
-                        )
-                    })),
-                });
+        if recreate_indexes {
+            qdrant_client
+                .delete_field_index(qdrant_collection.clone(), "link", None)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .create_collection(&CreateCollection {
-                    collection_name: qdrant_collection.clone(),
-                    vectors_config: Some(VectorsConfig {
-                        config: Some(vector_params_map),
-                    }),
-                    hnsw_config: Some(HnswConfigDiff {
-                        payload_m: Some(16),
-                        m: Some(0),
-                        ..Default::default()
-                    }),
-                    sparse_vectors_config: Some(SparseVectorConfig {
-                        map: sparse_vector_config,
-                    }),
-                    write_consistency_factor: Some(1),
-                    replication_factor: Some(replication_factor),
-                    ..Default::default()
-                })
+                .delete_field_index(qdrant_collection.clone(), "tag_set", None)
                 .await
-                .map_err(|err| {
-                    if err.to_string().contains("already exists") {
-                        return ServiceError::BadRequest("Collection already exists".into());
-                    }
-                    ServiceError::BadRequest(err.to_string())
-                })?;
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+            qdrant_client
+                .delete_field_index(qdrant_collection.clone(), "dataset_id", None)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+            qdrant_client
+                .delete_field_index(qdrant_collection.clone(), "metadata", None)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+            qdrant_client
+                .delete_field_index(qdrant_collection.clone(), "time_stamp", None)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+            qdrant_client
+                .delete_field_index(qdrant_collection.clone(), "group_ids", None)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+            qdrant_client
+                .delete_field_index(qdrant_collection.clone(), "location", None)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+            qdrant_client
+                .delete_field_index(qdrant_collection.clone(), "content", None)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
         }
-    };
-
-    if recreate_indexes {
-        qdrant_client
-            .delete_field_index(qdrant_collection.clone(), "link", None)
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
         qdrant_client
-            .delete_field_index(qdrant_collection.clone(), "tag_set", None)
+            .create_field_index(
+                qdrant_collection.clone(),
+                "link",
+                FieldType::Text,
+                None,
+                None,
+            )
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .delete_field_index(qdrant_collection.clone(), "dataset_id", None)
+            .create_field_index(
+                qdrant_collection.clone(),
+                "tag_set",
+                FieldType::Text,
+                None,
+                None,
+            )
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .delete_field_index(qdrant_collection.clone(), "metadata", None)
+            .create_field_index(
+                qdrant_collection.clone(),
+                "dataset_id",
+                FieldType::Keyword,
+                None,
+                None,
+            )
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .delete_field_index(qdrant_collection.clone(), "time_stamp", None)
+            .create_field_index(
+                qdrant_collection.clone(),
+                "metadata",
+                FieldType::Keyword,
+                None,
+                None,
+            )
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .delete_field_index(qdrant_collection.clone(), "group_ids", None)
+            .create_field_index(
+                qdrant_collection.clone(),
+                "time_stamp",
+                FieldType::Integer,
+                None,
+                None,
+            )
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .delete_field_index(qdrant_collection.clone(), "location", None)
+            .create_field_index(
+                qdrant_collection.clone(),
+                "group_ids",
+                FieldType::Keyword,
+                None,
+                None,
+            )
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .delete_field_index(qdrant_collection.clone(), "content", None)
+            .create_field_index(
+                qdrant_collection.clone(),
+                "location",
+                FieldType::Geo,
+                None,
+                None,
+            )
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+        qdrant_client
+            .create_field_index(
+                qdrant_collection.clone(),
+                "content",
+                FieldType::Text,
+                Some(&PayloadIndexParams {
+                    index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
+                        tokenizer: TokenizerType::Prefix as i32,
+                        min_token_len: Some(2),
+                        max_token_len: Some(10),
+                        lowercase: Some(true),
+                    })),
+                }),
+                None,
+            )
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
     }
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "link",
-            FieldType::Text,
-            None,
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "tag_set",
-            FieldType::Text,
-            None,
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "dataset_id",
-            FieldType::Keyword,
-            None,
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "metadata",
-            FieldType::Keyword,
-            None,
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "time_stamp",
-            FieldType::Integer,
-            None,
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "group_ids",
-            FieldType::Keyword,
-            None,
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "location",
-            FieldType::Geo,
-            None,
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "content",
-            FieldType::Text,
-            Some(&PayloadIndexParams {
-                index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
-                    tokenizer: TokenizerType::Prefix as i32,
-                    min_token_len: Some(2),
-                    max_token_len: Some(10),
-                    lowercase: Some(true),
-                })),
-            }),
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
     Ok(())
 }
@@ -295,7 +292,7 @@ pub async fn bulk_upsert_qdrant_points_query(
         ));
     }
 
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -321,9 +318,8 @@ pub async fn create_new_qdrant_point_query(
     group_ids: Option<Vec<uuid::Uuid>>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
-
     let payload = QdrantPayload::new(chunk_metadata, group_ids, None).into();
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
@@ -377,7 +373,7 @@ pub async fn update_qdrant_point_query(
 ) -> Result<(), actix_web::Error> {
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -477,7 +473,7 @@ pub async fn add_bookmark_to_qdrant_query(
     group_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -555,7 +551,7 @@ pub async fn remove_bookmark_from_qdrant_query(
     group_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -656,7 +652,7 @@ pub async fn search_over_groups_query(
     vector: VectorType,
     config: ServerDatasetConfiguration,
 ) -> Result<Vec<GroupSearchResults>, ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -932,7 +928,7 @@ pub async fn recommend_qdrant_query(
     config: ServerDatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<Vec<QdrantRecommendResult>, ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let recommend_strategy = match strategy {
         Some(strategy) => match strategy.as_str() {
@@ -1057,7 +1053,7 @@ pub async fn recommend_qdrant_groups_query(
     config: ServerDatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<Vec<GroupSearchResults>, ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let recommend_strategy = match strategy {
         Some(strategy) => match strategy.as_str() {
@@ -1204,7 +1200,7 @@ pub async fn get_point_count_qdrant_query(
         return Ok(0);
     };
 
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -1231,7 +1227,7 @@ pub async fn point_ids_exists_in_qdrant(
     point_ids: Vec<uuid::Uuid>,
     config: ServerDatasetConfiguration,
 ) -> Result<bool, ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
