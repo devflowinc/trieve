@@ -17,7 +17,7 @@ resource "aws_instance" "new-deployment-embeddigs" {
   }
 
   tags = {
-    Name = "withtrieve-embeddings"
+    Name = "${var.cluster-name}-embeddings"
   }
 }
 

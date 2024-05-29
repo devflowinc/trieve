@@ -1,4 +1,4 @@
-replicaCount: 5
+replicaCount: 4
 
 image:
   repository: docker.io/qdrant/qdrant
@@ -83,11 +83,13 @@ additionalLabels: {}
 podAnnotations: {}
 podLabels: {}
 
-resources: {}
-  # limits:
-  #   memory: 200Gi
-  # requests:
-  #   memory: 100Gi
+resources:
+  limits:
+    cpu: 29440m
+    memory: 200Gi
+  requests:
+    cpu: 29440m
+    memory: 200Gi
 
 containerSecurityContext:
   runAsNonRoot: true
@@ -107,7 +109,11 @@ updateVolumeFsOwnership: true
 
 nodeSelector: {}
 
-tolerations: []
+tolerations: 
+- key: "qdrant-node"
+  operator: "Exists"
+  effect: "NoSchedule"
+
 
 affinity: {}
 

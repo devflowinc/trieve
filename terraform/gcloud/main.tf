@@ -73,6 +73,12 @@ resource "google_container_node_pool" "larger_nodes" {
   node_config {
     preemptible  = true
     machine_type = "c2d-highmem-32"
+
+    taint {
+        effect = "NO_SCHEDULE"
+        key    = "qdrant-node"
+        value  = "present"
+    }
   }
 }
 
