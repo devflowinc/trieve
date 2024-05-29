@@ -17,6 +17,11 @@ variable "region" {
   default = "us-west-1"
 }
 
+variable "cluster-name" {
+  type = string
+  default = "test"
+}
+
 ###############################################################
 # VPC configuration
 ###############################################################
@@ -27,7 +32,7 @@ provider "aws" {
 
 module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
-  name   = "trieve-vpc"
+  name   = "${var.cluster-name}-trieve-vpc"
 
   enable_nat_gateway   = true
   enable_dns_hostnames = true
@@ -57,7 +62,7 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
-  cluster_name                   = "trieve-cluster"
+  cluster_name                   = "${var.cluster-name}-cluster"
   cluster_version                = "1.29"
   cluster_endpoint_public_access = true
 
@@ -78,13 +83,13 @@ module "eks" {
 
   eks_managed_node_groups = {
 
-    trieve-nodegroup-highmem = {
-      name = "nodegroup-highmem"
+    trieve-nodegroup-general = {
+      name = "${var.cluster-name}-nodegroup-genral"
 
-      instance_types = ["m7i.4xlarge"]
+      instance_types = ["m7i.xlarge"]
 
-      desired_size = 3
-      min_size     = 2
+      desired_size = 2
+      min_size     = 1
       max_size     = 3
 
       # Needed by the aws-ebs-csi-driver
@@ -93,14 +98,21 @@ module "eks" {
       }
     }
 
-    trieve-nodegroup-r3 = {
-      name = "nodegroup-r5"
+    trieve-nodegroup-highmem = {
+      name = "${var.cluster-name}-nodegroup-highmem"
 
-      instance_types = ["r5.4xlarge"]
+      instance_types = ["r5a.8xlarge"]
 
-      desired_size = 5
+      desired_size = 4
       min_size     = 1
-      max_size     = 7
+      max_size     = 4
+
+      taints = [
+        {
+          key    = "qdrant-node"
+          effect = "NO_SCHEDULE"
+        }
+      ]
 
       # Needed by the aws-ebs-csi-driver
       iam_role_additional_policies = {
@@ -122,7 +134,7 @@ module "eks" {
 
 data "aws_eks_cluster" "cluster" {
   depends_on = [module.eks]
-  name       = "trieve-cluster"
+  name       = "${var.cluster-name}-cluster"
 }
 
 data "aws_iam_openid_connect_provider" "oidc_provider" {
@@ -154,7 +166,7 @@ provider "helm" {
 
 module "alb_controller" {
   source                           = "./alb"
-  cluster_name                     = "trieve"
+  cluster_name                     = var.cluster-name
   cluster_identity_oidc_issuer     = data.aws_eks_cluster.cluster.identity.0.oidc.0.issuer
   cluster_identity_oidc_issuer_arn = data.aws_iam_openid_connect_provider.oidc_provider.arn
   aws_region                       = var.region

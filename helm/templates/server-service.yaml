@@ -1,5 +1,7 @@
 {{- $name := "server-service" }}
 {{- $selector := "server" }}
+
+{{- if eq $.Values.environment "gcloud" }}
 ---
 apiVersion: cloud.google.com/v1
 kind: BackendConfig
@@ -12,6 +14,7 @@ spec:
     type: HTTP
     requestPath: /api/health
 ---
+{{- end }}
 kind: Service
 apiVersion: v1
 metadata:

@@ -26,8 +26,10 @@ spec:
         app.kubernetes.io/instance: {{ $.Release.Name }}
         app.kubernetes.io/managed-by: Helm
     spec:
+      {{- if eq $.Values.environment "gcloud" }}
       nodeSelector:
         cloud.google.com/gke-accelerator: nvidia-l4
+      {{- end }}
       containers:
         - name: embedding-{{ $name }}
           readinessProbe:
