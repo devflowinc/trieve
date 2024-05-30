@@ -272,7 +272,7 @@ pub async fn delete_dataset_by_tracking_id(
 
 /// Get Dataset
 ///
-/// Get a dataset by id. The auth'ed user must be an admin or owner of the organization to get a dataset.
+/// Get a dataset by id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     get,
     path = "/dataset/{dataset_id}",
@@ -315,7 +315,7 @@ pub async fn get_dataset(
 
 /// Get Dataset by Tracking ID
 ///
-/// Get a dataset by its tracking id. The auth'ed user must be an admin or owner of the organization to get a dataset.
+/// Get a dataset by its tracking id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     get,
     path = "/dataset/tracking_id/{tracking_id}",
@@ -359,7 +359,7 @@ pub async fn get_dataset_by_tracking_id(
 
 /// Get Datasets from Organization
 ///
-/// Get all datasets for an organization. The auth'ed user must be an admin or owner of the organization to get its datasets.
+/// Get all datasets for an organization. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     get,
     path = "/dataset/organization/{organization_id}",

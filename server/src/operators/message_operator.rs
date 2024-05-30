@@ -1,4 +1,3 @@
-use crate::data::models::Topic;
 use crate::diesel::prelude::*;
 use crate::{
     data::models::{Message, Pool},
@@ -39,37 +38,8 @@ pub async fn get_topic_messages(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn user_owns_topic_query(
-    user_given_id: uuid::Uuid,
-    topic_id: uuid::Uuid,
-    given_dataset_id: uuid::Uuid,
-    pool: &web::Data<Pool>,
-) -> Result<Topic, ServiceError> {
-    use crate::data::schema::topics::dsl as topics_columns;
-
-    let mut conn = pool.get().await.unwrap();
-
-    let topic: Topic = topics_columns::topics
-        .filter(topics_columns::id.eq(topic_id))
-        .filter(topics_columns::owner_id.eq(user_given_id.to_string()))
-        .filter(topics_columns::dataset_id.eq(given_dataset_id))
-        .first::<Topic>(&mut conn)
-        .await
-        .map_err(|db_error| {
-            log::error!(
-                "Error getting topic for user_owns_topic_check: {:?}",
-                db_error
-            );
-            ServiceError::BadRequest("Error getting topic for user_owns_topic_check".to_string())
-        })?;
-
-    Ok(topic)
-}
-
-#[tracing::instrument(skip(pool))]
 pub async fn create_message_query(
     new_message: Message,
-    given_user_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::messages::dsl::messages;
@@ -116,7 +86,6 @@ pub async fn create_generic_system_message(
 pub async fn create_topic_message_query(
     previous_messages: Vec<Message>,
     new_message: Message,
-    given_user_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Vec<Message>, ServiceError> {
@@ -128,13 +97,13 @@ pub async fn create_topic_message_query(
         let system_message =
             create_generic_system_message(new_message.topic_id, dataset_id, pool).await?;
         ret_messages.extend(vec![system_message.clone()]);
-        create_message_query(system_message, given_user_id, pool).await?;
+        create_message_query(system_message, pool).await?;
         previous_messages_len = 1;
     }
 
     new_message_copy.sort_order = previous_messages_len as i32;
 
-    create_message_query(new_message_copy.clone(), given_user_id, pool).await?;
+    create_message_query(new_message_copy.clone(), pool).await?;
     ret_messages.push(new_message_copy);
 
     Ok(ret_messages)
@@ -191,7 +160,6 @@ pub async fn get_messages_for_topic_query(
 
 #[tracing::instrument(skip(pool))]
 pub async fn delete_message_query(
-    given_user_id: &uuid::Uuid,
     given_message_id: uuid::Uuid,
     given_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,

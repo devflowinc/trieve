@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct CreateTopicData {
+pub struct CreateTopicReqPayload {
     /// The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX if a name is not explicitly provided on the name request body key.
     pub first_user_message: Option<String>,
     /// The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
@@ -30,7 +30,7 @@ pub struct CreateTopicData {
     path = "/topic",
     context_path = "/api",
     tag = "topic",
-    request_body(content = CreateTopicData, description = "JSON request payload to create chat topic", content_type = "application/json"),
+    request_body(content = CreateTopicReqPayload, description = "JSON request payload to create chat topic", content_type = "application/json"),
     responses(
         (status = 200, description = "The JSON response payload containing the created topic", body = Topic),
         (status = 400, description = "Topic name empty or a service error", body = ErrorResponseBody),
@@ -44,7 +44,7 @@ pub struct CreateTopicData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn create_topic(
-    data: web::Json<CreateTopicData>,
+    data: web::Json<CreateTopicReqPayload>,
     user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -129,7 +129,7 @@ pub async fn delete_topic(
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct UpdateTopicData {
+pub struct UpdateTopicReqPayload {
     /// The id of the topic to target.
     pub topic_id: uuid::Uuid,
     /// The new name of the topic. A name is not generated from this field, it is used as-is.
@@ -144,7 +144,7 @@ pub struct UpdateTopicData {
     path = "/topic",
     context_path = "/api",
     tag = "topic",
-    request_body(content = UpdateTopicData, description = "JSON request payload to update a chat topic", content_type = "application/json"),
+    request_body(content = UpdateTopicReqPayload, description = "JSON request payload to update a chat topic", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the topic was updated"),
         (status = 400, description = "Service error relating to topic update", body = ErrorResponseBody),
@@ -158,7 +158,7 @@ pub struct UpdateTopicData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn update_topic(
-    data: web::Json<UpdateTopicData>,
+    data: web::Json<UpdateTopicReqPayload>,
     user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
