@@ -39,14 +39,10 @@ export const CreateNewDocChunkForm = () => {
 
     const chunkHTMLContentValue = editorHtmlContent();
     const chunkTextContentValue = editorTextContent();
-    console.log(
-      `chunkTextContentValue: ${JSON.stringify(chunkTextContentValue)}`,
-    );
 
     const docChunkLinkValue = docChunkLink();
 
     if (chunkTextContentValue == "") {
-      console.log("Errors");
       const errors: string[] = [];
       setErrorFields(errors);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call

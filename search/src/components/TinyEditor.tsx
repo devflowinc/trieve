@@ -14,7 +14,6 @@ export const TinyEditor = (props: TinyEditorProps) => {
   let tinyEditor;
 
   const initEditor = async () => {
-    console.log("running tiny setup");
     const options = {
       selector: "#editor",
       height: "100%",
@@ -97,7 +96,6 @@ export const TinyEditor = (props: TinyEditorProps) => {
     try {
       // eslint-disable-next-line
       const tinyMCE = (window as any).tinymce;
-      console.log(tinyMCE);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await tinyMCE.init(options);
       if (props.htmlValue) {

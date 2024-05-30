@@ -6,10 +6,6 @@ div.tox.tox-tinymce {
   min-height: 200px;
 }
 
-.debug {
-  outline: 1px solid red;
-}
-
 mark > div > * {
   background-color: #ff0;
   color: #000;
