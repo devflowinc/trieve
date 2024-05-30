@@ -4,11 +4,12 @@ import {
   BiRegularQuestionMark,
   BiRegularXCircle,
 } from "solid-icons/bi";
-import { JSX, Show, createEffect, createSignal, useContext } from "solid-js";
+import { JSX, Show, createSignal, useContext } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { CreateChunkDTO, isActixApiDefaultError } from "../../utils/apiTypes";
 import { Tooltip } from "./Atoms/Tooltip";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { TinyEditor } from "./TinyEditor";
 
 export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
@@ -28,25 +29,29 @@ export const CreateNewDocChunkForm = () => {
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [timestamp, setTimestamp] = createSignal("");
 
+  const [editorHtmlContent, setEditorHtmlContent] = createSignal("");
+  const [editorTextContent, setEditorTextContent] = createSignal("");
+
   const submitDocChunk = (e: Event) => {
     e.preventDefault();
     const dataset = $dataset?.();
     if (!dataset) return;
 
-    const chunkHTMLContentValue =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      (window as any).tinymce.activeEditor.getContent() as unknown as string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const chunkTextContentValue = (window as any).tinyMCE.activeEditor.getBody()
-      .textContent as unknown as string;
+    const chunkHTMLContentValue = editorHtmlContent();
+    const chunkTextContentValue = editorTextContent();
+    console.log(
+      `chunkTextContentValue: ${JSON.stringify(chunkTextContentValue)}`,
+    );
+
     const docChunkLinkValue = docChunkLink();
 
-    if (!chunkTextContentValue) {
+    if (chunkTextContentValue == "") {
+      console.log("Errors");
       const errors: string[] = [];
-      if (!chunkTextContentValue) {
-        errors.push("chunkContent");
-      }
       setErrorFields(errors);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      //eslint-disable-next-line
+      (window as any).tinymce.activeEditor.focus();
       return;
     }
 
@@ -97,136 +102,10 @@ export const CreateNewDocChunkForm = () => {
         return;
       });
     });
-
-    if (errorFields().includes("chunkContent")) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window as any).tinymce.activeEditor.focus();
-    }
   };
-
-  createEffect(() => {
-    const options = {
-      selector: "#search-query-textarea",
-      height: "100%",
-      width: "100%",
-      plugins: [
-        "advlist",
-        "autoresize",
-        "autolink",
-        "lists",
-        "link",
-        "image",
-        "charmap",
-        "preview",
-        "anchor",
-        "searchreplace",
-        "visualblocks",
-        "code",
-        "fullscreen",
-        "insertdatetime",
-        "media",
-        "table",
-        "help",
-        "wordcount",
-      ],
-      autoresize_bottom_margin: 0,
-      skin: document.documentElement.classList.contains("dark")
-        ? "oxide-dark"
-        : "oxide",
-      content_css: document.documentElement.classList.contains("dark")
-        ? "dark"
-        : "default",
-      toolbar:
-        "undo redo | fontsize | " +
-        "bold italic backcolor | alignleft aligncenter " +
-        "alignright alignjustify | bullist numlist outdent indent | " +
-        "removeformat | help",
-      font_size_formats: "4pt 6pt 8pt 10pt 12pt 14pt 16pt 18pt 20pt 22pt",
-      content_style:
-        "body { font-family:Helvetica,Arial,sans-serif; font-size:12pt; min-height: 200px; }",
-      menubar: false,
-      entity_encoding: "raw",
-      entities: "160,nbsp,38,amp,60,lt,62,gt",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setup: function (editor: any) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+1", "Font size 8.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `8pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+2", "Font size 12.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `12pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+3", "Font size 16.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `16pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+4", "Font size 20.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `20pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+5", "Font size 24.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `24pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+h", "Font size 24.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("HiliteColor", false, `#F1C40F`);
-        });
-      },
-    };
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-      const tinyMCE: any = (window as any).tinymce;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-      void tinyMCE.init(options as any);
-    } catch (e) {
-      console.error(e);
-    }
-  });
 
   return (
     <>
-      <div class="rounded-md bg-yellow-50 p-4">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <svg
-              class="h-5 w-5 text-yellow-400"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-yellow-800">Warning</h3>
-            <div class="mt-2 text-sm text-yellow-700">
-              <p>
-                If the textarea below for chunk content is not showing up,
-                please refresh the page. This is a known bug, and we are working
-                on fixing it asap.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
       <form
         class="my-8 flex h-full w-full flex-col space-y-4 text-neutral-800 dark:text-white"
         onSubmit={(e) => {
@@ -303,7 +182,10 @@ export const CreateNewDocChunkForm = () => {
               />
             </div>
           </div>
-          <textarea id="search-query-textarea" />
+          <TinyEditor
+            onHtmlChange={(e) => setEditorHtmlContent(e)}
+            onTextChange={(e) => setEditorTextContent(e)}
+          />
         </div>
         <div class="flex flex-row items-center space-x-2">
           <button
