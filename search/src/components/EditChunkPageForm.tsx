@@ -11,10 +11,9 @@ import {
   BiRegularXCircle,
 } from "solid-icons/bi";
 import type { SingleChunkPageProps } from "./SingleChunkPage";
-import sanitize from "sanitize-html";
-import { sanitzerOptions } from "./ScoreChunk";
 import { Tooltip } from "./Atoms/Tooltip";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { TinyEditor } from "./TinyEditor";
 
 export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
@@ -29,7 +28,6 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   >("");
   const [formErrorFields, setFormErrorFields] = createSignal<string[]>([]);
   const [isUpdating, setIsUpdating] = createSignal(false);
-  const [chunkHtml, setChunkHtml] = createSignal<string>("");
   const [link, setLink] = createSignal<string>(
     initialChunkMetadata?.link ?? "",
   );
@@ -53,6 +51,8 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const [fetching, setFetching] = createSignal(true);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [groupIds, setGroupIds] = createSignal<string[]>();
+
+  const [editorHtmlContent, setEditorHtmlContent] = createSignal("");
 
   createEffect(() => {
     const currentDatasetId = $dataset?.()?.dataset.id;
@@ -94,9 +94,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
-    const chunkHTMLContentValue = (
-      window as any
-    ).tinymce.activeEditor.getContent() as unknown as string;
+    const chunkHTMLContentValue = editorHtmlContent();
     const curChunkId = props.chunkId;
 
     if (!chunkHTMLContentValue) {
@@ -105,6 +103,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       errors.push("chunkContent");
       setFormErrorText(errorMessage);
       setFormErrorFields(errors);
+      (window as any).tinymce.activeEditor.focus();
       return;
     }
 
@@ -175,11 +174,6 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
         }
       });
     });
-
-    if (formErrorFields().includes("chunkContent")) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window as any).tinymce.activeEditor.focus();
-    }
   };
 
   createEffect(() => {
@@ -201,7 +195,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
           setMetadata(data.metadata);
           setTrackingId(data.tracking_id ?? "");
           setTimestamp(data.time_stamp?.split("T")[0] ?? null);
-          setChunkHtml(data.chunk_html ?? "");
+          setEditorHtmlContent(data.chunk_html ?? "");
           setWeight(data.weight ?? 0);
           setTopLevelError("");
           setFetching(false);
@@ -212,108 +206,6 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
         setFetching(false);
       }
     });
-  });
-
-  createEffect(() => {
-    if (topLevelError() || fetching()) {
-      return;
-    }
-    const textareaItem = document.querySelector("#search-query-textarea");
-    if (!textareaItem) {
-      return;
-    }
-    textareaItem.innerHTML = sanitize(chunkHtml(), sanitzerOptions);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-    const tinyMCE: any = (window as any).tinymce;
-    const options = {
-      selector: "#search-query-textarea",
-      height: "100%",
-      width: "100%",
-      plugins: [
-        "advlist",
-        "autoresize",
-        "autolink",
-        "lists",
-        "link",
-        "image",
-        "charmap",
-        "preview",
-        "anchor",
-        "searchreplace",
-        "visualblocks",
-        "code",
-        "fullscreen",
-        "insertdatetime",
-        "media",
-        "table",
-        "help",
-        "wordcount",
-      ],
-      autoresize_bottom_margin: 0,
-      skin: document.documentElement.classList.contains("dark")
-        ? "oxide-dark"
-        : "oxide",
-      content_css: document.documentElement.classList.contains("dark")
-        ? "dark"
-        : "default",
-      toolbar:
-        "undo redo | fontsize | " +
-        "bold italic backcolor | alignleft aligncenter " +
-        "alignright alignjustify | bullist numlist outdent indent | " +
-        "removeformat | help",
-      font_size_formats: "4pt 6pt 8pt 10pt 12pt 14pt 16pt 18pt 20pt 22pt",
-      content_style:
-        "body { font-family:Helvetica,Arial,sans-serif; font-size:12pt; min-height: 200px; }",
-      menubar: false,
-      entity_encoding: "raw",
-      entities: "160,nbsp,38,amp,60,lt,62,gt",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setup: function (editor: any) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+1", "Font size 8.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `8pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+2", "Font size 12.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `12pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+3", "Font size 16.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `16pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+4", "Font size 20.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `20pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+5", "Font size 24.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("FontSize", false, `24pt`);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+h", "Font size 24.", function () {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          editor.execCommand("HiliteColor", false, `#F1C40F`);
-        });
-      },
-    };
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      void tinyMCE.init(options as any);
-    } catch (e) {
-      console.error(e);
-    }
   });
 
   return (
@@ -444,8 +336,11 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                     />
                   </div>
                 </div>
-                <textarea id="search-query-textarea" />
               </div>
+              <TinyEditor
+                htmlValue={editorHtmlContent()}
+                onHtmlChange={(e) => setEditorHtmlContent(e)}
+              />
               <div class="flex flex-row items-center space-x-2">
                 <button
                   class="w-fit rounded bg-neutral-100 p-2 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
