@@ -112,7 +112,7 @@ pub struct UploadFileResult {
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn upload_file_handler(
+pub async fn upload_file(
     data: web::Json<UploadFileReqPayload>,
     pool: web::Data<Pool>,
     user: AdminOnly,
@@ -255,7 +255,7 @@ pub async fn upload_file_handler(
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn get_file_handler(
+pub async fn get_file(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
@@ -308,7 +308,7 @@ pub struct FileData {
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn get_dataset_files_handler(
+pub async fn get_dataset_files(
     data: web::Path<DatasetFileQuery>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -365,7 +365,7 @@ pub async fn get_dataset_files_handler(
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn delete_file_handler(
+pub async fn delete_file(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     _user: AdminOnly,

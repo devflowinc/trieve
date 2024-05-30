@@ -49,19 +49,17 @@ pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
 }
 
 pub fn build_chunking_regex(delimiters: Vec<String>) -> Result<Regex, regex::Error> {
-    let mut regex_string = r"[".to_string();
-    for delimiter in delimiters.iter() {
-        regex_string.push_str(delimiter.as_str());
-    }
-    regex_string.push_str("]+");
-    return Ok(Regex::new(&regex_string)?);
+    let escaped_delimiters: Vec<String> = delimiters.iter().map(|x| regex::escape(x)).collect();
+    let pattern = escaped_delimiters.join("|");
+    let re = Regex::new(&pattern)?;
+    return Ok(re);
 }
 
 #[tracing::instrument]
 pub fn coarse_doc_chunker(
     document: String,
     split_pattern: Option<Regex>,
-    num_splits: i32,
+    target_splits_per_chunk: usize,
 ) -> Vec<String> {
     let document_without_newlines = document.replace('\n', " ");
     let dom = Html::parse_fragment(&document_without_newlines);
@@ -75,46 +73,47 @@ pub fn coarse_doc_chunker(
     };
 
     // split the text into sentences
-    let mut sentences: Vec<&str> = pattern.split_inclusive(&clean_text).collect();
+    let mut splits: Vec<&str> = pattern.split_inclusive(&clean_text).collect();
+    // log the splits
+    log::info!("Splits: {:?}", splits);
 
     let mut groups: Vec<String> = vec![];
-    let target_group_size = 20;
 
-    if sentences.len() < target_group_size {
-        groups.push(sentences.join(""));
-        return coarse_remove_large_chunks(groups);
+    if splits.len() < target_splits_per_chunk {
+        groups.push(splits.join(""));
+        return groups;
     }
 
-    let mut remainder = (sentences.len() % target_group_size) as f32;
-    let group_count = ((sentences.len() / target_group_size) as f32).floor();
+    let mut remainder = (splits.len() % target_splits_per_chunk) as f32;
+    let group_count = ((splits.len() / target_splits_per_chunk) as f32).floor();
     let remainder_per_group = (remainder / group_count).ceil();
 
     while remainder > 0.0 {
-        let group_size =
-            target_group_size + cmp::min(remainder as usize, remainder_per_group as usize) as usize;
-        let group = sentences
+        let group_size = target_splits_per_chunk
+            + cmp::min(remainder as usize, remainder_per_group as usize) as usize;
+        let group = splits
             .iter()
             .take(group_size)
             .copied()
             .collect::<Vec<&str>>()
             .join("");
         groups.push(group);
-        sentences.drain(0..group_size);
+        splits.drain(0..group_size);
         remainder -= remainder_per_group;
     }
 
-    while !sentences.is_empty() {
-        let group = sentences
+    while !splits.is_empty() {
+        let group = splits
             .iter()
-            .take(target_group_size)
+            .take(target_splits_per_chunk)
             .copied()
             .collect::<Vec<&str>>()
             .join("");
         groups.push(group);
-        sentences.drain(0..target_group_size);
+        splits.drain(0..target_splits_per_chunk);
     }
 
-    coarse_remove_large_chunks(groups)
+    groups
 }
 
 #[tracing::instrument(skip(embeddings))]

@@ -191,10 +191,10 @@ impl Modify for SecurityAddon {
         handlers::group_handler::add_chunk_to_group_by_tracking_id,
         handlers::group_handler::get_chunks_in_group_by_tracking_id,
         handlers::group_handler::search_within_group,
-        handlers::file_handler::get_dataset_files_handler,
-        handlers::file_handler::upload_file_handler,
-        handlers::file_handler::get_file_handler,
-        handlers::file_handler::delete_file_handler,
+        handlers::file_handler::get_dataset_files,
+        handlers::file_handler::upload_file,
+        handlers::file_handler::get_file,
+        handlers::file_handler::delete_file,
         handlers::event_handler::get_events,
         handlers::organization_handler::create_organization,
         handlers::organization_handler::get_organization,
@@ -562,7 +562,7 @@ pub fn main() -> std::io::Result<()> {
                                     )),
                                 )
                                 .service(web::resource("/files/{dataset_id}/{page}").route(
-                                    web::get().to(handlers::file_handler::get_dataset_files_handler),
+                                    web::get().to(handlers::file_handler::get_dataset_files),
                                 )),
                         )
                         .service(
@@ -760,15 +760,15 @@ pub fn main() -> std::io::Result<()> {
                             web::scope("/file")
                                 .service(
                                     web::resource("").route(
-                                        web::post().to(handlers::file_handler::upload_file_handler),
+                                        web::post().to(handlers::file_handler::upload_file),
                                     ),
                                 )
                                 .service(
                                     web::resource("/{file_id}")
-                                        .route(web::get().to(handlers::file_handler::get_file_handler))
+                                        .route(web::get().to(handlers::file_handler::get_file))
                                         .route(
                                             web::delete()
-                                                .to(handlers::file_handler::delete_file_handler),
+                                                .to(handlers::file_handler::delete_file),
                                         ),
                                 )
                                 .service(
