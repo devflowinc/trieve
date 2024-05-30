@@ -255,8 +255,6 @@ services:
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=password
       - KC_HEALTH_ENABLED=true
-      - KC_PROXY=edge
-      - KC_HOSTNAME=${KEYCLOAK_BASE_URL-localhost}
     healthcheck:
       test:
         [

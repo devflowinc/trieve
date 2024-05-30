@@ -64,20 +64,14 @@ pub fn coarse_doc_chunker(
     let document_without_newlines = document.replace('\n', " ");
     let dom = Html::parse_fragment(&document_without_newlines);
 
-    // get the raw text from the HTML
     let clean_text = dom.root_element().text().collect::<String>();
 
     let pattern = match split_pattern {
         Some(pattern) => pattern,
         None => Regex::new(r"[.!?\n]+").expect("Invalid regex"),
     };
-    // log the pattern
-    log::info!("Pattern: {:?}", pattern);
 
-    // split the text into sentences
     let mut splits: Vec<&str> = pattern.split_inclusive(&clean_text).collect();
-    // log the splits length
-    log::info!("Splits: {:?}", splits.len());
 
     let mut groups: Vec<String> = vec![];
 
