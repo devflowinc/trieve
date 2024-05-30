@@ -17,7 +17,7 @@ use utoipa::ToSchema;
 
 /// Get Organization
 ///
-/// Fetch the details of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
+/// Fetch the details of an organization by its id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     get,
     path = "/organization/{organization_id}",
@@ -204,7 +204,7 @@ pub async fn create_organization(
 
 /// Get Organization Usage
 ///
-/// Fetch the current usage specification of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
+/// Fetch the current usage specification of an organization by its id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     get,
     path = "/organization/usage/{organization_id}",
@@ -241,7 +241,7 @@ pub async fn get_organization_usage(
 
 /// Get Organization Users
 ///
-/// Fetch the users of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
+/// Fetch the users of an organization by its id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     get,
     path = "/organization/users/{organization_id}",
@@ -286,7 +286,7 @@ pub struct RemoveUserFromOrgData {
 
 /// Remove User From Organization
 ///
-/// Remove a user from an organization. The auth'ed user must be an admin or owner of the organization to remove a user.
+/// Remove a user from an organization. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file..
 #[utoipa::path(
     delete,
     path = "/organization/{organization_id}/user/{user_id}",
@@ -308,14 +308,14 @@ pub async fn remove_user_from_org(
     data: web::Path<RemoveUserFromOrgData>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
-    admin: AdminOnly,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_admin(&admin, &data.organization_id) {
+    if !verify_admin(&user, &data.organization_id) {
         return Ok(HttpResponse::Forbidden().finish());
     };
 
     let org_id = data.organization_id;
-    let user_role = match get_role_for_org(&admin.0, &org_id.clone()) {
+    let user_role = match get_role_for_org(&user.0, &org_id.clone()) {
         Some(role) => role,
         None => return Err(ServiceError::Forbidden.into()),
     };

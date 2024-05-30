@@ -1,5 +1,5 @@
 use super::{
-    auth_handler::LoggedUser,
+    auth_handler::{AdminOnly, LoggedUser},
     chunk_handler::{ChunkFilter, ParsedQuery, SearchChunkData},
 };
 use crate::{
@@ -13,7 +13,6 @@ use crate::{
         message_operator::{
             create_message_query, create_topic_message_query, delete_message_query,
             get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
-            user_owns_topic_query,
         },
         organization_operator::get_message_org_count,
         parse_operator::convert_html_to_text,
@@ -42,7 +41,7 @@ use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct CreateMessageData {
+pub struct CreateMessageReqPayload {
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
     pub new_message_content: String,
     /// The ID of the topic to attach the message to.
@@ -59,13 +58,13 @@ pub struct CreateMessageData {
 
 /// Create a message
 ///
-/// Create a message. Messages are attached to topics in order to coordinate memory of gen-AI chat sessions. We are considering refactoring this resource of the API soon. Currently, you can only send user messages. If the topic is a RAG topic then the response will include Chunks first on the stream. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
+/// Create a message. Messages are attached to topics in order to coordinate memory of gen-AI chat sessions. We are considering refactoring this resource of the API soon. Currently, you can only send user messages. If the topic is a RAG topic then the response will include Chunks first on the stream. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     post,
     path = "/message",
     context_path = "/api",
     tag = "message",
-    request_body(content = CreateMessageData, description = "JSON request payload to create a message completion", content_type = "application/json"),
+    request_body(content = CreateMessageReqPayload, description = "JSON request payload to create a message completion", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
         (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
@@ -79,9 +78,9 @@ pub struct CreateMessageData {
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn create_message_completion_handler(
-    data: web::Json<CreateMessageData>,
-    user: LoggedUser,
+pub async fn create_message_completion(
+    data: web::Json<CreateMessageReqPayload>,
+    user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -106,7 +105,6 @@ pub async fn create_message_completion_handler(
     }
 
     let create_message_data = data.into_inner();
-    let user_owns_topic_pool = pool.clone();
     let get_messages_pool = pool.clone();
     let create_message_pool = pool.clone();
     let stream_response_pool = pool.clone();
@@ -122,15 +120,6 @@ pub async fn create_message_completion_handler(
         dataset_org_plan_sub.dataset.id,
     );
 
-    let _topic = user_owns_topic_query(
-        user.id,
-        topic_id,
-        dataset_org_plan_sub.dataset.id,
-        &user_owns_topic_pool,
-    )
-    .await
-    .map_err(|_e| ServiceError::Unauthorized)?;
-
     // get the previous messages
     let mut previous_messages = get_topic_messages(
         topic_id,
@@ -139,7 +128,7 @@ pub async fn create_message_completion_handler(
     )
     .await?;
 
-    // remove citations from the previous messages
+    // remove chunks from the previous messages
     previous_messages = previous_messages
         .into_iter()
         .map(|message| {
@@ -149,7 +138,7 @@ pub async fn create_message_completion_handler(
                     .content
                     .split("||")
                     .last()
-                    .unwrap_or("I give up, I can't find a citation")
+                    .unwrap_or("I give up, I can't find chunks for this message")
                     .to_string();
             }
             message
@@ -160,7 +149,6 @@ pub async fn create_message_completion_handler(
     let previous_messages = create_topic_message_query(
         previous_messages,
         new_message,
-        user.id,
         dataset_org_plan_sub.dataset.id,
         &create_message_pool,
     )
@@ -168,7 +156,6 @@ pub async fn create_message_completion_handler(
 
     stream_response(
         previous_messages,
-        user.id,
         topic_id,
         create_message_data.stream_response,
         create_message_data.highlight_results,
@@ -208,17 +195,7 @@ pub async fn get_all_topic_messages(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let second_pool = pool.clone();
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
-    // check if the user owns the topic
-    let _user_topic = user_owns_topic_query(
-        user.id,
-        topic_id,
-        dataset_org_plan_sub.dataset.id,
-        &second_pool,
-    )
-    .await
-    .map_err(|_e| ServiceError::Unauthorized)?;
 
     let messages =
         get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool).await?;
@@ -227,7 +204,7 @@ pub async fn get_all_topic_messages(
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct RegenerateMessageData {
+pub struct RegenerateMessageReqPayload {
     /// The id of the topic to regenerate the last message for.
     pub topic_id: uuid::Uuid,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
@@ -241,7 +218,7 @@ pub struct RegenerateMessageData {
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct EditMessageData {
+pub struct EditMessageReqPayload {
     /// The id of the topic to edit the message at the given sort order for.
     pub topic_id: uuid::Uuid,
     /// The sort order of the message to edit.
@@ -260,13 +237,13 @@ pub struct EditMessageData {
 
 /// Edit a message
 ///
-/// Edit a message which exists within the topic's chat history. This will delete the message and replace it with a new message. The new message will be generated by the AI based on the new content provided in the request body. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
+/// Edit a message which exists within the topic's chat history. This will delete the message and replace it with a new message. The new message will be generated by the AI based on the new content provided in the request body. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     put,
     path = "/message",
     context_path = "/api",
     tag = "message",
-    request_body(content = EditMessageData, description = "JSON request payload to edit a message and get a new stream", content_type = "application/json"),
+    request_body(content = EditMessageReqPayload, description = "JSON request payload to edit a message and get a new stream", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
         (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
@@ -279,9 +256,9 @@ pub struct EditMessageData {
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn edit_message_handler(
-    data: web::Json<EditMessageData>,
-    user: LoggedUser,
+pub async fn edit_message(
+    data: web::Json<EditMessageReqPayload>,
+    user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -304,7 +281,6 @@ pub async fn edit_message_handler(
     .id;
 
     delete_message_query(
-        &user.id,
         message_id,
         topic_id,
         dataset_org_plan_sub.dataset.id,
@@ -312,8 +288,8 @@ pub async fn edit_message_handler(
     )
     .await?;
 
-    create_message_completion_handler(
-        actix_web::web::Json(CreateMessageData {
+    create_message_completion(
+        actix_web::web::Json(CreateMessageReqPayload {
             new_message_content: new_message_content.to_string(),
             topic_id,
             stream_response,
@@ -330,13 +306,13 @@ pub async fn edit_message_handler(
 
 /// Regenerate message
 ///
-/// Regenerate the assistant response to the last user message of a topic. This will delete the last message and replace it with a new message. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
+/// Regenerate the assistant response to the last user message of a topic. This will delete the last message and replace it with a new message. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     delete,
     path = "/message",
     context_path = "/api",
     tag = "message",
-    request_body(content = RegenerateMessageData, description = "JSON request payload to delete an agent message then regenerate it in a strem", content_type = "application/json"),
+    request_body(content = RegenerateMessageReqPayload, description = "JSON request payload to delete an agent message then regenerate it in a strem", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
         (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
@@ -350,9 +326,9 @@ pub async fn edit_message_handler(
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn regenerate_message_handler(
-    data: web::Json<RegenerateMessageData>,
-    user: LoggedUser,
+pub async fn regenerate_message(
+    data: web::Json<RegenerateMessageReqPayload>,
+    user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -363,14 +339,9 @@ pub async fn regenerate_message_handler(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let user_owns_topic_pool = pool.clone();
     let get_messages_pool = pool.clone();
     let create_message_pool = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
-
-    user_owns_topic_query(user.id, topic_id, dataset_id, &user_owns_topic_pool)
-        .await
-        .map_err(|_e| ServiceError::Unauthorized)?;
 
     let mut previous_messages =
         get_topic_messages(topic_id, dataset_id, &get_messages_pool).await?;
@@ -384,7 +355,6 @@ pub async fn regenerate_message_handler(
     if previous_messages.len() == 2 {
         return stream_response(
             previous_messages,
-            user.id,
             topic_id,
             should_stream,
             data.highlight_citations,
@@ -437,11 +407,10 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate.push(message.clone());
     }
 
-    let _ = delete_message_query(&user.id, message_id, topic_id, dataset_id, &pool).await;
+    let _ = delete_message_query(message_id, topic_id, dataset_id, &pool).await;
 
     stream_response(
         previous_messages_to_regenerate,
-        user.id,
         topic_id,
         should_stream,
         data.highlight_citations,
@@ -544,7 +513,6 @@ pub async fn get_topic_string(
 #[tracing::instrument(skip(pool))]
 pub async fn stream_response(
     messages: Vec<models::Message>,
-    user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
     should_stream: Option<bool>,
     highlight_results: Option<bool>,
@@ -811,7 +779,7 @@ pub async fn stream_response(
             dataset.id,
         );
 
-        let _ = create_message_query(new_message, user_id, &pool).await;
+        let _ = create_message_query(new_message, &pool).await;
 
         return Ok(HttpResponse::Ok().json(completion_content));
     }
@@ -839,7 +807,7 @@ pub async fn stream_response(
             dataset.id,
         );
 
-        let _ = create_message_query(new_message, user_id, &pool).await;
+        let _ = create_message_query(new_message, &pool).await;
     });
 
     let new_stream = stream::iter(vec![Ok(Bytes::from(chunk_metadatas_stringified1))]);
@@ -894,7 +862,7 @@ pub struct SuggestedQueriesResponse {
 
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn create_suggested_queries_handler(
+pub async fn get_suggested_queries(
     data: web::Json<SuggestedQueriesReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,

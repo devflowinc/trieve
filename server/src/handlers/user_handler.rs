@@ -15,7 +15,7 @@ use utoipa::ToSchema;
 pub struct UpdateUserOrgRoleData {
     /// The id of the organization to update the user for.
     pub organization_id: uuid::Uuid,
-    /// The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the auth'ed user must be an admin (1) or owner (2) of the organization.
+    /// The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the role of the auth'ed user or api key must be an admin (1) or owner (2) of the organization.
     pub user_id: Option<uuid::Uuid>,
     /// Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
     pub role: i32,
@@ -31,7 +31,7 @@ pub struct GetUserWithChunksData {
 
 /// Update User
 ///
-/// Update a user's information. If the user_id is not provided, the auth'ed user will be updated. If the user_id is provided, the auth'ed user must be an admin (1) or owner (2) of the organization.
+/// Update a user's information. If the user_id is not provided, the auth'ed user will be updated. If the user_id is provided, the role of the auth'ed user or api key must be an admin (1) or owner (2) of the organization.
 #[utoipa::path(
     put,
     path = "/user",

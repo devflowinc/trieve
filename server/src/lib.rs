@@ -133,7 +133,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.8.9",
+        version = "9.0.0",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -153,11 +153,11 @@ impl Modify for SecurityAddon {
         handlers::topic_handler::delete_topic,
         handlers::topic_handler::update_topic,
         handlers::topic_handler::get_all_topics_for_owner_id,
-        handlers::message_handler::create_message_completion_handler,
+        handlers::message_handler::create_message_completion,
         handlers::message_handler::get_all_topic_messages,
-        handlers::message_handler::edit_message_handler,
-        handlers::message_handler::regenerate_message_handler,
-        handlers::message_handler::create_suggested_queries_handler,
+        handlers::message_handler::edit_message,
+        handlers::message_handler::regenerate_message,
+        handlers::message_handler::get_suggested_queries,
         handlers::chunk_handler::create_chunk,
         handlers::chunk_handler::update_chunk,
         handlers::chunk_handler::delete_chunk,
@@ -216,12 +216,12 @@ impl Modify for SecurityAddon {
     components(
         schemas(
             handlers::auth_handler::AuthQuery,
-            handlers::topic_handler::CreateTopicData,
+            handlers::topic_handler::CreateTopicReqPayload,
             handlers::topic_handler::DeleteTopicData,
-            handlers::topic_handler::UpdateTopicData,
-            handlers::message_handler::CreateMessageData,
-            handlers::message_handler::RegenerateMessageData,
-            handlers::message_handler::EditMessageData,
+            handlers::topic_handler::UpdateTopicReqPayload,
+            handlers::message_handler::CreateMessageReqPayload,
+            handlers::message_handler::RegenerateMessageReqPayload,
+            handlers::message_handler::EditMessageReqPayload,
             handlers::message_handler::SuggestedQueriesReqPayload,
             handlers::message_handler::SuggestedQueriesResponse,
             handlers::chunk_handler::ChunkData,
@@ -598,13 +598,13 @@ pub fn main() -> std::io::Result<()> {
                             web::resource("/message")
                                 .route(
                                     web::post().to(
-                                        handlers::message_handler::create_message_completion_handler,
+                                        handlers::message_handler::create_message_completion,
                                     ),
                                 )
-                                .route(web::put().to(handlers::message_handler::edit_message_handler))
+                                .route(web::put().to(handlers::message_handler::edit_message))
                                 .route(
                                     web::delete()
-                                        .to(handlers::message_handler::regenerate_message_handler),
+                                        .to(handlers::message_handler::regenerate_message),
                                 ),
                         )
                         .service(
@@ -632,7 +632,7 @@ pub fn main() -> std::io::Result<()> {
                                 )
                                 .service(web::resource("/suggestions").route(
                                     web::post().to(
-                                        handlers::message_handler::create_suggested_queries_handler,
+                                        handlers::message_handler::get_suggested_queries,
                                     ),
                                 ))
                                 .service(web::resource("/generate").route(

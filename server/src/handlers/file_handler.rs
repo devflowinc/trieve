@@ -348,7 +348,7 @@ pub async fn get_dataset_files_handler(
 }
 /// Delete File
 ///
-/// Delete a file from S3 attached to the server based on its id. This will disassociate chunks from the file, but only delete them all together if you specify delete_chunks to be true. Auth'ed user must be an admin or owner of the dataset's organization to delete a file.
+/// Delete a file from S3 attached to the server based on its id. This will disassociate chunks from the file, but only delete them all together if you specify delete_chunks to be true. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
 #[utoipa::path(
     delete,
     path = "/file/{file_id}",
