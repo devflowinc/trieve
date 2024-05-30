@@ -19,6 +19,7 @@ export const UploadFile = () => {
   const [timestamp, setTimestamp] = createSignal("");
   const [splitDelimiters, setSplitDelimiters] = createSignal([".", "?", "\\n"]);
   const [targetSplitsPerChunk, setTargetSplitsPerChunk] = createSignal(20);
+  const [rebalanceChunks, setRebalanceChunks] = createSignal(false);
 
   const handleDragUpload = (e: DragEvent) => {
     e.preventDefault();
@@ -68,6 +69,7 @@ export const UploadFile = () => {
       tag_set: tagSet().split(","),
       split_delimiters: splitDelimiters(),
       target_splits_per_chunk: targetSplitsPerChunk(),
+      rebalance_chunks: rebalanceChunks(),
     };
 
     if (timestamp()) {
@@ -157,7 +159,7 @@ export const UploadFile = () => {
             <div>Target Splits Per Chunk</div>
             <Tooltip
               body={<BsInfoCircle />}
-              tooltipText="Target splits per chunk. This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number. Trieve will evenly distribute remainder splits across chunks such that 46 splits with a target_splits_per_chunk of 20 will result in 3 chunks with 22 splits each."
+              tooltipText="Target splits per chunk. This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number."
             />
           </div>
           <input
@@ -166,6 +168,21 @@ export const UploadFile = () => {
             value={targetSplitsPerChunk()}
             onInput={(e) => setTargetSplitsPerChunk(parseInt(e.target.value))}
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+        </div>
+        <div class="flex flex-col space-y-2">
+          <div class="flex flex-row items-center space-x-2">
+            <div>Rebalance Chunks</div>
+            <Tooltip
+              body={<BsInfoCircle />}
+              tooltipText="Balance chunks. If set to true, Trieve will evenly distribute remainder splits across chunks such that 46 splits with a target_splits_per_chunk of 20 will result in 3 chunks with 22 splits each."
+            />
+          </div>
+          <input
+            type="checkbox"
+            checked={rebalanceChunks()}
+            onInput={(e) => setRebalanceChunks(e.currentTarget.checked)}
+            class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
           />
         </div>
         <label
