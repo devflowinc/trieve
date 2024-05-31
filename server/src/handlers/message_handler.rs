@@ -1,6 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunkData},
+    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{
@@ -633,7 +633,7 @@ pub async fn stream_response(
     }
 
     let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
-    let search_chunk_data = SearchChunkData {
+    let search_chunk_data = SearchChunksReqPayload {
         search_type: "hybrid".to_string(),
         query: query.clone(),
         page_size: Some(n_retrievals_to_include.try_into().unwrap_or(8)),
@@ -892,7 +892,7 @@ pub async fn get_suggested_queries(
     };
 
     let chunk_metadatas = search_hybrid_chunks(
-        SearchChunkData {
+        SearchChunksReqPayload {
             search_type: "hybrid".to_string(),
             query: data.query.clone(),
             page_size: Some(10),

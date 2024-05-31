@@ -17,7 +17,8 @@ use crate::data::models::{
     UnifiedId,
 };
 use crate::handlers::chunk_handler::{
-    ChunkFilter, ParsedQuery, SearchChunkData, SearchChunkQueryResponseBody,
+    AutocompleteReqPayload, ChunkFilter, ParsedQuery, SearchChunkQueryResponseBody,
+    SearchChunksReqPayload,
 };
 use crate::handlers::group_handler::{
     SearchOverGroupsData, SearchWithinGroupData, SearchWithinGroupResults,
@@ -1307,7 +1308,7 @@ pub async fn get_metadata_from_groups(
 #[tracing::instrument(skip(pool))]
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
-    data: &SearchChunkData,
+    data: &SearchChunksReqPayload,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1549,7 +1550,7 @@ pub fn rerank_chunks(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn search_semantic_chunks(
-    data: SearchChunkData,
+    data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -1618,7 +1619,7 @@ pub async fn search_semantic_chunks(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(timer, pool))]
 pub async fn search_full_text_chunks(
-    data: SearchChunkData,
+    data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -1697,7 +1698,7 @@ pub async fn search_full_text_chunks(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(timer, pool))]
 pub async fn search_hybrid_chunks(
-    data: SearchChunkData,
+    data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -2375,7 +2376,7 @@ pub async fn hybrid_search_over_groups(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn autocomplete_semantic_chunks(
-    mut data: SearchChunkData,
+    mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -2419,6 +2420,18 @@ pub async fn autocomplete_semantic_chunks(
         .must
         .push(Condition::matches_text("content", data.query.clone()));
 
+    if data.extend_results.unwrap_or(false) {
+        qdrant_query.push(
+            RetrievePointQuery {
+                vector: VectorType::Dense(embedding_vector),
+                score_threshold: data.score_threshold,
+                filter: data.filters.clone(),
+            }
+            .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
+            .await,
+        );
+    };
+
     let search_chunk_query_results =
         retrieve_qdrant_points_query(qdrant_query, 1, false, data.page_size.unwrap_or(10), config)
             .await?;
@@ -2429,17 +2442,37 @@ pub async fn autocomplete_semantic_chunks(
         data.highlight_delimiters = Some(vec![" ".to_string()]);
     }
 
-    let mut result_chunks =
-        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
+    let mut result_chunks = retrieve_chunks_from_point_ids(
+        search_chunk_query_results,
+        &data.clone().into(),
+        pool.clone(),
+    )
+    .await?;
 
     timer.add("finish fetching from postgres; start to rerank");
 
-    result_chunks.score_chunks = rerank_chunks(
-        result_chunks.score_chunks,
+    let mut first_increase = 0;
+    for i in 1..result_chunks.score_chunks.len() {
+        if result_chunks.score_chunks[i].score > result_chunks.score_chunks[i - 1].score {
+            first_increase = i;
+            break;
+        }
+    }
+    let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
+    let mut reranked_chunks = rerank_chunks(
+        before_increase.to_vec(),
+        data.recency_bias,
+        data.tag_weights.clone(),
+        data.use_weights,
+    );
+    reranked_chunks.extend(rerank_chunks(
+        after_increase.to_vec(),
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
-    );
+    ));
+
+    result_chunks.score_chunks = reranked_chunks;
 
     timer.add("finish reranking and return result");
     transaction.finish();
@@ -2449,7 +2482,7 @@ pub async fn autocomplete_semantic_chunks(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn autocomplete_fulltext_chunks(
-    mut data: SearchChunkData,
+    mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -2492,6 +2525,18 @@ pub async fn autocomplete_fulltext_chunks(
         .must
         .push(Condition::matches_text("content", data.query.clone()));
 
+    if data.extend_results.unwrap_or(false) {
+        qdrant_query.push(
+            RetrievePointQuery {
+                vector: VectorType::Sparse(sparse_vector),
+                score_threshold: data.score_threshold,
+                filter: data.filters.clone(),
+            }
+            .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
+            .await,
+        );
+    }
+
     let search_chunk_query_results =
         retrieve_qdrant_points_query(qdrant_query, 1, false, data.page_size.unwrap_or(10), config)
             .await?;
@@ -2502,17 +2547,37 @@ pub async fn autocomplete_fulltext_chunks(
         data.highlight_delimiters = Some(vec![" ".to_string()]);
     }
 
-    let mut result_chunks =
-        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
+    let mut result_chunks = retrieve_chunks_from_point_ids(
+        search_chunk_query_results,
+        &data.clone().into(),
+        pool.clone(),
+    )
+    .await?;
 
     timer.add("finish fetching from postgres; start to rerank");
 
-    result_chunks.score_chunks = rerank_chunks(
-        result_chunks.score_chunks,
+    let mut first_increase = 0;
+    for i in 1..result_chunks.score_chunks.len() {
+        if result_chunks.score_chunks[i].score > result_chunks.score_chunks[i - 1].score {
+            first_increase = i;
+            break;
+        }
+    }
+    let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
+    let mut reranked_chunks = rerank_chunks(
+        before_increase.to_vec(),
+        data.recency_bias,
+        data.tag_weights.clone(),
+        data.use_weights,
+    );
+    reranked_chunks.extend(rerank_chunks(
+        after_increase.to_vec(),
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
-    );
+    ));
+
+    result_chunks.score_chunks = reranked_chunks;
 
     timer.add("finish reranking and return result");
     transaction.finish();

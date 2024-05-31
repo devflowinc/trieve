@@ -871,7 +871,7 @@ pub async fn search_qdrant_query(
         futures::future::join_all(point_count_futures)
     );
 
-    let point_ids: Vec<SearchResult> = search_response
+    let search_results: Vec<SearchResult> = search_response
         .map_err(|e| {
             log::error!("Failed to search points on Qdrant {:?}", e);
             ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
@@ -901,7 +901,7 @@ pub async fn search_qdrant_query(
         .min()
         .unwrap_or(0);
 
-    Ok((point_ids, point_count))
+    Ok((search_results, point_count))
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

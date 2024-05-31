@@ -26,6 +26,7 @@ import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 const SearchForm = (props: {
   query?: string;
   searchType: string;
+  extendResults?: boolean;
   groupUniqueSearch?: boolean;
   slimChunks?: boolean;
   pageSize?: number;
@@ -85,6 +86,10 @@ const SearchForm = (props: {
     // eslint-disable-next-line solid/reactivity
     props.recencyBias ?? 0.0,
   );
+  const [extendResults, setExtendResults] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.extendResults ?? false,
+  );
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
@@ -108,7 +113,11 @@ const SearchForm = (props: {
     const searchTypeUrlParam = searchTypeRoute
       ? `&searchType=${searchTypeRoute}`
       : "";
+    let extendResultsUrlParam = "";
 
+    if (searchTypeRoute.includes("autocomplete")) {
+      extendResultsUrlParam = extendResults() ? "&extendResults=true" : "";
+    }
     const groupUniqueUrlParam = groupUniqueSearch() ? "&groupUnique=true" : "";
     const slimChunksUrlParam = slimChunks() ? "&slimChunks=true" : "";
     const pageSizeUrlParam = pageSize() ? `&pageSize=${pageSize()}` : "";
@@ -131,7 +140,8 @@ const SearchForm = (props: {
         getTotalPagesUrlParam +
         highlightDelimitersUrlParam +
         highlightResultsUrlParam +
-        recencyBiasUrlParam
+        recencyBiasUrlParam +
+        extendResultsUrlParam
       : `/search?q=${searchQuery}` +
         searchTypeUrlParam +
         groupUniqueUrlParam +
@@ -140,7 +150,8 @@ const SearchForm = (props: {
         getTotalPagesUrlParam +
         highlightDelimitersUrlParam +
         highlightResultsUrlParam +
-        recencyBiasUrlParam;
+        recencyBiasUrlParam +
+        extendResultsUrlParam;
 
     navigate(urlToNavigateTo);
   };
@@ -455,6 +466,32 @@ const SearchForm = (props: {
                             Reset
                           </button>
                         </div>
+                        <Show
+                          when={
+                            searchTypes().find((type) => type.isSelected)
+                              ?.route === "autocomplete-semantic" ||
+                            searchTypes().find((type) => type.isSelected)
+                              ?.route === "autocomplete-fulltext"
+                          }
+                        >
+                          <div class="flex items-center justify-between space-x-2 p-1">
+                            <label>Extend Results (autocomplete only):</label>
+                            <input
+                              class="h-4 w-4"
+                              type="checkbox"
+                              checked={props.extendResults}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setExtendResults(true);
+                                } else {
+                                  setExtendResults(false);
+                                }
+
+                                onSubmit(e);
+                              }}
+                            />
+                          </div>
+                        </Show>
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Slim Chunks (Latency Improvement):</label>
                           <input

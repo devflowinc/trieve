@@ -1,6 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{parse_query, ChunkFilter, SearchChunkData},
+    chunk_handler::{parse_query, ChunkFilter, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{
@@ -1115,7 +1115,7 @@ pub struct SearchWithinGroupData {
     pub slim_chunks: Option<bool>,
 }
 
-impl From<SearchWithinGroupData> for SearchChunkData {
+impl From<SearchWithinGroupData> for SearchChunksReqPayload {
     fn from(data: SearchWithinGroupData) -> Self {
         Self {
             query: data.query,
