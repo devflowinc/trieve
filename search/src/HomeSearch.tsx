@@ -18,6 +18,7 @@ export const HomeSearch = () => {
   const requestParams = url.split("?")[1];
 
   const params = new URLSearchParams(requestParams);
+  const extendResults = params.get("extendResults") === "true" || false;
   const searchType: string = params.get("searchType") ?? "search";
   const groupUnique = params.get("groupUnique") === "true" || false;
   const slimChunks = params.get("slimChunks") === "true" || false;
@@ -55,6 +56,7 @@ export const HomeSearch = () => {
         <div class="mt-8 w-full max-w-7xl px-4 sm:px-8 md:px-20">
           <SearchForm
             searchType={searchType}
+            extendResults={extendResults}
             groupUniqueSearch={groupUnique}
             slimChunks={slimChunks}
             pageSize={pageSize}

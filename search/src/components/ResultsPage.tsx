@@ -36,6 +36,7 @@ export interface ResultsPageProps {
   query: string;
   page: number;
   searchType: string;
+  extendResults?: boolean;
   groupUnique?: boolean;
   slimChunks?: boolean;
   pageSize?: number;
@@ -160,6 +161,7 @@ const ResultsPage = (props: ResultsPageProps) => {
 
     if (props.searchType.includes("autocomplete")) {
       searchRoute = "chunk/autocomplete";
+      requestBody["extend_results"] = props.extendResults ?? false;
     }
 
     props.setLoading(true);

@@ -24,11 +24,13 @@ export const Search = () => {
     "!",
   ]);
   const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
+  const [extendResults, setExtendResults] = createSignal<boolean>(false);
 
   createEffect(() => {
     setLoading(true);
 
     setQuery(location.query.q ?? "");
+    setExtendResults(location.query.extendResults === "true" || false);
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
     setGroupUnique(location.query.groupUnique === "true" || false);
@@ -50,6 +52,7 @@ export const Search = () => {
             <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] px-4 min-[360px]:max-w-[calc(100%-64px)] sm:px-8 md:px-20">
               <SearchForm
                 query={query()}
+                extendResults={extendResults()}
                 groupUniqueSearch={groupUnique()}
                 slimChunks={slimChunks()}
                 searchType={searchType()}
@@ -65,6 +68,7 @@ export const Search = () => {
           <ResultsPage
             page={page()}
             query={query()}
+            extendResults={extendResults()}
             groupUnique={groupUnique()}
             slimChunks={slimChunks()}
             pageSize={pageSize()}

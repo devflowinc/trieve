@@ -18,24 +18,9 @@ reset_s3_service() {
     docker compose up -d s3
 }
 
-# Function to reset the script database
-reset_script_redis() {
-    echo "Resetting the script Redis database..."
-    docker compose stop script-redis
-    docker compose rm -f script-redis
-    docker volume rm vault_script-redis-data
-    docker compose up -d script-redis
-}
-
 start_local_services() {
     echo "Starting local services..."
-    docker compose up -d db
-    docker compose up -d redis
-    docker compose up -d qdrant-database
-    docker compose up -d s3
-    docker compose up -d s3-client
-    docker compose up -d keycloak
-    docker compose up -d keycloak-db
+    docker compose up -d db redis qdrant-database s3 s3-client keycloak keycloak-db tika
 }
 
 # Main script logic
@@ -46,9 +31,6 @@ while getopts ":qps3l" opt; do
             ;;
         3)
             reset_s3_service
-            ;;
-        s)
-            reset_script_redis
             ;;
         l)
             start_local_services

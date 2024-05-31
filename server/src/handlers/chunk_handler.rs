@@ -887,7 +887,7 @@ pub struct ChunkFilter {
     "highlight_delimiters": ["?", ",", ".", "!"],
     "score_threshold": 0.5
 }))]
-pub struct SearchChunkData {
+pub struct SearchChunksReqPayload {
     /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid", it will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
@@ -922,9 +922,9 @@ pub struct SearchChunkData {
     pub content_only: Option<bool>,
 }
 
-impl Default for SearchChunkData {
+impl Default for SearchChunksReqPayload {
     fn default() -> Self {
-        SearchChunkData {
+        SearchChunksReqPayload {
             search_type: "hybrid".to_string(),
             query: "".to_string(),
             page: Some(1),
@@ -998,7 +998,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
     path = "/chunk/search",
     context_path = "/api",
     tag = "chunk",
-    request_body(content = SearchChunkData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
+    request_body(content = SearchChunksReqPayload, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkQueryResponseBody),
 
@@ -1013,7 +1013,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn search_chunks(
-    data: web::Json<SearchChunkData>,
+    data: web::Json<SearchChunksReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1136,9 +1136,11 @@ pub async fn search_chunks(
     "highlight_delimiters": ["?", ",", ".", "!"],
     "score_threshold": 0.5
 }))]
-pub struct AutocompleteData {
-    /// Can be either "semantic", or "fulltext". "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
+pub struct AutocompleteReqPayload {
+    /// Can be either "semantic", or "fulltext". "semantic" will pull in one page_size of the nearest cosine distant vectors. "fulltext" will pull in one page_size of full-text results based on SPLADE.
     pub search_type: String,
+    /// If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.
+    pub extend_results: Option<bool>,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
     /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
@@ -1165,9 +1167,9 @@ pub struct AutocompleteData {
     pub content_only: Option<bool>,
 }
 
-impl From<AutocompleteData> for SearchChunkData {
-    fn from(autocomplete_data: AutocompleteData) -> Self {
-        SearchChunkData {
+impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
+    fn from(autocomplete_data: AutocompleteReqPayload) -> Self {
+        SearchChunksReqPayload {
             search_type: autocomplete_data.search_type,
             query: autocomplete_data.query,
             page: Some(1),
@@ -1200,7 +1202,7 @@ impl From<AutocompleteData> for SearchChunkData {
     path = "/chunk/autocomplete",
     context_path = "/api",
     tag = "chunk",
-    request_body(content = AutocompleteData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
+    request_body(content = AutocompleteReqPayload, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkQueryResponseBody),
 
@@ -1215,7 +1217,7 @@ impl From<AutocompleteData> for SearchChunkData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn autocomplete(
-    data: web::Json<AutocompleteData>,
+    data: web::Json<AutocompleteReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1241,7 +1243,7 @@ pub async fn autocomplete(
             }
 
             autocomplete_fulltext_chunks(
-                data.clone().into(),
+                data.clone(),
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset,
@@ -1252,7 +1254,7 @@ pub async fn autocomplete(
         }
         "semantic" => {
             autocomplete_semantic_chunks(
-                data.clone().into(),
+                data.clone(),
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset,
