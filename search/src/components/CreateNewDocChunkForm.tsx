@@ -160,7 +160,7 @@ export const CreateNewDocChunkForm = () => {
           <div>Weight for Merchandise Tuning</div>
           <input
             type="number"
-            step="0.1"
+            step="0.000001"
             value={weight()}
             onInput={(e) => setWeight(Number(e.currentTarget.value))}
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
