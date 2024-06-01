@@ -56,6 +56,7 @@ pub struct SearchResult {
 pub struct SearchChunkQueryResult {
     pub search_results: Vec<SearchResult>,
     pub total_chunk_pages: i64,
+    pub batch_lengths: Vec<usize>,
 }
 
 async fn convert_group_tracking_ids_to_group_ids(
@@ -304,7 +305,7 @@ pub async fn retrieve_qdrant_points_query(
 
     let page = if page == 0 { 1 } else { page };
 
-    let (point_ids, count) = search_qdrant_query(
+    let (point_ids, count, batch_lengths) = search_qdrant_query(
         page,
         limit,
         qdrant_searches,
@@ -318,6 +319,7 @@ pub async fn retrieve_qdrant_points_query(
     Ok(SearchChunkQueryResult {
         search_results: point_ids,
         total_chunk_pages: pages,
+        batch_lengths,
     })
 }
 
@@ -2443,7 +2445,7 @@ pub async fn autocomplete_semantic_chunks(
     }
 
     let mut result_chunks = retrieve_chunks_from_point_ids(
-        search_chunk_query_results,
+        search_chunk_query_results.clone(),
         &data.clone().into(),
         pool.clone(),
     )
@@ -2451,13 +2453,12 @@ pub async fn autocomplete_semantic_chunks(
 
     timer.add("finish fetching from postgres; start to rerank");
 
-    let mut first_increase = 0;
-    for i in 1..result_chunks.score_chunks.len() {
-        if result_chunks.score_chunks[i].score > result_chunks.score_chunks[i - 1].score {
-            first_increase = i;
-            break;
-        }
-    }
+    let first_increase = search_chunk_query_results
+        .batch_lengths
+        .get(0)
+        .unwrap_or(&0)
+        .clone() as usize;
+
     let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),
@@ -2548,7 +2549,7 @@ pub async fn autocomplete_fulltext_chunks(
     }
 
     let mut result_chunks = retrieve_chunks_from_point_ids(
-        search_chunk_query_results,
+        search_chunk_query_results.clone(),
         &data.clone().into(),
         pool.clone(),
     )
@@ -2556,13 +2557,12 @@ pub async fn autocomplete_fulltext_chunks(
 
     timer.add("finish fetching from postgres; start to rerank");
 
-    let mut first_increase = 0;
-    for i in 1..result_chunks.score_chunks.len() {
-        if result_chunks.score_chunks[i].score > result_chunks.score_chunks[i - 1].score {
-            first_increase = i;
-            break;
-        }
-    }
+    let first_increase = search_chunk_query_results
+        .batch_lengths
+        .get(0)
+        .unwrap_or(&0)
+        .clone() as usize;
+
     let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),

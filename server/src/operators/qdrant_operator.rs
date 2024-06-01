@@ -769,7 +769,7 @@ pub async fn search_qdrant_query(
     queries: Vec<QdrantSearchQuery>,
     config: ServerDatasetConfiguration,
     get_total_pages: bool,
-) -> Result<(Vec<SearchResult>, u64), ServiceError> {
+) -> Result<(Vec<SearchResult>, u64, Vec<usize>), ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
@@ -866,29 +866,38 @@ pub async fn search_qdrant_query(
         })
         .collect::<Vec<_>>();
 
-    let (search_response, point_count_response) = futures::join!(
+    let (search_batch_response, point_count_response) = futures::join!(
         search_response_future,
         futures::future::join_all(point_count_futures)
     );
 
-    let search_results: Vec<SearchResult> = search_response
-        .map_err(|e| {
-            log::error!("Failed to search points on Qdrant {:?}", e);
-            ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
-        })?
+    let search_batch_response = search_batch_response.map_err(|e| {
+        log::error!("Failed to search points on Qdrant {:?}", e);
+        ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
+    })?;
+
+    let batch_lengths = search_batch_response
         .result
         .iter()
-        .flat_map(|result| {
-            result
+        .map(|batch_result| batch_result.result.len())
+        .collect();
+
+    let search_results: Vec<SearchResult> = search_batch_response
+        .result
+        .iter()
+        .flat_map(|batch_result| {
+            batch_result
                 .result
                 .iter()
-                .filter_map(|point| match point.id.clone()?.point_id_options? {
-                    PointIdOptions::Uuid(id) => Some(SearchResult {
-                        score: point.score,
-                        point_id: uuid::Uuid::parse_str(&id).ok()?,
-                    }),
-                    PointIdOptions::Num(_) => None,
-                })
+                .filter_map(
+                    |scored_point| match scored_point.id.clone()?.point_id_options? {
+                        PointIdOptions::Uuid(id) => Some(SearchResult {
+                            score: scored_point.score,
+                            point_id: uuid::Uuid::parse_str(&id).ok()?,
+                        }),
+                        PointIdOptions::Num(_) => None,
+                    },
+                )
                 .collect::<Vec<SearchResult>>()
         })
         .unique_by(|point| point.point_id)
@@ -901,7 +910,7 @@ pub async fn search_qdrant_query(
         .min()
         .unwrap_or(0);
 
-    Ok((search_results, point_count))
+    Ok((search_results, point_count, batch_lengths))
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -317,7 +317,7 @@ const MainLayout = (props: LayoutProps) => {
                       credentials: "include",
                       signal: completionAbortController().signal,
                       body: JSON.stringify({
-                        filters: false,
+                        filters: getFiltersFromStorage(dataset.dataset.id),
                         new_message_content: content,
                         message_sort_order: idx(),
                         topic_id: props.selectedTopic?.id,
