@@ -133,7 +133,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "9.0.0",
+        version = "0.10.0",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -374,6 +374,7 @@ pub fn main() -> std::io::Result<()> {
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL should be set");
     let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");
 
+    log::info!("Running migrations");
     run_migrations(database_url);
 
     actix_web::rt::System::new().block_on(async move {
@@ -428,6 +429,7 @@ pub fn main() -> std::io::Result<()> {
             .collect::<Option<Vec<u64>>>()
             .unwrap_or(vec![384,512,768,1024,1536,3072]);
 
+        log::info!("Creating qdrant collections");
         let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes)
             .await
             .map_err(|err| {
