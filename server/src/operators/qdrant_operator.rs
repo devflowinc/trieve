@@ -179,6 +179,11 @@ pub async fn create_new_qdrant_collection_query(
                 .delete_field_index(qdrant_collection.clone(), "content", None)
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
+
+            qdrant_client
+                .delete_field_index(qdrant_collection.clone(), "num_value", None)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
         }
 
         qdrant_client
@@ -271,6 +276,17 @@ pub async fn create_new_qdrant_collection_query(
                         lowercase: Some(true),
                     })),
                 }),
+                None,
+            )
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+        qdrant_client
+            .create_field_index(
+                qdrant_collection.clone(),
+                "num_value",
+                FieldType::Float,
+                None,
                 None,
             )
             .await

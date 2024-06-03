@@ -10,7 +10,7 @@ use super::schema::*;
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
-    get_metadata_filter_condition, get_num_value_filter_condition,
+    get_metadata_filter_condition, get_num_value_filter_condition, get_tag_set_filter_condition,
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
@@ -2680,6 +2680,14 @@ impl FieldCondition {
         if self.field == "group_tag_set" {
             return Ok(Some(
                 get_group_tag_set_filter_condition(self, dataset_id, pool)
+                    .await?
+                    .into(),
+            ));
+        }
+
+        if self.field == "tag_set" {
+            return Ok(Some(
+                get_tag_set_filter_condition(self, dataset_id, pool)
                     .await?
                     .into(),
             ));
