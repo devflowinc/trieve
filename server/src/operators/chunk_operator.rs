@@ -1,6 +1,7 @@
 use crate::data::models::{
     ChunkCollision, ChunkGroupBookmark, ChunkMetadataTypes, ContentChunkMetadata, Dataset,
-    IngestSpecificChunkMetadata, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
+    IngestSpecificChunkMetadata, ServerDatasetConfiguration, SlimChunkMetadata,
+    SlimChunkMetadataTagSetArray, UnifiedId,
 };
 use crate::get_env;
 use crate::handlers::chunk_handler::UploadIngestionMessage;
@@ -61,29 +62,37 @@ pub async fn get_slim_chunk_metadatas_from_point_ids(
         .await
         .expect("Failed to get connection from pool");
 
-    let slim_chunk_metadatas: Vec<SlimChunkMetadata> = chunk_metadata_columns::chunk_metadata
-        .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-        .select((
-            chunk_metadata_columns::id,
-            chunk_metadata_columns::link,
-            chunk_metadata_columns::qdrant_point_id,
-            chunk_metadata_columns::created_at,
-            chunk_metadata_columns::updated_at,
-            chunk_metadata_columns::tag_set,
-            chunk_metadata_columns::metadata,
-            chunk_metadata_columns::tracking_id,
-            chunk_metadata_columns::time_stamp,
-            chunk_metadata_columns::location,
-            chunk_metadata_columns::dataset_id,
-            chunk_metadata_columns::weight,
-            chunk_metadata_columns::image_urls,
-            chunk_metadata_columns::num_value,
-        ))
-        .load::<SlimChunkMetadata>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
+    let slim_chunk_tag_set_arrays: Vec<SlimChunkMetadataTagSetArray> =
+        chunk_metadata_columns::chunk_metadata
+            .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
+            .select((
+                chunk_metadata_columns::id,
+                chunk_metadata_columns::link,
+                chunk_metadata_columns::qdrant_point_id,
+                chunk_metadata_columns::created_at,
+                chunk_metadata_columns::updated_at,
+                chunk_metadata_columns::tag_set,
+                chunk_metadata_columns::metadata,
+                chunk_metadata_columns::tracking_id,
+                chunk_metadata_columns::time_stamp,
+                chunk_metadata_columns::location,
+                chunk_metadata_columns::dataset_id,
+                chunk_metadata_columns::weight,
+                chunk_metadata_columns::image_urls,
+                chunk_metadata_columns::num_value,
+            ))
+            .load::<SlimChunkMetadataTagSetArray>(&mut conn)
+            .await
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to load slim_chunk_metadatas".to_string())
+            })?;
 
-    Ok(slim_chunk_metadatas)
+    let slim_chunks = slim_chunk_tag_set_arrays
+        .into_iter()
+        .map(|slim_chunk_tag_set_array| slim_chunk_tag_set_array.clone().into())
+        .collect();
+
+    Ok(slim_chunks)
 }
 
 #[tracing::instrument(skip(pool))]
@@ -314,31 +323,37 @@ pub async fn get_slim_chunks_from_point_ids_query(
 
     let slim_chunks = {
         let mut conn = pool.get().await.unwrap();
-        let slim_chunk_metadatas: Vec<SlimChunkMetadata> = chunk_metadata_columns::chunk_metadata
-            .select((
-                chunk_metadata_columns::id,
-                chunk_metadata_columns::link,
-                chunk_metadata_columns::qdrant_point_id,
-                chunk_metadata_columns::created_at,
-                chunk_metadata_columns::updated_at,
-                chunk_metadata_columns::tag_set,
-                chunk_metadata_columns::metadata,
-                chunk_metadata_columns::tracking_id,
-                chunk_metadata_columns::time_stamp,
-                chunk_metadata_columns::location,
-                chunk_metadata_columns::dataset_id,
-                chunk_metadata_columns::weight,
-                chunk_metadata_columns::image_urls,
-                chunk_metadata_columns::num_value,
-            ))
-            .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-            .load(&mut conn)
-            .await
-            .map_err(|_| {
-                ServiceError::BadRequest("Failed to load slim chunk metadatas".to_string())
-            })?;
+        let slim_chunk_tag_set_arrays: Vec<SlimChunkMetadataTagSetArray> =
+            chunk_metadata_columns::chunk_metadata
+                .select((
+                    chunk_metadata_columns::id,
+                    chunk_metadata_columns::link,
+                    chunk_metadata_columns::qdrant_point_id,
+                    chunk_metadata_columns::created_at,
+                    chunk_metadata_columns::updated_at,
+                    chunk_metadata_columns::tag_set,
+                    chunk_metadata_columns::metadata,
+                    chunk_metadata_columns::tracking_id,
+                    chunk_metadata_columns::time_stamp,
+                    chunk_metadata_columns::location,
+                    chunk_metadata_columns::dataset_id,
+                    chunk_metadata_columns::weight,
+                    chunk_metadata_columns::image_urls,
+                    chunk_metadata_columns::num_value,
+                ))
+                .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
+                .load(&mut conn)
+                .await
+                .map_err(|_| {
+                    ServiceError::BadRequest("Failed to load slim chunk metadatas".to_string())
+                })?;
 
-        slim_chunk_metadatas
+        let slim_chunks: Vec<SlimChunkMetadata> = slim_chunk_tag_set_arrays
+            .into_iter()
+            .map(|slim_chunk_tag_set_array| slim_chunk_tag_set_array.clone().into())
+            .collect();
+
+        slim_chunks
             .iter()
             .map(|slim_chunk| slim_chunk.clone().into())
             .collect::<Vec<ChunkMetadataTypes>>()
