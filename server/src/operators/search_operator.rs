@@ -710,6 +710,82 @@ pub async fn get_group_metadata_filter_condition(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn get_tag_set_filter_condition(
+    filter: &FieldCondition,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Filter, ServiceError> {
+    let mut metadata_filter = Filter::default();
+
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let mut query = chunk_metadata_columns::chunk_metadata
+        .select(chunk_metadata_columns::qdrant_point_id)
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+        .into_boxed();
+
+    if let Some(matches) = &filter.r#match {
+        if let Some(first_val) = matches.get(0) {
+            match first_val {
+                MatchCondition::Text(string_val) => {
+                    query = query.filter(chunk_metadata_columns::tag_set.contains(vec![string_val]));
+                }
+                MatchCondition::Integer(int_val) => {
+                    query = query.filter(chunk_metadata_columns::tag_set.contains(vec![int_val.to_string()]));
+                }
+                MatchCondition::Float(float_val) => {
+                    query = query.filter(chunk_metadata_columns::tag_set.contains(vec![float_val.to_string()]));
+                }
+            }
+        }
+
+        for match_condition in matches.iter().skip(1) {
+            match match_condition {
+                MatchCondition::Text(string_val) => {
+                    query = query.or_filter(chunk_metadata_columns::tag_set.contains(vec![string_val]));
+                }
+                MatchCondition::Integer(int_val) => {
+                    query = query.or_filter(chunk_metadata_columns::tag_set.contains(vec![int_val.to_string()]));
+                }
+                MatchCondition::Float(float_val) => {
+                    query = query.or_filter(chunk_metadata_columns::tag_set.contains(vec![float_val.to_string()]));
+                }
+            }
+        }
+    };
+
+    if filter.range.is_some() {
+        "Range filter not supported for tag_set".to_string();
+    }
+
+    let qdrant_point_ids: Vec<uuid::Uuid> = query
+        .load::<Option<uuid::Uuid>>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
+        .into_iter()
+        .flatten()
+        .collect();
+
+    let matching_point_ids: Vec<PointId> = qdrant_point_ids
+        .iter()
+        .map(|uuid| uuid.to_string())
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
+        .collect::<Vec<PointId>>();
+
+    metadata_filter.must.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: matching_point_ids,
+        })),
+    });
+
+    Ok(metadata_filter)
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn get_group_tag_set_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
