@@ -53,7 +53,7 @@ use utoipa::ToSchema;
     "split_avg": false,
     "convert_html_to_text": false,
 }))]
-pub struct ChunkData {
+pub struct ChunkReqPayload {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
     pub chunk_html: Option<String>,
     /// Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.
@@ -159,7 +159,7 @@ pub struct BatchQueuedChunkResponse {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UploadIngestionMessage {
     pub ingest_specific_chunk_metadata: IngestSpecificChunkMetadata,
-    pub chunk: ChunkData,
+    pub chunk: ChunkReqPayload,
     pub dataset_id: uuid::Uuid,
     pub dataset_config: ServerDatasetConfiguration,
     pub upsert_by_tracking_id: bool,
@@ -193,7 +193,7 @@ pub struct BulkUploadIngestionMessage {
     "split_avg": false,
     "convert_html_to_text": false,
 }))]
-pub struct CreateSingleChunkData(pub ChunkData);
+pub struct CreateSingleChunkReqPayload(pub ChunkReqPayload);
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!([{
@@ -236,13 +236,13 @@ pub struct CreateSingleChunkData(pub ChunkData);
     "convert_html_to_text": false,
 }]
 ))]
-pub struct CreateBatchChunkData(pub Vec<ChunkData>);
+pub struct CreateBatchChunkReqPayload(pub Vec<ChunkReqPayload>);
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(untagged)]
-pub enum CreateChunkData {
-    Single(CreateSingleChunkData),
-    Batch(CreateBatchChunkData),
+pub enum CreateChunkReqPayloadEnum {
+    Single(CreateSingleChunkReqPayload),
+    Batch(CreateBatchChunkReqPayload),
 }
 
 /// Create or Upsert Chunk or Chunks
@@ -254,7 +254,7 @@ pub enum CreateChunkData {
     path = "/chunk",
     context_path = "/api",
     tag = "chunk",
-    request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
+    request_body(content = CreateChunkReqPayloadEnum, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
         (status = 426, description = "Error when upgrade is needed to process more chunks", body = ErrorResponseBody),
@@ -269,15 +269,15 @@ pub enum CreateChunkData {
 )]
 #[tracing::instrument(skip(redis_pool, pool))]
 pub async fn create_chunk(
-    create_chunk_data: web::Json<CreateChunkData>,
+    create_chunk_data: web::Json<CreateChunkReqPayloadEnum>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunks = match create_chunk_data.clone() {
-        CreateChunkData::Single(chunk) => vec![chunk.0],
-        CreateChunkData::Batch(chunks) => chunks.0,
+        CreateChunkReqPayloadEnum::Single(chunk) => vec![chunk.0],
+        CreateChunkReqPayloadEnum::Batch(chunks) => chunks.0,
     };
 
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
@@ -335,7 +335,7 @@ pub async fn create_chunk(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let response = match create_chunk_data.into_inner() {
-        CreateChunkData::Single(_) => ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
+        CreateChunkReqPayloadEnum::Single(_) => ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
             chunk_metadata: chunk_metadatas
                 .get(0)
                 .ok_or(ServiceError::BadRequest(
@@ -344,7 +344,7 @@ pub async fn create_chunk(
                 .clone(),
             pos_in_queue,
         }),
-        CreateChunkData::Batch(_) => ReturnQueuedChunk::Batch(BatchQueuedChunkResponse {
+        CreateChunkReqPayloadEnum::Batch(_) => ReturnQueuedChunk::Batch(BatchQueuedChunkResponse {
             chunk_metadata: chunk_metadatas,
             pos_in_queue,
         }),
@@ -456,7 +456,7 @@ pub async fn delete_chunk_by_tracking_id(
     "weight": 0.5,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
 }))]
-pub struct UpdateChunkData {
+pub struct UpdateChunkReqPayload {
     /// Id of the chunk you want to update. You can provide either the chunk_id or the tracking_id. If both are provided, the chunk_id will be used.
     chunk_id: Option<uuid::Uuid>,
     /// Tracking_id of the chunk you want to update. This is required to match an existing chunk.
@@ -504,7 +504,7 @@ pub struct UpdateIngestionMessage {
     path = "/chunk",
     context_path = "/api",
     tag = "chunk",
-    request_body(content = UpdateChunkData, description = "JSON request payload to update a chunk (chunk)", content_type = "application/json"),
+    request_body(content = UpdateChunkReqPayload, description = "JSON request payload to update a chunk (chunk)", content_type = "application/json"),
     responses(
         (status = 204, description = "No content Ok response indicating the chunk was updated as requested",),
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
@@ -518,7 +518,7 @@ pub struct UpdateIngestionMessage {
 )]
 #[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_chunk(
-    update_chunk_data: web::Json<UpdateChunkData>,
+    update_chunk_data: web::Json<UpdateChunkReqPayload>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
@@ -552,10 +552,12 @@ pub async fn update_chunk(
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
-    let chunk_tag_set = update_chunk_data
-        .tag_set
-        .clone()
-        .map(|tag_set| tag_set.join(","));
+    let chunk_tag_set = update_chunk_data.tag_set.clone().map(|tag_set| {
+        tag_set
+            .into_iter()
+            .map(|tag| Some(tag))
+            .collect::<Vec<Option<String>>>()
+    });
 
     let chunk_html = match update_chunk_data.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),

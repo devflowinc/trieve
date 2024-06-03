@@ -7,7 +7,7 @@ use crate::data::models::FileDTO;
 use crate::data::models::{
     Dataset, DatasetAndOrgWithSubAndPlan, EventType, ServerDatasetConfiguration,
 };
-use crate::handlers::chunk_handler::ChunkData;
+use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::{data::models::Event, get_env};
 use crate::{
@@ -82,7 +82,9 @@ pub async fn create_file_query(
         Some(file_id),
         &upload_file_data.file_name,
         file_size,
-        upload_file_data.tag_set.map(|tag_set| tag_set.join(",")),
+        upload_file_data
+            .tag_set
+            .map(|tag_set| tag_set.into_iter().map(|tag| Some(tag)).collect()),
         upload_file_data.metadata,
         upload_file_data.link,
         upload_file_data.time_stamp,
@@ -129,7 +131,7 @@ pub async fn create_file_chunks(
         target_splits_per_chunk,
     );
 
-    let mut chunks: Vec<ChunkData> = [].to_vec();
+    let mut chunks: Vec<ChunkReqPayload> = [].to_vec();
 
     let name = format!("Group for file {}", upload_file_data.file_name);
 
@@ -159,7 +161,7 @@ pub async fn create_file_chunks(
         })?;
 
     for (i, chunk_html) in chunk_htmls.iter().enumerate() {
-        let create_chunk_data = ChunkData {
+        let create_chunk_data = ChunkReqPayload {
             chunk_html: Some(chunk_html.clone()),
             link: upload_file_data.link.clone(),
             tag_set: upload_file_data.tag_set.clone(),

@@ -20,8 +20,7 @@ diesel::table! {
         dataset_id -> Uuid,
         tracking_id -> Nullable<Text>,
         metadata -> Nullable<Jsonb>,
-        tag_set -> Nullable<Text>,
-        tag_set_array -> Nullable<Array<Nullable<Text>>>,
+        tag_set -> Nullable<Array<Nullable<Text>>>,
     }
 }
 
@@ -42,7 +41,6 @@ diesel::table! {
         qdrant_point_id -> Nullable<Uuid>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        tag_set -> Nullable<Text>,
         chunk_html -> Nullable<Text>,
         metadata -> Nullable<Jsonb>,
         tracking_id -> Nullable<Text>,
@@ -51,7 +49,7 @@ diesel::table! {
         weight -> Float8,
         location -> Nullable<Jsonb>,
         image_urls -> Nullable<Array<Nullable<Text>>>,
-        tag_set_array -> Nullable<Array<Nullable<Text>>>,
+        tag_set -> Nullable<Array<Nullable<Text>>>,
         num_value -> Nullable<Float8>,
     }
 }
@@ -112,12 +110,11 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         size -> Int8,
-        tag_set -> Nullable<Text>,
         metadata -> Nullable<Jsonb>,
         link -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
         dataset_id -> Uuid,
-        tag_set_array -> Nullable<Array<Nullable<Text>>>,
+        tag_set -> Nullable<Array<Nullable<Text>>>,
     }
 }
 

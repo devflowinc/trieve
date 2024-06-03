@@ -222,7 +222,9 @@ pub async fn upload_file_handler(
             Some(file_id),
             &upload_file_data.file_name,
             decoded_file_data.len().try_into().unwrap(),
-            upload_file_data.tag_set.map(|tags| tags.join(",")),
+            upload_file_data
+                .tag_set
+                .map(|t| t.into_iter().map(|s| Some(s)).collect()),
             None,
             None,
             None,
