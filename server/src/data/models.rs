@@ -500,7 +500,7 @@ pub struct ChunkMetadataWithScore {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
     pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
@@ -518,7 +518,11 @@ impl From<(ChunkMetadata, f32)> for ChunkMetadataWithScore {
             qdrant_point_id: chunk.qdrant_point_id,
             created_at: chunk.created_at,
             updated_at: chunk.updated_at,
-            tag_set: chunk.tag_set,
+            tag_set: chunk.tag_set.map(|tags| {
+                tags.into_iter()
+                    .map(|tag| tag.unwrap_or_default())
+                    .join(",")
+            }),
             chunk_html: chunk.chunk_html,
             metadata: chunk.metadata,
             tracking_id: chunk.tracking_id,
@@ -639,7 +643,7 @@ pub struct SlimChunkMetadataWithScore {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
