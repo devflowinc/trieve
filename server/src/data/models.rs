@@ -277,7 +277,7 @@ impl Default for GeoInfo {
     "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01T00:00:00",
     "updated_at": "2021-01-01T00:00:00",
-    "tag_set": "tag1,tag2",
+    "tag_set": "[tag1,tag2]",
     "chunk_html": "<p>Hello, world!</p>",
     "metadata": {"key": "value"},
     "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -377,6 +377,30 @@ impl ChunkMetadata {
     }
 }
 
+impl From<ChunkMetadataStringTagSet> for ChunkMetadata {
+    fn from(chunk_metadata_string_tag_set: ChunkMetadataStringTagSet) -> Self {
+        ChunkMetadata {
+            id: chunk_metadata_string_tag_set.id,
+            link: chunk_metadata_string_tag_set.link,
+            qdrant_point_id: chunk_metadata_string_tag_set.qdrant_point_id,
+            created_at: chunk_metadata_string_tag_set.created_at,
+            updated_at: chunk_metadata_string_tag_set.updated_at,
+            chunk_html: chunk_metadata_string_tag_set.chunk_html,
+            metadata: chunk_metadata_string_tag_set.metadata,
+            tracking_id: chunk_metadata_string_tag_set.tracking_id,
+            time_stamp: chunk_metadata_string_tag_set.time_stamp,
+            dataset_id: chunk_metadata_string_tag_set.dataset_id,
+            weight: chunk_metadata_string_tag_set.weight,
+            location: chunk_metadata_string_tag_set.location,
+            image_urls: chunk_metadata_string_tag_set.image_urls,
+            tag_set: chunk_metadata_string_tag_set
+                .tag_set
+                .map(|tags| tags.split(',').map(|tag| Some(tag.to_string())).collect()),
+            num_value: chunk_metadata_string_tag_set.num_value,
+        }
+    }
+}
+
 impl From<SlimChunkMetadata> for ChunkMetadata {
     fn from(slim_chunk: SlimChunkMetadata) -> Self {
         ChunkMetadata {
@@ -386,7 +410,9 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
             qdrant_point_id: slim_chunk.qdrant_point_id,
             created_at: slim_chunk.created_at,
             updated_at: slim_chunk.updated_at,
-            tag_set: slim_chunk.tag_set,
+            tag_set: slim_chunk
+                .tag_set
+                .map(|tags| tags.split(',').map(|tag| Some(tag.to_string())).collect()),
             metadata: slim_chunk.metadata,
             tracking_id: slim_chunk.tracking_id,
             time_stamp: slim_chunk.time_stamp,
@@ -550,7 +576,7 @@ impl ScoreChunkDTO {
 #[serde(untagged)]
 pub enum ChunkMetadataTypes {
     ID(SlimChunkMetadata),
-    Metadata(ChunkMetadata),
+    Metadata(ChunkMetadataStringTagSet),
     Content(ContentChunkMetadata),
 }
 
@@ -558,7 +584,7 @@ impl From<ChunkMetadataTypes> for ChunkMetadata {
     fn from(val: ChunkMetadataTypes) -> Self {
         match val {
             ChunkMetadataTypes::ID(slim_chunk_metadata) => slim_chunk_metadata.into(),
-            ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata,
+            ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.into(),
             ChunkMetadataTypes::Content(content_chunk_metadata) => content_chunk_metadata.into(),
         }
     }
@@ -566,7 +592,7 @@ impl From<ChunkMetadataTypes> for ChunkMetadata {
 
 impl From<ChunkMetadata> for ChunkMetadataTypes {
     fn from(chunk_metadata: ChunkMetadata) -> Self {
-        ChunkMetadataTypes::Metadata(chunk_metadata)
+        ChunkMetadataTypes::Metadata(chunk_metadata.into())
     }
 }
 
@@ -585,7 +611,7 @@ impl From<ContentChunkMetadata> for ChunkMetadataTypes {
 impl ChunkMetadataTypes {
     pub fn metadata(&self) -> ChunkMetadata {
         match self {
-            ChunkMetadataTypes::Metadata(metadata) => metadata.clone(),
+            ChunkMetadataTypes::Metadata(metadata) => metadata.clone().into(),
             ChunkMetadataTypes::ID(slim_metadata) => slim_metadata.clone().into(),
             ChunkMetadataTypes::Content(content_metadata) => content_metadata.clone().into(),
         }
@@ -653,7 +679,87 @@ impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
-pub struct SlimChunkMetadata {
+pub struct ChunkMetadataStringTagSet {
+    pub id: uuid::Uuid,
+    pub link: Option<String>,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub chunk_html: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub location: Option<GeoInfo>,
+    pub image_urls: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
+    pub num_value: Option<f64>,
+}
+
+impl From<ChunkMetadata> for ChunkMetadataStringTagSet {
+    fn from(chunk: ChunkMetadata) -> Self {
+        ChunkMetadataStringTagSet {
+            id: chunk.id,
+            link: chunk.link,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            chunk_html: chunk.chunk_html,
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            dataset_id: chunk.dataset_id,
+            weight: chunk.weight,
+            location: chunk.location,
+            image_urls: chunk.image_urls,
+            tag_set: chunk.tag_set.map(|tags| {
+                tags.into_iter()
+                    .map(|tag| tag.unwrap_or_default())
+                    .join(",")
+            }),
+            num_value: chunk.num_value,
+        }
+    }
+}
+
+impl From<ContentChunkMetadata> for ChunkMetadataStringTagSet {
+    fn from(chunk: ContentChunkMetadata) -> Self {
+        ChunkMetadataStringTagSet {
+            id: chunk.id,
+            link: None,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+            chunk_html: Some("".to_string()),
+            metadata: None,
+            tracking_id: chunk.tracking_id,
+            time_stamp: None,
+            dataset_id: uuid::Uuid::new_v4(),
+            weight: chunk.weight,
+            location: None,
+            image_urls: chunk.image_urls,
+            tag_set: None,
+            num_value: chunk.num_value,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "[tag1,tag2]",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "weight": 0.5,
+}))]
+pub struct SlimChunkMetadataTagSetArray {
     pub id: uuid::Uuid,
     pub link: Option<String>,
     pub qdrant_point_id: Option<uuid::Uuid>,
@@ -670,8 +776,64 @@ pub struct SlimChunkMetadata {
     pub num_value: Option<f64>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "tag1,tag2",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "weight": 0.5,
+}))]
+pub struct SlimChunkMetadata {
+    pub id: uuid::Uuid,
+    pub link: Option<String>,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub location: Option<GeoInfo>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub image_urls: Option<Vec<Option<String>>>,
+    pub num_value: Option<f64>,
+}
+
 impl From<ChunkMetadata> for SlimChunkMetadata {
     fn from(chunk: ChunkMetadata) -> Self {
+        SlimChunkMetadata {
+            id: chunk.id,
+            link: chunk.link,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set.map(|tags| {
+                tags.into_iter()
+                    .map(|tag| tag.unwrap_or_default())
+                    .join(",")
+            }),
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            location: chunk.location,
+            dataset_id: chunk.dataset_id,
+            weight: chunk.weight,
+            image_urls: chunk.image_urls,
+            num_value: chunk.num_value,
+        }
+    }
+}
+
+impl From<ChunkMetadataStringTagSet> for SlimChunkMetadata {
+    fn from(chunk: ChunkMetadataStringTagSet) -> Self {
         SlimChunkMetadata {
             id: chunk.id,
             link: chunk.link,
@@ -705,6 +867,31 @@ impl From<ContentChunkMetadata> for SlimChunkMetadata {
             time_stamp: None,
             location: None,
             dataset_id: uuid::Uuid::new_v4(),
+            weight: chunk.weight,
+            image_urls: chunk.image_urls,
+            num_value: chunk.num_value,
+        }
+    }
+}
+
+impl From<SlimChunkMetadataTagSetArray> for SlimChunkMetadata {
+    fn from(chunk: SlimChunkMetadataTagSetArray) -> Self {
+        SlimChunkMetadata {
+            id: chunk.id,
+            link: chunk.link,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set.map(|tags| {
+                tags.into_iter()
+                    .map(|tag| tag.unwrap_or_default())
+                    .join(",")
+            }),
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            location: chunk.location,
+            dataset_id: chunk.dataset_id,
             weight: chunk.weight,
             image_urls: chunk.image_urls,
             num_value: chunk.num_value,

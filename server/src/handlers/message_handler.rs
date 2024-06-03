@@ -4,8 +4,8 @@ use super::{
 };
 use crate::{
     data::models::{
-        self, ChunkMetadata, ChunkMetadataTypes, Dataset, DatasetAndOrgWithSubAndPlan, Pool,
-        ServerDatasetConfiguration,
+        self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetAndOrgWithSubAndPlan,
+        Pool, ServerDatasetConfiguration,
     },
     errors::ServiceError,
     get_env,
@@ -666,7 +666,7 @@ pub async fn stream_response(
                 _ => unreachable!("The operator should never return slim chunks for this"),
             },
         )
-        .collect::<Vec<ChunkMetadata>>();
+        .collect::<Vec<ChunkMetadataStringTagSet>>();
 
     let mut chunk_metadatas_stringified =
         serde_json::to_string(&chunk_metadatas).expect("Failed to serialize citation chunks");
