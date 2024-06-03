@@ -1,6 +1,5 @@
 use trieve_server::{
-    errors::ServiceError,
-    operators::qdrant_operator::{create_new_qdrant_collection_query, get_qdrant_connection},
+    errors::ServiceError, operators::qdrant_operator::create_new_qdrant_collection_query,
 };
 
 #[tokio::main]

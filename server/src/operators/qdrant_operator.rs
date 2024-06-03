@@ -294,10 +294,13 @@ pub async fn bulk_upsert_qdrant_points_query(
 
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
-    qdrant
+    qdrant_client
         .upsert_points_blocking(qdrant_collection, None, points, None)
         .await
         .map_err(|err| {
@@ -342,12 +345,11 @@ pub async fn create_new_qdrant_point_query(
 
     let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload);
 
-    let qdrant_client =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!("Failed connecting to qdrant {:?}", err))
-            })?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
     qdrant_client
         .upsert_points_blocking(qdrant_collection, None, vec![point], None)
@@ -375,10 +377,13 @@ pub async fn update_qdrant_point_query(
 
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
-    let current_point_vec = qdrant
+    let current_point_vec = qdrant_client
         .get_points(
             qdrant_collection.clone(),
             None,
@@ -442,7 +447,7 @@ pub async fn update_qdrant_point_query(
 
         let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload.into());
 
-        qdrant
+        qdrant_client
             .upsert_points(qdrant_collection, None, vec![point], None)
             .await
             .map_err(|_err| ServiceError::BadRequest("Failed upserting chunk in qdrant".into()))?;
@@ -450,7 +455,7 @@ pub async fn update_qdrant_point_query(
         return Ok(());
     }
 
-    qdrant
+    qdrant_client
         .overwrite_payload(
             qdrant_collection,
             None,
@@ -475,12 +480,15 @@ pub async fn add_bookmark_to_qdrant_query(
 ) -> Result<(), ServiceError> {
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
-    let current_point_vec = qdrant
+    let current_point_vec = qdrant_client
         .get_points(
             qdrant_collection.clone(),
             None,
@@ -528,7 +536,7 @@ pub async fn add_bookmark_to_qdrant_query(
 
     let points_selector = qdrant_point_id.into();
 
-    qdrant
+    qdrant_client
         .overwrite_payload(
             qdrant_collection,
             None,
@@ -553,12 +561,15 @@ pub async fn remove_bookmark_from_qdrant_query(
 ) -> Result<(), ServiceError> {
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
-    let current_point_vec = qdrant
+    let current_point_vec = qdrant_client
         .get_points(
             qdrant_collection.clone(),
             None,
@@ -606,7 +617,7 @@ pub async fn remove_bookmark_from_qdrant_query(
 
     let points_selector = qdrant_point_id.into();
 
-    qdrant
+    qdrant_client
         .overwrite_payload(
             qdrant_collection,
             None,
@@ -654,8 +665,11 @@ pub async fn search_over_groups_query(
 ) -> Result<Vec<GroupSearchResults>, ServiceError> {
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
     let vector_name = match vector {
         VectorType::Sparse(_) => "sparse_vectors",
@@ -676,7 +690,7 @@ pub async fn search_over_groups_query(
 
     let qdrant_search_results = match vector {
         VectorType::Dense(embedding_vector) => {
-            qdrant
+            qdrant_client
                 .search_groups(&SearchPointGroups {
                     collection_name: qdrant_collection.to_string(),
                     vector: embedding_vector,
@@ -695,7 +709,7 @@ pub async fn search_over_groups_query(
 
         VectorType::Sparse(sparse_vector) => {
             let sparse_vector: Vector = sparse_vector.into();
-            qdrant
+            qdrant_client
                 .search_groups(&SearchPointGroups {
                     collection_name: qdrant_collection.to_string(),
                     vector: sparse_vector.data,
@@ -766,10 +780,13 @@ pub async fn search_qdrant_query(
     config: ServerDatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<(Vec<SearchResult>, u64, Vec<usize>), ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
     let data: Vec<SearchPoints> = queries
         .into_iter()
@@ -829,7 +846,7 @@ pub async fn search_qdrant_query(
         ..Default::default()
     };
 
-    let search_response_future = qdrant.search_batch_points(&batch_points);
+    let search_response_future = qdrant_client.search_batch_points(&batch_points);
 
     let count_query = data
         .iter()
@@ -849,7 +866,7 @@ pub async fn search_qdrant_query(
                 return Ok(0);
             }
 
-            Ok(qdrant
+            Ok(qdrant_client
                 .count(query)
                 .await
                 .map_err(|e| {
@@ -1008,10 +1025,13 @@ pub async fn recommend_qdrant_query(
         shard_key_selector: None,
     };
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
-    let recommended_point_ids = qdrant
+    let recommended_point_ids = qdrant_client
         .recommend(&recommend_points)
         .await
         .map_err(|err| {
@@ -1135,10 +1155,13 @@ pub async fn recommend_qdrant_groups_query(
         with_lookup: None,
     };
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
-    let data = qdrant
+    let data = qdrant_client
         .recommend_groups(&recommend_points)
         .await
         .map_err(|err| {
@@ -1202,10 +1225,13 @@ pub async fn get_point_count_qdrant_query(
 
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
-    let data = qdrant
+    let data = qdrant_client
         .count(&CountPoints {
             collection_name: qdrant_collection,
             filter: Some(filters),
@@ -1229,12 +1255,15 @@ pub async fn point_ids_exists_in_qdrant(
 ) -> Result<bool, ServiceError> {
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
     let points: Vec<PointId> = point_ids.iter().map(|x| x.to_string().into()).collect();
 
-    let data = qdrant
+    let data = qdrant_client
         .get_points(
             qdrant_collection,
             None,

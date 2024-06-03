@@ -68,8 +68,6 @@ spec:
             value: {{ .Values.config.s3.bucket }}
           - name: COOKIE_SECURE
             value: {{ .Values.config.trieve.cookieSecure | quote }}
-          - name: QDRANT_COLLECTION
-            value: {{ .Values.config.qdrant.collection }}
           - name: TIKA_URL
             value: tika.default.svc.cluster.local
           - name: OPENAI_BASE_URL
