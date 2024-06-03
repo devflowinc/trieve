@@ -292,7 +292,6 @@ pub struct ChunkMetadata {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<String>,
     pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
@@ -301,7 +300,7 @@ pub struct ChunkMetadata {
     pub weight: f64,
     pub location: Option<GeoInfo>,
     pub image_urls: Option<Vec<Option<String>>>,
-    pub tag_set_array: Option<Vec<Option<String>>>,
+    pub tag_set: Option<Vec<Option<String>>>,
     pub num_value: Option<f64>,
 }
 
@@ -310,7 +309,7 @@ impl ChunkMetadata {
     pub fn from_details(
         chunk_html: &Option<String>,
         link: &Option<String>,
-        tag_set: &Option<String>,
+        tag_set: &Option<Vec<Option<String>>>,
         qdrant_point_id: Option<uuid::Uuid>,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
@@ -336,7 +335,6 @@ impl ChunkMetadata {
             dataset_id,
             weight,
             image_urls: image_urls.map(|urls| urls.into_iter().map(Some).collect()),
-            tag_set_array: None,
             num_value,
         }
     }
@@ -348,7 +346,7 @@ impl ChunkMetadata {
         id: T,
         chunk_html: Option<String>,
         link: &Option<String>,
-        tag_set: &Option<String>,
+        tag_set: &Option<Vec<Option<String>>>,
         qdrant_point_id: Option<uuid::Uuid>,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
@@ -374,7 +372,6 @@ impl ChunkMetadata {
             dataset_id,
             weight,
             image_urls: image_urls.map(|urls| urls.into_iter().map(Some).collect()),
-            tag_set_array: None,
             num_value,
         }
     }
@@ -397,7 +394,6 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
             dataset_id: slim_chunk.dataset_id,
             weight: slim_chunk.weight,
             image_urls: slim_chunk.image_urls,
-            tag_set_array: None,
             num_value: slim_chunk.num_value,
         }
     }
@@ -420,7 +416,6 @@ impl From<ContentChunkMetadata> for ChunkMetadata {
             dataset_id: uuid::Uuid::new_v4(),
             weight: content_chunk.weight,
             image_urls: content_chunk.image_urls,
-            tag_set_array: None,
             num_value: content_chunk.num_value,
         }
     }
@@ -479,7 +474,7 @@ pub struct ChunkMetadataWithScore {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<String>,
+    pub tag_set: Option<Vec<Option<String>>>,
     pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
@@ -618,7 +613,7 @@ pub struct SlimChunkMetadataWithScore {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<String>,
+    pub tag_set: Option<Vec<Option<String>>>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -664,7 +659,7 @@ pub struct SlimChunkMetadata {
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<String>,
+    pub tag_set: Option<Vec<Option<String>>>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -834,8 +829,7 @@ pub struct ChunkGroup {
     pub dataset_id: uuid::Uuid,
     pub tracking_id: Option<String>,
     pub metadata: Option<serde_json::Value>,
-    pub tag_set: Option<String>,
-    pub tag_set_array: Option<Vec<Option<String>>>,
+    pub tag_set: Option<Vec<Option<String>>>,
 }
 
 impl ChunkGroup {
@@ -845,7 +839,7 @@ impl ChunkGroup {
         dataset_id: uuid::Uuid,
         tracking_id: Option<String>,
         metadata: Option<serde_json::Value>,
-        tag_set: Option<String>,
+        tag_set: Option<Vec<Option<String>>>,
     ) -> Self {
         ChunkGroup {
             id: uuid::Uuid::new_v4(),
@@ -857,7 +851,6 @@ impl ChunkGroup {
             tracking_id,
             metadata,
             tag_set,
-            tag_set_array: None,
         }
     }
 
@@ -868,7 +861,7 @@ impl ChunkGroup {
         dataset_id: uuid::Uuid,
         tracking_id: Option<String>,
         metadata: Option<serde_json::Value>,
-        tag_set: Option<String>,
+        tag_set: Option<Vec<Option<String>>>,
     ) -> Self {
         ChunkGroup {
             id,
@@ -880,7 +873,6 @@ impl ChunkGroup {
             tracking_id,
             metadata,
             tag_set,
-            tag_set_array: None,
         }
     }
 }
@@ -1014,12 +1006,11 @@ pub struct File {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub size: i64,
-    pub tag_set: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub link: Option<String>,
     pub time_stamp: Option<chrono::NaiveDateTime>,
     pub dataset_id: uuid::Uuid,
-    pub tag_set_array: Option<Vec<Option<String>>>,
+    pub tag_set: Option<Vec<Option<String>>>,
 }
 
 impl File {
@@ -1028,7 +1019,7 @@ impl File {
         file_id: Option<uuid::Uuid>,
         file_name: &str,
         size: i64,
-        tag_set: Option<String>,
+        tag_set: Option<Vec<Option<String>>>,
         metadata: Option<serde_json::Value>,
         link: Option<String>,
         time_stamp: Option<String>,
@@ -1051,7 +1042,6 @@ impl File {
                     .naive_local()
             }),
             dataset_id,
-            tag_set_array: None,
         }
     }
 }
@@ -1355,9 +1345,6 @@ impl DatasetAndUsage {
     "LLM_BASE_URL": "https://api.openai.com/v1",
     "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
     "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
-    "QDRANT_URL": "http://localhost:6333",
-    "QDRANT_API_KEY": "api_key",
-    "QDRANT_COLLECTION_NAME": "collection",
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
     "N_RETRIEVALS_TO_INCLUDE": 5,
     "DUPLICATE_DISTANCE_THRESHOLD": 1.1,
@@ -1376,9 +1363,6 @@ pub struct ServerDatasetConfiguration {
     pub EMBEDDING_BASE_URL: String,
     pub EMBEDDING_MODEL_NAME: String,
     pub RERANKER_BASE_URL: String,
-    pub QDRANT_URL: String,
-    pub QDRANT_API_KEY: String,
-    pub QDRANT_COLLECTION_NAME: String,
     pub MESSAGE_TO_QUERY_PROMPT: String,
     pub RAG_PROMPT: String,
     pub N_RETRIEVALS_TO_INCLUDE: usize,
@@ -1517,42 +1501,6 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(&json!(true))
                 .as_bool()
                 .unwrap_or(true),
-            QDRANT_URL: configuration
-                .get("QDRANT_URL")
-                .unwrap_or(&json!(get_env!("QDRANT_URL", "Must provide QDRANT_URL")))
-                .as_str()
-                .map(|s| {
-                    if s.is_empty() {
-                        get_env!("QDRANT_URL", "Must provide QDRANT_URL").to_string()
-                    } else {
-                        s.to_string()
-                    }
-                })
-                .unwrap_or(get_env!("QDRANT_URL", "Must provide QDRANT_URL").to_string()),
-            QDRANT_API_KEY: configuration
-                .get("QDRANT_API_KEY")
-                .unwrap_or(&json!(get_env!("QDRANT_API_KEY", "Must provide QDRANT_API_KEY")))
-                .as_str()
-                .map(|s| {
-                    if s.is_empty() {
-                        get_env!("QDRANT_API_KEY", "Must provide QDRANT_API_KEY").to_string()
-                    } else {
-                        s.to_string()
-                    }
-                })
-                .unwrap_or(get_env!("QDRANT_API_KEY", "Must provide QDRANT_API_KEY").to_string()),
-            QDRANT_COLLECTION_NAME: configuration
-                .get("QDRANT_COLLECTION_NAME")
-                .unwrap_or(&json!(get_env!("QDRANT_COLLECTION", "Must provide QDRANT_COLLECTION")))
-                .as_str()
-                .map(|s| {
-                    if s.is_empty() {
-                        get_env!("QDRANT_COLLECTION", "Must provide QDRANT_COLLECTION").to_string()
-                    } else {
-                        s.to_string()
-                    }
-                })
-                .unwrap_or(get_env!("QDRANT_COLLECTION", "Must provide QDRANT_COLLECTION").to_string()),
             EMBEDDING_QUERY_PREFIX: configuration
                 .get("EMBEDDING_QUERY_PREFIX")
                 .unwrap_or(&{
@@ -2165,7 +2113,7 @@ impl From<String> for UnifiedId {
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct QdrantPayload {
-    pub tag_set: Option<Vec<String>>,
+    pub tag_set: Option<Vec<Option<String>>>,
     pub link: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub time_stamp: Option<i64>,
@@ -2192,9 +2140,7 @@ impl QdrantPayload {
         dataset_id: Option<uuid::Uuid>,
     ) -> Self {
         QdrantPayload {
-            tag_set: chunk_metadata
-                .tag_set
-                .map(|x| x.split(',').map(|s| s.to_string()).collect()),
+            tag_set: chunk_metadata.tag_set,
             link: chunk_metadata.link,
             metadata: chunk_metadata.metadata,
             time_stamp: chunk_metadata.time_stamp.map(|x| x.timestamp()),
@@ -2212,7 +2158,7 @@ impl QdrantPayload {
                 x.as_list()
                     .expect("tag_set should be a list")
                     .iter()
-                    .map(|value| value.to_string())
+                    .map(|value| Some(value.to_string()))
                     .collect()
             }),
             link: point.payload.get("link").cloned().map(|x| x.to_string()),
@@ -2265,7 +2211,7 @@ impl From<RetrievedPoint> for QdrantPayload {
                 x.as_list()
                     .expect("tag_set should be a list")
                     .iter()
-                    .map(|value| value.to_string())
+                    .map(|value| Some(value.to_string()))
                     .collect()
             }),
             link: point.payload.get("link").cloned().map(|x| x.to_string()),

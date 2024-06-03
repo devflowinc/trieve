@@ -16,6 +16,7 @@ use crate::data::models::{
     ContentChunkMetadata, Dataset, HasIDCondition, ScoreChunkDTO, ServerDatasetConfiguration,
     UnifiedId,
 };
+use crate::get_env;
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, ParsedQuery, SearchChunkQueryResponseBody,
     SearchChunksReqPayload,
@@ -31,7 +32,7 @@ use crate::{
 use actix_web::web;
 use diesel::dsl::sql;
 use diesel::sql_types::{Bool, Text};
-use diesel::{ExpressionMethods, JoinOnDsl, PgTextExpressionMethods, QueryDsl};
+use diesel::{ExpressionMethods, JoinOnDsl, PgArrayExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 
 use itertools::Itertools;
@@ -740,15 +741,15 @@ pub async fn get_group_tag_set_filter_condition(
             match first_val {
                 MatchCondition::Text(string_val) => {
                     query = query
-                        .filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
+                        .filter(chunk_group_columns::tag_set.contains(vec![string_val.clone()]));
                 }
-                MatchCondition::Integer(id_val) => {
-                    query =
-                        query.filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
+                MatchCondition::Integer(int_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.contains(vec![int_val.to_string()]));
                 }
-                MatchCondition::Float(id_val) => {
-                    query =
-                        query.filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
+                MatchCondition::Float(float_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.contains(vec![float_val.to_string()]));
                 }
             }
         }
@@ -757,15 +758,17 @@ pub async fn get_group_tag_set_filter_condition(
             match match_condition {
                 MatchCondition::Text(string_val) => {
                     query = query
-                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
+                        .or_filter(chunk_group_columns::tag_set.contains(vec![string_val.clone()]));
                 }
-                MatchCondition::Integer(id_val) => {
-                    query = query
-                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
+                MatchCondition::Integer(int_val) => {
+                    query = query.or_filter(
+                        chunk_group_columns::tag_set.contains(vec![int_val.to_string()]),
+                    );
                 }
-                MatchCondition::Float(id_val) => {
-                    query = query
-                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
+                MatchCondition::Float(float_val) => {
+                    query = query.or_filter(
+                        chunk_group_columns::tag_set.contains(vec![float_val.to_string()]),
+                    );
                 }
             }
         }
@@ -867,8 +870,11 @@ pub async fn global_unfiltered_top_match_query(
 ) -> Result<SearchResult, ServiceError> {
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
     let mut dataset_filter = Filter::default();
     dataset_filter
@@ -889,7 +895,7 @@ pub async fn global_unfiltered_top_match_query(
         }
     };
 
-    let data = qdrant
+    let data = qdrant_client
         .search_points(&SearchPoints {
             collection_name: qdrant_collection,
             vector: embedding_vector,
@@ -967,13 +973,13 @@ pub async fn get_metadata_query(
 
     let chunk_metadata_with_file_id: Vec<ChunkMetadata> = chunk_metadata
         .into_iter()
-        .map(|metadata| {
-            let qdrant_point_id = match metadata.qdrant_point_id {
+        .map(|chunk_metadata| {
+            let qdrant_point_id = match chunk_metadata.qdrant_point_id {
                 Some(id) => id,
                 None => {
                     chunk_collisions
                                     .iter()
-                                    .find(|collision| collision.0 == metadata.id) // Match chunk id
+                                    .find(|collision| collision.0 == chunk_metadata.id) // Match chunk id
                                     .expect("Qdrant point id does not exist for root chunk or collision")
                                     .1
                                     .expect("Collision Qdrant point id must exist if there is no root qdrant point id")
@@ -981,22 +987,21 @@ pub async fn get_metadata_query(
             };
 
             ChunkMetadata {
-                id: metadata.id,
-                link: metadata.link,
-                tag_set: metadata.tag_set,
+                id: chunk_metadata.id,
+                link: chunk_metadata.link,
+                tag_set: chunk_metadata.tag_set,
                 qdrant_point_id: Some(qdrant_point_id),
-                created_at: metadata.created_at,
-                updated_at: metadata.updated_at,
-                chunk_html: metadata.chunk_html,
-                metadata: metadata.metadata,
-                tracking_id: metadata.tracking_id,
-                time_stamp: metadata.time_stamp,
-                location: metadata.location,
-                dataset_id: metadata.dataset_id,
-                weight: metadata.weight,
-                image_urls: metadata.image_urls,
-                tag_set_array: None,
-                num_value: metadata.num_value,
+                created_at: chunk_metadata.created_at,
+                updated_at: chunk_metadata.updated_at,
+                chunk_html: chunk_metadata.chunk_html,
+                metadata: chunk_metadata.metadata,
+                tracking_id: chunk_metadata.tracking_id,
+                time_stamp: chunk_metadata.time_stamp,
+                location: chunk_metadata.location,
+                dataset_id: chunk_metadata.dataset_id,
+                weight: chunk_metadata.weight,
+                image_urls: chunk_metadata.image_urls,
+                num_value: chunk_metadata.num_value,
             }
         })
         .collect();
@@ -1115,7 +1120,7 @@ pub async fn retrieve_chunks_for_groups(
                                     updated_at: chrono::Utc::now().naive_local(),
                                     chunk_html: Some("".to_string()),
                                     link: Some("".to_string()),
-                                    tag_set: Some("".to_string()),
+                                    tag_set: None,
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
@@ -1123,7 +1128,6 @@ pub async fn retrieve_chunks_for_groups(
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
                                     image_urls: None,
-                                    tag_set_array: None,
                                     num_value: None
                                 }.into()
                             },
@@ -1260,8 +1264,8 @@ pub async fn get_metadata_from_groups(
                                     created_at: chrono::Utc::now().naive_local(),
                                     updated_at: chrono::Utc::now().naive_local(),
                                     chunk_html: Some("".to_string()),
-                                    link: Some("".to_string()),
-                                    tag_set: Some("".to_string()),
+                                    link: None,
+                                    tag_set: None,
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
@@ -1269,7 +1273,6 @@ pub async fn get_metadata_from_groups(
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
                                     image_urls: None,
-                                    tag_set_array: None,
                                     num_value: None
                                 }.into()
                             },
@@ -1386,8 +1389,8 @@ pub async fn retrieve_chunks_from_point_ids(
                             created_at: chrono::Utc::now().naive_local(),
                             updated_at: chrono::Utc::now().naive_local(),
                             chunk_html: Some("".to_string()),
-                            link: Some("".to_string()),
-                            tag_set: Some("".to_string()),
+                            link: None,
+                            tag_set: None,
                             metadata: None,
                             tracking_id: None,
                             time_stamp: None,
@@ -1395,7 +1398,6 @@ pub async fn retrieve_chunks_from_point_ids(
                             dataset_id: uuid::Uuid::default(),
                             weight: 1.0,
                             image_urls: None,
-                            tag_set_array: None,
                             num_value: None,
                         }
                         .into()
@@ -1529,7 +1531,7 @@ pub fn rerank_chunks(
                 for (tag, weight) in tag_weights.iter() {
                     if let Some(metadata) = chunk.metadata.get(0) {
                         if let Some(metadata_tags) = metadata.metadata().tag_set {
-                            if metadata_tags.contains(tag) {
+                            if metadata_tags.contains(&Some(tag.clone())) {
                                 tag_score *= weight;
                             }
                         }

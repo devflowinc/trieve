@@ -96,13 +96,24 @@ pub async fn create_chunk_group(
     let name = body.name.clone();
     let description = body.description.clone();
 
+    let group_tag_set = if let Some(tag_set) = body.tag_set.clone() {
+        Some(
+            tag_set
+                .into_iter()
+                .map(|tag| Some(tag.clone()))
+                .collect::<Vec<Option<String>>>(),
+        )
+    } else {
+        None
+    };
+
     let group = ChunkGroup::from_details(
         name,
         description,
         dataset_org_plan_sub.dataset.id,
         body.tracking_id.clone(),
         body.metadata.clone(),
-        body.tag_set.clone().map(|tags| tags.join(",")),
+        group_tag_set,
     );
     {
         let group = group.clone();
@@ -317,13 +328,24 @@ pub async fn update_group_by_tracking_id(
     )
     .await?;
 
+    let group_tag_set = if let Some(tag_set) = data.tag_set.clone() {
+        Some(
+            tag_set
+                .into_iter()
+                .map(|tag| Some(tag.clone()))
+                .collect::<Vec<Option<String>>>(),
+        )
+    } else {
+        None
+    };
+
     let new_group = ChunkGroup::from_details(
         data.name.clone().unwrap_or(group.name.clone()),
         data.description.clone().or(Some(group.description.clone())),
         dataset_org_plan_sub.dataset.id,
         Some(data.tracking_id.clone()),
         data.metadata.clone().or(group.metadata.clone()),
-        data.tag_set.clone().map(|tags| tags.join(",")),
+        group_tag_set,
     );
 
     update_chunk_group_query(new_group, pool).await?;
@@ -488,15 +510,24 @@ pub struct UpdateChunkGroupData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn update_chunk_group(
-    body: web::Json<UpdateChunkGroupData>,
+    data: web::Json<UpdateChunkGroupData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let name = body.name.clone();
-    let description = body.description.clone();
-    let group_id = body.group_id;
-    let tag_set = body.tag_set.clone().map(|tags| tags.join(","));
+    let name = data.name.clone();
+    let description = data.description.clone();
+    let group_id = data.group_id;
+    let group_tag_set = if let Some(tag_set) = data.tag_set.clone() {
+        Some(
+            tag_set
+                .into_iter()
+                .map(|tag| Some(tag.clone()))
+                .collect::<Vec<Option<String>>>(),
+        )
+    } else {
+        None
+    };
 
     let group = if let Some(group_id) = group_id {
         dataset_owns_group(
@@ -505,7 +536,7 @@ pub async fn update_chunk_group(
             pool.clone(),
         )
         .await?
-    } else if let Some(tracking_id) = body.tracking_id.clone() {
+    } else if let Some(tracking_id) = data.tracking_id.clone() {
         dataset_owns_group(
             UnifiedId::TrackingId(tracking_id),
             dataset_org_plan_sub.dataset.id,
@@ -521,9 +552,9 @@ pub async fn update_chunk_group(
         name.unwrap_or(group.name.clone()),
         description.or(Some(group.description.clone())),
         dataset_org_plan_sub.dataset.id,
-        body.tracking_id.clone(),
-        body.metadata.clone(),
-        tag_set.or(group.tag_set.clone()),
+        data.tracking_id.clone(),
+        data.metadata.clone(),
+        group_tag_set.or(group.tag_set.clone()),
     );
 
     update_chunk_group_query(new_chunk_group, pool).await?;

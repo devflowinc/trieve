@@ -3,6 +3,7 @@ use crate::data::models::{
     OrganizationWithSubAndPlan, ServerDatasetConfiguration, StripePlan, StripeSubscription,
     UnifiedId,
 };
+use crate::get_env;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
     data::models::{Dataset, Pool},
@@ -144,11 +145,13 @@ pub async fn delete_dataset_by_id_query(
 
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
-        .await
-        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to qdrant: {}", err)))?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
 
-    qdrant
+    qdrant_client
         .delete_points(
             qdrant_collection,
             None,

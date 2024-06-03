@@ -2,8 +2,9 @@ use crate::data::models::{
     ChunkCollision, ChunkGroupBookmark, ChunkMetadataTypes, ContentChunkMetadata, Dataset,
     IngestSpecificChunkMetadata, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
+use crate::get_env;
 use crate::handlers::chunk_handler::UploadIngestionMessage;
-use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkData};
+use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
@@ -211,7 +212,6 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                     dataset_id: chunk.0.dataset_id,
                     weight: chunk.0.weight,
                     image_urls: chunk.0.image_urls.clone(),
-                    tag_set_array: None,
                     num_value: chunk.0.num_value,
                 }
                 .into()
@@ -263,7 +263,6 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         dataset_id: chunk.0.dataset_id,
                         weight: chunk.0.weight,
                         image_urls: chunk.0.image_urls.clone(),
-                        tag_set_array: None,
                         num_value: chunk.0.num_value,
                     }
                     .into()
@@ -1047,12 +1046,16 @@ pub async fn delete_chunk_metadata_query(
 
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+
     match transaction_result {
         Ok(result) => match result {
             TransactionResult::ChunkCollisionNotDetected => {
-                let _ = qdrant
+                let _ = qdrant_client
                     .delete_points(
                         qdrant_collection,
                         None,
@@ -1093,7 +1096,7 @@ pub async fn delete_chunk_metadata_query(
                 })?
                 .clone();
 
-                let _ = qdrant
+                let _ = qdrant_client
                     .update_vectors_blocking(
                         qdrant_collection,
                         None,
@@ -1308,7 +1311,7 @@ pub async fn get_row_count_for_dataset_id_query(
 
 #[tracing::instrument(skip(pool))]
 pub async fn create_chunk_metadata(
-    chunks: Vec<ChunkData>,
+    chunks: Vec<ChunkReqPayload>,
     dataset_uuid: uuid::Uuid,
     dataset_configuration: ServerDatasetConfiguration,
     pool: web::Data<Pool>,
@@ -1318,7 +1321,15 @@ pub async fn create_chunk_metadata(
     let mut chunk_metadatas = vec![];
 
     for chunk in chunks {
-        let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
+        let chunk_tag_set = if let Some(tags) = chunk.tag_set.clone() {
+            Some(
+                tags.into_iter()
+                    .map(|tag| Some(tag))
+                    .collect::<Vec<Option<String>>>(),
+            )
+        } else {
+            None
+        };
 
         let chunk_tracking_id = chunk
             .tracking_id
