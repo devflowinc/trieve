@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ingest
+  name: file-worker
   labels:
-    app.kubernetes.io/name: ingest
+    app.kubernetes.io/name: file-worker
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: Helm
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: ingest
+      app.kubernetes.io/name: file-worker
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ingest
+        app.kubernetes.io/name: file-worker
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/managed-by: Helm
     spec:
@@ -22,12 +22,12 @@ spec:
       serviceAccountName: cloud-postgres-service-account
       {{- end }}
       containers:
-      - name: ingest
+      - name: file-worker
         resources:
           limits:
             cpu: 1
-        replicas: {{ .Values.config.ingest.replicas }}
-        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (ne .Values.environment "local")) "ingest" .Values.containers.ingest.tag }}
+        replicas: 1
+        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (ne .Values.environment "local")) "file_worker" .Values.containers.file_worker.tag }}
         env:
           - name: ADMIN_API_KEY
             value: {{ .Values.config.trieve.adminApiKey }}
@@ -71,8 +71,10 @@ spec:
             value: {{ .Values.config.s3.bucket }}
           - name: COOKIE_SECURE
             value: {{ .Values.config.trieve.cookieSecure | quote }}
+          - name: QDRANT_COLLECTION
+            value: {{ .Values.config.qdrant.collection }}
           - name: TIKA_URL
-            value: tika.default.svc.cluster.local
+            value: http://tika.default.svc.cluster.local:9998
           - name: OPENAI_BASE_URL
             value: {{ .Values.config.openai.baseUrl }}
           - name: STRIPE_SECRET
@@ -101,10 +103,6 @@ spec:
             value: {{ .Values.config.trieve.embeddingServerOrigin }}
           - name: EMBEDDING_SERVER_ORIGIN_BGEM3
             value: {{ .Values.config.trieve.embeddingServerOriginBGEM3 }}
-          - name: EMBEDDING_SERVER_ORIGIN_JINA_CODE
-            value: {{ .Values.config.trieve.embeddingServerOriginJinaCode }}
-          - name: JINA_CODE_API_KEY
-            value: {{ .Values.config.trieve.jinaCodeApiKey }}
           - name: RERANKER_SERVER_ORIGIN
             value: {{ .Values.config.trieve.rerankerServerOrigin }}
           - name: UNLIMITED
@@ -113,6 +111,8 @@ spec:
             value: {{ .Values.config.redis.connections | quote }}
           - name: NUM_THREADS
             value: {{ .Values.config.ingest.num_threads | quote }}
+          - name: AWS_REGION
+            value: {{ .Values.config.s3.region }}
       {{- if eq $.Values.environment "gcloud" }}
       - name: cloud-sql-proxy
         # It is recommended to use the latest version of the Cloud SQL Auth Proxy

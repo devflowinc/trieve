@@ -39,14 +39,13 @@ service:
       checksEnabled: false
 
 ingress:
-  enabled: false
+  enabled: true
   ingressClassName: ""
   additionalLabels: {}
   annotations: {}
     # kubernetes.io/ingress.class: alb
   hosts:
-    - host: example-domain.com
-      paths:
+    - paths:
         - path: /
           pathType: Prefix
           servicePort: 6333

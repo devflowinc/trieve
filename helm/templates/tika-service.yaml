@@ -1,13 +1,12 @@
-{{- $name := "tika-service" }}
 {{- $selector := "tika" }}
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ $name }}
+  name: tika
   labels:
     app.kubernetes.io/instance: trieve
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/name: tika
     app.kubernetes.io/version: 1.16.0
     helm.sh/chart: trieve-0.1.0
     meta.helm.sh/release-name: trieve

@@ -40,7 +40,8 @@ config:
     rootPassword: $MINIO_ROOT_PASSWORD
   redis:
     connections: 30
-    password: redis
+    useSubchart: true
+    uri: "redis://:redis@trieve-redis-master.default.svc.cluster.local:6379" # Only used if useSubchart is false
   qdrant:
     useSubchart: true
     qdrantUrl: http://trieve-qdrant.default.svc.cluster.local:6334 # Only used if useSubchart is false
@@ -67,6 +68,8 @@ config:
     sparseServerDocOrigin: http://embedding-splade-doc.default.cluster.local
     embeddingServerOriginBGEM3: http://embedding-bgem3.default.cluster.local
     rerankerServerOrigin: http://embedding-reranker.default.cluster.local
+    embeddingServerOriginJinaCode: https://api.jina.ai/v1
+    jinaCodeApiKey: jina_************************************************************
     salt: $SALT
     secretKey: $SECRET_KEY
     adminApiKey: $ADMIN_API_KEY 
@@ -112,5 +115,3 @@ embeddings:
     model: naver/efficient-splade-VI-BT-large-query
     revision: main
     args: ["--pooling", "splade"]
-redis:
-  enabled: true
