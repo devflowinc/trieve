@@ -83,14 +83,14 @@ module "eks" {
 
   eks_managed_node_groups = {
 
-    trieve-nodegroup-general = {
-      name = "${var.cluster-name}-nodegroup-genral"
+    trieve-general = {
+      name = "${var.cluster-name}-general"
 
-      instance_types = ["m7i.xlarge"]
+      instance_types = ["c6a.xlarge"]
 
       desired_size = 2
       min_size     = 1
-      max_size     = 3
+      max_size     = 2
 
       # Needed by the aws-ebs-csi-driver
       iam_role_additional_policies = {
@@ -98,10 +98,10 @@ module "eks" {
       }
     }
 
-    trieve-nodegroup-highmem = {
-      name = "${var.cluster-name}-nodegroup-highmem"
+    trieve-highmem = {
+      name = "${var.cluster-name}-highmem"
 
-      instance_types = ["r5a.8xlarge"]
+      instance_types = ["r6a.xlarge"]
 
       desired_size = 4
       min_size     = 1

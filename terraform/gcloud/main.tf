@@ -12,8 +12,13 @@ variable "cluster_name" {
 }
 
 variable "project" {}
+
 variable "region" {
   default = "us-west1"
+}
+
+variable "zone" {
+  default = "us-west1-a"
 }
 
 ###############################################################
@@ -22,6 +27,12 @@ variable "region" {
 # Set GOOGLE_CREDENTIALS
 provider "google" {
   region  = var.region
+  project = var.project
+}
+
+provider "google-beta" {
+  region = var.region
+  zone   = var.zone
   project = var.project
 }
 
@@ -41,8 +52,8 @@ resource "google_compute_subnetwork" "vpc_subnet" {
 # K8s configuration
 ###############################################################
 resource "google_container_cluster" "cluster" {
-  name             = "${var.cluster_name}"
-  location         = "${var.region}-a"
+  name             = var.cluster_name
+  location         = var.zone
 
   # We can't create a cluster with no node pool defined, but we want to only use
   # separately managed node pools. So we create the smallest possible default
@@ -55,11 +66,15 @@ resource "google_container_cluster" "cluster" {
   vertical_pod_autoscaling {
     enabled = true
   }
+
+  workload_identity_config {
+    workload_pool = "${var.project}.svc.id.goog"
+  }
 }
 
 resource "google_container_node_pool" "larger_nodes" {
   name       = "larger-compute"
-  location   = "${var.region}-a"
+  location   = var.zone
   cluster    = google_container_cluster.cluster.name
 
   # enable_autopilot = true
@@ -84,45 +99,26 @@ resource "google_container_node_pool" "larger_nodes" {
 
 resource "google_container_node_pool" "simple_nodes" {
   name       = "simple-compute"
-  location   = "${var.region}-a"
+  location   = var.zone
   cluster    = google_container_cluster.cluster.name
 
   # enable_autopilot = true
-  node_count = 1
+  node_count = 3
 
   autoscaling {
     min_node_count = 1
-    max_node_count = 2
+    max_node_count = 3
   }
 
   node_config {
     preemptible  = true
-    machine_type = "c2d-standard-4"
+    machine_type = "c2d-standard-8"
   }
 }
 
-# resource "google_container_node_pool" "primary_preemptible_nodes" {
-#   name       = "general-compute"
-#   location   = "${var.region}-a"
-#   cluster    = google_container_cluster.cluster.name
-#
-#   # enable_autopilot = true
-#   node_count = 3
-#
-#   autoscaling {
-#     min_node_count = 3
-#     max_node_count = 20
-#   }
-#
-#   node_config {
-#     preemptible  = true
-#     machine_type = "e2-highmem-8"
-#   }
-# }
-
 resource "google_container_node_pool" "gpu_nodes" {
   name       = "gpu-compute"
-  location   = "${var.region}-a"
+  location   = var.zone
   cluster    = google_container_cluster.cluster.name
   node_count = 1
 
