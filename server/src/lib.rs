@@ -373,10 +373,8 @@ pub fn main() -> std::io::Result<()> {
 
         tracing_subscriber::Registry::default()
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(level_filter.into()),
-                ),
+                tracing_subscriber::fmt::layer()
+                    .with_filter(EnvFilter::from_default_env().add_directive(level_filter.into())),
             )
             .init();
 
