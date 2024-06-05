@@ -51,9 +51,9 @@ pub async fn dataset_owns_group(
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct CreateChunkGroupData {
+pub struct CreateChunkGroupReqPayload {
     /// Name to assign to the chunk_group. Does not need to be unique.
-    pub name: String,
+    pub name: Option<String>,
     /// Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for.
     pub description: Option<String>,
     /// Optional tracking id to assign to the chunk_group. This is a unique identifier for the chunk_group.
@@ -74,7 +74,7 @@ pub struct CreateChunkGroupData {
     path = "/chunk_group",
     context_path = "/api",
     tag = "chunk_group",
-    request_body(content = CreateChunkGroupData, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
+    request_body(content = CreateChunkGroupReqPayload, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
     responses(
         (status = 200, description = "Returns the created chunkGroup", body = ChunkGroup),
         (status = 400, description = "Service error relating to creating the chunkGroup", body = ErrorResponseBody),
@@ -88,7 +88,7 @@ pub struct CreateChunkGroupData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn create_chunk_group(
-    body: web::Json<CreateChunkGroupData>,
+    body: web::Json<CreateChunkGroupReqPayload>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -279,7 +279,7 @@ pub async fn get_chunk_group(
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct UpdateGroupByTrackingIDData {
+pub struct UpdateGroupByTrackingIDReqPayload {
     /// Tracking Id of the chunk_group to update.
     pub tracking_id: String,
     /// Name to assign to the chunk_group. Does not need to be unique. If not provided, the name will not be updated.
@@ -300,7 +300,7 @@ pub struct UpdateGroupByTrackingIDData {
     path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
     tag = "chunk_group",
-    request_body(content = UpdateGroupByTrackingIDData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
+    request_body(content = UpdateGroupByTrackingIDReqPayload, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was updated"),
         (status = 400, description = "Service error relating to updating the chunkGroup", body = ErrorResponseBody),
@@ -316,7 +316,7 @@ pub struct UpdateGroupByTrackingIDData {
 #[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn update_group_by_tracking_id(
-    data: web::Json<UpdateGroupByTrackingIDData>,
+    data: web::Json<UpdateGroupByTrackingIDReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: AdminOnly,
     pool: web::Data<Pool>,
@@ -340,8 +340,8 @@ pub async fn update_group_by_tracking_id(
     };
 
     let new_group = ChunkGroup::from_details(
-        data.name.clone().unwrap_or(group.name.clone()),
-        data.description.clone().or(Some(group.description.clone())),
+        data.name.clone(),
+        data.description.clone(),
         dataset_org_plan_sub.dataset.id,
         Some(data.tracking_id.clone()),
         data.metadata.clone().or(group.metadata.clone()),
@@ -849,29 +849,29 @@ pub async fn get_groups_chunk_is_in(
     Ok(HttpResponse::Ok().json(groups))
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct DeleteBookmarkPathData {
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct RemoveChunkFromGroupReqPayload {
+    /// Id of the chunk to remove from the group.
     pub chunk_id: uuid::Uuid,
 }
 
 /// Remove Chunk from Group
 ///
-/// Route to remove a chunk from a group. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Route to remove a chunk from a group. Auth'ed user or api key must be an admin or owner of the dataset's organization to remove a chunk from a group.
 #[utoipa::path(
     delete,
     path = "/chunk_group/chunk/{group_id}",
     context_path = "/api",
     tag = "chunk_group",
+    request_body(content = RemoveChunkFromGroupReqPayload, description = "JSON request payload to remove a chunk from a group", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk was removed to the group"),
         (status = 400, description = "Service error relating to removing the chunk from the group", body = ErrorResponseBody),
     ),
-    request_body(content = DeleteBookmarkPathData, description = "JSON request payload to send an invitation", content_type = "application/json"),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("group_id" = uuid::Uuid, description = "Id of the group to remove the bookmark'ed chunk from"),
+        ("group_id" = Option<uuid::Uuid>, Path, description = "Id of the group you want to remove the chunk from."),
     ),
-    request_body(content = CreateChunkGroupData, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
     security(
         ("ApiKey" = ["admin"]),
     )
@@ -879,7 +879,7 @@ pub struct DeleteBookmarkPathData {
 #[tracing::instrument(skip(pool))]
 pub async fn remove_chunk_from_group(
     group_id: web::Path<uuid::Uuid>,
-    body: web::Json<DeleteBookmarkPathData>,
+    body: web::Json<RemoveChunkFromGroupReqPayload>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
