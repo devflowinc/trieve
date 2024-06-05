@@ -2,7 +2,7 @@
   <img height="100" src="https://cdn.trieve.ai/trieve-logo.png" alt="Trieve Logo">
 </p>
 <p align="center">
-<strong><a href="https://blog.trieve.ai">Sign Up (1k chunks free)</a> | <a href="https://docs.trieve.ai">Documentation</a> | <a href="https://cal.com/nick.k/meet">Meeting Link</a> | <a href="mailto:+16282224090">+1 628-222-4090</a> | <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">Community Matrix</a>
+<strong><a href="https://dashboard.trieve.ai">Sign Up (1k chunks free)</a> | <a href="https://docs.trieve.ai">Documentation</a> | <a href="https://cal.com/nick.k/meet">Meeting Link</a> | <a href="https://discord.gg/eBJXXZDB8z">Discord</a> | <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">Matrix</a>
 </strong>
 </p>
 

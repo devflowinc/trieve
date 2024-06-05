@@ -136,7 +136,7 @@ pub async fn create_file_chunks(
     let name = format!("Group for file {}", upload_file_data.file_name);
 
     let chunk_group = ChunkGroup::from_details(
-        name.clone(),
+        Some(name.clone()),
         upload_file_data.description.clone(),
         dataset_org_plan_sub.dataset.id,
         upload_file_data.group_tracking_id.clone(),
