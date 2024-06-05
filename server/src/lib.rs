@@ -360,18 +360,29 @@ pub fn main() -> std::io::Result<()> {
         log::info!("Sentry monitoring enabled");
         Some(guard)
     } else {
+        // if sentry is not enabled, get RUST_LOG from the environment variable (.env file)
+        let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "INFO".to_string());
+        let level_filter = match rust_log.to_uppercase().as_str() {
+            "ERROR" => tracing_subscriber::filter::LevelFilter::ERROR,
+            "WARN" => tracing_subscriber::filter::LevelFilter::WARN,
+            "INFO" => tracing_subscriber::filter::LevelFilter::INFO,
+            "DEBUG" => tracing_subscriber::filter::LevelFilter::DEBUG,
+            "TRACE" => tracing_subscriber::filter::LevelFilter::TRACE,
+            _ => tracing_subscriber::filter::LevelFilter::INFO,
+        };
+
         tracing_subscriber::Registry::default()
             .with(
                 tracing_subscriber::fmt::layer().with_filter(
                     EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                        .add_directive(level_filter.into()),
                 ),
             )
             .init();
 
         None
     };
-
+    
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL should be set");
     let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");
 
