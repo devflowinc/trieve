@@ -91,54 +91,6 @@ spec:
                   number: 3001
 ---
 apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: ingress-keycloak
-  labels:
-    app: trieve
-  annotations:
-    kubernetes.io/ingress.class: gce
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    external-dns.alpha.kubernetes.io/hostname: "oidc.{{ $externalDomain }}"
-spec:
-  tls:
-    - hosts:
-        - "oidc.{{ $externalDomain }}"
-  rules:
-    - host: "oidc.{{ $externalDomain }}"
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: keycloak-service
-                port:
-                  number: 8080
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: ingress-s3
-  labels:
-    app: trieve
-  annotations:
-    kubernetes.io/ingress.class: gce
-    external-dns.alpha.kubernetes.io/hostname: "data.{{ $externalDomain }}"
-spec:
-  rules:
-    - host: "data.{{ $externalDomain }}"
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: minio-service
-                port:
-                  number: 9000
----
-apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-all-ingress

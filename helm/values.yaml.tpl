@@ -1,7 +1,7 @@
 environment: $ENVIRONMENT # Set to aws if deploying to 
 domain: $DOMAIN # Only used if environment = local
 externalDomain: $EXTERNAL_DOMAIN
-useGpu: false
+useGpu: true
 containers:
   keycloak:
     tag: 23.0.7
@@ -28,16 +28,10 @@ postgres:
 config:
   vite:
     apiHost: https://api.$EXTERNAL_DOMAIN/api
-    searchUiUrl: https://search.trieve.ai
+    searchUiUrl: https://search.$EXTERNAL_DOMAIN
     frontmatterVals: "link,tag_set,time_stamp"
     sentryChatDsn: $SENTRY_CHAT_DSN
     dashboardUrl: $DASHBOARD_URL
-  keycloak:
-    admin: $KEYCLOAK_ADMIN
-    password: $KEYCLOAK_PASSWORD
-  minio:
-    rootUser: $MINIO_ROOT_USER
-    rootPassword: $MINIO_ROOT_PASSWORD
   redis:
     connections: 30
     useSubchart: true
@@ -62,7 +56,6 @@ config:
     unlimited: true
     cookieSecure: false
     baseServerUrl: https://api.$EXTERNAL_DOMAIN
-    gpuServerOrigin: http://localhost:7070
     embeddingServerOrigin: http://embedding-jina.default.cluster.local
     sparseServerQueryOrigin: http://embedding-splade-query.default.cluster.local
     sparseServerDocOrigin: http://embedding-splade-doc.default.cluster.local
@@ -93,10 +86,11 @@ config:
     accessKey: $S3_ACCESS_KEY
     secretKey: $S3_SECRET_KEY
     bucket: $S3_BUCKET
+    region: $AWS_REGION
   stripe:
     secret: $STRIPE_API_KEY
     webhookSecret: $STRIPE_WEBHOOK_SECRET
-    adminDashboardUrl: http://keycloak.default.svc.cluster.local:8080/admin
+    adminDashboardUrl: https://dashboard.$EXTERNAL_DOMAIN
 embeddings:
   - name: jina
     revision: main
