@@ -584,13 +584,42 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                               {key}:{" "}
                             </span>
                             <span class="line-clamp-1 break-all">
-                              {props.chunk.metadata &&
-                                indirectHasOwnProperty(
-                                  props.chunk.metadata,
-                                  key,
-                                ) &&
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                                (props.chunk.metadata as any)[key]}
+                            {(() => {
+                              const value = (props.chunk.metadata as any)[key];
+                              if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                                return (
+                                  <div class="pl-2">
+                                    <For each={Object.keys(value)}>
+                                      {(subKey) => (
+                                        <div class="flex space-x-2">
+                                          <span class="font-semibold italic text-neutral-700 dark:text-neutral-200">
+                                            {subKey}:
+                                          </span>
+                                          <span class="text-neutral-700 dark:text-neutral-300">
+                                            {typeof value[subKey] === 'object' ? JSON.stringify(value[subKey], null, 2) : value[subKey]}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </For>
+                                  </div>
+                                );
+                              } else if (Array.isArray(value) && value.length > 0) {
+                                return (
+                                  <div class="pl-4">
+                                    <span class="text-neutral-700 dark:text-neutral-300">
+                                      {value.map((item, index) => (
+                                        <span>
+                                          <span>{item}</span>
+                                          {index < value.length - 1 && <span>, </span>}
+                                        </span>
+                                      ))}
+                                    </span>
+                                  </div>
+                                );
+                              } else {
+                                return value;
+                              }
+                            })()}
                             </span>
                           </div>
                         </Show>
