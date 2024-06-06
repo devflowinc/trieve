@@ -1,5 +1,5 @@
 use super::chunk_operator::{
-    find_relevant_sentence, get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
+    get_highlights, get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
     get_content_chunk_from_point_ids_query, get_qdrant_ids_from_chunk_ids_query,
     get_slim_chunks_from_point_ids_query,
 };
@@ -1220,7 +1220,7 @@ pub async fn retrieve_chunks_for_groups(
                         };
 
                     if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
-                       let highlighted_chunk = find_relevant_sentence(
+                       let highlighted_chunk = get_highlights(
                             chunk.clone().into(),
                             data.query.clone(),
                             data.highlight_threshold,
@@ -1491,7 +1491,7 @@ pub async fn retrieve_chunks_from_point_ids(
                 };
 
             if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
-                let highlighted_chunk = find_relevant_sentence(
+                let highlighted_chunk = get_highlights(
                     chunk.clone().into(),
                     data.query.clone(),
                     data.highlight_threshold,

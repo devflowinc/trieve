@@ -1249,12 +1249,12 @@ pub async fn get_qdrant_ids_from_chunk_ids_query(
 }
 
 #[tracing::instrument]
-pub fn find_relevant_sentence(
+pub fn get_highlights(
     input: ChunkMetadata,
     query: String,
     threshold: Option<f64>,
     split_chars: Vec<String>,
-) -> Result<ChunkMetadata, ServiceError> {
+) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
 
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
@@ -1273,20 +1273,19 @@ pub fn find_relevant_sentence(
         })
         .collect::<Vec<String>>();
 
-    //insert all sentences into the engine
     split_content.iter().for_each(|sentence| {
         engine.insert(sentence.clone(), &sentence.clone());
     });
 
     let mut new_output = input;
 
-    //search for the query
     let results = engine.search(&query);
     let mut matched_phrases = vec![];
     let amount = if split_content.len() < 5 { 2 } else { 3 };
     for x in results.iter().take(amount) {
         matched_phrases.push(x.clone());
     }
+    let result_matches = matched_phrases.clone();
 
     for phrase in matched_phrases {
         new_output.chunk_html = new_output
@@ -1295,12 +1294,11 @@ pub fn find_relevant_sentence(
             .map(|x| x.replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase)));
     }
 
-    // combine adjacent <mark><b> tags
     new_output.chunk_html = new_output
         .chunk_html
         .map(|x| x.replace("</b></mark><mark><b>", ""));
 
-    Ok(new_output)
+    Ok((new_output, result_matches))
 }
 
 #[tracing::instrument(skip(pool))]
