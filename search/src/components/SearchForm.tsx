@@ -33,6 +33,8 @@ const SearchForm = (props: {
   getTotalPages?: boolean;
   highlightResults?: boolean;
   highlightDelimiters?: string[];
+  highlightMaxLength?: number;
+  highlightMaxNum?: number;
   recencyBias?: number;
   groupID?: string;
 }) => {
@@ -82,6 +84,14 @@ const SearchForm = (props: {
     // eslint-disable-next-line solid/reactivity
     props.highlightDelimiters ?? ["?", ".", "!"],
   );
+  const [highlightMaxLength, setHighlightMaxLength] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.highlightMaxLength ?? 8,
+  );
+  const [highlightMaxNum, setHighlightMaxNum] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.highlightMaxNum ?? 3,
+  );
   const [recencyBias, setRecencyBias] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.recencyBias ?? 0.0,
@@ -120,6 +130,9 @@ const SearchForm = (props: {
     }
     const groupUniqueUrlParam = groupUniqueSearch() ? "&groupUnique=true" : "";
     const slimChunksUrlParam = slimChunks() ? "&slimChunks=true" : "";
+    const recencyBiasUrlParam = recencyBias()
+      ? `&recencyBias=${recencyBias()}`
+      : "";
     const pageSizeUrlParam = pageSize() ? `&pageSize=${pageSize()}` : "";
     const getTotalPagesUrlParam = getTotalPages() ? "&getTotalPages=true" : "";
     const highlightResultsUrlParam = highlightResults()
@@ -128,30 +141,28 @@ const SearchForm = (props: {
     const highlightDelimitersUrlParam = highlightDelimiters().length
       ? `&highlightDelimiters=${highlightDelimiters().join(",")}`
       : "";
-    const recencyBiasUrlParam = recencyBias()
-      ? `&recencyBias=${recencyBias()}`
+    const highlightMaxLengthUrlParam = highlightMaxLength()
+      ? `&highlightMaxLength=${highlightMaxLength()}`
+      : "";
+    const highlightMaxNumUrlParam = highlightMaxNum()
+      ? `&highlightMaxNum=${highlightMaxNum()}`
       : "";
 
+    const sharedUrlParams =
+      searchTypeUrlParam +
+      extendResultsUrlParam +
+      slimChunksUrlParam +
+      recencyBiasUrlParam +
+      pageSizeUrlParam +
+      getTotalPagesUrlParam +
+      highlightDelimitersUrlParam +
+      highlightResultsUrlParam +
+      highlightMaxLengthUrlParam +
+      highlightMaxNumUrlParam;
+
     const urlToNavigateTo = props.groupID
-      ? `/group/${props.groupID}?q=${searchQuery}` +
-        searchTypeUrlParam +
-        slimChunksUrlParam +
-        pageSizeUrlParam +
-        getTotalPagesUrlParam +
-        highlightDelimitersUrlParam +
-        highlightResultsUrlParam +
-        recencyBiasUrlParam +
-        extendResultsUrlParam
-      : `/search?q=${searchQuery}` +
-        searchTypeUrlParam +
-        groupUniqueUrlParam +
-        slimChunksUrlParam +
-        pageSizeUrlParam +
-        getTotalPagesUrlParam +
-        highlightDelimitersUrlParam +
-        highlightResultsUrlParam +
-        recencyBiasUrlParam +
-        extendResultsUrlParam;
+      ? `/group/${props.groupID}?q=${searchQuery}` + sharedUrlParams
+      : `/search?q=${searchQuery}` + groupUniqueUrlParam + sharedUrlParams;
 
     navigate(urlToNavigateTo);
   };
@@ -510,6 +521,23 @@ const SearchForm = (props: {
                           />
                         </div>
                         <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Recency Bias (0.0 to 1.0):</label>
+                          <input
+                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            min="0.0"
+                            max="1.0"
+                            step="0.1"
+                            value={props.recencyBias}
+                            onInput={(e) => {
+                              setRecencyBias(parseFloat(e.currentTarget.value));
+                            }}
+                            onBlur={(e) => {
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Page Size:</label>
                           <input
                             class="w-12 rounded border border-neutral-400 p-0.5 text-black"
@@ -577,17 +605,32 @@ const SearchForm = (props: {
                             }}
                           />
                         </div>
-                        <div class="flex items-center justify-between space-x-2 p-1">
-                          <label>Recency Bias (0.0 to 1.0):</label>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Highlight Max Length:</label>
                           <input
                             class="w-12 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            min="0.0"
-                            max="1.0"
-                            step="0.1"
-                            value={props.recencyBias}
+                            value={props.highlightMaxLength}
                             onInput={(e) => {
-                              setRecencyBias(parseFloat(e.currentTarget.value));
+                              setHighlightMaxLength(
+                                parseInt(e.currentTarget.value),
+                              );
+                            }}
+                            onBlur={(e) => {
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Highlight Max Num:</label>
+                          <input
+                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            value={props.highlightMaxNum}
+                            onInput={(e) => {
+                              setHighlightMaxNum(
+                                parseInt(e.currentTarget.value),
+                              );
                             }}
                             onBlur={(e) => {
                               onSubmit(e);

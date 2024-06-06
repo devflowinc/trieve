@@ -36,6 +36,7 @@ export interface ResultsPageProps {
   query: string;
   page: number;
   searchType: string;
+  recencyBias?: number;
   extendResults?: boolean;
   groupUnique?: boolean;
   slimChunks?: boolean;
@@ -43,7 +44,8 @@ export interface ResultsPageProps {
   getTotalPages?: boolean;
   highlightResults?: boolean;
   highlightDelimiters?: string[];
-  recencyBias?: number;
+  highlightMaxLength?: number;
+  highlightMaxNum?: number;
   loading: Accessor<boolean>;
   setLoading: Setter<boolean>;
 }
@@ -144,13 +146,15 @@ const ResultsPage = (props: ResultsPageProps) => {
       search_type: props.searchType.includes("autocomplete")
         ? props.searchType.replace("autocomplete-", "")
         : props.searchType,
+      recency_bias: props.recencyBias ?? 0.0,
       get_collisions: true,
       slim_chunks: props.slimChunks ?? false,
       page_size: props.pageSize ?? 10,
       get_total_pages: props.getTotalPages ?? false,
       highlight_results: props.highlightResults ?? true,
       highlight_delimiters: props.highlightDelimiters ?? ["?", ".", "!"],
-      recency_bias: props.recencyBias ?? 0.0,
+      highlight_max_length: props.highlightMaxLength ?? 8,
+      highlight_max_num: props.highlightMaxNum ?? 3,
     };
 
     let searchRoute = "chunk/search";

@@ -20,6 +20,7 @@ export const HomeSearch = () => {
   const params = new URLSearchParams(requestParams);
   const extendResults = params.get("extendResults") === "true" || false;
   const searchType: string = params.get("searchType") ?? "search";
+  const recencyBias = Number(params.get("recencyBias")) || 0.0;
   const groupUnique = params.get("groupUnique") === "true" || false;
   const slimChunks = params.get("slimChunks") === "true" || false;
   const pageSize = Number(params.get("pageSize")) || 10;
@@ -29,7 +30,8 @@ export const HomeSearch = () => {
     .get("highlightDelimiters")
     ?.split(",")
     .filter((delimiter) => delimiter !== "") ?? ["?", ".", "!"];
-  const recencyBias = Number(params.get("recencyBias")) || 0.0;
+  const highlightMaxLength = Number(params.get("highlightMaxLength")) || 8;
+  const highlightMaxNum = Number(params.get("highlightMaxNum")) || 3;
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
@@ -56,6 +58,7 @@ export const HomeSearch = () => {
         <div class="mt-8 w-full max-w-7xl px-4 sm:px-8 md:px-20">
           <SearchForm
             searchType={searchType}
+            recencyBias={recencyBias}
             extendResults={extendResults}
             groupUniqueSearch={groupUnique}
             slimChunks={slimChunks}
@@ -63,7 +66,8 @@ export const HomeSearch = () => {
             getTotalPages={getTotalPages}
             highlightDelimiters={highlightDelimiters}
             highlightResults={highlightResults}
-            recencyBias={recencyBias}
+            highlightMaxLength={highlightMaxLength}
+            highlightMaxNum={highlightMaxNum}
           />
         </div>
       </div>
