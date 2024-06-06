@@ -972,8 +972,6 @@ pub async fn get_recommended_groups(
 
     let mut timer = Timer::new();
 
-    timer.add("start to extend qdrant_point_ids for group_tracking_ids and group_ids");
-
     let mut positive_qdrant_ids = vec![];
 
     if let Some(positive_group_ids) = positive_group_ids {
@@ -1058,7 +1056,7 @@ pub async fn get_recommended_groups(
         );
     }
 
-    timer.add("finish to extend qdrant_point_ids for group_tracking_ids and group_ids; start to recommend_qdrant_groups_query from qdrant");
+    timer.add("fetched ids from postgres");
 
     let recommended_groups_from_qdrant = recommend_qdrant_groups_query(
         positive_qdrant_ids,
@@ -1082,7 +1080,7 @@ pub async fn get_recommended_groups(
         total_chunk_pages: (recommended_groups_from_qdrant.len() as f64 / 10.0).ceil() as i64,
     };
 
-    timer.add("finish to recommend_qdrant_groups_query from qdrant; start to get_metadata_from_groups from postgres");
+    timer.add("recommend_qdrant_groups_query");
 
     let recommended_chunk_metadatas = get_metadata_from_groups(
         group_qdrant_query_result.clone(),
@@ -1102,7 +1100,7 @@ pub async fn get_recommended_groups(
         })
         .collect::<Vec<GroupScoreChunk>>();
 
-    timer.add("finish to get_metadata_from_groups from postgres and return results");
+    timer.add("fetched metadata from ids");
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
