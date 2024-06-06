@@ -1253,7 +1253,9 @@ pub fn get_highlights(
     input: ChunkMetadata,
     query: String,
     threshold: Option<f64>,
-    split_chars: Vec<String>,
+    delimiters: Vec<String>,
+    max_length: Option<u32>,
+    max_num: Option<u32>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
 
@@ -1261,13 +1263,13 @@ pub fn get_highlights(
     let mut engine: SimSearch<String> = SimSearch::new_with(search_options);
 
     let split_content = content
-        .split_inclusive(|c: char| split_chars.contains(&c.to_string()))
+        .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
         .flat_map(|x| {
             x.to_string()
                 .split_whitespace()
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
-                .chunks(5)
+                .chunks(max_length.unwrap_or(5) as usize)
                 .map(|x| x.join(" "))
                 .collect::<Vec<String>>()
         })
@@ -1281,8 +1283,7 @@ pub fn get_highlights(
 
     let results = engine.search(&query);
     let mut matched_phrases = vec![];
-    let amount = if split_content.len() < 5 { 2 } else { 3 };
-    for x in results.iter().take(amount) {
+    for x in results.iter().take(max_num.unwrap_or(3) as usize) {
         matched_phrases.push(x.clone());
     }
     let result_matches = matched_phrases.clone();

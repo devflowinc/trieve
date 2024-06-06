@@ -54,6 +54,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
+  const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
   const [slimChunks, setSlimChunks] = createSignal(false);
   const [pageSize, setPageSize] = createSignal<number>(10);
   const [getTotalPages, setGetTotalPages] = createSignal(false);
@@ -64,7 +65,9 @@ export const GroupPage = (props: GroupPageProps) => {
     ".",
     "!",
   ]);
-  const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
+  const [highlightMaxLength, setHighlightMaxLength] = createSignal<number>(8);
+  const [highlightMaxNum, setHighlightMaxNum] = createSignal<number>(3);
+
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<ChunkMetadata[]>([]);
   const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
@@ -129,6 +132,7 @@ export const GroupPage = (props: GroupPageProps) => {
     setQuery(location.query.q ?? "");
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
+    setRecencyBias(Number(location.query.recencyBias) || 0.0);
     setSlimChunks(location.query.slimChunks === "true");
     setPageSize(Number(location.query.pageSize) || 10);
     setGetTotalPages(location.query.getTotalPages === "true");
@@ -136,7 +140,8 @@ export const GroupPage = (props: GroupPageProps) => {
     setHighlightDelimiters(
       location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
     );
-    setRecencyBias(Number(location.query.recencyBias) || 0.0);
+    setHighlightMaxLength(Number(location.query.highlightMaxLength) || 8);
+    setHighlightMaxNum(Number(location.query.highlightMaxNum) || 3);
   });
 
   createEffect(() => {
@@ -560,11 +565,13 @@ export const GroupPage = (props: GroupPageProps) => {
                     searchType={searchType()}
                     pageSize={pageSize()}
                     getTotalPages={getTotalPages()}
-                    highlightResults={highlightResults()}
-                    highlightDelimiters={highlightDelimiters()}
                     recencyBias={recencyBias()}
                     groupID={props.groupID}
                     slimChunks={slimChunks()}
+                    highlightResults={highlightResults()}
+                    highlightDelimiters={highlightDelimiters()}
+                    highlightMaxLength={highlightMaxLength()}
+                    highlightMaxNum={highlightMaxNum()}
                   />
                 </Show>
               </div>

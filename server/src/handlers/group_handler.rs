@@ -1134,12 +1134,16 @@ pub struct SearchWithinGroupData {
     pub use_weights: Option<bool>,
     /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
     pub tag_weights: Option<HashMap<String, f32>>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
     pub highlight_threshold: Option<f64>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
+    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting.
     pub highlight_delimiters: Option<Vec<String>>,
+    /// Set highlight_max_length to control the maximum number of tokens (typically whitespace separated strings, but sometimes also word stems) which can be present within a single highlight. If not specified, this defaults to 8. This is useful to shorten large splits which may have low scores due to length compared to the query. Set to something very large like 100 to highlight entire splits.
+    pub highlight_max_length: Option<u32>,
+    /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
+    pub highlight_max_num: Option<u32>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
@@ -1147,23 +1151,25 @@ pub struct SearchWithinGroupData {
 }
 
 impl From<SearchWithinGroupData> for SearchChunksReqPayload {
-    fn from(data: SearchWithinGroupData) -> Self {
+    fn from(search_within_group_data: SearchWithinGroupData) -> Self {
         Self {
-            query: data.query,
-            page: data.page,
-            page_size: data.page_size,
-            get_total_pages: data.get_total_pages,
-            filters: data.filters,
-            search_type: data.search_type,
-            recency_bias: data.recency_bias,
-            use_weights: data.use_weights,
-            tag_weights: data.tag_weights,
+            query: search_within_group_data.query,
+            page: search_within_group_data.page,
+            page_size: search_within_group_data.page_size,
+            get_total_pages: search_within_group_data.get_total_pages,
+            filters: search_within_group_data.filters,
+            search_type: search_within_group_data.search_type,
+            recency_bias: search_within_group_data.recency_bias,
+            use_weights: search_within_group_data.use_weights,
+            tag_weights: search_within_group_data.tag_weights,
             get_collisions: Some(false),
-            highlight_results: data.highlight_results,
-            highlight_threshold: data.highlight_threshold,
-            highlight_delimiters: data.highlight_delimiters,
-            score_threshold: data.score_threshold,
-            slim_chunks: data.slim_chunks,
+            highlight_results: search_within_group_data.highlight_results,
+            highlight_threshold: search_within_group_data.highlight_threshold,
+            highlight_delimiters: search_within_group_data.highlight_delimiters,
+            highlight_max_length: search_within_group_data.highlight_max_length,
+            highlight_max_num: search_within_group_data.highlight_max_num,
+            score_threshold: search_within_group_data.score_threshold,
+            slim_chunks: search_within_group_data.slim_chunks,
             content_only: Some(false),
         }
     }
@@ -1290,12 +1296,16 @@ pub struct SearchOverGroupsData {
     pub filters: Option<ChunkFilter>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching sub-sentences.
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
     pub highlight_threshold: Option<f64>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
+    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting.
     pub highlight_delimiters: Option<Vec<String>>,
+    /// Set highlight_max_length to control the maximum number of tokens (typically whitespace separated strings, but sometimes also word stems) which can be present within a single highlight. If not specified, this defaults to 8. This is useful to shorten large splits which may have low scores due to length compared to the query. Set to something very large like 100 to highlight entire splits.
+    pub highlight_max_length: Option<u32>,
+    /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
+    pub highlight_max_num: Option<u32>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     /// Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.

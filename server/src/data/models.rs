@@ -547,10 +547,12 @@ impl From<(ChunkMetadata, f32)> for ChunkMetadataWithScore {
             "weight": 0.5,
         }
     ],
+    "highlights": ["highlight is two tokens: high, light", "whereas hello is only one token: hello"],
     "score": 0.5
 }))]
 pub struct ScoreChunkDTO {
     pub metadata: Vec<ChunkMetadataTypes>,
+    pub highlights: Option<Vec<String>>,
     pub score: f64,
 }
 

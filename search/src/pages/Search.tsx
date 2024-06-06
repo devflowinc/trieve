@@ -12,6 +12,8 @@ export const Search = () => {
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
+  const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
+  const [extendResults, setExtendResults] = createSignal<boolean>(false);
   const [groupUnique, setGroupUnique] = createSignal<boolean>(false);
   const [slimChunks, setSlimChunks] = createSignal<boolean>(false);
   const [pageSize, setPageSize] = createSignal<number>(10);
@@ -23,8 +25,8 @@ export const Search = () => {
     ".",
     "!",
   ]);
-  const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
-  const [extendResults, setExtendResults] = createSignal<boolean>(false);
+  const [highlightMaxLength, setHighlightMaxLength] = createSignal<number>(8);
+  const [highlightMaxNum, setHighlightMaxNum] = createSignal<number>(3);
 
   createEffect(() => {
     setLoading(true);
@@ -33,6 +35,7 @@ export const Search = () => {
     setExtendResults(location.query.extendResults === "true" || false);
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
+    setRecencyBias(Number(location.query.recencyBias) || 0.0);
     setGroupUnique(location.query.groupUnique === "true" || false);
     setSlimChunks(location.query.slimChunks === "true" || false);
     setPageSize(Number(location.query.pageSize) || 10);
@@ -41,7 +44,8 @@ export const Search = () => {
     setHighlightDelimiters(
       location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
     );
-    setRecencyBias(Number(location.query.recencyBias) || 0.0);
+    setHighlightMaxLength(Number(location.query.highlightMaxLength) || 8);
+    setHighlightMaxNum(Number(location.query.highlightMaxNum) || 3);
   });
 
   return (
@@ -56,11 +60,13 @@ export const Search = () => {
                 groupUniqueSearch={groupUnique()}
                 slimChunks={slimChunks()}
                 searchType={searchType()}
+                recencyBias={recencyBias()}
                 pageSize={pageSize()}
                 getTotalPages={getTotalPages()}
                 highlightResults={highlightResults()}
                 highlightDelimiters={highlightDelimiters()}
-                recencyBias={recencyBias()}
+                highlightMaxLength={highlightMaxLength()}
+                highlightMaxNum={highlightMaxNum()}
               />
               {/* <SuggestedQueries query={query()} /> */}
             </div>
@@ -68,6 +74,8 @@ export const Search = () => {
           <ResultsPage
             page={page()}
             query={query()}
+            searchType={searchType()}
+            recencyBias={recencyBias()}
             extendResults={extendResults()}
             groupUnique={groupUnique()}
             slimChunks={slimChunks()}
@@ -75,8 +83,8 @@ export const Search = () => {
             getTotalPages={getTotalPages()}
             highlightResults={highlightResults()}
             highlightDelimiters={highlightDelimiters()}
-            recencyBias={recencyBias()}
-            searchType={searchType()}
+            highlightMaxLength={highlightMaxLength()}
+            highlightMaxNum={highlightMaxNum()}
             loading={loading}
             setLoading={setLoading}
           />

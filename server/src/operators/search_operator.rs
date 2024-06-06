@@ -1,6 +1,6 @@
 use super::chunk_operator::{
-    get_highlights, get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
-    get_content_chunk_from_point_ids_query, get_qdrant_ids_from_chunk_ids_query,
+    get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
+    get_content_chunk_from_point_ids_query, get_highlights, get_qdrant_ids_from_chunk_ids_query,
     get_slim_chunks_from_point_ids_query,
 };
 use super::group_operator::{
@@ -1119,6 +1119,7 @@ pub struct FullTextDocIds {
                     "weight": 1.0
                 }
             ],
+            "highlights": ["highlight is two tokens: high, light", "whereas hello is only one token: hello"],
             "score": 0.5
         }
     ]
@@ -1219,21 +1220,26 @@ pub async fn retrieve_chunks_for_groups(
                             },
                         };
 
+                    let mut highlights: Option<Vec<String>> = None;
                     if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
-                       let highlighted_chunk = get_highlights(
+                       let (highlighted_chunk, highlighted_snippets) = get_highlights(
                             chunk.clone().into(),
                             data.query.clone(),
                             data.highlight_threshold,
                             data.highlight_delimiters.clone().unwrap_or(vec![
-                        ".".to_string(),
-                        "!".to_string(),
-                        "?".to_string(),
-                        "\n".to_string(),
-                        "\t".to_string(),
-                        ",".to_string(),
-                    ]),
+                                ".".to_string(),
+                                "!".to_string(),
+                                "?".to_string(),
+                                "\n".to_string(),
+                                "\t".to_string(),
+                                ",".to_string(),
+                            ]),
+                            data.highlight_max_length,
+                            data.highlight_max_num,
                         )
-                        .unwrap_or(chunk.clone().into());
+                        .unwrap_or((chunk.clone().into(), vec![]));
+
+                        highlights = Some(highlighted_snippets);
 
                         match chunk {
                             ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
@@ -1258,6 +1264,7 @@ pub async fn retrieve_chunks_for_groups(
 
                     ScoreChunkDTO {
                         metadata: collided_chunks,
+                        highlights,
                         score: search_result.score.into(),
                     }
                 })
@@ -1374,6 +1381,7 @@ pub async fn get_metadata_from_groups(
 
                     ScoreChunkDTO {
                         metadata: collided_chunks,
+                        highlights: None,
                         score: search_result.score.into(),
                     }
                 })
@@ -1490,8 +1498,9 @@ pub async fn retrieve_chunks_from_point_ids(
                     }
                 };
 
+            let mut highlights: Option<Vec<String>> = None;
             if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
-                let highlighted_chunk = get_highlights(
+                let (highlighted_chunk, highlighted_snippets) = get_highlights(
                     chunk.clone().into(),
                     data.query.clone(),
                     data.highlight_threshold,
@@ -1503,8 +1512,12 @@ pub async fn retrieve_chunks_from_point_ids(
                         "\t".to_string(),
                         ",".to_string(),
                     ]),
+                    data.highlight_max_length,
+                    data.highlight_max_num,
                 )
-                .unwrap_or(chunk.clone().into());
+                .unwrap_or((chunk.clone().into(), vec![]));
+
+                highlights = Some(highlighted_snippets);
 
                 match chunk {
                     ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
@@ -1529,6 +1542,7 @@ pub async fn retrieve_chunks_from_point_ids(
 
             ScoreChunkDTO {
                 metadata: collided_chunks,
+                highlights,
                 score: search_result.score.into(),
             }
         })
@@ -1776,6 +1790,7 @@ pub async fn search_full_text_chunks(
             .into_iter()
             .map(|score_chunk| ScoreChunkDTO {
                 metadata: vec![score_chunk.metadata.get(0).unwrap().clone()],
+                highlights: score_chunk.highlights,
                 score: score_chunk.score,
             })
             .collect();
