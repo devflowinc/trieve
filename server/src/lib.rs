@@ -1,4 +1,5 @@
 #![allow(clippy::get_first)]
+#![allow(deprecated)]
 
 #[macro_use]
 extern crate diesel;

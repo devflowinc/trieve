@@ -2371,9 +2371,7 @@ pub async fn hybrid_search_over_groups(
         sparse_embedding_vector_future
     )?;
 
-    timer.add(
-        "computed dense embedding",
-    );
+    timer.add("computed dense embedding");
 
     let semantic_future = retrieve_group_qdrant_points_query(
         VectorType::Dense(dense_vector),
