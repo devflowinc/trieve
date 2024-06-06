@@ -1681,7 +1681,7 @@ pub async fn search_semantic_chunks(
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
-    timer.add("finish creating dense embedding vector; start to fetch from qdrant");
+    timer.add("computed dense embedding");
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
@@ -1700,12 +1700,12 @@ pub async fn search_semantic_chunks(
     )
     .await?;
 
-    timer.add("finish fetching from qdrant; start to fetch from postgres");
+    timer.add("fetched from qdrant");
 
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
-    timer.add("finish fetching from postgres; start to rerank");
+    timer.add("fetched from postgres");
 
     result_chunks.score_chunks = rerank_chunks(
         result_chunks.score_chunks,
@@ -1714,7 +1714,7 @@ pub async fn search_semantic_chunks(
         data.use_weights,
     );
 
-    timer.add("finish reranking and return result");
+    timer.add("reranking");
     transaction.finish();
 
     Ok(result_chunks)
@@ -1749,7 +1749,7 @@ pub async fn search_full_text_chunks(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
-    timer.add("finish getting sparse vector; start to fetch from qdrant");
+    timer.add("commputd sparse vector");
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Sparse(sparse_vector),
@@ -1768,12 +1768,12 @@ pub async fn search_full_text_chunks(
     )
     .await?;
 
-    timer.add("finish fetching from qdrant; start to fetch from postgres");
+    timer.add("fetched from qdrant");
 
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
 
-    timer.add("finish fetching from postgres; start to rerank");
+    timer.add("fetched from postgres");
 
     result_chunks.score_chunks = rerank_chunks(
         result_chunks.score_chunks,
@@ -1782,7 +1782,7 @@ pub async fn search_full_text_chunks(
         data.use_weights,
     );
 
-    timer.add("finish reranking and return result");
+    timer.add("reranking");
 
     if data.slim_chunks.unwrap_or(false) {
         result_chunks.score_chunks = result_chunks
@@ -1822,8 +1822,6 @@ pub async fn search_hybrid_chunks(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    timer.add("start to search semantic and full text chunks");
-
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -1834,7 +1832,7 @@ pub async fn search_hybrid_chunks(
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
 
-    timer.add("finished calculating embeddings");
+    timer.add("computed sparse and dense embeddings");
 
     let qdrant_queries = vec![
         RetrievePointQuery {
@@ -1862,10 +1860,12 @@ pub async fn search_hybrid_chunks(
     )
     .await?;
 
+    timer.add("fetched point_ids from qdrant");
+
     let result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
-    timer.add("finish searching semantic and full text chunks; start to rerank results");
+    timer.add("fetched metadata from postgres");
 
     let reranked_chunks = {
         let mut reranked_chunks = if result_chunks.score_chunks.len() > 20 {
@@ -1917,7 +1917,7 @@ pub async fn search_hybrid_chunks(
 
         reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
 
-        timer.add("finish reranking and return result");
+        timer.add("reranking");
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
@@ -2182,7 +2182,7 @@ pub async fn semantic_search_over_groups(
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
-    timer.add("finish creating dense embedding vector; start to fetch from qdrant");
+    timer.add("computed dense embedding");
 
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -2199,7 +2199,7 @@ pub async fn semantic_search_over_groups(
     )
     .await?;
 
-    timer.add("finish fetching from qdrant; start to fetch from postgres");
+    timer.add("fetched from qdrant");
 
     let mut result_chunks = retrieve_chunks_for_groups(
         search_over_groups_qdrant_result.clone(),
@@ -2220,7 +2220,7 @@ pub async fn semantic_search_over_groups(
         })
         .collect();
 
-    timer.add("finish fetching from postgres; return results");
+    timer.add("fetched from postgres");
 
     //TODO: rerank for groups
 
@@ -2242,7 +2242,7 @@ pub async fn full_text_search_over_groups(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
-    timer.add("finish getting sparse vector; start to fetch from qdrant");
+    timer.add("computed sparse vector");
 
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         VectorType::Sparse(sparse_vector),
@@ -2259,7 +2259,7 @@ pub async fn full_text_search_over_groups(
     )
     .await?;
 
-    timer.add("finish fetching from qdrant; start to fetch from postgres");
+    timer.add("fetched from qdrant");
 
     let mut result_groups_with_chunk_hits = retrieve_chunks_for_groups(
         search_over_groups_qdrant_result.clone(),
@@ -2280,7 +2280,7 @@ pub async fn full_text_search_over_groups(
         })
         .collect();
 
-    timer.add("finish fetching from postgres; return results");
+    timer.add("fetched from postgres");
 
     //TODO: rerank for groups
 
@@ -2372,7 +2372,7 @@ pub async fn hybrid_search_over_groups(
     )?;
 
     timer.add(
-        "finish creating dense embedding vector and sparse vector; start to fetch from qdrant",
+        "computed dense embedding",
     );
 
     let semantic_future = retrieve_group_qdrant_points_query(
@@ -2423,7 +2423,7 @@ pub async fn hybrid_search_over_groups(
         total_chunk_pages: semantic_results.total_chunk_pages,
     };
 
-    timer.add("finish fetching from qdrant; start to retrieve_chunks_for_groups from postgres");
+    timer.add("fetched from qdrant");
 
     let combined_result_chunks = retrieve_chunks_for_groups(
         combined_search_chunk_query_results.clone(),
@@ -2432,7 +2432,7 @@ pub async fn hybrid_search_over_groups(
     )
     .await?;
 
-    timer.add("finish retrieving_chunks_for_groups from postgres; start to rerank for groups");
+    timer.add("fetched from postgres");
 
     let reranked_chunks = if combined_result_chunks.group_chunks.len() > 20 {
         let split_results = combined_result_chunks
@@ -2467,7 +2467,7 @@ pub async fn hybrid_search_over_groups(
         .await?
     };
 
-    timer.add("finish reranking for groups and return results");
+    timer.add("reranking");
 
     let result_chunks = SearchOverGroupsResults {
         group_chunks: reranked_chunks,
@@ -2508,7 +2508,7 @@ pub async fn autocomplete_semantic_chunks(
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
-    timer.add("finish creating dense embedding vector; start to fetch from qdrant");
+    timer.add("computed dense embedding");
 
     let mut qdrant_query = vec![
         RetrievePointQuery {
@@ -2541,7 +2541,7 @@ pub async fn autocomplete_semantic_chunks(
         retrieve_qdrant_points_query(qdrant_query, 1, false, data.page_size.unwrap_or(10), config)
             .await?;
 
-    timer.add("finish fetching from qdrant; start to fetch from postgres");
+    timer.add("fetching from qdrant");
 
     if data.highlight_delimiters.is_none() {
         data.highlight_delimiters = Some(vec![" ".to_string()]);
@@ -2554,7 +2554,7 @@ pub async fn autocomplete_semantic_chunks(
     )
     .await?;
 
-    timer.add("finish fetching from postgres; start to rerank");
+    timer.add("fetching from postgres");
 
     let first_increase = search_chunk_query_results
         .batch_lengths
@@ -2578,7 +2578,7 @@ pub async fn autocomplete_semantic_chunks(
 
     result_chunks.score_chunks = reranked_chunks;
 
-    timer.add("finish reranking and return result");
+    timer.add("reranking");
     transaction.finish();
 
     Ok(result_chunks)
@@ -2612,7 +2612,7 @@ pub async fn autocomplete_fulltext_chunks(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
-    timer.add("finish creating dense embedding vector; start to fetch from qdrant");
+    timer.add("computed sparse vector");
 
     let mut qdrant_query = vec![
         RetrievePointQuery {
@@ -2645,7 +2645,7 @@ pub async fn autocomplete_fulltext_chunks(
         retrieve_qdrant_points_query(qdrant_query, 1, false, data.page_size.unwrap_or(10), config)
             .await?;
 
-    timer.add("finish fetching from qdrant; start to fetch from postgres");
+    timer.add("fetched from qdrant");
 
     if data.highlight_delimiters.is_none() {
         data.highlight_delimiters = Some(vec![" ".to_string()]);
@@ -2658,7 +2658,7 @@ pub async fn autocomplete_fulltext_chunks(
     )
     .await?;
 
-    timer.add("finish fetching from postgres; start to rerank");
+    timer.add("fetched from postgres");
 
     let first_increase = search_chunk_query_results
         .batch_lengths
@@ -2682,7 +2682,7 @@ pub async fn autocomplete_fulltext_chunks(
 
     result_chunks.score_chunks = reranked_chunks;
 
-    timer.add("finish reranking and return result");
+    timer.add("reranking");
     transaction.finish();
 
     Ok(result_chunks)

@@ -1660,7 +1660,7 @@ pub async fn get_recommended_chunks(
         )
     }
 
-    timer.add("finish extending tracking_ids and chunk_ids to qdrant_point_ids; start recommend_qdrant_query");
+    timer.add("fetched ids from postgres");
 
     let recommended_qdrant_results = recommend_qdrant_query(
         positive_qdrant_ids,
@@ -1678,7 +1678,7 @@ pub async fn get_recommended_chunks(
         ServiceError::BadRequest(format!("Could not get recommended chunks: {}", err))
     })?;
 
-    timer.add("finish recommend_qdrant_query; start get_metadata_from_point_ids");
+    timer.add("recommend_qdrant_query");
 
     let recommended_chunk_metadatas = match data.slim_chunks {
         Some(true) => {
@@ -1745,7 +1745,7 @@ pub async fn get_recommended_chunks(
         })
         .collect::<Vec<ChunkMetadataWithScore>>();
 
-    timer.add("finish get_metadata_from_point_ids and return results");
+    timer.add("fetched metadata from point_ids");
 
     if data.slim_chunks.unwrap_or(false) {
         let res = recommended_chunk_metadatas_with_score
