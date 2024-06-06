@@ -2172,6 +2172,22 @@ pub struct OrganizationUsageCount {
     pub chunk_count: i32,
 }
 
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone)]
+#[diesel(table_name = dataset_tags)]
+pub struct DatasetTags {
+    pub id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub tag: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone)]
+#[diesel(table_name = chunk_metadata_tags)]
+pub struct ChunkMetadataTags {
+    pub id: uuid::Uuid,
+    pub chunk_metadata_id: uuid::Uuid,
+    pub tag_id: uuid::Uuid,
+}
+
 #[derive(Debug)]
 pub enum ApiKeyRole {
     Read = 0,
