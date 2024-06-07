@@ -165,6 +165,7 @@ services:
       - RERANKER_SERVER_ORIGIN=${RERANKER_SERVER_ORIGIN}
       - UNLIMITED=${UNLIMITED}
       - REDIS_CONNECTIONS=${REDIS_CONNECTIONS}
+      - RUST_LOG=${RUST_LOG}
 
   ingestion-worker:
     image: trieve/ingest
