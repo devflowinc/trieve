@@ -2233,6 +2233,8 @@ pub struct UserApiKey {
     pub updated_at: chrono::NaiveDateTime,
     pub role: i32,
     pub blake3_hash: Option<String>,
+    pub dataset_ids: Option<Vec<Option<String>>>,
+    pub organization_ids: Option<Vec<Option<String>>>,
 }
 
 impl UserApiKey {
@@ -2241,6 +2243,8 @@ impl UserApiKey {
         blake3_hash: String,
         name: String,
         role: ApiKeyRole,
+        dataset_ids: Option<Vec<uuid::Uuid>>,
+        organization_ids: Option<Vec<uuid::Uuid>>,
     ) -> Self {
         UserApiKey {
             id: uuid::Uuid::new_v4(),
@@ -2251,6 +2255,10 @@ impl UserApiKey {
             updated_at: chrono::Utc::now().naive_local(),
             role: role.into(),
             blake3_hash: Some(blake3_hash),
+            dataset_ids: dataset_ids
+                .map(|ids| ids.into_iter().map(|id| Some(id.to_string())).collect()),
+            organization_ids: organization_ids
+                .map(|ids| ids.into_iter().map(|id| Some(id.to_string())).collect()),
         }
     }
 }
