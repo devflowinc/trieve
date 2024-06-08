@@ -1,14 +1,13 @@
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, Dataset, FileGroup, Pool,
+        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTable, Dataset, FileGroup, Pool,
         ServerDatasetConfiguration, UnifiedId,
     },
-    operators::chunk_operator::delete_chunk_metadata_query,
+    operators::chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
 };
 use crate::{
     data::models::{ChunkGroupBookmark, SlimGroup},
     errors::ServiceError,
-    operators::search_operator::get_metadata_query,
 };
 use actix_web::web;
 use diesel::prelude::*;
@@ -222,8 +221,8 @@ pub async fn delete_group_by_id_query(
         let chunks = chunk_group_bookmarks_columns::chunk_group_bookmarks
             .inner_join(chunk_metadata_columns::chunk_metadata)
             .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
-            .select(ChunkMetadata::as_select())
-            .load::<ChunkMetadata>(&mut conn)
+            .select(ChunkMetadataTable::as_select())
+            .load::<ChunkMetadataTable>(&mut conn)
             .await
             .map_err(|_err| ServiceError::BadRequest("Error getting chunks".to_string()))?;
 
@@ -399,10 +398,11 @@ pub async fn get_bookmarks_for_group_query(
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
     let page = if page == 0 { 1 } else { page };
     let limit = limit.unwrap_or(10);
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.clone().get().await.unwrap();
 
     let group_uuid = match group_id {
         UnifiedId::TrackingId(id) => chunk_group_columns::chunk_group
@@ -414,7 +414,8 @@ pub async fn get_bookmarks_for_group_query(
         UnifiedId::TrieveUuid(id) => id,
     };
 
-    let (chunk_metadata, chunk_count, chunk_group) =
+    // let (chunk_metadata, tag_seet, chunk_count, chunk_group) :
+    let pairs: Vec<(uuid::Uuid, i64, ChunkGroup)> =
         chunk_metadata_columns::chunk_metadata
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
@@ -430,29 +431,26 @@ pub async fn get_bookmarks_for_group_query(
                     .and(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
             )
             .select((
-                ChunkMetadata::as_select(),
+                chunk_metadata_columns::id,
                 sql::<Int8>("count(*) OVER() AS full_count"),
                 ChunkGroup::as_select(),
             ))
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
-            .load::<(ChunkMetadata, i64, ChunkGroup)>(&mut conn)
+            .load::<(uuid::Uuid, i64, ChunkGroup)>(&mut conn)
             .await
-            .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?
-            .into_iter()
-            .fold((Vec::new(), 0, ChunkGroup::default()), |mut acc, item| {
-                acc.0.push(item.0);
-                acc.1 = item.1;
-                acc.2 = item.2;
-                acc
-            });
+            .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
-    let chunk_metadata_with_file_id = get_metadata_query(chunk_metadata, pool)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
+    let chunk_ids = pairs.clone().into_iter().map(|(id, _, _)| id).collect();
+    let chunk_metadata = get_chunk_metadatas_from_point_ids(chunk_ids, pool).await?;
+
+    let (chunk_count, chunk_group) = pairs
+        .get(0)
+        .map(|(_, chunk_count, chunk_group)| (*chunk_count, chunk_group.clone()))
+        .unwrap_or((0, ChunkGroup::default()));
 
     Ok(GroupsBookmarkQueryResult {
-        metadata: chunk_metadata_with_file_id,
+        metadata: chunk_metadata,
         group: chunk_group,
         total_pages: (chunk_count as f64 / 10.0).ceil() as i64,
     })
