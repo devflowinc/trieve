@@ -246,6 +246,8 @@ diesel::table! {
         updated_at -> Timestamp,
         role -> Int4,
         blake3_hash -> Nullable<Text>,
+        dataset_ids -> Nullable<Array<Nullable<Text>>>,
+        organization_ids -> Nullable<Array<Nullable<Text>>>,
     }
 }
 

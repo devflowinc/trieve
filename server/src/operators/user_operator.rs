@@ -187,6 +187,8 @@ pub async fn set_user_api_key_query(
     user_id: uuid::Uuid,
     name: String,
     role: ApiKeyRole,
+    dataset_ids: Option<Vec<uuid::Uuid>>,
+    organization_ids: Option<Vec<uuid::Uuid>>,
     pool: web::Data<Pool>,
 ) -> Result<String, ServiceError> {
     let raw_api_key = generate_api_key();
@@ -194,7 +196,14 @@ pub async fn set_user_api_key_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let api_key_struct = UserApiKey::from_details(user_id, hashed_api_key.clone(), name, role);
+    let api_key_struct = UserApiKey::from_details(
+        user_id,
+        hashed_api_key.clone(),
+        name,
+        role,
+        dataset_ids,
+        organization_ids,
+    );
 
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
         .values(&api_key_struct)
@@ -208,8 +217,8 @@ pub async fn set_user_api_key_query(
 #[tracing::instrument(skip(pool))]
 pub async fn get_user_from_api_key_query(
     api_key: &str,
-    pool: &web::Data<Pool>,
-) -> Result<SlimUser, ServiceError> {
+    pool: web::Data<Pool>,
+) -> Result<(SlimUser, UserApiKey), ServiceError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_api_key::dsl as user_api_key_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
@@ -264,7 +273,11 @@ pub async fn get_user_from_api_key_query(
                 .iter()
                 .map(|user_org_org| user_org_org.2.clone())
                 .collect::<Vec<Organization>>();
-            Ok(SlimUser::from_details(user, user_orgs, orgs))
+
+            Ok((
+                SlimUser::from_details(user, user_orgs, orgs),
+                first_user_org.3.clone(),
+            ))
         }
         None => {
             let argon2_hash = hash_argon2_api_key(api_key)?;
@@ -322,7 +335,10 @@ pub async fn get_user_from_api_key_query(
                     .await
                     .map_err(|_| ServiceError::BadRequest("Error updating api key".to_string()))?;
 
-                    Ok(SlimUser::from_details(user, user_orgs, orgs))
+                    Ok((
+                        SlimUser::from_details(user, user_orgs, orgs),
+                        first_user_org.3.clone(),
+                    ))
                 }
                 None => Err(ServiceError::BadRequest("API Key Incorrect".to_string())),
             }
@@ -549,6 +565,8 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         api_key_hash,
         "default".to_string(),
         ApiKeyRole::ReadAndWrite,
+        None,
+        None,
     );
 
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
