@@ -404,6 +404,7 @@ pub fn main() -> std::io::Result<()> {
             .build()
             .unwrap();
 
+        log::info!("Connecting to redis");
         let redis_store = RedisSessionStore::new(redis_url)
             .await
             .expect("Failed to create redis store");
