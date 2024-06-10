@@ -162,7 +162,6 @@ pub async fn soft_delete_dataset_by_id_query(
     Ok(())
 }
 
-
 #[tracing::instrument(skip(pool))]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
@@ -219,17 +218,20 @@ pub async fn update_dataset_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let new_dataset: Dataset =
-        diesel::update(datasets_columns::datasets.filter(datasets_columns::id.eq(id)).filter(datasets_columns::deleted.eq(false)))
-            .set((
-                datasets_columns::name.eq(name),
-                datasets_columns::updated_at.eq(diesel::dsl::now),
-                datasets_columns::server_configuration.eq(server_configuration),
-                datasets_columns::client_configuration.eq(client_configuration),
-            ))
-            .get_result(&mut conn)
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to update dataset".to_string()))?;
+    let new_dataset: Dataset = diesel::update(
+        datasets_columns::datasets
+            .filter(datasets_columns::id.eq(id))
+            .filter(datasets_columns::deleted.eq(false)),
+    )
+    .set((
+        datasets_columns::name.eq(name),
+        datasets_columns::updated_at.eq(diesel::dsl::now),
+        datasets_columns::server_configuration.eq(server_configuration),
+        datasets_columns::client_configuration.eq(client_configuration),
+    ))
+    .get_result(&mut conn)
+    .await
+    .map_err(|_| ServiceError::BadRequest("Failed to update dataset".to_string()))?;
 
     Ok(new_dataset)
 }

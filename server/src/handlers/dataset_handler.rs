@@ -8,8 +8,8 @@ use crate::{
     errors::ServiceError,
     operators::{
         dataset_operator::{
-            create_dataset_query, soft_delete_dataset_by_id_query, get_dataset_by_id_query,
-            get_datasets_by_organization_id, update_dataset_query,
+            create_dataset_query, get_dataset_by_id_query, get_datasets_by_organization_id,
+            soft_delete_dataset_by_id_query, update_dataset_query,
         },
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
     },
@@ -225,7 +225,7 @@ pub async fn delete_dataset(
     if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
         return Err(ServiceError::Forbidden);
     }
-    
+
     soft_delete_dataset_by_id_query(data.into_inner(), pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
