@@ -137,7 +137,7 @@ export const ApiKeyGenerateModal = (props: {
           <span class="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
-          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 pb-2 text-left align-middle shadow-xl transition-all">
+          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform rounded-md bg-white p-6 pb-2 text-left align-middle shadow-xl transition-all">
             <Show when={!generated()}>
               <form
                 onSubmit={(e) => {
@@ -263,6 +263,7 @@ export const ApiKeyGenerateModal = (props: {
                               Datasets:
                             </label>
                             <MultiSelect
+                              disabled={selectedOrgIds().length === 0}
                               items={datasetsAndUsages().map((dataset) => ({
                                 id: dataset.dataset.id,
                                 name: dataset.dataset.name,
