@@ -8,7 +8,7 @@ use crate::{
     errors::ServiceError,
     operators::{
         dataset_operator::{
-            create_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
+            create_dataset_query, soft_delete_dataset_by_id_query, get_dataset_by_id_query,
             get_datasets_by_organization_id, update_dataset_query,
         },
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
@@ -225,11 +225,8 @@ pub async fn delete_dataset(
     if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
         return Err(ServiceError::Forbidden);
     }
-
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
-    delete_dataset_by_id_query(data.into_inner(), pool, server_dataset_config).await?;
+    
+    soft_delete_dataset_by_id_query(data.into_inner(), pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -265,8 +262,7 @@ pub async fn delete_dataset_by_tracking_id(
         return Err(ServiceError::Forbidden);
     }
 
-    let server_dataset_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
-    delete_dataset_by_id_query(dataset.id, pool, server_dataset_config).await?;
+    soft_delete_dataset_by_id_query(dataset.id, pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 

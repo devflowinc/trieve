@@ -1431,6 +1431,7 @@ pub struct Dataset {
     pub server_configuration: serde_json::Value,
     pub client_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
+    pub deleted: bool,
 }
 
 impl Dataset {
@@ -1450,6 +1451,7 @@ impl Dataset {
             client_configuration,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
+            deleted: false,
         }
     }
 }

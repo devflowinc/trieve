@@ -49,12 +49,14 @@ pub async fn get_dataset_by_id_query(
     let dataset = match id {
         UnifiedId::TrieveUuid(id) => datasets_columns::datasets
             .filter(datasets_columns::id.eq(id))
+            .filter(datasets_columns::deleted.eq(false))
             .select(Dataset::as_select())
             .first(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
         UnifiedId::TrackingId(id) => datasets_columns::datasets
             .filter(datasets_columns::tracking_id.eq(id))
+            .filter(datasets_columns::deleted.eq(false))
             .select(Dataset::as_select())
             .first(&mut conn)
             .await
@@ -89,6 +91,7 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
             stripe_plans_columns::stripe_plans
                 .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
         )
+        .filter(datasets_columns::deleted.eq(false))
         .into_boxed();
 
     let (dataset, organization, stripe_plan, stripe_subscription) = match id {
@@ -134,6 +137,31 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
         org_with_plan_sub,
     ))
 }
+
+#[tracing::instrument(skip(pool))]
+pub async fn soft_delete_dataset_by_id_query(
+    id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    diesel::update(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
+        .set(datasets_columns::deleted.eq(true))
+        .execute(&mut conn)
+        .await
+        .map_err(|err| {
+            log::error!("Could not delete dataset: {}", err);
+            ServiceError::BadRequest("Could not delete dataset".to_string())
+        })?;
+
+    Ok(())
+}
+
 
 #[tracing::instrument(skip(pool))]
 pub async fn delete_dataset_by_id_query(
@@ -192,7 +220,7 @@ pub async fn update_dataset_query(
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let new_dataset: Dataset =
-        diesel::update(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
+        diesel::update(datasets_columns::datasets.filter(datasets_columns::id.eq(id)).filter(datasets_columns::deleted.eq(false)))
             .set((
                 datasets_columns::name.eq(name),
                 datasets_columns::updated_at.eq(diesel::dsl::now),
@@ -221,6 +249,7 @@ pub async fn get_datasets_by_organization_id(
 
     let dataset_and_usages: Vec<(Dataset, DatasetUsageCount)> = datasets_columns::datasets
         .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
+        .filter(datasets_columns::deleted.eq(false))
         .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
         .select((Dataset::as_select(), DatasetUsageCount::as_select()))
         .load::<(Dataset, DatasetUsageCount)>(&mut conn)
