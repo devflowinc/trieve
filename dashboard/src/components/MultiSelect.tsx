@@ -19,10 +19,11 @@ export interface Item {
 
 export function MultiSelect(props: {
   items: Item[];
+  selected?: Item[];
   setSelected: (selected: Item[]) => void;
 }): JSX.Element {
   // eslint-disable-next-line solid/reactivity
-  const [selected, setSelectedItems] = createSignal([] as Item[]);
+  const [selected, setSelectedItems] = createSignal(props.selected ?? []);
   const setSelected = (selected: Item[]) => {
     setSelectedItems(selected);
     props.setSelected(selected);
