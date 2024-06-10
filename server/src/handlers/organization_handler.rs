@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    af_middleware::auth_middleware::{get_role_for_org, verify_admin, verify_owner},
+    middleware::auth_middleware::{get_role_for_org, verify_admin, verify_owner},
     data::models::{Pool, RedisPool, UserOrganization, UserRole},
     errors::ServiceError,
     operators::{

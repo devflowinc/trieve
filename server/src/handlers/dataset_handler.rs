@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    af_middleware::auth_middleware::{verify_admin, verify_owner},
+    middleware::auth_middleware::{verify_admin, verify_owner},
     data::models::{
         ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool,
         ServerDatasetConfiguration, StripePlan, UnifiedId,

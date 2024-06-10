@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
-    af_middleware::auth_middleware::verify_member,
+    middleware::auth_middleware::verify_member,
     data::models::{
         DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, FileWorkerMessage, Pool, RedisPool,
         ServerDatasetConfiguration,

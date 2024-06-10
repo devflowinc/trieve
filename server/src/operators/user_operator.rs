@@ -218,7 +218,7 @@ pub async fn set_user_api_key_query(
 pub async fn get_user_from_api_key_query(
     api_key: &str,
     pool: web::Data<Pool>,
-) -> Result<(SlimUser, UserApiKey), ServiceError> {
+) -> Result<SlimUser, ServiceError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_api_key::dsl as user_api_key_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
@@ -269,15 +269,44 @@ pub async fn get_user_from_api_key_query(
                 }
             });
 
-            let orgs = user_orgs_orgs
+            let mut orgs = user_orgs_orgs
                 .iter()
                 .map(|user_org_org| user_org_org.2.clone())
                 .collect::<Vec<Organization>>();
 
-            Ok((
-                SlimUser::from_details(user, user_orgs, orgs),
-                first_user_org.3.clone(),
-            ))
+            if first_user_org.3.organization_ids.is_some_and(|org_ids| !org_ids.is_empty()) {
+                orgs = orgs
+                    .into_iter()
+                    .filter(|org| {
+                        first_user_org
+                            .3
+                            .organization_ids
+                            .as_ref()
+                            .expect("Organization ids must be present")
+                            .contains(&org.id)
+                    })
+                    .collect();
+            }
+
+            if first_user_org.3.dataset_ids.is_some_and(|dataset_ids| !dataset_ids.is_empty()) {
+                // remove datasets that are not in the dataset_ids
+                for org in orgs.iter_mut() {
+                    org.datasets = org
+                        .datasets
+                        .into_iter()
+                        .filter(|dataset| {
+                            first_user_org
+                                .3
+                                .dataset_ids
+                                .as_ref()
+                                .expect("Dataset ids must be present")
+                                .contains(&dataset.id)
+                        })
+                        .collect();
+                }
+            }
+
+            Ok(SlimUser::from_details(user, user_orgs, orgs))
         }
         None => {
             let argon2_hash = hash_argon2_api_key(api_key)?;

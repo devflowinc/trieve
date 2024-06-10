@@ -1,5 +1,5 @@
 use crate::{
-    af_middleware::auth_middleware::verify_owner,
+    middleware::auth_middleware::verify_owner,
     data::models::Pool,
     errors::ServiceError,
     get_env,

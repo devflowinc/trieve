@@ -32,7 +32,7 @@ use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use utoipa_redoc::{Redoc, Servable};
 
-pub mod af_middleware;
+pub mod middleware;
 pub mod data;
 pub mod errors;
 pub mod handlers;
@@ -475,7 +475,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
                 .wrap(sentry_actix::Sentry::new())
-                .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
+                .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
                     IdentityMiddleware::builder()
                         .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
