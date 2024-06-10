@@ -48,6 +48,7 @@ export const ApiKeyGenerateModal = (props: {
   );
 
   createEffect(() => {
+    setDatasetsAndUsages([]);
     for (const orgId of selectedOrgIds()) {
       void fetch(`${api_host}/dataset/organization/${orgId}`, {
         credentials: "include",
@@ -57,7 +58,10 @@ export const ApiKeyGenerateModal = (props: {
       }).then((res) => {
         if (res.ok) {
           void res.json().then((data) => {
-            setDatasetsAndUsages(data as DatasetAndUsage[]);
+            setDatasetsAndUsages((prev) => [
+              ...prev,
+              ...(data as DatasetAndUsage[]),
+            ]);
           });
         }
       });
@@ -119,7 +123,7 @@ export const ApiKeyGenerateModal = (props: {
     <Show when={props.openModal()}>
       <Dialog
         isOpen
-        class="fixed inset-0 z-10 overflow-y-auto"
+        class="fixed inset-0 z-10 overflow-y-scroll"
         onClose={() => {
           props.closeModal();
           setGenerated(false);
