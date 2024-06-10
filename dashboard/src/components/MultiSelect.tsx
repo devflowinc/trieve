@@ -18,6 +18,7 @@ export interface Item {
 }
 
 export function MultiSelect(props: {
+  disabled?: boolean;
   items: Item[];
   selected?: Item[];
   setSelected: (selected: Item[]) => void;
@@ -31,6 +32,7 @@ export function MultiSelect(props: {
 
   return (
     <Listbox
+      disabled={props.disabled}
       multiple
       toggleable
       defaultOpen={false}
@@ -43,7 +45,7 @@ export function MultiSelect(props: {
       as="div"
     >
       <div class="relative">
-        <ListboxButton class="relative min-w-[300px] max-w-[300px] cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left outline outline-1 outline-gray-300  focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-magenta-300 sm:text-sm">
+        <ListboxButton class="relative min-w-[300px] max-w-[300px] cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left outline outline-1 outline-gray-300 focus-visible:border-indigo-500  focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-magenta-300 disabled:opacity-50 sm:text-sm">
           <div class="flex flex-wrap gap-1">
             <For
               each={selected()}
