@@ -104,6 +104,7 @@ diesel::table! {
         server_configuration -> Jsonb,
         client_configuration -> Jsonb,
         tracking_id -> Nullable<Text>,
+        deleted -> Bool,
     }
 }
 
