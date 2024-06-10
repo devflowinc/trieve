@@ -26,7 +26,7 @@ import {
 import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
 import { FaSolidChevronDown } from "solid-icons/fa";
-import { MultiSelect } from "./MultiSelect";
+import { Item, MultiSelect } from "./MultiSelect";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
@@ -42,14 +42,12 @@ export const ApiKeyGenerateModal = (props: {
   const [generated, setGenerated] = createSignal<boolean>(false);
   const organizations = createMemo(() => userContext?.user?.()?.orgs ?? []);
   const [selectedOrgs, setSelectedOrgs] = createSignal<Organization[]>([]);
-  const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<string[]>(
-    [],
-  );
+  const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<Item[]>([]);
 
   const [datasetsAndUsages] = createResource(
     selectedOrgs,
     async (selected) => {
-      const datasetsAndUsages: DatasetAndUsage[] = [];
+      const datasetsAndUsages: Item[] = [];
       const resolved = await Promise.all(
         selected.map((org) =>
           fetch(`${api_host}/dataset/organization/${org.id}`, {
@@ -62,8 +60,12 @@ export const ApiKeyGenerateModal = (props: {
       );
       for (const res of resolved) {
         if (res.ok) {
-          const data = (await res.json()) as unknown;
-          datasetsAndUsages.push(...(data as DatasetAndUsage[]));
+          const data = (await res.json()) as unknown as DatasetAndUsage[];
+          const mapped = data.map((d) => ({
+            name: d.dataset.name,
+            id: d.dataset.id,
+          }));
+          datasetsAndUsages.push(...mapped);
         }
       }
 
@@ -83,7 +85,7 @@ export const ApiKeyGenerateModal = (props: {
       body: JSON.stringify({
         name: name(),
         role: role(),
-        dataset_ids: selectedDatasetIds(),
+        dataset_ids: selectedDatasetIds().map((d) => d.id),
         organization_ids: selectedOrgs().map((org) => org.id),
       }),
     }).then((res) => {
@@ -259,19 +261,10 @@ export const ApiKeyGenerateModal = (props: {
                             </label>
                             <MultiSelect
                               disabled={selectedOrgs().length === 0}
-                              items={datasetsAndUsages().map((dataset) => ({
-                                id: dataset.dataset.id,
-                                name: dataset.dataset.name,
-                              }))}
-                              setSelected={(
-                                selected: {
-                                  id: string;
-                                  name: string;
-                                }[],
-                              ) => {
-                                setSelectedDatasetIds(
-                                  selected.map((dataset) => dataset.id),
-                                );
+                              items={datasetsAndUsages()}
+                              selected={selectedDatasetIds()}
+                              setSelected={(selected: Item[]) => {
+                                setSelectedDatasetIds(selected);
                               }}
                             />
                           </div>

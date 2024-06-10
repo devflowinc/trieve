@@ -26,8 +26,8 @@ export function MultiSelect<I extends Item>(props: {
   // eslint-disable-next-line solid/reactivity
   const [selected, setSelectedItems] = createSignal(props.selected ?? []);
   const setSelected = (selected: I[]) => {
-    setSelectedItems(selected);
     props.setSelected(selected);
+    setSelectedItems(selected);
   };
 
   // If a selected item is not in the pool of items,
