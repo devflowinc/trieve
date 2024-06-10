@@ -46,7 +46,7 @@ export const NavBar = () => {
             <>
               <PopoverButton
                 aria-label="Show help or contact"
-                class="flex items-center space-x-2 rounded-md bg-neutral-100 px-2 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
+                class="flex items-center space-x-2 rounded-md border bg-neutral-100 px-2 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
               >
                 <BsQuestionCircle class="h-3 w-3" />
                 <span>Help or Contact</span>
