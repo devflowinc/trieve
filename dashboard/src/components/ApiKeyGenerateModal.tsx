@@ -25,7 +25,6 @@ import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
 import { FaSolidChevronDown } from "solid-icons/fa";
 import { MultiSelect } from "./MultiSelect";
-import { DatasetContext } from "../contexts/DatasetContext";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
@@ -34,23 +33,19 @@ export const ApiKeyGenerateModal = (props: {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
 
   const userContext = useContext(UserContext);
-  const datasetContext = useContext(DatasetContext);
 
   const [apiKey, setApiKey] = createSignal<string>("");
   const [name, setName] = createSignal<string>("");
   const [role, setRole] = createSignal<number>(1);
   const [generated, setGenerated] = createSignal<boolean>(false);
   const organizations = createMemo(() => userContext?.user?.()?.orgs ?? []);
-  const [selectedOrgIds, setSelectedOrgIds] = createSignal<string[]>([
-    userContext.selectedOrganizationId?.() ?? "",
-  ]);
+  const [selectedOrgIds, setSelectedOrgIds] = createSignal<string[]>([]);
   const [datasetsAndUsages, setDatasetsAndUsages] = createSignal<
     DatasetAndUsage[]
   >([]);
-  const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<string[]>([
-    datasetContext.dataset?.()?.id ?? "",
-  ]);
-
+  const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<string[]>(
+    [],
+  );
 
   createEffect(() => {
     setDatasetsAndUsages([]);
@@ -248,14 +243,6 @@ export const ApiKeyGenerateModal = (props: {
                                 id: org.id,
                                 name: org.name,
                               }))}
-                              selected={organizations()
-                                .filter((org) =>
-                                  selectedOrgIds().includes(org.id),
-                                )
-                                .map((org) => ({
-                                  id: org.id,
-                                  name: org.name,
-                                }))}
                               setSelected={(
                                 selected: {
                                   id: string;
@@ -280,16 +267,6 @@ export const ApiKeyGenerateModal = (props: {
                                 id: dataset.dataset.id,
                                 name: dataset.dataset.name,
                               }))}
-                              selected={datasetsAndUsages()
-                                .filter((dataset) =>
-                                  selectedDatasetIds().includes(
-                                    dataset.dataset.id,
-                                  ),
-                                )
-                                .map((dataset) => ({
-                                  id: dataset.dataset.id,
-                                  name: dataset.dataset.name,
-                                }))}
                               setSelected={(
                                 selected: {
                                   id: string;
