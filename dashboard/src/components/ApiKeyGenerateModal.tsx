@@ -6,6 +6,7 @@ import {
   JSX,
   Show,
   useContext,
+  createResource,
 } from "solid-js";
 import {
   Dialog,
@@ -19,6 +20,7 @@ import {
 import {
   DatasetAndUsage,
   fromI32ToUserRole,
+  Organization,
   SetUserApiKeyResponse,
 } from "../types/apiTypes";
 import { UserContext } from "../contexts/UserContext";
@@ -39,34 +41,36 @@ export const ApiKeyGenerateModal = (props: {
   const [role, setRole] = createSignal<number>(1);
   const [generated, setGenerated] = createSignal<boolean>(false);
   const organizations = createMemo(() => userContext?.user?.()?.orgs ?? []);
-  const [selectedOrgIds, setSelectedOrgIds] = createSignal<string[]>([]);
-  const [datasetsAndUsages, setDatasetsAndUsages] = createSignal<
-    DatasetAndUsage[]
-  >([]);
+  const [selectedOrgs, setSelectedOrgs] = createSignal<Organization[]>([]);
   const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<string[]>(
     [],
   );
 
-  createEffect(() => {
-    setDatasetsAndUsages([]);
-    for (const orgId of selectedOrgIds()) {
-      void fetch(`${api_host}/dataset/organization/${orgId}`, {
-        credentials: "include",
-        headers: {
-          "TR-Organization": orgId,
-        },
-      }).then((res) => {
+  const [datasetsAndUsages] = createResource(
+    selectedOrgs,
+    async (selected) => {
+      const datasetsAndUsages: DatasetAndUsage[] = [];
+      const resolved = await Promise.all(
+        selected.map((org) =>
+          fetch(`${api_host}/dataset/organization/${org.id}`, {
+            credentials: "include",
+            headers: {
+              "TR-Organization": org.id,
+            },
+          }),
+        ),
+      );
+      for (const res of resolved) {
         if (res.ok) {
-          void res.json().then((data) => {
-            setDatasetsAndUsages((prev) => [
-              ...prev,
-              ...(data as DatasetAndUsage[]),
-            ]);
-          });
+          const data = (await res.json()) as unknown;
+          datasetsAndUsages.push(...(data as DatasetAndUsage[]));
         }
-      });
-    }
-  });
+      }
+
+      return datasetsAndUsages;
+    },
+    { initialValue: [] },
+  );
 
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
@@ -80,7 +84,7 @@ export const ApiKeyGenerateModal = (props: {
         name: name(),
         role: role(),
         dataset_ids: selectedDatasetIds(),
-        organization_ids: selectedOrgIds(),
+        organization_ids: selectedOrgs().map((org) => org.id),
       }),
     }).then((res) => {
       if (res.ok) {
@@ -239,19 +243,10 @@ export const ApiKeyGenerateModal = (props: {
                               Organizations:
                             </label>
                             <MultiSelect
-                              items={organizations().map((org) => ({
-                                id: org.id,
-                                name: org.name,
-                              }))}
-                              setSelected={(
-                                selected: {
-                                  id: string;
-                                  name: string;
-                                }[],
-                              ) => {
-                                setSelectedOrgIds(
-                                  selected.map((org) => org.id),
-                                );
+                              selected={selectedOrgs()}
+                              items={organizations()}
+                              setSelected={(selected: Organization[]) => {
+                                setSelectedOrgs(selected);
                               }}
                             />
                           </div>
@@ -263,7 +258,7 @@ export const ApiKeyGenerateModal = (props: {
                               Datasets:
                             </label>
                             <MultiSelect
-                              disabled={selectedOrgIds().length === 0}
+                              disabled={selectedOrgs().length === 0}
                               items={datasetsAndUsages().map((dataset) => ({
                                 id: dataset.dataset.id,
                                 name: dataset.dataset.name,
