@@ -73,7 +73,7 @@ const OrgSettingsForm = () => {
         updateOrganization();
       }}
     >
-      <div class="shadow sm:overflow-hidden sm:rounded-md">
+      <div class="border border-[#e5e7eb] shadow sm:overflow-hidden sm:rounded-md">
         <div class="bg-white px-4 py-6 sm:p-6">
           <div>
             <h2
@@ -82,12 +82,12 @@ const OrgSettingsForm = () => {
             >
               Organization Settings
             </h2>
-            <p class="mt-1 text-sm text-neutral-600">
+            <p class="text-sm text-neutral-600">
               Update your organization's information.
             </p>
           </div>
 
-          <div class="mt-6 grid grid-cols-4 gap-6">
+          <div class="mt-4 grid grid-cols-4 gap-6">
             <div class="col-span-4 sm:col-span-2">
               <label
                 for="organization-name"
@@ -99,18 +99,18 @@ const OrgSettingsForm = () => {
                 type="text"
                 name="organization-name"
                 id="organization-name"
-                class="mt-2 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
                 value={organizationName()}
                 onInput={(e) => setOrganizationName(e.currentTarget.value)}
               />
             </div>
           </div>
         </div>
-        <div class="bg-neutral-50 px-4 py-3 text-right sm:px-6">
+        <div class="border-t bg-neutral-50 px-4 py-3 text-right">
           <button
             type="submit"
             classList={{
-              "inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900":
+              "inline-flex text-sm justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900":
                 true,
               "animate-pulse cursor-not-allowed": updating(),
             }}
@@ -196,33 +196,54 @@ export const OrgDangerZoneForm = () => {
   };
 
   return (
-    <form class="border-4 border-red-500">
+    <form class="rounded-md border border-red-600/20 shadow-sm shadow-red-500/30">
       <div class="shadow sm:overflow-hidden sm:rounded-md ">
-        <div class="space-y-3 bg-white px-4 py-6 sm:p-6">
+        <div class="space-y-3 bg-white px-3 py-6 sm:p-6">
           <div>
             <h2 id="user-details-name" class="text-lg font-medium leading-6">
-              Danger Zone
+              Delete Organization
             </h2>
-            <p class="mt-1 text-sm text-neutral-600">
-              These settings are for advanced users only. Changing these
-              settings can break the app.
+            <p class="mt-0 text-sm text-red-700">
+              Warning: This action is not reversible. Please be sure before
+              deleting.
             </p>
+            <div class="mt-3 grid grid-cols-4 gap-0">
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="organization-name"
+                  class="block text-sm font-medium leading-6 opacity-70"
+                >
+                  Enter the organization name
+                  <span class="font-bold"> "test-org" </span>
+                  to confirm.
+                </label>
+                <input
+                  type="text"
+                  name="organization-name"
+                  id="organization-name"
+                  class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                  // value={organizationName()}
+                  // onInput={(e) => setOrganizationName(e.currentTarget.value)}
+                />
+              </div>
+            </div>
           </div>
-
+        </div>
+        <div class="border-t border-red-600/30 bg-red-50/40 px-3 py-3 text-right sm:px-3">
           <button
             onClick={() => {
               deleteOrganization();
             }}
             disabled={deleting()}
             classList={{
-              "pointer:cursor w-fit rounded-md border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500 hover:text-white focus:outline-magenta-500":
+              "pointer:cursor text-sm w-fit opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
                 true,
               "animate-pulse cursor-not-allowed": deleting(),
             }}
           >
             <Switch>
               <Match when={deleting()}>Deleting...</Match>
-              <Match when={!deleting()}>DELETE ORGANIZATION</Match>
+              <Match when={!deleting()}>Delete Organization</Match>
             </Switch>
           </button>
         </div>
@@ -234,14 +255,13 @@ export const OrgDangerZoneForm = () => {
 export const Settings = () => {
   return (
     <div class="h-full pb-4">
-      <div class="space-y-6 sm:px-6 lg:grid lg:grid-cols-2 lg:gap-5 lg:px-0">
+      <div class="space-y-6 sm:px-6 lg:grid lg:grid-cols-2 lg:px-0">
         <section
           class="lg:col-span-2"
           aria-labelledby="organization-details-name"
         >
           <OrgSettingsForm />
         </section>
-
         <section class="lg:col-span-2" aria-labelledby="user-details-name">
           <OrgDangerZoneForm />
         </section>
