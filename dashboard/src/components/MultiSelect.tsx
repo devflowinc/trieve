@@ -35,7 +35,7 @@ export function MultiSelect(props: {
       defaultOpen={false}
       value={selected()}
       onSelectChange={setSelected}
-      onClick={(e) => {
+      onClick={(e: MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
       }}
