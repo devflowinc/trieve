@@ -3,7 +3,7 @@
 import { AiOutlineCheck } from "solid-icons/ai";
 import { TbSelector } from "solid-icons/tb";
 import type { JSX } from "solid-js";
-import { For, createSignal, Show } from "solid-js";
+import { For, createSignal, Show, createEffect } from "solid-js";
 import {
   DisclosureStateChild,
   Listbox,
@@ -29,6 +29,19 @@ export function MultiSelect<I extends Item>(props: {
     setSelectedItems(selected);
     props.setSelected(selected);
   };
+
+  // If a selected item is not in the pool of items,
+  // reset the list of selected items, this likely
+  // needs to be fixed in the terracotta library
+  createEffect(() => {
+    const selectedIds = selected().map((item) => item.id);
+    const newSelected = props.items.filter((item) =>
+      selectedIds.includes(item.id),
+    );
+    if (newSelected.length !== selected().length) {
+      setSelected(newSelected);
+    }
+  });
 
   return (
     <Listbox
