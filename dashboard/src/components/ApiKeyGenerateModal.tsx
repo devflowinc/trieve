@@ -3,13 +3,28 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  JSX,
   Show,
   useContext,
 } from "solid-js";
-import { Dialog, DialogOverlay, DialogPanel, DialogTitle } from "terracotta";
-import { fromI32ToUserRole, SetUserApiKeyResponse } from "../types/apiTypes";
+import {
+  Dialog,
+  DialogOverlay,
+  DialogPanel,
+  DialogTitle,
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+} from "terracotta";
+import {
+  DatasetAndUsage,
+  fromI32ToUserRole,
+  SetUserApiKeyResponse,
+} from "../types/apiTypes";
 import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
+import { FaSolidChevronDown } from "solid-icons/fa";
+import { MultiSelect } from "./MultiSelect";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
@@ -23,6 +38,31 @@ export const ApiKeyGenerateModal = (props: {
   const [name, setName] = createSignal<string>("");
   const [role, setRole] = createSignal<number>(1);
   const [generated, setGenerated] = createSignal<boolean>(false);
+  const organizations = createMemo(() => userContext?.user?.()?.orgs ?? []);
+  const [selectedOrgIds, setSelectedOrgIds] = createSignal<string[]>([]);
+  const [datasetsAndUsages, setDatasetsAndUsages] = createSignal<
+    DatasetAndUsage[]
+  >([]);
+  const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<string[]>(
+    [],
+  );
+
+  createEffect(() => {
+    for (const orgId of selectedOrgIds()) {
+      void fetch(`${api_host}/dataset/organization/${orgId}`, {
+        credentials: "include",
+        headers: {
+          "TR-Organization": orgId,
+        },
+      }).then((res) => {
+        if (res.ok) {
+          void res.json().then((data) => {
+            setDatasetsAndUsages(data as DatasetAndUsage[]);
+          });
+        }
+      });
+    }
+  });
 
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
@@ -35,6 +75,8 @@ export const ApiKeyGenerateModal = (props: {
       body: JSON.stringify({
         name: name(),
         role: role(),
+        dataset_ids: selectedDatasetIds(),
+        organization_ids: selectedOrgIds(),
       }),
     }).then((res) => {
       if (res.ok) {
@@ -167,6 +209,74 @@ export const ApiKeyGenerateModal = (props: {
                           </select>
                         </div>
                       </div>
+                      <Disclosure defaultOpen={false} as="div" class="py-2">
+                        <DisclosureButton
+                          as="div"
+                          class="flex w-full justify-between rounded-l py-2 text-left text-sm font-medium focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75"
+                        >
+                          {({ isOpen }): JSX.Element => (
+                            <>
+                              <span>API Key Scope</span>
+                              <FaSolidChevronDown
+                                class={`${
+                                  isOpen() ? "rotate-180 transform" : ""
+                                } h-4 w-4 `}
+                                title={isOpen() ? "Close" : "Open"}
+                              />
+                            </>
+                          )}
+                        </DisclosureButton>
+                        <DisclosurePanel class="space-y-2 pb-2 pt-1">
+                          <div class="flex items-center space-x-2">
+                            <label
+                              for="organization"
+                              class="block text-sm font-medium leading-6"
+                            >
+                              Organizations:
+                            </label>
+                            <MultiSelect
+                              items={organizations().map((org) => ({
+                                id: org.id,
+                                name: org.name,
+                              }))}
+                              setSelected={(
+                                selected: {
+                                  id: string;
+                                  name: string;
+                                }[],
+                              ) => {
+                                setSelectedOrgIds(
+                                  selected.map((org) => org.id),
+                                );
+                              }}
+                            />
+                          </div>
+                          <div class="flex items-center space-x-2">
+                            <label
+                              for="organization"
+                              class="block text-sm font-medium leading-6"
+                            >
+                              Datasets:
+                            </label>
+                            <MultiSelect
+                              items={datasetsAndUsages().map((dataset) => ({
+                                id: dataset.dataset.id,
+                                name: dataset.dataset.name,
+                              }))}
+                              setSelected={(
+                                selected: {
+                                  id: string;
+                                  name: string;
+                                }[],
+                              ) => {
+                                setSelectedDatasetIds(
+                                  selected.map((dataset) => dataset.id),
+                                );
+                              }}
+                            />
+                          </div>
+                        </DisclosurePanel>
+                      </Disclosure>
                     </div>
                   </div>
                 </div>
