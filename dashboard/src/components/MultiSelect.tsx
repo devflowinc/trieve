@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { AiOutlineCheck } from "solid-icons/ai";
 import { TbSelector } from "solid-icons/tb";
 import type { JSX } from "solid-js";
@@ -10,109 +12,101 @@ import {
   ListboxOptions,
 } from "terracotta";
 
+export interface Item {
+  id: string;
+  name: string;
+}
+
 export function MultiSelect(props: {
-  items: {
-    id: string;
-    name: string;
-  }[];
-  setSelected: (
-    selected: {
-      id: string;
-      name: string;
-    }[],
-  ) => void;
+  items: Item[];
+  setSelected: (selected: Item[]) => void;
 }): JSX.Element {
   // eslint-disable-next-line solid/reactivity
-  const [selected, setSelectedItems] = createSignal(
-    [] as { id: string; name: string }[],
-  );
-  const setSelected = (
-    selected: {
-      id: string;
-      name: string;
-    }[],
-  ) => {
+  const [selected, setSelectedItems] = createSignal([] as Item[]);
+  const setSelected = (selected: Item[]) => {
     setSelectedItems(selected);
     props.setSelected(selected);
   };
 
   return (
-    <div class="flex min-w-[300px] flex-col gap-2">
-      <span class="text-sm">Event Type:</span>
-      <Listbox
-        multiple
-        toggleable
-        defaultOpen={false}
-        value={selected()}
-        onSelectChange={setSelected}
-      >
-        <div class="relative">
-          <ListboxButton class="relative min-w-[300px] max-w-[300px] cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left outline outline-1 outline-gray-300  focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-magenta-300 sm:text-sm">
-            <div class="flex flex-wrap gap-1">
-              <For
-                each={selected()}
-                fallback={<span class="block truncate">No selected.</span>}
+    <Listbox
+      multiple
+      toggleable
+      defaultOpen={false}
+      value={selected()}
+      onSelectChange={setSelected}
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      }}
+      as="div"
+    >
+      <div class="relative">
+        <ListboxButton class="relative min-w-[300px] max-w-[300px] cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left outline outline-1 outline-gray-300  focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-magenta-300 sm:text-sm">
+          <div class="flex flex-wrap gap-1">
+            <For
+              each={selected()}
+              fallback={<span class="block truncate">None selected.</span>}
+            >
+              {(item): JSX.Element => (
+                <span class="inline-flex items-center rounded bg-magenta-100 px-2 py-0.5 text-xs font-medium text-magenta-800 hover:bg-magenta-300">
+                  {item.name}
+                </span>
+              )}
+            </For>
+          </div>
+          <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+            <TbSelector class="h-5 w-5" />
+          </span>
+        </ListboxButton>
+        <DisclosureStateChild>
+          {({ isOpen }): JSX.Element => (
+            <Show when={isOpen()}>
+              <ListboxOptions
+                unmount={false}
+                class="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base outline outline-1 outline-gray-300 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
               >
-                {(item): JSX.Element => (
-                  <span class="inline-flex items-center rounded bg-magenta-100 px-2 py-0.5 text-xs font-medium text-magenta-800 hover:bg-magenta-300">
-                    {item.name}
-                  </span>
-                )}
-              </For>
-            </div>
-            <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-              <TbSelector class="h-5 w-5" />
-            </span>
-          </ListboxButton>
-          <DisclosureStateChild>
-            {({ isOpen }): JSX.Element => (
-              <Show when={isOpen()}>
-                <ListboxOptions
-                  unmount={false}
-                  class="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base outline outline-1 outline-gray-300 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
-                >
-                  <For each={props.items}>
-                    {(item): JSX.Element => (
-                      <ListboxOption
-                        class="group rounded-md p-1 focus:outline-none"
-                        value={item}
-                      >
-                        {({ isSelected }): JSX.Element => {
-                          return (
-                            <div
+                <For each={props.items}>
+                  {(item): JSX.Element => (
+                    <ListboxOption
+                      class="group rounded-md p-1 focus:outline-none"
+                      value={item}
+                    >
+                      {({ isSelected }): JSX.Element => {
+                        return (
+                          <div
+                            classList={{
+                              "bg-magenta-100 text-magenta-900": isSelected(),
+                              "text-gray-900": !isSelected(),
+                              "group-hover:bg-magenta-50 group-hover:text-magenta-900 relative cursor-default select-none py-2 pl-10 pr-4 rounded-md":
+                                true,
+                            }}
+                          >
+                            <span
                               classList={{
-                                "bg-magenta-100 text-magenta-900": isSelected(),
-                                "text-gray-900": !isSelected(),
-                                "group-hover:bg-magenta-50 group-hover:text-magenta-900 relative cursor-default select-none py-2 pl-10 pr-4 rounded-md":
-                                  true,
+                                "font-medium": isSelected(),
+                                "font-normal": !isSelected(),
+                                "block truncate": true,
                               }}
                             >
-                              <span
-                                classList={{
-                                  "font-medium": isSelected(),
-                                  "font-normal": !isSelected(),
-                                  "block truncate": true,
-                                }}
-                              >
-                                {item.name}
+                              {item.name}
+                            </span>
+                            <Show when={isSelected()}>
+                              <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <AiOutlineCheck class="h-5 w-5" />
                               </span>
-                              <Show when={isSelected()}>
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                                  <AiOutlineCheck class="h-5 w-5" />
-                                </span>
-                              </Show>
-                            </div>
-                          );
-                        }}
-                      </ListboxOption>
-                    )}
-                  </For>
-                </ListboxOptions>
-              </Show>
-            )}
-          </DisclosureStateChild>
-        </div>
-      </Listbox>
-    </div>
+                            </Show>
+                          </div>
+                        );
+                      }}
+                    </ListboxOption>
+                  )}
+                </For>
+              </ListboxOptions>
+            </Show>
+          )}
+        </DisclosureStateChild>
+      </div>
+    </Listbox>
   );
 }

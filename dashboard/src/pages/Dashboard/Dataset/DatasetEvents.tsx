@@ -100,46 +100,49 @@ export const DatasetEvents = () => {
                   Event Log from the server (Refreshes every 5 seconds)
                 </p>
               </div>
-              <MultiSelect
-                items={[
-                  {
-                    id: "file_uploaded",
-                    name: "File Uploaded",
-                  },
-                  {
-                    id: "file_upload_failed",
-                    name: "File Upload Failed",
-                  },
-                  {
-                    id: "chunk_action_failed",
-                    name: "Chunk Upload Failed",
-                  },
-                  {
-                    id: "chunks_uploaded",
-                    name: "Chunks Uploaded",
-                  },
-                  {
-                    id: "chunk_updated",
-                    name: "Chunk Updated",
-                  },
-                  {
-                    id: "qdrant_index_failed",
-                    name: "Qdrant Index Failed",
-                  },
-                  {
-                    id: "bulk_chunk_action_failed",
-                    name: "Bulk Chunk Action Failed",
-                  },
-                ]}
-                setSelected={(
-                  selected: {
-                    id: string;
-                    name: string;
-                  }[],
-                ) => {
-                  setSelected(selected);
-                }}
-              />
+              <div class="flex min-w-[300px] flex-col gap-2">
+                <span class="text-sm">Event Type:</span>
+                <MultiSelect
+                  items={[
+                    {
+                      id: "file_uploaded",
+                      name: "File Uploaded",
+                    },
+                    {
+                      id: "file_upload_failed",
+                      name: "File Upload Failed",
+                    },
+                    {
+                      id: "chunk_action_failed",
+                      name: "Chunk Upload Failed",
+                    },
+                    {
+                      id: "chunks_uploaded",
+                      name: "Chunks Uploaded",
+                    },
+                    {
+                      id: "chunk_updated",
+                      name: "Chunk Updated",
+                    },
+                    {
+                      id: "qdrant_index_failed",
+                      name: "Qdrant Index Failed",
+                    },
+                    {
+                      id: "bulk_chunk_action_failed",
+                      name: "Bulk Chunk Action Failed",
+                    },
+                  ]}
+                  setSelected={(
+                    selected: {
+                      id: string;
+                      name: string;
+                    }[],
+                  ) => {
+                    setSelected(selected);
+                  }}
+                />
+              </div>
             </div>
             <div class="mt-8 flow-root">
               <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
