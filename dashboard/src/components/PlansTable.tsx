@@ -18,10 +18,14 @@ export interface PlansTableProps {
   currentOrgSubPlan: OrganizationAndSubAndPlan | null;
 }
 
-const activeTag = (text: string) => {
+interface ActiveTagProps {
+  text: string;
+}
+
+const ActiveTag = (props: ActiveTagProps) => {
   return (
-    <p class="w-fit rounded-lg bg-neutral-100 px-4 py-2 font-semibold text-magenta-500 shadow-sm shadow-magenta-100/40">
-      {text}
+    <p class="w-fit rounded-lg px-4 py-2 font-semibold text-magenta-500">
+      {props.text}
     </p>
   );
 };
@@ -150,16 +154,18 @@ export const PlansTable = (props: PlansTableProps) => {
   };
 
   return (
-    <div>
-      <div class="grid w-full grid-cols-3 place-content-center gap-x-2 rounded bg-neutral-100 p-3 text-sm">
+    <div class="flex flex-col gap-4">
+      <div class="grid w-full grid-cols-3 place-content-center gap-x-2 rounded border bg-neutral-100 px-5 py-3 text-sm">
         <div class="space-y-1">
-          <p class="text-lg uppercase text-magenta-500">Enterprise</p>
+          <p class="text-lg font-semibold uppercase text-magenta-500">
+            Enterprise
+          </p>
           <p>
             For applications managing serious workloads. Signal, WhatsApp, or
             Telegram all work.
           </p>
           <a
-            class="block rounded bg-magenta-100 py-1 text-center"
+            class="block rounded border border-magenta-200/70 bg-magenta-100 py-1 text-center"
             href="tel:6282224090"
           >
             +1 628-222-4090
@@ -193,7 +199,7 @@ export const PlansTable = (props: PlansTableProps) => {
           </div>
         </div>
       </div>
-      <div class="mt-10 space-y-4">
+      <div class="space-y-2">
         <h3 class="text-lg font-semibold text-neutral-800">
           Change subscription plan for{" "}
           {props.currentOrgSubPlan?.organization.name} Organization
@@ -300,7 +306,7 @@ export const PlansTable = (props: PlansTableProps) => {
                 >
                   <Switch>
                     <Match when={currentPlan()?.amount === 0}>
-                      {activeTag("Current Tier")}
+                      <ActiveTag text="Current Tier" />
                     </Match>
                     <Match
                       when={
@@ -308,12 +314,14 @@ export const PlansTable = (props: PlansTableProps) => {
                         currentPlan()?.amount !== 0
                       }
                     >
-                      {activeTag(
-                        "Starts on " +
+                      <ActiveTag
+                        text={
+                          "Starts on " +
                           new Date(
                             currentSubscription()?.current_period_end ?? "",
-                          ).toLocaleDateString(),
-                      )}
+                          ).toLocaleDateString()
+                        }
+                      />
                     </Match>
                     <Match when={currentPlan()?.amount !== 0}>
                       <button
@@ -336,7 +344,7 @@ export const PlansTable = (props: PlansTableProps) => {
                     : false;
 
                   const currentPeriodEnd = plan.current_period_end;
-                  let actionButton = activeTag("Current Tier");
+                  let actionButton = <ActiveTag text="Current Tier" />;
 
                   if (!plan.current || currentPeriodEnd) {
                     if ((curPlan?.amount ?? 0) > 0 && !currentPeriodEnd) {

@@ -39,15 +39,20 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
         <div class="flex w-full justify-between pt-2">
           <div>
             <h1 class="text-base font-semibold leading-6">Datasets</h1>
-            <p class="mt-2 text-sm text-neutral-700">
-              {" "}
-              A list of all the datasets{" "}
-            </p>
+            <Show
+              fallback={<p>This organization does not have any datasets.</p>}
+              when={props.datasetAndUsages().length > 0}
+            >
+              <p class="text-sm text-neutral-700">
+                {" "}
+                A list of all the datasets{" "}
+              </p>
+            </Show>
           </div>
           <Show when={props.datasetAndUsages().length != 0}>
             <div class="end-2 right-2 content-end justify-end text-end">
               <button
-                class="justify-end rounded-md bg-magenta-500 p-2 text-white"
+                class="justify-end rounded-md bg-magenta-500 p-2 text-sm font-semibold text-white"
                 onClick={() => props.setOpenNewDatasetModal(true)}
               >
                 Create Dataset +
@@ -62,7 +67,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           class="relative block w-full rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2"
         >
           <TbDatabasePlus class="mx-auto h-12 w-12 text-magenta" />
-          <span class="ont-semibold mt-2 block">Create a new dataset</span>
+          <span class="ont-semibold mt-2 block">Create A New Dataset</span>
         </button>
       </Show>
       <Show when={props.datasetAndUsages().length > 0}>

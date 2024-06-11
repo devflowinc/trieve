@@ -79,7 +79,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
           <span class="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
-          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 pb-2 text-left align-middle shadow-xl transition-all">
+          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 text-left align-middle shadow-xl transition-all">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -99,8 +99,8 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                     You can invite a member to your dataset using their email.
                   </p>
 
-                  <div class="mt-10 items-center space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
-                    <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                  <div class="mt-4 items-center space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
+                    <div class="py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
                       <label
                         for="organization"
                         class="block text-sm font-medium leading-6 sm:pt-1.5"
@@ -118,7 +118,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                         onInput={(e) => setEmail(e.currentTarget.value)}
                       />
                     </div>
-                    <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <div class="py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
                       <label
                         for="organization"
                         class="block text-sm font-medium leading-6 sm:pt-1.5"
@@ -154,7 +154,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
               <div class="mt-3 flex items-center justify-between">
                 <button
                   type="button"
-                  class="inline-flex justify-center rounded-md bg-neutral-200 px-3 py-2 font-semibold text-black shadow-sm hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:bg-magenta-200"
+                  class="inline-flex justify-center rounded-md border bg-neutral-100 px-3 py-2 text-sm font-semibold text-black shadow-sm hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:bg-magenta-200"
                   onClick={() => props.closeModal()}
                 >
                   Cancel
@@ -163,7 +163,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                   type="submit"
                   disabled={email() === "" || sendingEmail()}
                   classList={{
-                    "inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200":
+                    "inline-flex text-sm justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200":
                       true,
                     "cursor-not-allowed animate-pulse": sendingEmail(),
                   }}

@@ -21,6 +21,7 @@ import { DatasetContext } from "../../../contexts/DatasetContext";
 import { ApiKeyGenerateModal } from "../../../components/ApiKeyGenerateModal";
 import { FaRegularClipboard, FaRegularTrashCan } from "solid-icons/fa";
 import { formatDate } from "../../../formatters";
+import { BuildingSomething } from "../../../components/BuildingSomething";
 
 export const DatasetStart = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -111,7 +112,7 @@ export const DatasetStart = () => {
       <main class="mx-auto">
         <div class="space-y-6 lg:grid lg:grid-cols-2 lg:gap-5 lg:px-0">
           <section
-            class="flex-col space-y-4 bg-white px-4 py-6 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
+            class="flex-col space-y-4 border bg-white px-4 py-6 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
             aria-labelledby="organization-details-name"
           >
             <div class="flex items-center space-x-4">
@@ -119,31 +120,15 @@ export const DatasetStart = () => {
                 Get Started
               </h2>
               <a
-                class="flex items-center space-x-2 rounded-md bg-neutral-100 px-2 py-1 text-sm"
-                href="https://docs.arguflow.ai"
+                class="flex items-center space-x-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm"
+                href="https://docs.trieve.ai"
                 target="_blank"
               >
                 <p>API Docs</p>
                 <BiRegularLinkExternal class="h-4 w-4" />
               </a>
             </div>
-            <div class="flex w-fit space-x-4 rounded-md bg-blue-50 px-6 py-4">
-              <BiRegularInfoCircle class="h-5 w-5 text-blue-400" />
-              <p class="text-sm text-blue-700">
-                Building something? Share in our{" "}
-                <a class="underline" href="https://discord.gg/s4CX3vczyn">
-                  Discord
-                </a>{" "}
-                or{" "}
-                <a
-                  class="underline"
-                  href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg"
-                >
-                  Matrix
-                </a>
-                ; we would love to hear about it!
-              </p>
-            </div>
+            <BuildingSomething />
             <div class="flex flex-col space-y-2">
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">
@@ -284,7 +269,7 @@ export const DatasetStart = () => {
             </h2>
             <div class="flex flex-col space-y-4">
               <p>1. Add searchable data</p>
-              <div class="flex w-fit space-x-4 rounded-md bg-blue-50 px-6 py-4">
+              <div class="flex w-fit space-x-4 rounded-md bg-blue-50 px-4 py-4">
                 <div class="flex">
                   <div class="flex-shrink-0">
                     {/* <FiAlertTriangle class="h-4 w-4 text-yellow-400" /> */}
@@ -317,7 +302,7 @@ export const DatasetStart = () => {
             </div>
             <div class="flex flex-col space-y-4">
               <p class="mt-3">2. Start Searching</p>
-              <div class="flex w-fit space-x-4 rounded-md bg-blue-50 px-6 py-4">
+              <div class="flex w-fit space-x-4 rounded-md bg-blue-50 px-4 py-4">
                 <div class="flex">
                   <div class="flex-shrink-0">
                     {/* <FiAlertTriangle class="h-4 w-4 text-yellow-400" /> */}

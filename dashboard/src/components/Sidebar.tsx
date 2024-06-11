@@ -31,13 +31,11 @@ export const Sidebar = () => {
 
   return (
     <>
-      <div class="flex min-h-[calc(100vh-65px)] w-full max-w-[280px] flex-col justify-between border-r">
+      <div class="flex min-h-[calc(100vh-65px)] w-full max-w-[280px] flex-col justify-between border-r bg-neutral-50">
         <div class="flex flex-col">
           <div class="border-b px-4 py-3">
-            <h5 class="mb-2 mt-2 font-semibold text-neutral-600">
-              Organizations
-            </h5>
-            <div class="flex flex-col items-start space-y-1">
+            <h5 class="font-semibold text-neutral-600">Organizations</h5>
+            <div class="flex flex-col items-start space-y-1 py-2">
               <For each={organizations()}>
                 {(org) => (
                   <button
@@ -57,7 +55,7 @@ export const Sidebar = () => {
               </For>
             </div>
             <button
-              class="mt-4 flex items-center gap-x-2 rounded-md border border-neutral-300 px-2 py-1 text-sm hover:border-fuchsia-800 hover:text-fuchsia-800"
+              class="flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm hover:border-fuchsia-800 hover:text-fuchsia-800"
               onClick={() => setShowNewOrgModal(true)}
             >
               <AiOutlinePlus class="inline-block h-4 w-4" />{" "}
@@ -65,8 +63,8 @@ export const Sidebar = () => {
             </button>
           </div>
           <div class="border-b px-4 py-3">
-            <h5 class="my-2 font-semibold text-neutral-600">Admin Tools</h5>
-            <div class="flex flex-col items-start space-y-1">
+            <h5 class="font-semibold text-neutral-600">Admin Tools</h5>
+            <div class="flex flex-col items-start space-y-1 py-2">
               <div class="flex items-center text-neutral-800 hover:text-fuchsia-800">
                 <a
                   href={`${searchUiURL}${orgDatasetParams()}`}
@@ -89,13 +87,13 @@ export const Sidebar = () => {
             </div>
           </div>
         </div>
-        <div class="sticky-bottom h-[100px] border-t px-4 py-3">
-          <div class="flex items-center space-x-1">
+        <div class="sticky bottom-0 flex flex-col items-start border-t px-4 py-4">
+          <div class="flex items-center gap-2">
             <p>{userContext?.user?.()?.email}</p>
             <AiOutlineUser class="h-4 w-4" />
           </div>
           <button
-            class="hover:text-fuchsia-800"
+            class="flex items-center gap-2 hover:text-fuchsia-800"
             onClick={() => {
               void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
                 method: "DELETE",
@@ -113,7 +111,7 @@ export const Sidebar = () => {
               });
             }}
           >
-            Logout <IoLogOutOutline class="inline-block h-4 w-4" />
+            Log Out <IoLogOutOutline class="inline-block h-4 w-4" />
           </button>
         </div>
       </div>

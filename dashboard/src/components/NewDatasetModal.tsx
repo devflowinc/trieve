@@ -120,7 +120,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 pb-2 text-left align-middle shadow-xl transition-all">
+            <DialogPanel class="inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 text-left align-middle shadow-xl transition-all">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -136,17 +136,16 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                       Create New Dataset
                     </DialogTitle>
 
-                    <p class="mt-1 max-w-2xl text-sm leading-6 text-neutral-600">
+                    <p class="max-w-2xl text-sm leading-6 text-neutral-600">
                       Your datset will be created and hosted on our servers.
-                    </p>
-                    <p class="mt-1 max-w-2xl text-sm leading-6 text-neutral-600">
+                      <br />
                       You can upload your data to the dataset after it is
                       created or you can create a dataset with data already in
                       it.
                     </p>
 
-                    <div class="mt-10 space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
-                      <div class="content-center sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <div class="mt-4 space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
+                      <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
                         <label
                           for="organization"
                           class="block h-full pt-1.5 text-sm font-medium leading-6"
@@ -164,7 +163,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                         </div>
                       </div>
 
-                      <div class="content-center sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                      <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
                         <label
                           for="dataset-name"
                           class="block text-sm font-medium leading-6 sm:pt-1.5"
@@ -190,7 +189,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                         </div>
                       </div>
 
-                      <div class="content-center sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                      <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
                         <label
                           for="embeddingSize"
                           class="block h-full pt-1.5 text-sm font-medium leading-6"

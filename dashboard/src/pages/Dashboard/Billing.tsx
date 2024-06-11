@@ -61,7 +61,7 @@ export const Billing = () => {
   });
 
   return (
-    <div class="w-full pt-8">
+    <div class="w-full">
       <PlansTable currentOrgSubPlan={orgSubPlan()} />
     </div>
   );
