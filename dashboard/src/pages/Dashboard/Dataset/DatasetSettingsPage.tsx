@@ -664,6 +664,7 @@ export const DangerZoneForm = () => {
     );
     if (!confirmBox) return;
 
+    setDeleting(true);
     fetch(`${import.meta.env.VITE_API_HOST}/dataset`, {
       method: "DELETE",
       headers: {
@@ -676,6 +677,7 @@ export const DangerZoneForm = () => {
       }),
     })
       .then((res) => {
+        setDeleting(false);
         if (res.ok) {
           navigate(`/dashboard/${organization_id}/overview`);
           createToast({
@@ -686,6 +688,7 @@ export const DangerZoneForm = () => {
         }
       })
       .catch(() => {
+        setDeleting(false);
         createToast({
           title: "Error",
           message: "Error deleting dataset!",
