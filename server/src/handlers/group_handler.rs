@@ -96,10 +96,12 @@ pub async fn create_chunk_group(
     let name = body.name.clone();
     let description = body.description.clone();
 
-    let group_tag_set = body.tag_set.clone().map(|tag_set| tag_set
-                .into_iter()
-                .map(|tag| Some(tag.clone()))
-                .collect::<Vec<Option<String>>>());
+    let group_tag_set = body.tag_set.clone().map(|tag_set| {
+        tag_set
+            .into_iter()
+            .map(|tag| Some(tag.clone()))
+            .collect::<Vec<Option<String>>>()
+    });
 
     let group = ChunkGroup::from_details(
         name,
@@ -322,10 +324,12 @@ pub async fn update_group_by_tracking_id(
     )
     .await?;
 
-    let group_tag_set = data.tag_set.clone().map(|tag_set| tag_set
-                .into_iter()
-                .map(|tag| Some(tag.clone()))
-                .collect::<Vec<Option<String>>>());
+    let group_tag_set = data.tag_set.clone().map(|tag_set| {
+        tag_set
+            .into_iter()
+            .map(|tag| Some(tag.clone()))
+            .collect::<Vec<Option<String>>>()
+    });
 
     let new_group = ChunkGroup::from_details(
         data.name.clone(),
@@ -506,10 +510,12 @@ pub async fn update_chunk_group(
     let name = data.name.clone();
     let description = data.description.clone();
     let group_id = data.group_id;
-    let group_tag_set = data.tag_set.clone().map(|tag_set| tag_set
-                .into_iter()
-                .map(|tag| Some(tag.clone()))
-                .collect::<Vec<Option<String>>>());
+    let group_tag_set = data.tag_set.clone().map(|tag_set| {
+        tag_set
+            .into_iter()
+            .map(|tag| Some(tag.clone()))
+            .collect::<Vec<Option<String>>>()
+    });
 
     let group = if let Some(group_id) = group_id {
         dataset_owns_group(

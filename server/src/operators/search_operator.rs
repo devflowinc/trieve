@@ -102,9 +102,7 @@ pub async fn get_qdrant_ids_from_condition(
 ) -> Result<Vec<String>, ServiceError> {
     if let Some(ids) = cond.ids {
         Ok(get_qdrant_ids_from_chunk_ids_query(
-            ids.into_iter()
-                .map(UnifiedId::TrieveUuid)
-                .collect(),
+            ids.into_iter().map(UnifiedId::TrieveUuid).collect(),
             pool.clone(),
         )
         .await?
@@ -342,8 +340,7 @@ pub async fn get_num_value_filter_condition(
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Integer(id_val) => {
-                    query =
-                        query.filter(chunk_metadata_columns::num_value.eq(*id_val as f64));
+                    query = query.filter(chunk_metadata_columns::num_value.eq(*id_val as f64));
                 }
                 MatchCondition::Float(id_val) => {
                     query = query.filter(chunk_metadata_columns::num_value.eq(*id_val));
@@ -359,8 +356,7 @@ pub async fn get_num_value_filter_condition(
         for match_condition in matches.iter().skip(1) {
             match match_condition {
                 MatchCondition::Integer(id_val) => {
-                    query = query
-                        .or_filter(chunk_metadata_columns::num_value.eq(*id_val as f64));
+                    query = query.or_filter(chunk_metadata_columns::num_value.eq(*id_val as f64));
                 }
                 MatchCondition::Float(id_val) => {
                     query = query.or_filter(chunk_metadata_columns::num_value.eq(id_val));
