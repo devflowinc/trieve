@@ -103,7 +103,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 pb-2 text-left align-middle shadow-xl transition-all">
+            <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 text-left align-middle shadow-xl transition-all">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -120,7 +120,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
                     </DialogTitle>
 
                     <p class="mt-1 max-w-2xl text-sm leading-6 text-neutral-600">
-                      If the name is already take, a random name will be used
+                      If the name is already taken, a random name will be used
                       instead.
                     </p>
                     <p class="mt-1 max-w-2xl text-sm leading-6 text-neutral-600">
@@ -129,7 +129,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
                       organization and manage its settings.
                     </p>
 
-                    <div class="mt-10 space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
+                    <div class="mt-4 space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
                       <div class="content-center sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
                         <label
                           for="dataset-name"

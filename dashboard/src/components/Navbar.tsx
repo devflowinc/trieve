@@ -15,7 +15,7 @@ export const NavBar = () => {
   const navigator = useNavigate();
 
   return (
-    <div class="flex justify-between space-x-3">
+    <div class="flex justify-between gap-3">
       <A
         href={`/dashboard/${
           userContext.selectedOrganizationId?.() ?? ""
