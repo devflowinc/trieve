@@ -25,8 +25,9 @@ import {
 } from "../types/apiTypes";
 import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
-import { FaSolidChevronDown } from "solid-icons/fa";
+import { FaRegularCircleQuestion, FaSolidChevronDown } from "solid-icons/fa";
 import { Item, MultiSelect } from "./MultiSelect";
+import { Tooltip } from "./Tooltip";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
@@ -222,11 +223,17 @@ export const ApiKeyGenerateModal = (props: {
                       <Disclosure defaultOpen={false} as="div" class="py-2">
                         <DisclosureButton
                           as="div"
-                          class="flex w-full justify-between rounded-l py-2 text-left text-sm font-medium focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75"
+                          class="flex w-full justify-between rounded-l py-2 text-left text-sm focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75"
                         >
                           {({ isOpen }): JSX.Element => (
                             <>
-                              <span>API Key Scope</span>
+                              <div class="flex items-center gap-x-2">
+                                <span class="font-medium">API Key Scope</span>
+                                <Tooltip
+                                  body={<FaRegularCircleQuestion />}
+                                  tooltipText="If not selected or empty, the API key will have access to all organizations and datasets that your current user profile has access to."
+                                />
+                              </div>
                               <FaSolidChevronDown
                                 class={`${
                                   isOpen() ? "rotate-180 transform" : ""

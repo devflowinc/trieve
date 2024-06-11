@@ -2,7 +2,7 @@ use super::message_handler::get_topic_string;
 use crate::{
     data::models::{DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, Topic},
     errors::ServiceError,
-    handlers::auth_handler::LoggedUser,
+    handlers::auth_handler::AdminOnly,
     operators::topic_operator::{
         create_topic_query, delete_topic_query, get_all_topics_for_owner_id_query,
         update_topic_query,
@@ -24,7 +24,7 @@ pub struct CreateTopicReqPayload {
 
 /// Create Topic
 ///
-/// Create a new chat topic. Topics are attached to a owner_id's and act as a coordinator for conversation message history of gen-AI chat sessions.
+/// Create a new chat topic. Topics are attached to a owner_id's and act as a coordinator for conversation message history of gen-AI chat sessions. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/topic",
@@ -39,13 +39,13 @@ pub struct CreateTopicReqPayload {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn create_topic(
     data: web::Json<CreateTopicReqPayload>,
-    user: LoggedUser,
+    user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -96,7 +96,7 @@ pub struct DeleteTopicData {
 
 /// Delete Topic
 ///
-/// Delete an existing chat topic. When a topic is deleted, all associated chat messages are also deleted.
+/// Delete an existing chat topic. When a topic is deleted, all associated chat messages are also deleted. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
     path = "/topic/{topic_id}",
@@ -111,13 +111,13 @@ pub struct DeleteTopicData {
         ("topic_id" = uuid, Path, description = "The id of the topic you want to delete."),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_topic(
     topic_id: web::Path<uuid::Uuid>,
-    user: LoggedUser,
+    user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -138,7 +138,7 @@ pub struct UpdateTopicReqPayload {
 
 /// Update Topic
 ///
-/// Update an existing chat topic. Currently, only the name of the topic can be updated.
+/// Update an existing chat topic. Currently, only the name of the topic can be updated. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
     path = "/topic",
@@ -153,13 +153,13 @@ pub struct UpdateTopicReqPayload {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn update_topic(
     data: web::Json<UpdateTopicReqPayload>,
-    user: LoggedUser,
+    user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -178,7 +178,7 @@ pub async fn update_topic(
 
 /// Get All Topics for Owner ID
 ///
-/// Get all topics belonging to an arbitary owner_id. This is useful for managing message history and chat sessions. It is common to use a browser fingerprint or your user's id as the owner_id.
+/// Get all topics belonging to an arbitary owner_id. This is useful for managing message history and chat sessions. It is common to use a browser fingerprint or your user's id as the owner_id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/topic/owner/{owner_id}",
@@ -193,12 +193,12 @@ pub async fn update_topic(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_all_topics_for_owner_id(
-    user: LoggedUser,
+    user: AdminOnly,
     owner_id: web::Path<String>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,

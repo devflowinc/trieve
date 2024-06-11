@@ -111,9 +111,9 @@ pub struct SetUserApiKeyRequest {
     name: String,
     /// The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1.
     role: i32,
-    /// The dataset ids which the api key will have access to. If not provided, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.
+    /// The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.
     dataset_ids: Option<Vec<uuid::Uuid>>,
-    /// The organization ids which the api key will have access to. If not provided, the api key will have access to all organizations the auth'ed user has access to.
+    /// The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.
     organization_ids: Option<Vec<uuid::Uuid>>,
 }
 

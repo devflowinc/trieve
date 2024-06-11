@@ -17,7 +17,7 @@ use utoipa::ToSchema;
 
 /// Get Organization
 ///
-/// Fetch the details of an organization by its id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Fetch the details of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/organization/{organization_id}",
@@ -204,7 +204,7 @@ pub async fn create_organization(
 
 /// Get Organization Usage
 ///
-/// Fetch the current usage specification of an organization by its id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Fetch the current usage specification of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/organization/usage/{organization_id}",
@@ -241,7 +241,7 @@ pub async fn get_organization_usage(
 
 /// Get Organization Users
 ///
-/// Fetch the users of an organization by its id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Fetch the users of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/organization/users/{organization_id}",
@@ -286,7 +286,7 @@ pub struct RemoveUserFromOrgData {
 
 /// Remove User From Organization
 ///
-/// Remove a user from an organization. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file..
+/// Remove a user from an organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization..
 #[utoipa::path(
     delete,
     path = "/organization/{organization_id}/user/{user_id}",

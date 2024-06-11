@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{Pool, RedisPool, SlimUser, UnifiedId, User, UserRole},
+    data::models::{Pool, RedisPool, SlimUser, UnifiedId, User, UserApiKey, UserRole},
     errors::ServiceError,
     handlers::auth_handler::{AdminOnly, LoggedUser, OrganizationRole, OwnerOnly},
     operators::{
@@ -52,9 +52,12 @@ where
             let get_user_span = transaction.start_child("get_user", "Getting user");
 
             let (http_req, pl) = req.parts_mut();
-            let user = get_user(http_req, pl, transaction.clone(), pool.clone())
-                .await
-                .or(auth_with_api_key(http_req, transaction.clone(), pool.clone()).await?);
+            let mut user = get_user(http_req, pl, transaction.clone(), pool.clone()).await;
+            let mut api_key = None;
+            if user.is_none() {
+                (user, api_key) =
+                    auth_with_api_key(http_req, transaction.clone(), pool.clone()).await?;
+            }
 
             if let Some(user) = user.clone() {
                 req.extensions_mut().insert(user);
@@ -99,6 +102,31 @@ where
 
                     get_dataset_and_org_span.finish();
 
+                    if let Some(user_api_key) = api_key {
+                        if let Some(api_key_org_ids) = user_api_key.organization_ids {
+                            if api_key_org_ids.len() > 0
+                                && !api_key_org_ids.contains(&Some(
+                                    dataset_org_plan_sub
+                                        .organization
+                                        .organization
+                                        .id
+                                        .to_string(),
+                                ))
+                            {
+                                return Err(ServiceError::Unauthorized.into());
+                            }
+                        }
+
+                        if let Some(api_key_dataset_ids) = user_api_key.dataset_ids {
+                            if api_key_dataset_ids.len() > 0
+                                && !api_key_dataset_ids
+                                    .contains(&Some(dataset_org_plan_sub.dataset.id.to_string()))
+                            {
+                                return Err(ServiceError::Unauthorized.into());
+                            }
+                        }
+                    }
+
                     req.extensions_mut().insert(dataset_org_plan_sub.clone());
 
                     dataset_org_plan_sub.organization.organization.id
@@ -137,17 +165,16 @@ where
                     .find(|org| org.organization_id == org_id)
                     .ok_or(ServiceError::Forbidden)?;
 
-                let role = if user_org.role >= UserRole::User.into() {
+                let org_role = if user_org.role >= UserRole::User.into() {
                     Ok(OrganizationRole {
                         user: user.clone(),
                         role: UserRole::from(user_org.role),
                     })
                 } else {
-                    log::error!("User does not have permission to access this organization");
                     Err(ServiceError::Forbidden)
                 }?;
 
-                req.extensions_mut().insert(role);
+                req.extensions_mut().insert(org_role);
 
                 find_user_org_span.finish();
             }
@@ -211,7 +238,7 @@ async fn auth_with_api_key(
     req: &HttpRequest,
     tx: Transaction,
     pool: web::Data<Pool>,
-) -> Result<Option<LoggedUser>, ServiceError> {
+) -> Result<(Option<LoggedUser>, Option<UserApiKey>), ServiceError> {
     if let Some(authen_header) = req.headers().get("Authorization") {
         if let Ok(authen_header) = authen_header.to_str() {
             if authen_header == std::env::var("ADMIN_API_KEY").unwrap_or("".to_string()) {
@@ -221,7 +248,7 @@ async fn auth_with_api_key(
                             if let Ok(user) =
                                 get_arbitrary_org_owner_from_org_id(org_id, pool.clone()).await
                             {
-                                return Ok(Some(user));
+                                return Ok((Some(user), None));
                             }
                         }
                     }
@@ -234,7 +261,7 @@ async fn auth_with_api_key(
                                 get_arbitrary_org_owner_from_dataset_id(dataset_id, pool.clone())
                                     .await
                             {
-                                return Ok(Some(user));
+                                return Ok((Some(user), None));
                             }
                         }
                     }
@@ -247,37 +274,7 @@ async fn auth_with_api_key(
             if let Ok((user, api_key)) =
                 get_user_from_api_key_query(authen_header, pool.clone()).await
             {
-                if let Some(org_id_header) = req.headers().get("TR-Organization") {
-                    if let Ok(org_id) = org_id_header.to_str() {
-                        if let Ok(org_id) = org_id.parse::<uuid::Uuid>() {
-                            if api_key.organization_ids.is_some()
-                                && api_key.organization_ids.as_ref().unwrap().len() > 0
-                                && !api_key
-                                    .organization_ids
-                                    .unwrap()
-                                    .contains(&Some(org_id.to_string()))
-                            {
-                                return Err(ServiceError::Forbidden.into());
-                            }
-                        }
-                    }
-                }
-                if let Some(dataset_id_header) = req.headers().get("TR-Dataset") {
-                    if let Ok(dataset_id) = dataset_id_header.to_str() {
-                        if let Ok(dataset_id) = dataset_id.parse::<uuid::Uuid>() {
-                            if api_key.dataset_ids.is_some()
-                                && api_key.dataset_ids.as_ref().unwrap().len() > 0
-                                && !api_key
-                                    .dataset_ids
-                                    .unwrap()
-                                    .contains(&Some(dataset_id.to_string()))
-                            {
-                                return Err(ServiceError::Forbidden.into());
-                            }
-                        }
-                    }
-                }
-                return Ok(Some(user));
+                return Ok((Some(user), Some(api_key)));
             }
 
             get_user_from_api_key_span.finish();
@@ -286,7 +283,7 @@ async fn auth_with_api_key(
 
     //TODO: Add path scoped api key using the path field of `HTTPRequest` struct
 
-    Ok(None)
+    Ok((None, None))
 }
 
 pub struct AuthMiddlewareFactory;
