@@ -742,18 +742,13 @@ pub async fn get_tag_set_filter_condition(
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Text(string_val) => {
-                    query =
-                        query.filter(dataset_tags_columns::tag.eq(string_val));
+                    query = query.filter(dataset_tags_columns::tag.eq(string_val));
                 }
                 MatchCondition::Integer(int_val) => {
-                    query = query.filter(
-                        dataset_tags_columns::tag.eq(int_val.to_string()),
-                    );
+                    query = query.filter(dataset_tags_columns::tag.eq(int_val.to_string()));
                 }
                 MatchCondition::Float(float_val) => {
-                    query = query.filter(
-                        dataset_tags_columns::tag.eq(float_val.to_string()),
-                    );
+                    query = query.filter(dataset_tags_columns::tag.eq(float_val.to_string()));
                 }
             }
         }
@@ -761,18 +756,13 @@ pub async fn get_tag_set_filter_condition(
         for match_condition in matches.iter().skip(1) {
             match match_condition {
                 MatchCondition::Text(string_val) => {
-                    query =
-                        query.or_filter(dataset_tags_columns::tag.eq(string_val));
+                    query = query.or_filter(dataset_tags_columns::tag.eq(string_val));
                 }
                 MatchCondition::Integer(int_val) => {
-                    query = query.or_filter(
-                        dataset_tags_columns::tag.eq(int_val.to_string()),
-                    );
+                    query = query.or_filter(dataset_tags_columns::tag.eq(int_val.to_string()));
                 }
                 MatchCondition::Float(float_val) => {
-                    query = query.or_filter(
-                        dataset_tags_columns::tag.eq(float_val.to_string()),
-                    );
+                    query = query.or_filter(dataset_tags_columns::tag.eq(float_val.to_string()));
                 }
             }
         }
