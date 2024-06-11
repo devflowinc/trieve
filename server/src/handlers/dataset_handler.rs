@@ -2,7 +2,7 @@ use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     af_middleware::auth_middleware::{verify_admin, verify_owner},
     data::models::{
-        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool,
+        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool, RedisPool,
         ServerDatasetConfiguration, StripePlan, UnifiedId,
     },
     errors::ServiceError,
@@ -210,10 +210,11 @@ pub async fn update_dataset(
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn delete_dataset(
     data: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
@@ -226,7 +227,10 @@ pub async fn delete_dataset(
         return Err(ServiceError::Forbidden);
     }
 
-    soft_delete_dataset_by_id_query(data.into_inner(), pool).await?;
+    let config =
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    soft_delete_dataset_by_id_query(data.into_inner(), config, pool, redis_pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -254,15 +258,25 @@ pub async fn delete_dataset(
 pub async fn delete_dataset_by_tracking_id(
     tracking_id: String,
     pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset = get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id), pool.clone()).await?;
+    if dataset_org_plan_sub.dataset.tracking_id != Some(tracking_id) {
+        return Err(ServiceError::BadRequest(
+            "Dataset header does not match provided dataset ID".to_string(),
+        ));
+    }
 
-    if !verify_owner(&user, &dataset.organization_id) {
+    if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
         return Err(ServiceError::Forbidden);
     }
 
-    soft_delete_dataset_by_id_query(dataset.id, pool).await?;
+    let config =
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    soft_delete_dataset_by_id_query(dataset_org_plan_sub.dataset.id, config, pool, redis_pool)
+        .await?;
     Ok(HttpResponse::NoContent().finish())
 }
 

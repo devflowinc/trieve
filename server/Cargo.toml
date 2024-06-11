@@ -26,6 +26,10 @@ name = "file-worker"
 path = "src/bin/file-worker.rs"
 
 [[bin]]
+name = "delete-worker"
+path = "src/bin/delete-worker.rs"
+
+[[bin]]
 name = "redoc_ci"
 path = "src/bin/redoc_ci.rs"
 

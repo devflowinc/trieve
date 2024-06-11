@@ -1410,7 +1410,17 @@ pub struct DatasetEventCount {
     pub notification_count: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[derive(
+    Debug,
+    Serialize,
+    Deserialize,
+    Queryable,
+    Insertable,
+    Selectable,
+    Clone,
+    ToSchema,
+    QueryableByName,
+)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
@@ -1431,7 +1441,7 @@ pub struct Dataset {
     pub server_configuration: serde_json::Value,
     pub client_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
-    pub deleted: bool,
+    pub deleted: i32,
 }
 
 impl Dataset {
@@ -1451,7 +1461,7 @@ impl Dataset {
             client_configuration,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            deleted: false,
+            deleted: 0,
         }
     }
 }
