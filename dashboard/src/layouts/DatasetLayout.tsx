@@ -26,7 +26,7 @@ export const DatasetLayout = (props: DatasetLayoutProps) => {
     <>
       <ShowToasts />
       <div class="flex min-h-screen flex-col bg-white text-black">
-        <div class="w-full border-b px-10 py-2">
+        <div class="w-full border-b px-8 py-2">
           <NavBar />
         </div>
         <div class="flex">

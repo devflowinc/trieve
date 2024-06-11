@@ -79,7 +79,7 @@ export const DatasetEvents = () => {
   return (
     <div class="mb-3">
       <main class="mx-auto">
-        <div class="rounded-md bg-blue-50 p-4 dark:bg-blue-900">
+        <div class="rounded-md border border-blue-600/20 bg-blue-50 p-4 dark:bg-blue-900">
           <div class="flex space-x-2">
             <FiInfo class="h-5 w-5 text-blue-400 dark:text-blue-50" />
             <p class="text-sm text-blue-700 dark:text-blue-50">

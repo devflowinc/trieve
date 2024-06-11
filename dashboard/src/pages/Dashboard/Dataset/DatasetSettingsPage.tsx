@@ -730,12 +730,12 @@ export const DangerZoneForm = () => {
               </div>
             </div>
           </div>
-          <div class="border-t border-red-600/30 bg-red-50/40 px-3 py-3 text-right sm:px-3">
+          <div class="border-t border-red-600/20 bg-red-50/40 px-3 py-3 text-right sm:px-3">
             <button
               onClick={() => {
                 deleteDataset();
               }}
-              disabled={deleting()}
+              disabled={deleting() || confirmText() !== datasetName()}
               classList={{
                 "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
                   true,

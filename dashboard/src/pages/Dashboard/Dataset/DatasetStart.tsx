@@ -129,7 +129,7 @@ export const DatasetStart = () => {
               </a>
             </div>
             <BuildingSomething />
-            <div class="flex flex-col space-y-2">
+            <div class="flex flex-col gap-2">
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">
                   {curDataset()?.name} dataset id:{" "}
@@ -178,15 +178,10 @@ export const DatasetStart = () => {
                   <FaRegularClipboard />
                 </button>
               </div>
-              <div class="mt-6">
-                <label
-                  for="email-address"
-                  class="mb-2 block text-sm font-medium"
-                >
-                  API Keys:
-                </label>
+              <div class="mt-4 border-t pt-4">
+                <div class="block font-medium">API Keys</div>
                 <Show when={apiKeys().length > 0}>
-                  <div class="mb-1 mt-2">
+                  <div class="mb-1">
                     <div class="inline-block min-w-full overflow-hidden rounded-md border-[0.5px] border-neutral-300 py-2 align-middle">
                       <table class="min-w-full divide-y divide-gray-300">
                         <thead>
@@ -269,7 +264,7 @@ export const DatasetStart = () => {
             </h2>
             <div class="flex flex-col space-y-4">
               <p>1. Add searchable data</p>
-              <div class="flex w-fit space-x-4 rounded-md border border-blue-600/30 bg-blue-50 px-4 py-4">
+              <div class="flex w-fit space-x-4 rounded-md border border-blue-600/20 bg-blue-50 px-4 py-4">
                 <div class="flex">
                   <div class="flex-shrink-0">
                     {/* <FiAlertTriangle class="h-4 w-4 text-yellow-400" /> */}
@@ -302,7 +297,7 @@ export const DatasetStart = () => {
             </div>
             <div class="flex flex-col space-y-4">
               <p class="mt-3">2. Start Searching</p>
-              <div class="flex w-fit space-x-4 rounded-md border border-blue-600/30 bg-blue-50 px-4 py-4">
+              <div class="flex w-fit space-x-4 rounded-md border border-blue-600/20 bg-blue-50 px-4 py-4">
                 <div class="flex">
                   <div class="flex-shrink-0">
                     {/* <FiAlertTriangle class="h-4 w-4 text-yellow-400" /> */}
