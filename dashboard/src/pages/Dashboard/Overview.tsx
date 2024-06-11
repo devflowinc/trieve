@@ -14,7 +14,7 @@ import {
 import NewDatasetModal from "../../components/NewDatasetModal";
 import { DatasetOverview } from "../../components/DatasetOverview";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
-import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
+import { BiRegularLinkExternal } from "solid-icons/bi";
 import { FaRegularClipboard } from "solid-icons/fa";
 import { createToast } from "../../components/ShowToasts";
 import { BuildingSomething } from "../../components/BuildingSomething";
