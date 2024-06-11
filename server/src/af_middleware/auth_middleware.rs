@@ -79,24 +79,22 @@ where
 
                     let dataset_org_plan_sub = match dataset_id.parse::<uuid::Uuid>() {
                         Ok(dataset_id) => {
-                            let dataset_and_org =
-                                get_dataset_and_organization_from_dataset_id_query(
+                            
+
+                            get_dataset_and_organization_from_dataset_id_query(
                                     UnifiedId::TrieveUuid(dataset_id),
                                     pool.clone(),
                                 )
-                                .await?;
-
-                            dataset_and_org
+                                .await?
                         }
                         Err(_) => {
-                            let dataset_and_org =
-                                get_dataset_and_organization_from_dataset_id_query(
+                            
+
+                            get_dataset_and_organization_from_dataset_id_query(
                                     UnifiedId::TrackingId(dataset_id.clone()),
                                     pool.clone(),
                                 )
-                                .await?;
-
-                            dataset_and_org
+                                .await?
                         }
                     };
 
@@ -104,7 +102,7 @@ where
 
                     if let Some(user_api_key) = api_key {
                         if let Some(api_key_org_ids) = user_api_key.organization_ids {
-                            if api_key_org_ids.len() > 0
+                            if !api_key_org_ids.is_empty()
                                 && !api_key_org_ids.contains(&Some(
                                     dataset_org_plan_sub
                                         .organization
@@ -118,7 +116,7 @@ where
                         }
 
                         if let Some(api_key_dataset_ids) = user_api_key.dataset_ids {
-                            if api_key_dataset_ids.len() > 0
+                            if !api_key_dataset_ids.is_empty()
                                 && !api_key_dataset_ids
                                     .contains(&Some(dataset_org_plan_sub.dataset.id.to_string()))
                             {
@@ -133,7 +131,9 @@ where
                 }
                 None => {
                     if let Some(org_header) = req.headers().get("TR-Organization") {
-                        let org_id = org_header
+                        
+
+                        org_header
                             .to_str()
                             .map_err(|_| {
                                 Into::<Error>::into(ServiceError::BadRequest(
@@ -145,9 +145,7 @@ where
                                 Into::<Error>::into(ServiceError::BadRequest(
                                     "Could not convert Organization to UUID".to_string(),
                                 ))
-                            })?;
-
-                        org_id
+                            })?
                     } else {
                         let res = srv.call(req).await?;
                         return Ok(res);
@@ -308,14 +306,10 @@ where
 }
 
 pub fn get_role_for_org(user: &SlimUser, org_id: &uuid::Uuid) -> Option<UserRole> {
-    match user
+    user
         .user_orgs
         .iter()
-        .find(|org_conn| org_conn.organization_id == *org_id)
-    {
-        Some(org_conn) => Some(UserRole::from(org_conn.role)),
-        None => None,
-    }
+        .find(|org_conn| org_conn.organization_id == *org_id).map(|org_conn| UserRole::from(org_conn.role))
 }
 
 pub fn verify_owner(user: &OwnerOnly, org_id: &uuid::Uuid) -> bool {
@@ -323,7 +317,7 @@ pub fn verify_owner(user: &OwnerOnly, org_id: &uuid::Uuid) -> bool {
         return user_role >= UserRole::Owner;
     }
 
-    return false;
+    false
 }
 
 pub fn verify_admin(user: &AdminOnly, org_id: &uuid::Uuid) -> bool {
@@ -331,13 +325,13 @@ pub fn verify_admin(user: &AdminOnly, org_id: &uuid::Uuid) -> bool {
         return user_role >= UserRole::Admin;
     }
 
-    return false;
+    false
 }
 
 pub fn verify_member(user: &LoggedUser, org_id: &uuid::Uuid) -> bool {
-    if let Some(user_role) = get_role_for_org(&user, org_id) {
+    if let Some(user_role) = get_role_for_org(user, org_id) {
         return user_role >= UserRole::User;
     }
 
-    return false;
+    false
 }

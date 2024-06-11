@@ -84,7 +84,7 @@ pub async fn create_file_query(
         file_size,
         upload_file_data
             .tag_set
-            .map(|tag_set| tag_set.into_iter().map(|tag| Some(tag)).collect()),
+            .map(|tag_set| tag_set.into_iter().map(Some).collect()),
         upload_file_data.metadata,
         upload_file_data.link,
         upload_file_data.time_stamp,

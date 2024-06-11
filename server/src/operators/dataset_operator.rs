@@ -265,3 +265,26 @@ pub async fn get_datasets_by_organization_id(
 
     Ok(dataset_and_usages)
 }
+
+pub async fn get_soft_delete_dataset(
+    pool: web::Data<Pool>,
+) -> Result<Option<Dataset>, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let dataset = match datasets_columns::datasets
+        .filter(datasets_columns::deleted.eq(true))
+        .select(Dataset::as_select())
+        .first::<Dataset>(&mut conn)
+        .await
+    {
+        Ok(dataset) => Some(dataset),
+        Err(_) => None,
+    };
+
+    Ok(dataset)
+}

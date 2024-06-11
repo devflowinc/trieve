@@ -2591,6 +2591,7 @@ pub struct LocationPolygon {
     pub interior: Option<Vec<Vec<GeoInfo>>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(untagged)]
 pub enum ConditionType {

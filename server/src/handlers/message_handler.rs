@@ -799,7 +799,7 @@ pub async fn stream_response(
     if !chunk_metadatas_stringified.is_empty() {
         chunk_metadatas_stringified =
             format!("{}||", chunk_metadatas_stringified.replace("||", ""));
-        chunk_metadatas_stringified1 = chunk_metadatas_stringified.clone();
+        chunk_metadatas_stringified1.clone_from(&chunk_metadatas_stringified);
     }
 
     Arbiter::new().spawn(async move {
