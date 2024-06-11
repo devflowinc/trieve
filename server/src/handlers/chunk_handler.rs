@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithScore, ConditionType,
-    DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Pool, RedisPool,
-    ScoreChunkDTO, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
+    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Pool,
+    RedisPool, ScoreChunkDTO, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -1301,7 +1301,7 @@ pub async fn autocomplete(
     context_path = "/api",
     tag = "chunk",
     responses(
-        (status = 200, description = "chunk with the id that you were searching for", body = ChunkMetadata),
+        (status = 200, description = "chunk with the id that you were searching for", body = ChunkMetadataStringTagSet),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
         (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
@@ -1327,8 +1327,9 @@ pub async fn get_chunk_by_id(
     );
 
     let chunk = get_metadata_from_id_query(chunk_id, dataset_org_plan_sub.dataset.id, pool).await?;
+    let chunk_string_tag_set = ChunkMetadataStringTagSet::from(chunk);
 
-    let point_id = chunk.qdrant_point_id;
+    let point_id = chunk_string_tag_set.qdrant_point_id;
     let pointid_exists = if let Some(point_id) = point_id {
         point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?
     } else {
@@ -1337,7 +1338,7 @@ pub async fn get_chunk_by_id(
     };
 
     if pointid_exists {
-        Ok(HttpResponse::Ok().json(chunk))
+        Ok(HttpResponse::Ok().json(chunk_string_tag_set))
     } else {
         Err(ServiceError::NotFound("Chunk not found".to_string()))
     }
@@ -1352,7 +1353,7 @@ pub async fn get_chunk_by_id(
     context_path = "/api",
     tag = "chunk",
     responses(
-        (status = 200, description = "chunk with the tracking_id that you were searching for", body = ChunkMetadata),
+        (status = 200, description = "chunk with the tracking_id that you were searching for", body = ChunkMetadataStringTagSet),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
         (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
@@ -1381,8 +1382,9 @@ pub async fn get_chunk_by_tracking_id(
         pool,
     )
     .await?;
+    let chunk_tag_set_string = ChunkMetadataStringTagSet::from(chunk);
 
-    let point_id = chunk.qdrant_point_id;
+    let point_id = chunk_tag_set_string.qdrant_point_id;
 
     let pointid_exists = if let Some(point_id) = point_id {
         point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?
@@ -1392,7 +1394,7 @@ pub async fn get_chunk_by_tracking_id(
     };
 
     if pointid_exists {
-        Ok(HttpResponse::Ok().json(chunk))
+        Ok(HttpResponse::Ok().json(chunk_tag_set_string))
     } else {
         Err(ServiceError::NotFound("Chunk not found".to_string()))
     }
@@ -1413,7 +1415,7 @@ pub struct GetChunksData {
     tag = "chunk",
     request_body(content = GetChunksData, description = "JSON request payload to get the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "chunks with the id that you were searching for", body = Vec<ChunkMetadata>),
+        (status = 200, description = "chunks with the id that you were searching for", body = Vec<ChunkMetadataStringTagSet>),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
         (status = 404, description = "Any one of the specified chunks not found", body = ErrorResponseBody)
     ),
@@ -1441,13 +1443,20 @@ pub async fn get_chunks_by_ids(
         pool,
     )
     .await?;
+    let chunk_string_tag_sets = chunks
+        .into_iter()
+        .map(ChunkMetadataStringTagSet::from)
+        .collect::<Vec<ChunkMetadataStringTagSet>>();
 
-    let point_ids = chunks.iter().filter_map(|x| x.qdrant_point_id).collect();
+    let point_ids = chunk_string_tag_sets
+        .iter()
+        .filter_map(|x| x.qdrant_point_id)
+        .collect();
 
     let pointids_exists = point_ids_exists_in_qdrant(point_ids, dataset_configuration).await?;
 
     if pointids_exists {
-        Ok(HttpResponse::Ok().json(chunks))
+        Ok(HttpResponse::Ok().json(chunk_string_tag_sets))
     } else {
         Err(ServiceError::NotFound(
             "Any one of the specified chunks not found".to_string(),
@@ -1470,7 +1479,7 @@ pub struct GetTrackingChunksData {
     tag = "chunk",
     request_body(content = GetTrackingChunksData, description = "JSON request payload to get the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "chunk with the id that you were searching for", body = ChunkMetadata),
+        (status = 200, description = "chunk with the id that you were searching for", body = Vec<ChunkMetadataStringTagSet>),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
         (status = 404, description = "Any one of the specified chunks not found", body = ErrorResponseBody)
     ),
@@ -1498,13 +1507,20 @@ pub async fn get_chunks_by_tracking_ids(
         pool,
     )
     .await?;
+    let chunk_string_tag_sets = chunks
+        .into_iter()
+        .map(ChunkMetadataStringTagSet::from)
+        .collect::<Vec<ChunkMetadataStringTagSet>>();
 
-    let point_ids = chunks.iter().filter_map(|x| x.qdrant_point_id).collect();
+    let point_ids = chunk_string_tag_sets
+        .iter()
+        .filter_map(|x| x.qdrant_point_id)
+        .collect();
 
     let pointids_exists = point_ids_exists_in_qdrant(point_ids, dataset_configuration).await?;
 
     if pointids_exists {
-        Ok(HttpResponse::Ok().json(chunks))
+        Ok(HttpResponse::Ok().json(chunk_string_tag_sets))
     } else {
         Err(ServiceError::NotFound(
             "Any one of the specified chunks not found".to_string(),

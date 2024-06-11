@@ -117,8 +117,6 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     setFormErrorFields([]);
     setIsUpdating(true);
 
-    console.log(tagSet());
-
     void fetch(`${apiHost}/chunk`, {
       method: "PUT",
       headers: {
