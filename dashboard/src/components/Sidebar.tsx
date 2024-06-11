@@ -31,7 +31,7 @@ export const Sidebar = () => {
 
   return (
     <>
-      <div class="flex min-h-[calc(100vh-65px)] w-full max-w-[280px] flex-col justify-between border-r bg-white ">
+      <div class="flex min-h-[calc(100vh-65px)] w-full max-w-[280px] flex-col justify-between border-r bg-neutral-100 ">
         <div class="sticky top-0 flex flex-col">
           <div class="border-b px-4 py-3">
             <h5 class="font-semibold text-neutral-600">Organizations</h5>

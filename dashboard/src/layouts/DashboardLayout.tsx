@@ -106,7 +106,7 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
               }
             >
               <div class="w-full bg-neutral-50 px-8">
-                <div class="my-4 flex flex-col space-y-3 border-b">
+                <div class="my-6 flex flex-col space-y-3 border-b">
                   <OrgName />
                   <OrgTabs />
                 </div>
