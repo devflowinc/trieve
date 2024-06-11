@@ -1697,7 +1697,7 @@ pub async fn get_recommended_chunks(
 
     let recommended_chunk_metadatas = match data.slim_chunks {
         Some(true) => {
-            let slim_chunks = get_slim_chunks_from_point_ids_query(
+            let slim_chunks = get_slim_chunk_metadatas_from_point_ids(
                 recommended_qdrant_results
                     .clone()
                     .into_iter()
@@ -1713,7 +1713,10 @@ pub async fn get_recommended_chunks(
                 ))
             })?;
 
-            slim_chunks.into_iter().map(|chunk| chunk.into()).collect()
+            slim_chunks
+                .into_iter()
+                .map(ChunkMetadata::from)
+                .collect::<Vec<ChunkMetadata>>()
         }
         _ => get_chunk_metadatas_from_point_ids(
             recommended_qdrant_results
