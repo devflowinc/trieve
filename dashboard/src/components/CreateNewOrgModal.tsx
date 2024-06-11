@@ -103,7 +103,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 text-left align-middle shadow-xl transition-all">
+            <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md border bg-white p-6 text-left align-middle shadow-xl transition-all">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -129,8 +129,8 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
                       organization and manage its settings.
                     </p>
 
-                    <div class="mt-4 space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
-                      <div class="content-center sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <div class="mt-4 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
+                      <div class="content-center p-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
                         <label
                           for="dataset-name"
                           class="block text-sm font-medium leading-6 sm:pt-1.5"
@@ -144,8 +144,8 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
                               name="dataset-name"
                               id="dataset-name"
                               autocomplete="dataset-name"
-                              class="block flex-1 border-0 bg-transparent py-1.5 pl-1 placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm"
-                              placeholder="new-org"
+                              class="block flex-1 border-0 bg-transparent py-1.5 pl-2 placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm"
+                              placeholder="My New Organization..."
                               value={name()}
                               onInput={(e) => setName(e.currentTarget.value)}
                             />
