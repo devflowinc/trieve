@@ -177,8 +177,8 @@ export const UserManagement = () => {
   });
 
   return (
-    <div class="mt-10">
-      <div class="mt-10 sm:flex sm:items-center">
+    <div class="mt-4">
+      <div class="sm:flex sm:items-center">
         <div class="sm:flex-auto">
           <Show when={!showInvitations()}>
             <h1 class="text-base font-semibold leading-6 text-neutral-900">

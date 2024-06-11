@@ -20,7 +20,7 @@ export const NavBar = () => {
         href={`/dashboard/${
           userContext.selectedOrganizationId?.() ?? ""
         }/overview`}
-        class="flex items-center space-x-1"
+        class="flex items-center gap-1"
       >
         <img
           class="h-12 w-12 cursor-pointer"
@@ -46,7 +46,7 @@ export const NavBar = () => {
             <>
               <PopoverButton
                 aria-label="Show help or contact"
-                class="flex items-center space-x-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
+                class="flex items-center gap-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
               >
                 <BsQuestionCircle class="h-3 w-3" />
                 <span>Help or Contact</span>
