@@ -36,7 +36,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
   return (
     <>
       <div class="flex items-center">
-        <div class="flex w-full justify-between pt-2">
+        <div class="flex w-full items-end justify-between pt-2">
           <div>
             <h1 class="text-base font-semibold leading-6">Datasets</h1>
             <Show
@@ -50,14 +50,12 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
             </Show>
           </div>
           <Show when={props.datasetAndUsages().length != 0}>
-            <div class="end-2 right-2 content-end justify-end text-end">
-              <button
-                class="justify-end rounded-md bg-magenta-500 p-2 text-sm font-semibold text-white"
-                onClick={() => props.setOpenNewDatasetModal(true)}
-              >
-                Create Dataset +
-              </button>
-            </div>
+            <button
+              class="rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
+              onClick={() => props.setOpenNewDatasetModal(true)}
+            >
+              Create Dataset +
+            </button>
           </Show>
         </div>
       </div>

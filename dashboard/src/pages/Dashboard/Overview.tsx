@@ -166,6 +166,7 @@ export const Overview = () => {
         organization={orgSubPlan}
         orgUsage={orgUsage}
       />
+      <div class="h-1" />
       <DatasetOverview
         setOpenNewDatasetModal={setNewDatasetModalOpen}
         datasetAndUsages={datasetAndUsages}

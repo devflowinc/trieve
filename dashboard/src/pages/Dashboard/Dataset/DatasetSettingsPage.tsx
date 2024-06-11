@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { For, Show, createEffect, createSignal, useContext } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createSignal,
+  useContext,
+  Switch,
+  Match,
+  createMemo,
+} from "solid-js";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import {
   ClientEnvsConfiguration,
@@ -641,6 +650,9 @@ export const DangerZoneForm = () => {
 
   const navigate = useNavigate();
 
+  const [deleting, setDeleting] = createSignal(false);
+  const [confirmText, setConfirmText] = createSignal("");
+
   const deleteDataset = () => {
     const dataset_id = datasetContext.dataset?.()?.id;
     const organization_id = datasetContext.dataset?.()?.organization_id;
@@ -681,32 +693,64 @@ export const DangerZoneForm = () => {
         });
       });
   };
+  const datasetName = createMemo(() => datasetContext.dataset?.()?.name || "");
 
   return (
-    <form class="border-4 border-red-500">
-      <div class="shadow sm:overflow-hidden sm:rounded-md ">
-        <div class="space-y-3 bg-white px-4 py-6 sm:p-6">
-          <div>
-            <h2 id="user-details-name" class="text-lg font-medium leading-6">
-              Danger Zone
-            </h2>
-            <p class="mt-1 text-sm text-neutral-600">
-              These settings are for advanced users only. Changing these
-              settings can break the app.
-            </p>
+    <Show when={datasetContext.dataset != null}>
+      <form class="rounded-md border border-red-600/20 shadow-sm shadow-red-500/30">
+        <div class="shadow sm:overflow-hidden sm:rounded-md ">
+          <div class="space-y-3 bg-white px-3 py-6 sm:p-6">
+            <div>
+              <h2 id="user-details-name" class="text-lg font-medium leading-6">
+                Delete Dataset
+              </h2>
+              <p class="mt-0 text-sm text-red-700">
+                Warning: This action is not reversible. Please be sure before
+                deleting.
+              </p>
+              <div class="mt-3 grid grid-cols-4 gap-0">
+                <div class="col-span-4 sm:col-span-2">
+                  <label
+                    for="dataset-name"
+                    class="block text-sm font-medium leading-6 opacity-70"
+                  >
+                    Enter the dataset name
+                    <span class="font-bold"> "{datasetName()}" </span>
+                    to confirm.
+                  </label>
+                  <input
+                    type="text"
+                    name="dataset-name"
+                    id="dataset-name"
+                    class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
+                    value={confirmText()}
+                    onInput={(e) => setConfirmText(e.currentTarget.value)}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-
-          <button
-            onClick={() => {
-              deleteDataset();
-            }}
-            class="pointer:cursor w-fit rounded-md border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500 hover:text-white focus:outline-magenta-500"
-          >
-            DELETE DATASET
-          </button>
+          <div class="border-t border-red-600/30 bg-red-50/40 px-3 py-3 text-right sm:px-3">
+            <button
+              onClick={() => {
+                deleteDataset();
+              }}
+              disabled={deleting()}
+              classList={{
+                "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
+                  true,
+                "animate-pulse cursor-not-allowed": deleting(),
+              }}
+            >
+              <Switch>
+                <Match when={deleting()}>Deleting...</Match>
+                <Match when={!deleting()}>Delete Dataset</Match>
+              </Switch>
+            </button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </Show>
   );
 };
 
