@@ -1479,9 +1479,8 @@ pub struct GetTrackingChunksData {
     tag = "chunk",
     request_body(content = GetTrackingChunksData, description = "JSON request payload to get the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "chunk with the id that you were searching for", body = Vec<ChunkMetadataStringTagSet>),
-        (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
-        (status = 404, description = "Any one of the specified chunks not found", body = ErrorResponseBody)
+        (status = 200, description = "Chunks with one the ids which were specified", body = Vec<ChunkMetadataStringTagSet>),
+        (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),

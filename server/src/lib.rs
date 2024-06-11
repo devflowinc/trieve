@@ -18,6 +18,7 @@ use crate::{
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
     },
 };
+
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
@@ -27,10 +28,16 @@ use actix_web::{
     web::{self, PayloadConfig},
     App, HttpServer,
 };
+
+use actix_web::error::JsonPayloadError;
+
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use utoipa_redoc::{Redoc, Servable};
+
+use actix_web::{error, post, HttpResponse};
+use serde::Deserialize;
 
 pub mod af_middleware;
 pub mod data;
@@ -441,6 +448,10 @@ pub fn main() -> std::io::Result<()> {
             .collect::<Option<Vec<u64>>>()
             .unwrap_or(vec![384,512,768,1024,1536,3072]);
 
+        let json_cfg = web::JsonConfig::default()
+            .limit(4096)
+            .error_handler(|err, req| custom_json_error_handler(err, req));
+
         log::info!("Creating qdrant collections");
         let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes)
             .await
@@ -459,6 +470,48 @@ pub fn main() -> std::io::Result<()> {
             });
         }
 
+        fn custom_json_error_handler(err: JsonPayloadError, _req: &actix_web::HttpRequest) -> actix_web::Error {
+            let (error_message, solution) = match &err {
+                JsonPayloadError::ContentType => (
+                    "Content type error",
+                    "Ensure that the content type of the request body is set to application/json."
+                ),
+                JsonPayloadError::Payload(_) => (
+                    "Payload error",
+                    "Check that the JSON payload matches the expected structure."
+                ),
+                JsonPayloadError::Deserialize(deserialize_err) => match deserialize_err.classify() {
+                    serde_json::error::Category::Io => (
+                        "I/O error while reading JSON",
+                        "Verify that the server has sufficient permissions to access the file or data source."
+                    ),
+                    serde_json::error::Category::Syntax => (
+                        "Syntax error in JSON",
+                        "Fix syntax errors in the JSON payload to adhere to JSON formatting rules."
+                    ),
+                    serde_json::error::Category::Data => (
+                        "Data error in JSON",
+                        "Ensure that the data in the JSON payload is valid and consistent with the expected schema."
+                    ),
+                    serde_json::error::Category::Eof => (
+                        "Unexpected end of JSON input",
+                        "Ensure that the JSON payload is complete and not truncated."
+                    ),
+                    _ => (
+                        "Other JSON deserialization error",
+                        "Unknown Error"
+                    ),
+                },
+                _ => (
+                    "Other JSON payload error",
+                    "Inspect the JSON payload and the server's handling of JSON requests for any issues."
+                ),
+            };
+
+            let detailed_error_message = format!("*Type* : {} | *Message* : {} | {}", error_message, err, solution);
+            ServiceError::JsonDeserializeError(detailed_error_message).into()
+        }
+
         HttpServer::new(move || {
             App::new()
                 .app_data(PayloadConfig::new(134200000))
@@ -474,6 +527,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(pool.clone()))
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
+                .app_data(json_cfg.clone())
                 .wrap(sentry_actix::Sentry::new())
                 .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(

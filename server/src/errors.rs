@@ -31,6 +31,9 @@ pub enum ServiceError {
 
     #[display(fmt = "Not Found")]
     NotFound(String),
+
+    #[display(fmt = "Json Deserialization Error: {_0}")]
+    JsonDeserializeError(String),
 }
 
 // impl ResponseError trait allows to convert our errors into http responses with appropriate data
@@ -61,6 +64,11 @@ impl ResponseError for ServiceError {
             ServiceError::NotFound(ref message) => {
                 HttpResponse::NotFound().json(ErrorResponseBody {
                     message: format!("Not Found: {}", message),
+                })
+            }
+            ServiceError::JsonDeserializeError(ref message) => {
+                HttpResponse::BadRequest().json(ErrorResponseBody {
+                    message: format!("Json Deserialization Error: {}", message),
                 })
             }
         }
