@@ -205,7 +205,7 @@ async fn delete_worker(
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
         match delete_dataset_by_id_query(
-            delete_worker_message.dataset_id.clone(),
+            delete_worker_message.dataset_id,
             web_pool.clone(),
             delete_worker_message.server_config.clone(),
         )
