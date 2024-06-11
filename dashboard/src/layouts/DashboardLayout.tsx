@@ -105,7 +105,7 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
                 (userContext.user?.()?.orgs.length ?? 0) > 0
               }
             >
-              <div class="w-full px-12">
+              <div class="w-full px-8">
                 <div class="my-4 flex flex-col space-y-3 border-b">
                   <OrgName />
                   <OrgTabs />

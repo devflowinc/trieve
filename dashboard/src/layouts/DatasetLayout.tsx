@@ -31,7 +31,7 @@ export const DatasetLayout = (props: DatasetLayoutProps) => {
         </div>
         <div class="flex">
           <Sidebar />
-          <div class="w-full px-12">
+          <div class="w-full px-8">
             <div class="my-4 flex flex-col space-y-3 border-b">
               <DatasetName />
               <DatasetTabs />

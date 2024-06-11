@@ -102,8 +102,8 @@ export const FrontendSettingsForm = () => {
 
   return (
     <form>
-      <div class="shadow sm:overflow-hidden sm:rounded-md">
-        <div class="bg-white px-4 py-6 sm:p-6">
+      <div class="border shadow sm:overflow-hidden sm:rounded-md">
+        <div class="border border-neutral-50 bg-white px-4 py-6 sm:p-6">
           <div>
             <h2 id="user-details-name" class="text-lg font-medium leading-6">
               Frontend Settings
@@ -124,7 +124,7 @@ export const FrontendSettingsForm = () => {
                 type="text"
                 name="datasetName"
                 id="datasetName"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={name()}
                 onInput={(e) => setName(e.target.value)}
               />
@@ -141,7 +141,7 @@ export const FrontendSettingsForm = () => {
                 type="number"
                 name="linesBeforeShowMore"
                 id="linesBeforeShowMore"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={clientConfig().LINES_BEFORE_SHOW_MORE}
                 onInput={(e) =>
                   setClientConfig((prev) => {
@@ -165,7 +165,7 @@ export const FrontendSettingsForm = () => {
                 type="text"
                 name="imageRangeStartKey"
                 id="imageRangeStartKey"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={clientConfig().IMAGE_RANGE_START_KEY}
                 onInput={(e) =>
                   setClientConfig((prev) => {
@@ -189,7 +189,7 @@ export const FrontendSettingsForm = () => {
                 type="text"
                 name="imageRangeEndKey"
                 id="imageRangeEndKey"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={clientConfig().IMAGE_RANGE_END_KEY}
                 onInput={(e) =>
                   setClientConfig((prev) => {
@@ -203,13 +203,13 @@ export const FrontendSettingsForm = () => {
             </div>
           </div>
         </div>
-        <div class="bg-neutral-50 px-4 py-3 text-right sm:px-6">
+        <div class="border-t bg-neutral-50 px-4 py-3 text-right sm:px-6">
           <button
             onClick={(e) => {
               e.preventDefault();
               onSave();
             }}
-            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
+            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
           >
             Save
           </button>
@@ -281,8 +281,8 @@ export const ServerSettingsForm = () => {
 
   return (
     <form>
-      <div class="shadow sm:overflow-hidden sm:rounded-md">
-        <div class="bg-white px-4 py-6 sm:p-6">
+      <div class="rounded-md border shadow sm:overflow-hidden">
+        <div class="rounded-md bg-white px-4 py-6 sm:p-6">
           <div>
             <h2 id="user-details-name" class="text-lg font-medium leading-6">
               Server Settings
@@ -304,7 +304,7 @@ export const ServerSettingsForm = () => {
                 type="text"
                 name="llmAPIURL"
                 id="llmAPIURL"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().LLM_BASE_URL}
                 onInput={(e) =>
                   setServerConfig((prev) => {
@@ -328,7 +328,7 @@ export const ServerSettingsForm = () => {
                 type="text"
                 name="llmDefaultModel"
                 id="llmDefaultModel"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().LLM_DEFAULT_MODEL}
                 onInput={(e) =>
                   setServerConfig((prev) => {
@@ -352,7 +352,7 @@ export const ServerSettingsForm = () => {
                 type="number"
                 name="nRetrivialsToInclude"
                 id="linesBeforeShowMore"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().N_RETRIEVALS_TO_INCLUDE}
                 onInput={(e) =>
                   setServerConfig((prev) => {
@@ -377,7 +377,7 @@ export const ServerSettingsForm = () => {
                 step={0.1}
                 name="duplicateThreshold"
                 id="linesBeforeShowMore"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().DUPLICATE_DISTANCE_THRESHOLD}
                 onInput={(e) =>
                   setServerConfig((prev) => {
@@ -411,7 +411,7 @@ export const ServerSettingsForm = () => {
                 rows="4"
                 name="messageToQueryPrompt"
                 id="messageToQueryPrompt"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
 
@@ -435,7 +435,7 @@ export const ServerSettingsForm = () => {
                 rows="4"
                 name="ragPrompt"
                 id="ragPrompt"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
 
@@ -488,7 +488,7 @@ export const ServerSettingsForm = () => {
                 type="text"
                 name="embeddingQueryPrefix"
                 id="embeddingQueryPrefix"
-                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().EMBEDDING_QUERY_PREFIX}
                 onInput={(e) =>
                   setServerConfig((prev) => {
@@ -617,13 +617,13 @@ export const ServerSettingsForm = () => {
             </div>
           </div>
         </div>
-        <div class="bg-neutral-50 px-4 py-3 text-right sm:px-6">
+        <div class="border-t bg-neutral-50 px-4 py-3 text-right sm:px-6">
           <button
             onClick={(e) => {
               e.preventDefault();
               onSave();
             }}
-            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
+            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
           >
             Save
           </button>
@@ -712,7 +712,7 @@ export const DangerZoneForm = () => {
 
 export const DatasetSettingsPage = () => {
   return (
-    <div class="grid grid-cols-1 gap-3">
+    <div class="flex flex-col gap-3 pb-4">
       <div>
         <ServerSettingsForm />
       </div>

@@ -132,6 +132,8 @@ export const OrgDangerZoneForm = () => {
 
   const [deleting, setDeleting] = createSignal<boolean>(false);
 
+  const [confirmText, setConfirmText] = createSignal("");
+
   const selectedOrgnaization = createMemo(() => {
     const selectedOrgId = userContext.selectedOrganizationId?.();
     if (!selectedOrgId) return null;
@@ -141,6 +143,14 @@ export const OrgDangerZoneForm = () => {
   const deleteOrganization = () => {
     const orgId = selectedOrgnaization()?.id;
     if (!orgId) return;
+    if (confirmText() !== selectedOrgnaization()?.name) {
+      createToast({
+        title: "Error",
+        message: "Organization name does not match!",
+        type: "error",
+      });
+      return;
+    }
 
     const confirmBox = confirm(
       "Deleting this organization will remove all chunks and all of your datasets. Are you sure you want to delete?",
@@ -214,16 +224,19 @@ export const OrgDangerZoneForm = () => {
                   class="block text-sm font-medium leading-6 opacity-70"
                 >
                   Enter the organization name
-                  <span class="font-bold"> "test-org" </span>
+                  <span class="font-bold">
+                    {" "}
+                    "{selectedOrgnaization()?.name}"{" "}
+                  </span>
                   to confirm.
                 </label>
                 <input
                   type="text"
                   name="organization-name"
                   id="organization-name"
-                  class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
-                  // value={organizationName()}
-                  // onInput={(e) => setOrganizationName(e.currentTarget.value)}
+                  class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
+                  value={confirmText()}
+                  onInput={(e) => setConfirmText(e.currentTarget.value)}
                 />
               </div>
             </div>
@@ -234,9 +247,11 @@ export const OrgDangerZoneForm = () => {
             onClick={() => {
               deleteOrganization();
             }}
-            disabled={deleting()}
+            disabled={
+              deleting() || confirmText() !== selectedOrgnaization()?.name
+            }
             classList={{
-              "pointer:cursor text-sm w-fit opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
+              "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
                 true,
               "animate-pulse cursor-not-allowed": deleting(),
             }}
