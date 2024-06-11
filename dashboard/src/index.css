@@ -35,8 +35,3 @@ pre {
     background-color: var(--shiki-dark-bg);
   }
 }
-
-.debug {
-  outline: 1px solid red;
-}
-
