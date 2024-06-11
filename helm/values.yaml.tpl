@@ -15,6 +15,10 @@ containers:
     tag: no-ocr
   ingest:
     tag: latest
+  file_worker:
+    tag: latest
+  delete_worker:
+    tag: latest
   search:
     tag: latest
   chat:
