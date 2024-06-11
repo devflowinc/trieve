@@ -720,20 +720,10 @@ pub async fn get_tag_set_filter_condition(
     let mut metadata_filter = Filter::default();
 
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
-    use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
 
     let mut conn = pool.get().await.unwrap();
 
     let mut query = chunk_metadata_columns::chunk_metadata
-        .inner_join(
-            chunk_metadata_tags_columns::chunk_metadata_tags
-                .on(chunk_metadata_tags_columns::chunk_metadata_id.eq(chunk_metadata_columns::id)),
-        )
-        .inner_join(
-            dataset_tags_columns::dataset_tags
-                .on(dataset_tags_columns::id.eq(chunk_metadata_tags_columns::tag_id)),
-        )
         .select(chunk_metadata_columns::qdrant_point_id)
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
@@ -743,16 +733,16 @@ pub async fn get_tag_set_filter_condition(
             match first_val {
                 MatchCondition::Text(string_val) => {
                     query =
-                        query.filter(dataset_tags_columns::tag.eq(string_val));
+                        query.filter(chunk_metadata_columns::tag_set.contains(vec![string_val]));
                 }
                 MatchCondition::Integer(int_val) => {
                     query = query.filter(
-                        dataset_tags_columns::tag.eq(int_val.to_string()),
+                        chunk_metadata_columns::tag_set.contains(vec![int_val.to_string()]),
                     );
                 }
                 MatchCondition::Float(float_val) => {
                     query = query.filter(
-                        dataset_tags_columns::tag.eq(float_val.to_string()),
+                        chunk_metadata_columns::tag_set.contains(vec![float_val.to_string()]),
                     );
                 }
             }
@@ -762,16 +752,16 @@ pub async fn get_tag_set_filter_condition(
             match match_condition {
                 MatchCondition::Text(string_val) => {
                     query =
-                        query.or_filter(dataset_tags_columns::tag.eq(string_val));
+                        query.or_filter(chunk_metadata_columns::tag_set.contains(vec![string_val]));
                 }
                 MatchCondition::Integer(int_val) => {
                     query = query.or_filter(
-                        dataset_tags_columns::tag.eq(int_val.to_string()),
+                        chunk_metadata_columns::tag_set.contains(vec![int_val.to_string()]),
                     );
                 }
                 MatchCondition::Float(float_val) => {
                     query = query.or_filter(
-                        dataset_tags_columns::tag.eq(float_val.to_string()),
+                        chunk_metadata_columns::tag_set.contains(vec![float_val.to_string()]),
                     );
                 }
             }
