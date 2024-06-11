@@ -205,6 +205,25 @@ services:
         condition: service_healthy
     env_file: .env
 
+  delete-worker:
+    image: trieve/delete_worker
+    container_name: delete-worker
+    build:
+      context: ./server/
+      dockerfile: Dockerfile.delete-worker
+    restart: always
+    network_mode: "host"
+    depends_on:
+      tika:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      qdrant-database:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    env_file: .env
+
   chat:
     image: trieve/chat
     container_name: chat

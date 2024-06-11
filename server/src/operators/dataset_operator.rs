@@ -1,7 +1,7 @@
 use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetUsageCount, Organization,
-    OrganizationWithSubAndPlan, ServerDatasetConfiguration, StripePlan, StripeSubscription,
-    UnifiedId,
+    OrganizationWithSubAndPlan, RedisPool, ServerDatasetConfiguration, StripePlan,
+    StripeSubscription, UnifiedId,
 };
 use crate::get_env;
 use crate::operators::qdrant_operator::get_qdrant_connection;
@@ -13,6 +13,7 @@ use actix_web::web;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use qdrant_client::qdrant::{Condition, Filter};
+use serde::{Deserialize, Serialize};
 
 #[tracing::instrument(skip(pool))]
 pub async fn create_dataset_query(
@@ -49,14 +50,14 @@ pub async fn get_dataset_by_id_query(
     let dataset = match id {
         UnifiedId::TrieveUuid(id) => datasets_columns::datasets
             .filter(datasets_columns::id.eq(id))
-            .filter(datasets_columns::deleted.eq(false))
+            .filter(datasets_columns::deleted.eq(0))
             .select(Dataset::as_select())
             .first(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
         UnifiedId::TrackingId(id) => datasets_columns::datasets
             .filter(datasets_columns::tracking_id.eq(id))
-            .filter(datasets_columns::deleted.eq(false))
+            .filter(datasets_columns::deleted.eq(0))
             .select(Dataset::as_select())
             .first(&mut conn)
             .await
@@ -91,7 +92,7 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
             stripe_plans_columns::stripe_plans
                 .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
         )
-        .filter(datasets_columns::deleted.eq(false))
+        .filter(datasets_columns::deleted.eq(0))
         .into_boxed();
 
     let (dataset, organization, stripe_plan, stripe_subscription) = match id {
@@ -138,10 +139,19 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
     ))
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DeleteMessage {
+    pub dataset_id: uuid::Uuid,
+    pub server_config: ServerDatasetConfiguration,
+    pub attempt_number: usize,
+}
+
 #[tracing::instrument(skip(pool))]
 pub async fn soft_delete_dataset_by_id_query(
     id: uuid::Uuid,
+    config: ServerDatasetConfiguration,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
@@ -151,13 +161,34 @@ pub async fn soft_delete_dataset_by_id_query(
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     diesel::update(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
-        .set(datasets_columns::deleted.eq(true))
+        .set(datasets_columns::deleted.eq(1))
         .execute(&mut conn)
         .await
         .map_err(|err| {
             log::error!("Could not delete dataset: {}", err);
             ServiceError::BadRequest("Could not delete dataset".to_string())
         })?;
+
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let message = DeleteMessage {
+        dataset_id: id,
+        server_config: config,
+        attempt_number: 0,
+    };
+
+    let serialized_message =
+        serde_json::to_string(&message).map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    redis::cmd("rpush")
+        .arg("delete_dataset_queue")
+        .arg(&serialized_message)
+        .query_async(&mut *redis_conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(())
 }
@@ -168,7 +199,10 @@ pub async fn delete_dataset_by_id_query(
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool.get().await.unwrap();
 
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
@@ -178,19 +212,65 @@ pub async fn delete_dataset_by_id_query(
     )
     .await?;
 
-    qdrant_client
-        .delete_points(
-            qdrant_collection,
-            None,
-            &Filter::must([Condition::matches("dataset_id", id.to_string())]).into(),
-            None,
+    let mut last_offset_id = uuid::Uuid::nil();
+
+    loop {
+        // Fetch a batch of chunk IDs
+        let chunk_and_qdrant_ids = chunk_metadata_columns::chunk_metadata
+            .filter(chunk_metadata_columns::dataset_id.eq(id))
+            .filter(chunk_metadata_columns::id.gt(last_offset_id))
+            .select((
+                chunk_metadata_columns::id,
+                chunk_metadata_columns::qdrant_point_id,
+            ))
+            .limit(1000)
+            .load::<(uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
+            .await
+            .map_err(|err| {
+                log::error!("Could not fetch chunk IDs: {}", err);
+                ServiceError::BadRequest("Could not fetch chunk IDs".to_string())
+            })?;
+
+        let chunk_ids = chunk_and_qdrant_ids
+            .iter()
+            .map(|(id, _)| id.clone())
+            .collect::<Vec<uuid::Uuid>>();
+        let qdrant_point_ids = chunk_and_qdrant_ids
+            .iter()
+            .filter_map(|(_, qdrant_id)| Some(qdrant_id.clone()?.to_string()))
+            .collect::<Vec<String>>();
+
+        if chunk_ids.is_empty() {
+            break;
+        }
+
+        // Delete the chunks in the current batch
+        diesel::delete(
+            chunk_metadata_columns::chunk_metadata
+                .filter(chunk_metadata_columns::id.eq_any(&chunk_ids)),
         )
+        .execute(&mut conn)
         .await
         .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))
+            log::error!("Could not delete chunks: {}", err);
+            ServiceError::BadRequest("Could not delete chunks".to_string())
         })?;
 
-    let mut conn = pool.get().await.unwrap();
+        qdrant_client
+            .delete_points(
+                qdrant_collection.clone(),
+                None,
+                &Filter::must([Condition::has_id(qdrant_point_ids)]).into(),
+                None,
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))
+            })?;
+
+        // Move to the next batch
+        last_offset_id = chunk_ids.last().unwrap().clone();
+    }
 
     diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
         .execute(&mut conn)
@@ -221,7 +301,7 @@ pub async fn update_dataset_query(
     let new_dataset: Dataset = diesel::update(
         datasets_columns::datasets
             .filter(datasets_columns::id.eq(id))
-            .filter(datasets_columns::deleted.eq(false)),
+            .filter(datasets_columns::deleted.eq(0)),
     )
     .set((
         datasets_columns::name.eq(name),
@@ -251,7 +331,7 @@ pub async fn get_datasets_by_organization_id(
 
     let dataset_and_usages: Vec<(Dataset, DatasetUsageCount)> = datasets_columns::datasets
         .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
-        .filter(datasets_columns::deleted.eq(false))
+        .filter(datasets_columns::deleted.eq(0))
         .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
         .select((Dataset::as_select(), DatasetUsageCount::as_select()))
         .load::<(Dataset, DatasetUsageCount)>(&mut conn)
@@ -264,27 +344,4 @@ pub async fn get_datasets_by_organization_id(
         .collect::<Vec<DatasetAndUsage>>();
 
     Ok(dataset_and_usages)
-}
-
-pub async fn get_soft_delete_dataset(
-    pool: web::Data<Pool>,
-) -> Result<Option<Dataset>, ServiceError> {
-    use crate::data::schema::datasets::dsl as datasets_columns;
-
-    let mut conn = pool
-        .get()
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
-
-    let dataset = match datasets_columns::datasets
-        .filter(datasets_columns::deleted.eq(true))
-        .select(Dataset::as_select())
-        .first::<Dataset>(&mut conn)
-        .await
-    {
-        Ok(dataset) => Some(dataset),
-        Err(_) => None,
-    };
-
-    Ok(dataset)
 }
