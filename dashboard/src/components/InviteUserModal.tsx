@@ -79,7 +79,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
           <span class="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
-          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 text-left align-middle shadow-xl transition-all">
+          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md border bg-white p-6 text-left align-middle shadow-xl transition-all">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
