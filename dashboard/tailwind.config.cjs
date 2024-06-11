@@ -1,5 +1,5 @@
 const defaultTheme = require("tailwindcss/defaultTheme");
-const typographyPlugin = require('@tailwindcss/typography');
+const typographyPlugin = require("@tailwindcss/typography");
 
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable no-undef */
