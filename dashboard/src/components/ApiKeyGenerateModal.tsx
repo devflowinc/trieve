@@ -144,7 +144,7 @@ export const ApiKeyGenerateModal = (props: {
           <span class="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
-          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform rounded-md bg-white p-6 pb-2 text-left align-middle shadow-xl transition-all">
+          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform rounded-md bg-white p-6 text-left align-middle shadow-xl transition-all">
             <Show when={!generated()}>
               <form
                 onSubmit={(e) => {
@@ -166,7 +166,7 @@ export const ApiKeyGenerateModal = (props: {
                       by providing it in the Authorization header.
                     </p>
 
-                    <div class="mt-10 space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
+                    <div class="mt-2 space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
                       <div class="content-center sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
                         <label
                           for="dataset-name"
