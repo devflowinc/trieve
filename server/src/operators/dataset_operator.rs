@@ -233,11 +233,11 @@ pub async fn delete_dataset_by_id_query(
 
         let chunk_ids = chunk_and_qdrant_ids
             .iter()
-            .map(|(id, _)| id.clone())
+            .map(|(id, _)| *id)
             .collect::<Vec<uuid::Uuid>>();
         let qdrant_point_ids = chunk_and_qdrant_ids
             .iter()
-            .filter_map(|(_, qdrant_id)| Some(qdrant_id.clone()?.to_string()))
+            .filter_map(|(_, qdrant_id)| Some((*qdrant_id)?.to_string()))
             .collect::<Vec<String>>();
 
         if chunk_ids.is_empty() {
@@ -269,7 +269,7 @@ pub async fn delete_dataset_by_id_query(
             })?;
 
         // Move to the next batch
-        last_offset_id = chunk_ids.last().unwrap().clone();
+        last_offset_id = *chunk_ids.last().unwrap();
     }
 
     diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
