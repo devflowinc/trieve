@@ -52,7 +52,7 @@ pub fn build_chunking_regex(delimiters: Vec<String>) -> Result<Regex, regex::Err
     let escaped_delimiters: Vec<String> = delimiters.iter().map(|x| regex::escape(x)).collect();
     let pattern = escaped_delimiters.join("|");
     let re = Regex::new(&pattern)?;
-    return Ok(re);
+    Ok(re)
 }
 
 #[tracing::instrument]

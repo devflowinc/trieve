@@ -196,7 +196,7 @@ pub async fn delete_invitation(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
     let invite_id = invitation_id.into_inner();
-    let invite = get_invitation_by_id_query(invite_id.clone(), pool.clone()).await?;
+    let invite = get_invitation_by_id_query(invite_id, pool.clone()).await?;
 
     if !verify_admin(&user, &invite.organization_id) {
         return Err(ServiceError::Forbidden);

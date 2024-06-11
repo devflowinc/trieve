@@ -103,7 +103,7 @@ pub async fn get_qdrant_ids_from_condition(
     if let Some(ids) = cond.ids {
         Ok(get_qdrant_ids_from_chunk_ids_query(
             ids.into_iter()
-                .map(|id| UnifiedId::TrieveUuid(id))
+                .map(UnifiedId::TrieveUuid)
                 .collect(),
             pool.clone(),
         )
@@ -115,7 +115,7 @@ pub async fn get_qdrant_ids_from_condition(
         Ok(get_qdrant_ids_from_chunk_ids_query(
             tracking_ids
                 .into_iter()
-                .map(|id| UnifiedId::TrackingId(id))
+                .map(UnifiedId::TrackingId)
                 .collect(),
             pool.clone(),
         )
@@ -343,10 +343,10 @@ pub async fn get_num_value_filter_condition(
             match first_val {
                 MatchCondition::Integer(id_val) => {
                     query =
-                        query.filter(chunk_metadata_columns::num_value.eq(id_val.clone() as f64));
+                        query.filter(chunk_metadata_columns::num_value.eq(*id_val as f64));
                 }
                 MatchCondition::Float(id_val) => {
-                    query = query.filter(chunk_metadata_columns::num_value.eq(id_val.clone()));
+                    query = query.filter(chunk_metadata_columns::num_value.eq(*id_val));
                 }
                 MatchCondition::Text(_) => {
                     return Err(ServiceError::BadRequest(
@@ -360,7 +360,7 @@ pub async fn get_num_value_filter_condition(
             match match_condition {
                 MatchCondition::Integer(id_val) => {
                     query = query
-                        .or_filter(chunk_metadata_columns::num_value.eq(id_val.clone() as f64));
+                        .or_filter(chunk_metadata_columns::num_value.eq(*id_val as f64));
                 }
                 MatchCondition::Float(id_val) => {
                     query = query.or_filter(chunk_metadata_columns::num_value.eq(id_val));
@@ -2556,11 +2556,10 @@ pub async fn autocomplete_semantic_chunks(
 
     timer.add("fetching from postgres");
 
-    let first_increase = search_chunk_query_results
+    let first_increase = *search_chunk_query_results
         .batch_lengths
         .get(0)
-        .unwrap_or(&0)
-        .clone() as usize;
+        .unwrap_or(&0) as usize;
 
     let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
     let mut reranked_chunks = rerank_chunks(
@@ -2660,11 +2659,10 @@ pub async fn autocomplete_fulltext_chunks(
 
     timer.add("fetched from postgres");
 
-    let first_increase = search_chunk_query_results
+    let first_increase = *search_chunk_query_results
         .batch_lengths
         .get(0)
-        .unwrap_or(&0)
-        .clone() as usize;
+        .unwrap_or(&0) as usize;
 
     let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
     let mut reranked_chunks = rerank_chunks(

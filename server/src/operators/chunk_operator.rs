@@ -1243,8 +1243,7 @@ pub async fn get_qdrant_ids_from_chunk_ids_query(
 
     Ok(qdrant_point_ids
         .into_iter()
-        .filter(|x| x.is_some())
-        .map(|x| x.unwrap())
+        .flatten()
         .collect())
 }
 
@@ -1335,15 +1334,9 @@ pub async fn create_chunk_metadata(
     let mut chunk_metadatas = vec![];
 
     for chunk in chunks {
-        let chunk_tag_set = if let Some(tags) = chunk.tag_set.clone() {
-            Some(
-                tags.into_iter()
-                    .map(|tag| Some(tag))
-                    .collect::<Vec<Option<String>>>(),
-            )
-        } else {
-            None
-        };
+        let chunk_tag_set = chunk.tag_set.clone().map(|tags| tags.into_iter()
+                    .map(Some)
+                    .collect::<Vec<Option<String>>>());
 
         let chunk_tracking_id = chunk
             .tracking_id

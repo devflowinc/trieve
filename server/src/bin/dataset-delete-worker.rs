@@ -1,5 +1,4 @@
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use redis::aio::MultiplexedConnection;
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
 use std::sync::{
@@ -8,10 +7,10 @@ use std::sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
-    data::models::{self, FileWorkerMessage},
+    data::models::{self, Dataset},
     errors::ServiceError,
     establish_connection, get_env,
-    operators::file_operator::{create_file_chunks, create_file_query, get_aws_bucket},
+    operators::dataset_operator::get_soft_delete_dataset,
 };
 
 fn main() {
@@ -114,7 +113,7 @@ pub async fn delete_worker(
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
     let dataset_to_delete = loop {
-        let dataset = get_soft_delete_dataset(&web_pool)
+        let dataset = get_soft_delete_dataset(web_pool.clone())
             .await
             .expect("Failed to get dataset to delete");
 
@@ -124,17 +123,4 @@ pub async fn delete_worker(
 
         tokio::time::sleep(std::time::Duration::from_secs(5)).await;
     };
-}
-
-pub async fn get_soft_delete_dataset(pool: &models::Pool) -> Result<Option<Dataset>, ServiceError> {
-    use crate::schema::datasets::dsl::*;
-    use diesel::prelude::*;
-
-    let conn = pool.get().await?;
-    let dataset = datasets
-        .filter(deleted.eq(true))
-        .first::<Dataset>(&conn)
-        .optional()?;
-
-    Ok(dataset)
 }

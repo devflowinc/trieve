@@ -555,7 +555,7 @@ pub async fn update_chunk(
     let chunk_tag_set = update_chunk_data.tag_set.clone().map(|tag_set| {
         tag_set
             .into_iter()
-            .map(|tag| Some(tag))
+            .map(Some)
             .collect::<Vec<Option<String>>>()
     });
 
@@ -589,7 +589,6 @@ pub async fn update_chunk(
             .or(chunk_metadata.time_stamp),
         update_chunk_data
             .location
-            .clone()
             .or(chunk_metadata.location),
         update_chunk_data.image_urls.clone().or(chunk_metadata
             .image_urls

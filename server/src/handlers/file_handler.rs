@@ -168,8 +168,8 @@ pub async fn upload_file_handler(
     let base64_decode_span = transaction.start_child("base64_decode", "base64_decode");
     let mut cleaned_base64 = upload_file_data
         .base64_file
-        .replace("+", "-")
-        .replace("/", "_");
+        .replace('+', "-")
+        .replace('/', "_");
     if cleaned_base64.ends_with('=') {
         cleaned_base64.pop();
     }
@@ -224,7 +224,7 @@ pub async fn upload_file_handler(
             decoded_file_data.len().try_into().unwrap(),
             upload_file_data
                 .tag_set
-                .map(|t| t.into_iter().map(|s| Some(s)).collect()),
+                .map(|t| t.into_iter().map(Some).collect()),
             None,
             None,
             None,
@@ -319,7 +319,7 @@ pub async fn get_dataset_files_handler(
     required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data = data.into_inner();
-    if dataset_org_plan_sub.dataset.id != data.dataset_id.clone() {
+    if dataset_org_plan_sub.dataset.id != data.dataset_id {
         return Err(ServiceError::BadRequest(
             "Dataset header does not match given path".to_string(),
         )

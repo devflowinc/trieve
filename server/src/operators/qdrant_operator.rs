@@ -97,7 +97,7 @@ pub async fn create_new_qdrant_collection_query(
                     vec![(
                         qdrant_collection.to_string(),
                         VectorParams {
-                            size: vector.clone(),
+                            size: *vector,
                             distance: Distance::Cosine.into(),
                             quantization_config: quantization_config.clone(),
                             on_disk,
@@ -528,7 +528,7 @@ pub async fn add_bookmark_to_qdrant_query(
         }
     };
 
-    let group_ids = if current_point.payload.get("group_ids").is_some() {
+    let group_ids = if current_point.payload.contains_key("group_ids") {
         let mut group_ids_qdrant = current_point
             .payload
             .get("group_ids")
@@ -609,7 +609,7 @@ pub async fn remove_bookmark_from_qdrant_query(
         }
     };
 
-    let group_ids = if current_point.payload.get("group_ids").is_some() {
+    let group_ids = if current_point.payload.contains_key("group_ids") {
         let mut group_ids_qdrant = current_point
             .payload
             .get("group_ids")
