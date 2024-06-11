@@ -31,7 +31,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::dsl::sql;
-use diesel::sql_types::{Bool, Text};
+use diesel::sql_types::{Bool, Float, Text};
 use diesel::{ExpressionMethods, JoinOnDsl, PgArrayExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 
@@ -489,25 +489,29 @@ pub async fn get_metadata_filter_condition(
         let range_filter = get_range(range.clone())?;
         if let Some(gt) = range_filter.gt {
             query = query.filter(
-                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).gt(gt.to_string()),
+                sql::<Bool>(&format!("(chunk_metadata.metadata->>'{}')::float > ", key))
+                    .bind::<Float, _>(gt as f32),
             );
         };
 
         if let Some(gte) = range_filter.gte {
             query = query.filter(
-                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).ge(gte.to_string()),
+                sql::<Bool>(&format!("(chunk_metadata.metadata->>'{}')::float >= ", key))
+                    .bind::<Float, _>(gte as f32),
             );
         };
 
         if let Some(lt) = range_filter.lt {
             query = query.filter(
-                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).lt(lt.to_string()),
+                sql::<Bool>(&format!("(chunk_metadata.metadata->>'{}')::float < ", key))
+                    .bind::<Float, _>(lt as f32),
             );
         };
 
         if let Some(lte) = range_filter.lte {
             query = query.filter(
-                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).le(lte.to_string()),
+                sql::<Bool>(&format!("(chunk_metadata.metadata->>'{}')::float <= ", key))
+                    .bind::<Float, _>(lte as f32),
             );
         };
     }
@@ -547,8 +551,6 @@ pub async fn get_metadata_filter_condition(
             );
         };
     }
-
-    println!("query: {:?}", diesel::debug_query(&query));
 
     let qdrant_point_ids: Vec<uuid::Uuid> = query
         .load::<Option<uuid::Uuid>>(&mut conn)
