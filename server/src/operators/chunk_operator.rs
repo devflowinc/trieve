@@ -292,9 +292,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                     Some(
                         ChunkMetadata::from_table_and_tag_set(
                             ChunkMetadataTable {
-                                qdrant_point_id: chunk_table
-                                    .qdrant_point_id
-                                    .or(Some(qdrant_point_id)),
+                                qdrant_point_id: chunk_table.qdrant_point_id.or(Some(qdrant_point_id)),
                                 ..chunk_table
                             },
                             tag_set,
@@ -1161,9 +1159,7 @@ pub async fn insert_duplicate_chunk_metadata_query(
             .await
             .map_err(|e| {
                 log::error!("Failed to create chunk metadata tags {:}", e);
-                ServiceError::BadRequest(
-                    "Failed to create chunk metadata tags (duplicate chunk)".to_string(),
-                )
+                ServiceError::BadRequest("Failed to create chunk metadata tags (duplicate chunk)".to_string())
             })?;
     }
 
