@@ -79,22 +79,18 @@ where
 
                     let dataset_org_plan_sub = match dataset_id.parse::<uuid::Uuid>() {
                         Ok(dataset_id) => {
-                            
-
                             get_dataset_and_organization_from_dataset_id_query(
-                                    UnifiedId::TrieveUuid(dataset_id),
-                                    pool.clone(),
-                                )
-                                .await?
+                                UnifiedId::TrieveUuid(dataset_id),
+                                pool.clone(),
+                            )
+                            .await?
                         }
                         Err(_) => {
-                            
-
                             get_dataset_and_organization_from_dataset_id_query(
-                                    UnifiedId::TrackingId(dataset_id.clone()),
-                                    pool.clone(),
-                                )
-                                .await?
+                                UnifiedId::TrackingId(dataset_id.clone()),
+                                pool.clone(),
+                            )
+                            .await?
                         }
                     };
 
@@ -131,8 +127,6 @@ where
                 }
                 None => {
                     if let Some(org_header) = req.headers().get("TR-Organization") {
-                        
-
                         org_header
                             .to_str()
                             .map_err(|_| {
@@ -306,10 +300,10 @@ where
 }
 
 pub fn get_role_for_org(user: &SlimUser, org_id: &uuid::Uuid) -> Option<UserRole> {
-    user
-        .user_orgs
+    user.user_orgs
         .iter()
-        .find(|org_conn| org_conn.organization_id == *org_id).map(|org_conn| UserRole::from(org_conn.role))
+        .find(|org_conn| org_conn.organization_id == *org_id)
+        .map(|org_conn| UserRole::from(org_conn.role))
 }
 
 pub fn verify_owner(user: &OwnerOnly, org_id: &uuid::Uuid) -> bool {

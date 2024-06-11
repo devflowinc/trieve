@@ -413,10 +413,12 @@ pub async fn bulk_upload_chunks(
                 .qdrant_point_id
                 .unwrap_or(uuid::Uuid::new_v4());
 
-            let chunk_tag_set = message.chunk.tag_set.clone().map(|tag_set| tag_set
-                        .into_iter()
-                        .map(|tag| Some(tag.to_string()))
-                        .collect::<Vec<Option<String>>>());
+            let chunk_tag_set = message.chunk.tag_set.clone().map(|tag_set| {
+                tag_set
+                    .into_iter()
+                    .map(|tag| Some(tag.to_string()))
+                    .collect::<Vec<Option<String>>>()
+            });
 
             let timestamp = {
                 message
@@ -633,10 +635,12 @@ async fn upload_chunk(
         false => payload.chunk.chunk_html.clone().unwrap_or_default(),
     };
 
-    let chunk_tag_set = payload.chunk.tag_set.clone().map(|tag_set| tag_set
-                .into_iter()
-                .map(|tag| Some(tag.to_string()))
-                .collect::<Vec<Option<String>>>());
+    let chunk_tag_set = payload.chunk.tag_set.clone().map(|tag_set| {
+        tag_set
+            .into_iter()
+            .map(|tag| Some(tag.to_string()))
+            .collect::<Vec<Option<String>>>()
+    });
 
     let chunk_tracking_id = payload
         .chunk

@@ -587,9 +587,7 @@ pub async fn update_chunk(
             })
             .transpose()?
             .or(chunk_metadata.time_stamp),
-        update_chunk_data
-            .location
-            .or(chunk_metadata.location),
+        update_chunk_data.location.or(chunk_metadata.location),
         update_chunk_data.image_urls.clone().or(chunk_metadata
             .image_urls
             .map(|x| x.into_iter().map(|x| x.unwrap()).collect())),
