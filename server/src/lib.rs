@@ -3,14 +3,6 @@
 
 #[macro_use]
 extern crate diesel;
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::pooled_connection::ManagerConfig;
-use openssl::ssl::SslVerifyMode;
-use openssl::ssl::{SslConnector, SslMethod};
-use postgres_openssl::MakeTlsConnector;
-use tracing_subscriber::{prelude::*, EnvFilter, Layer};
-use utoipa_swagger_ui::SwaggerUi;
-
 use crate::{
     errors::ServiceError,
     handlers::auth_handler::build_oidc_client,
@@ -18,26 +10,27 @@ use crate::{
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
     },
 };
-
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
+use actix_web::error::JsonPayloadError;
 use actix_web::{
     cookie::{Key, SameSite},
     middleware,
     web::{self, PayloadConfig},
     App, HttpServer,
 };
-
-use actix_web::error::JsonPayloadError;
-
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::pooled_connection::ManagerConfig;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
+use openssl::ssl::SslVerifyMode;
+use openssl::ssl::{SslConnector, SslMethod};
+use postgres_openssl::MakeTlsConnector;
+use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use utoipa_redoc::{Redoc, Servable};
-
-use actix_web::{error, post, HttpResponse};
-use serde::Deserialize;
+use utoipa_swagger_ui::SwaggerUi;
 
 pub mod af_middleware;
 pub mod data;
@@ -449,7 +442,7 @@ pub fn main() -> std::io::Result<()> {
             .unwrap_or(vec![384,512,768,1024,1536,3072]);
 
         let json_cfg = web::JsonConfig::default()
-            .limit(4096)
+            .limit(134200000)
             .error_handler(|err, req| custom_json_error_handler(err, req));
 
         log::info!("Creating qdrant collections");
@@ -497,10 +490,6 @@ pub fn main() -> std::io::Result<()> {
                         "Unexpected end of JSON input",
                         "Ensure that the JSON payload is complete and not truncated."
                     ),
-                    _ => (
-                        "Other JSON deserialization error",
-                        "Unknown Error"
-                    ),
                 },
                 _ => (
                     "Other JSON payload error",
@@ -515,11 +504,7 @@ pub fn main() -> std::io::Result<()> {
         HttpServer::new(move || {
             App::new()
                 .app_data(PayloadConfig::new(134200000))
-                .app_data(
-                    web::JsonConfig::default()
-                        .limit(134200000)
-                        .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
-                )
+                .app_data(json_cfg.clone())
                 .app_data(
                     web::PathConfig::default()
                         .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
@@ -527,7 +512,6 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(pool.clone()))
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
-                .app_data(json_cfg.clone())
                 .wrap(sentry_actix::Sentry::new())
                 .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
