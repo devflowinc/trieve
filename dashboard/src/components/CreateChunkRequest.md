@@ -1,9 +1,8 @@
 ```js
-fetch("api.trieve.ai/api/chunk", {
+fetch("https://api.trieve.ai/api/chunk", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "TR-Organization": "********-****-****-****-************",
     "TR-Dataset": "********-****-****-****-************",
     Authorization: "tr-********************************",
   },

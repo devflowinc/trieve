@@ -68,7 +68,7 @@ pub struct CreateChunkGroupReqPayload {
 
 /// Create Chunk Group
 ///
-/// Create a new chunk_group. This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Create a new chunk_group. This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/chunk_group",
@@ -294,7 +294,7 @@ pub struct UpdateGroupByTrackingIDReqPayload {
 
 /// Update Group by Tracking ID
 ///
-/// Update a chunk_group with the given tracking id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Update a chunk_group with the given tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
     path = "/chunk_group/tracking_id/{tracking_id}",
@@ -360,7 +360,7 @@ pub struct DeleteGroupByTrackingIDData {
 
 /// Delete Group by Tracking ID
 ///
-/// Delete a chunk_group with the given tracking id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Delete a chunk_group with the given tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
     path = "/chunk_group/tracking_id/{tracking_id}",
@@ -419,7 +419,7 @@ pub struct DeleteGroupData {
 
 /// Delete Group
 ///
-/// This will delete a chunk_group. If you set delete_chunks to true, it will also delete the chunks within the group. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// This will delete a chunk_group. If you set delete_chunks to true, it will also delete the chunks within the group. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
     path = "/chunk_group/{group_id}",
@@ -490,7 +490,7 @@ pub struct UpdateChunkGroupData {
 
 /// Update Group
 ///
-/// Update a chunk_group. If you try to change the tracking_id to one that already exists, this operation will fail. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Update a chunk_group. If you try to change the tracking_id to one that already exists, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
     path = "/chunk_group",
@@ -572,7 +572,7 @@ pub struct AddChunkToGroupData {
 
 /// Add Chunk to Group
 ///
-/// Route to add a chunk to a group. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Route to add a chunk to a group. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/chunk_group/chunk/{group_id}",
@@ -635,7 +635,7 @@ pub struct AddChunkToGroupByTrackingIdData {
 
 /// Add Chunk to Group by Tracking ID
 ///
-/// Route to add a chunk to a group by tracking id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Route to add a chunk to a group by tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/chunk_group/tracking_id/{tracking_id}",

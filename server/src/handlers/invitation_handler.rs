@@ -42,7 +42,7 @@ pub struct InvitationData {
 
 /// Send Invitation
 ///
-/// Invitations act as a way to invite users to join an organization. After a user is invited, they will automatically be added to the organization with the role specified in the invitation once they set their. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Invitations act as a way to invite users to join an organization. After a user is invited, they will automatically be added to the organization with the role specified in the invitation once they set their. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/invitation",
@@ -146,7 +146,7 @@ pub async fn create_invitation(
 
 /// Get Invitations
 ///
-/// Get all invitations for the organization. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Get all invitations for the organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/invitation/{organization_id}",
@@ -175,7 +175,7 @@ pub async fn get_invitations(
 
 /// Delete Invitation
 ///
-/// Delete an invitation by id. Auth'ed user or api key must be an admin or owner of the dataset's organization to delete a file.
+/// Delete an invitation by id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
     path = "/invitation/{invitation_id}",
