@@ -110,7 +110,7 @@ export const DatasetStart = () => {
   return (
     <div class="h-full">
       <main class="mx-auto">
-        <div class="space-y-6 lg:grid lg:grid-cols-2 lg:gap-5 lg:px-0">
+        <div class="space-y-6 pb-8 lg:grid lg:grid-cols-2 lg:gap-5 lg:px-0">
           <section
             class="flex-col space-y-4 border bg-white px-4 py-6 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
             aria-labelledby="organization-details-name"
@@ -261,7 +261,7 @@ export const DatasetStart = () => {
             </div>
           </section>
           <section
-            class="flex-col space-y-4 bg-white px-4 py-6 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
+            class="flex-col gap-4 border bg-white px-4 py-6 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
             aria-labelledby="organization-details-name"
           >
             <h2 id="user-details-name" class="text-lg font-medium leading-6">
@@ -269,7 +269,7 @@ export const DatasetStart = () => {
             </h2>
             <div class="flex flex-col space-y-4">
               <p>1. Add searchable data</p>
-              <div class="flex w-fit space-x-4 rounded-md bg-blue-50 px-4 py-4">
+              <div class="flex w-fit space-x-4 rounded-md border border-blue-600/30 bg-blue-50 px-4 py-4">
                 <div class="flex">
                   <div class="flex-shrink-0">
                     {/* <FiAlertTriangle class="h-4 w-4 text-yellow-400" /> */}
@@ -302,7 +302,7 @@ export const DatasetStart = () => {
             </div>
             <div class="flex flex-col space-y-4">
               <p class="mt-3">2. Start Searching</p>
-              <div class="flex w-fit space-x-4 rounded-md bg-blue-50 px-4 py-4">
+              <div class="flex w-fit space-x-4 rounded-md border border-blue-600/30 bg-blue-50 px-4 py-4">
                 <div class="flex">
                   <div class="flex-shrink-0">
                     {/* <FiAlertTriangle class="h-4 w-4 text-yellow-400" /> */}

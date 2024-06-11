@@ -89,18 +89,18 @@ export const DatasetEvents = () => {
             </p>
           </div>
         </div>
-        <div class="mx-auto mt-8 pb-8">
+        <div class="mx-auto mt-4 pb-8">
           <div class="">
             <div class="sm:flex sm:items-center">
               <div class="sm:flex-auto">
                 <h1 class="text-base font-semibold leading-6 text-gray-900">
                   Events
                 </h1>
-                <p class="mt-2 text-sm text-gray-700">
+                <p class="text-sm text-gray-700">
                   Event Log from the server (Refreshes every 5 seconds)
                 </p>
               </div>
-              <div class="flex min-w-[300px] flex-col gap-2">
+              <div class="flex min-w-[300px] flex-col gap-1">
                 <span class="text-sm">Event Type:</span>
                 <MultiSelect
                   items={[
@@ -177,6 +177,16 @@ export const DatasetEvents = () => {
                           </th>
                         </tr>
                       </thead>
+                      <Show when={events().length === 0}>
+                        <tr>
+                          <td
+                            class="px-3 py-4 pt-14 text-center text-sm text-gray-500"
+                            colSpan="4"
+                          >
+                            No events found
+                          </td>
+                        </tr>
+                      </Show>
                       <tbody class="bg-white">
                         <For each={events()}>
                           {(event) => {

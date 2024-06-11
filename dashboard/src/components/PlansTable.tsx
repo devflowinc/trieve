@@ -155,7 +155,7 @@ export const PlansTable = (props: PlansTableProps) => {
 
   return (
     <div class="flex flex-col gap-4">
-      <div class="grid w-full grid-cols-3 place-content-center gap-x-2 rounded border bg-neutral-100 px-5 py-3 text-sm">
+      <div class="grid w-full grid-cols-3 place-content-center gap-x-2 rounded border bg-white px-5 py-3 text-sm shadow-sm">
         <div class="space-y-1">
           <p class="text-lg font-semibold uppercase text-magenta-500">
             Enterprise
@@ -165,7 +165,7 @@ export const PlansTable = (props: PlansTableProps) => {
             Telegram all work.
           </p>
           <a
-            class="block rounded border border-magenta-200/70 bg-magenta-100 py-1 text-center"
+            class="block rounded border border-magenta-200/70 bg-magenta-100 py-1 text-center font-medium"
             href="tel:6282224090"
           >
             +1 628-222-4090

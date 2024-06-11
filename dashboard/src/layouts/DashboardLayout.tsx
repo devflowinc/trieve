@@ -66,7 +66,7 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
     <>
       <ShowToasts />
       <div class="flex min-h-screen flex-col bg-white text-black">
-        <div class="w-full border-b px-10 py-2">
+        <div class="w-full border-b px-8 py-2">
           <NavBar />
         </div>
         <div class="flex">
@@ -105,7 +105,7 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
                 (userContext.user?.()?.orgs.length ?? 0) > 0
               }
             >
-              <div class="w-full px-8">
+              <div class="w-full bg-neutral-50 px-8">
                 <div class="my-4 flex flex-col space-y-3 border-b">
                   <OrgName />
                   <OrgTabs />

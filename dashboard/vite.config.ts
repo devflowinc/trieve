@@ -8,7 +8,7 @@ import runtimeEnv from "vite-plugin-runtime-env";
 export default defineConfig({
   plugins: [
     md({
-      wrapperClasses: "prose prose-sm m-auto text-left",
+      wrapperClasses: "prose prose-sm text-sm m-auto text-left",
       rehypePlugins: [
         [
           rehypePrettyCode,
