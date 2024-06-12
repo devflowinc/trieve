@@ -160,7 +160,7 @@ export const AfMessage = (props: AfMessageProps) => {
               setShowEditingIcon(false);
             }}
           >
-            <div class="flex gap-2 text-black md:flex-row md:space-x-2 md:space-y-0">
+            <div class="flex gap-2 text-black dark:text-neutral-100 md:flex-row md:space-x-2 md:space-y-0">
               <div class="mt-1">
                 {props.role === "user" ? (
                   <BiSolidUserRectangle class="fill-current" />
