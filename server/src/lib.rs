@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    errors::ServiceError,
+    errors::{custom_json_error_handler, ServiceError},
     handlers::auth_handler::build_oidc_client,
     operators::{
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
@@ -13,7 +13,6 @@ use crate::{
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
-use actix_web::error::JsonPayloadError;
 use actix_web::{
     cookie::{Key, SameSite},
     middleware,
@@ -445,7 +444,7 @@ pub fn main() -> std::io::Result<()> {
 
         let json_cfg = web::JsonConfig::default()
             .limit(134200000)
-            .error_handler(|err, req| custom_json_error_handler(err, req));
+            .error_handler(custom_json_error_handler);
 
         log::info!("Creating qdrant collections");
         let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes)
@@ -463,44 +462,6 @@ pub fn main() -> std::io::Result<()> {
             .map_err(|err| {
                 log::error!("Failed to create default user: {:?}", err);
             });
-        }
-
-        fn custom_json_error_handler(err: JsonPayloadError, _req: &actix_web::HttpRequest) -> actix_web::Error {
-            let (error_message, solution) = match &err {
-                JsonPayloadError::ContentType => (
-                    "Content type error",
-                    "Ensure that the content type of the request body is set to application/json."
-                ),
-                JsonPayloadError::Payload(_) => (
-                    "Payload error",
-                    "Check that the JSON payload matches the expected structure."
-                ),
-                JsonPayloadError::Deserialize(deserialize_err) => match deserialize_err.classify() {
-                    serde_json::error::Category::Io => (
-                        "I/O error while reading JSON",
-                        "Verify that the server has sufficient permissions to access the file or data source."
-                    ),
-                    serde_json::error::Category::Syntax => (
-                        "Syntax error in JSON",
-                        "Fix syntax errors in the JSON payload to adhere to JSON formatting rules."
-                    ),
-                    serde_json::error::Category::Data => (
-                        "Data error in JSON",
-                        "Ensure that the data in the JSON payload is valid and consistent with the expected schema."
-                    ),
-                    serde_json::error::Category::Eof => (
-                        "Unexpected end of JSON input",
-                        "Ensure that the JSON payload is complete and not truncated."
-                    ),
-                },
-                _ => (
-                    "Other JSON payload error",
-                    "Inspect the JSON payload and the server's handling of JSON requests for any issues."
-                ),
-            };
-
-            let detailed_error_message = format!("*Type* : {} | *Message* : {} | {}", error_message, err, solution);
-            ServiceError::JsonDeserializeError(detailed_error_message).into()
         }
 
         HttpServer::new(move || {

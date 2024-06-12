@@ -1130,6 +1130,8 @@ pub struct SearchWithinGroupData {
     pub highlight_max_length: Option<u32>,
     /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
     pub highlight_max_num: Option<u32>,
+    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words.
+    pub highlight_window: Option<u32>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
@@ -1154,6 +1156,7 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
             highlight_delimiters: search_within_group_data.highlight_delimiters,
             highlight_max_length: search_within_group_data.highlight_max_length,
             highlight_max_num: search_within_group_data.highlight_max_num,
+            highlight_window: search_within_group_data.highlight_window,
             score_threshold: search_within_group_data.score_threshold,
             slim_chunks: search_within_group_data.slim_chunks,
             content_only: Some(false),
@@ -1292,6 +1295,8 @@ pub struct SearchOverGroupsData {
     pub highlight_max_length: Option<u32>,
     /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
     pub highlight_max_num: Option<u32>,
+    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words.
+    pub highlight_window: Option<u32>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     /// Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.
