@@ -133,7 +133,13 @@ export const AfMessage = (props: AfMessageProps) => {
 
   return (
     <Show when={props.role !== "system"}>
-      <div classList={{ "lg:flex items-start": true }}>
+      <div
+        classList={{
+          "lg:flex grow items-start": true,
+          "self-start": props.role == "assistant",
+          "self-end": props.role == "user",
+        }}
+      >
         <Show when={!editing()}>
           <div
             ref={setLeftColumnRef}
@@ -142,7 +148,7 @@ export const AfMessage = (props: AfMessageProps) => {
                 true,
               "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
                 props.role === "assistant",
-              "bg-neutral-50 dark:bg-neutral-800 md:ml-16":
+              "bg-white border-neutral-300 dark:bg-neutral-800 md:ml-16":
                 props.role === "user",
               "md:mr-16": props.role === "assistant" && metadata().length <= 0,
             }}
@@ -154,20 +160,22 @@ export const AfMessage = (props: AfMessageProps) => {
               setShowEditingIcon(false);
             }}
           >
-            <div class="flex w-full gap-2 md:flex-row md:space-x-2 md:space-y-0">
-              {props.role === "user" ? (
-                <BiSolidUserRectangle class="fill-current" />
-              ) : (
-                <AiFillRobot class="fill-current" />
-              )}
+            <div class="flex gap-2 text-black md:flex-row md:space-x-2 md:space-y-0">
+              <div class="mt-1">
+                {props.role === "user" ? (
+                  <BiSolidUserRectangle class="fill-current" />
+                ) : (
+                  <AiFillRobot class="fill-current" />
+                )}
+              </div>
               <div
                 classList={{
                   "w-full": true,
-                  "flex gap-y-8 items-start lg:gap-4 lg:grid lg:grid-cols-3 flex-col-reverse lg:flex-row":
+                  "flex gap-y-8 items-start lg:gap-4 flex-col-reverse lg:flex-row":
                     !!chunkMetadatas(),
                 }}
               >
-                <div class="col-span-3 text-neutral-800 dark:text-neutral-50">
+                <div class="col-span-3 text-black dark:text-neutral-50">
                   <div
                     // eslint-disable-next-line solid/no-innerhtml
                     innerHTML={sanitizeHtml(
