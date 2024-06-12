@@ -700,13 +700,7 @@ pub async fn bulk_insert_chunk_metadata_query(
         .values(chunk_group_bookmarks_to_insert)
         .execute(&mut conn)
         .await
-        .map_err(|e| {
-            sentry::capture_message(
-                &format!("Failed to insert chunk into gropus: {:?}", e),
-                sentry::Level::Error,
-            );
-            ServiceError::BadRequest("Failed to insert chunk into groups".to_string())
-        })?;
+        .map_err(|e| ServiceError::BadRequest("Failed to insert chunk into groups".to_string()))?;
 
     let chunk_tags_to_chunk_id: Vec<(Vec<DatasetTags>, uuid::Uuid)> = insertion_data
         .clone()
