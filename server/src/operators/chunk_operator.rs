@@ -1733,6 +1733,7 @@ pub fn get_highlights(
     delimiters: Vec<String>,
     max_length: Option<u32>,
     max_num: Option<u32>,
+    window_size: Option<u32>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
 
@@ -1763,7 +1764,67 @@ pub fn get_highlights(
     for x in results.iter().take(max_num.unwrap_or(3) as usize) {
         matched_phrases.push(x.clone());
     }
-    let result_matches = matched_phrases.clone();
+
+    let estimated_context_size = 100;
+
+    fn find_phrase_index(words: &[&str], phrase: &str) -> Option<usize> {
+        let phrase_words: Vec<&str> = phrase.split_whitespace().collect();
+        let phrase_len = phrase_words.len();
+
+        if phrase_len == 0 {
+            return None;
+        }
+
+        (0..=(words.len() - phrase_len))
+            .find(|&i| &words[i..i + phrase_len] == phrase_words.as_slice())
+    }
+
+    let result_matches = if let Some(window) = window_size {
+        if let Some(chunk_html) = new_output.chunk_html.clone() {
+            let mut result_matches = vec![];
+            for phrase in matched_phrases.clone() {
+                if let Some(index) = chunk_html.find(&phrase) {
+                    let start_index = index - estimated_context_size as usize;
+
+                    let end_index = if index + phrase.len() + estimated_context_size as usize
+                        >= chunk_html.len()
+                    {
+                        chunk_html.len()
+                    } else {
+                        index + phrase.len() + estimated_context_size as usize
+                    };
+
+                    let context = chunk_html[start_index..end_index]
+                        .split_whitespace()
+                        .collect_vec();
+
+                    if let Some(phrase_index) = find_phrase_index(&context, &phrase) {
+                        let start_index = phrase_index - window as usize;
+                        let split_phrase = phrase.split_whitespace().collect_vec();
+
+                        let end_index = if phrase_index + split_phrase.len() + window as usize
+                            >= context.len()
+                        {
+                            context.len()
+                        } else {
+                            phrase_index + split_phrase.len() + window as usize
+                        };
+
+                        let context = context[start_index..end_index]
+                            .join(" ")
+                            .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase));
+
+                        result_matches.push(context.to_string());
+                    }
+                }
+            }
+            result_matches
+        } else {
+            matched_phrases.clone()
+        }
+    } else {
+        matched_phrases.clone()
+    };
 
     for phrase in matched_phrases {
         new_output.chunk_html = new_output

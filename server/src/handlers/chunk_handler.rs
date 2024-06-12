@@ -917,6 +917,8 @@ pub struct SearchChunksReqPayload {
     pub highlight_max_length: Option<u32>,
     /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
     pub highlight_max_num: Option<u32>,
+    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words.
+    pub highlight_window: Option<u32>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
@@ -943,6 +945,7 @@ impl Default for SearchChunksReqPayload {
             highlight_delimiters: None,
             highlight_max_length: None,
             highlight_max_num: None,
+            highlight_window: None,
             score_threshold: None,
             slim_chunks: None,
             content_only: None,
@@ -1168,6 +1171,8 @@ pub struct AutocompleteReqPayload {
     pub highlight_max_length: Option<u32>,
     /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
     pub highlight_max_num: Option<u32>,
+    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words.
+    pub highlight_window: Option<u32>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
@@ -1198,6 +1203,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             ),
             highlight_max_length: autocomplete_data.highlight_max_length,
             highlight_max_num: autocomplete_data.highlight_max_num,
+            highlight_window: autocomplete_data.highlight_window,
             score_threshold: autocomplete_data.score_threshold,
             slim_chunks: autocomplete_data.slim_chunks,
             content_only: autocomplete_data.content_only,
