@@ -3,21 +3,25 @@
 @tailwind utilities;
 
 mark > div > * {
-  background-color: #ff0;
+  background-color: #fffebd;
   color: #000;
   font-weight: bolder;
   width: fit-content;
 }
 
 mark > p {
-  background-color: #ff0;
+  background-color: #fffebd;
   color: #000;
   font-weight: bolder;
   width: fit-content;
 }
 
+mark {
+  background-color: #fffebd;
+}
+
 b > mark > h1, h2, h3, h4, h5, h6 {
-  background-color: #ff0;
+  background-color: #fffebd;
   color: #000;
   font-weight: bolder;
   width: fit-content;
