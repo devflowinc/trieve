@@ -183,7 +183,7 @@ pub async fn soft_delete_dataset_by_id_query(
     let serialized_message =
         serde_json::to_string(&message).map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    redis::cmd("rpush")
+    redis::cmd("lpush")
         .arg("delete_dataset_queue")
         .arg(&serialized_message)
         .query_async(&mut *redis_conn)

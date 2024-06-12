@@ -327,7 +327,7 @@ pub async fn create_chunk(
         ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
     })?;
 
-    let pos_in_queue = redis::cmd("rpush")
+    let pos_in_queue = redis::cmd("lpush")
         .arg("ingestion")
         .arg(&serialized_message)
         .query_async(&mut *redis_conn)
@@ -628,7 +628,7 @@ pub async fn update_chunk(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    redis::cmd("rpush")
+    redis::cmd("lpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
         .query_async(&mut *redis_conn)
@@ -777,7 +777,7 @@ pub async fn update_chunk_by_tracking_id(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    redis::cmd("rpush")
+    redis::cmd("lpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
         .query_async(&mut *redis_conn)

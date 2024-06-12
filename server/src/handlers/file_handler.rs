@@ -209,7 +209,7 @@ pub async fn upload_file_handler(
     })?;
 
     let push_to_redis_span = transaction.start_child("push_to_redis", "push_to_redis");
-    redis::cmd("rpush")
+    redis::cmd("lpush")
         .arg("file_ingestion")
         .arg(&serialized_message)
         .query_async(&mut *redis_conn)

@@ -204,30 +204,43 @@ pub async fn create_file_chunks(
     let server_dataset_configuration =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
-    let (ingestion_message, _) = create_chunk_metadata(
-        chunks,
-        dataset_org_plan_sub.dataset.id,
-        server_dataset_configuration,
-        pool.clone(),
-    )
-    .await?;
+    let chunk_segments = chunks
+        .chunks(120)
+        .into_iter()
+        .map(|chunk_segment| chunk_segment.to_vec())
+        .collect::<Vec<Vec<ChunkReqPayload>>>();
 
-    let serialized_messages: String = serde_json::to_string(&ingestion_message).map_err(|_| {
-        ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
-    })?;
+    let mut serialized_messages: Vec<String> = vec![];
 
-    if serialized_messages.is_empty() {
-        return Err(ServiceError::BadRequest(
-            "Could not create chunks".to_string(),
-        ));
+    for chunk_segment in chunk_segments {
+        let (ingestion_message, _) = create_chunk_metadata(
+            chunk_segment,
+            dataset_org_plan_sub.dataset.id,
+            server_dataset_configuration.clone(),
+            pool.clone(),
+        )
+        .await?;
+
+        let serialized_message: String =
+            serde_json::to_string(&ingestion_message).map_err(|_| {
+                ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+            })?;
+
+        if serialized_message.is_empty() {
+            continue;
+        }
+
+        serialized_messages.push(serialized_message);
     }
 
-    redis::cmd("rpush")
-        .arg("ingestion")
-        .arg(&serialized_messages)
-        .query_async(&mut redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    for serialized_message in serialized_messages {
+        redis::cmd("lpush")
+            .arg("ingestion")
+            .arg(&serialized_message)
+            .query_async(&mut redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    }
 
     create_event_query(
         Event::from_details(

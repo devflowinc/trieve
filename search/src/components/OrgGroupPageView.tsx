@@ -140,7 +140,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                   <For each={groups()}>
                     {(group) => (
                       <tr>
-                        <td class="cursor-pointer whitespace-nowrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
+                        <td class="cursor-pointer whitespace-nowrap text-wrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
                           <a
                             class="w-full underline"
                             href={`/group/${group.id}`}
@@ -148,7 +148,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                             {group.name}
                           </a>
                         </td>
-                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
+                        <td class="whitespace-nowrap text-wrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
                           {group.description}
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-left text-sm text-gray-900 dark:text-gray-300">
