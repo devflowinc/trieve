@@ -43,7 +43,7 @@ pub async fn get_chunk_metadatas_from_point_ids(
         .expect("Failed to get connection from pool");
 
     // Get tag_set
-    let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Vec<String>)> =
+    let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
         chunk_metadata_columns::chunk_metadata
             .left_join(
                 chunk_metadata_tags_columns::chunk_metadata_tags
@@ -57,16 +57,21 @@ pub async fn get_chunk_metadatas_from_point_ids(
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
             .select((
                 ChunkMetadataTable::as_select(),
-                sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+                sql::<sql_types::Array<sql_types::Text>>(
+                    "array_remove(array_agg(dataset_tags.tag), null)",
+                )
+                .nullable(),
             ))
             .group_by(chunk_metadata_columns::id)
-            .load::<(ChunkMetadataTable, Vec<String>)>(&mut conn)
+            .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let chunk_metadatas = chunk_metadata_pairs
         .into_iter()
-        .map(|(table, tag_set)| ChunkMetadata::from_table_and_tag_set(table, tag_set))
+        .map(|(table, tag_set)| {
+            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![]))
+        })
         .collect();
 
     Ok(chunk_metadatas)
@@ -184,7 +189,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
 
         // Get tagset and chunk metadatatable
 
-        let chunk_metadata_pair: Vec<(ChunkMetadataTable, Vec<String>)> =
+        let chunk_metadata_pair: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
             chunk_metadata_columns::chunk_metadata
                 .left_join(chunk_metadata_tags_columns::chunk_metadata_tags.on(
                     chunk_metadata_tags_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
@@ -195,11 +200,14 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                 )
                 .select((
                     ChunkMetadataTable::as_select(),
-                    sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+                    sql::<sql_types::Array<sql_types::Text>>(
+                        "array_remove(array_agg(dataset_tags.tag), null)",
+                    )
+                    .nullable(),
                 ))
                 .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
                 .group_by(chunk_metadata_columns::id)
-                .load::<(ChunkMetadataTable, Vec<String>)>(&mut conn)
+                .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
                 .await
                 .map_err(|err| {
                     ServiceError::BadRequest(format!(
@@ -222,7 +230,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         qdrant_point_id: chunk_table.qdrant_point_id.or(qdrant_point_id),
                         ..chunk_table
                     },
-                    tag_set,
+                    tag_set.unwrap_or(vec![]),
                 )
                 .into()
             })
@@ -256,7 +264,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                     .await
                     .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
-            let chunk_metadata_pair: Vec<(ChunkMetadataTable, Vec<String>)> =
+            let chunk_metadata_pair: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
                 chunk_metadata_columns::chunk_metadata
                     .left_join(
                         chunk_metadata_tags_columns::chunk_metadata_tags
@@ -269,11 +277,14 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                     )
                     .select((
                         ChunkMetadataTable::as_select(),
-                        sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+                        sql::<sql_types::Array<sql_types::Text>>(
+                            "array_remove(array_agg(dataset_tags.tag), null)",
+                        )
+                        .nullable(),
                     ))
                     .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
                     .group_by(chunk_metadata_columns::id)
-                    .load::<(ChunkMetadataTable, Vec<String>)>(&mut conn)
+                    .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
                     .await
                     .map_err(|_| {
                         ServiceError::BadRequest(
@@ -297,7 +308,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                                     .or(Some(qdrant_point_id)),
                                 ..chunk_table
                             },
-                            tag_set,
+                            tag_set.unwrap_or(vec![]),
                         )
                         .into(),
                     )
@@ -331,7 +342,7 @@ pub async fn get_slim_chunks_from_point_ids_query(
         .await
         .expect("Failed to get connection from pool");
 
-    let slim_chunk_pairs: Vec<(SlimChunkMetadataTable, Vec<String>)> =
+    let slim_chunk_pairs: Vec<(SlimChunkMetadataTable, Option<Vec<String>>)> =
         chunk_metadata_columns::chunk_metadata
             .left_join(
                 chunk_metadata_tags_columns::chunk_metadata_tags
@@ -359,10 +370,13 @@ pub async fn get_slim_chunks_from_point_ids_query(
                     chunk_metadata_columns::image_urls,
                     chunk_metadata_columns::num_value,
                 ),
-                sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+                sql::<sql_types::Array<sql_types::Text>>(
+                    "array_remove(array_agg(dataset_tags.tag), null)",
+                )
+                .nullable(),
             ))
             .group_by(chunk_metadata_columns::id)
-            .load::<(SlimChunkMetadataTable, Vec<String>)>(&mut conn)
+            .load::<(SlimChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
             .await
             .map_err(|_| {
                 ServiceError::BadRequest("Failed to load slim_chunk_metadatas".to_string())
@@ -370,7 +384,9 @@ pub async fn get_slim_chunks_from_point_ids_query(
 
     let slim_chunks = slim_chunk_pairs
         .into_iter()
-        .map(|(table, tag_set)| SlimChunkMetadata::from_table_and_tag_set(table, tag_set).into())
+        .map(|(table, tag_set)| {
+            SlimChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![])).into()
+        })
         .collect();
 
     Ok(slim_chunks)
@@ -462,16 +478,22 @@ pub async fn get_metadata_from_id_query(
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .select((
             ChunkMetadataTable::as_select(),
-            sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+            sql::<sql_types::Array<sql_types::Text>>(
+                "array_remove(array_agg(dataset_tags.tag), null)",
+            )
+            .nullable(),
         ))
         .group_by(chunk_metadata_columns::id)
-        .first::<(ChunkMetadataTable, Vec<String>)>(&mut conn)
+        .first::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
         .await
         .map_err(|_| {
             ServiceError::NotFound("Chunk with id not found in the specified dataset".to_string())
         })?;
 
-    Ok(ChunkMetadata::from_table_and_tag_set(chunk_table, tag_set))
+    Ok(ChunkMetadata::from_table_and_tag_set(
+        chunk_table,
+        tag_set.unwrap_or(vec![]),
+    ))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -499,10 +521,13 @@ pub async fn get_metadata_from_tracking_id_query(
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
         .select((
             ChunkMetadataTable::as_select(),
-            sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+            sql::<sql_types::Array<sql_types::Text>>(
+                "array_remove(array_agg(dataset_tags.tag), null)",
+            )
+            .nullable(),
         ))
         .group_by(chunk_metadata_columns::id)
-        .first::<(ChunkMetadataTable, Vec<String>)>(&mut conn)
+        .first::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
         .await
         .map_err(|_| {
             ServiceError::NotFound(
@@ -510,7 +535,10 @@ pub async fn get_metadata_from_tracking_id_query(
             )
         })?;
 
-    Ok(ChunkMetadata::from_table_and_tag_set(chunk_table, tag_set))
+    Ok(ChunkMetadata::from_table_and_tag_set(
+        chunk_table,
+        tag_set.unwrap_or(vec![]),
+    ))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -525,7 +553,7 @@ pub async fn get_metadata_from_ids_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Vec<String>)> =
+    let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
         chunk_metadata_columns::chunk_metadata
             .left_join(
                 chunk_metadata_tags_columns::chunk_metadata_tags
@@ -540,16 +568,21 @@ pub async fn get_metadata_from_ids_query(
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
             .select((
                 ChunkMetadataTable::as_select(),
-                sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+                sql::<sql_types::Array<sql_types::Text>>(
+                    "array_remove(array_agg(dataset_tags.tag), null)",
+                )
+                .nullable(),
             ))
             .group_by(chunk_metadata_columns::id)
-            .load::<(ChunkMetadataTable, Vec<String>)>(&mut conn)
+            .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let chunk_metadatas = chunk_metadata_pairs
         .into_iter()
-        .map(|(table, tag_set)| ChunkMetadata::from_table_and_tag_set(table, tag_set).into())
+        .map(|(table, tag_set)| {
+            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![])).into()
+        })
         .collect();
 
     Ok(chunk_metadatas)
@@ -567,7 +600,7 @@ pub async fn get_metadata_from_tracking_ids_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Vec<String>)> =
+    let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
         chunk_metadata_columns::chunk_metadata
             .left_join(
                 chunk_metadata_tags_columns::chunk_metadata_tags
@@ -582,16 +615,21 @@ pub async fn get_metadata_from_tracking_ids_query(
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
             .select((
                 ChunkMetadataTable::as_select(),
-                sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+                sql::<sql_types::Array<sql_types::Text>>(
+                    "array_remove(array_agg(dataset_tags.tag), null)",
+                )
+                .nullable(),
             ))
             .group_by(chunk_metadata_columns::id)
-            .load::<(ChunkMetadataTable, Vec<String>)>(&mut conn)
+            .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let chunk_metadatas = chunk_metadata_pairs
         .into_iter()
-        .map(|(table, tag_set)| ChunkMetadata::from_table_and_tag_set(table, tag_set).into())
+        .map(|(table, tag_set)| {
+            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![])).into()
+        })
         .collect();
 
     Ok(chunk_metadatas)
@@ -763,7 +801,7 @@ pub async fn get_optional_metadata_from_tracking_id_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let optional_chunk: Option<(ChunkMetadataTable, Vec<String>)> =
+    let optional_chunk: Option<(ChunkMetadataTable, Option<Vec<String>>)> =
         chunk_metadata_columns::chunk_metadata
             .left_join(
                 chunk_metadata_tags_columns::chunk_metadata_tags
@@ -778,10 +816,13 @@ pub async fn get_optional_metadata_from_tracking_id_query(
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
             .select((
                 ChunkMetadataTable::as_select(),
-                sql::<sql_types::Array<sql_types::Text>>("array_agg(dataset_tags.tag)"),
+                sql::<sql_types::Array<sql_types::Text>>(
+                    "array_remove(array_agg(dataset_tags.tag), null)",
+                )
+                .nullable(),
             ))
             .group_by(chunk_metadata_columns::id)
-            .load::<(ChunkMetadataTable, Vec<String>)>(&mut conn)
+            .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
             .await
             .map_err(|e| {
                 log::error!(
@@ -795,8 +836,9 @@ pub async fn get_optional_metadata_from_tracking_id_query(
             })?
             .pop();
 
-    Ok(optional_chunk
-        .map(|(chunk_table, tag_set)| ChunkMetadata::from_table_and_tag_set(chunk_table, tag_set)))
+    Ok(optional_chunk.map(|(chunk_table, tag_set)| {
+        ChunkMetadata::from_table_and_tag_set(chunk_table, tag_set.unwrap_or(vec![]))
+    }))
 }
 
 #[tracing::instrument(skip(pool))]
