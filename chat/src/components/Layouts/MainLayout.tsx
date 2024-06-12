@@ -286,7 +286,10 @@ const MainLayout = (props: LayoutProps) => {
   return (
     <>
       <div class="relative flex w-full flex-col justify-between">
-        <div class="flex flex-col gap-4 px-4 pb-32 pt-4" id="topic-messages">
+        <div
+          class="flex flex-col items-stretch gap-6 px-4 pb-32 pt-4"
+          id="topic-messages"
+        >
           <For each={messages()}>
             {(message, idx) => {
               return (
