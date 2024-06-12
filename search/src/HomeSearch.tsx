@@ -20,6 +20,7 @@ export const HomeSearch = () => {
   const params = new URLSearchParams(requestParams);
   const extendResults = params.get("extendResults") === "true" || false;
   const searchType: string = params.get("searchType") ?? "search";
+  const scoreThreshold = Number(params.get("scoreThreshold")) || 0.0;
   const recencyBias = Number(params.get("recencyBias")) || 0.0;
   const groupUnique = params.get("groupUnique") === "true" || false;
   const slimChunks = params.get("slimChunks") === "true" || false;
@@ -58,6 +59,7 @@ export const HomeSearch = () => {
         <div class="mt-8 w-full max-w-7xl px-4 sm:px-8 md:px-20">
           <SearchForm
             searchType={searchType}
+            scoreThreshold={scoreThreshold}
             recencyBias={recencyBias}
             extendResults={extendResults}
             groupUniqueSearch={groupUnique}
