@@ -1234,6 +1234,7 @@ pub async fn retrieve_chunks_for_groups(
                             ]),
                             data.highlight_max_length,
                             data.highlight_max_num,
+                data.highlight_window
                         )
                         .unwrap_or((chunk.clone().into(), vec![]));
 
@@ -1512,6 +1513,7 @@ pub async fn retrieve_chunks_from_point_ids(
                     ]),
                     data.highlight_max_length,
                     data.highlight_max_num,
+                    data.highlight_window,
                 )
                 .unwrap_or((chunk.clone().into(), vec![]));
 
