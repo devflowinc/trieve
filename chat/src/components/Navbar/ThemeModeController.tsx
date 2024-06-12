@@ -47,10 +47,10 @@ const ThemeModeController = () => {
               }}
             >
               <div class="hidden dark:block">
-                <BsMoonStars class=" h-6 w-6" />
+                <BsMoonStars class="h-6 w-6" />
               </div>
               <div class="block dark:hidden">
-                <BsSun class=" h-6 w-6" />
+                <BsSun class="h-6 w-6" />
               </div>
             </PopoverButton>
             <Transition

@@ -31,7 +31,7 @@ export const OrganizationSelectBox = () => {
                   stroke-width="0"
                   style={{ overflow: "visible", color: "currentColor" }}
                   viewBox="0 0 16 16"
-                  class="h-3.5 w-3.5 "
+                  class="h-3.5 w-3.5"
                   height="1em"
                   width="1em"
                   xmlns="http://www.w3.org/2000/svg"

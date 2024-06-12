@@ -12,7 +12,7 @@ export const Tooltip = (props: TooltipProps) => {
   return (
     <div class="relative">
       <div
-        class=" hover:cursor-help"
+        class="hover:cursor-help"
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
       >
