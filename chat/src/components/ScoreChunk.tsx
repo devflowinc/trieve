@@ -85,6 +85,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
         }),
       ])
       .then(() => {
+        alert("COPIED");
         setCopied(true);
         setTimeout(() => {
           setCopied(false);
@@ -102,19 +103,19 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   return (
     <div
-      class="flex w-full flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 lg:ml-2"
+      class="flex w-full scroll-mt-[30px] flex-col items-center border-b-neutral-300 bg-neutral-100 p-2 pb-4 dark:!bg-neutral-800 lg:ml-2 [&:not(:last-child)]:border-b-2"
       id={"doc_" + (props.order ?? "") + props.counter}
     >
       <div class="flex w-full flex-col space-y-2">
         <div class="flex h-fit items-center space-x-1">
           <Tooltip
-            body={<FiGlobe class="h-5 w-5 text-green-500" />}
+            body={<FiGlobe class="z-50 h-5 w-5 text-green-500" />}
             tooltipText="Publicly visible"
           />
           <span class="font-semibold">Doc: {props.counter}</span>
           <div class="flex-1" />
           <Show when={!copied()}>
-            <button class="h-fit" onClick={() => copyChunk()}>
+            <button class="h-fit opacity-50" onClick={() => copyChunk()}>
               <AiOutlineCopy class="h-5 w-5 fill-current" />
             </button>
           </Show>
@@ -126,7 +127,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
             href={`${searchURL}/chunk/${props.chunk.id}`}
             target="_blank"
           >
-            <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+            <VsFileSymlinkFile class="h-5 w-5 fill-current opacity-50" />
           </a>
         </div>
         <div class="flex w-full flex-col">
@@ -214,7 +215,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           </For>
         </div>
       </div>
-      <div class="mb-1 h-1 w-full border-b border-neutral-300 gradient-mask-b-0 dark:border-neutral-600" />
+      <div class="mb-1 h-1 w-full border-b border-neutral-500 gradient-mask-b-0 dark:border-neutral-600" />
       <div
         classList={{
           "line-clamp-4 gradient-mask-b-0": useExpand() && !expanded(),

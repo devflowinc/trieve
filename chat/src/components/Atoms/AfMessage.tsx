@@ -7,6 +7,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  onCleanup,
 } from "solid-js";
 import { ChunkMetadataWithVotes } from "../../utils/apiTypes";
 import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
@@ -32,6 +33,34 @@ export const AfMessage = (props: AfMessageProps) => {
     ChunkMetadataWithVotes[]
   >([]);
   const [metadata, setMetadata] = createSignal<ChunkMetadataWithVotes[]>([]);
+
+  // Used to syncrhonize the response height with the citations height
+  // CSS is not enough
+  const [leftColumnRef, setLeftColumnRef] = createSignal<HTMLElement | null>(
+    null,
+  );
+  const [rightColumnRef, setRightColumnRef] = createSignal<HTMLElement | null>(
+    null,
+  );
+  createEffect(() => {
+    const leftColumn = leftColumnRef();
+    const rightColumn = rightColumnRef();
+
+    if (leftColumn && rightColumn) {
+      const setRightColumnHeight = () => {
+        rightColumn.style.maxHeight = `${leftColumn.clientHeight}px`;
+      };
+
+      // Set the initial height and update on resize
+      setRightColumnHeight();
+      window.addEventListener("resize", setRightColumnHeight);
+
+      // Cleanup event listener on component unmount
+      onCleanup(() => {
+        window.removeEventListener("resize", setRightColumnHeight);
+      });
+    }
+  });
 
   createEffect(() => {
     setEditingMessageContent(props.content);
@@ -103,17 +132,19 @@ export const AfMessage = (props: AfMessageProps) => {
   });
 
   return (
-    <div>
-      <Show when={props.role !== "system"}>
+    <Show when={props.role !== "system"}>
+      <div classList={{ "lg:flex items-start": true }}>
         <Show when={!editing()}>
           <div
+            ref={setLeftColumnRef}
             classList={{
-              "dark:text-white shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
+              "dark:text-white grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
                 true,
-              "bg-neutral-200 border-neutral-300 md:mr-16 dark:bg-neutral-700/70":
+              "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
                 props.role === "assistant",
               "bg-neutral-50 dark:bg-neutral-800 md:ml-16":
                 props.role === "user",
+              "md:mr-16": props.role === "assistant" && metadata().length <= 0,
             }}
             onMouseEnter={() => setShowEditingIcon(true)}
             onMouseLeave={() => {
@@ -123,7 +154,7 @@ export const AfMessage = (props: AfMessageProps) => {
               setShowEditingIcon(false);
             }}
           >
-            <div class="flex w-full gap-2 md:flex-row md:space-x-2 md:space-y-0 lg:space-x-4">
+            <div class="flex w-full gap-2 md:flex-row md:space-x-2 md:space-y-0">
               {props.role === "user" ? (
                 <BiSolidUserRectangle class="fill-current" />
               ) : (
@@ -136,7 +167,7 @@ export const AfMessage = (props: AfMessageProps) => {
                     !!chunkMetadatas(),
                 }}
               >
-                <div class="col-span-2 text-neutral-800 dark:text-neutral-50">
+                <div class="col-span-3 text-neutral-800 dark:text-neutral-50">
                   <div
                     // eslint-disable-next-line solid/no-innerhtml
                     innerHTML={sanitizeHtml(
@@ -146,30 +177,10 @@ export const AfMessage = (props: AfMessageProps) => {
                   />
                 </div>
                 <Show when={!displayMessage().content}>
-                  <div class="col-span-2 w-full whitespace-pre-line">
+                  <div class="col-span-3 w-full whitespace-pre-line">
                     <div class="flex w-full flex-col items-center justify-center">
                       <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
                     </div>
-                  </div>
-                </Show>
-                <Show when={metadata() && metadata().length > 0}>
-                  <div class="max-h-[800px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden pr-2 scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
-                    <For each={chunkMetadatas()}>
-                      {(chunk, i) => (
-                        <ScoreChunk
-                          signedInUserId={undefined}
-                          chunkCollections={[]}
-                          totalCollectionPages={1}
-                          collection={undefined}
-                          chunk={chunk}
-                          counter={(i() + 1).toString()}
-                          initialExpanded={false}
-                          bookmarks={[]}
-                          showExpand={!props.streamingCompletion()}
-                          order={props.order.toString()}
-                        />
-                      )}
-                    </For>
                   </div>
                 </Show>
               </div>
@@ -239,7 +250,32 @@ export const AfMessage = (props: AfMessageProps) => {
         {/*     </form> */}
         {/*   </div> */}
         {/* </Show> */}
-      </Show>
-    </div>
+        <div>
+          <Show when={metadata() && metadata().length > 0}>
+            <div
+              ref={setRightColumnRef}
+              class="relative min-w-[300px] shrink-0 flex-grow flex-col space-y-3 overflow-scroll overflow-x-hidden overflow-y-scroll px-2 scrollbar-track-neutral-200 scrollbar-w-2.5 dark:scrollbar-track-zinc-700"
+            >
+              <For each={chunkMetadatas()}>
+                {(chunk, i) => (
+                  <ScoreChunk
+                    signedInUserId={undefined}
+                    chunkCollections={[]}
+                    totalCollectionPages={1}
+                    collection={undefined}
+                    chunk={chunk}
+                    counter={(i() + 1).toString()}
+                    initialExpanded={false}
+                    bookmarks={[]}
+                    showExpand={!props.streamingCompletion()}
+                    order={props.order.toString()}
+                  />
+                )}
+              </For>
+            </div>
+          </Show>
+        </div>
+      </div>
+    </Show>
   );
 };

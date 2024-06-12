@@ -286,10 +286,7 @@ const MainLayout = (props: LayoutProps) => {
   return (
     <>
       <div class="relative flex w-full flex-col justify-between">
-        <div
-          class="flex flex-col items-stretch gap-4 px-4 pb-32 pt-4"
-          id="topic-messages"
-        >
+        <div class="flex flex-col gap-4 px-4 pb-32 pt-4" id="topic-messages">
           <For each={messages()}>
             {(message, idx) => {
               return (
@@ -354,13 +351,13 @@ const MainLayout = (props: LayoutProps) => {
           </For>
         </div>
 
-        <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-gradient-to-b from-transparent via-zinc-200 to-zinc-100 p-4 dark:bg-none dark:via-zinc-800 dark:to-zinc-900 lg:w-4/5">
+        <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-gradient-to-b from-transparent via-zinc-200 to-zinc-100 p-4 dark:via-zinc-800 dark:to-zinc-900 lg:w-4/5">
           <Show when={messages().length > 0}>
             <div class="flex w-full justify-center">
               <Switch>
                 <Match when={!streamingCompletion()}>
                   <button
-                    class="flex w-fit items-center justify-center space-x-4 rounded-xl bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white"
+                    class="flex w-fit items-center justify-center space-x-4 rounded-xl border border-neutral-300/80 bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white"
                     onClick={(e) => {
                       e.preventDefault();
                       const topic_id = props.selectedTopic?.id;
