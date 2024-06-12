@@ -1767,24 +1767,16 @@ pub fn get_highlights(
 
     let estimated_context_size = 100;
 
-    fn find_phrase_index(words: &[&str], phrase: &str) -> Option<usize> {
-        let phrase_words: Vec<&str> = phrase.split_whitespace().collect();
-        let phrase_len = phrase_words.len();
-
-        if phrase_len == 0 {
-            return None;
-        }
-
-        (0..=(words.len() - phrase_len))
-            .find(|&i| &words[i..i + phrase_len] == phrase_words.as_slice())
-    }
-
     let result_matches = if let Some(window) = window_size {
         if let Some(chunk_html) = new_output.chunk_html.clone() {
             let mut result_matches = vec![];
             for phrase in matched_phrases.clone() {
                 if let Some(index) = chunk_html.find(&phrase) {
-                    let start_index = index - estimated_context_size as usize;
+                    let start_index = if index as i32 - estimated_context_size >= 0 {
+                        index - estimated_context_size as usize
+                    } else {
+                        0
+                    };
 
                     let end_index = if index + phrase.len() + estimated_context_size as usize
                         >= chunk_html.len()
@@ -1798,17 +1790,24 @@ pub fn get_highlights(
                         .split_whitespace()
                         .collect_vec();
 
-                    if let Some(phrase_index) = find_phrase_index(&context, &phrase) {
-                        let start_index = phrase_index - window as usize;
-                        let split_phrase = phrase.split_whitespace().collect_vec();
+                    let split_phrase_words: Vec<&str> = phrase.split_whitespace().collect();
+                    let phrase_len = split_phrase_words.len();
 
-                        let end_index = if phrase_index + split_phrase.len() + window as usize
-                            >= context.len()
-                        {
-                            context.len()
+                    if let Some(phrase_index) = (0..=(context.len() - phrase_len))
+                        .find(|&i| &context[i..i + phrase_len] == split_phrase_words.as_slice())
+                    {
+                        let start_index = if phrase_index as i32 - window as i32 >= 0 {
+                            phrase_index - window as usize
                         } else {
-                            phrase_index + split_phrase.len() + window as usize
+                            0
                         };
+
+                        let end_index =
+                            if phrase_index + phrase_len + window as usize >= context.len() {
+                                context.len()
+                            } else {
+                                phrase_index + phrase_len + window as usize
+                            };
 
                         let context = context[start_index..end_index]
                             .join(" ")
