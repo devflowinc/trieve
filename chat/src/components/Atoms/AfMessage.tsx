@@ -72,6 +72,7 @@ export const AfMessage = (props: AfMessageProps) => {
     textarea.style.height = `${textarea.scrollHeight}px`;
     setEditingMessageContent(textarea.value);
   };
+
   createEffect(() => {
     if (props.streamingCompletion()) return;
     const bracketRe = /\[(.*?)\]/g;
@@ -102,14 +103,17 @@ export const AfMessage = (props: AfMessageProps) => {
   });
 
   return (
-    <>
+    <div>
       <Show when={props.role !== "system"}>
         <Show when={!editing()}>
           <div
             classList={{
-              "dark:text-white md:px-6 w-full px-4 py-4 flex items-start": true,
-              "bg-neutral-200 dark:bg-zinc-700": props.role === "assistant",
-              "bg-neutral-50 dark:bg-zinc-800": props.role === "user",
+              "dark:text-white shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
+                true,
+              "bg-neutral-200 border-neutral-300 md:mr-16 dark:bg-neutral-700/70":
+                props.role === "assistant",
+              "bg-neutral-50 dark:bg-neutral-800 md:ml-16":
+                props.role === "user",
             }}
             onMouseEnter={() => setShowEditingIcon(true)}
             onMouseLeave={() => {
@@ -119,7 +123,7 @@ export const AfMessage = (props: AfMessageProps) => {
               setShowEditingIcon(false);
             }}
           >
-            <div class="w-full space-y-2 md:flex md:flex-row md:space-x-2 md:space-y-0 lg:space-x-4">
+            <div class="flex w-full gap-2 md:flex-row md:space-x-2 md:space-y-0 lg:space-x-4">
               {props.role === "user" ? (
                 <BiSolidUserRectangle class="fill-current" />
               ) : (
@@ -128,11 +132,11 @@ export const AfMessage = (props: AfMessageProps) => {
               <div
                 classList={{
                   "w-full": true,
-                  "flex flex-col gap-y-8 items-start lg:gap-4 lg:grid lg:grid-cols-3 flex-col-reverse lg:flex-row":
+                  "flex gap-y-8 items-start lg:gap-4 lg:grid lg:grid-cols-3 flex-col-reverse lg:flex-row":
                     !!chunkMetadatas(),
                 }}
               >
-                <div class="col-span-2 whitespace-pre-line text-neutral-800 dark:text-neutral-50">
+                <div class="col-span-2 text-neutral-800 dark:text-neutral-50">
                   <div
                     // eslint-disable-next-line solid/no-innerhtml
                     innerHTML={sanitizeHtml(
@@ -148,7 +152,7 @@ export const AfMessage = (props: AfMessageProps) => {
                     </div>
                   </div>
                 </Show>
-                <Show when={metadata()}>
+                <Show when={metadata() && metadata().length > 0}>
                   <div class="max-h-[800px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden pr-2 scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
                     <For each={chunkMetadatas()}>
                       {(chunk, i) => (
@@ -183,59 +187,59 @@ export const AfMessage = (props: AfMessageProps) => {
             </Show>
           </div>
         </Show>
-        <Show when={editing()}>
-          <div
-            classList={{
-              "dark:text-white md:px-6 w-full px-4 py-4 flex items-start": true,
-              "bg-neutral-200 dark:bg-zinc-700": props.role === "assistant",
-              "bg-neutral-50 dark:bg-zinc-800": props.role === "user",
-            }}
-          >
-            <form class="w-full">
-              <textarea
-                id="new-message-content-textarea"
-                class="max-h-[180px] w-full resize-none whitespace-pre-wrap rounded bg-neutral-100 bg-transparent p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
-                placeholder="Write a question or prompt for the assistant..."
-                value={editingMessageContent()}
-                onInput={(e) => resizeTextarea(e.target)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    props.onEdit(editingMessageContent());
-                    setEditedContent(editingMessageContent());
-                    setEditing(false);
-                  }
-                }}
-                rows="1"
-              />
-              <div class="mt-2 flex flex-row justify-center space-x-2 text-sm">
-                <button
-                  type="submit"
-                  class="rounded bg-purple-500 px-2 py-1 text-white"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    props.onEdit(editingMessageContent());
-                    setEditedContent(editingMessageContent());
-                    setEditing(false);
-                  }}
-                >
-                  Save & Submit
-                </button>
-                <button
-                  type="button"
-                  class="rounded border border-neutral-500 px-2 py-1"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setEditing(false);
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </Show>
+        {/* <Show when={editing()}> */}
+        {/*   <div */}
+        {/*     classList={{ */}
+        {/*       "dark:text-white md:px-6 w-full px-4 py-4 flex items-start": true, */}
+        {/*       "bg-neutral-200 dark:bg-zinc-700": props.role === "assistant", */}
+        {/*       "bg-neutral-50 dark:bg-zinc-800": props.role === "user", */}
+        {/*     }} */}
+        {/*   > */}
+        {/*     <form class="w-full"> */}
+        {/*       <textarea */}
+        {/*         id="new-message-content-textarea" */}
+        {/*         class="max-h-[180px] w-full resize-none whitespace-pre-wrap rounded bg-neutral-100 bg-transparent p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600" */}
+        {/*         placeholder="Write a question or prompt for the assistant..." */}
+        {/*         value={editingMessageContent()} */}
+        {/*         onInput={(e) => resizeTextarea(e.target)} */}
+        {/*         onKeyDown={(e) => { */}
+        {/*           if (e.key === "Enter") { */}
+        {/*             e.preventDefault(); */}
+        {/*             props.onEdit(editingMessageContent()); */}
+        {/*             setEditedContent(editingMessageContent()); */}
+        {/*             setEditing(false); */}
+        {/*           } */}
+        {/*         }} */}
+        {/*         rows="1" */}
+        {/*       /> */}
+        {/*       <div class="mt-2 flex flex-row justify-center space-x-2 text-sm"> */}
+        {/*         <button */}
+        {/*           type="submit" */}
+        {/*           class="rounded bg-purple-500 px-2 py-1 text-white" */}
+        {/*           onClick={(e) => { */}
+        {/*             e.preventDefault(); */}
+        {/*             props.onEdit(editingMessageContent()); */}
+        {/*             setEditedContent(editingMessageContent()); */}
+        {/*             setEditing(false); */}
+        {/*           }} */}
+        {/*         > */}
+        {/*           Save & Submit */}
+        {/*         </button> */}
+        {/*         <button */}
+        {/*           type="button" */}
+        {/*           class="rounded border border-neutral-500 px-2 py-1" */}
+        {/*           onClick={(e) => { */}
+        {/*             e.preventDefault(); */}
+        {/*             setEditing(false); */}
+        {/*           }} */}
+        {/*         > */}
+        {/*           Cancel */}
+        {/*         </button> */}
+        {/*       </div> */}
+        {/*     </form> */}
+        {/*   </div> */}
+        {/* </Show> */}
       </Show>
-    </>
+    </div>
   );
 };

@@ -13,7 +13,7 @@ export interface NavbarProps {
 
 export const Navbar = (props: NavbarProps) => {
   return (
-    <div class="flex w-full items-center justify-between border-b border-neutral-200 px-5 py-2 font-semibold text-neutral-800 dark:border-neutral-800 dark:text-white md:text-xl">
+    <div class="flex w-full items-center justify-between border-b border-neutral-300 bg-neutral-200/80 px-5 py-3 font-semibold text-neutral-800 dark:border-neutral-800 dark:bg-neutral-800/50 dark:text-white md:text-xl">
       <div class="lg:hidden">
         <BiRegularMenuAltLeft
           onClick={() => props.setSideBarOpen((prev) => !prev)}
@@ -27,7 +27,7 @@ export const Navbar = (props: NavbarProps) => {
           </div>
         </Match>
         <Match when={!props.loadingNewTopic}>
-          <div class="flex w-full items-center justify-center px-2 text-center">
+          <div class="flex w-full items-center justify-center px-2 text-center text-sm">
             <p>{props.selectedTopic()?.name ?? "New RAG Chat"}</p>
           </div>
         </Match>

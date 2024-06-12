@@ -286,7 +286,10 @@ const MainLayout = (props: LayoutProps) => {
   return (
     <>
       <div class="relative flex w-full flex-col justify-between">
-        <div class="flex flex-col items-center pb-32" id="topic-messages">
+        <div
+          class="flex flex-col items-stretch gap-4 px-4 pb-32 pt-4"
+          id="topic-messages"
+        >
           <For each={messages()}>
             {(message, idx) => {
               return (
@@ -394,7 +397,7 @@ const MainLayout = (props: LayoutProps) => {
           <div class="flex w-full flex-row items-center space-x-2">
             <Popover
               as="form"
-              class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded border bg-neutral-50 px-4 py-1 text-neutral-800 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white"
+              class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded border border-neutral-300 bg-neutral-50 px-4 py-1 text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
               defaultOpen={false}
             >
               <PopoverPanel class="mb-1 flex w-full gap-2 border-b border-b-neutral-400 py-4">
@@ -405,7 +408,7 @@ const MainLayout = (props: LayoutProps) => {
               </PopoverPanel>
               <textarea
                 id="new-message-content-textarea"
-                class="w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md placeholder:text-black/60 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 dark:placeholder:text-white/40"
+                class="w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md placeholder:text-black/60 focus:outline-none dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 dark:placeholder:text-white/40"
                 placeholder="Write a question or prompt for the assistant..."
                 value={newMessageContent()}
                 disabled={streamingCompletion()}

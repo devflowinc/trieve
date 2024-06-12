@@ -127,7 +127,7 @@ export const Sidebar = (props: SidebarProps) => {
 
   return (
     <div class="absolute z-50 flex h-screen w-screen flex-row dark:text-gray-50 lg:relative lg:w-full">
-      <div class="flex h-full w-2/3 flex-col border-r bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 lg:w-full">
+      <div class="flex h-full w-2/3 flex-col border-r border-neutral-300 bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 lg:w-full">
         <div class="flex w-full flex-col space-y-2 px-2 py-2">
           <button
             onClick={() => {
@@ -137,7 +137,7 @@ export const Sidebar = (props: SidebarProps) => {
               props.setSideBarOpen(false);
             }}
             disabled={userContext.user?.() === null}
-            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:border-neutral-700 dark:bg-neutral-700/50 dark:hover:bg-neutral-700"
+            class="flex w-full flex-row items-center rounded-md border border-transparent px-3 py-1 hover:border-neutral-300 hover:bg-neutral-100 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 hover:dark:border-neutral-700 dark:hover:bg-neutral-700 hover:dark:bg-neutral-700/50"
           >
             <div class="flex flex-row items-center space-x-2">
               <span class="text-xl">
@@ -153,7 +153,7 @@ export const Sidebar = (props: SidebarProps) => {
               <button
                 classList={{
                   "flex items-center space-x-4 py-2 w-full rounded-md": true,
-                  "bg-neutral-200 dark:bg-neutral-700":
+                  "bg-white border border-neutral-300 dark:border-neutral-600/70 text-black dark:text-white dark:bg-neutral-700/50":
                     props.currentTopic()?.id === topic.id,
                 }}
                 onClick={() => {
