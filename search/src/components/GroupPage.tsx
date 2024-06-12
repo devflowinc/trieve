@@ -68,6 +68,7 @@ export const GroupPage = (props: GroupPageProps) => {
   ]);
   const [highlightMaxLength, setHighlightMaxLength] = createSignal<number>(8);
   const [highlightMaxNum, setHighlightMaxNum] = createSignal<number>(3);
+  const [highlightWindow, setHighlightWindow] = createSignal<number>(0);
 
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<ChunkMetadata[]>([]);
@@ -146,6 +147,7 @@ export const GroupPage = (props: GroupPageProps) => {
     );
     setHighlightMaxLength(Number(location.query.highlightMaxLength) || 8);
     setHighlightMaxNum(Number(location.query.highlightMaxNum) || 3);
+    setHighlightWindow(Number(location.query.highlightWindow) || 0);
   });
 
   createEffect(() => {
@@ -203,6 +205,8 @@ export const GroupPage = (props: GroupPageProps) => {
           get_total_pages: getTotalPages(),
           highlight_results: highlightResults(),
           highlight_delimiters: highlightDelimiters(),
+          highlight_max_length: highlightMaxLength(),
+          highlight_window: highlightWindow(),
           recency_bias: recencyBias(),
         }),
       }).then((response) => {
@@ -578,6 +582,7 @@ export const GroupPage = (props: GroupPageProps) => {
                     highlightDelimiters={highlightDelimiters()}
                     highlightMaxLength={highlightMaxLength()}
                     highlightMaxNum={highlightMaxNum()}
+                    highlightWindow={highlightWindow()}
                   />
                 </Show>
               </div>
