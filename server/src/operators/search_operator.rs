@@ -1835,14 +1835,14 @@ pub async fn search_hybrid_chunks(
     let qdrant_queries = vec![
         RetrievePointQuery {
             vector: VectorType::Dense(dense_vector),
-            score_threshold: data.score_threshold,
+            score_threshold: None,
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
         .await,
         RetrievePointQuery {
             vector: VectorType::Sparse(sparse_vector),
-            score_threshold: data.score_threshold,
+            score_threshold: None,
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
@@ -1916,6 +1916,10 @@ pub async fn search_hybrid_chunks(
         reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
 
         timer.add("reranking");
+
+        if let Some(score_threshold) = data.score_threshold {
+            reranked_chunks.retain(|chunk| chunk.score >= score_threshold.into());
+        }
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
@@ -2056,7 +2060,7 @@ pub async fn search_hybrid_groups(
     let qdrant_queries = vec![
         RetrievePointQuery {
             vector: VectorType::Dense(dense_vector),
-            score_threshold: data.score_threshold,
+            score_threshold: None,
             filter: data.filters.clone(),
         }
         .into_qdrant_query(
@@ -2068,7 +2072,7 @@ pub async fn search_hybrid_groups(
         .await,
         RetrievePointQuery {
             vector: VectorType::Sparse(sparse_vector),
-            score_threshold: data.score_threshold,
+            score_threshold: None,
             filter: data.filters.clone(),
         }
         .into_qdrant_query(
@@ -2104,7 +2108,7 @@ pub async fn search_hybrid_groups(
     .await?;
 
     let reranked_chunks = {
-        let reranked_chunks = if result_chunks.score_chunks.len() > 20 {
+        let mut reranked_chunks = if result_chunks.score_chunks.len() > 20 {
             let split_results = result_chunks
                 .score_chunks
                 .chunks(20)
@@ -2149,6 +2153,10 @@ pub async fn search_hybrid_groups(
                 data.use_weights,
             )
         };
+
+        if let Some(score_threshold) = data.score_threshold {
+            reranked_chunks.retain(|chunk| chunk.score >= score_threshold.into());
+        }
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
@@ -2377,7 +2385,7 @@ pub async fn hybrid_search_over_groups(
         data.get_total_pages.unwrap_or(false),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
-        data.score_threshold,
+        None,
         data.group_size.unwrap_or(3),
         parsed_query.clone(),
         dataset.id,
@@ -2391,7 +2399,7 @@ pub async fn hybrid_search_over_groups(
         data.get_total_pages.unwrap_or(false),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
-        data.score_threshold,
+        None,
         data.group_size.unwrap_or(3),
         parsed_query.clone(),
         dataset.id,
@@ -2430,7 +2438,7 @@ pub async fn hybrid_search_over_groups(
 
     timer.add("fetched from postgres");
 
-    let reranked_chunks = if combined_result_chunks.group_chunks.len() > 20 {
+    let mut reranked_chunks = if combined_result_chunks.group_chunks.len() > 20 {
         let split_results = combined_result_chunks
             .group_chunks
             .chunks(20)
@@ -2464,6 +2472,15 @@ pub async fn hybrid_search_over_groups(
     };
 
     timer.add("reranking");
+
+    if let Some(score_threshold) = data.score_threshold {
+        reranked_chunks.retain(|chunk| chunk.metadata[0].score >= score_threshold.into());
+        reranked_chunks.iter_mut().for_each(|chunk| {
+            chunk
+                .metadata
+                .retain(|metadata| metadata.score >= score_threshold.into())
+        });
+    }
 
     let result_chunks = SearchOverGroupsResults {
         group_chunks: reranked_chunks,
