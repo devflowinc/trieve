@@ -222,8 +222,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                 let qdrant_point_id = chunk_qdrant_pointid_pair
                     .iter()
                     .find(|(chunk_id, _)| *chunk_id == chunk_table.id)
-                    .map(|(_, qdrant_point_id)| *qdrant_point_id)
-                    .flatten();
+                    .and_then(|(_, qdrant_point_id)| *qdrant_point_id);
 
                 ChunkMetadata::from_table_and_tag_set(
                     ChunkMetadataTable {
@@ -581,7 +580,7 @@ pub async fn get_metadata_from_ids_query(
     let chunk_metadatas = chunk_metadata_pairs
         .into_iter()
         .map(|(table, tag_set)| {
-            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![])).into()
+            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![]))
         })
         .collect();
 
@@ -628,7 +627,7 @@ pub async fn get_metadata_from_tracking_ids_query(
     let chunk_metadatas = chunk_metadata_pairs
         .into_iter()
         .map(|(table, tag_set)| {
-            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![])).into()
+            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![]))
         })
         .collect();
 
@@ -700,7 +699,7 @@ pub async fn bulk_insert_chunk_metadata_query(
         .values(chunk_group_bookmarks_to_insert)
         .execute(&mut conn)
         .await
-        .map_err(|e| ServiceError::BadRequest("Failed to insert chunk into groups".to_string()))?;
+        .map_err(|_| ServiceError::BadRequest("Failed to insert chunk into groups".to_string()))?;
 
     let chunk_tags_to_chunk_id: Vec<(Vec<DatasetTags>, uuid::Uuid)> = insertion_data
         .clone()
@@ -752,10 +751,9 @@ pub async fn bulk_insert_chunk_metadata_query(
         // Remove all conflicts
         needed_dataset_tags.retain(|dataset_tag| {
             // If it isn't found aka None, then it is not a conflicting one
-            dataset_tags_existing
+            !dataset_tags_existing
                 .iter()
-                .find(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
-                .is_none()
+                .any(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
         });
         // Add Back preexisting ones
         needed_dataset_tags.extend(dataset_tags_existing);
@@ -966,10 +964,9 @@ pub async fn insert_chunk_metadata_query(
         // Remove all conflicts
         needed_dataset_tags.retain(|dataset_tag| {
             // If it isn't found aka None, then it is not a conflicting one
-            dataset_tags_existing
+            !dataset_tags_existing
                 .iter()
-                .find(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
-                .is_none()
+                .any(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
         });
         // Add Back preexisting ones
         needed_dataset_tags.extend(dataset_tags_existing);
@@ -1172,10 +1169,9 @@ pub async fn insert_duplicate_chunk_metadata_query(
         // Remove all conflicts
         needed_dataset_tags.retain(|dataset_tag| {
             // If it isn't found aka None, then it is not a conflicting one
-            dataset_tags_existing
+            !dataset_tags_existing
                 .iter()
-                .find(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
-                .is_none()
+                .any(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
         });
 
         // Add Back preexisting ones
@@ -1316,10 +1312,9 @@ pub async fn update_chunk_metadata_query(
             // Remove all conflicts
             needed_dataset_tags.retain(|dataset_tag| {
                 // If it isn't found aka None, then it is not a conflicting one
-                dataset_tags_existing
+                !dataset_tags_existing
                     .iter()
-                    .find(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
-                    .is_none()
+                    .any(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
             });
             // Add Back preexisting ones
             needed_dataset_tags.extend(dataset_tags_existing);

@@ -206,7 +206,6 @@ pub async fn create_file_chunks(
 
     let chunk_segments = chunks
         .chunks(120)
-        .into_iter()
         .map(|chunk_segment| chunk_segment.to_vec())
         .collect::<Vec<Vec<ChunkReqPayload>>>();
 
