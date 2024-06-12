@@ -28,6 +28,7 @@ export const Search = () => {
   ]);
   const [highlightMaxLength, setHighlightMaxLength] = createSignal<number>(8);
   const [highlightMaxNum, setHighlightMaxNum] = createSignal<number>(3);
+  const [highlightWindow, setHighlightWindow] = createSignal<number>(0);
 
   createEffect(() => {
     setLoading(true);
@@ -50,6 +51,7 @@ export const Search = () => {
     );
     setHighlightMaxLength(Number(location.query.highlightMaxLength) || 8);
     setHighlightMaxNum(Number(location.query.highlightMaxNum) || 3);
+    setHighlightWindow(Number(location.query.highlightWindow) || 0);
   });
 
   return (
@@ -72,6 +74,7 @@ export const Search = () => {
                 highlightDelimiters={highlightDelimiters()}
                 highlightMaxLength={highlightMaxLength()}
                 highlightMaxNum={highlightMaxNum()}
+                highlightWindow={highlightWindow()}
               />
               {/* <SuggestedQueries query={query()} /> */}
             </div>
@@ -91,6 +94,7 @@ export const Search = () => {
             highlightDelimiters={highlightDelimiters()}
             highlightMaxLength={highlightMaxLength()}
             highlightMaxNum={highlightMaxNum()}
+            highlightWindow={highlightWindow()}
             loading={loading}
             setLoading={setLoading}
           />
