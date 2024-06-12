@@ -16,11 +16,11 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
         onClose={() => props.setIsOpen(false)}
       >
         <div class="flex h-screen items-center justify-center px-4">
-          <DialogOverlay class="fixed inset-0 bg-gray-500/5 backdrop-blur-[3px]" />
+          <DialogOverlay class="fixed inset-0 bg-gray-500/50" />
           <span class="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
-          <DialogPanel class="my-8 inline-block w-full max-w-md transform overflow-hidden rounded-2xl bg-neutral-50 p-6 text-left align-middle shadow-md transition-all dark:bg-neutral-800">
+          <DialogPanel class="my-8 inline-block w-full max-w-md transform overflow-hidden rounded bg-neutral-50 p-6 text-left align-middle shadow-md transition-all dark:bg-neutral-800">
             {props.children}
           </DialogPanel>
         </div>
