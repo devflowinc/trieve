@@ -34,6 +34,7 @@ export const HomeSearch = () => {
     .filter((delimiter) => delimiter !== "") ?? ["?", ".", "!"];
   const highlightMaxLength = Number(params.get("highlightMaxLength")) || 8;
   const highlightMaxNum = Number(params.get("highlightMaxNum")) || 3;
+  const highlightWindow = Number(params.get("highlightWindow")) || 0;
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
@@ -71,6 +72,7 @@ export const HomeSearch = () => {
             highlightResults={highlightResults}
             highlightMaxLength={highlightMaxLength}
             highlightMaxNum={highlightMaxNum}
+            highlightWindow={highlightWindow}
           />
         </div>
       </div>

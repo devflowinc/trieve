@@ -36,6 +36,7 @@ const SearchForm = (props: {
   highlightDelimiters?: string[];
   highlightMaxLength?: number;
   highlightMaxNum?: number;
+  highlightWindow?: number;
   recencyBias?: number;
   groupID?: string;
 }) => {
@@ -97,6 +98,10 @@ const SearchForm = (props: {
     // eslint-disable-next-line solid/reactivity
     props.highlightMaxNum ?? 3,
   );
+  const [highlightWindow, setHighlightWindow] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.highlightWindow ?? 0,
+  );
   const [recencyBias, setRecencyBias] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.recencyBias ?? 0.0,
@@ -155,6 +160,9 @@ const SearchForm = (props: {
     const highlightMaxNumUrlParam = highlightMaxNum()
       ? `&highlightMaxNum=${highlightMaxNum()}`
       : "";
+    const highlightWindowUrlParam = highlightWindow()
+      ? `&highlightWindow=${highlightWindow()}`
+      : "";
 
     const sharedUrlParams =
       searchTypeUrlParam +
@@ -167,7 +175,8 @@ const SearchForm = (props: {
       highlightDelimitersUrlParam +
       highlightResultsUrlParam +
       highlightMaxLengthUrlParam +
-      highlightMaxNumUrlParam;
+      highlightMaxNumUrlParam +
+      highlightWindowUrlParam;
 
     const urlToNavigateTo = props.groupID
       ? `/group/${props.groupID}?q=${searchQuery}` + sharedUrlParams
@@ -657,6 +666,22 @@ const SearchForm = (props: {
                             value={props.highlightMaxNum}
                             onInput={(e) => {
                               setHighlightMaxNum(
+                                parseInt(e.currentTarget.value),
+                              );
+                            }}
+                            onBlur={(e) => {
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Highlight Window:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            value={props.highlightWindow}
+                            onInput={(e) => {
+                              setHighlightWindow(
                                 parseInt(e.currentTarget.value),
                               );
                             }}

@@ -47,6 +47,7 @@ export interface ResultsPageProps {
   highlightDelimiters?: string[];
   highlightMaxLength?: number;
   highlightMaxNum?: number;
+  highlightWindow?: number;
   loading: Accessor<boolean>;
   setLoading: Setter<boolean>;
 }
@@ -157,6 +158,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       highlight_delimiters: props.highlightDelimiters ?? ["?", ".", "!"],
       highlight_max_length: props.highlightMaxLength ?? 8,
       highlight_max_num: props.highlightMaxNum ?? 3,
+      highlight_window: props.highlightWindow ?? 0,
     };
 
     let searchRoute = "chunk/search";

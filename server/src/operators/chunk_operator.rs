@@ -1772,19 +1772,26 @@ pub fn get_highlights(
             let mut result_matches = vec![];
             for phrase in matched_phrases.clone() {
                 if let Some(index) = chunk_html.find(&phrase) {
-                    let start_index = if index as i32 - estimated_context_size >= 0 {
+                    let mut start_index = if index as i32 - estimated_context_size >= 0 {
                         index - estimated_context_size as usize
                     } else {
                         0
                     };
 
-                    let end_index = if index + phrase.len() + estimated_context_size as usize
+                    let mut end_index = if index + phrase.len() + estimated_context_size as usize
                         >= chunk_html.len()
                     {
                         chunk_html.len()
                     } else {
                         index + phrase.len() + estimated_context_size as usize
                     };
+
+                    while !chunk_html.is_char_boundary(start_index) {
+                        start_index -= 1;
+                    }
+                    while !chunk_html.is_char_boundary(end_index) {
+                        end_index += 1;
+                    }
 
                     let context = chunk_html[start_index..end_index]
                         .split_whitespace()
