@@ -360,7 +360,7 @@ const MainLayout = (props: LayoutProps) => {
               <Switch>
                 <Match when={!streamingCompletion()}>
                   <button
-                    class="flex w-fit items-center justify-center space-x-4 rounded-xl border border-neutral-300/80 bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white"
+                    class="flex w-fit items-center justify-center space-x-4 rounded-xl border border-neutral-300/80 bg-neutral-50 px-4 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                     onClick={(e) => {
                       e.preventDefault();
                       const topic_id = props.selectedTopic?.id;
