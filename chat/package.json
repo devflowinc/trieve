@@ -40,7 +40,7 @@
     "eslint-plugin-solid": "^0.13.0",
     "postcss": "^8.4.32",
     "prettier": "3.1.1",
-    "prettier-plugin-tailwindcss": "^0.5.11",
+    "prettier-plugin-tailwindcss": "^0.6.3",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.2.2",
     "vite": "^5.0.0",

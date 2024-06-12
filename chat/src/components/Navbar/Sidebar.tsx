@@ -90,7 +90,7 @@ export const Sidebar = (props: SidebarProps) => {
         "Content-Type": "application/json",
         "TR-Dataset": dataset.dataset.id,
       },
-      credentials: "include"
+      credentials: "include",
     });
 
     if (res.ok) {
@@ -127,8 +127,8 @@ export const Sidebar = (props: SidebarProps) => {
 
   return (
     <div class="absolute z-50 flex h-screen w-screen flex-row dark:text-gray-50 lg:relative lg:w-full">
-      <div class="flex h-full w-2/3 flex-col bg-neutral-50 dark:bg-neutral-800 lg:w-full">
-        <div class="flex w-full flex-col space-y-2 px-2 py-2 ">
+      <div class="flex h-full w-2/3 flex-col border-r bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 lg:w-full">
+        <div class="flex w-full flex-col space-y-2 px-2 py-2">
           <button
             onClick={() => {
               props.setIsCreatingTopic(true);
@@ -137,7 +137,7 @@ export const Sidebar = (props: SidebarProps) => {
               props.setSideBarOpen(false);
             }}
             disabled={userContext.user?.() === null}
-            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:border-neutral-400 dark:hover:bg-neutral-700"
+            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:border-neutral-700 dark:bg-neutral-700/50 dark:hover:bg-neutral-700"
           >
             <div class="flex flex-row items-center space-x-2">
               <span class="text-xl">
@@ -181,7 +181,7 @@ export const Sidebar = (props: SidebarProps) => {
                       class="w-full rounded-md bg-neutral-50 px-2 py-1 dark:bg-neutral-800"
                     />
 
-                    <div class="flex flex-row space-x-1 pl-2 text-2xl ">
+                    <div class="flex flex-row space-x-1 pl-2 text-2xl">
                       <button
                         onClick={() => {
                           void submitEditText();
@@ -225,8 +225,8 @@ export const Sidebar = (props: SidebarProps) => {
             )}
           </For>
         </div>
-        <div class="flex-1 " />
-        <div class="flex w-full flex-col space-y-1 border-t px-2 py-2 dark:border-neutral-400">
+        <div class="flex-1" />
+        <div class="flex w-full flex-col space-y-1 border-t px-2 py-2 text-sm dark:border-neutral-600">
           <div class="ml-4 flex items-center space-x-2">
             <OrganizationSelectBox />
             <p class="text-2xl">/</p>
@@ -236,7 +236,7 @@ export const Sidebar = (props: SidebarProps) => {
             href={dashboardUrl}
             class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:hover:bg-neutral-700"
           >
-            <FiLink class="h-6 w-6" />
+            <FiLink class="h-4 w-4" />
             <div>Dashboard</div>
           </a>
           <button
@@ -244,23 +244,23 @@ export const Sidebar = (props: SidebarProps) => {
             class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:hover:bg-neutral-700"
             onClick={() => setSettingsModalOpen(true)}
           >
-            <FiSettings class="h-6 w-6" />
+            <FiSettings class="h-4 w-4" />
             <div>Settings</div>
           </button>
           <a
             href="https://github.com/devflowinc/trieve"
-            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+            class="flex w-full items-baseline gap-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
           >
-            <AiFillGithub class="h-6 w-6 fill-current" />
+            <AiFillGithub class="h-4 w-4 fill-current" />
             <div class="flex">
-              <p>STAR US</p>
-              <TbMinusVertical class="h-6 w-6" />
+              <p>Star Us</p>
+              <TbMinusVertical class="h-4 w-4" />
               <p>{starCount()}</p>
             </div>
           </a>
           <a
             href="https://github.com/devflowinc/trieve"
-            class="flex items-center space-x-1 px-3 py-2"
+            class="m-auto flex items-center gap-1 px-3 py-2"
           >
             <img src="https://cdn.trieve.ai/trieve-logo.png" class="h-7 w-7" />
             <div>
