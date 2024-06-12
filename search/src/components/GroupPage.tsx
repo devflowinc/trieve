@@ -53,6 +53,7 @@ export const GroupPage = (props: GroupPageProps) => {
 
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
+  const [scoreThreshold, setScoreThreshold] = createSignal<number>(0.0);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
   const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
   const [slimChunks, setSlimChunks] = createSignal(false);
@@ -131,6 +132,7 @@ export const GroupPage = (props: GroupPageProps) => {
   createEffect(() => {
     setQuery(location.query.q ?? "");
     setPage(Number(location.query.page) || 1);
+    setScoreThreshold(Number(location.query.scoreThreshold) || 0.0);
     setSearchType(location.query.searchType ?? "hybrid");
     setRecencyBias(Number(location.query.recencyBias) || 0.0);
     setSlimChunks(location.query.slimChunks === "true");
@@ -191,6 +193,7 @@ export const GroupPage = (props: GroupPageProps) => {
         body: JSON.stringify({
           query: query(),
           page: page(),
+          score_threshold: scoreThreshold(),
           group_id: props.groupID,
           search_type: searchType(),
           slim_chunks: slimChunks(),
@@ -563,6 +566,7 @@ export const GroupPage = (props: GroupPageProps) => {
                   <SearchForm
                     query={query()}
                     searchType={searchType()}
+                    scoreThreshold={scoreThreshold()}
                     pageSize={pageSize()}
                     getTotalPages={getTotalPages()}
                     recencyBias={recencyBias()}

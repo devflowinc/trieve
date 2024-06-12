@@ -26,6 +26,7 @@ import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 const SearchForm = (props: {
   query?: string;
   searchType: string;
+  scoreThreshold?: number;
   extendResults?: boolean;
   groupUniqueSearch?: boolean;
   slimChunks?: boolean;
@@ -59,6 +60,10 @@ const SearchForm = (props: {
       route: "autocomplete-fulltext",
     },
   ]);
+  const [scoreThreshold, setScoreThreshold] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.scoreThreshold ?? 0.0,
+  );
   const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
   const [textareaFocused, setTextareaFocused] = createSignal(false);
@@ -128,6 +133,9 @@ const SearchForm = (props: {
     if (searchTypeRoute.includes("autocomplete")) {
       extendResultsUrlParam = extendResults() ? "&extendResults=true" : "";
     }
+    const scoreThresholdUrlParam = scoreThreshold()
+      ? `&scoreThreshold=${scoreThreshold()}`
+      : "";
     const groupUniqueUrlParam = groupUniqueSearch() ? "&groupUnique=true" : "";
     const slimChunksUrlParam = slimChunks() ? "&slimChunks=true" : "";
     const recencyBiasUrlParam = recencyBias()
@@ -150,6 +158,7 @@ const SearchForm = (props: {
 
     const sharedUrlParams =
       searchTypeUrlParam +
+      scoreThresholdUrlParam +
       extendResultsUrlParam +
       slimChunksUrlParam +
       recencyBiasUrlParam +
@@ -477,6 +486,25 @@ const SearchForm = (props: {
                             Reset
                           </button>
                         </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Score Threshold (0.0 to 1.0):</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            min="0.0"
+                            max="1.0"
+                            step="0.00001"
+                            value={props.scoreThreshold}
+                            onInput={(e) => {
+                              setScoreThreshold(
+                                parseFloat(e.currentTarget.value),
+                              );
+                            }}
+                            onBlur={(e) => {
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
                         <Show
                           when={
                             searchTypes().find((type) => type.isSelected)
@@ -523,7 +551,7 @@ const SearchForm = (props: {
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Recency Bias (0.0 to 1.0):</label>
                           <input
-                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
                             min="0.0"
                             max="1.0"
@@ -540,7 +568,7 @@ const SearchForm = (props: {
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Page Size:</label>
                           <input
-                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
                             value={props.pageSize}
                             onInput={(e) => {
@@ -588,7 +616,7 @@ const SearchForm = (props: {
                         <div class="items flex justify-between space-x-2 p-1">
                           <label>Highlight Delimiters (Comma Separated):</label>
                           <input
-                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="text"
                             value={highlightDelimiters().join(",")}
                             onInput={(e) => {
@@ -608,7 +636,7 @@ const SearchForm = (props: {
                         <div class="items flex justify-between space-x-2 p-1">
                           <label>Highlight Max Length:</label>
                           <input
-                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
                             value={props.highlightMaxLength}
                             onInput={(e) => {
@@ -624,7 +652,7 @@ const SearchForm = (props: {
                         <div class="items flex justify-between space-x-2 p-1">
                           <label>Highlight Max Num:</label>
                           <input
-                            class="w-12 rounded border border-neutral-400 p-0.5 text-black"
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
                             value={props.highlightMaxNum}
                             onInput={(e) => {

@@ -35,6 +35,7 @@ import { createToast } from "./ShowToasts";
 export interface ResultsPageProps {
   query: string;
   page: number;
+  scoreThreshold: number;
   searchType: string;
   recencyBias?: number;
   extendResults?: boolean;
@@ -146,6 +147,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       search_type: props.searchType.includes("autocomplete")
         ? props.searchType.replace("autocomplete-", "")
         : props.searchType,
+      score_threshold: props.scoreThreshold,
       recency_bias: props.recencyBias ?? 0.0,
       get_collisions: true,
       slim_chunks: props.slimChunks ?? false,
