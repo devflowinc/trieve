@@ -103,10 +103,10 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   return (
     <div
-      class="flex w-full scroll-mt-[30px] flex-col items-center border-b-neutral-300 bg-neutral-100 p-2 pb-4 dark:!bg-neutral-800 lg:ml-2 [&:not(:last-child)]:border-b-2"
+      class="flex w-full scroll-mt-[30px] flex-col items-center border-b-neutral-300 p-2 pb-4 lg:ml-2 [&:not(:last-child)]:border-b-2"
       id={"doc_" + (props.order ?? "") + props.counter}
     >
-      <div class="flex w-full flex-col space-y-2">
+      <div class="flex w-full flex-col space-y-2 dark:text-white">
         <div class="flex h-fit items-center space-x-1">
           <Tooltip
             body={<FiGlobe class="z-50 h-5 w-5 text-green-500" />}
