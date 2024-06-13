@@ -7,7 +7,6 @@ import {
   Show,
   useContext,
   createResource,
-  untrack,
 } from "solid-js";
 import {
   Dialog,
@@ -161,7 +160,7 @@ export const ApiKeyGenerateModal = (props: {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  generateApiKey();
+                  void generateApiKey();
                 }}
               >
                 <div class="space-y-12 sm:space-y-16">
