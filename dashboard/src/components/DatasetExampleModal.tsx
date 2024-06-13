@@ -68,11 +68,10 @@ export const AddSampleDataModal = (props: {
         header: true,
         step: uploadData,
         complete: function () {
-          console.log("Uploading data", dataToUpload);
           void sendDataToTrieve(dataToUpload).then(() => {
             setStatusText("Upload complete!");
             setProgress(100);
-            props.closeModal();
+            closeModal();
           });
         },
       },
@@ -84,17 +83,21 @@ export const AddSampleDataModal = (props: {
     uploadSampleData();
   };
 
+  const closeModal = () => {
+    setStatusText("Preparing upload...");
+    dataToUpload = [[]];
+    setProgress(0);
+    setConfirmation(false);
+    props.closeModal();
+  };
+
   return (
     <Show when={props.openModal()}>
       <Dialog
         isOpen
         class="fixed inset-0 z-10 overflow-y-scroll"
         onClose={() => {
-          props.closeModal();
-          setStatusText("Preparing upload...");
-          dataToUpload = [[]];
-          setProgress(0);
-          setConfirmation(false);
+          closeModal();
         }}
       >
         <div class="flex min-h-screen items-center justify-center px-4">
@@ -139,10 +142,10 @@ export const AddSampleDataModal = (props: {
                 </DialogTitle>
                 <div class="mt-2">
                   <div class="relative pt-1">
-                    <div class="mb-4 flex h-2 overflow-hidden rounded bg-blue-200 text-xs">
+                    <div class="mb-4 flex h-2 overflow-hidden rounded bg-magenta-100 text-xs">
                       <div
                         style={{ width: `${progress()}%` }}
-                        class="flex flex-col justify-center whitespace-nowrap bg-blue-500 text-center text-white shadow-none"
+                        class="flex flex-col justify-center whitespace-nowrap bg-magenta-500 text-center text-white shadow-none"
                       />
                     </div>
                   </div>
