@@ -142,10 +142,10 @@ const SearchForm = (props: {
       ? `&recencyBias=${recencyBias()}`
       : "";
     const pageSizeUrlParam = pageSize() ? `&pageSize=${pageSize()}` : "";
-    const getTotalPagesUrlParam = getTotalPages() ? "&getTotalPages=true" : "";
-    const highlightResultsUrlParam = highlightResults()
-      ? "&highlightResults=true"
-      : "";
+    const getTotalPagesUrlParam =
+      getTotalPages() == false ? "&getTotalPages=false" : "";
+    const highlightResultsUrlParam =
+      highlightResults() == false ? "&highlightResults=false" : "";
     const highlightDelimitersUrlParam = highlightDelimiters().length
       ? `&highlightDelimiters=${highlightDelimiters().join(",")}`
       : "";
@@ -475,7 +475,7 @@ const SearchForm = (props: {
                               e.preventDefault();
                               setSlimChunks(false);
                               setPageSize(10);
-                              setGetTotalPages(false);
+                              setGetTotalPages(true);
                               setHighlightResults(true);
                               setHighlightDelimiters(["?", ".", "!"]);
                               setRecencyBias(0.0);

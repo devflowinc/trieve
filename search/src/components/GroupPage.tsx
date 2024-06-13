@@ -137,8 +137,10 @@ export const GroupPage = (props: GroupPageProps) => {
     setRecencyBias(Number(location.query.recencyBias) || 0.0);
     setSlimChunks(location.query.slimChunks === "true");
     setPageSize(Number(location.query.pageSize) || 10);
-    setGetTotalPages(location.query.getTotalPages === "true");
-    setHighlightResults(location.query.highlightResults === "true");
+    setGetTotalPages(location.query.getTotalPages === "false" ? false : true);
+    setHighlightResults(
+      location.query.highlightResults === "false" ? false : true,
+    );
     setHighlightDelimiters(
       location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
     );
