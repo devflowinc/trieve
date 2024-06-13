@@ -482,11 +482,16 @@ const SearchForm = (props: {
                             class="rounded-md border border-neutral-400 bg-neutral-100 px-2 py-1 dark:border-neutral-900 dark:bg-neutral-800"
                             onClick={(e) => {
                               e.preventDefault();
+                              setScoreThreshold(0.0);
                               setSlimChunks(false);
                               setPageSize(10);
                               setGetTotalPages(true);
                               setHighlightResults(true);
                               setHighlightDelimiters(["?", ".", "!"]);
+                              setHighlightMaxLength(8);
+                              setHighlightMaxNum(3);
+                              setHighlightWindow(0);
+                              setExtendResults(false);
                               setRecencyBias(0.0);
                               setState(false);
                               onSubmit(e);

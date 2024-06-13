@@ -726,8 +726,6 @@ pub async fn bulk_insert_chunk_metadata_query(
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
     // TODO, dedupe and bulk insert this.
     for (dataset_tags, chunk_uuid) in chunk_tags_to_chunk_id {
-        log::info!("Inserting dataset tags {:?}", dataset_tags.clone());
-
         diesel::insert_into(dataset_tags_columns::dataset_tags)
             .values(&dataset_tags)
             .on_conflict_do_nothing()
@@ -1765,83 +1763,90 @@ pub fn get_highlights(
         matched_phrases.push(x.clone());
     }
 
-    let estimated_context_size = 100;
+    let window = window_size.unwrap_or(0);
+    let half_window = std::cmp::max(window / 2, 1);
+    let mut windowed_phrases = vec![];
+    if window > 0 && !matched_phrases.is_empty() {
+        let mut start_end_indices = vec![];
+        let chunk_content = content
+            .clone()
+            .split_whitespace()
+            .collect::<Vec<&str>>()
+            .join(" ");
 
-    let result_matches = if let Some(window) = window_size {
-        if let Some(chunk_html) = new_output.chunk_html.clone() {
-            let mut result_matches = vec![];
-            for phrase in matched_phrases.clone() {
-                if let Some(index) = chunk_html.find(&phrase) {
-                    let mut start_index = if index as i32 - estimated_context_size >= 0 {
-                        index - estimated_context_size as usize
-                    } else {
-                        0
-                    };
+        for phrase in matched_phrases.clone() {
+            if let Some(index) = chunk_content.find(&phrase) {
+                start_end_indices.push((index, index + phrase.chars().count()));
+            }
+        }
 
-                    let mut end_index = if index + phrase.len() + estimated_context_size as usize
-                        >= chunk_html.len()
-                    {
-                        chunk_html.len()
-                    } else {
-                        index + phrase.len() + estimated_context_size as usize
-                    };
-
-                    while !chunk_html.is_char_boundary(start_index) {
-                        start_index -= 1;
-                    }
-                    while !chunk_html.is_char_boundary(end_index) {
-                        end_index += 1;
-                    }
-
-                    let context = chunk_html[start_index..end_index]
-                        .split_whitespace()
-                        .collect_vec();
-
-                    let split_phrase_words: Vec<&str> = phrase.split_whitespace().collect();
-                    let phrase_len = split_phrase_words.len();
-
-                    if let Some(phrase_index) = (0..=(context.len() - phrase_len))
-                        .find(|&i| &context[i..i + phrase_len] == split_phrase_words.as_slice())
-                    {
-                        let start_index = if phrase_index as i32 - window as i32 >= 0 {
-                            phrase_index - window as usize
-                        } else {
-                            0
-                        };
-
-                        let end_index =
-                            if phrase_index + phrase_len + window as usize >= context.len() {
-                                context.len()
-                            } else {
-                                phrase_index + phrase_len + window as usize
-                            };
-
-                        let context = context[start_index..end_index]
-                            .join(" ")
-                            .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase));
-
-                        result_matches.push(context.to_string());
+        let mut window_start_end_indices = vec![];
+        for (start_index, end_index) in start_end_indices {
+            let mut window_start = start_index;
+            let mut whitespace_count = 0;
+            while window_start > 0 && whitespace_count <= half_window {
+                if let Some(c) = chunk_content.chars().nth(window_start) {
+                    if c == ' ' {
+                        whitespace_count += 1;
+                        if whitespace_count == half_window {
+                            break;
+                        }
                     }
                 }
+                window_start -= 1;
             }
-            result_matches
-        } else {
-            matched_phrases.clone()
-        }
-    } else {
-        matched_phrases.clone()
-    };
 
-    for phrase in matched_phrases {
-        new_output.chunk_html = new_output
-            .chunk_html
-            .clone()
-            .map(|x| x.replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase)));
+            let mut window_end = end_index;
+            whitespace_count = 0;
+            while window_end < chunk_content.len() && whitespace_count <= half_window {
+                if let Some(c) = chunk_content.chars().nth(window_end) {
+                    if c == ' ' {
+                        whitespace_count += 1;
+                        if whitespace_count == half_window {
+                            break;
+                        }
+                    }
+                }
+                window_end += 1;
+            }
+
+            window_start_end_indices.push((window_start, window_end));
+        }
+
+        // for i in 1..window_start_end_indices.len() {
+        //     if window_start_end_indices[i].0 < window_start_end_indices[i - 1].1 {
+        //         window_start_end_indices[i].0 = window_start_end_indices[i - 1].1 + 1;
+        //     }
+        // }
+
+        window_start_end_indices.retain(|(start, end)| start < end);
+
+        for i in 0..window_start_end_indices.len() {
+            let phrase = matched_phrases[i].clone();
+            let (window_start, window_end) = window_start_end_indices[i];
+            let windowed_phrase = chunk_content
+                .chars()
+                .skip(window_start)
+                .take(window_end - window_start)
+                .collect::<String>()
+                .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase));
+            windowed_phrases.push(windowed_phrase);
+        }
     }
 
-    new_output.chunk_html = new_output
-        .chunk_html
-        .map(|x| x.replace("</b></mark><mark><b>", ""));
+    let result_matches = if windowed_phrases.is_empty() {
+        matched_phrases.clone()
+    } else {
+        windowed_phrases.clone()
+    };
+
+    let mut chunk_html = new_output.chunk_html.clone().unwrap_or_default();
+    for phrase in matched_phrases.clone() {
+        chunk_html = chunk_html
+            .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase))
+            .replace("</b></mark><mark><b>", "");
+    }
+    new_output.chunk_html = Some(chunk_html);
 
     Ok((new_output, result_matches))
 }
