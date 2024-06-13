@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::data::models::{
     ChunkCollision, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes,
     ContentChunkMetadata, Dataset, DatasetTags, IngestSpecificChunkMetadata,
@@ -1734,10 +1736,8 @@ pub fn get_highlights(
     window_size: Option<u32>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
-
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
-    let mut engine: SimSearch<String> = SimSearch::new_with(search_options);
-
+    let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
     let split_content = content
         .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
         .flat_map(|x| {
@@ -1750,105 +1750,141 @@ pub fn get_highlights(
                 .collect::<Vec<String>>()
         })
         .collect::<Vec<String>>();
-
-    split_content.iter().for_each(|sentence| {
-        engine.insert(sentence.clone(), &sentence.clone());
-    });
-
-    let mut new_output = input;
-
+    for i in 0..split_content.len() {
+        engine.insert(i, &split_content[i]);
+    }
+    let new_output = input;
     let results = engine.search(&query);
-    let mut matched_phrases = vec![];
+    let mut matched_idxs = vec![];
+    let mut matched_idxs_set = HashSet::new();
     for x in results.iter().take(max_num.unwrap_or(3) as usize) {
-        matched_phrases.push(x.clone());
+        matched_idxs_set.insert(*x);
+        matched_idxs.push(*x);
     }
-
+    matched_idxs.sort();
     let window = window_size.unwrap_or(0);
-    let half_window = std::cmp::max(window / 2, 1);
-    let mut windowed_phrases = vec![];
-    if window > 0 && !matched_phrases.is_empty() {
-        let mut start_end_indices = vec![];
-        let chunk_content = content
-            .clone()
-            .split_whitespace()
-            .collect::<Vec<&str>>()
-            .join(" ");
-
-        for phrase in matched_phrases.clone() {
-            if let Some(index) = chunk_content.find(&phrase) {
-                start_end_indices.push((index, index + phrase.chars().count()));
-            }
-        }
-
-        let mut window_start_end_indices = vec![];
-        for (start_index, end_index) in start_end_indices {
-            let mut window_start = start_index;
-            let mut whitespace_count = 0;
-            while window_start > 0 && whitespace_count <= half_window {
-                if let Some(c) = chunk_content.chars().nth(window_start) {
-                    if c == ' ' {
-                        whitespace_count += 1;
-                        if whitespace_count == half_window {
-                            break;
-                        }
-                    }
-                }
-                window_start -= 1;
-            }
-
-            let mut window_end = end_index;
-            whitespace_count = 0;
-            while window_end < chunk_content.len() && whitespace_count <= half_window {
-                if let Some(c) = chunk_content.chars().nth(window_end) {
-                    if c == ' ' {
-                        whitespace_count += 1;
-                        if whitespace_count == half_window {
-                            break;
-                        }
-                    }
-                }
-                window_end += 1;
-            }
-
-            window_start_end_indices.push((window_start, window_end));
-        }
-
-        // for i in 1..window_start_end_indices.len() {
-        //     if window_start_end_indices[i].0 < window_start_end_indices[i - 1].1 {
-        //         window_start_end_indices[i].0 = window_start_end_indices[i - 1].1 + 1;
-        //     }
-        // }
-
-        window_start_end_indices.retain(|(start, end)| start < end);
-
-        for i in 0..window_start_end_indices.len() {
-            let phrase = matched_phrases[i].clone();
-            let (window_start, window_end) = window_start_end_indices[i];
-            let windowed_phrase = chunk_content
-                .chars()
-                .skip(window_start)
-                .take(window_end - window_start)
-                .collect::<String>()
-                .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase));
-            windowed_phrases.push(windowed_phrase);
-        }
+    if window <= 0 {
+        return Ok(apply_highlights_to_html(
+            new_output,
+            matched_idxs
+                .iter()
+                .map(|x| split_content.get(*x).unwrap().clone())
+                .collect(),
+        ));
     }
-
+    let half_window = std::cmp::max(window / 2, 1);
+    // edge case 1: When the half window size is greater than the length of left or right phrase,
+    // we need to search further to get the correct windowed phrase
+    // edge case 2: When two windowed phrases overlap, we need to trim the first one.
+    let mut windowed_phrases = vec![];
+    // Used to keep track of the number of words used in the phrase
+    let mut used_phrases: HashMap<usize, usize> = HashMap::new();
+    for idx in matched_idxs.clone() {
+        let phrase = split_content.get(idx).expect("Index is correct").clone();
+        let mut next_phrase = String::new();
+        if idx < split_content.len() - 1 {
+            let mut start = idx + 1;
+            let mut count: usize = 0;
+            while (count as u32) < half_window {
+                if start >= split_content.len() || matched_idxs_set.contains(&start) {
+                    break;
+                }
+                let candidate_words = split_content
+                    .get(start)
+                    .expect("Index is correct")
+                    .split_whitespace()
+                    .take(half_window as usize - count)
+                    .collect::<Vec<&str>>();
+                used_phrases.insert(
+                    start,
+                    std::cmp::min(candidate_words.len(), half_window as usize - count),
+                );
+                count += candidate_words.len();
+                next_phrase.push_str(&candidate_words.join(" "));
+                start += 1;
+            }
+        }
+        if !next_phrase.is_empty() {
+            next_phrase = format!(" {}", next_phrase);
+        }
+        let mut prev_phrase = String::new();
+        if idx > 0 {
+            let mut start = idx - 1;
+            let mut count: usize = 0;
+            while (count as u32) < half_window {
+                let split_words = split_content
+                    .get(start)
+                    .expect("Index is correct")
+                    .split_whitespace()
+                    .collect::<Vec<&str>>();
+                if matched_idxs_set.contains(&start) {
+                    break;
+                }
+                if used_phrases.contains_key(&start)
+                    && split_words.len() > *used_phrases.get(&start).expect("Index is correct")
+                {
+                    let remaining_count = half_window as usize - count;
+                    let available_word_len =
+                        split_words.len() - *used_phrases.get(&start).expect("Index is correct");
+                    if remaining_count > available_word_len {
+                        count += remaining_count - available_word_len;
+                    } else {
+                        break;
+                    }
+                }
+                if used_phrases.contains_key(&start)
+                    && split_words.len() <= *used_phrases.get(&start).expect("Index is correct")
+                {
+                    break;
+                }
+                let candiate_words = split_words
+                    .into_iter()
+                    .rev()
+                    .take(half_window as usize - count)
+                    .collect::<Vec<&str>>();
+                count += candiate_words.len();
+                prev_phrase = format!("{} {}", candiate_words.iter().rev().join(" "), prev_phrase);
+                if start == 0 {
+                    break;
+                }
+                start -= 1;
+            }
+        }
+        if !prev_phrase.is_empty() {
+            prev_phrase.push_str(" ");
+        }
+        let windowed_phrase = format!(
+            "{}<b><mark>{}</mark></b>{}",
+            prev_phrase, phrase, next_phrase
+        );
+        windowed_phrases.push(windowed_phrase);
+    }
+    let matched_phrases = matched_idxs
+        .clone()
+        .iter()
+        .map(|x| split_content.get(*x).expect("Index is correct").clone())
+        .collect::<Vec<String>>();
     let result_matches = if windowed_phrases.is_empty() {
         matched_phrases.clone()
     } else {
         windowed_phrases.clone()
     };
+    Ok(apply_highlights_to_html(new_output, result_matches))
+}
 
-    let mut chunk_html = new_output.chunk_html.clone().unwrap_or_default();
-    for phrase in matched_phrases.clone() {
+fn apply_highlights_to_html(
+    input: ChunkMetadata,
+    phrases: Vec<String>,
+) -> (ChunkMetadata, Vec<String>) {
+    let mut meta_data = input;
+    let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();
+    for phrase in phrases.clone() {
         chunk_html = chunk_html
             .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase))
             .replace("</b></mark><mark><b>", "");
     }
-    new_output.chunk_html = Some(chunk_html);
-
-    Ok((new_output, result_matches))
+    meta_data.chunk_html = Some(chunk_html);
+    (meta_data, phrases)
 }
 
 #[tracing::instrument(skip(pool))]
