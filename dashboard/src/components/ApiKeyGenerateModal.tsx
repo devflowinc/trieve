@@ -7,7 +7,6 @@ import {
   Show,
   useContext,
   createResource,
-  Setter,
 } from "solid-js";
 import {
   Dialog,
