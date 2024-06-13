@@ -140,7 +140,7 @@ export const AfMessage = (props: AfMessageProps) => {
         <div
           ref={setLeftColumnRef}
           classList={{
-            "dark:text-white group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-center":
+            "dark:text-white group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
               true,
             "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
               props.role === "assistant",
@@ -150,7 +150,7 @@ export const AfMessage = (props: AfMessageProps) => {
           }}
         >
           <div class="flex items-center gap-4 self-start text-black dark:text-neutral-100 md:flex-row">
-            <div class="">
+            <div class="mt-1 self-start">
               {props.role === "user" ? (
                 <BiSolidUserRectangle class="fill-current" />
               ) : (
@@ -209,7 +209,7 @@ export const AfMessage = (props: AfMessageProps) => {
           <Show when={props.role === "user"}>
             <button
               class={
-                "-mr-2 ml-2 group-hover:text-neutral-600 group-hover:dark:text-neutral-400 lg:text-transparent"
+                "-mr-2 ml-2 self-center group-hover:text-neutral-600 group-hover:dark:text-neutral-400 lg:text-transparent"
               }
               onClick={() => setEditing(!editing())}
             >
