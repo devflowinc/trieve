@@ -25,9 +25,6 @@ export interface AfMessageProps {
 export const AfMessage = (props: AfMessageProps) => {
   const [editing, setEditing] = createSignal(false);
   const [editedContent, setEditedContent] = createSignal("");
-  const [showEditingIcon, setShowEditingIcon] = createSignal(
-    window.innerWidth < 450 ? true : false,
-  );
   const [editingMessageContent, setEditingMessageContent] = createSignal("");
   const [chunkMetadatas, setChunkMetadatas] = createSignal<
     ChunkMetadataWithVotes[]
@@ -144,20 +141,13 @@ export const AfMessage = (props: AfMessageProps) => {
           <div
             ref={setLeftColumnRef}
             classList={{
-              "dark:text-white grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
+              "dark:text-white group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
                 true,
               "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
                 props.role === "assistant",
               "bg-white border-neutral-300 dark:bg-neutral-800 md:ml-16":
                 props.role === "user",
               "md:mr-16": props.role === "assistant" && metadata().length <= 0,
-            }}
-            onMouseEnter={() => setShowEditingIcon(true)}
-            onMouseLeave={() => {
-              if (window.innerWidth < 450) {
-                return;
-              }
-              setShowEditingIcon(false);
             }}
           >
             <div class="flex gap-2 text-black dark:text-neutral-100 md:flex-row md:space-x-2 md:space-y-0">
@@ -195,10 +185,9 @@ export const AfMessage = (props: AfMessageProps) => {
             </div>
             <Show when={props.role === "user"}>
               <button
-                classList={{
-                  "text-neutral-600 dark:text-neutral-400": showEditingIcon(),
-                  "text-transparent": !showEditingIcon(),
-                }}
+                class={
+                  "group-hover:text-neutral-600 group-hover:dark:text-neutral-400 lg:text-transparent"
+                }
                 onClick={() => setEditing(true)}
               >
                 <BiRegularEdit class="fill-current" />
