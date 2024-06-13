@@ -7,6 +7,7 @@ import {
   Show,
   useContext,
   createResource,
+  Setter,
 } from "solid-js";
 import {
   Dialog,
@@ -18,6 +19,7 @@ import {
   DisclosurePanel,
 } from "terracotta";
 import {
+  ApiKeyDTO,
   DatasetAndUsage,
   fromI32ToUserRole,
   Organization,
@@ -25,13 +27,21 @@ import {
 } from "../types/apiTypes";
 import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
-import { FaRegularCircleQuestion, FaSolidChevronDown } from "solid-icons/fa";
+import {
+  FaRegularCircleQuestion,
+  FaRegularClipboard,
+  FaSolidChevronDown,
+} from "solid-icons/fa";
 import { Item, MultiSelect } from "./MultiSelect";
 import { Tooltip } from "./Tooltip";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
   closeModal: () => void;
+
+  refetch: (
+    info?: unknown,
+  ) => ApiKeyDTO[] | Promise<ApiKeyDTO[]> | null | undefined;
 }) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
 
@@ -77,6 +87,7 @@ export const ApiKeyGenerateModal = (props: {
 
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
+
     void fetch(`${api_host}/user/api_key`, {
       credentials: "include",
       method: "POST",
@@ -91,6 +102,7 @@ export const ApiKeyGenerateModal = (props: {
       }),
     }).then((res) => {
       if (res.ok) {
+        void props.refetch();
         void res.json().then((data) => {
           setApiKey((data as SetUserApiKeyResponse).api_key);
         });
@@ -318,13 +330,30 @@ export const ApiKeyGenerateModal = (props: {
                   </svg>
                 </div>
                 <div class="mt-4 text-center">
-                  <p class="text-sm text-neutral-600">
+                  <p class="text-neutral-600">
                     Here is your API Key. Make sure you copy this down as it
                     cannot be shown again:
                   </p>
-                  <p class="mb-2 mt-2 text-sm font-semibold text-neutral-900">
-                    {apiKey()}
-                  </p>
+                  <div class="mx-auto flex items-center justify-center gap-4 py-4">
+                    <p class="font-semibold text-neutral-900">{apiKey()}</p>
+                    <div
+                      class="rounded border border-transparent p-2 hover:border-neutral-200 hover:bg-neutral-100"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(apiKey());
+                        window.dispatchEvent(
+                          new CustomEvent("show-toast", {
+                            detail: {
+                              type: "info",
+                              title: "Copied",
+                              message: "API Key copied to clipboard",
+                            },
+                          }),
+                        );
+                      }}
+                    >
+                      <FaRegularClipboard />
+                    </div>
+                  </div>
                 </div>
               </div>
               <button
