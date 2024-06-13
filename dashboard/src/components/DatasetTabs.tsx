@@ -26,6 +26,13 @@ export const DatasetTabs = () => {
       >
         Settings
       </A>
+      <A
+        href={`/dashboard/dataset/${urlParams.id}/api-keys`}
+        activeClass="border-b-2 -mb-[1px] border-magenta-500"
+        class="hover:text-fuchsia-800"
+      >
+        API Keys
+      </A>
     </div>
   );
 };
