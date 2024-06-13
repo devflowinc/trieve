@@ -31,7 +31,15 @@ pub async fn create_dataset_query(
         .values(&new_dataset)
         .execute(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create dataset".to_string()))?;
+        .map_err(|err| match err {
+            diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::UniqueViolation,
+                _,
+            ) => ServiceError::BadRequest(
+                "Could not create dataset because a dataset with the same tracking_id already exists in the organization".to_string(),
+            ),
+            _ => ServiceError::BadRequest("Could not create dataset".to_string()),
+        })?;
 
     Ok(new_dataset)
 }
@@ -54,14 +62,14 @@ pub async fn get_dataset_by_id_query(
             .select(Dataset::as_select())
             .first(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
+            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
         UnifiedId::TrackingId(id) => datasets_columns::datasets
             .filter(datasets_columns::tracking_id.eq(id))
             .filter(datasets_columns::deleted.eq(0))
             .select(Dataset::as_select())
             .first(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
+            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
     };
 
     Ok(dataset)
@@ -98,6 +106,7 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
     let (dataset, organization, stripe_plan, stripe_subscription) = match id {
         UnifiedId::TrieveUuid(id) => query
             .filter(datasets_columns::id.eq(id))
+            .filter(datasets_columns::deleted.eq(0))
             .select((
                 Dataset::as_select(),
                 organizations_columns::organizations::all_columns(),
@@ -111,9 +120,10 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
                 Option<StripeSubscription>,
             )>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
+            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
         UnifiedId::TrackingId(id) => query
             .filter(datasets_columns::tracking_id.eq(id))
+            .filter(datasets_columns::deleted.eq(0))
             .select((
                 Dataset::as_select(),
                 organizations_columns::organizations::all_columns(),
@@ -127,7 +137,7 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
                 Option<StripeSubscription>,
             )>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
+            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
     };
 
     let org_with_plan_sub: OrganizationWithSubAndPlan =
@@ -336,7 +346,7 @@ pub async fn get_datasets_by_organization_id(
         .select((Dataset::as_select(), DatasetUsageCount::as_select()))
         .load::<(Dataset, DatasetUsageCount)>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
+        .map_err(|_| ServiceError::NotFound("Could not find organization".to_string()))?;
 
     let dataset_and_usages = dataset_and_usages
         .into_iter()
