@@ -31,7 +31,7 @@ const ShowToasts = () => {
   const [toastDetails, setToastDetails] = createSignal<ToastDetail[]>([]);
 
   createEffect(() => {
-    let timeOutId: number;
+    let timeOutId: NodeJS.Timeout;
 
     const showToastEvent = (event: Event) => {
       const toastEvent = event as unknown as ToastEvent;

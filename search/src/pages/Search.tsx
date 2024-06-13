@@ -41,8 +41,10 @@ export const Search = () => {
     setGroupUnique(location.query.groupUnique === "true" || false);
     setSlimChunks(location.query.slimChunks === "true" || false);
     setPageSize(Number(location.query.pageSize) || 10);
-    setGetTotalPages(location.query.getTotalPages === "true" || false);
-    setHighlightResults(location.query.highlightResults === "true" || false);
+    setGetTotalPages(location.query.getTotalPages === "false" ? false : true);
+    setHighlightResults(
+      location.query.highlightResults === "false" ? false : true,
+    );
     setHighlightDelimiters(
       location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
     );

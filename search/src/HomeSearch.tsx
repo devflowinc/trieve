@@ -25,8 +25,9 @@ export const HomeSearch = () => {
   const groupUnique = params.get("groupUnique") === "true" || false;
   const slimChunks = params.get("slimChunks") === "true" || false;
   const pageSize = Number(params.get("pageSize")) || 10;
-  const getTotalPages = params.get("getTotalPages") === "true" || false;
-  const highlightResults = params.get("highlightResults") === "true" || true;
+  const getTotalPages = params.get("getTotalPages") === "false" ? false : true;
+  const highlightResults =
+    params.get("highlightResults") === "false" ? false : true;
   const highlightDelimiters = params
     .get("highlightDelimiters")
     ?.split(",")

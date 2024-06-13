@@ -15,6 +15,8 @@ export const AddSampleDataModal = (props: {
   openModal: Accessor<boolean>;
   closeModal: () => void;
 }) => {
+  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+
   const [confirmation, setConfirmation] = createSignal(false);
   const [progress, setProgress] = createSignal(0);
   const [statusText, setStatusText] = createSignal("Preparing upload...");
@@ -24,7 +26,7 @@ export const AddSampleDataModal = (props: {
 
   const sendDataToTrieve = async (data: object[][]) => {
     for (let i = 0; i < data.length; i++) {
-      await fetch("https://api.trieve.ai/api/chunk", {
+      await fetch(`${api_host}/chunk`, {
         method: "POST",
         headers: {
           "TR-Dataset": datasetContext.dataset?.()?.id ?? "",
