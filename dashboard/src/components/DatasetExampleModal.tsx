@@ -21,11 +21,11 @@ export const AddSampleDataModal = (props: {
   const [statusText, setStatusText] = createSignal("Preparing upload...");
   const datasetContext = useContext(DatasetContext);
 
-  const dataToUpload: object[][] = [[]];
+  let dataToUpload: object[][] = [[]];
 
   const sendDataToTrieve = async (data: object[][]) => {
     for (let i = 0; i < data.length; i++) {
-      const response = await fetch("http://localhost:8090/api/chunk", {
+     await fetch("http://localhost:8090/api/chunk", {
         method: "POST",
         headers: {
           "TR-Dataset": datasetContext.dataset?.()?.id ?? "",
@@ -93,6 +93,8 @@ export const AddSampleDataModal = (props: {
         class="fixed inset-0 z-10 overflow-y-scroll"
         onClose={() => {
           props.closeModal();
+          setStatusText("Preparing upload...");
+          dataToUpload = [[]];
           setProgress(0);
           setConfirmation(false);
           setUploading(false);
