@@ -7,6 +7,7 @@ import {
   Show,
   useContext,
   createResource,
+  untrack,
 } from "solid-js";
 import {
   Dialog,
@@ -87,6 +88,7 @@ export const ApiKeyGenerateModal = (props: {
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
 
+    void props.refetch();
     void fetch(`${api_host}/user/api_key`, {
       credentials: "include",
       method: "POST",
@@ -101,7 +103,6 @@ export const ApiKeyGenerateModal = (props: {
       }),
     }).then((res) => {
       if (res.ok) {
-        void props.refetch();
         void res.json().then((data) => {
           setApiKey((data as SetUserApiKeyResponse).api_key);
         });
