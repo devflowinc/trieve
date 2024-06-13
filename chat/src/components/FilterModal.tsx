@@ -90,13 +90,13 @@ export const FilterModal = (props: FilterModalProps) => {
   }, "");
 
   return (
-    <div class="flex max-h-[300px] grow flex-col space-y-2 overflow-auto px-2 pr-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 xl:min-w-[50vw] 2xl:min-w-[40vw]">
-      <div class="mb-4 flex w-full items-center space-x-2 border-b border-neutral-400 py-2 pb-4 dark:border-neutral-900">
+    <div class="flex max-h-[300px] grow flex-col gap-2 overflow-auto px-2 pr-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 xl:min-w-[50vw] 2xl:min-w-[40vw]">
+      <div class="mb-4 flex w-full items-center space-x-2 border-b border-neutral-200 py-2 pb-4 dark:border-neutral-900">
         <label aria-label="Change Filter Type">
           <span class="p-1">Filter Type:</span>
         </label>
         <select
-          class="h-fit rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          class="h-fit rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onChange={(e) => {
             setTempFilterType(e.currentTarget.value);
           }}
@@ -121,7 +121,7 @@ export const FilterModal = (props: FilterModalProps) => {
         </select>
         <button
           type="button"
-          class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          class="rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => {
             const curFilterType = tempFilterType();
             if (curFilterType === "must") {
@@ -140,7 +140,7 @@ export const FilterModal = (props: FilterModalProps) => {
         <div class="flex-1" />
         <button
           type="button"
-          class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          class="rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => {
             setMustFilters([]);
             setMustNotFilters([]);
@@ -151,7 +151,7 @@ export const FilterModal = (props: FilterModalProps) => {
         </button>
         <button
           type="button"
-          class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          class="rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => saveFilters()}
         >
           Apply Filters
@@ -164,7 +164,7 @@ export const FilterModal = (props: FilterModalProps) => {
           shouldFilters().length === 0
         }
       >
-        <div class="h-full pt-4 text-center text-neutral-500">
+        <div class="h-full py-4 text-center text-neutral-500">
           You have no filters in effect.
         </div>
       </Show>
@@ -183,7 +183,7 @@ export const FilterModal = (props: FilterModalProps) => {
                 return (
                   <div
                     classList={{
-                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                      "border-b border-dotted border-neutral-300 dark:border-neutral-900":
                         index() < mustFilters().length - 1,
                     }}
                   >
@@ -200,7 +200,7 @@ export const FilterModal = (props: FilterModalProps) => {
         </div>
       </Show>
       <Show when={mustNotFilters().length > 0}>
-        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
+        <div class="border-b border-neutral-300 py-2 dark:border-neutral-900">
           must not: [
           <div class="flex flex-col gap-y-2">
             <For each={mustNotFilters()}>
@@ -214,7 +214,7 @@ export const FilterModal = (props: FilterModalProps) => {
                 return (
                   <div
                     classList={{
-                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                      "border-b border-dotted border-neutral-300 dark:border-neutral-900":
                         index() < mustNotFilters().length - 1,
                     }}
                   >
@@ -231,7 +231,7 @@ export const FilterModal = (props: FilterModalProps) => {
         </div>
       </Show>
       <Show when={shouldFilters().length > 0}>
-        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
+        <div class="border-b border-neutral-300 py-2 dark:border-neutral-700">
           should: [
           <div class="flex flex-col gap-y-2">
             <For each={shouldFilters()}>
@@ -245,7 +245,7 @@ export const FilterModal = (props: FilterModalProps) => {
                 return (
                   <div
                     classList={{
-                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                      "border-b border-dotted border-neutral-400 dark:border-neutral-700":
                         index() < shouldFilters().length - 1,
                     }}
                   >
@@ -378,7 +378,7 @@ export const FilterItem = (props: FilterItemProps) => {
           <span class="p-1">Filter Field:</span>
         </label>
         <select
-          class="h-fit w-48 rounded-md border border-neutral-400 bg-neutral-100 p-1 pl-1 dark:border-neutral-900 dark:bg-neutral-800"
+          class="h-fit w-48 rounded-md border border-neutral-400 bg-neutral-100 p-1 pl-1 dark:border-neutral-700 dark:bg-neutral-800"
           onChange={(e) => {
             setTempFilterField(e.currentTarget.value);
           }}
@@ -395,7 +395,7 @@ export const FilterItem = (props: FilterItemProps) => {
                   classList={{
                     "flex w-full items-center justify-between rounded p-1":
                       true,
-                    "bg-neutral-300 dark:bg-neutral-900":
+                    "bg-neutral-300 dark:bg-neutral-700":
                       tempFilterField().startsWith(filter_field),
                   }}
                 >
@@ -411,7 +411,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="text"
               placeholder="field"
-              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-700 dark:bg-neutral-800"
               onChange={(e) => {
                 setTempFilterField("metadata." + e.currentTarget.value);
               }}
@@ -425,7 +425,7 @@ export const FilterItem = (props: FilterItemProps) => {
           <span class="p-1">Filter Mode:</span>
         </label>
         <select
-          class="h-fit w-48 rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          class="h-fit w-48 rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-700 dark:bg-neutral-800"
           onChange={(e) => {
             setTempFilterMode(e.currentTarget.value);
           }}
@@ -438,7 +438,7 @@ export const FilterItem = (props: FilterItemProps) => {
                   classList={{
                     "flex w-full items-center justify-between rounded p-1":
                       true,
-                    "bg-neutral-300 dark:bg-neutral-900":
+                    "bg-neutral-300 dark:bg-neutral-700":
                       filter_mode === tempFilterMode(),
                   }}
                 >
@@ -456,7 +456,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="number"
               placeholder="Latitude"
-              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-500 dark:bg-neutral-800"
               onChange={(e) => {
                 setLocation({
                   ...location(),

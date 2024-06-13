@@ -400,7 +400,7 @@ const MainLayout = (props: LayoutProps) => {
               class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded border border-neutral-300 bg-neutral-50 px-4 py-1 text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
               defaultOpen={false}
             >
-              <PopoverPanel class="mb-1 flex w-full gap-2 border-b border-b-neutral-400 py-4">
+              <PopoverPanel class="mb-1 flex w-full gap-2 border-b border-b-neutral-300 py-4">
                 <FilterModal
                   setShowFilterModal={setShowFilterModal}
                   showFilterModal={showFilterModal}
