@@ -22,7 +22,7 @@ export const Navbar = (props: NavbarProps) => {
       </div>
       <Switch>
         <Match when={props.loadingNewTopic}>
-          <div class="flex w-full animate-pulse items-center justify-center px-2 text-center">
+          <div class="flex w-full items-center justify-center px-2 text-center text-sm">
             <p>Loading...</p>
           </div>
         </Match>
