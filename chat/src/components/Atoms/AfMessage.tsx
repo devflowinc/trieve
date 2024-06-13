@@ -137,64 +137,86 @@ export const AfMessage = (props: AfMessageProps) => {
           "self-end": props.role == "user",
         }}
       >
-        <Show when={!editing()}>
-          <div
-            ref={setLeftColumnRef}
-            classList={{
-              "dark:text-white group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
-                true,
-              "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
-                props.role === "assistant",
-              "bg-white border-neutral-300 dark:bg-neutral-800 md:ml-16":
-                props.role === "user",
-              "md:mr-16": props.role === "assistant" && metadata().length <= 0,
-            }}
-          >
-            <div class="flex gap-2 text-black dark:text-neutral-100 md:flex-row md:space-x-2 md:space-y-0">
-              <div class="mt-1">
-                {props.role === "user" ? (
-                  <BiSolidUserRectangle class="fill-current" />
-                ) : (
-                  <AiFillRobot class="fill-current" />
-                )}
-              </div>
-              <div
-                classList={{
-                  "w-full": true,
-                  "flex gap-y-8 items-start lg:gap-4 flex-col-reverse lg:flex-row":
-                    !!chunkMetadatas(),
-                }}
-              >
-                <div class="col-span-3 text-black dark:text-neutral-50">
-                  <div
-                    // eslint-disable-next-line solid/no-innerhtml
-                    innerHTML={sanitizeHtml(
-                      editedContent() || displayMessage().content.trimStart(),
-                      sanitzerOptions,
-                    )}
-                  />
-                </div>
-                <Show when={!displayMessage().content}>
-                  <div class="col-span-3 w-full whitespace-pre-line">
-                    <div class="flex w-full flex-col items-center justify-center">
-                      <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
-                    </div>
-                  </div>
-                </Show>
-              </div>
+        <div
+          ref={setLeftColumnRef}
+          classList={{
+            "dark:text-white group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-center":
+              true,
+            "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
+              props.role === "assistant",
+            "bg-white border-neutral-300 dark:bg-neutral-800 md:ml-16":
+              props.role === "user",
+            "md:mr-16": props.role === "assistant" && metadata().length <= 0,
+          }}
+        >
+          <div class="flex items-center gap-4 self-start text-black dark:text-neutral-100 md:flex-row">
+            <div class="">
+              {props.role === "user" ? (
+                <BiSolidUserRectangle class="fill-current" />
+              ) : (
+                <AiFillRobot class="fill-current" />
+              )}
             </div>
-            <Show when={props.role === "user"}>
-              <button
-                class={
-                  "group-hover:text-neutral-600 group-hover:dark:text-neutral-400 lg:text-transparent"
+            <div
+              classList={{
+                "w-full": true,
+                "flex gap-y-8 items-start lg:gap-4 flex-col-reverse lg:flex-row":
+                  !!chunkMetadatas(),
+              }}
+            >
+              <Show
+                fallback={
+                  <textarea
+                    id="new-message-content-textarea"
+                    class="w-full whitespace-pre-wrap rounded border border-neutral-300 bg-neutral-200/80 p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
+                    placeholder="Write a question or prompt for the assistant..."
+                    value={editingMessageContent()}
+                    onInput={(e) => resizeTextarea(e.target)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setEditing(false);
+                      }
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        props.onEdit(editingMessageContent());
+                        setEditedContent(editingMessageContent());
+                        setEditing(false);
+                      }
+                    }}
+                    rows="1"
+                  />
                 }
-                onClick={() => setEditing(true)}
+                when={!editing()}
               >
-                <BiRegularEdit class="fill-current" />
-              </button>
-            </Show>
+                <div
+                  class="text-black dark:text-neutral-50"
+                  // eslint-disable-next-line solid/no-innerhtml
+                  innerHTML={sanitizeHtml(
+                    editedContent() || displayMessage().content.trimStart(),
+                    sanitzerOptions,
+                  )}
+                />
+              </Show>
+              <Show when={!displayMessage().content}>
+                <div class="w-full whitespace-pre-line">
+                  <div class="flex w-full flex-col items-center justify-center">
+                    <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
+                  </div>
+                </div>
+              </Show>
+            </div>
           </div>
-        </Show>
+          <Show when={props.role === "user"}>
+            <button
+              class={
+                "-mr-2 ml-2 group-hover:text-neutral-600 group-hover:dark:text-neutral-400 lg:text-transparent"
+              }
+              onClick={() => setEditing(!editing())}
+            >
+              <BiRegularEdit class="fill-current" />
+            </button>
+          </Show>
+        </div>
         <div>
           <Show when={metadata() && metadata().length > 0}>
             <div
