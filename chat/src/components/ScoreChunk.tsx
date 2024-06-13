@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal, Switch, Match } from "solid-js";
 import {
-  indirectHasOwnProperty,
   type ChunkBookmarksDTO,
   type ChunkCollectionDTO,
   type ChunkMetadataWithVotes,
@@ -62,10 +63,6 @@ export const getLocalTime = (strDate: string | Date) => {
 };
 
 const ScoreChunk = (props: ScoreChunkProps) => {
-  const frontMatterVals = (
-    (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set,time_stamp,location"
-  ).split(",");
   const searchURL =
     (import.meta.env.VITE_SEARCH_UI_URL as string | undefined) ??
     "https://search.trieve.ai";
@@ -74,6 +71,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [copied, setCopied] = createSignal(false);
+  const [expandMetadata, setExpandMetadata] = createSignal(false);
 
   const copyChunk = () => {
     navigator.clipboard
@@ -131,88 +129,134 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           </a>
         </div>
         <div class="flex w-full flex-col">
-          <For each={frontMatterVals}>
-            {(frontMatterVal) => (
-              <>
-                <Show when={props.chunk.link && frontMatterVal == "link"}>
-                  <a
-                    class="line-clamp-1 w-fit break-all text-magenta-400 underline dark:text-turquoise-400"
-                    target="_blank"
-                    href={props.chunk.link ?? ""}
-                  >
-                    {props.chunk.link}
-                  </a>
-                </Show>
-                <Show when={props.chunk.tag_set && frontMatterVal == "tag_set"}>
-                  <div class="flex space-x-2">
-                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                      Tag Set:{" "}
-                    </span>
-                    <span class="line-clamp-1 break-all">
-                      {props.chunk.tag_set}
-                    </span>
-                  </div>
-                </Show>
-                <Show
-                  when={
-                    props.chunk.time_stamp && frontMatterVal == "time_stamp"
-                  }
-                >
-                  <div class="flex space-x-2">
-                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                      Time Stamp:{" "}
-                    </span>
-                    <span class="line-clamp-1 break-all">
-                      {formatDate(new Date(props.chunk.time_stamp ?? ""))}
-                    </span>
-                  </div>
-                </Show>
-                <Show
-                  when={props.chunk.location && frontMatterVal == "location"}
-                >
-                  <div class="flex space-x-2">
-                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                      Location:{" "}
-                    </span>
-                    <span class="line-clamp-1 break-all">
-                      [{props.chunk.location?.lat}, {props.chunk.location?.lon}]
-                    </span>
-                  </div>
-                </Show>
-                <Show
-                  when={
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                    frontMatterVal !== "link" &&
-                    frontMatterVal !== "tag_set" &&
-                    frontMatterVal !== "time_stamp" &&
-                    frontMatterVal !== "location" &&
-                    props.chunk.metadata &&
-                    indirectHasOwnProperty(
-                      props.chunk.metadata,
-                      frontMatterVal,
-                    ) &&
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                    (props.chunk.metadata as any)[frontMatterVal]
-                  }
-                >
-                  <div class="flex space-x-2">
-                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                      {frontMatterVal}:{" "}
-                    </span>
-                    <span class="line-clamp-1 break-all">
-                      {props.chunk.metadata &&
-                        indirectHasOwnProperty(
-                          props.chunk.metadata,
-                          frontMatterVal,
-                        ) &&
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                        (props.chunk.metadata as any)[frontMatterVal]}
-                    </span>
-                  </div>
-                </Show>
-              </>
-            )}
-          </For>
+          <Show when={props.chunk.link}>
+            <a
+              class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
+              target="_blank"
+              href={props.chunk.link ?? ""}
+            >
+              {props.chunk.link}
+            </a>
+          </Show>
+          <Show when={props.chunk.tracking_id}>
+            <div class="flex space-x-2">
+              <span class="text-nowrap whitespace-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
+                Tracking ID:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">
+                {props.chunk.tracking_id}
+              </span>
+            </div>
+          </Show>
+          <Show when={props.chunk.tag_set}>
+            <div class="flex space-x-2">
+              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                Tag Set:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">{props.chunk.tag_set}</span>
+            </div>
+          </Show>
+          <Show when={props.chunk.time_stamp}>
+            <div class="flex space-x-2">
+              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                Time Stamp:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">
+                {formatDate(new Date(props.chunk.time_stamp ?? ""))}
+              </span>
+            </div>
+          </Show>
+          <Show when={props.chunk.location}>
+            <div class="flex space-x-2">
+              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                Location:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">
+                [{props.chunk.location?.lat}, {props.chunk.location?.lon}]
+              </span>
+            </div>
+          </Show>
+          <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
+            <button
+              class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:bg-neutral-700/60 dark:text-magenta-400"
+              onClick={() => setExpandMetadata((prev) => !prev)}
+            >
+              <span>
+                {expandMetadata() ? "Collapse Metadata" : "Expand Metadata"}
+              </span>
+              <Switch>
+                <Match when={expandMetadata()}>
+                  <BiRegularChevronUp class="h-5 w-5 fill-current" />
+                </Match>
+                <Match when={!expandMetadata()}>
+                  <BiRegularChevronDown class="h-5 w-5 fill-current" />
+                </Match>
+              </Switch>
+            </button>
+          </Show>
+          <Show when={expandMetadata()}>
+            <div class="pl-2">
+              <For each={Object.keys(props.chunk.metadata ?? {})}>
+                {(key) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+                  const value = (props.chunk.metadata as any)[key];
+                  return (
+                    <Show when={value}>
+                      <div class="flex space-x-2">
+                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                          {key}:{" "}
+                        </span>
+                        <span class="line-clamp-1 break-all">
+                          <Show
+                            when={
+                              typeof value === "object" &&
+                              value !== null &&
+                              !Array.isArray(value)
+                            }
+                            fallback={
+                              Array.isArray(value) && value.length > 0 ? (
+                                <div class="pl-4">
+                                  <For each={value}>
+                                    {(item, index) => (
+                                      <span>
+                                        <span>{item}</span>
+                                        {index() < value.length - 1 && (
+                                          <span>, </span>
+                                        )}
+                                      </span>
+                                    )}
+                                  </For>
+                                </div>
+                              ) : (
+                                value
+                              )
+                            }
+                          >
+                            <div class="pl-2">
+                              <For each={Object.keys(value)}>
+                                {(subKey) => (
+                                  <div class="flex space-x-1">
+                                    <span class="font-semibold italic text-neutral-700 dark:text-neutral-200">
+                                      {subKey}:
+                                    </span>
+                                    <span class="text-neutral-700 dark:text-neutral-300">
+                                      {typeof value[subKey] === "object"
+                                        ? JSON.stringify(value[subKey], null, 2)
+                                        : value[subKey]}
+                                    </span>
+                                  </div>
+                                )}
+                              </For>
+                            </div>
+                          </Show>
+                        </span>
+                      </div>
+                    </Show>
+                  );
+                }}
+              </For>
+            </div>
+          </Show>
         </div>
       </div>
       <div class="mb-1 h-1 w-full border-b border-neutral-500 gradient-mask-b-0 dark:border-neutral-600" />

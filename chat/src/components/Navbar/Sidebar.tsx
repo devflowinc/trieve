@@ -226,7 +226,7 @@ export const Sidebar = (props: SidebarProps) => {
           </For>
         </div>
         <div class="flex-1" />
-        <div class="flex w-full flex-col space-y-1 border-t px-2 py-2 text-sm dark:border-neutral-600">
+        <div class="flex w-full flex-col space-y-1 border-t px-2 py-2 text-base dark:border-neutral-600">
           <div class="ml-4 flex items-center space-x-2">
             <OrganizationSelectBox />
             <p class="text-2xl">/</p>
@@ -252,7 +252,7 @@ export const Sidebar = (props: SidebarProps) => {
             class="flex w-full items-baseline gap-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
           >
             <AiFillGithub class="h-4 w-4 fill-current" />
-            <div class="flex">
+            <div class="flex items-center">
               <p>Star Us</p>
               <TbMinusVertical class="h-4 w-4" />
               <p>{starCount()}</p>
