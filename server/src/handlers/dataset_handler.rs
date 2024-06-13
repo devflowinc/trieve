@@ -47,11 +47,11 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
     "client_configuration": {}
 }))]
 pub struct CreateDatasetRequest {
-    /// Name of the dataset. Must be unique within the organization.
+    /// Name of the dataset.
     pub dataset_name: String,
     /// Organization ID that the dataset will belong to.
     pub organization_id: uuid::Uuid,
-    /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems.
+    /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization.
     pub tracking_id: Option<String>,
     /// Server configuration for the dataset, can be arbitrary JSON. We recommend setting to `{}` to start. See docs.trieve.ai for more information or adjust with the admin dashboard.
     pub server_configuration: serde_json::Value,
@@ -145,6 +145,7 @@ pub struct UpdateDatasetRequest {
     responses(
         (status = 200, description = "Dataset updated successfully", body = Dataset),
         (status = 400, description = "Service error relating to updating the dataset", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -200,6 +201,7 @@ pub async fn update_dataset(
     responses(
         (status = 204, description = "Dataset deleted successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -245,6 +247,7 @@ pub async fn delete_dataset(
     responses(
         (status = 204, description = "Dataset deleted successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -256,13 +259,13 @@ pub async fn delete_dataset(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_dataset_by_tracking_id(
-    tracking_id: String,
+    tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    if dataset_org_plan_sub.dataset.tracking_id != Some(tracking_id) {
+    if dataset_org_plan_sub.dataset.tracking_id != Some(tracking_id.clone()) {
         return Err(ServiceError::BadRequest(
             "Dataset header does not match provided dataset ID".to_string(),
         ));
@@ -291,6 +294,7 @@ pub async fn delete_dataset_by_tracking_id(
     responses(
         (status = 200, description = "Dataset retrieved successfully", body = Dataset),
         (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -334,6 +338,7 @@ pub async fn get_dataset(
     responses(
         (status = 200, description = "Dataset retrieved successfully", body = Dataset),
         (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -378,6 +383,7 @@ pub async fn get_dataset_by_tracking_id(
     responses(
         (status = 200, description = "Datasets retrieved successfully", body = Vec<DatasetAndUsage>),
         (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),
+        (status = 404, description = "Could not find organization", body = ErrorResponseBody)
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
