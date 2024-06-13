@@ -153,21 +153,21 @@ pub async fn soft_delete_dataset_by_id_query(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::datasets::dsl as datasets_columns;
-
     let mut conn = pool
         .get()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    diesel::update(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
-        .set(datasets_columns::deleted.eq(1))
-        .execute(&mut conn)
-        .await
-        .map_err(|err| {
-            log::error!("Could not delete dataset: {}", err);
-            ServiceError::BadRequest("Could not delete dataset".to_string())
-        })?;
+    diesel::sql_query(format!(
+        "UPDATE datasets SET deleted = 1, tracking_id = NULL WHERE id = '{}'::uuid",
+        id
+    ))
+    .execute(&mut conn)
+    .await
+    .map_err(|err| {
+        log::error!("Could not delete dataset: {}", err);
+        ServiceError::BadRequest("Could not delete dataset".to_string())
+    })?;
 
     let mut redis_conn = redis_pool
         .get()
