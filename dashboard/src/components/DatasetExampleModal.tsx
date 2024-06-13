@@ -24,7 +24,7 @@ export const AddSampleDataModal = (props: {
 
   const sendDataToTrieve = async (data: object[][]) => {
     for (let i = 0; i < data.length; i++) {
-      await fetch("http://localhost:8090/api/chunk", {
+      await fetch("https://api.trieve.ai/api/chunk", {
         method: "POST",
         headers: {
           "TR-Dataset": datasetContext.dataset?.()?.id ?? "",
