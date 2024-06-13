@@ -84,10 +84,15 @@ export const ApiKeyGenerateModal = (props: {
     { initialValue: [] },
   );
 
+  createEffect(() => {
+    if (generated()) {
+      void props.refetch();
+    }
+  });
+
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
 
-    void props.refetch();
     void fetch(`${api_host}/user/api_key`, {
       credentials: "include",
       method: "POST",
