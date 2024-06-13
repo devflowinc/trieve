@@ -22,6 +22,8 @@ import { ApiKeyGenerateModal } from "../../../components/ApiKeyGenerateModal";
 import { FaRegularClipboard, FaRegularTrashCan } from "solid-icons/fa";
 import { formatDate } from "../../../formatters";
 import { BuildingSomething } from "../../../components/BuildingSomething";
+import { BsMagic } from "solid-icons/bs";
+import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 
 export const DatasetStart = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -31,6 +33,8 @@ export const DatasetStart = () => {
 
   const [apiKeys, setApiKeys] = createSignal<ApiKeyDTO[]>([]);
   const [openModal, setOpenModal] = createSignal<boolean>(false);
+  const [openSampleDataModal, setOpenSampleDataModal] =
+    createSignal<boolean>(false);
 
   const selectedOrganization = createMemo(() => {
     const selectedOrgId = userContext.selectedOrganizationId?.();
@@ -127,6 +131,13 @@ export const DatasetStart = () => {
                 <p>API Docs</p>
                 <BiRegularLinkExternal class="h-4 w-4" />
               </a>
+              <button
+                class="flex items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
+                onClick={() => setOpenSampleDataModal(true)}
+              >
+                <p>Add Sample Data</p>
+                <BsMagic class="h-4 w-4" />
+              </button>
             </div>
             <BuildingSomething />
             <div class="flex flex-col gap-2">
@@ -333,6 +344,10 @@ export const DatasetStart = () => {
       <ApiKeyGenerateModal
         openModal={openModal}
         closeModal={() => setOpenModal(false)}
+      />
+      <AddSampleDataModal
+        openModal={openSampleDataModal}
+        closeModal={() => setOpenSampleDataModal(false)}
       />
     </div>
   );
