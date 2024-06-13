@@ -22,12 +22,12 @@ export const Navbar = (props: NavbarProps) => {
       </div>
       <Switch>
         <Match when={props.loadingNewTopic}>
-          <div class="flex w-full items-center justify-center px-2 text-center text-sm">
+          <div class="flex w-full items-center justify-center px-2 text-center text-base">
             <p>Loading...</p>
           </div>
         </Match>
         <Match when={!props.loadingNewTopic}>
-          <div class="flex w-full items-center justify-center px-2 text-center text-sm">
+          <div class="flex w-full items-center justify-center px-2 text-center text-base">
             <p>{props.selectedTopic()?.name ?? "New RAG Chat"}</p>
           </div>
         </Match>

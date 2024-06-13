@@ -484,7 +484,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 }
               >
                 <div class="flex space-x-2">
-                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                  <span class="whitespace-nowrap text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                     Tracking ID:{" "}
                   </span>
                   <span class="line-clamp-1 break-all">
