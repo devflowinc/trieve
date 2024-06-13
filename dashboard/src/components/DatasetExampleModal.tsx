@@ -17,7 +17,6 @@ export const AddSampleDataModal = (props: {
 }) => {
   const [confirmation, setConfirmation] = createSignal(false);
   const [progress, setProgress] = createSignal(0);
-  const [uploading, setUploading] = createSignal(false);
   const [statusText, setStatusText] = createSignal("Preparing upload...");
   const datasetContext = useContext(DatasetContext);
 
@@ -25,7 +24,7 @@ export const AddSampleDataModal = (props: {
 
   const sendDataToTrieve = async (data: object[][]) => {
     for (let i = 0; i < data.length; i++) {
-     await fetch("http://localhost:8090/api/chunk", {
+      await fetch("http://localhost:8090/api/chunk", {
         method: "POST",
         headers: {
           "TR-Dataset": datasetContext.dataset?.()?.id ?? "",
@@ -35,7 +34,7 @@ export const AddSampleDataModal = (props: {
         body: JSON.stringify(data[i]),
       });
       setProgress((progress() + 100 / data.length) % 100);
-      setStatusText(`Uploading batch ${i}...`);
+      setStatusText(`Uploading batch ${i + 1}...`);
     }
   };
 
@@ -62,7 +61,6 @@ export const AddSampleDataModal = (props: {
   }
 
   const uploadSampleData = () => {
-    setUploading(true);
     Papa.parse(
       "https://gist.githubusercontent.com/densumesh/16f667de9149902f989250a8a1c50969/raw/4631cf5894a9fd473b708a4b372cd58f84808591/shortened_yc_example.csv",
       {
@@ -97,7 +95,6 @@ export const AddSampleDataModal = (props: {
           dataToUpload = [[]];
           setProgress(0);
           setConfirmation(false);
-          setUploading(false);
         }}
       >
         <div class="flex min-h-screen items-center justify-center px-4">
