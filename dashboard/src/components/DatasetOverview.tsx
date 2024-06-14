@@ -9,6 +9,7 @@ export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
   datasetAndUsages: Accessor<DatasetAndUsage[]>;
   setDatasetsAndUsages: Setter<DatasetAndUsage[]>;
+  setOpenExampleDatasetModal: Setter<boolean>;
 }
 
 export const DatasetOverview = (props: DatasetOverviewProps) => {
@@ -50,12 +51,20 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
             </Show>
           </div>
           <Show when={props.datasetAndUsages().length != 0}>
-            <button
-              class="rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
-              onClick={() => props.setOpenNewDatasetModal(true)}
-            >
-              Create Dataset +
-            </button>
+            <div>
+              <button
+                class="mr-2 rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
+                onClick={() => props.setOpenExampleDatasetModal(true)}
+              >
+                Create Example Dataset +
+              </button>
+              <button
+                class="rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
+                onClick={() => props.setOpenNewDatasetModal(true)}
+              >
+                Create Dataset +
+              </button>
+            </div>
           </Show>
         </div>
       </div>

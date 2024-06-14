@@ -30,7 +30,8 @@ export const Overview = () => {
   const [orgUsage, setOrgUsage] = createSignal<OrganizationUsageCount>();
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
     createSignal<boolean>(false);
-
+  const [exampleDatasetModalOpen, setExampleDatasetModalOpen] =
+    createSignal<boolean>(false);
   const selectedOrganization = createMemo(() => {
     const selectedOrgId = userContext.selectedOrganizationId?.();
     if (!selectedOrgId) return null;
@@ -169,14 +170,17 @@ export const Overview = () => {
       <div class="h-1" />
       <DatasetOverview
         setOpenNewDatasetModal={setNewDatasetModalOpen}
+        setOpenExampleDatasetModal={setExampleDatasetModalOpen}
         datasetAndUsages={datasetAndUsages}
         setDatasetsAndUsages={setDatasetsAndUsages}
       />
       <NewDatasetModal
         isOpen={newDatasetModalOpen}
-        closeModal={() => {
-          setNewDatasetModalOpen(false);
-        }}
+        closeModal={() => setNewDatasetModalOpen(false)}
+      />
+      <NewDatasetModal
+        isOpen={exampleDatasetModalOpen}
+        closeModal={() => setExampleDatasetModalOpen(false)}
       />
     </div>
   );
