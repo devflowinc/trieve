@@ -251,6 +251,11 @@ async fn delete_worker(
                                             "Deleted Organization: {:?}",
                                             dataset.organization_id
                                         );
+
+                                        let _ = redis_connection
+                                            .srem::<&str, std::string::String, usize>("deleted_organizations", dataset.organization_id.to_string())
+                                            .await
+                                            .map_err(|err| log::error!("Failed to remove organization from deleted organizations: {:?}", err));
                                     }
                                     Err(err) => {
                                         log::error!("Failed to delete organization: {:?}", err);
