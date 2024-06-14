@@ -10,7 +10,7 @@ import { FaRegularTrashCan } from "solid-icons/fa";
 import { ApiKeyGenerateModal } from "./ApiKeyGenerateModal";
 import { UserContext } from "../contexts/UserContext";
 import {
-  ApiKeyDTO,
+  ApiKeyRespBody,
   fromI32ToApiKeyRole,
   fromI32ToUserRole,
 } from "../types/apiTypes";
@@ -46,7 +46,7 @@ export const ApiKeys = () => {
       })
         .then((res) => res.json())
         .then((data) => {
-          return data as ApiKeyDTO[];
+          return data as ApiKeyRespBody[];
         });
     },
     { initialValue: [] },
@@ -108,10 +108,25 @@ export const ApiKeys = () => {
                     scope="col"
                     class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
-                    Created At
-                  </th>
-                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                     Perms
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
+                    Datasets
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
+                    Organizations
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
+                    Created At
                   </th>
                 </tr>
               </thead>
@@ -123,12 +138,63 @@ export const ApiKeys = () => {
                         {apiKey.name}
                       </td>
                       <td class="px-3 py-3.5 text-left text-sm text-gray-900">
-                        {formatDate(new Date(apiKey.created_at))}
-                      </td>
-                      <td class="px-3 py-3.5 text-left text-sm text-gray-900">
                         {apiKey.role > 0
                           ? fromI32ToUserRole(currentUserRole())
                           : fromI32ToApiKeyRole(apiKey.role).toString()}
+                      </td>
+                      <td class="px-3 py-3.5 text-left text-sm text-gray-900">
+                        <Show when={apiKey.dataset_ids?.length}>[</Show>
+                        <For each={apiKey.dataset_ids}>
+                          {(dataset_id, index) => (
+                            <>
+                              <a
+                                class="text-fuchsia-600 hover:underline"
+                                href={`/dashboard/dataset/${dataset_id}/start`}
+                              >
+                                {dataset_id}
+                              </a>
+                              <Show
+                                when={
+                                  index() <
+                                  (apiKey.dataset_ids?.length ?? 0) - 1
+                                }
+                              >
+                                {", "}
+                              </Show>
+                            </>
+                          )}
+                        </For>
+                        <Show when={apiKey.dataset_ids?.length}>]</Show>
+                      </td>
+                      <td class="px-3 py-3.5 text-left text-sm text-gray-900">
+                        <Show when={apiKey.organization_ids?.length}>[</Show>
+                        <For each={apiKey.organization_ids}>
+                          {(org_id, index) => (
+                            <>
+                              <a
+                                class="text-fuchsia-600 hover:underline"
+                                href={`/dashboard/${org_id}/overview`}
+                                onClick={() =>
+                                  userContext.setSelectedOrganizationId(org_id)
+                                }
+                              >
+                                {org_id}
+                              </a>
+                              <Show
+                                when={
+                                  index() <
+                                  (apiKey.organization_ids?.length ?? 0) - 1
+                                }
+                              >
+                                {", "}
+                              </Show>
+                            </>
+                          )}
+                        </For>
+                        <Show when={apiKey.organization_ids?.length}>]</Show>
+                      </td>
+                      <td class="px-3 py-3.5 text-left text-sm text-gray-900">
+                        {formatDate(new Date(apiKey.created_at))}
                       </td>
                       <td class="px-3 py-3.5 text-center text-sm text-gray-900">
                         <div

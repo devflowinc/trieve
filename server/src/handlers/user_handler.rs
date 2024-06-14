@@ -173,7 +173,7 @@ pub async fn set_user_api_key(
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
+        (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyRespBody>),
         (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
     ),
     security(
@@ -207,7 +207,7 @@ pub struct DeleteUserApiKeyRequest {
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
+        (status = 204, description = "Confirmation that the api key was deleted"),
         (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
     ),
     params(

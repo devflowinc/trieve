@@ -2,10 +2,19 @@ import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import CreateChunkRequest from "../../../components/CreateChunkRequest.md";
 import HybridSearchReqeust from "../../../components/HybridSearchRequest.md";
 import { BuildingSomething } from "../../../components/BuildingSomething";
-import { BsMagic } from "solid-icons/bs";
+import { createEffect, createMemo, createSignal, useContext } from "solid-js";
+import { UserContext } from "../../../contexts/UserContext";
+import { useLocation } from "@solidjs/router";
+import { createToast } from "../../../components/ShowToasts";
+import { Dataset } from "../../../types/apiTypes";
+import { DatasetContext } from "../../../contexts/DatasetContext";
+import { FaRegularClipboard } from "solid-icons/fa";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
+import { BsMagic } from "solid-icons/bs";
 
 export const DatasetStart = () => {
+  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const location = useLocation();
   const userContext = useContext(UserContext);
   const datasetContext = useContext(DatasetContext);
 
@@ -22,6 +31,35 @@ export const DatasetStart = () => {
     const dataset = datasetContext.dataset?.();
     if (!dataset) return null;
     return dataset;
+  });
+
+  createEffect(() => {
+    const pathname = location.pathname;
+    const datasetId = pathname.split("/")[3];
+
+    void fetch(`${api_host}/dataset/${datasetId}`, {
+      method: "GET",
+      headers: {
+        "TR-Dataset": datasetId,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    }).then((resp) => {
+      if (!resp.ok) {
+        createToast({
+          title: "Error",
+          type: "error",
+          message:
+            "This dataset does not exist or do you not have permission to access it.",
+          timeout: 1000,
+        });
+        return;
+      }
+
+      void resp.json().then((data: Dataset) => {
+        userContext.setSelectedOrganizationId(data.organization_id);
+      });
+    });
   });
 
   return (
@@ -53,6 +91,56 @@ export const DatasetStart = () => {
               </button>
             </div>
             <BuildingSomething />
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center space-x-3">
+                <p class="block text-sm font-medium">
+                  {curDataset()?.name} dataset id:{" "}
+                </p>
+                <p class="w-fit text-sm">{curDataset()?.id}</p>
+                <button
+                  class="text-sm underline"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(curDataset()?.id ?? "");
+                    window.dispatchEvent(
+                      new CustomEvent("show-toast", {
+                        detail: {
+                          type: "info",
+                          title: "Copied",
+                          message: "Dataset ID copied to clipboard",
+                        },
+                      }),
+                    );
+                  }}
+                >
+                  <FaRegularClipboard />
+                </button>
+              </div>
+              <div class="flex items-center space-x-3">
+                <p class="block text-sm font-medium">
+                  {selectedOrganization()?.name} org id:
+                </p>
+                <p class="w-fit text-sm">{selectedOrganization()?.id}</p>
+                <button
+                  class="text-sm underline"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(
+                      selectedOrganization()?.id ?? "",
+                    );
+                    window.dispatchEvent(
+                      new CustomEvent("show-toast", {
+                        detail: {
+                          type: "info",
+                          title: "Copied",
+                          message: "Organization ID copied to clipboard",
+                        },
+                      }),
+                    );
+                  }}
+                >
+                  <FaRegularClipboard />
+                </button>
+              </div>
+            </div>
           </section>
           <section
             class="flex-col gap-4 border bg-white px-4 py-6 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"

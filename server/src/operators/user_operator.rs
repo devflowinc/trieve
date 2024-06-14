@@ -1,5 +1,5 @@
 use crate::data::models::{
-    ApiKeyDTO, ApiKeyRole, Organization, RedisPool, SlimUser, UserApiKey, UserOrganization,
+    ApiKeyRespBody, ApiKeyRole, Organization, RedisPool, SlimUser, UserApiKey, UserOrganization,
     UserRole,
 };
 use crate::{
@@ -349,7 +349,7 @@ pub async fn get_user_from_api_key_query(
 pub async fn get_user_api_keys_query(
     user_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<ApiKeyDTO>, ServiceError> {
+) -> Result<Vec<ApiKeyRespBody>, ServiceError> {
     use crate::data::schema::user_api_key::dsl as user_api_key_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -364,7 +364,7 @@ pub async fn get_user_api_keys_query(
     let api_keys = api_keys
         .into_iter()
         .map(|api_key| api_key.into())
-        .collect::<Vec<ApiKeyDTO>>();
+        .collect::<Vec<ApiKeyRespBody>>();
     Ok(api_keys)
 }
 

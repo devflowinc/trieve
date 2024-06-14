@@ -237,11 +237,13 @@ export function stringToApiKeyRole(input: string): ApiKeyRole | undefined {
   }
 }
 
-export interface ApiKeyDTO {
+export interface ApiKeyRespBody {
   id: string;
   user_id: string;
   name: string;
   role: number;
+  dataset_ids: string[] | null;
+  organization_ids: string[] | null;
   created_at: string;
   updated_at: string;
 }

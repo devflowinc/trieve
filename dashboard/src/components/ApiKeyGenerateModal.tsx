@@ -18,7 +18,7 @@ import {
   DisclosurePanel,
 } from "terracotta";
 import {
-  ApiKeyDTO,
+  ApiKeyRespBody,
   DatasetAndUsage,
   fromI32ToUserRole,
   Organization,
@@ -40,7 +40,7 @@ export const ApiKeyGenerateModal = (props: {
 
   refetch: (
     info?: unknown,
-  ) => ApiKeyDTO[] | Promise<ApiKeyDTO[]> | null | undefined;
+  ) => ApiKeyRespBody[] | Promise<ApiKeyRespBody[]> | null | undefined;
 }) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
 
