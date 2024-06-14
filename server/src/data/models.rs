@@ -1929,6 +1929,7 @@ pub struct Organization {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub registerable: Option<bool>,
+    pub deleted: i32,
 }
 
 impl Organization {
@@ -1939,6 +1940,7 @@ impl Organization {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             registerable: Some(true),
+            deleted: 0,
         }
     }
 

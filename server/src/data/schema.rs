@@ -193,6 +193,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         registerable -> Nullable<Bool>,
+        deleted -> Int4,
     }
 }
 

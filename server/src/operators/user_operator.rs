@@ -33,6 +33,7 @@ pub async fn get_user_by_id_query(
                 .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
         )
         .filter(users_columns::id.eq(user_id))
+        .filter(organization_columns::deleted.eq(0))
         .select((
             User::as_select(),
             UserOrganization::as_select(),
@@ -237,6 +238,7 @@ pub async fn get_user_from_api_key_query(
             )
             .inner_join(user_api_key_columns::user_api_key)
             .filter(user_api_key_columns::blake3_hash.eq(api_key_hash.clone()))
+            .filter(organization_columns::deleted.eq(0))
             .select((
                 User::as_select(),
                 UserOrganization::as_select(),
@@ -289,6 +291,7 @@ pub async fn get_user_from_api_key_query(
                     ))
                     .inner_join(user_api_key_columns::user_api_key)
                     .filter(user_api_key_columns::api_key_hash.eq(argon2_hash.clone()))
+                    .filter(organization_columns::deleted.eq(0))
                     .select((
                         User::as_select(),
                         UserOrganization::as_select(),
