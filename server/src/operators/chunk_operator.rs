@@ -1816,7 +1816,13 @@ pub fn get_highlights(
                     std::cmp::min(candidate_words.len(), half_window as usize - count),
                 );
                 count += candidate_words.len();
-                next_phrase.push_str(&candidate_words.join(" "));
+                let spaced_phrases = if candidate_words.len() == 1 {
+                    format!("{} ", candidate_words.join(" "))
+                } else {
+                    candidate_words.join(" ")
+                };
+
+                next_phrase.push_str(&spaced_phrases);
                 start += 1;
             }
         }
@@ -1828,7 +1834,7 @@ pub fn get_highlights(
             let mut start = idx - 1;
             let mut count: usize = 0;
             while (count as u32) < half_window {
-                let slice = get_slice_from_vec_string(split_content.clone(), start)?;
+                let slice: String = get_slice_from_vec_string(split_content.clone(), start)?;
                 let split_words = slice.split_whitespace().collect::<Vec<&str>>();
                 if matched_idxs_set.contains(&start) {
                     break;
@@ -1858,13 +1864,20 @@ pub fn get_highlights(
                 {
                     break;
                 }
-                let candiate_words = split_words
+                let candidate_words = split_words
                     .into_iter()
                     .rev()
                     .take(half_window as usize - count)
                     .collect::<Vec<&str>>();
-                count += candiate_words.len();
-                prev_phrase = format!("{} {}", candiate_words.iter().rev().join(" "), prev_phrase);
+                count += candidate_words.len();
+
+                let spaced_phrases = if candidate_words.len() == 1 {
+                    format!("{} ", candidate_words.join(" "))
+                } else {
+                    candidate_words.iter().rev().join(" ")
+                };
+
+                prev_phrase = format!("{} {}", spaced_phrases, prev_phrase);
                 if start == 0 {
                     break;
                 }
