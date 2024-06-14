@@ -1,93 +1,36 @@
 import { Accessor, createSignal, Show, useContext } from "solid-js";
 import { Dialog, DialogOverlay, DialogPanel, DialogTitle } from "terracotta";
-import Papa from "papaparse";
 import { DatasetContext } from "../contexts/DatasetContext";
-
-type ChunkData = {
-  "Chunk HTML": string;
-  Link: string;
-  "Tag Set": string;
-  "Tracking ID": string;
-  Metadata: string; // Assuming Metadata can be a string or parsed as an object
-};
+import { uploadSampleData } from "../api/uploadSampleData";
 
 export const AddSampleDataModal = (props: {
   openModal: Accessor<boolean>;
   closeModal: () => void;
 }) => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
-
   const [confirmation, setConfirmation] = createSignal(false);
   const [progress, setProgress] = createSignal(0);
   const [statusText, setStatusText] = createSignal("Preparing upload...");
   const datasetContext = useContext(DatasetContext);
 
-  let dataToUpload: object[][] = [[]];
-
-  const sendDataToTrieve = async (data: object[][]) => {
-    for (let i = 0; i < data.length; i++) {
-      await fetch(`${api_host}/chunk`, {
-        method: "POST",
-        headers: {
-          "TR-Dataset": datasetContext.dataset?.()?.id ?? "",
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(data[i]),
-      });
-      setProgress((progress() + 100 / data.length) % 100);
-      setStatusText(`Uploading batch ${i + 1}...`);
-    }
-  };
-
-  function uploadData(row: { data: ChunkData }) {
-    if (!row.data) return;
-    if (row.data["Chunk HTML"] === "") return;
-    if (dataToUpload[dataToUpload.length - 1].length < 120) {
-      try {
-        dataToUpload[dataToUpload.length - 1].push({
-          chunk_html: row.data["Chunk HTML"].replace(/;/g, ","),
-          link: row.data.Link.replace(/;/g, ","),
-          tag_set: row.data["Tag Set"].split("|"),
-          tracking_id: row.data["Tracking ID"],
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          metadata: JSON.parse(row.data.Metadata.replace(/;/g, ",")),
-          upsert_by_tracking_id: true,
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    } else {
-      dataToUpload.push([]);
-    }
-  }
-
-  const uploadSampleData = () => {
-    Papa.parse(
-      "https://gist.githubusercontent.com/densumesh/16f667de9149902f989250a8a1c50969/raw/4631cf5894a9fd473b708a4b372cd58f84808591/shortened_yc_example.csv",
-      {
-        download: true,
-        header: true,
-        step: uploadData,
-        complete: function () {
-          void sendDataToTrieve(dataToUpload).then(() => {
-            setStatusText("Upload complete!");
-            setProgress(100);
-            closeModal();
-          });
-        },
-      },
-    );
-  };
-
   const startUpload = () => {
     setConfirmation(true);
-    uploadSampleData();
+    const datasetId = datasetContext?.dataset?.()?.id;
+    if (!datasetId) {
+      setStatusText("Error: No dataset ID found");
+      return;
+    }
+    void uploadSampleData({
+      datasetId,
+      reportProgress(progress) {
+        setProgress(progress);
+      },
+    }).then(() => {
+      setStatusText("Upload complete!");
+    });
   };
 
   const closeModal = () => {
     setStatusText("Preparing upload...");
-    dataToUpload = [[]];
     setProgress(0);
     setConfirmation(false);
     props.closeModal();
