@@ -1759,9 +1759,11 @@ pub fn get_highlights(
                 .collect::<Vec<String>>()
         })
         .collect::<Vec<String>>();
-    for i in 0..split_content.len() {
-        engine.insert(i, &split_content[i]);
-    }
+
+    split_content.iter().enumerate().for_each(|(i, x)| {
+        engine.insert(i, x);
+    });
+
     let new_output = input;
     let results = engine.search(&query);
     let mut matched_idxs = vec![];
@@ -1772,7 +1774,7 @@ pub fn get_highlights(
     }
     matched_idxs.sort();
     let window = window_size.unwrap_or(0);
-    if window <= 0 {
+    if window == 0 {
         return Ok((
             apply_highlights_to_html(
                 new_output,
@@ -1870,7 +1872,7 @@ pub fn get_highlights(
             }
         }
         if !prev_phrase.is_empty() {
-            prev_phrase.push_str(" ");
+            prev_phrase.push(' ');
         }
         let windowed_phrase = format!(
             "{}<b><mark>{}</mark></b>{}",

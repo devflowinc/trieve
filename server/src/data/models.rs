@@ -387,7 +387,7 @@ impl ChunkMetadata {
             qdrant_point_id: chunk_metadata_table.qdrant_point_id,
             created_at: chunk_metadata_table.created_at,
             updated_at: chunk_metadata_table.updated_at,
-            tag_set: Some(tag_set.into_iter().map(|tag| Some(tag)).collect()),
+            tag_set: Some(tag_set.into_iter().map(Some).collect()),
             metadata: chunk_metadata_table.metadata,
             tracking_id: chunk_metadata_table.tracking_id,
             time_stamp: chunk_metadata_table.time_stamp,
@@ -2371,10 +2371,10 @@ impl From<UserApiKey> for ApiKeyRespBody {
             role: api_key.role,
             dataset_ids: api_key
                 .dataset_ids
-                .map(|ids| ids.into_iter().filter_map(|id| id).collect()),
+                .map(|ids| ids.into_iter().flatten().collect()),
             organization_ids: api_key
                 .organization_ids
-                .map(|ids| ids.into_iter().filter_map(|id| id).collect()),
+                .map(|ids| ids.into_iter().flatten().collect()),
             created_at: api_key.created_at,
             updated_at: api_key.updated_at,
         }
