@@ -1764,8 +1764,14 @@ pub fn get_highlights(
     matched_idxs.sort();
     let window = window_size.unwrap_or(0);
     if window <= 0 {
-        return Ok(apply_highlights_to_html(
-            new_output,
+        return Ok((
+            apply_highlights_to_html(
+                new_output,
+                matched_idxs
+                    .iter()
+                    .map(|x| split_content.get(*x).unwrap().clone())
+                    .collect(),
+            ),
             matched_idxs
                 .iter()
                 .map(|x| split_content.get(*x).unwrap().clone())
@@ -1869,13 +1875,13 @@ pub fn get_highlights(
     } else {
         windowed_phrases.clone()
     };
-    Ok(apply_highlights_to_html(new_output, result_matches))
+    Ok(
+        apply_highlights_to_html(new_output, matched_phrases),
+        result_matches,
+    )
 }
 
-fn apply_highlights_to_html(
-    input: ChunkMetadata,
-    phrases: Vec<String>,
-) -> (ChunkMetadata, Vec<String>) {
+fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> ChunkMetadata {
     let mut meta_data = input;
     let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();
     for phrase in phrases.clone() {
@@ -1884,7 +1890,7 @@ fn apply_highlights_to_html(
             .replace("</b></mark><mark><b>", "");
     }
     meta_data.chunk_html = Some(chunk_html);
-    (meta_data, phrases)
+    meta_data
 }
 
 #[tracing::instrument(skip(pool))]
