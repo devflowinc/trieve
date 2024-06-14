@@ -1751,11 +1751,11 @@ pub fn get_highlights(
         .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
         .flat_map(|x| {
             x.to_string()
-                .split_whitespace()
+                .split_inclusive(" ")
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
                 .chunks(max_length.unwrap_or(5) as usize)
-                .map(|x| x.join(" "))
+                .map(|x| x.join(""))
                 .collect::<Vec<String>>()
         })
         .collect::<Vec<String>>();
@@ -1808,7 +1808,7 @@ pub fn get_highlights(
                 }
                 let slice = get_slice_from_vec_string(split_content.clone(), start)?;
                 let candidate_words = slice
-                    .split_whitespace()
+                    .split_inclusive(" ")
                     .take(half_window as usize - count)
                     .collect::<Vec<&str>>();
                 used_phrases.insert(
@@ -1816,26 +1816,17 @@ pub fn get_highlights(
                     std::cmp::min(candidate_words.len(), half_window as usize - count),
                 );
                 count += candidate_words.len();
-                let spaced_phrases = if candidate_words.len() == 1 {
-                    format!("{} ", candidate_words.join(" "))
-                } else {
-                    candidate_words.join(" ")
-                };
-
-                next_phrase.push_str(&spaced_phrases);
+                next_phrase.push_str(&candidate_words.join(""));
                 start += 1;
             }
-        }
-        if !next_phrase.is_empty() {
-            next_phrase = format!(" {}", next_phrase);
         }
         let mut prev_phrase = String::new();
         if idx > 0 {
             let mut start = idx - 1;
             let mut count: usize = 0;
             while (count as u32) < half_window {
-                let slice: String = get_slice_from_vec_string(split_content.clone(), start)?;
-                let split_words = slice.split_whitespace().collect::<Vec<&str>>();
+                let slice = get_slice_from_vec_string(split_content.clone(), start)?;
+                let split_words = slice.split_inclusive(" ").collect::<Vec<&str>>();
                 if matched_idxs_set.contains(&start) {
                     break;
                 }
@@ -1870,27 +1861,18 @@ pub fn get_highlights(
                     .take(half_window as usize - count)
                     .collect::<Vec<&str>>();
                 count += candidate_words.len();
-
-                let spaced_phrases = if candidate_words.len() == 1 {
-                    format!("{} ", candidate_words.join(" "))
-                } else {
-                    candidate_words.iter().rev().join(" ")
-                };
-
-                prev_phrase = format!("{} {}", spaced_phrases, prev_phrase);
+                prev_phrase = format!("{}{}", candidate_words.iter().rev().join(""), prev_phrase);
                 if start == 0 {
                     break;
                 }
                 start -= 1;
             }
         }
-        if !prev_phrase.is_empty() {
-            prev_phrase.push(' ');
-        }
-        let windowed_phrase = format!(
-            "{}<b><mark>{}</mark></b>{}",
-            prev_phrase, phrase, next_phrase
+        let highlighted_phrase = phrase.replace(
+            &phrase.trim(),
+            &format!("<mark><b>{}</b></mark>", phrase.trim()),
         );
+        let windowed_phrase = format!("{}{}{}", prev_phrase, highlighted_phrase, next_phrase);
         windowed_phrases.push(windowed_phrase);
     }
     let matched_phrases = matched_idxs
@@ -1917,8 +1899,12 @@ fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> Chunk
         if replaced_phrases.contains(&phrase) {
             continue;
         }
+        let trimmed_phrase = phrase.trim();
         chunk_html = chunk_html
-            .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase))
+            .replace(
+                &trimmed_phrase,
+                &format!("<mark><b>{}</b></mark>", trimmed_phrase),
+            )
             .replace("</b></mark><mark><b>", "");
         replaced_phrases.insert(phrase);
     }
