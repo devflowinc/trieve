@@ -5,7 +5,7 @@ use crate::{
         UserOrganization,
     },
     errors::ServiceError,
-    operators::dataset_operator::delete_dataset_by_id_query,
+    operators::dataset_operator::soft_delete_dataset_by_id_query,
     randutil,
 };
 use actix_web::{web, HttpRequest};
@@ -74,6 +74,7 @@ pub async fn update_organization_query(
 
     let updated_organization: Organization = diesel::update(organizations_columns::organizations)
         .filter(organizations_columns::id.eq(id))
+        .filter(organizations_columns::deleted.eq(0))
         .set((
             organizations_columns::name.eq(name),
             organizations_columns::updated_at.eq(chrono::Utc::now().naive_local()),
@@ -118,7 +119,7 @@ pub async fn delete_organization_query(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
-) -> Result<Organization, ServiceError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
     use crate::data::schema::organizations::dsl as organizations_columns;
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
@@ -194,21 +195,27 @@ pub async fn delete_organization_query(
     for dataset in datasets {
         let config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
 
-        delete_dataset_by_id_query(dataset.id, pool.clone(), config.clone())
-            .await
-            .map_err(|e| {
-                log::error!(
-                    "Error deleting dataset in delete_organization_query: {:?}",
-                    e
-                );
-                ServiceError::BadRequest("Error deleting dataset".to_string())
-            })?;
+        soft_delete_dataset_by_id_query(
+            dataset.id,
+            config.clone(),
+            pool.clone(),
+            redis_pool.clone(),
+        )
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Error deleting dataset in delete_organization_query: {:?}",
+                e
+            );
+            ServiceError::BadRequest("Error deleting dataset".to_string())
+        })?;
     }
 
-    let deleted_organization: Organization = diesel::delete(
+    diesel::update(
         organizations_columns::organizations.filter(organizations_columns::id.eq(org_id)),
     )
-    .get_result(&mut conn)
+    .set(organizations_columns::deleted.eq(1))
+    .execute(&mut conn)
     .await
     .map_err(|e| {
         log::error!(
@@ -218,7 +225,16 @@ pub async fn delete_organization_query(
         ServiceError::BadRequest("Could not delete organization, try again".to_string())
     })?;
 
-    Ok(deleted_organization)
+    redis_conn
+        .sadd("deleted_organizations", org_id.to_string())
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError(
+                "Failed to add organization to deleted_organizations".to_string(),
+            )
+        })?;
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(pool))]
@@ -250,6 +266,7 @@ pub async fn get_org_from_id_query(
 
     let org_plan_sub: (Organization, Option<StripePlan>, Option<StripeSubscription>) = query
         .filter(organizations_columns::id.eq(organization_id))
+        .filter(organizations_columns::deleted.eq(0))
         .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(&mut conn)
         .await
         .map_err(|e| {
@@ -407,6 +424,7 @@ pub async fn get_org_users_by_id_query(
             organization_columns::organizations
                 .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
         )
+        .filter(organization_columns::deleted.eq(0))
         .filter(user_organizations_columns::organization_id.eq(org_id))
         .select((
             User::as_select(),
@@ -448,6 +466,8 @@ pub async fn get_arbitrary_org_owner_from_org_id(
         )
         .filter(user_organizations_columns::organization_id.eq(org_id))
         .filter(user_organizations_columns::role.eq(2))
+                    .filter(organization_columns::deleted.eq(0))
+
         .select((
             User::as_select(),
             UserOrganization::as_select(),
@@ -496,6 +516,7 @@ pub async fn get_arbitrary_org_owner_from_dataset_id(
             datasets_columns::datasets
                 .on(datasets_columns::organization_id.eq(organization_columns::id)),
         )
+        .filter(organization_columns::deleted.eq(0))
         .filter(datasets_columns::id.eq(dataset_id))
         .filter(user_organizations_columns::role.eq(2))
         .select((
@@ -521,4 +542,52 @@ pub async fn get_arbitrary_org_owner_from_dataset_id(
         vec![user_orgs_orgs.1],
         vec![user_orgs_orgs.2],
     ))
+}
+
+pub async fn get_soft_deleted_datasets_for_organization(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<Dataset>, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let datasets: Vec<Dataset> = datasets_columns::datasets
+        .filter(datasets_columns::organization_id.eq(organization_id))
+        .filter(datasets_columns::deleted.eq(1))
+        .load::<Dataset>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Error getting soft deleted datasets for organization in get_soft_deleted_datasets_for_organization: {:?}",
+                e
+            );
+            ServiceError::BadRequest("Error loading soft deleted datasets".to_string())
+        })?;
+
+    Ok(datasets)
+}
+
+pub async fn delete_actual_organization_query(
+    org_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::organizations::dsl as organizations_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    diesel::delete(
+        organizations_columns::organizations.filter(organizations_columns::id.eq(org_id)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!(
+            "Error deleting organization in delete_actual_organization_query: {:?}",
+            e
+        );
+        ServiceError::BadRequest("Error deleting organization".to_string())
+    })?;
+
+    Ok(())
 }

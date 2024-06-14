@@ -208,7 +208,7 @@ pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
-) -> Result<(), ServiceError> {
+) -> Result<Dataset, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::datasets::dsl as datasets_columns;
 
@@ -282,15 +282,16 @@ pub async fn delete_dataset_by_id_query(
         last_offset_id = *chunk_ids.last().unwrap();
     }
 
-    diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
-        .execute(&mut conn)
-        .await
-        .map_err(|err| {
-            log::error!("Could not delete dataset: {}", err);
-            ServiceError::BadRequest("Could not delete dataset".to_string())
-        })?;
+    let dataset: Dataset =
+        diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
+            .get_result(&mut conn)
+            .await
+            .map_err(|err| {
+                log::error!("Could not delete dataset: {}", err);
+                ServiceError::BadRequest("Could not delete dataset".to_string())
+            })?;
 
-    Ok(())
+    Ok(dataset)
 }
 
 #[tracing::instrument(skip(pool))]

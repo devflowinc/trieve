@@ -1,4 +1,5 @@
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
+use redis::AsyncCommands;
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
 use std::sync::{
@@ -10,7 +11,12 @@ use trieve_server::{
     data::models,
     errors::ServiceError,
     establish_connection, get_env,
-    operators::dataset_operator::{delete_dataset_by_id_query, DeleteMessage},
+    operators::{
+        dataset_operator::{delete_dataset_by_id_query, DeleteMessage},
+        organization_operator::{
+            delete_actual_organization_query, get_soft_deleted_datasets_for_organization,
+        },
+    },
 };
 
 fn main() {
@@ -211,7 +217,7 @@ async fn delete_worker(
         )
         .await
         {
-            Ok(_) => {
+            Ok(dataset) => {
                 log::info!("Deleted Dataset: {:?}", delete_worker_message.dataset_id);
 
                 let _ = redis::cmd("LREM")
@@ -220,6 +226,41 @@ async fn delete_worker(
                     .arg(serialized_message)
                     .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
                     .await;
+
+                if redis_connection
+                    .sismember("deleted_organizations", dataset.organization_id.to_string())
+                    .await
+                    .unwrap_or(false)
+                {
+                    match get_soft_deleted_datasets_for_organization(
+                        dataset.organization_id,
+                        web_pool.clone(),
+                    )
+                    .await
+                    {
+                        Ok(datasets) => {
+                            if datasets.is_empty() {
+                                let _ = delete_actual_organization_query(
+                                    dataset.organization_id,
+                                    web_pool.clone(),
+                                )
+                                .await
+                                .map_err(|err| {
+                                    log::error!("Failed to delete organization: {:?}", err)
+                                });
+
+                                let _ = redis_connection
+                                    .srem::<&str, std::string::String, usize>("deleted_organizations", dataset.organization_id.to_string())
+                                    .await
+                                    .map_err(|err| log::error!("Failed to remove organization from deleted organizations: {:?}", err));
+                            }
+                        }
+                        Err(err) => {
+                            log::error!("Failed to get datasets for organization: {:?}", err);
+                            continue;
+                        }
+                    }
+                }
             }
             Err(err) => {
                 log::error!("Failed to delete dataset: {:?}", err);

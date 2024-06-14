@@ -61,7 +61,7 @@ pub async fn get_organization(
     context_path = "/api",
     tag = "organization",
     responses(
-        (status = 200, description = "Confirmation that the organization was deleted", body = Organization),
+        (status = 204, description = "Confirmation that the organization was deleted"),
         (status = 400, description = "Service error relating to deleting the organization by id", body = ErrorResponseBody),
     ),
     params(
@@ -86,7 +86,7 @@ pub async fn delete_organization(
         return Ok(HttpResponse::Forbidden().finish());
     }
 
-    let org = delete_organization_query(
+    delete_organization_query(
         Some(&req),
         Some(user.0.id),
         organization_id,
@@ -95,7 +95,7 @@ pub async fn delete_organization(
     )
     .await?;
 
-    Ok(HttpResponse::Ok().json(org))
+    Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
