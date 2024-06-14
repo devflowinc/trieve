@@ -201,7 +201,7 @@ pub async fn create_new_qdrant_collection_query(
             .create_field_index(
                 qdrant_collection.clone(),
                 "tag_set",
-                FieldType::Text,
+                FieldType::Keyword,
                 None,
                 None,
             )
