@@ -2801,13 +2801,13 @@ impl FieldCondition {
             ));
         }
 
-        if self.field == "tag_set" {
-            return Ok(Some(
-                get_tag_set_filter_condition(self, dataset_id, pool)
-                    .await?
-                    .into(),
-            ));
-        }
+        // if self.field == "tag_set" {
+        //     return Ok(Some(
+        //         get_tag_set_filter_condition(self, dataset_id, pool)
+        //             .await?
+        //             .into(),
+        //     ));
+        // }
 
         if self.field == "num_value" {
             return Ok(Some(
