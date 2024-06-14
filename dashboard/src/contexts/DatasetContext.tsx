@@ -32,6 +32,11 @@ export const DatasetContextWrapper = (props: DatasetStoreContextProps) => {
       const id = useParams().id;
       if (!id) return;
 
+      if (!id || !id.match(/^[a-f0-9-]+$/)) {
+        console.error("Invalid dataset id for fetch");
+        return;
+      }
+
       const api_host = import.meta.env.VITE_API_HOST as string;
       fetch(`${api_host}/dataset/${id}`, {
         method: "GET",

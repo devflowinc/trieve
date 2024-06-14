@@ -240,19 +240,23 @@ async fn delete_worker(
                     {
                         Ok(datasets) => {
                             if datasets.is_empty() {
-                                let _ = delete_actual_organization_query(
+                                match delete_actual_organization_query(
                                     dataset.organization_id,
                                     web_pool.clone(),
                                 )
                                 .await
-                                .map_err(|err| {
-                                    log::error!("Failed to delete organization: {:?}", err)
-                                });
-
-                                let _ = redis_connection
-                                    .srem::<&str, std::string::String, usize>("deleted_organizations", dataset.organization_id.to_string())
-                                    .await
-                                    .map_err(|err| log::error!("Failed to remove organization from deleted organizations: {:?}", err));
+                                {
+                                    Ok(_) => {
+                                        log::info!(
+                                            "Deleted Organization: {:?}",
+                                            dataset.organization_id
+                                        );
+                                    }
+                                    Err(err) => {
+                                        log::error!("Failed to delete organization: {:?}", err);
+                                        continue;
+                                    }
+                                }
                             }
                         }
                         Err(err) => {
