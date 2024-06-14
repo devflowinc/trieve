@@ -1875,10 +1875,10 @@ pub fn get_highlights(
     } else {
         windowed_phrases.clone()
     };
-    Ok(
+    Ok((
         apply_highlights_to_html(new_output, matched_phrases),
         result_matches,
-    )
+    ))
 }
 
 fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> ChunkMetadata {
