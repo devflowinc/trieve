@@ -1900,8 +1900,12 @@ fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> Chunk
     let mut meta_data = input;
     let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();
     for phrase in phrases.clone() {
+        let cleaned_phrase = phrase.replace("<mark><b>", "").replace("</b></mark>", "");
         chunk_html = chunk_html
-            .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase))
+            .replace(
+                &cleaned_phrase,
+                &format!("<mark><b>{}</b></mark>", cleaned_phrase),
+            )
             .replace("</b></mark><mark><b>", "");
     }
     meta_data.chunk_html = Some(chunk_html);
