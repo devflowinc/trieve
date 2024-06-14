@@ -1899,14 +1899,15 @@ pub fn get_highlights(
 fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> ChunkMetadata {
     let mut meta_data = input;
     let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();
+    let mut replaced_phrases = HashSet::new();
     for phrase in phrases.clone() {
-        let cleaned_phrase = phrase.replace("<mark><b>", "").replace("</b></mark>", "");
+        if replaced_phrases.contains(&phrase) {
+            continue;
+        }
         chunk_html = chunk_html
-            .replace(
-                &cleaned_phrase,
-                &format!("<mark><b>{}</b></mark>", cleaned_phrase),
-            )
+            .replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase))
             .replace("</b></mark><mark><b>", "");
+        replaced_phrases.insert(phrase);
     }
     meta_data.chunk_html = Some(chunk_html);
     meta_data
