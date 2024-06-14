@@ -1725,6 +1725,15 @@ pub async fn get_qdrant_ids_from_chunk_ids_query(
     Ok(qdrant_point_ids.into_iter().flatten().collect())
 }
 
+pub fn get_slice_from_vec_string(vec: Vec<String>, index: usize) -> Result<String, ServiceError> {
+    match vec.get(index) {
+        Some(x) => Ok(x.clone()),
+        None => Err(ServiceError::BadRequest(
+            "Index out of bounds for vec".to_string(),
+        )),
+    }
+}
+
 #[tracing::instrument]
 pub fn get_highlights(
     input: ChunkMetadata,
@@ -1786,7 +1795,7 @@ pub fn get_highlights(
     // Used to keep track of the number of words used in the phrase
     let mut used_phrases: HashMap<usize, usize> = HashMap::new();
     for idx in matched_idxs.clone() {
-        let phrase = split_content.get(idx).expect("Index is correct").clone();
+        let phrase = get_slice_from_vec_string(split_content.clone(), idx)?;
         let mut next_phrase = String::new();
         if idx < split_content.len() - 1 {
             let mut start = idx + 1;
@@ -1795,9 +1804,8 @@ pub fn get_highlights(
                 if start >= split_content.len() || matched_idxs_set.contains(&start) {
                     break;
                 }
-                let candidate_words = split_content
-                    .get(start)
-                    .expect("Index is correct")
+                let slice = get_slice_from_vec_string(split_content.clone(), start)?;
+                let candidate_words = slice
                     .split_whitespace()
                     .take(half_window as usize - count)
                     .collect::<Vec<&str>>();
@@ -1818,20 +1826,22 @@ pub fn get_highlights(
             let mut start = idx - 1;
             let mut count: usize = 0;
             while (count as u32) < half_window {
-                let split_words = split_content
-                    .get(start)
-                    .expect("Index is correct")
-                    .split_whitespace()
-                    .collect::<Vec<&str>>();
+                let slice = get_slice_from_vec_string(split_content.clone(), start)?;
+                let split_words = slice.split_whitespace().collect::<Vec<&str>>();
                 if matched_idxs_set.contains(&start) {
                     break;
                 }
                 if used_phrases.contains_key(&start)
-                    && split_words.len() > *used_phrases.get(&start).expect("Index is correct")
+                    && split_words.len()
+                        > *used_phrases
+                            .get(&start)
+                            .ok_or(ServiceError::BadRequest("Index out of bounds".to_string()))?
                 {
                     let remaining_count = half_window as usize - count;
-                    let available_word_len =
-                        split_words.len() - *used_phrases.get(&start).expect("Index is correct");
+                    let available_word_len = split_words.len()
+                        - *used_phrases
+                            .get(&start)
+                            .ok_or(ServiceError::BadRequest("Index out of bounds".to_string()))?;
                     if remaining_count > available_word_len {
                         count += remaining_count - available_word_len;
                     } else {
@@ -1839,7 +1849,10 @@ pub fn get_highlights(
                     }
                 }
                 if used_phrases.contains_key(&start)
-                    && split_words.len() <= *used_phrases.get(&start).expect("Index is correct")
+                    && split_words.len()
+                        <= *used_phrases
+                            .get(&start)
+                            .ok_or(ServiceError::BadRequest("Index out of bounds".to_string()))?
                 {
                     break;
                 }
@@ -1868,7 +1881,7 @@ pub fn get_highlights(
     let matched_phrases = matched_idxs
         .clone()
         .iter()
-        .map(|x| split_content.get(*x).expect("Index is correct").clone())
+        .filter_map(|x| split_content.get(*x).cloned())
         .collect::<Vec<String>>();
     let result_matches = if windowed_phrases.is_empty() {
         matched_phrases.clone()
