@@ -37,6 +37,11 @@ export const DatasetStart = () => {
     const pathname = location.pathname;
     const datasetId = pathname.split("/")[3];
 
+    if (!datasetId || !datasetId.match(/^[a-f0-9-]+$/)) {
+      console.error("Invalid dataset id for fetch");
+      return;
+    }
+
     void fetch(`${api_host}/dataset/${datasetId}`, {
       method: "GET",
       headers: {
