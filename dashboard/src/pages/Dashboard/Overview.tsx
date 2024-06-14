@@ -12,6 +12,7 @@ import {
   OrganizationAndSubAndPlan,
 } from "../../types/apiTypes";
 import NewDatasetModal from "../../components/NewDatasetModal";
+import NewExampleDatasetModal from "../../components/NewExampleDatasetModal";
 import { DatasetOverview } from "../../components/DatasetOverview";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
 import { BiRegularLinkExternal } from "solid-icons/bi";
@@ -178,7 +179,7 @@ export const Overview = () => {
         isOpen={newDatasetModalOpen}
         closeModal={() => setNewDatasetModalOpen(false)}
       />
-      <NewDatasetModal
+      <NewExampleDatasetModal
         isOpen={exampleDatasetModalOpen}
         closeModal={() => setExampleDatasetModalOpen(false)}
       />
