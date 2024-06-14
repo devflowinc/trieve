@@ -10,13 +10,13 @@ import {
 import { UserContext } from "../contexts/UserContext";
 import { useNavigate } from "@solidjs/router";
 import {
-  Dataset,
-  DefaultError,
   ServerEnvsConfiguration,
   availableEmbeddingModels,
 } from "../types/apiTypes";
 import { defaultServerEnvsConfiguration } from "../pages/Dashboard/Dataset/DatasetSettingsPage";
 import { createToast } from "./ShowToasts";
+import { createNewDataset } from "../api/createDataset";
+import { uploadSampleData } from "../api/uploadSampleData";
 
 export interface NewDatasetModalProps {
   isOpen: Accessor<boolean>;
@@ -24,8 +24,6 @@ export interface NewDatasetModalProps {
 }
 
 export const NewDatasetModal = (props: NewDatasetModalProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
-
   const [serverConfig, setServerConfig] = createSignal<ServerEnvsConfiguration>(
     defaultServerEnvsConfiguration,
   );
@@ -33,60 +31,51 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const [name, setName] = createSignal<string>("");
   const navigate = useNavigate();
 
+  const [isLoading, setIsLoading] = createSignal(false);
+  const [fillWithExampleData, setFillWithExampleData] = createSignal(false);
+
   const selectedOrgnaization = createMemo(() => {
     const selectedOrgId = userContext.selectedOrganizationId?.();
     if (!selectedOrgId) return null;
     return userContext.user?.()?.orgs.find((org) => org.id === selectedOrgId);
   });
 
-  const createDataset = () => {
+  const createDataset = async () => {
     const organizationId = userContext.selectedOrganizationId?.();
     if (!organizationId) return;
 
     const curServerConfig = serverConfig();
 
-    fetch(`${apiHost}/dataset`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "TR-Organization": organizationId,
-      },
-      body: JSON.stringify({
-        dataset_name: name(),
-        organization_id: organizationId,
-        server_configuration: curServerConfig,
-        client_configuration: "{}",
-      }),
-    })
-      .then(async (res) => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          const data = (await res.json()) as DefaultError;
-          createToast({
-            title: "Error",
-            type: "error",
-            message: data.message,
-          });
-        }
-      })
-      .then((res) => {
-        if (!res) return;
-        createToast({
-          title: "Success",
-          type: "success",
-          message: "Successfully created dataset",
-        });
-        navigate(`/dashboard/dataset/${(res as Dataset).id}`);
-      })
-      .catch(() => {
-        createToast({
-          title: "Error",
-          type: "error",
-          message: "There was an issue creating your dataset",
-        });
+    try {
+      setIsLoading(true);
+      const dataset = await createNewDataset({
+        name: name(),
+        organizationId,
+        serverConfig: curServerConfig,
       });
+
+      if (fillWithExampleData()) {
+        await uploadSampleData({
+          datasetId: dataset.id,
+        });
+      }
+
+      createToast({
+        title: "Success",
+        type: "success",
+        message: "Successfully created dataset",
+      });
+      setIsLoading(false);
+      navigate(`/dashboard/dataset/${dataset.id}`);
+    } catch (e: unknown) {
+      setIsLoading(false);
+      const error = e as Error;
+      createToast({
+        title: "Error",
+        type: "error",
+        message: error.message,
+      });
+    }
   };
 
   return (
@@ -124,7 +113,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  createDataset();
+                  void createDataset();
                 }}
               >
                 <div class="space-y-12 sm:space-y-16">
@@ -242,6 +231,29 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                           </For>
                         </select>
                       </div>
+
+                      <div>
+                        <div class="py-4 sm:grid sm:grid-cols-3 sm:items-baseline sm:gap-4">
+                          <label
+                            for="fill-with-example-data"
+                            class="block h-full pt-1.5 text-sm font-medium leading-6"
+                          >
+                            Fill with Example Data
+                          </label>
+                          <div class="mt-4 sm:col-span-2 sm:mt-0">
+                            <input
+                              type="checkbox"
+                              name="fill-with-example-data"
+                              id="fill-with-example-data"
+                              class="rounded-md border border-neutral-300 bg-white py-1.5 pl-2 pr-10 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                              checked={fillWithExampleData()}
+                              onChange={(e) =>
+                                setFillWithExampleData(e.currentTarget.checked)
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -256,7 +268,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                   </button>
                   <button
                     type="submit"
-                    disabled={name() === ""}
+                    disabled={name() === "" || isLoading()}
                     class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-magenta-700 disabled:bg-magenta-200"
                   >
                     Create New Dataset
