@@ -2346,25 +2346,35 @@ impl UserApiKey {
     "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
     "role": 1,
+    "dataset_ids": ["d0d0d0d0-d0d0-d0d0-d0d0-d0d0d0d0d0d0"],
+    "organization_ids": ["o1o1o1o1-o1o1-o1o1-o1o1-o1o1o1o1o1o1"],
     "created_at": "2021-01-01T00:00:00",
     "updated_at": "2021-01-01T00:00:00",
 }))]
-pub struct ApiKeyDTO {
+pub struct ApiKeyRespBody {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub name: String,
     pub role: i32,
+    pub dataset_ids: Option<Vec<String>>,
+    pub organization_ids: Option<Vec<String>>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl From<UserApiKey> for ApiKeyDTO {
+impl From<UserApiKey> for ApiKeyRespBody {
     fn from(api_key: UserApiKey) -> Self {
-        ApiKeyDTO {
+        ApiKeyRespBody {
             id: api_key.id,
             user_id: api_key.user_id,
             name: api_key.name,
             role: api_key.role,
+            dataset_ids: api_key
+                .dataset_ids
+                .map(|ids| ids.into_iter().filter_map(|id| id).collect()),
+            organization_ids: api_key
+                .organization_ids
+                .map(|ids| ids.into_iter().filter_map(|id| id).collect()),
             created_at: api_key.created_at,
             updated_at: api_key.updated_at,
         }

@@ -297,7 +297,6 @@ pub async fn delete_dataset_by_tracking_id(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
     ),
@@ -341,7 +340,6 @@ pub async fn get_dataset(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("tracking_id" = String, Path, description = "The tracking id of the dataset you want to retrieve."),
     ),

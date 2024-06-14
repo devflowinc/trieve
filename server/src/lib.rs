@@ -134,7 +134,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.10.4",
+        version = "0.10.5",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -277,7 +277,7 @@ impl Modify for SecurityAddon {
             operators::search_operator::GroupScoreChunk,
             handlers::dataset_handler::CreateDatasetRequest,
             handlers::dataset_handler::UpdateDatasetRequest,
-            data::models::ApiKeyDTO,
+            data::models::ApiKeyRespBody,
             data::models::SlimUser,
             data::models::UserOrganization,
             data::models::Topic,

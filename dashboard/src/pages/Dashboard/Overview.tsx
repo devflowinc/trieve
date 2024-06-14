@@ -107,9 +107,9 @@ export const Overview = () => {
       });
 
     onCleanup(() => {
-      datasetAndUsageAbortController.abort();
-      orgSubPlanAbortController.abort();
-      orgUsageAbortController.abort();
+      datasetAndUsageAbortController.abort("cleanup");
+      orgSubPlanAbortController.abort("cleanup");
+      orgUsageAbortController.abort("cleanup");
     });
   });
 
