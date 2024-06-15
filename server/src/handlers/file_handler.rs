@@ -419,6 +419,7 @@ pub async fn get_signed_url(
 
     let signed_url = bucket
         .presign_get(format!("{}/{}", s3_path, file_name.into_inner()), 300, None)
+        .await
         .map_err(|e| {
             sentry::capture_message(
                 &format!("Error getting signed url: {}", e),

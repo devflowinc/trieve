@@ -29,8 +29,11 @@ use futures_util::stream;
 use itertools::Itertools;
 use openai_dive::v1::{
     api::Client,
-    resources::chat::{
-        ChatCompletionChoice, ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
+    resources::{
+        chat::{
+            ChatCompletionChoice, ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
+        },
+        shared::StopToken,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -40,14 +43,53 @@ use simsearch::SimSearch;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
+pub fn check_completion_param_validity(
+    temperature: Option<f32>,
+    frequency_penalty: Option<f32>,
+    presence_penalty: Option<f32>,
+    stop_tokens: Option<Vec<String>>,
+) -> Result<(), ServiceError> {
+    if let Some(temperature) = temperature {
+        if temperature < 0.0 || temperature > 2.0 {
+            return Err(ServiceError::BadRequest(
+                "Temperature must be between 0 and 2".to_string(),
+            ));
+        }
+    }
+
+    if let Some(frequency_penalty) = frequency_penalty {
+        if frequency_penalty < -2.0 || frequency_penalty > 2.0 {
+            return Err(ServiceError::BadRequest(
+                "Frequency penalty must be between -2.0 and 2.0".to_string(),
+            ));
+        }
+    }
+
+    if let Some(presence_penalty) = presence_penalty {
+        if presence_penalty < -2.0 || presence_penalty > 2.0 {
+            return Err(ServiceError::BadRequest(
+                "Presence penalty must be between -2.0 and 2.0".to_string(),
+            ));
+        }
+    }
+
+    if let Some(stop_tokens) = stop_tokens {
+        if stop_tokens.len() > 4 {
+            return Err(ServiceError::BadRequest(
+                "Stop tokens must be less than or equal to 4".to_string(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageReqPayload {
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
     pub new_message_content: String,
     /// The ID of the topic to attach the message to.
     pub topic_id: uuid::Uuid,
-    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
-    pub stream_response: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
@@ -56,6 +98,20 @@ pub struct CreateMessageReqPayload {
     pub search_type: Option<String>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
+    /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
+    pub completion_first: Option<bool>,
+    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream_response: Option<bool>,
+    /// What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.5.
+    pub temperature: Option<f32>,
+    /// Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
+    pub frequency_penalty: Option<f32>,
+    /// Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Default is 0.7.
+    pub presence_penalty: Option<f32>,
+    /// The maximum number of tokens to generate in the chat completion. Default is None.
+    pub max_tokens: Option<u32>,
+    /// Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
+    pub stop_tokens: Option<Vec<String>>,
 }
 
 /// Create a message
@@ -80,7 +136,7 @@ pub struct CreateMessageReqPayload {
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn create_message_completion(
+pub async fn create_message(
     data: web::Json<CreateMessageReqPayload>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -91,6 +147,13 @@ pub async fn create_message_completion(
     let server_dataset_configuration = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
+
+    check_completion_param_validity(
+        data.temperature,
+        data.frequency_penalty,
+        data.presence_penalty,
+        data.stop_tokens.clone(),
+    )?;
 
     let org_message_count = get_message_org_count(message_count_org_id, message_count_pool).await?;
 
@@ -167,6 +230,12 @@ pub async fn create_message_completion(
         dataset_org_plan_sub.dataset,
         stream_response_pool,
         server_dataset_configuration,
+        create_message_data.completion_first,
+        create_message_data.temperature,
+        create_message_data.frequency_penalty,
+        create_message_data.presence_penalty,
+        create_message_data.max_tokens,
+        create_message_data.stop_tokens,
     )
     .await
 }
@@ -210,8 +279,6 @@ pub async fn get_all_topic_messages(
 pub struct RegenerateMessageReqPayload {
     /// The id of the topic to regenerate the last message for.
     pub topic_id: uuid::Uuid,
-    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
-    pub stream_response: Option<bool>,
     /// Whether or not to highlight the citations in the response. If this is set to true or not included, the citations will be highlighted. If this is set to false, the citations will not be highlighted. Default is true.
     pub highlight_citations: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.  
@@ -220,6 +287,20 @@ pub struct RegenerateMessageReqPayload {
     pub search_type: Option<String>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
+    /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
+    pub completion_first: Option<bool>,
+    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream_response: Option<bool>,
+    /// What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.7.
+    pub temperature: Option<f32>,
+    /// Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
+    pub frequency_penalty: Option<f32>,
+    /// Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+    pub presence_penalty: Option<f32>,
+    /// The maximum number of tokens to generate in the chat completion.
+    pub max_tokens: Option<u32>,
+    /// Stop tokens are up to 4 sequences where the API will stop generating further tokens.
+    pub stop_tokens: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -230,8 +311,6 @@ pub struct EditMessageReqPayload {
     pub message_sort_order: i32,
     /// The new content of the message to replace the old content with.
     pub new_message_content: String,
-    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
-    pub stream_response: Option<bool>,
     /// Whether or not to highlight the citations in the response. If this is set to true or not included, the citations will be highlighted. If this is set to false, the citations will not be highlighted. Default is true.
     pub highlight_citations: Option<bool>,
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
@@ -240,6 +319,20 @@ pub struct EditMessageReqPayload {
     pub search_type: Option<String>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
+    /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
+    pub completion_first: Option<bool>,
+    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream_response: Option<bool>,
+    /// What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.7.
+    pub temperature: Option<f32>,
+    /// Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
+    pub frequency_penalty: Option<f32>,
+    /// Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+    pub presence_penalty: Option<f32>,
+    /// The maximum number of tokens to generate in the chat completion.
+    pub max_tokens: Option<u32>,
+    /// Stop tokens are up to 4 sequences where the API will stop generating further tokens.
+    pub stop_tokens: Option<Vec<String>>,
 }
 
 /// Edit a message
@@ -274,6 +367,13 @@ pub async fn edit_message(
     let message_sort_order = data.message_sort_order;
     let new_message_content = &data.new_message_content;
 
+    check_completion_param_validity(
+        data.temperature,
+        data.frequency_penalty,
+        data.presence_penalty,
+        data.stop_tokens.clone(),
+    )?;
+
     let second_pool = pool.clone();
     let third_pool = pool.clone();
 
@@ -294,7 +394,7 @@ pub async fn edit_message(
     )
     .await?;
 
-    create_message_completion(
+    create_message(
         actix_web::web::Json(CreateMessageReqPayload {
             new_message_content: new_message_content.to_string(),
             topic_id,
@@ -303,6 +403,12 @@ pub async fn edit_message(
             highlight_delimiters: data.highlight_delimiters.clone(),
             search_type: data.search_type.clone(),
             filters: data.filters.clone(),
+            completion_first: data.completion_first,
+            temperature: data.temperature,
+            frequency_penalty: data.frequency_penalty,
+            presence_penalty: data.presence_penalty,
+            max_tokens: data.max_tokens,
+            stop_tokens: data.stop_tokens.clone(),
         }),
         user,
         dataset_org_plan_sub,
@@ -345,6 +451,13 @@ pub async fn regenerate_message(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
+    check_completion_param_validity(
+        data.temperature,
+        data.frequency_penalty,
+        data.presence_penalty,
+        data.stop_tokens.clone(),
+    )?;
+
     let get_messages_pool = pool.clone();
     let create_message_pool = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
@@ -370,6 +483,12 @@ pub async fn regenerate_message(
             dataset_org_plan_sub.dataset,
             create_message_pool,
             server_dataset_configuration,
+            data.completion_first,
+            data.temperature,
+            data.frequency_penalty,
+            data.presence_penalty,
+            data.max_tokens,
+            data.stop_tokens.clone(),
         )
         .await;
     }
@@ -427,6 +546,12 @@ pub async fn regenerate_message(
         dataset_org_plan_sub.dataset,
         create_message_pool,
         server_dataset_configuration,
+        data.completion_first,
+        data.temperature,
+        data.frequency_penalty,
+        data.presence_penalty,
+        data.max_tokens,
+        data.stop_tokens.clone(),
     )
     .await
 }
@@ -530,6 +655,12 @@ pub async fn stream_response(
     dataset: Dataset,
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
+    completion_first: Option<bool>,
+    temperature: Option<f32>,
+    frequency_penalty: Option<f32>,
+    presence_penalty: Option<f32>,
+    max_tokens: Option<u32>,
+    stop_tokens: Option<Vec<String>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -607,12 +738,12 @@ pub async fn stream_response(
             }],
             stream: Some(false),
             temperature: None,
+            frequency_penalty: Some(0.8),
+            presence_penalty: Some(0.8),
+            stop: None,
             top_p: None,
             n: None,
-            stop: None,
             max_tokens: None,
-            presence_penalty: Some(0.8),
-            frequency_penalty: Some(0.8),
             logit_bias: None,
             user: None,
             response_format: None,
@@ -730,15 +861,19 @@ pub async fn stream_response(
 
     let parameters = ChatCompletionParameters {
         model: chosen_model,
-        stream: should_stream,
         messages: open_ai_messages,
-        temperature: None,
         top_p: None,
         n: None,
-        stop: None,
-        max_tokens: None,
-        presence_penalty: Some(0.8),
-        frequency_penalty: Some(0.8),
+        stream: Some(should_stream.unwrap_or(true)),
+        temperature: Some(temperature.unwrap_or(0.5)),
+        frequency_penalty: Some(frequency_penalty.unwrap_or(0.7)),
+        presence_penalty: Some(presence_penalty.unwrap_or(0.7)),
+        max_tokens,
+        stop: if let Some(stop_tokens) = stop_tokens {
+            Some(StopToken::Array(stop_tokens))
+        } else {
+            None
+        },
         logit_bias: None,
         user: None,
         response_format: None,
@@ -797,8 +932,11 @@ pub async fn stream_response(
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
     if !chunk_metadatas_stringified.is_empty() {
-        chunk_metadatas_stringified =
-            format!("{}||", chunk_metadatas_stringified.replace("||", ""));
+        chunk_metadatas_stringified = if completion_first.unwrap_or(false) {
+            format!("||{}", chunk_metadatas_stringified.replace("||", ""))
+        } else {
+            format!("{}||", chunk_metadatas_stringified.replace("||", ""))
+        };
         chunk_metadatas_stringified1.clone_from(&chunk_metadatas_stringified);
     }
 
@@ -819,23 +957,26 @@ pub async fn stream_response(
         let _ = create_message_query(new_message, &pool).await;
     });
 
-    let new_stream = stream::iter(vec![Ok(Bytes::from(chunk_metadatas_stringified1))]);
-
-    Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
-        move |response| -> Result<Bytes, actix_web::Error> {
-            if let Ok(response) = response {
-                let chat_content = response.choices[0].delta.content.clone();
-                if let Some(message) = chat_content.clone() {
-                    s.send(message).unwrap();
-                }
-                return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+    let chunk_stream = stream::iter(vec![Ok(Bytes::from(chunk_metadatas_stringified1))]);
+    let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
+        if let Ok(response) = response {
+            let chat_content = response.choices[0].delta.content.clone();
+            if let Some(message) = chat_content.clone() {
+                s.send(message).unwrap();
             }
-            Err(ServiceError::InternalServerError(
-                "Model Response Error. Please try again later.".into(),
-            )
-            .into())
-        },
-    ))))
+            return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+        }
+        Err(ServiceError::InternalServerError(
+            "Model Response Error. Please try again later.".into(),
+        )
+        .into())
+    });
+
+    if completion_first.unwrap_or(false) {
+        return Ok(HttpResponse::Ok().streaming(completion_stream.chain(chunk_stream)));
+    }
+
+    Ok(HttpResponse::Ok().streaming(chunk_stream.chain(completion_stream)))
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
