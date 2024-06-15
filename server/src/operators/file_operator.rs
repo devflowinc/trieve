@@ -284,6 +284,7 @@ pub async fn get_file_query(
     let bucket = get_aws_bucket()?;
     let s3_url = bucket
         .presign_get(file_metadata.id.to_string(), 300, None)
+        .await
         .map_err(|e| {
             log::error!("Could not get presigned url {:?}", e);
 
