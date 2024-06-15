@@ -100,7 +100,7 @@ utoipa = { version = "4.2", features = [
     "debug",
 ] }
 utoipa-redoc = { version = "4.0", features = ["actix-web"] }
-magick_rust = { version = "1.0", optional = true }
+magick_rust = { version = "0.21", optional = true }
 pyo3 = { version = "0.21.1", features = [
     "full",
     "auto-initialize",
