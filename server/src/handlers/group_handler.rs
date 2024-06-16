@@ -923,7 +923,7 @@ pub struct RecommendGroupChunksRequest {
 
 /// Get Recommended Groups
 ///
-/// Route to get recommended groups. This route will return groups which are similar to the groups in the request body.
+/// Route to get recommended groups. This route will return groups which are similar to the groups in the request body. You must provide at least one positive group id or group tracking id.
 #[utoipa::path(
     post,
     path = "/chunk_group/recommend",
@@ -952,6 +952,13 @@ pub async fn get_recommended_groups(
     let negative_group_ids = data.negative_group_ids.clone();
     let positive_tracking_ids = data.positive_group_tracking_ids.clone();
     let negative_tracking_ids = data.negative_group_tracking_ids.clone();
+
+    if positive_group_ids.is_none() && positive_tracking_ids.is_none() {
+        return Err(ServiceError::BadRequest(
+            "You must provide at least one positive group id or group tracking id".into(),
+        )
+        .into());
+    }
 
     let limit = data.limit.unwrap_or(10);
     let server_dataset_config =
