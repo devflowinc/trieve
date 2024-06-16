@@ -2477,7 +2477,8 @@ impl QdrantPayload {
                 .payload
                 .get("time_stamp")
                 .cloned()
-                .map(|x| x.as_integer().expect("time_stamp should be an integer")),
+                .map(|x| x.as_integer())
+                .flatten(),
             dataset_id: point
                 .payload
                 .get("dataset_id")
@@ -2497,15 +2498,14 @@ impl QdrantPayload {
                 .payload
                 .get("location")
                 .cloned()
-                .map(|value| {
-                    serde_json::from_value(value.into()).expect("Failed to parse location")
-                })
-                .unwrap_or_default(),
+                .map(|value| serde_json::from_value(value.into()).ok())
+                .flatten(),
             num_value: point
                 .payload
                 .get("num_value")
                 .cloned()
-                .map(|x| x.as_double().expect("num_value should be a float")),
+                .map(|x| x.as_double())
+                .flatten(),
         }
     }
 }
@@ -2530,25 +2530,22 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .payload
                 .get("time_stamp")
                 .cloned()
-                .map(|x| x.as_integer().expect("time_stamp should be an integer")),
+                .map(|x| x.as_integer())
+                .flatten(),
             dataset_id: point
                 .payload
                 .get("dataset_id")
                 .cloned()
                 .unwrap_or_default()
                 .as_str()
-                .map(|s| uuid::Uuid::parse_str(s).unwrap())
+                .map(|s| uuid::Uuid::parse_str(s).ok())
+                .flatten()
                 .unwrap_or_default(),
             group_ids: point.payload.get("group_ids").cloned().map(|x| {
                 x.as_list()
-                    .expect("group_ids should be a list")
+                    .unwrap_or_default()
                     .iter()
-                    .map(|value| {
-                        value
-                            .to_string()
-                            .parse()
-                            .expect("failed to parse group_ids")
-                    })
+                    .filter_map(|value| value.to_string().parse().ok())
                     .collect()
             }),
             content: point
@@ -2561,15 +2558,15 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .payload
                 .get("location")
                 .cloned()
-                .map(|value| {
-                    serde_json::from_value(value.into()).expect("Failed to parse location")
-                })
+                .map(|value| serde_json::from_value(value.into()).ok())
+                .flatten()
                 .unwrap_or_default(),
             num_value: point
                 .payload
                 .get("num_value")
                 .cloned()
-                .map(|x| x.as_double().expect("num_value should be a float")),
+                .map(|x| x.as_double())
+                .flatten(),
         }
     }
 }
