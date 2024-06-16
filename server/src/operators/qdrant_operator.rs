@@ -1052,9 +1052,7 @@ pub async fn recommend_qdrant_query(
         .await
         .map_err(|err| {
             log::error!("Failed to recommend points from qdrant: {:?}", err);
-            ServiceError::BadRequest(
-                "Failed to recommend points from qdrant. Your are likely providing an invalid point id.".to_string(),
-            )
+            ServiceError::BadRequest("Failed to recommend points from qdrant.".to_string())
         })?
         .result
         .into_iter()
@@ -1182,9 +1180,7 @@ pub async fn recommend_qdrant_groups_query(
         .await
         .map_err(|err| {
             log::error!("Failed to recommend groups points from qdrant: {:?}", err);
-            ServiceError::BadRequest(
-                "Failed to recommend groups points from qdrant. Your are likely providing an invalid point id.".to_string(),
-            )
+            ServiceError::BadRequest("Failed to recommend groups points from qdrant.".to_string())
         })?;
 
     let group_recommendation_results = data

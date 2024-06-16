@@ -1554,7 +1554,7 @@ pub struct RecommendChunksRequest {
 
 /// Get Recommended Chunks
 ///
-/// Get recommendations of chunks similar to the chunks in the request. Think about this as a feature similar to the "add to playlist" recommendation feature on Spotify. This request pairs especially well with our groups endpoint.
+/// Get recommendations of chunks similar to the positive samples in the request and dissimilar to the negative. You must provide at least one of either positive_chunk_ids or positive_tracking_ids.
 #[utoipa::path(
     post,
     path = "/chunk/recommend",
@@ -1587,6 +1587,13 @@ pub async fn get_recommended_chunks(
     let limit = data.limit.unwrap_or(10);
     let server_dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    if positive_chunk_ids.is_none() && positive_tracking_ids.is_none() {
+        return Err(ServiceError::BadRequest(
+            "Either positive_chunk_ids or positive_tracking_ids must be provided".to_string(),
+        )
+        .into());
+    }
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
