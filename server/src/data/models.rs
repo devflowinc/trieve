@@ -2347,7 +2347,7 @@ impl QdrantPayload {
         QdrantPayload {
             tag_set: point.payload.get("tag_set").cloned().map(|x| {
                 x.as_list()
-                    .expect("tag_set should be a list")
+                    .unwrap_or_default()
                     .iter()
                     .map(|value| Some(value.to_string()))
                     .collect()
@@ -2400,7 +2400,7 @@ impl From<RetrievedPoint> for QdrantPayload {
         QdrantPayload {
             tag_set: point.payload.get("tag_set").cloned().map(|x| {
                 x.as_list()
-                    .expect("tag_set should be a list")
+                    .unwrap_or_default()
                     .iter()
                     .map(|value| Some(value.to_string()))
                     .collect()
