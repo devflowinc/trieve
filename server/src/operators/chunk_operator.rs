@@ -1899,11 +1899,11 @@ fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> Chunk
         if replaced_phrases.contains(&phrase) {
             continue;
         }
-        let trimmed_phrase = phrase.trim();
+        let replace_phrase = phrase.clone();
         chunk_html = chunk_html
             .replace(
-                &trimmed_phrase,
-                &format!("<mark><b>{}</b></mark>", trimmed_phrase),
+                &replace_phrase,
+                &format!("<mark><b>{}</b></mark>", replace_phrase),
             )
             .replace("</b></mark><mark><b>", "");
         replaced_phrases.insert(phrase);
