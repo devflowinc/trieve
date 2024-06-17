@@ -12,6 +12,7 @@ import { useNavigate } from "@solidjs/router";
 import { FiTrash } from "solid-icons/fi";
 import { FaSolidGear } from "solid-icons/fa";
 import { useDatasetPages } from "../hooks/useDatasetPages";
+import { AiFillCaretLeft, AiFillCaretRight } from "solid-icons/ai";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
@@ -27,10 +28,13 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
     setPage(0);
   });
 
-  const { datasets, maxPageDiscovered, removeDataset } = useDatasetPages({
-    org: props.selectedOrganization,
-    page: page,
-  });
+  const { datasets, maxPageDiscovered, removeDataset, hasLoaded } =
+    useDatasetPages({
+      org: props.selectedOrganization,
+      page: page,
+      setPage,
+    });
+
   const deleteDataset = (datasetId: string) => {
     const currentPage = page();
     const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -71,20 +75,17 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           </Show>
         </div>
       </div>
-      <Show when={datasets().length == 0}>
+      <Show when={datasets().length === 0 && page() === 0 && hasLoaded}>
         <button
           onClick={() => props.setOpenNewDatasetModal(true)}
           class="relative block w-full rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2"
         >
           <TbDatabasePlus class="mx-auto h-12 w-12 text-magenta" />
-          <span class="ont-semibold mt-2 block">Create A New Dataset</span>
+          <span class="mt-2 block font-semibold">Create A New Dataset</span>
         </button>
       </Show>
-      <button onClick={() => setPage((page) => page + 1)}>
-        Next page {JSON.stringify(maxPageDiscovered())}
-      </button>
       <Show when={datasets().length > 0}>
-        <div class="mt-8 flow-root">
+        <div class="mt-8">
           <div class="overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5">
             <table class="min-w-full divide-y divide-neutral-300">
               <thead class="w-full min-w-full bg-neutral-100">
@@ -172,9 +173,40 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                 </For>
               </tbody>
             </table>
+            <PaginationArrows
+              page={page}
+              setPage={setPage}
+              maxPageDiscovered={maxPageDiscovered}
+            />
           </div>
         </div>
       </Show>
     </>
+  );
+};
+
+const PaginationArrows = (props: {
+  page: Accessor<number>;
+  setPage: Setter<number>;
+  maxPageDiscovered: Accessor<number | null>;
+}) => {
+  return (
+    <div class="flex items-center justify-end gap-2 border-t border-t-neutral-200 p-1">
+      <button
+        onClick={() => props.setPage((page) => page - 1)}
+        disabled={props.page() === 0}
+        class="p-2 text-lg font-semibold text-neutral-600 disabled:opacity-50"
+      >
+        <AiFillCaretLeft />
+      </button>
+      <div class="text-sm">Page {props.page() + 1}</div>
+      <button
+        onClick={() => props.setPage((page) => page + 1)}
+        disabled={props.page() === props.maxPageDiscovered()}
+        class="p-2 text-lg font-semibold text-neutral-600 disabled:opacity-50"
+      >
+        <AiFillCaretRight />
+      </button>
+    </div>
   );
 };
