@@ -4,6 +4,7 @@ use crate::data::models::{
     StripeSubscription, UnifiedId,
 };
 use crate::get_env;
+use crate::handlers::dataset_handler::GetDatasetsPagination;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
     data::models::{Dataset, Pool},
@@ -330,6 +331,7 @@ pub async fn update_dataset_query(
 #[tracing::instrument(skip(pool))]
 pub async fn get_datasets_by_organization_id(
     org_id: web::Path<uuid::Uuid>,
+    pagination: GetDatasetsPagination,
     pool: web::Data<Pool>,
 ) -> Result<Vec<DatasetAndUsage>, ServiceError> {
     use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
@@ -340,14 +342,26 @@ pub async fn get_datasets_by_organization_id(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let dataset_and_usages: Vec<(Dataset, DatasetUsageCount)> = datasets_columns::datasets
-        .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
-        .filter(datasets_columns::deleted.eq(0))
-        .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
-        .select((Dataset::as_select(), DatasetUsageCount::as_select()))
-        .load::<(Dataset, DatasetUsageCount)>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::NotFound("Could not find organization".to_string()))?;
+    let dataset_and_usages = match pagination.limit {
+        Some(limit) => datasets_columns::datasets
+            .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
+            .filter(datasets_columns::deleted.eq(0))
+            .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
+            .select((Dataset::as_select(), DatasetUsageCount::as_select()))
+            .limit(limit.into())
+            .offset(pagination.offset.unwrap_or(0))
+            .load::<(Dataset, DatasetUsageCount)>(&mut conn)
+            .await
+            .map_err(|_| ServiceError::NotFound("Could not find organization".to_string()))?,
+        None => datasets_columns::datasets
+            .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
+            .filter(datasets_columns::deleted.eq(0))
+            .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
+            .select((Dataset::as_select(), DatasetUsageCount::as_select()))
+            .load::<(Dataset, DatasetUsageCount)>(&mut conn)
+            .await
+            .map_err(|_| ServiceError::NotFound("Could not find organization".to_string()))?,
+    };
 
     let dataset_and_usages = dataset_and_usages
         .into_iter()
