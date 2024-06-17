@@ -342,23 +342,22 @@ pub async fn get_datasets_by_organization_id(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
+    let get_datasets_query = datasets_columns::datasets
+        .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
+        .filter(datasets_columns::deleted.eq(0))
+        .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
+        .order(datasets_columns::created_at.desc())
+        .select((Dataset::as_select(), DatasetUsageCount::as_select()))
+        .into_boxed();
+
     let dataset_and_usages = match pagination.limit {
-        Some(limit) => datasets_columns::datasets
-            .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
-            .filter(datasets_columns::deleted.eq(0))
-            .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
-            .limit(limit.into())
+        Some(limit) => get_datasets_query
             .offset(pagination.offset.unwrap_or(0))
-            .order(datasets_columns::created_at.desc())
-            .select((Dataset::as_select(), DatasetUsageCount::as_select()))
+            .limit(limit)
             .load::<(Dataset, DatasetUsageCount)>(&mut conn)
             .await
             .map_err(|_| ServiceError::NotFound("Could not find organization".to_string()))?,
-        None => datasets_columns::datasets
-            .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
-            .filter(datasets_columns::deleted.eq(0))
-            .order(datasets_columns::created_at.desc())
-            .select((Dataset::as_select(), DatasetUsageCount::as_select()))
+        None => get_datasets_query
             .load::<(Dataset, DatasetUsageCount)>(&mut conn)
             .await
             .map_err(|_| ServiceError::NotFound("Could not find organization".to_string()))?,

@@ -45,7 +45,7 @@ const getDatasets = async ({ orgId }: { orgId: string }) => {
 };
 
 export const useDatasetPages = (props: {
-  org: Accessor<Organization>;
+  org: Accessor<Organization | undefined>;
   page: Accessor<number>;
   searchQuery: Accessor<string>;
   setPage: (page: number) => void;
@@ -54,10 +54,12 @@ export const useDatasetPages = (props: {
   const [realDatasets, setRealDatasets] = createSignal<DatasetAndUsage[]>([]);
 
   createEffect(() => {
-    if (!props.org().id) {
+    const org_id = props.org()?.id;
+
+    if (!org_id) {
       return;
     }
-    void getDatasets({ orgId: props.org().id }).then((datasets) => {
+    void getDatasets({ orgId: org_id }).then((datasets) => {
       setRealDatasets(datasets);
       setHasLoaded(true);
     });
