@@ -1,137 +1,87 @@
 import { Accessor, createEffect, createMemo, createSignal } from "solid-js";
 import { DatasetAndUsage, Organization } from "../types/apiTypes";
-import { createStore } from "solid-js/store";
 
-const PAGE_SIZE = 10;
+const FETCHING_SIZE = 100;
+const PAGE_SIZE = 2;
+
+const getDatasets = async ({ orgId }: { orgId: string }) => {
+  let page = 0;
+  const results: DatasetAndUsage[] = [];
+  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  let canFetchAgain = true;
+  while (canFetchAgain) {
+    try {
+      const params = new URLSearchParams({
+        limit: FETCHING_SIZE.toString(),
+        offset: (page * FETCHING_SIZE).toString(),
+      });
+      const response = await fetch(
+        `${api_host}/dataset/organization/${orgId}?${params.toString()}`,
+        {
+          credentials: "include",
+          headers: {
+            "TR-Organization": orgId,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch datasets");
+      }
+
+      const datasets = (await response.json()) as unknown as DatasetAndUsage[];
+      if (datasets.length > 0) {
+        results.push(...datasets);
+        page++;
+      } else {
+        canFetchAgain = false;
+      }
+    } catch (error) {
+      canFetchAgain = false;
+    }
+  }
+  return results;
+};
 
 export const useDatasetPages = (props: {
   org: Accessor<Organization>;
   page: Accessor<number>;
   setPage: (page: number) => void;
 }) => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
   const [hasLoaded, setHasLoaded] = createSignal(false);
-
-  // Prevent rapid clicking while the preloading is happening
-  createEffect(() => {
-    if (
-      pagedDatasets.maxPageDiscovered &&
-      props.page() > pagedDatasets.maxPageDiscovered
-    ) {
-      props.setPage(pagedDatasets.maxPageDiscovered);
-    }
-  });
-
-  const [pagedDatasets, setPagedDatasets] = createStore({
-    datasets: {} as Record<number, DatasetAndUsage[]>,
-    maxPageDiscovered: null as number | null,
-  });
-
-  createEffect(() => {
-    props.org();
-    setPagedDatasets("datasets", {});
-    setPagedDatasets("maxPageDiscovered", null);
-    setHasLoaded(false);
-  });
+  const [realDatasets, setRealDatasets] = createSignal<DatasetAndUsage[]>([]);
 
   createEffect(() => {
     if (!props.org().id) {
       return;
     }
-    const params = new URLSearchParams({
-      limit: PAGE_SIZE.toString(),
-      offset: (props.page() * PAGE_SIZE).toString(),
+    void getDatasets({ orgId: props.org().id }).then((datasets) => {
+      setRealDatasets(datasets);
+      setHasLoaded(true);
     });
-    const page = props.page();
-    void fetch(
-      `${api_host}/dataset/organization/${props.org().id}?${params.toString()}`,
-      {
-        credentials: "include",
-        headers: {
-          "TR-Organization": props.org().id,
-        },
-      },
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        setPagedDatasets("datasets", page, () => {
-          return data as DatasetAndUsage[];
-        });
-        setHasLoaded(true);
-      })
-      .catch((e) => {
-        console.error(e);
-        setHasLoaded(true);
-      });
-
-    // Prefetch the next page
-    const nextParams = new URLSearchParams({
-      limit: PAGE_SIZE.toString(),
-      offset: ((props.page() + 1) * PAGE_SIZE).toString(),
-    });
-    void fetch(
-      `${api_host}/dataset/organization/${
-        props.org().id
-      }?${nextParams.toString()}`,
-      {
-        credentials: "include",
-        headers: {
-          "TR-Organization": props.org().id,
-        },
-      },
-    )
-      .then((res) => res.json())
-      .then((data: DatasetAndUsage[]) => {
-        if (data.length === 0) {
-          setPagedDatasets("maxPageDiscovered", page);
-        }
-        setPagedDatasets("datasets", page + 1, () => {
-          return data;
-        });
-      });
   });
 
-  const removeDataset = (page: number, datasetId: string) => {
-    const maxIndex = Object.keys(pagedDatasets.datasets).length;
-    for (let i = page; i < maxIndex; i++) {
-      if (i == page) {
-        // Remove the dataset and borrow one from the next page
-        setPagedDatasets("datasets", i, (datasets) => {
-          const removed = datasets.filter((d) => d.dataset.id !== datasetId);
-          const toAdd = pagedDatasets.datasets[i + 1]?.at(0);
-          if (toAdd) {
-            removed.push(toAdd);
-          }
-          return removed;
-        });
-      } else {
-        // remove the first dataset and borrow from the next one
-        setPagedDatasets("datasets", i, (datasets) => {
-          if (datasets.length === 0) {
-            return [];
-          }
-          const removed = datasets.slice(1);
-          const toAdd = pagedDatasets.datasets[i + 1]?.at(0);
-          if (toAdd) {
-            removed.push(toAdd);
-          }
-          return removed;
-        });
-      }
-    }
+  const removeDataset = (datasetId: string) => {
+    const newDatasets = realDatasets().filter(
+      (dataset) => dataset.dataset.id !== datasetId,
+    );
+    setRealDatasets(newDatasets);
   };
 
   const currDatasets = createMemo(() => {
-    return pagedDatasets.datasets[props.page()] || [];
+    const sliced = realDatasets().slice(
+      props.page() * PAGE_SIZE,
+      (props.page() + 1) * PAGE_SIZE,
+    );
+    return sliced;
   });
-
   const maxPageDiscovered = createMemo(() => {
-    return pagedDatasets.maxPageDiscovered;
+    return Math.floor(realDatasets().length / PAGE_SIZE);
   });
 
   return {
     datasets: currDatasets,
-    maxPageDiscovered: maxPageDiscovered,
+    maxPageDiscovered,
     removeDataset,
     hasLoaded,
   };

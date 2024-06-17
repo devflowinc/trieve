@@ -37,7 +37,6 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
     });
 
   const deleteDataset = (datasetId: string) => {
-    const currentPage = page();
     const api_host = import.meta.env.VITE_API_HOST as unknown as string;
     void fetch(`${api_host}/dataset/${datasetId}`, {
       method: "DELETE",
@@ -47,7 +46,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       },
       credentials: "include",
     }).then(() => {
-      removeDataset(currentPage, datasetId);
+      removeDataset(datasetId);
     });
   };
   return (
