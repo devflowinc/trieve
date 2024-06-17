@@ -46,7 +46,7 @@ export const DatasetStart = () => {
   const [usage, { mutate: mutateUsage }] = createResource(
     currDatasetId,
     async (datasetId) => {
-      const response = await fetch(`${api_host}/dataset/${datasetId}/usage`, {
+      const response = await fetch(`${api_host}/dataset/usage/${datasetId}`, {
         method: "GET",
         headers: {
           "TR-Dataset": datasetId,

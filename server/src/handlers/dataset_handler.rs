@@ -331,7 +331,7 @@ pub async fn get_dataset(
 /// Get the usage for a dataset by its id.
 #[utoipa::path(
     get,
-    path = "/dataset/{dataset_id}/usage",
+    path = "/dataset/usage/{dataset_id}",
     context_path = "/api",
     tag = "dataset",
     responses(
