@@ -1,4 +1,6 @@
 import {
+  Accessor,
+  Show,
   createEffect,
   createMemo,
   createSignal,
@@ -7,9 +9,9 @@ import {
 } from "solid-js";
 import { UserContext } from "../../contexts/UserContext";
 import {
-  DatasetAndUsage,
   OrganizationUsageCount,
   OrganizationAndSubAndPlan,
+  Organization,
 } from "../../types/apiTypes";
 import NewDatasetModal from "../../components/NewDatasetModal";
 import { DatasetOverview } from "../../components/DatasetOverview";
@@ -23,9 +25,6 @@ export const Overview = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
 
   const userContext = useContext(UserContext);
-  const [datasetAndUsages, setDatasetsAndUsages] = createSignal<
-    DatasetAndUsage[]
-  >([]);
   const [orgSubPlan, setOrgSubPlan] = createSignal<OrganizationAndSubAndPlan>();
   const [orgUsage, setOrgUsage] = createSignal<OrganizationUsageCount>();
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
@@ -40,19 +39,6 @@ export const Overview = () => {
   createEffect(() => {
     const selectedOrgId = selectedOrganization()?.id;
     if (!selectedOrgId) return;
-
-    const datasetAndUsageAbortController = new AbortController();
-    void fetch(`${api_host}/dataset/organization/${selectedOrgId}`, {
-      credentials: "include",
-      headers: {
-        "TR-Organization": selectedOrgId,
-      },
-      signal: datasetAndUsageAbortController.signal,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setDatasetsAndUsages(data);
-      });
 
     const orgSubPlanAbortController = new AbortController();
     void fetch(`${api_host}/organization/${selectedOrgId}`, {
@@ -107,7 +93,6 @@ export const Overview = () => {
       });
 
     onCleanup(() => {
-      datasetAndUsageAbortController.abort("cleanup");
       orgSubPlanAbortController.abort("cleanup");
       orgUsageAbortController.abort("cleanup");
     });
@@ -167,11 +152,12 @@ export const Overview = () => {
         orgUsage={orgUsage}
       />
       <div class="h-1" />
-      <DatasetOverview
-        setOpenNewDatasetModal={setNewDatasetModalOpen}
-        datasetAndUsages={datasetAndUsages}
-        setDatasetsAndUsages={setDatasetsAndUsages}
-      />
+      <Show when={selectedOrganization()}>
+        <DatasetOverview
+          selectedOrganization={selectedOrganization as Accessor<Organization>}
+          setOpenNewDatasetModal={setNewDatasetModalOpen}
+        />
+      </Show>
       <NewDatasetModal
         isOpen={newDatasetModalOpen}
         closeModal={() => {
