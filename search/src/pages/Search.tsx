@@ -33,7 +33,7 @@ export const Search = () => {
   const [highlightWindow, setHighlightWindow] = createSignal<number>(0);
 
   createEffect(() => {
-    setLoading(true);
+    // setLoading(true);
 
     setQuery(location.query.q ?? "");
     setExtendResults(location.query.extendResults === "true" || false);
@@ -86,7 +86,7 @@ export const Search = () => {
           </div>
           <ResultsPage
             page={page()}
-            query={query()}
+            query={search.state.query}
             scoreThreshold={scoreThreshold()}
             searchType={searchType()}
             recencyBias={recencyBias()}
