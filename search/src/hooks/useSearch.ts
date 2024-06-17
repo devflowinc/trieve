@@ -5,6 +5,8 @@ export const useSearch = () => {
     query: "", // TODO: Debounce
     searchType: "",
     scoreThreshold: 0.0,
+    extendResults: false,
+    slimChunks: false,
   });
 
   return {

@@ -26,8 +26,6 @@ import { SearchStore } from "../hooks/useSearch";
 const SearchForm = (props: {
   search: SearchStore;
   searchType: string;
-  groupUniqueSearch?: boolean;
-  slimChunks?: boolean;
   pageSize?: number;
   getTotalPages?: boolean;
   highlightResults?: boolean;
@@ -35,7 +33,6 @@ const SearchForm = (props: {
   highlightMaxLength?: number;
   highlightMaxNum?: number;
   highlightWindow?: number;
-  recencyBias?: number;
   groupID?: string;
 }) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -69,44 +66,35 @@ const SearchForm = (props: {
   const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
   const [textareaFocused, setTextareaFocused] = createSignal(false);
-  const [groupUniqueSearch, setGroupUniqueSearch] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.groupUniqueSearch ?? false,
-  );
-  // eslint-disable-next-line solid/reactivity
-  const [slimChunks, setSlimChunks] = createSignal(props.slimChunks ?? false);
-  const [pageSize, setPageSize] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.pageSize ?? 10,
-  );
-  const [getTotalPages, setGetTotalPages] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.getTotalPages ?? false,
-  );
-  const [highlightResults, setHighlightResults] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.highlightResults ?? true,
-  );
-  const [highlightDelimiters, setHighlightDelimiters] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.highlightDelimiters ?? ["?", ".", "!"],
-  );
-  const [highlightMaxLength, setHighlightMaxLength] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.highlightMaxLength ?? 8,
-  );
-  const [highlightMaxNum, setHighlightMaxNum] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.highlightMaxNum ?? 3,
-  );
-  const [highlightWindow, setHighlightWindow] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.highlightWindow ?? 0,
-  );
-  const [recencyBias, setRecencyBias] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.recencyBias ?? 0.0,
-  );
+  // // eslint-disable-next-line solid/reactivity
+  // const [pageSize, setPageSize] = createSignal(
+  //   // eslint-disable-next-line solid/reactivity
+  //   props.pageSize ?? 10,
+  // );
+  // const [getTotalPages, setGetTotalPages] = createSignal(
+  //   // eslint-disable-next-line solid/reactivity
+  //   props.getTotalPages ?? false,
+  // );
+  // const [highlightResults, setHighlightResults] = createSignal(
+  //   // eslint-disable-next-line solid/reactivity
+  //   props.highlightResults ?? true,
+  // );
+  // const [highlightDelimiters, setHighlightDelimiters] = createSignal(
+  //   // eslint-disable-next-line solid/reactivity
+  //   props.highlightDelimiters ?? ["?", ".", "!"],
+  // );
+  // const [highlightMaxLength, setHighlightMaxLength] = createSignal(
+  //   // eslint-disable-next-line solid/reactivity
+  //   props.highlightMaxLength ?? 8,
+  // );
+  // const [highlightMaxNum, setHighlightMaxNum] = createSignal(
+  //   // eslint-disable-next-line solid/reactivity
+  //   props.highlightMaxNum ?? 3,
+  // );
+  // const [highlightWindow, setHighlightWindow] = createSignal(
+  //   // eslint-disable-next-line solid/reactivity
+  //   props.highlightWindow ?? 0,
+  // );
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
@@ -207,6 +195,21 @@ const SearchForm = (props: {
 
     return textareaVal;
   });
+
+  const resetParams = () => {
+    props.search.setSearch("scoreThreshold", 0.0);
+    props.search.setSearch("extendResults", false);
+    props.search.setSearch("slimChunks", false);
+    props.search.setSearch("recencyBias", 0.0);
+    // setPageSize(10);
+    // setGetTotalPages(true);
+    // setHighlightResults(true);
+    // setHighlightDelimiters(["?", ".", "!"]);
+    // setHighlightMaxLength(8);
+    // setHighlightMaxNum(3);
+    // setHighlightWindow(0);
+    // setState(false);
+  };
 
   return (
     <>
@@ -381,7 +384,7 @@ const SearchForm = (props: {
               )}
             </Popover>
             <Popover defaultOpen={false} class="relative">
-              {({ isOpen, setState }) => (
+              {({ isOpen }) => (
                 <>
                   <PopoverButton
                     aria-label="Toggle options"
@@ -410,18 +413,7 @@ const SearchForm = (props: {
                             class="rounded-md border border-neutral-400 bg-neutral-100 px-2 py-1 dark:border-neutral-900 dark:bg-neutral-800"
                             onClick={(e) => {
                               e.preventDefault();
-                              props.search.setSearch("scoreThreshold", 0.0);
-                              props.search.setSearch("extendResults", false);
-                              setSlimChunks(false);
-                              setPageSize(10);
-                              setGetTotalPages(true);
-                              setHighlightResults(true);
-                              setHighlightDelimiters(["?", ".", "!"]);
-                              setHighlightMaxLength(8);
-                              setHighlightMaxNum(3);
-                              setHighlightWindow(0);
-                              setRecencyBias(0.0);
-                              setState(false);
+                              resetParams();
                             }}
                           >
                             Reset
@@ -472,13 +464,12 @@ const SearchForm = (props: {
                           <input
                             class="h-4 w-4"
                             type="checkbox"
-                            checked={props.slimChunks}
+                            checked={props.search.state.slimChunks}
                             onChange={(e) => {
-                              if (e.target.checked) {
-                                setSlimChunks(true);
-                              } else {
-                                setSlimChunks(false);
-                              }
+                              props.search.setSearch(
+                                "slimChunks",
+                                e.target.checked,
+                              );
                             }}
                           />
                         </div>
@@ -490,9 +481,12 @@ const SearchForm = (props: {
                             min="0.0"
                             max="1.0"
                             step="0.1"
-                            value={props.recencyBias}
+                            value={props.search.state.recencyBias}
                             onInput={(e) => {
-                              setRecencyBias(parseFloat(e.currentTarget.value));
+                              props.search.setSearch(
+                                "recencyBias",
+                                parseFloat(e.currentTarget.value),
+                              );
                             }}
                           />
                         </div>
@@ -606,13 +600,12 @@ const SearchForm = (props: {
                 <input
                   class="h-4 w-4"
                   type="checkbox"
-                  checked={props.groupUniqueSearch}
+                  checked={props.search.state.groupUniqueSearch}
                   onChange={(e) => {
-                    if (e.target.checked) {
-                      setGroupUniqueSearch(true);
-                    } else {
-                      setGroupUniqueSearch(false);
-                    }
+                    props.search.setSearch(
+                      "groupUniqueSearch",
+                      e.target.checked,
+                    );
                   }}
                 />
               </div>
