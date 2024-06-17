@@ -558,15 +558,15 @@ pub fn main() -> std::io::Result<()> {
                                     web::get().to(handlers::dataset_handler::get_client_dataset_config),
                                 ))
                                 .service(
+                                    web::resource("/usage/{dataset_id}")
+                                        .route(web::get().to(handlers::dataset_handler::get_usage_by_dataset_id)),
+                                )
+                                .service(
                                     web::resource("/{dataset_id}")
                                         .route(web::get().to(handlers::dataset_handler::get_dataset))
                                         .route(
                                             web::delete().to(handlers::dataset_handler::delete_dataset),
                                         ),
-                                )
-                                .service(
-                                    web::resource("/{dataset_id}/usage")
-                                        .route(web::get().to(handlers::dataset_handler::get_usage_by_dataset_id)),
                                 )
                                 .service(
                                     web::resource("/tracking_id/{tracking_id}")
