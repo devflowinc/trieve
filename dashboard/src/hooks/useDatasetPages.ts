@@ -2,7 +2,7 @@ import { Accessor, createEffect, createMemo, createSignal } from "solid-js";
 import { DatasetAndUsage, Organization } from "../types/apiTypes";
 
 const FETCHING_SIZE = 100;
-const PAGE_SIZE = 2;
+const PAGE_SIZE = 20;
 
 const getDatasets = async ({ orgId }: { orgId: string }) => {
   let page = 0;
@@ -46,6 +46,7 @@ const getDatasets = async ({ orgId }: { orgId: string }) => {
 export const useDatasetPages = (props: {
   org: Accessor<Organization>;
   page: Accessor<number>;
+  searchQuery: Accessor<string>;
   setPage: (page: number) => void;
 }) => {
   const [hasLoaded, setHasLoaded] = createSignal(false);
