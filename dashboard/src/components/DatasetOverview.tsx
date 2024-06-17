@@ -1,21 +1,39 @@
 import { TbDatabasePlus } from "solid-icons/tb";
-import { Show, For, Setter, Accessor, createEffect } from "solid-js";
-import { DatasetAndUsage } from "../types/apiTypes";
+import {
+  Show,
+  For,
+  Setter,
+  Accessor,
+  createSignal,
+  createEffect,
+} from "solid-js";
+import { Organization } from "../types/apiTypes";
 import { useNavigate } from "@solidjs/router";
 import { FiTrash } from "solid-icons/fi";
 import { FaSolidGear } from "solid-icons/fa";
+import { useDatasetPages } from "../hooks/useDatasetPages";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
-  datasetAndUsages: Accessor<DatasetAndUsage[]>;
-  setDatasetsAndUsages: Setter<DatasetAndUsage[]>;
+  selectedOrganization: Accessor<Organization>;
 }
 
 export const DatasetOverview = (props: DatasetOverviewProps) => {
   const navigate = useNavigate();
+  const [page, setPage] = createSignal(0);
+
+  createEffect(() => {
+    props.selectedOrganization();
+    setPage(0);
+  });
+
+  const { datasets, maxPageDiscovered, removeDataset } = useDatasetPages({
+    org: props.selectedOrganization,
+    page: page,
+  });
   const deleteDataset = (datasetId: string) => {
+    const currentPage = page();
     const api_host = import.meta.env.VITE_API_HOST as unknown as string;
-    const currentDatasetsAndUsages = props.datasetAndUsages();
     void fetch(`${api_host}/dataset/${datasetId}`, {
       method: "DELETE",
       headers: {
@@ -24,13 +42,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       },
       credentials: "include",
     }).then(() => {
-      const newDatasetAndUsages = currentDatasetsAndUsages.filter(
-        (datasetAndUsage) => datasetAndUsage.dataset.id !== datasetId,
-      );
-
-      createEffect(() => {
-        props.setDatasetsAndUsages(newDatasetAndUsages);
-      });
+      removeDataset(currentPage, datasetId);
     });
   };
   return (
@@ -41,7 +53,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
             <h1 class="text-base font-semibold leading-6">Datasets</h1>
             <Show
               fallback={<p>This organization does not have any datasets.</p>}
-              when={props.datasetAndUsages().length > 0}
+              when={datasets().length > 0}
             >
               <p class="text-sm text-neutral-700">
                 {" "}
@@ -49,7 +61,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
               </p>
             </Show>
           </div>
-          <Show when={props.datasetAndUsages().length != 0}>
+          <Show when={datasets().length != 0}>
             <button
               class="rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
               onClick={() => props.setOpenNewDatasetModal(true)}
@@ -59,7 +71,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           </Show>
         </div>
       </div>
-      <Show when={props.datasetAndUsages().length == 0}>
+      <Show when={datasets().length == 0}>
         <button
           onClick={() => props.setOpenNewDatasetModal(true)}
           class="relative block w-full rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2"
@@ -68,7 +80,10 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           <span class="ont-semibold mt-2 block">Create A New Dataset</span>
         </button>
       </Show>
-      <Show when={props.datasetAndUsages().length > 0}>
+      <button onClick={() => setPage((page) => page + 1)}>
+        Next page {JSON.stringify(maxPageDiscovered())}
+      </button>
+      <Show when={datasets().length > 0}>
         <div class="mt-8 flow-root">
           <div class="overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5">
             <table class="min-w-full divide-y divide-neutral-300">
@@ -97,7 +112,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                 </tr>
               </thead>
               <tbody class="divide-y divide-neutral-200 bg-white">
-                <For each={props.datasetAndUsages()}>
+                <For each={datasets()}>
                   {(datasetAndUsage) => (
                     <tr class="cursor-pointer hover:bg-neutral-100">
                       <td
