@@ -374,7 +374,16 @@ export const FilterItem = (props: FilterItemProps) => {
               : tempFilterField()
           }
         >
-          <For each={["tag_set", "link", "time_stamp", "location", "metadata"]}>
+          <For
+            each={[
+              "tag_set",
+              "link",
+              "time_stamp",
+              "location",
+              "metadata",
+              "num_value",
+            ]}
+          >
             {(filter_field) => {
               return (
                 <option
