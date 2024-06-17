@@ -23,6 +23,7 @@ export interface DatasetOverviewProps {
 export const DatasetOverview = (props: DatasetOverviewProps) => {
   const navigate = useNavigate();
   const [page, setPage] = createSignal(0);
+  const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
 
   createEffect(() => {
     props.selectedOrganization();
@@ -32,6 +33,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
   const { datasets, maxPageDiscovered, removeDataset, hasLoaded } =
     useDatasetPages({
       org: props.selectedOrganization,
+      searchQuery: datasetSearchQuery,
       page: page,
       setPage,
     });
@@ -65,14 +67,25 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
               </p>
             </Show>
           </div>
-          <Show when={datasets().length != 0}>
-            <button
-              class="rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
-              onClick={() => props.setOpenNewDatasetModal(true)}
-            >
-              Create Dataset +
-            </button>
-          </Show>
+          <div class="flex gap-2">
+            <input
+              value={datasetSearchQuery()}
+              onClick={(e) => {
+                setPage(0);
+                setDatasetSearchQuery(e.currentTarget.value);
+              }}
+              placeholder="Search datasets..."
+              class="rounded border border-neutral-300/80 bg-neutral-200 px-2 py-1 text-sm placeholder:text-neutral-400"
+            />
+            <Show when={datasets().length != 0}>
+              <button
+                class="rounded bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
+                onClick={() => props.setOpenNewDatasetModal(true)}
+              >
+                Create Dataset +
+              </button>
+            </Show>
+          </div>
         </div>
       </div>
       <Show when={datasets().length === 0 && page() === 0 && hasLoaded}>
