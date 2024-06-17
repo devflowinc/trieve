@@ -8,8 +8,8 @@ use crate::{
     errors::ServiceError,
     operators::{
         dataset_operator::{
-            create_dataset_query, get_dataset_by_id_query, get_datasets_by_organization_id,
-            soft_delete_dataset_by_id_query, update_dataset_query,
+            create_dataset_query, get_dataset_by_id_query, get_dataset_usage_query,
+            get_datasets_by_organization_id, soft_delete_dataset_by_id_query, update_dataset_query,
         },
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
     },
@@ -324,6 +324,40 @@ pub async fn get_dataset(
         d.client_configuration
     ));
     Ok(HttpResponse::Ok().json(d))
+}
+
+/// Get Usage By Dataset ID
+///
+/// Get the usage for a dataset by its id.
+#[utoipa::path(
+    get,
+    path = "/dataset/{dataset_id}/usage",
+    context_path = "/api",
+    tag = "dataset",
+    responses(
+        (status = 200, description = "Dataset usage retrieved successfully", body = DatasetUsageCount),
+        (status = 400, description = "Service error relating to retrieving the dataset usage", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve usage for."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn get_usage_by_dataset_id(
+    pool: web::Data<Pool>,
+    dataset_id: web::Path<uuid::Uuid>,
+    user: AdminOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let usage = get_dataset_usage_query(dataset_id.into_inner(), pool)
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    Ok(HttpResponse::Ok().json(usage))
 }
 
 /// Get Dataset by Tracking ID
