@@ -12,6 +12,7 @@
     "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
   },
   "dependencies": {
+    "@nozbe/microfuzz": "^1.0.0",
     "@sentry/browser": "^7.110.0",
     "@solidjs/router": "^0.10.1",
     "papaparse": "^5.4.1",
