@@ -19,6 +19,8 @@ import { FaRegularClipboard } from "solid-icons/fa";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 import { BsMagic } from "solid-icons/bs";
 
+const SAMPLE_DATASET_SIZE = 921;
+
 export const DatasetStart = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
   const location = useLocation();
@@ -39,28 +41,35 @@ export const DatasetStart = () => {
     if (!dataset) return null;
     return dataset;
   });
+  const currDatasetId = createMemo(() => curDataset()?.id);
 
-  const [usage] = createResource(curDataset, async (curDataset) => {
-    const response = await fetch(`${api_host}/dataset/${curDataset.id}/usage`, {
-      method: "GET",
-      headers: {
-        "TR-Dataset": curDataset.id,
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    });
-
-    if (response.ok) {
-      return response.json() as unknown as DatasetUsageCount;
-    } else {
-      createToast({
-        title: "Error",
-        type: "error",
-        message: "Failed to fetch dataset usage",
-        timeout: 1000,
+  const [usage, { mutate: mutateUsage }] = createResource(
+    currDatasetId,
+    async (datasetId) => {
+      const response = await fetch(`${api_host}/dataset/${datasetId}/usage`, {
+        method: "GET",
+        headers: {
+          "TR-Dataset": datasetId,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
       });
-    }
-  });
+
+      if (response.ok) {
+        const data = (await response.json()) as unknown as DatasetUsageCount;
+        console.log("Got good repsonse", data);
+        return data;
+      } else {
+        createToast({
+          title: "Error",
+          type: "error",
+          message: "Failed to fetch dataset usage",
+          timeout: 1000,
+        });
+        throw new Error("Failed to fetch dataset usage");
+      }
+    },
+  );
 
   createEffect(() => {
     const pathname = location.pathname;
@@ -178,7 +187,7 @@ export const DatasetStart = () => {
               </div>
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">Chunk Count:</p>
-                <p class="w-fit text-sm">{usage()?.chunk_count}</p>
+                <p class="w-fit text-sm">{usage()?.chunk_count || 0}</p>
               </div>
             </div>
           </section>
@@ -258,6 +267,15 @@ export const DatasetStart = () => {
         </div>
       </main>
       <AddSampleDataModal
+        addedDataCallback={() => {
+          mutateUsage((prev) => {
+            if (prev)
+              return {
+                ...prev,
+                chunk_count: SAMPLE_DATASET_SIZE,
+              };
+          });
+        }}
         openModal={openSampleDataModal}
         closeModal={() => setOpenSampleDataModal(false)}
       />
