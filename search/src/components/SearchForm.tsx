@@ -23,16 +23,7 @@ import { FilterModal } from "./FilterModal";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import { SearchStore } from "../hooks/useSearch";
 
-const SearchForm = (props: {
-  search: SearchStore;
-  searchType: string;
-  getTotalPages?: boolean;
-  highlightDelimiters?: string[];
-  highlightMaxLength?: number;
-  highlightMaxNum?: number;
-  highlightWindow?: number;
-  groupID?: string;
-}) => {
+const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -64,27 +55,6 @@ const SearchForm = (props: {
   const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
   const [textareaFocused, setTextareaFocused] = createSignal(false);
-  // // eslint-disable-next-line solid/reactivity
-  // const [getTotalPages, setGetTotalPages] = createSignal(
-  //   // eslint-disable-next-line solid/reactivity
-  //   props.getTotalPages ?? false,
-  // );
-  // const [highlightDelimiters, setHighlightDelimiters] = createSignal(
-  //   // eslint-disable-next-line solid/reactivity
-  //   props.highlightDelimiters ?? ["?", ".", "!"],
-  // );
-  // const [highlightMaxLength, setHighlightMaxLength] = createSignal(
-  //   // eslint-disable-next-line solid/reactivity
-  //   props.highlightMaxLength ?? 8,
-  // );
-  // const [highlightMaxNum, setHighlightMaxNum] = createSignal(
-  //   // eslint-disable-next-line solid/reactivity
-  //   props.highlightMaxNum ?? 3,
-  // );
-  // const [highlightWindow, setHighlightWindow] = createSignal(
-  //   // eslint-disable-next-line solid/reactivity
-  //   props.highlightWindow ?? 0,
-  // );
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
@@ -94,16 +64,6 @@ const SearchForm = (props: {
 
   createEffect(() => {
     setTextareaInput(props.search.state.query ?? "");
-
-    setSearchTypes((prev) => {
-      return prev.map((item) => {
-        if (props.searchType == item.route) {
-          return { ...item, isSelected: true };
-        } else {
-          return { ...item, isSelected: false };
-        }
-      });
-    });
 
     setTimeout(() => {
       resizeTextarea(document.querySelector("#search-query-textarea"));
@@ -191,14 +151,13 @@ const SearchForm = (props: {
     props.search.setSearch("extendResults", false);
     props.search.setSearch("slimChunks", false);
     props.search.setSearch("recencyBias", 0.0);
-    // setPageSize(10);
-    // setGetTotalPages(true);
-    // setHighlightResults(true);
-    // setHighlightDelimiters(["?", ".", "!"]);
-    // setHighlightMaxLength(8);
-    // setHighlightMaxNum(3);
-    // setHighlightWindow(0);
-    // setState(false);
+    props.search.setSearch("pageSize", 10);
+    props.search.setSearch("getTotalPages", true);
+    props.search.setSearch("highlightResults", true);
+    props.search.setSearch("highlightDelimiters", ["?", ".", "!"]);
+    props.search.setSearch("highlightMaxLength", 8);
+    props.search.setSearch("highlightMaxNum", 3);
+    props.search.setSearch("highlightWindow", 0);
   };
 
   return (
@@ -499,13 +458,12 @@ const SearchForm = (props: {
                           <input
                             class="h-4 w-4"
                             type="checkbox"
-                            checked={props.getTotalPages}
+                            checked={props.search.state.getTotalPages}
                             onChange={(e) => {
-                              if (e.target.checked) {
-                                setGetTotalPages(true);
-                              } else {
-                                setGetTotalPages(false);
-                              }
+                              props.search.setSearch(
+                                "getTotalPages",
+                                e.target.checked,
+                              );
                             }}
                           />
                         </div>
@@ -528,13 +486,18 @@ const SearchForm = (props: {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="text"
-                            value={highlightDelimiters().join(",")}
+                            value={props.search.state.highlightDelimiters.join(
+                              ",",
+                            )}
                             onInput={(e) => {
                               if (e.currentTarget.value === " ") {
-                                setHighlightDelimiters([" "]);
+                                props.search.setSearch("highlightDelimiters", [
+                                  " ",
+                                ]);
                               }
 
-                              setHighlightDelimiters(
+                              props.search.setSearch(
+                                "highlightDelimiters",
                                 e.currentTarget.value.split(","),
                               );
                             }}
@@ -545,9 +508,10 @@ const SearchForm = (props: {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={props.highlightMaxLength}
+                            value={props.search.state.highlightMaxLength}
                             onInput={(e) => {
-                              setHighlightMaxLength(
+                              props.search.setSearch(
+                                "highlightMaxLength",
                                 parseInt(e.currentTarget.value),
                               );
                             }}
@@ -558,9 +522,10 @@ const SearchForm = (props: {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={props.highlightMaxNum}
+                            value={props.search.state.highlightMaxNum}
                             onInput={(e) => {
-                              setHighlightMaxNum(
+                              props.search.setSearch(
+                                "highlightMaxNum",
                                 parseInt(e.currentTarget.value),
                               );
                             }}
@@ -571,9 +536,10 @@ const SearchForm = (props: {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={props.highlightWindow}
+                            value={props.search.state.highlightWindow}
                             onInput={(e) => {
-                              setHighlightWindow(
+                              props.search.setSearch(
+                                "highlightWindow",
                                 parseInt(e.currentTarget.value),
                               );
                             }}

@@ -10,6 +10,12 @@ export const useSearch = () => {
     groupUniqueSearch: false,
     recencyBias: 0.0,
     pageSize: 10,
+    getTotalPages: false,
+    highlightResults: true,
+    highlightDelimiters: ["?", ".", "!"],
+    highlightMaxLength: 8,
+    highlightMaxNum: 3,
+    highlightWindow: 0,
   });
 
   return {
