@@ -276,6 +276,7 @@ impl Modify for SecurityAddon {
             operators::search_operator::GroupScoreChunk,
             handlers::dataset_handler::CreateDatasetRequest,
             handlers::dataset_handler::UpdateDatasetRequest,
+            handlers::dataset_handler::GetDatasetsPagination,
             data::models::ApiKeyRespBody,
             data::models::SlimUser,
             data::models::UserOrganization,

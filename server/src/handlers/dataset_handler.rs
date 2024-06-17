@@ -370,6 +370,12 @@ pub async fn get_dataset_by_tracking_id(
     Ok(HttpResponse::Ok().json(d))
 }
 
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct GetDatasetsPagination {
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
 /// Get Datasets from Organization
 ///
 /// Get all datasets for an organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
@@ -386,6 +392,8 @@ pub async fn get_dataset_by_tracking_id(
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
         ("organization_id" = uuid, Path, description = "id of the organization you want to retrieve datasets for"),
+        ("limit" = Option<i64>, Query, description = "The number of records to return"),
+        ("offset" = Option<i64>, Query, description = "The number of records to skip"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -394,9 +402,11 @@ pub async fn get_dataset_by_tracking_id(
 #[tracing::instrument(skip(pool))]
 pub async fn get_datasets_from_organization(
     organization_id: web::Path<uuid::Uuid>,
+    pagination: web::Query<GetDatasetsPagination>,
     user: AdminOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pagination = pagination.into_inner();
     let organization_id = organization_id.into_inner();
     user.0
         .user_orgs
@@ -404,9 +414,18 @@ pub async fn get_datasets_from_organization(
         .find(|org| org.organization_id == organization_id)
         .ok_or(ServiceError::Forbidden)?;
 
-    let dataset_and_usages = get_datasets_by_organization_id(organization_id.into(), pool)
-        .await
-        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    // If offset is set, limit must also be set and vice versa
+    if pagination.offset.is_some() != pagination.limit.is_some() {
+        return Err(ServiceError::BadRequest(
+            "Pagination requires both offset and limit.".to_string(),
+        )
+        .into());
+    }
+
+    let dataset_and_usages =
+        get_datasets_by_organization_id(organization_id.into(), pagination, pool)
+            .await
+            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(dataset_and_usages))
 }
