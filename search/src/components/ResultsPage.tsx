@@ -137,6 +137,9 @@ const ResultsPage = (props: ResultsPageProps) => {
   createEffect(() => {
     const dataset = $dataset?.();
     if (!dataset) return;
+    if (!props.query) {
+      return;
+    }
 
     triggerSearch();
 
