@@ -345,10 +345,16 @@ pub async fn get_num_value_filter_condition(
                 MatchCondition::Float(id_val) => {
                     query = query.filter(chunk_metadata_columns::num_value.eq(*id_val));
                 }
-                MatchCondition::Text(_) => {
-                    return Err(ServiceError::BadRequest(
-                        "Invalid match condition for num_value".to_string(),
-                    ));
+                MatchCondition::Text(text_val) => {
+                    for id_str in text_val.split(',').map(str::trim) {
+                        if let Ok(id_val) = id_str.parse::<f64>() {
+                            query = query.filter(chunk_metadata_columns::num_value.eq(id_val));
+                        } else {
+                            return Err(ServiceError::BadRequest(
+                                "Invalid text match condition for num_value".to_string(),
+                            ));
+                        }
+                    }
                 }
             }
         }
@@ -361,10 +367,16 @@ pub async fn get_num_value_filter_condition(
                 MatchCondition::Float(id_val) => {
                     query = query.or_filter(chunk_metadata_columns::num_value.eq(id_val));
                 }
-                MatchCondition::Text(_) => {
-                    return Err(ServiceError::BadRequest(
-                        "Invalid match condition for num_value".to_string(),
-                    ));
+                MatchCondition::Text(text_val) => {
+                    for id_str in text_val.split(',').map(str::trim) {
+                        if let Ok(id_val) = id_str.parse::<f64>() {
+                            query = query.or_filter(chunk_metadata_columns::num_value.eq(id_val));
+                        } else {
+                            return Err(ServiceError::BadRequest(
+                                "Invalid text match condition for num_value".to_string(),
+                            ));
+                        }
+                    }
                 }
             }
         }
