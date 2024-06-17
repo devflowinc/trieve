@@ -6,6 +6,7 @@ import { uploadSampleData } from "../api/uploadSampleData";
 export const AddSampleDataModal = (props: {
   openModal: Accessor<boolean>;
   closeModal: () => void;
+  addedDataCallback: () => void;
 }) => {
   const [confirmation, setConfirmation] = createSignal(false);
   const [progress, setProgress] = createSignal(0);
@@ -13,6 +14,7 @@ export const AddSampleDataModal = (props: {
   const datasetContext = useContext(DatasetContext);
 
   const startUpload = () => {
+    const callback = props.addedDataCallback;
     setConfirmation(true);
     const datasetId = datasetContext?.dataset?.()?.id;
     if (!datasetId) {
@@ -26,6 +28,9 @@ export const AddSampleDataModal = (props: {
       },
     }).then(() => {
       setStatusText("Upload complete!");
+      if (callback) {
+        callback();
+      }
     });
   };
 
