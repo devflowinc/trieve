@@ -14,7 +14,6 @@ export const Search = () => {
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
-  const [pageSize, setPageSize] = createSignal<number>(10);
   const [getTotalPages, setGetTotalPages] = createSignal<boolean>(false);
   const [highlightResults, setHighlightResults] = createSignal<boolean>(true);
   const [highlightDelimiters, setHighlightDelimiters] = createSignal<string[]>([
@@ -33,7 +32,6 @@ export const Search = () => {
     setQuery(location.query.q ?? "");
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
-    setPageSize(Number(location.query.pageSize) || 10);
     setGetTotalPages(location.query.getTotalPages === "false" ? false : true);
     setHighlightResults(
       location.query.highlightResults === "false" ? false : true,
@@ -55,7 +53,6 @@ export const Search = () => {
               <SearchForm
                 search={search}
                 searchType={searchType()}
-                pageSize={pageSize()}
                 getTotalPages={getTotalPages()}
                 highlightResults={highlightResults()}
                 highlightDelimiters={highlightDelimiters()}
@@ -78,7 +75,7 @@ export const Search = () => {
             extendResults={search.state.extendResults}
             groupUnique={search.state.groupUniqueSearch}
             slimChunks={search.state.slimChunks}
-            pageSize={pageSize()}
+            pageSize={search.state.pageSize}
             getTotalPages={getTotalPages()}
             highlightResults={highlightResults()}
             highlightDelimiters={highlightDelimiters()}

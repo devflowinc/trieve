@@ -7,6 +7,9 @@ export const useSearch = () => {
     scoreThreshold: 0.0,
     extendResults: false,
     slimChunks: false,
+    groupUniqueSearch: false,
+    recencyBias: 0.0,
+    pageSize: 10,
   });
 
   return {

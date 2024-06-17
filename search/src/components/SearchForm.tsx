@@ -26,7 +26,6 @@ import { SearchStore } from "../hooks/useSearch";
 const SearchForm = (props: {
   search: SearchStore;
   searchType: string;
-  pageSize?: number;
   getTotalPages?: boolean;
   highlightResults?: boolean;
   highlightDelimiters?: string[];
@@ -67,10 +66,6 @@ const SearchForm = (props: {
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
   const [textareaFocused, setTextareaFocused] = createSignal(false);
   // // eslint-disable-next-line solid/reactivity
-  // const [pageSize, setPageSize] = createSignal(
-  //   // eslint-disable-next-line solid/reactivity
-  //   props.pageSize ?? 10,
-  // );
   // const [getTotalPages, setGetTotalPages] = createSignal(
   //   // eslint-disable-next-line solid/reactivity
   //   props.getTotalPages ?? false,
@@ -495,9 +490,12 @@ const SearchForm = (props: {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={props.pageSize}
+                            value={props.search.state.pageSize}
                             onInput={(e) => {
-                              setPageSize(parseInt(e.currentTarget.value));
+                              props.search.setSearch(
+                                "pageSize",
+                                parseInt(e.currentTarget.value),
+                              );
                             }}
                           />
                         </div>
