@@ -27,7 +27,6 @@ const SearchForm = (props: {
   search: SearchStore;
   searchType: string;
   getTotalPages?: boolean;
-  highlightResults?: boolean;
   highlightDelimiters?: string[];
   highlightMaxLength?: number;
   highlightMaxNum?: number;
@@ -69,10 +68,6 @@ const SearchForm = (props: {
   // const [getTotalPages, setGetTotalPages] = createSignal(
   //   // eslint-disable-next-line solid/reactivity
   //   props.getTotalPages ?? false,
-  // );
-  // const [highlightResults, setHighlightResults] = createSignal(
-  //   // eslint-disable-next-line solid/reactivity
-  //   props.highlightResults ?? true,
   // );
   // const [highlightDelimiters, setHighlightDelimiters] = createSignal(
   //   // eslint-disable-next-line solid/reactivity
@@ -519,13 +514,12 @@ const SearchForm = (props: {
                           <input
                             class="h-4 w-4"
                             type="checkbox"
-                            checked={props.highlightResults}
+                            checked={props.search.state.highlightResults}
                             onChange={(e) => {
-                              if (e.target.checked) {
-                                setHighlightResults(true);
-                              } else {
-                                setHighlightResults(false);
-                              }
+                              props.search.setSearch(
+                                "highlightResults",
+                                e.target.checked,
+                              );
                             }}
                           />
                         </div>
