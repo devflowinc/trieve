@@ -17,18 +17,14 @@ import { formatDate } from "../formatters";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
-  selectedOrganization: Accessor<Organization>;
+  selectedOrganization: Accessor<Organization | undefined>;
 }
 
 export const DatasetOverview = (props: DatasetOverviewProps) => {
   const navigate = useNavigate();
   const [page, setPage] = createSignal(0);
   const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
-
-  createEffect(() => {
-    props.selectedOrganization();
-    setPage(0);
-  });
+  const [maxDatasetsLength, setMaxDatasetsLength] = createSignal(0);
 
   const { datasets, maxPageDiscovered, removeDataset, hasLoaded } =
     useDatasetPages({
@@ -37,6 +33,20 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       page: page,
       setPage,
     });
+
+  createEffect((prevLength: number) => {
+    const datasetsLength = datasets().length;
+    if (datasetsLength > prevLength) {
+      setMaxDatasetsLength(datasetsLength);
+    }
+
+    return prevLength > datasetsLength ? prevLength : datasetsLength;
+  }, 0);
+
+  createEffect(() => {
+    props.selectedOrganization();
+    setPage(0);
+  });
 
   const deleteDataset = (datasetId: string) => {
     const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -58,7 +68,17 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           <div>
             <h1 class="text-base font-semibold leading-6">Datasets</h1>
             <Show
-              fallback={<p>This organization does not have any datasets.</p>}
+              fallback={
+                maxDatasetsLength() > 0 ? (
+                  <p class="text-sm text-red-700">
+                    No datasets match your search query.
+                  </p>
+                ) : (
+                  <p class="text-sm text-neutral-700">
+                    This organization does not have any datasets.
+                  </p>
+                )
+              }
               when={datasets().length > 0}
             >
               <p class="text-sm text-neutral-700">
@@ -75,9 +95,9 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                 setDatasetSearchQuery(e.currentTarget.value);
               }}
               placeholder="Search datasets..."
-              class="rounded border border-neutral-300/80 bg-neutral-200 px-2 py-1 text-sm placeholder:text-neutral-400"
+              class="rounded border border-neutral-300/80 bg-white px-2 py-1 text-sm placeholder:text-neutral-400"
             />
-            <Show when={datasets().length != 0}>
+            <Show when={maxDatasetsLength() != 0}>
               <button
                 class="rounded bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
                 onClick={() => props.setOpenNewDatasetModal(true)}
@@ -88,7 +108,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           </div>
         </div>
       </div>
-      <Show when={datasets().length === 0 && page() === 0 && hasLoaded}>
+      <Show when={maxDatasetsLength() === 0 && page() === 0 && hasLoaded}>
         <button
           onClick={() => props.setOpenNewDatasetModal(true)}
           class="relative block w-full rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2"
@@ -97,7 +117,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           <span class="mt-2 block font-semibold">Create A New Dataset</span>
         </button>
       </Show>
-      <Show when={datasets().length > 0}>
+      <Show when={maxDatasetsLength() > 0}>
         <div class="mt-8">
           <div class="overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5">
             <table class="min-w-full divide-y divide-neutral-300">
@@ -197,11 +217,13 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                 </For>
               </tbody>
             </table>
-            <PaginationArrows
-              page={page}
-              setPage={setPage}
-              maxPageDiscovered={maxPageDiscovered}
-            />
+            <Show when={maxPageDiscovered() > 1}>
+              <PaginationArrows
+                page={page}
+                setPage={setPage}
+                maxPageDiscovered={maxPageDiscovered}
+              />
+            </Show>
           </div>
         </div>
       </Show>

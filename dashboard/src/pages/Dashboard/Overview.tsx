@@ -1,5 +1,4 @@
 import {
-  Accessor,
   Show,
   createEffect,
   createMemo,
@@ -30,9 +29,9 @@ export const Overview = () => {
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
     createSignal<boolean>(false);
 
-  const selectedOrganization = createMemo(() => {
+  const selectedOrganization = createMemo((): Organization | undefined => {
     const selectedOrgId = userContext.selectedOrganizationId?.();
-    if (!selectedOrgId) return null;
+    if (!selectedOrgId) return undefined;
     return userContext.user?.()?.orgs.find((org) => org.id === selectedOrgId);
   });
 
@@ -154,7 +153,7 @@ export const Overview = () => {
       <div class="h-1" />
       <Show when={selectedOrganization()}>
         <DatasetOverview
-          selectedOrganization={selectedOrganization as Accessor<Organization>}
+          selectedOrganization={selectedOrganization}
           setOpenNewDatasetModal={setNewDatasetModalOpen}
         />
       </Show>
