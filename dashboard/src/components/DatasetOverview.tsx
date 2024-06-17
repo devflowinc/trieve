@@ -13,6 +13,7 @@ import { FiTrash } from "solid-icons/fi";
 import { FaSolidGear } from "solid-icons/fa";
 import { useDatasetPages } from "../hooks/useDatasetPages";
 import { AiFillCaretLeft, AiFillCaretRight } from "solid-icons/ai";
+import { formatDate } from "../formatters";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
@@ -108,6 +109,12 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                   >
                     ID
                   </th>
+                  <th
+                    scope="col"
+                    class="py-3.5 text-left text-sm font-semibold"
+                  >
+                    Created
+                  </th>
                   <th class="sr-only">Delete</th>
                   <th />
                 </tr>
@@ -145,6 +152,11 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                         }}
                       >
                         {datasetAndUsage.dataset.id}
+                      </td>
+                      <td class="whitespace-nowrap py-4 text-sm text-neutral-600">
+                        {formatDate(
+                          new Date(datasetAndUsage.dataset.created_at),
+                        )}
                       </td>
                       <td class="whitespace-nowrap py-4 text-right text-sm font-medium">
                         <button
