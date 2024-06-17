@@ -2,11 +2,18 @@ import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import CreateChunkRequest from "../../../components/CreateChunkRequest.md";
 import HybridSearchReqeust from "../../../components/HybridSearchRequest.md";
 import { BuildingSomething } from "../../../components/BuildingSomething";
-import { createEffect, createMemo, createSignal, useContext } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createMemo,
+  createResource,
+  createSignal,
+  useContext,
+} from "solid-js";
 import { UserContext } from "../../../contexts/UserContext";
 import { useLocation } from "@solidjs/router";
 import { createToast } from "../../../components/ShowToasts";
-import { Dataset } from "../../../types/apiTypes";
+import { Dataset, DatasetUsageCount } from "../../../types/apiTypes";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { FaRegularClipboard } from "solid-icons/fa";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
@@ -31,6 +38,28 @@ export const DatasetStart = () => {
     const dataset = datasetContext.dataset?.();
     if (!dataset) return null;
     return dataset;
+  });
+
+  const [usage] = createResource(curDataset, async (curDataset) => {
+    const response = await fetch(`${api_host}/dataset/${curDataset.id}/usage`, {
+      method: "GET",
+      headers: {
+        "TR-Dataset": curDataset.id,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    if (response.ok) {
+      return response.json() as unknown as DatasetUsageCount;
+    } else {
+      createToast({
+        title: "Error",
+        type: "error",
+        message: "Failed to fetch dataset usage",
+        timeout: 1000,
+      });
+    }
   });
 
   createEffect(() => {
@@ -87,13 +116,15 @@ export const DatasetStart = () => {
                 <p>API Docs</p>
                 <BiRegularLinkExternal class="h-4 w-4" />
               </a>
-              <button
-                class="flex items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
-                onClick={() => setOpenSampleDataModal(true)}
-              >
-                <p>Add Sample Data</p>
-                <BsMagic class="h-4 w-4" />
-              </button>
+              <Show when={usage() && usage()?.chunk_count === 0}>
+                <button
+                  class="flex items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
+                  onClick={() => setOpenSampleDataModal(true)}
+                >
+                  <p>Add Sample Data</p>
+                  <BsMagic class="h-4 w-4" />
+                </button>
+              </Show>
             </div>
             <BuildingSomething />
             <div class="flex flex-col gap-2">
@@ -144,6 +175,10 @@ export const DatasetStart = () => {
                 >
                   <FaRegularClipboard />
                 </button>
+              </div>
+              <div class="flex items-center space-x-3">
+                <p class="block text-sm font-medium">Chunk Count:</p>
+                <p class="w-fit text-sm">{usage()?.chunk_count}</p>
               </div>
             </div>
           </section>
