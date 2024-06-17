@@ -22,9 +22,10 @@ import { FaSolidCheck } from "solid-icons/fa";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FilterModal } from "./FilterModal";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
+import { SearchStore } from "../hooks/useSearch";
 
 const SearchForm = (props: {
-  query?: string;
+  search: SearchStore;
   searchType: string;
   scoreThreshold?: number;
   extendResults?: boolean;
@@ -186,7 +187,7 @@ const SearchForm = (props: {
   };
 
   createEffect(() => {
-    setTextareaInput(props.query ?? "");
+    setTextareaInput(props.search.state.query ?? "");
 
     setSearchTypes((prev) => {
       return prev.map((item) => {
@@ -302,7 +303,7 @@ const SearchForm = (props: {
                 onBlur={() => setTextareaFocused(false)}
                 value={textareaVal()}
                 onInput={(e) => {
-                  setTextareaInput(e.target.value);
+                  props.search.setSearch("query", e.currentTarget.value);
                 }}
                 onKeyDown={(e) => {
                   if (
@@ -319,7 +320,7 @@ const SearchForm = (props: {
               <Show when={textareaInput()}>
                 <button
                   classList={{
-                    "pt-[2px]": !!props.query,
+                    "pt-[2px]": !!props.search.state.query,
                   }}
                   onClick={(e) => {
                     e.preventDefault();
@@ -329,7 +330,7 @@ const SearchForm = (props: {
                   <BiRegularX class="h-7 w-7 fill-current" />
                 </button>
               </Show>
-              <Show when={props.query}>
+              <Show when={props.search.state.query}>
                 <button
                   classList={{
                     "border-l border-neutral-600 pl-[10px] dark:border-neutral-200":

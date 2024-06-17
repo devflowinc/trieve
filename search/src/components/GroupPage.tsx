@@ -36,6 +36,7 @@ import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
+import { useSearch } from "../hooks/useSearch";
 
 export interface GroupPageProps {
   groupID: string;
@@ -44,6 +45,7 @@ export interface GroupPageProps {
 export const GroupPage = (props: GroupPageProps) => {
   const apiHost: string = import.meta.env.VITE_API_HOST as string;
   const datasetAndUserContext = useContext(DatasetAndUserContext);
+  const search = useSearch();
 
   const $dataset = datasetAndUserContext.currentDataset;
   const location = useLocation();
@@ -570,7 +572,7 @@ export const GroupPage = (props: GroupPageProps) => {
               >
                 <Show when={!query()}>
                   <SearchForm
-                    query={query()}
+                    search={search}
                     searchType={searchType()}
                     scoreThreshold={scoreThreshold()}
                     pageSize={pageSize()}

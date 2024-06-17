@@ -4,9 +4,11 @@ import ResultsPage from "../components/ResultsPage";
 import SearchForm from "../components/SearchForm";
 import { useLocation } from "@solidjs/router";
 import { Show, createEffect, createSignal } from "solid-js";
+import { useSearch } from "../hooks/useSearch";
 
 export const Search = () => {
   const location = useLocation();
+  const search = useSearch();
 
   const [loading, setLoading] = createSignal<boolean>(false);
   const [query, setQuery] = createSignal<string>("");
@@ -61,7 +63,7 @@ export const Search = () => {
           <div class="mx-auto w-full max-w-7xl">
             <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] px-4 min-[360px]:max-w-[calc(100%-64px)] sm:px-8 md:px-20">
               <SearchForm
-                query={query()}
+                search={search}
                 searchType={searchType()}
                 scoreThreshold={scoreThreshold()}
                 extendResults={extendResults()}
@@ -78,6 +80,9 @@ export const Search = () => {
               />
               {/* <SuggestedQueries query={query()} /> */}
             </div>
+          </div>
+          <div class="py-8 outline outline-red-500">
+            {JSON.stringify(search.state)}
           </div>
           <ResultsPage
             page={page()}
