@@ -363,6 +363,7 @@ const SearchForm = (props: {
                   </PopoverButton>
                   <Show when={isOpen()}>
                     <PopoverPanel
+                      tabIndex={0}
                       unmount={false}
                       class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-700"
                     >
