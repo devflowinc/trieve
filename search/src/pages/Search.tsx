@@ -14,9 +14,6 @@ export const Search = () => {
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
-  const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
-  const [groupUnique, setGroupUnique] = createSignal<boolean>(false);
-  const [slimChunks, setSlimChunks] = createSignal<boolean>(false);
   const [pageSize, setPageSize] = createSignal<number>(10);
   const [getTotalPages, setGetTotalPages] = createSignal<boolean>(false);
   const [highlightResults, setHighlightResults] = createSignal<boolean>(true);
@@ -36,9 +33,6 @@ export const Search = () => {
     setQuery(location.query.q ?? "");
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
-    setRecencyBias(Number(location.query.recencyBias) || 0.0);
-    setGroupUnique(location.query.groupUnique === "true" || false);
-    setSlimChunks(location.query.slimChunks === "true" || false);
     setPageSize(Number(location.query.pageSize) || 10);
     setGetTotalPages(location.query.getTotalPages === "false" ? false : true);
     setHighlightResults(
@@ -61,9 +55,6 @@ export const Search = () => {
               <SearchForm
                 search={search}
                 searchType={searchType()}
-                groupUniqueSearch={groupUnique()}
-                slimChunks={slimChunks()}
-                recencyBias={recencyBias()}
                 pageSize={pageSize()}
                 getTotalPages={getTotalPages()}
                 highlightResults={highlightResults()}
@@ -83,10 +74,10 @@ export const Search = () => {
             query={search.state.query}
             scoreThreshold={search.state.scoreThreshold}
             searchType={search.state.searchType}
-            recencyBias={recencyBias()}
+            recencyBias={search.state.recencyBias}
             extendResults={search.state.extendResults}
-            groupUnique={groupUnique()}
-            slimChunks={slimChunks()}
+            groupUnique={search.state.groupUniqueSearch}
+            slimChunks={search.state.slimChunks}
             pageSize={pageSize()}
             getTotalPages={getTotalPages()}
             highlightResults={highlightResults()}
