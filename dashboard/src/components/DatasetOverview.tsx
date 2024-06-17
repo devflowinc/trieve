@@ -70,7 +70,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           <div class="flex gap-2">
             <input
               value={datasetSearchQuery()}
-              onClick={(e) => {
+              onInput={(e) => {
                 setPage(0);
                 setDatasetSearchQuery(e.currentTarget.value);
               }}

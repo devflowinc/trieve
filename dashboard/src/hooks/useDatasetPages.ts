@@ -1,5 +1,6 @@
 import { Accessor, createEffect, createMemo, createSignal } from "solid-js";
 import { DatasetAndUsage, Organization } from "../types/apiTypes";
+import createFuzzySearch from "@nozbe/microfuzz";
 
 const FETCHING_SIZE = 100;
 const PAGE_SIZE = 20;
@@ -70,7 +71,18 @@ export const useDatasetPages = (props: {
   };
 
   const currDatasets = createMemo(() => {
-    const sliced = realDatasets().slice(
+    let startingSet = realDatasets();
+
+    if (props.searchQuery() && props.searchQuery() !== "") {
+      const fuzzy = createFuzzySearch(startingSet, {
+        getText(datasetAndUsage: DatasetAndUsage) {
+          return [datasetAndUsage.dataset.name, datasetAndUsage.dataset.id];
+        },
+      });
+      startingSet = fuzzy(props.searchQuery()).map((result) => result.item);
+    }
+
+    const sliced = startingSet.slice(
       props.page() * PAGE_SIZE,
       (props.page() + 1) * PAGE_SIZE,
     );
