@@ -13,10 +13,8 @@ export const Search = () => {
   const [loading, setLoading] = createSignal<boolean>(false);
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
-  const [scoreThreshold, setScoreThreshold] = createSignal<number>(0.0);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
   const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
-  const [extendResults, setExtendResults] = createSignal<boolean>(false);
   const [groupUnique, setGroupUnique] = createSignal<boolean>(false);
   const [slimChunks, setSlimChunks] = createSignal<boolean>(false);
   const [pageSize, setPageSize] = createSignal<number>(10);
@@ -36,9 +34,7 @@ export const Search = () => {
     // setLoading(true);
 
     setQuery(location.query.q ?? "");
-    setExtendResults(location.query.extendResults === "true" || false);
     setPage(Number(location.query.page) || 1);
-    setScoreThreshold(Number(location.query.scoreThreshold) || 0.0);
     setSearchType(location.query.searchType ?? "hybrid");
     setRecencyBias(Number(location.query.recencyBias) || 0.0);
     setGroupUnique(location.query.groupUnique === "true" || false);
@@ -65,8 +61,6 @@ export const Search = () => {
               <SearchForm
                 search={search}
                 searchType={searchType()}
-                scoreThreshold={scoreThreshold()}
-                extendResults={extendResults()}
                 groupUniqueSearch={groupUnique()}
                 slimChunks={slimChunks()}
                 recencyBias={recencyBias()}
@@ -87,10 +81,10 @@ export const Search = () => {
           <ResultsPage
             page={page()}
             query={search.state.query}
-            scoreThreshold={scoreThreshold()}
-            searchType={searchType()}
+            scoreThreshold={search.state.scoreThreshold}
+            searchType={search.state.searchType}
             recencyBias={recencyBias()}
-            extendResults={extendResults()}
+            extendResults={search.state.extendResults}
             groupUnique={groupUnique()}
             slimChunks={slimChunks()}
             pageSize={pageSize()}

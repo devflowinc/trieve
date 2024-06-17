@@ -1,5 +1,4 @@
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
-import { useNavigate } from "@solidjs/router";
 import {
   For,
   Match,
@@ -27,8 +26,6 @@ import { SearchStore } from "../hooks/useSearch";
 const SearchForm = (props: {
   search: SearchStore;
   searchType: string;
-  scoreThreshold?: number;
-  extendResults?: boolean;
   groupUniqueSearch?: boolean;
   slimChunks?: boolean;
   pageSize?: number;
@@ -45,7 +42,6 @@ const SearchForm = (props: {
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const $envs = datasetAndUserContext.clientConfig;
-  const navigate = useNavigate();
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "FullText", isSelected: false, route: "fulltext" },
@@ -62,10 +58,14 @@ const SearchForm = (props: {
       route: "autocomplete-fulltext",
     },
   ]);
-  const [scoreThreshold, setScoreThreshold] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.scoreThreshold ?? 0.0,
-  );
+
+  createEffect(() => {
+    props.search.setSearch(
+      "searchType",
+      searchTypes().find((type) => type.isSelected)?.route ?? "hybrid",
+    );
+  });
+
   const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
   const [textareaFocused, setTextareaFocused] = createSignal(false);
@@ -107,83 +107,11 @@ const SearchForm = (props: {
     // eslint-disable-next-line solid/reactivity
     props.recencyBias ?? 0.0,
   );
-  const [extendResults, setExtendResults] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.extendResults ?? false,
-  );
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
 
     textarea.style.height = `${textarea.scrollHeight}px`;
-  };
-
-  const onSubmit = (e: Event) => {
-    e.preventDefault();
-    const textAreaValue = textareaInput();
-    if (!textAreaValue) return;
-
-    const searchQuery = encodeURIComponent(
-      textAreaValue.length > 3800
-        ? textAreaValue.slice(0, 3800)
-        : textAreaValue,
-    );
-
-    const searchTypeRoute =
-      searchTypes().find((type) => type.isSelected)?.route ?? "hybrid";
-    const searchTypeUrlParam = searchTypeRoute
-      ? `&searchType=${searchTypeRoute}`
-      : "";
-    let extendResultsUrlParam = "";
-
-    if (searchTypeRoute.includes("autocomplete")) {
-      extendResultsUrlParam = extendResults() ? "&extendResults=true" : "";
-    }
-    const scoreThresholdUrlParam = scoreThreshold()
-      ? `&scoreThreshold=${scoreThreshold()}`
-      : "";
-    const groupUniqueUrlParam = groupUniqueSearch() ? "&groupUnique=true" : "";
-    const slimChunksUrlParam = slimChunks() ? "&slimChunks=true" : "";
-    const recencyBiasUrlParam = recencyBias()
-      ? `&recencyBias=${recencyBias()}`
-      : "";
-    const pageSizeUrlParam = pageSize() ? `&pageSize=${pageSize()}` : "";
-    const getTotalPagesUrlParam =
-      getTotalPages() == false ? "&getTotalPages=false" : "";
-    const highlightResultsUrlParam =
-      highlightResults() == false ? "&highlightResults=false" : "";
-    const highlightDelimitersUrlParam = highlightDelimiters().length
-      ? `&highlightDelimiters=${highlightDelimiters().join(",")}`
-      : "";
-    const highlightMaxLengthUrlParam = highlightMaxLength()
-      ? `&highlightMaxLength=${highlightMaxLength()}`
-      : "";
-    const highlightMaxNumUrlParam = highlightMaxNum()
-      ? `&highlightMaxNum=${highlightMaxNum()}`
-      : "";
-    const highlightWindowUrlParam = highlightWindow()
-      ? `&highlightWindow=${highlightWindow()}`
-      : "";
-
-    const sharedUrlParams =
-      searchTypeUrlParam +
-      scoreThresholdUrlParam +
-      extendResultsUrlParam +
-      slimChunksUrlParam +
-      recencyBiasUrlParam +
-      pageSizeUrlParam +
-      getTotalPagesUrlParam +
-      highlightDelimitersUrlParam +
-      highlightResultsUrlParam +
-      highlightMaxLengthUrlParam +
-      highlightMaxNumUrlParam +
-      highlightWindowUrlParam;
-
-    const urlToNavigateTo = props.groupID
-      ? `/group/${props.groupID}?q=${searchQuery}` + sharedUrlParams
-      : `/search?q=${searchQuery}` + groupUniqueUrlParam + sharedUrlParams;
-
-    navigate(urlToNavigateTo);
   };
 
   createEffect(() => {
@@ -283,7 +211,7 @@ const SearchForm = (props: {
   return (
     <>
       <div class="w-full">
-        <form class="w-full space-y-4 dark:text-white" onSubmit={onSubmit}>
+        <form class="w-full space-y-4 dark:text-white">
           <div class="relative flex">
             <div
               classList={{
@@ -311,8 +239,6 @@ const SearchForm = (props: {
                     (!e.shiftKey && e.key === "Enter")
                   ) {
                     window.dispatchEvent(new Event("triggerSearch"));
-
-                    onSubmit(e);
                   }
                 }}
                 rows="1"
@@ -424,7 +350,6 @@ const SearchForm = (props: {
                                 });
                               });
                               setState(true);
-                              onSubmit(e);
                             };
                             return (
                               <MenuItem
@@ -485,7 +410,8 @@ const SearchForm = (props: {
                             class="rounded-md border border-neutral-400 bg-neutral-100 px-2 py-1 dark:border-neutral-900 dark:bg-neutral-800"
                             onClick={(e) => {
                               e.preventDefault();
-                              setScoreThreshold(0.0);
+                              props.search.setSearch("scoreThreshold", 0.0);
+                              props.search.setSearch("extendResults", false);
                               setSlimChunks(false);
                               setPageSize(10);
                               setGetTotalPages(true);
@@ -494,10 +420,8 @@ const SearchForm = (props: {
                               setHighlightMaxLength(8);
                               setHighlightMaxNum(3);
                               setHighlightWindow(0);
-                              setExtendResults(false);
                               setRecencyBias(0.0);
                               setState(false);
-                              onSubmit(e);
                             }}
                           >
                             Reset
@@ -511,14 +435,12 @@ const SearchForm = (props: {
                             min="0.0"
                             max="1.0"
                             step="0.00001"
-                            value={props.scoreThreshold}
+                            value={props.search.state.scoreThreshold}
                             onInput={(e) => {
-                              setScoreThreshold(
+                              props.search.setSearch(
+                                "scoreThreshold",
                                 parseFloat(e.currentTarget.value),
                               );
-                            }}
-                            onBlur={(e) => {
-                              onSubmit(e);
                             }}
                           />
                         </div>
@@ -535,15 +457,12 @@ const SearchForm = (props: {
                             <input
                               class="h-4 w-4"
                               type="checkbox"
-                              checked={props.extendResults}
+                              checked={props.search.state.extendResults}
                               onChange={(e) => {
-                                if (e.target.checked) {
-                                  setExtendResults(true);
-                                } else {
-                                  setExtendResults(false);
-                                }
-
-                                onSubmit(e);
+                                props.search.setSearch(
+                                  "extendResults",
+                                  e.target.checked,
+                                );
                               }}
                             />
                           </div>
@@ -560,8 +479,6 @@ const SearchForm = (props: {
                               } else {
                                 setSlimChunks(false);
                               }
-
-                              onSubmit(e);
                             }}
                           />
                         </div>
@@ -577,9 +494,6 @@ const SearchForm = (props: {
                             onInput={(e) => {
                               setRecencyBias(parseFloat(e.currentTarget.value));
                             }}
-                            onBlur={(e) => {
-                              onSubmit(e);
-                            }}
                           />
                         </div>
                         <div class="flex items-center justify-between space-x-2 p-1">
@@ -590,9 +504,6 @@ const SearchForm = (props: {
                             value={props.pageSize}
                             onInput={(e) => {
                               setPageSize(parseInt(e.currentTarget.value));
-                            }}
-                            onBlur={(e) => {
-                              onSubmit(e);
                             }}
                           />
                         </div>
@@ -608,8 +519,6 @@ const SearchForm = (props: {
                               } else {
                                 setGetTotalPages(false);
                               }
-
-                              onSubmit(e);
                             }}
                           />
                         </div>
@@ -625,8 +534,6 @@ const SearchForm = (props: {
                               } else {
                                 setHighlightResults(false);
                               }
-
-                              onSubmit(e);
                             }}
                           />
                         </div>
@@ -645,9 +552,6 @@ const SearchForm = (props: {
                                 e.currentTarget.value.split(","),
                               );
                             }}
-                            onBlur={(e) => {
-                              onSubmit(e);
-                            }}
                           />
                         </div>
                         <div class="items flex justify-between space-x-2 p-1">
@@ -660,9 +564,6 @@ const SearchForm = (props: {
                               setHighlightMaxLength(
                                 parseInt(e.currentTarget.value),
                               );
-                            }}
-                            onBlur={(e) => {
-                              onSubmit(e);
                             }}
                           />
                         </div>
@@ -677,9 +578,6 @@ const SearchForm = (props: {
                                 parseInt(e.currentTarget.value),
                               );
                             }}
-                            onBlur={(e) => {
-                              onSubmit(e);
-                            }}
                           />
                         </div>
                         <div class="items flex justify-between space-x-2 p-1">
@@ -692,9 +590,6 @@ const SearchForm = (props: {
                               setHighlightWindow(
                                 parseInt(e.currentTarget.value),
                               );
-                            }}
-                            onBlur={(e) => {
-                              onSubmit(e);
                             }}
                           />
                         </div>
@@ -718,8 +613,6 @@ const SearchForm = (props: {
                     } else {
                       setGroupUniqueSearch(false);
                     }
-
-                    onSubmit(e);
                   }}
                 />
               </div>
