@@ -166,7 +166,23 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </span>
             </div>
           </Show>
-          <Show when={props.chunk.location}>
+          <Show when={props.chunk.num_value}>
+            <div class="flex gap-x-2">
+              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                Num Value:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">
+                {props.chunk.num_value}
+              </span>
+            </div>
+          </Show>
+          <Show
+            when={
+              props.chunk.location &&
+              props.chunk.location.lat &&
+              props.chunk.location.lon
+            }
+          >
             <div class="flex space-x-2">
               <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                 Location:{" "}

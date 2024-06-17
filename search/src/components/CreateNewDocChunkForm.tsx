@@ -16,18 +16,25 @@ export const CreateNewDocChunkForm = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $dataset = datasetAndUserContext.currentDataset;
-  const [docChunkLink, setDocChunkLink] = createSignal("");
-  const [tagSet, setTagSet] = createSignal("");
-  const [weight, setWeight] = createSignal(1);
-  const [locationLat, setLocationLat] = createSignal(0);
-  const [locationLon, setLocationLon] = createSignal(0);
+  const [docChunkLink, setDocChunkLink] = createSignal<string | undefined>(
+    undefined,
+  );
+  const [tagSet, setTagSet] = createSignal<string | undefined>(undefined);
+  const [weight, setWeight] = createSignal<number | undefined>(undefined);
+  const [locationLat, setLocationLat] = createSignal<number | undefined>(
+    undefined,
+  );
+  const [locationLon, setLocationLon] = createSignal<number | undefined>(
+    undefined,
+  );
+  const [numValue, setNumValue] = createSignal<number | undefined>(undefined);
   const [errorText, setErrorText] = createSignal<
     string | number | boolean | Node | JSX.ArrayElement | null | undefined
   >("");
   const [errorFields, setErrorFields] = createSignal<string[]>([]);
   const [isSubmitting, setIsSubmitting] = createSignal(false);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
-  const [timestamp, setTimestamp] = createSignal("");
+  const [timestamp, setTimestamp] = createSignal<string | undefined>(undefined);
 
   const [editorHtmlContent, setEditorHtmlContent] = createSignal("");
   const [editorTextContent, setEditorTextContent] = createSignal("");
@@ -39,8 +46,6 @@ export const CreateNewDocChunkForm = () => {
 
     const chunkHTMLContentValue = editorHtmlContent();
     const chunkTextContentValue = editorTextContent();
-
-    const docChunkLinkValue = docChunkLink();
 
     if (chunkTextContentValue == "") {
       const errors: string[] = [];
@@ -57,14 +62,22 @@ export const CreateNewDocChunkForm = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
       chunk_html: chunkHTMLContentValue,
-      link: docChunkLinkValue,
-      tag_set: tagSet().split(","),
+      link: docChunkLink(),
+      tag_set: tagSet()?.split(","),
       weight: weight(),
-      location: {
+      num_value: numValue(),
+    };
+
+    if (locationLat() && locationLon()) {
+      requestBody.location = {
         lat: locationLat(),
         lon: locationLon(),
-      },
-    };
+      };
+    }
+
+    if (numValue()) {
+      requestBody.num_value = numValue();
+    }
 
     if (timestamp()) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -114,7 +127,8 @@ export const CreateNewDocChunkForm = () => {
           <div>Link to document chunk</div>
           <input
             type="url"
-            value={docChunkLink()}
+            placeholder="optional - link to the document chunk for convenience"
+            value={docChunkLink() ?? ""}
             onInput={(e) => setDocChunkLink(e.target.value)}
             classList={{
               "w-full bg-neutral-100 border border-gray-300 rounded-md px-4 py-1 dark:bg-neutral-700":
@@ -125,8 +139,8 @@ export const CreateNewDocChunkForm = () => {
           <div>Tag Set</div>
           <input
             type="text"
-            placeholder="optional - separate with commas"
-            value={tagSet()}
+            placeholder="optional - comma separated tags for optimized filtering"
+            value={tagSet() ?? ""}
             onInput={(e) => setTagSet(e.target.value)}
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
           />
@@ -134,18 +148,50 @@ export const CreateNewDocChunkForm = () => {
           <input
             type="date"
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            placeholder="optional - date of the document chunk for filtering"
+            value={timestamp() ?? ""}
             onInput={(e) => {
               setTimestamp(e.currentTarget.value);
             }}
           />
-          <div>Location Latitude and Longitude</div>
+          <div class="flex items-center gap-x-2">
+            <div>Number Value</div>
+            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+              <Tooltip
+                body={
+                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                }
+                tooltipText="Optional. If you have a number value for this chunk, enter it here. This may be price, quantity, or any other numerical value."
+              />
+            </div>
+          </div>
+          <input
+            type="number"
+            value={numValue()}
+            placeholder="optional - price, quantity, or some other numeric for filtering"
+            onInput={(e) => setNumValue(Number(e.currentTarget.value))}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+          <div class="flex items-center gap-x-2">
+            <div>Location (Lat, Lon)</div>
+            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+              <Tooltip
+                body={
+                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                }
+                tooltipText="Optional. This is a coordinate value."
+              />
+            </div>
+          </div>
           <div class="flex space-x-2">
             <input
               type="number"
               step="0.00000001"
               placeholder="Latitude"
               value={locationLat()}
-              onInput={(e) => setLocationLat(Number(e.currentTarget.value))}
+              onInput={(e) =>
+                setLocationLat(() => Number(e.currentTarget.value))
+              }
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
             <input
@@ -157,10 +203,21 @@ export const CreateNewDocChunkForm = () => {
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
           </div>
-          <div>Weight for Merchandise Tuning</div>
+          <div class="flex items-center gap-x-2">
+            <div>Weight</div>
+            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+              <Tooltip
+                body={
+                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                }
+                tooltipText="Optional. Weight is applied as a linear factor to score on search results. If you have something likeclickthrough data, you can use it to incrementally increase the boost of a chunk."
+              />
+            </div>
+          </div>
           <input
             type="number"
             step="0.000001"
+            placeholder="optional - weight is applied as linear boost to score for search"
             value={weight()}
             onInput={(e) => setWeight(Number(e.currentTarget.value))}
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
@@ -202,7 +259,7 @@ export const CreateNewDocChunkForm = () => {
           setIsOpen={setShowNeedLoginModal}
         >
           <div class="min-w-[250px] sm:min-w-[300px]">
-            <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
+            <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
             <div class="mb-4 text-center text-xl font-bold">
               Cannot add document chunk without an account
             </div>
