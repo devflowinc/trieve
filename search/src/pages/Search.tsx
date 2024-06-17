@@ -15,7 +15,6 @@ export const Search = () => {
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
   const [getTotalPages, setGetTotalPages] = createSignal<boolean>(false);
-  const [highlightResults, setHighlightResults] = createSignal<boolean>(true);
   const [highlightDelimiters, setHighlightDelimiters] = createSignal<string[]>([
     "?",
     ",",
@@ -33,9 +32,6 @@ export const Search = () => {
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
     setGetTotalPages(location.query.getTotalPages === "false" ? false : true);
-    setHighlightResults(
-      location.query.highlightResults === "false" ? false : true,
-    );
     setHighlightDelimiters(
       location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
     );
@@ -54,7 +50,6 @@ export const Search = () => {
                 search={search}
                 searchType={searchType()}
                 getTotalPages={getTotalPages()}
-                highlightResults={highlightResults()}
                 highlightDelimiters={highlightDelimiters()}
                 highlightMaxLength={highlightMaxLength()}
                 highlightMaxNum={highlightMaxNum()}
@@ -77,7 +72,7 @@ export const Search = () => {
             slimChunks={search.state.slimChunks}
             pageSize={search.state.pageSize}
             getTotalPages={getTotalPages()}
-            highlightResults={highlightResults()}
+            highlightResults={search.state.highlightResults}
             highlightDelimiters={highlightDelimiters()}
             highlightMaxLength={highlightMaxLength()}
             highlightMaxNum={highlightMaxNum()}
