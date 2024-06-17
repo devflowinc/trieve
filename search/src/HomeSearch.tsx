@@ -4,9 +4,11 @@ import { DatasetAndUserContext } from "./components/Contexts/DatasetAndUserConte
 import SearchForm from "./components/SearchForm";
 import { DefaultQueries } from "./components/DefaultQueries";
 import { Footer } from "./components/Footer";
+import { useSearch } from "./hooks/useSearch";
 
 export const HomeSearch = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
+  const search = useSearch();
 
   const $dataset = datasetAndUserContext.currentDataset;
   const $env = datasetAndUserContext.clientConfig;
@@ -60,6 +62,7 @@ export const HomeSearch = () => {
         </div>
         <div class="mt-8 w-full max-w-7xl px-4 sm:px-8 md:px-20">
           <SearchForm
+            search={search}
             searchType={searchType}
             scoreThreshold={scoreThreshold}
             recencyBias={recencyBias}
