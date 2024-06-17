@@ -475,6 +475,7 @@ const SearchForm = (props: {
                   <Show when={isOpen()}>
                     <PopoverPanel
                       unmount={false}
+                      tabIndex={0}
                       class="absolute z-10 mt-2 h-fit w-[480px] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-700"
                     >
                       <div class="items flex flex-col space-y-1">
