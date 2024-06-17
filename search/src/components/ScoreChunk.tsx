@@ -528,10 +528,29 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </Show>
               <Show
                 when={
+                  props.chunk.num_value &&
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "num_value")
+                }
+              >
+                <div class="flex gap-x-2">
+                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                    Num Value:{" "}
+                  </span>
+                  <span class="line-clamp-1 break-all">
+                    {props.chunk.num_value}
+                  </span>
+                </div>
+              </Show>
+              <Show
+                when={
                   props.chunk.location &&
                   !$envs()
                     .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "location")
+                    ?.find((val) => val == "location") &&
+                  props.chunk.location.lat &&
+                  props.chunk.location.lon
                 }
               >
                 <div class="flex space-x-2">

@@ -26,28 +26,28 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const [formErrorText, setFormErrorText] = createSignal<
     string | number | boolean | Node | JSX.ArrayElement | null | undefined
   >("");
-  const [formErrorFields, setFormErrorFields] = createSignal<string[]>([]);
   const [isUpdating, setIsUpdating] = createSignal(false);
-  const [link, setLink] = createSignal<string>(
-    initialChunkMetadata?.link ?? "",
+  const [link, setLink] = createSignal<string | undefined | null>(
+    initialChunkMetadata?.link,
   );
-  const [tagSet, setTagSet] = createSignal<string>(
-    initialChunkMetadata?.tag_set ?? "",
+  const [tagSet, setTagSet] = createSignal<string | undefined | null>(
+    initialChunkMetadata?.tag_set,
   );
-  const [weight, setWeight] = createSignal(initialChunkMetadata?.weight ?? 1);
+  const [weight, setWeight] = createSignal(initialChunkMetadata?.weight);
   const [metadata, setMetadata] = createSignal(initialChunkMetadata?.metadata);
   const [trackingId, setTrackingId] = createSignal(
-    initialChunkMetadata?.tracking_id ?? "",
+    initialChunkMetadata?.tracking_id,
   );
   const [locationLat, setLocationLat] = createSignal(
-    props.defaultResultChunk.metadata?.location?.lat ?? 0,
+    initialChunkMetadata?.location?.lat,
   );
   const [locationLon, setLocationLon] = createSignal(
-    props.defaultResultChunk.metadata?.location?.lon ?? 0,
+    initialChunkMetadata?.location?.lon,
   );
   const [timestamp, setTimestamp] = createSignal(
-    props.defaultResultChunk.metadata?.time_stamp ?? null,
+    initialChunkMetadata?.time_stamp,
   );
+  const [numValue, setNumValue] = createSignal(initialChunkMetadata?.num_value);
   const [fetching, setFetching] = createSignal(true);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [groupIds, setGroupIds] = createSignal<string[]>();
@@ -102,7 +102,6 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       const errorMessage = "Chunk content cannot be empty";
       errors.push("chunkContent");
       setFormErrorText(errorMessage);
-      setFormErrorFields(errors);
       (window as any).tinymce.activeEditor.focus();
       return;
     }
@@ -114,8 +113,27 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       body_timestamp = timestamp() + " 00:00:00";
     }
 
-    setFormErrorFields([]);
     setIsUpdating(true);
+
+    const requestBody: any = {
+      chunk_id: curChunkId,
+      link: link(),
+      tag_set: tagSet()?.split(","),
+      tracking_id: trackingId(),
+      metadata: metadata(),
+      chunk_html: chunkHTMLContentValue,
+      weight: weight() ?? 1,
+      group_ids: groupIds(),
+      time_stamp: body_timestamp,
+      num_value: numValue(),
+    };
+
+    if (locationLat() && locationLon()) {
+      requestBody.location = {
+        lat: locationLat(),
+        lon: locationLon(),
+      };
+    }
 
     void fetch(`${apiHost}/chunk`, {
       method: "PUT",
@@ -124,21 +142,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
         "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
-      body: JSON.stringify({
-        chunk_id: curChunkId,
-        link: link(),
-        tag_set: tagSet().split(","),
-        tracking_id: trackingId(),
-        metadata: metadata(),
-        chunk_html: chunkHTMLContentValue,
-        weight: weight() ?? 1,
-        group_ids: groupIds(),
-        location: {
-          lat: locationLat(),
-          lon: locationLon(),
-        },
-        time_stamp: body_timestamp,
-      }),
+      body: JSON.stringify(requestBody),
     }).then((response) => {
       if (response.ok) {
         window.location.href = `/chunk/${curChunkId ?? ""}`;
@@ -196,7 +200,10 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
           setTrackingId(data.tracking_id ?? "");
           setTimestamp(data.time_stamp?.split("T")[0] ?? null);
           setEditorHtmlContent(data.chunk_html ?? "");
-          setWeight(data.weight ?? 0);
+          setWeight(data.weight != 0 ? data.weight : undefined);
+          setNumValue(data.num_value);
+          setLocationLat(data.location?.lat);
+          setLocationLon(data.location?.lon);
           setTopLevelError("");
           setFetching(false);
         });
@@ -232,39 +239,59 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                 <div>Link</div>
                 <input
                   type="text"
-                  placeholder="(Optional) https://example.com"
-                  value={link()}
+                  placeholder="optional - link to the document chunk for convenience"
+                  value={link() ?? ""}
                   onInput={(e) => setLink(e.target.value)}
-                  classList={{
-                    "w-full bg-neutral-100 rounded-md px-4 py-1 dark:bg-neutral-700":
-                      true,
-                    "border border-red-500":
-                      formErrorFields().includes("evidenceLink"),
-                  }}
+                  class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
                 />
                 <div>Tag Set</div>
                 <input
                   type="text"
-                  placeholder="(Optional) tag1,tag2,tag3"
-                  value={tagSet()}
+                  placeholder="optional - comma separated tags for optimized filtering"
+                  value={tagSet() ?? ""}
                   onInput={(e) => setTagSet(e.target.value)}
-                  classList={{
-                    "w-full bg-neutral-100 rounded-md px-4 py-1 dark:bg-neutral-700":
-                      true,
-                    "border border-red-500":
-                      formErrorFields().includes("tagset"),
-                  }}
+                  class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
                 />
                 <div>Date</div>
                 <input
                   type="date"
                   class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+                  placeholder="optional - date of the document chunk for filtering"
+                  value={timestamp() ?? ""}
                   onInput={(e) => {
                     setTimestamp(e.currentTarget.value);
                   }}
-                  value={timestamp() ?? ""}
                 />
-                <div>Location Latitude and Longitude</div>
+                <div class="flex items-center gap-x-2">
+                  <div>Number Value</div>
+                  <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                    <Tooltip
+                      body={
+                        <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                      }
+                      tooltipText="Optional. If you have a number value for this chunk, enter it here. This may be price, quantity, or any other numerical value."
+                    />
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  step="0.000001"
+                  placeholder="optional - price, quantity, or some other numeric for filtering"
+                  value={numValue() ?? ""}
+                  onInput={(e) => setNumValue(Number(e.currentTarget.value))}
+                  class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+                />
+                <div class="flex items-center gap-x-2">
+                  <div>Location (Lat, Lon)</div>
+                  <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                    <Tooltip
+                      body={
+                        <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                      }
+                      tooltipText="Optional. This is a coordinate value."
+                    />
+                  </div>
+                </div>
                 <div class="flex space-x-2">
                   <input
                     type="number"
@@ -287,10 +314,21 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                     class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
                   />
                 </div>
-                <div>Weight for Merchandise Tuning</div>
+                <div class="flex items-center gap-x-2">
+                  <div>Weight</div>
+                  <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                    <Tooltip
+                      body={
+                        <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                      }
+                      tooltipText="Optional. Weight is applied as a linear factor to score on search results. If you have something likeclickthrough data, you can use it to incrementally increase the boost of a chunk."
+                    />
+                  </div>
+                </div>
                 <input
                   type="number"
                   step="0.000001"
+                  placeholder="optional - weight is applied as linear boost to score for search"
                   value={weight()}
                   onInput={(e) => setWeight(Number(e.currentTarget.value))}
                   class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
