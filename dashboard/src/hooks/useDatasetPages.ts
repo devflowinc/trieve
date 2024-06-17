@@ -1,14 +1,26 @@
-import { Accessor, createEffect, createMemo } from "solid-js";
+import { Accessor, createEffect, createMemo, createSignal } from "solid-js";
 import { DatasetAndUsage, Organization } from "../types/apiTypes";
 import { createStore } from "solid-js/store";
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 10;
 
 export const useDatasetPages = (props: {
   org: Accessor<Organization>;
   page: Accessor<number>;
+  setPage: (page: number) => void;
 }) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const [hasLoaded, setHasLoaded] = createSignal(false);
+
+  // Prevent rapid clicking while the preloading is happening
+  createEffect(() => {
+    if (
+      pagedDatasets.maxPageDiscovered &&
+      props.page() > pagedDatasets.maxPageDiscovered
+    ) {
+      props.setPage(pagedDatasets.maxPageDiscovered);
+    }
+  });
 
   const [pagedDatasets, setPagedDatasets] = createStore({
     datasets: {} as Record<number, DatasetAndUsage[]>,
@@ -19,6 +31,7 @@ export const useDatasetPages = (props: {
     props.org();
     setPagedDatasets("datasets", {});
     setPagedDatasets("maxPageDiscovered", null);
+    setHasLoaded(false);
   });
 
   createEffect(() => {
@@ -44,6 +57,11 @@ export const useDatasetPages = (props: {
         setPagedDatasets("datasets", page, () => {
           return data as DatasetAndUsage[];
         });
+        setHasLoaded(true);
+      })
+      .catch((e) => {
+        console.error(e);
+        setHasLoaded(true);
       });
 
     // Prefetch the next page
@@ -115,5 +133,6 @@ export const useDatasetPages = (props: {
     datasets: currDatasets,
     maxPageDiscovered: maxPageDiscovered,
     removeDataset,
+    hasLoaded,
   };
 };
