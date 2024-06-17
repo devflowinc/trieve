@@ -12,6 +12,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::prelude::*;
+use diesel::result::{DatabaseErrorKind, Error as DBError};
 use diesel_async::RunQueryDsl;
 use qdrant_client::qdrant::{Condition, Filter};
 use serde::{Deserialize, Serialize};
@@ -301,6 +302,7 @@ pub async fn update_dataset_query(
     name: String,
     server_configuration: serde_json::Value,
     client_configuration: serde_json::Value,
+    new_tracking_id: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -316,6 +318,7 @@ pub async fn update_dataset_query(
             .filter(datasets_columns::deleted.eq(0)),
     )
     .set((
+        new_tracking_id.map(|id| datasets_columns::tracking_id.eq(id)),
         datasets_columns::name.eq(name),
         datasets_columns::updated_at.eq(diesel::dsl::now),
         datasets_columns::server_configuration.eq(server_configuration),
@@ -323,7 +326,19 @@ pub async fn update_dataset_query(
     ))
     .get_result(&mut conn)
     .await
-    .map_err(|_| ServiceError::BadRequest("Failed to update dataset".to_string()))?;
+    .map_err(|e: DBError| {
+        match e {
+        DBError::DatabaseError(db_error, _) => match db_error {
+            DatabaseErrorKind::UniqueViolation => {
+                ServiceError::BadRequest("Could not update tracking_id because a dataset with the same tracking_id already exists in the organization".to_string())
+            }
+            _ => ServiceError::BadRequest("Failed to update dataset".to_string())
+        }
+        _ => {
+            ServiceError::BadRequest("Failed to update dataset".to_string())
+        }
+    }
+    })?;
 
     Ok(new_dataset)
 }

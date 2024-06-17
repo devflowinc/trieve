@@ -13,11 +13,17 @@ import {
 import { UserContext } from "../../../contexts/UserContext";
 import { useLocation } from "@solidjs/router";
 import { createToast } from "../../../components/ShowToasts";
-import { Dataset, DatasetUsageCount } from "../../../types/apiTypes";
+import {
+  Dataset,
+  DatasetUsageCount,
+  DefaultError,
+} from "../../../types/apiTypes";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { FaRegularClipboard } from "solid-icons/fa";
+import { AiOutlineInfoCircle } from "solid-icons/ai";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 import { BsMagic } from "solid-icons/bs";
+import { Tooltip } from "../../../components/Tooltip";
 
 const SAMPLE_DATASET_SIZE = 921;
 
@@ -71,6 +77,53 @@ export const DatasetStart = () => {
     },
   );
 
+  const [updatedTrackingId, setUpdatedTrackingId] = createSignal<
+    string | undefined
+  >(datasetContext.dataset?.()?.tracking_id);
+
+  const [isLoading, setIsLoading] = createSignal<boolean>(false);
+
+  const updateDataset = async () => {
+    const organizationId = userContext.selectedOrganizationId?.();
+    const dataset = datasetContext.dataset?.();
+    if (!organizationId) return;
+    if (!dataset) return;
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${api_host}/dataset`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "TR-Organization": organizationId,
+        },
+        body: JSON.stringify({
+          dataset_id: dataset.id,
+          organization_id: organizationId,
+          tracking_id: dataset.tracking_id,
+          new_tracking_id: updatedTrackingId(),
+          server_configuration: dataset.server_configuration,
+          client_configuration: "{}",
+        }),
+      });
+      if (!response.ok) {
+        const error = (await response.json()) as DefaultError;
+        throw new Error(error.message);
+      }
+      const newDataset = (await response.json()) as Dataset;
+      createToast({
+        title: "Success",
+        type: "success",
+        message: `New tracking id: ${newDataset.tracking_id}`,
+      });
+    } catch (e: unknown) {
+      const error = e as Error;
+      createToast({ title: "Error", type: "error", message: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   createEffect(() => {
     const pathname = location.pathname;
     const datasetId = pathname.split("/")[3];
@@ -110,7 +163,7 @@ export const DatasetStart = () => {
       <main class="mx-auto">
         <div class="space-y-6 pb-8 lg:grid lg:grid-cols-2 lg:gap-5 lg:px-0">
           <section
-            class="flex-col space-y-4 border bg-white px-4 py-6 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
+            class="flex-col space-y-4 border bg-white px-4 py-6 shadow sm:rounded-md sm:p-6 lg:col-span-2"
             aria-labelledby="organization-details-name"
           >
             <div class="flex items-center space-x-4">
@@ -188,6 +241,33 @@ export const DatasetStart = () => {
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">Chunk Count:</p>
                 <p class="w-fit text-sm">{usage()?.chunk_count || 0}</p>
+              </div>
+              <div class="flex items-center space-x-3">
+                <label class="block text-sm font-medium">tracking id:</label>
+                <div class="flex rounded-md border border-neutral-300 sm:max-w-md">
+                  <input
+                    type="text"
+                    name="dataset-name"
+                    id="dataset-name"
+                    autocomplete="dataset-name"
+                    class="block flex-1 border-0 bg-transparent py-1.5 pl-1 placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm"
+                    value={datasetContext.dataset?.()?.tracking_id ?? ""}
+                    onChange={(e) =>
+                      setUpdatedTrackingId(e.currentTarget.value)
+                    }
+                  />
+                </div>
+                <button
+                  disabled={isLoading()}
+                  class="flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm hover:border-fuchsia-800 hover:text-fuchsia-800"
+                  onClick={() => void updateDataset()}
+                >
+                  Update
+                </button>
+                <Tooltip
+                  body={<AiOutlineInfoCircle />}
+                  tooltipText="Tracking ID can be used in TR-Dataset header for API requests"
+                />
               </div>
             </div>
           </section>
