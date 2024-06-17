@@ -131,6 +131,8 @@ pub struct UpdateDatasetRequest {
     pub server_configuration: Option<serde_json::Value>,
     /// The new client configuration of the dataset, can be arbitrary JSON. See docs.trieve.ai for more information. If not provided, the client configuration will not be updated.
     pub client_configuration: Option<serde_json::Value>,
+    /// Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated.
+    pub new_tracking_id: Option<String>,
 }
 
 /// Update Dataset
@@ -183,6 +185,7 @@ pub async fn update_dataset(
         data.client_configuration
             .clone()
             .unwrap_or(curr_dataset.client_configuration),
+        data.new_tracking_id.clone(),
         pool.clone(),
     )
     .await?;

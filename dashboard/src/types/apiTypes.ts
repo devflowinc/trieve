@@ -66,6 +66,7 @@ export interface OrganizationUsageCount {
 
 export interface Dataset {
   id: string;
+  tracking_id: string;
   name: string;
   created_at: string;
   updated_at: string;
