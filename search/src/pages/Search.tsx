@@ -27,25 +27,15 @@ export const Search = () => {
             {/* <SuggestedQueries query={query()} /> */}
           </div>
         </div>
-        <div class="py-8 outline outline-red-500">
-          {JSON.stringify(search.debouncedState)}
-        </div>
+        {/* <div class="py-8 outline outline-red-500"> */}
+        {/*   {JSON.stringify(search.debounced)} */}
+        {/* </div> */}
+        {/* <div class="py-8 outline outline-red-500"> */}
+        {/*   {JSON.stringify(search.version)} */}
+        {/* </div> */}
         <ResultsPage
+          search={search}
           page={page()}
-          query={search.state.query}
-          scoreThreshold={search.state.scoreThreshold}
-          searchType={search.state.searchType}
-          recencyBias={search.state.recencyBias}
-          extendResults={search.state.extendResults}
-          groupUnique={search.state.groupUniqueSearch}
-          slimChunks={search.state.slimChunks}
-          pageSize={search.state.pageSize}
-          getTotalPages={search.state.getTotalPages}
-          highlightResults={search.state.highlightResults}
-          highlightDelimiters={search.state.highlightDelimiters}
-          highlightMaxLength={search.state.highlightMaxLength}
-          highlightMaxNum={search.state.highlightMaxNum}
-          highlightWindow={search.state.highlightWindow}
           loading={loading}
           setLoading={setLoading}
         />

@@ -12,6 +12,7 @@ import {
   useContext,
   onCleanup,
   createMemo,
+  on,
 } from "solid-js";
 import {
   type ChunkGroupDTO,
@@ -31,23 +32,11 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
 import { Filters } from "./FilterModal";
 import { createToast } from "./ShowToasts";
+import { SearchStore } from "../hooks/useSearch";
 
 export interface ResultsPageProps {
-  query: string;
+  search: SearchStore;
   page: number;
-  scoreThreshold: number;
-  searchType: string;
-  recencyBias?: number;
-  extendResults?: boolean;
-  groupUnique?: boolean;
-  slimChunks?: boolean;
-  pageSize?: number;
-  getTotalPages?: boolean;
-  highlightResults?: boolean;
-  highlightDelimiters?: string[];
-  highlightMaxLength?: number;
-  highlightMaxNum?: number;
-  highlightWindow?: number;
   loading: Accessor<boolean>;
   setLoading: Setter<boolean>;
 }
@@ -135,123 +124,139 @@ const ResultsPage = (props: ResultsPageProps) => {
   );
 
   createEffect(() => {
-    const dataset = $dataset?.();
-    if (!dataset) return;
-    if (!props.query) {
-      return;
-    }
+    console.log("BIG UPDAT", props.search.state.version);
+  });
 
-    triggerSearch();
+  createEffect(
+    on(
+      () => props.search.debounced.version,
+      () => {
+        const dataset = $dataset?.();
+        if (!dataset) return;
+        if (!props.search.debounced.query) {
+          return;
+        }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const requestBody: any = {
-      query: props.query,
-      page: props.page,
-      filters: filters(),
-      search_type: props.searchType.includes("autocomplete")
-        ? props.searchType.replace("autocomplete-", "")
-        : props.searchType,
-      score_threshold: props.scoreThreshold,
-      recency_bias: props.recencyBias ?? 0.0,
-      get_collisions: true,
-      slim_chunks: props.slimChunks ?? false,
-      page_size: props.pageSize ?? 10,
-      get_total_pages: props.getTotalPages ?? false,
-      highlight_results: props.highlightResults ?? true,
-      highlight_delimiters: props.highlightDelimiters ?? ["?", ".", "!"],
-      highlight_max_length: props.highlightMaxLength ?? 8,
-      highlight_max_num: props.highlightMaxNum ?? 3,
-      highlight_window: props.highlightWindow ?? 0,
-    };
+        triggerSearch();
 
-    let searchRoute = "chunk/search";
-    const groupUnique = props.groupUnique;
-    if (groupUnique) {
-      searchRoute = "chunk_group/group_oriented_search";
-    }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const requestBody: any = {
+          query: props.search.debounced.query,
+          page: props.page,
+          filters: filters(),
+          search_type: props.search.debounced.searchType.includes(
+            "autocomplete",
+          )
+            ? props.search.debounced.searchType.replace("autocomplete-", "")
+            : props.search.debounced.searchType,
+          score_threshold: props.search.debounced.scoreThreshold,
+          recency_bias: props.search.debounced.recencyBias ?? 0.0,
+          get_collisions: true,
+          slim_chunks: props.search.debounced.slimChunks ?? false,
+          page_size: props.search.debounced.pageSize ?? 10,
+          get_total_pages: props.search.debounced.getTotalPages ?? false,
+          highlight_results: props.search.debounced.highlightResults ?? true,
+          highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
+            "?",
+            ".",
+            "!",
+          ],
+          highlight_max_length: props.search.debounced.highlightMaxLength ?? 8,
+          highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
+          highlight_window: props.search.debounced.highlightWindow ?? 0,
+        };
 
-    if (props.searchType.includes("autocomplete")) {
-      searchRoute = "chunk/autocomplete";
-      requestBody["extend_results"] = props.extendResults ?? false;
-    }
+        let searchRoute = "chunk/search";
+        const groupUnique = props.search.debounced.groupUniqueSearch;
+        if (groupUnique) {
+          searchRoute = "chunk_group/group_oriented_search";
+        }
 
-    props.setLoading(true);
+        if (props.search.debounced.searchType.includes("autocomplete")) {
+          searchRoute = "chunk/autocomplete";
+          requestBody["extend_results"] =
+            props.search.debounced.extendResults ?? false;
+        }
 
-    setGroupResultChunks([]);
-    setResultChunks([]);
-    setNoResults(false);
+        props.setLoading(true);
 
-    const abortController = new AbortController();
+        setGroupResultChunks([]);
+        setResultChunks([]);
+        setNoResults(false);
 
-    void fetch(`${apiHost}/${searchRoute}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "TR-Dataset": dataset.dataset.id,
-      },
-      signal: abortController.signal,
-      credentials: "include",
-      body: JSON.stringify(requestBody),
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          let resultingChunks: ScoreChunkDTO[] = [];
-          if (groupUnique) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            const groupResult = data.group_chunks as GroupScoreChunkDTO[];
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            setTotalPages(data.total_chunk_pages);
+        const abortController = new AbortController();
 
-            setGroupResultChunks(groupResult);
+        void fetch(`${apiHost}/${searchRoute}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "TR-Dataset": dataset.dataset.id,
+          },
+          signal: abortController.signal,
+          credentials: "include",
+          body: JSON.stringify(requestBody),
+        }).then((response) => {
+          if (response.ok) {
+            void response.json().then((data) => {
+              let resultingChunks: ScoreChunkDTO[] = [];
+              if (groupUnique) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                const groupResult = data.group_chunks as GroupScoreChunkDTO[];
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                setTotalPages(data.total_chunk_pages);
 
-            resultingChunks = groupResult.flatMap((groupChunkDTO) => {
-              return groupChunkDTO.metadata;
+                setGroupResultChunks(groupResult);
+
+                resultingChunks = groupResult.flatMap((groupChunkDTO) => {
+                  return groupChunkDTO.metadata;
+                });
+              } else {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                resultingChunks = data.score_chunks as ScoreChunkDTO[];
+
+                setResultChunks(resultingChunks);
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                setTotalPages(data.total_chunk_pages);
+              }
+
+              if (resultingChunks.length === 0) {
+                setNoResults(true);
+              }
             });
           } else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            resultingChunks = data.score_chunks as ScoreChunkDTO[];
+            void response
+              .json()
+              .then((data) => {
+                createToast({
+                  type: "error",
+                  message: data.message,
+                });
+              })
+              .catch(() => {
+                createToast({
+                  type: "error",
+                  message: "An unknown error occurred while searching",
+                });
+              });
 
-            setResultChunks(resultingChunks);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            setTotalPages(data.total_chunk_pages);
-          }
-
-          if (resultingChunks.length === 0) {
             setNoResults(true);
           }
-        });
-      } else {
-        void response
-          .json()
-          .then((data) => {
-            createToast({
-              type: "error",
-              message: data.message,
-            });
-          })
-          .catch(() => {
-            createToast({
-              type: "error",
-              message: "An unknown error occurred while searching",
-            });
+
+          setClientSideRequestFinished(true);
+
+          createEffect(() => {
+            props.setLoading(false);
           });
+        });
 
-        setNoResults(true);
-      }
+        fetchChunkCollections();
 
-      setClientSideRequestFinished(true);
-
-      createEffect(() => {
-        props.setLoading(false);
-      });
-    });
-
-    fetchChunkCollections();
-
-    onCleanup(() => {
-      abortController.abort();
-    });
-  });
+        onCleanup(() => {
+          abortController.abort();
+        });
+      },
+    ),
+  );
 
   createEffect((prevFiltersKey) => {
     const filtersKey = curDatasetFiltersKey();
@@ -341,7 +346,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                       setOnDelete={setOnDelete}
                       setShowConfirmModal={setShowConfirmDeleteModal}
                       showExpand={clientSideRequestFinished()}
-                      defaultShowMetadata={props.slimChunks}
+                      defaultShowMetadata={props.search.state.slimChunks}
                       setChunkGroups={setChunkCollections}
                       setSelectedIds={setSelectedIds}
                       selectedIds={selectedIds}
