@@ -12,7 +12,7 @@ use trieve_server::{
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
-        dataset_operator::{delete_dataset_by_id_query, DeleteMessage},
+        dataset_operator::{delete_chunks_in_dataset, delete_dataset_by_id_query, DeleteMessage},
         organization_operator::{
             delete_actual_organization_query, get_soft_deleted_datasets_for_organization,
         },
@@ -209,6 +209,39 @@ async fn delete_worker(
         let transaction = sentry::start_transaction(processing_chunk_ctx);
         let delete_worker_message: DeleteMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
+
+        if delete_worker_message.empty_dataset {
+            match delete_chunks_in_dataset(
+                delete_worker_message.dataset_id,
+                web_pool.clone(),
+                delete_worker_message.server_config.clone(),
+            )
+            .await
+            {
+                Ok(_) => {
+                    log::info!(
+                        "Deleted all chunks for dataset: {:?}",
+                        delete_worker_message.dataset_id
+                    );
+                    let _ = redis::cmd("LREM")
+                        .arg("delete_dataset_processing")
+                        .arg(1)
+                        .arg(serialized_message)
+                        .query_async::<redis::aio::MultiplexedConnection, usize>(
+                            &mut *redis_connection,
+                        )
+                        .await;
+
+                    continue;
+                }
+                Err(err) => {
+                    log::error!("Failed to delete all chunks for dataset: {:?}", err);
+                    let _ =
+                        readd_error_to_queue(delete_worker_message, err, redis_pool.clone()).await;
+                    continue;
+                }
+            }
+        }
 
         match delete_dataset_by_id_query(
             delete_worker_message.dataset_id,
