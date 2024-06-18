@@ -16,28 +16,6 @@ export const HomeSearch = () => {
     .SUGGESTED_QUERIES?.split(",")
     .filter((query) => query !== "");
 
-  const url = window.location.href;
-  const requestParams = url.split("?")[1];
-
-  const params = new URLSearchParams(requestParams);
-  const extendResults = params.get("extendResults") === "true" || false;
-  const searchType: string = params.get("searchType") ?? "search";
-  const scoreThreshold = Number(params.get("scoreThreshold")) || 0.0;
-  const recencyBias = Number(params.get("recencyBias")) || 0.0;
-  const groupUnique = params.get("groupUnique") === "true" || false;
-  const slimChunks = params.get("slimChunks") === "true" || false;
-  const pageSize = Number(params.get("pageSize")) || 10;
-  const getTotalPages = params.get("getTotalPages") === "false" ? false : true;
-  const highlightResults =
-    params.get("highlightResults") === "false" ? false : true;
-  const highlightDelimiters = params
-    .get("highlightDelimiters")
-    ?.split(",")
-    .filter((delimiter) => delimiter !== "") ?? ["?", ".", "!"];
-  const highlightMaxLength = Number(params.get("highlightMaxLength")) || 8;
-  const highlightMaxNum = Number(params.get("highlightMaxNum")) || 3;
-  const highlightWindow = Number(params.get("highlightWindow")) || 0;
-
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
       <HomeNavbar />
@@ -61,22 +39,7 @@ export const HomeSearch = () => {
           </a>
         </div>
         <div class="mt-8 w-full max-w-7xl px-4 sm:px-8 md:px-20">
-          <SearchForm
-            search={search}
-            searchType={searchType}
-            scoreThreshold={scoreThreshold}
-            recencyBias={recencyBias}
-            extendResults={extendResults}
-            groupUniqueSearch={groupUnique}
-            slimChunks={slimChunks}
-            pageSize={pageSize}
-            getTotalPages={getTotalPages}
-            highlightDelimiters={highlightDelimiters}
-            highlightResults={highlightResults}
-            highlightMaxLength={highlightMaxLength}
-            highlightMaxNum={highlightMaxNum}
-            highlightWindow={highlightWindow}
-          />
+          <SearchForm search={search} />
         </div>
       </div>
       <DefaultQueries suggestedQueries={suggestedQueries ?? []} />

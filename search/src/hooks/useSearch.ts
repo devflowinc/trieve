@@ -30,7 +30,7 @@ export const useSearch = () => {
 
   createEffect(
     on(
-      () => JSON.stringify(state),
+      () => state.version,
       () => {
         console.log("updated");
         const timeout = setTimeout(() => {
@@ -41,14 +41,19 @@ export const useSearch = () => {
     ),
   );
 
+  // @ts-expect-error args
+  const proxiedSet: typeof setSearch = (
+    ...args: Parameters<typeof setSearch>
+  ) => {
+    setSearch("version", (prev) => prev + 1);
+    // @ts-expect-error args
+    setSearch(...args);
+  };
+
   return {
     debounced,
     state,
-    setSearch: (...args: Parameters<typeof setSearch>) => {
-      setSearch("version", (prev) => prev + 1);
-      // @ts-expect-error args
-      setSearch(...args);
-    },
+    setSearch: proxiedSet,
   };
 };
 
