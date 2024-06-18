@@ -27,12 +27,6 @@ export const Search = () => {
             {/* <SuggestedQueries query={query()} /> */}
           </div>
         </div>
-        {/* <div class="py-8 outline outline-red-500"> */}
-        {/*   {JSON.stringify(search.debounced)} */}
-        {/* </div> */}
-        {/* <div class="py-8 outline outline-red-500"> */}
-        {/*   {JSON.stringify(search.version)} */}
-        {/* </div> */}
         <ResultsPage
           search={search}
           page={page()}
