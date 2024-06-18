@@ -123,10 +123,6 @@ const ResultsPage = (props: ResultsPageProps) => {
       `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
   );
 
-  createEffect(() => {
-    console.log("BIG UPDAT", props.search.state.version);
-  });
-
   createEffect(
     on(
       () => props.search.debounced.version,
