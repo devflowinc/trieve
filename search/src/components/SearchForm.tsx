@@ -5,9 +5,8 @@ import {
   Show,
   Switch,
   createEffect,
-  createMemo,
   createSignal,
-  onCleanup,
+  on,
   useContext,
 } from "solid-js";
 import {
@@ -52,10 +51,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
     );
   });
 
-  const [textareaInput, setTextareaInput] = createSignal("");
-  const [typewriterEffect, setTypewriterEffect] = createSignal("");
-  const [textareaFocused, setTextareaFocused] = createSignal(false);
-
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
 
@@ -63,87 +58,22 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   };
 
   createEffect(() => {
-    setTextareaInput(props.search.state.query ?? "");
-
     setTimeout(() => {
       resizeTextarea(document.querySelector("#search-query-textarea"));
     }, 5);
   });
 
-  createEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    textareaVal();
-
-    resizeTextarea(document.querySelector("#search-query-textarea"));
-  });
-
-  createEffect(() => {
-    const shouldNotRun = textareaInput() || textareaFocused();
-
-    if (shouldNotRun) {
-      return;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const textArray: string[] = $envs().SEARCH_QUERIES?.split(",") ?? [];
-
-    const typingSpeed = 50;
-    const deleteSpeed = 30;
-
-    let currentTextIndex = 0;
-    let currentCharIndex = 0;
-    let isDeleting = false;
-
-    let timeoutRefOne: number;
-    let timeoutRefTwo: number;
-    let timeoutRefThree: number;
-
-    const typeText = () => {
-      const currentText = textArray[currentTextIndex];
-
-      if (isDeleting) {
-        setTypewriterEffect(currentText.substring(0, currentCharIndex - 1));
-        currentCharIndex--;
-      } else {
-        setTypewriterEffect(currentText.substring(0, currentCharIndex + 1));
-        currentCharIndex++;
-      }
-
-      if (!isDeleting && currentCharIndex === currentText.length) {
-        isDeleting = true;
-        timeoutRefOne = setTimeout(typeText, 1000) as unknown as number;
-      } else if (isDeleting && currentCharIndex === 0) {
-        isDeleting = false;
-        currentTextIndex = (currentTextIndex + 1) % textArray.length;
-        timeoutRefTwo = setTimeout(typeText, typingSpeed) as unknown as number;
-      } else {
-        const speed = isDeleting ? deleteSpeed : typingSpeed;
-        timeoutRefThree = setTimeout(typeText, speed) as unknown as number;
-      }
-    };
-
-    typeText();
-
-    onCleanup(() => {
-      clearTimeout(timeoutRefOne);
-      clearTimeout(timeoutRefTwo);
-      clearTimeout(timeoutRefThree);
-    });
-  });
+  createEffect(
+    on(
+      () => props.search.state.query,
+      () => {
+        resizeTextarea(document.querySelector("#search-query-textarea"));
+      },
+    ),
+  );
 
   createEffect(() => {
     $envs().CREATE_CHUNK_FEATURE?.valueOf();
-  });
-
-  const textareaVal = createMemo(() => {
-    const textareaInputVal = textareaInput();
-    const textareaFocusedVal = textareaFocused();
-    const typewriterEffectVal = typewriterEffect();
-    const textareaVal =
-      textareaInputVal ||
-      (textareaFocusedVal ? textareaInputVal : typewriterEffectVal);
-
-    return textareaVal;
   });
 
   const resetParams = () => {
@@ -177,11 +107,8 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 classList={{
                   "scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600":
                     true,
-                  "text-neutral-600": !textareaInput() && !textareaFocused(),
                 }}
-                onFocus={() => setTextareaFocused(true)}
-                onBlur={() => setTextareaFocused(false)}
-                value={textareaVal()}
+                value={props.search.state.query}
                 onInput={(e) => {
                   props.search.setSearch("query", e.currentTarget.value);
                 }}
@@ -195,14 +122,14 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 }}
                 rows="1"
               />
-              <Show when={textareaInput()}>
+              <Show when={props.search.state.query}>
                 <button
                   classList={{
                     "pt-[2px]": !!props.search.state.query,
                   }}
                   onClick={(e) => {
                     e.preventDefault();
-                    setTextareaInput("");
+                    props.search.setSearch("query", "");
                   }}
                 >
                   <BiRegularX class="h-7 w-7 fill-current" />
@@ -212,7 +139,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 <button
                   classList={{
                     "border-l border-neutral-600 pl-[10px] dark:border-neutral-200":
-                      !!textareaInput(),
+                      !!props.search.state.query,
                   }}
                   type="submit"
                 >
