@@ -13,7 +13,7 @@ use trieve_server::data::models::{
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
-    BulkUploadIngestionMessage, UpdateIngestionMessage, UploadIngestionMessage,
+    BoostPhrase, BulkUploadIngestionMessage, UpdateIngestionMessage, UploadIngestionMessage,
 };
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
@@ -24,7 +24,7 @@ use trieve_server::operators::chunk_operator::{
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::model_operator::{
-    create_embedding, create_embeddings, get_sparse_vector, get_sparse_vectors,
+    create_embedding, create_embeddings, get_sparse_vectors,
 };
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
@@ -398,7 +398,13 @@ pub async fn bulk_upload_chunks(
     }
 
     #[allow(clippy::type_complexity)]
-    let ingestion_data: Vec<(ChunkMetadata, String, Option<Vec<uuid::Uuid>>, bool)> = payload
+    let ingestion_data: Vec<(
+        ChunkMetadata,
+        String,
+        Option<Vec<uuid::Uuid>>,
+        bool,
+        Option<BoostPhrase>,
+    )> = payload
         .ingestion_messages
         .iter()
         .map(|message| {
@@ -465,6 +471,7 @@ pub async fn bulk_upload_chunks(
                 content,
                 message.chunk.group_ids.clone(),
                 message.upsert_by_tracking_id,
+                message.chunk.boost_phrase.clone(),
             )
         })
         .collect();
@@ -488,14 +495,18 @@ pub async fn bulk_upload_chunks(
     }
 
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
-    let all_content: Vec<String> = inserted_chunk_metadatas
+    let content_and_boosts: Vec<(String, Option<BoostPhrase>)> = inserted_chunk_metadatas
         .iter()
-        .map(|(_, content, _, _)| content.clone())
+        .map(|(_, content, _, _, boost_phrase)| (content.clone(), boost_phrase.clone()))
+        .collect();
+    let contents: Vec<String> = content_and_boosts
+        .iter()
+        .map(|(content, _)| content.clone())
         .collect();
 
     let inserted_chunk_metadata_ids: Vec<uuid::Uuid> = inserted_chunk_metadatas
         .iter()
-        .map(|(chunk_metadata, _, _, _)| chunk_metadata.id)
+        .map(|(chunk_metadata, _, _, _, _)| chunk_metadata.id)
         .collect();
 
     let embedding_transaction = transaction.start_child(
@@ -505,7 +516,7 @@ pub async fn bulk_upload_chunks(
 
     // Assuming split average is false, Assume Explicit Vectors don't exist
     let embedding_vectors = match create_embeddings(
-        all_content.clone(),
+        contents.clone(),
         "doc",
         dataset_config.clone(),
         reqwest_client.clone(),
@@ -534,7 +545,7 @@ pub async fn bulk_upload_chunks(
     );
 
     let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vectors(all_content, "doc", reqwest_client).await {
+        match get_sparse_vectors(content_and_boosts, "doc", reqwest_client).await {
             Ok(vectors) => Ok(vectors),
             Err(err) => {
                 bulk_revert_insert_chunk_metadata_query(
@@ -546,7 +557,7 @@ pub async fn bulk_upload_chunks(
             }
         }
     } else {
-        let content_size = all_content.len();
+        let content_size = content_and_boosts.len();
 
         Ok(std::iter::repeat(vec![(0, 0.0)])
             .take(content_size)
@@ -561,7 +572,7 @@ pub async fn bulk_upload_chunks(
         splade_vectors.iter(),
     )
     .filter_map(
-        |((chunk_metadata, _, group_ids, _), embedding_vector, splade_vector)| {
+        |((chunk_metadata, _, group_ids, _, _), embedding_vector, splade_vector)| {
             let qdrant_point_id = chunk_metadata.qdrant_point_id;
 
             let payload = QdrantPayload::new(chunk_metadata, group_ids, None).into();
@@ -728,7 +739,7 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vectors(vec![content], "doc", reqwest_client).await {
+        match get_sparse_vectors(vec![(content, None)], "doc", reqwest_client).await {
             Ok(v) => v.first().expect("First vector should exist").clone(),
             Err(_) => vec![(0, 0.0)],
         }
@@ -920,8 +931,11 @@ async fn update_chunk(
         .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vector(content, "doc").await {
-            Ok(v) => v,
+        let reqwest_client = reqwest::Client::new();
+
+        match get_sparse_vectors(vec![(content, payload.boost_phrase)], "doc", reqwest_client).await
+        {
+            Ok(v) => v.first().unwrap_or(&vec![(0, 0.0)]).clone(),
             Err(_) => vec![(0, 0.0)],
         }
     } else {

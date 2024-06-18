@@ -6,7 +6,7 @@ use crate::data::models::{
     ServerDatasetConfiguration, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::get_env;
-use crate::handlers::chunk_handler::UploadIngestionMessage;
+use crate::handlers::chunk_handler::{BoostPhrase, UploadIngestionMessage};
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
@@ -641,10 +641,25 @@ pub async fn get_metadata_from_tracking_ids_query(
 #[tracing::instrument(skip(pool))]
 pub async fn bulk_insert_chunk_metadata_query(
     // ChunkMetadata, group_ids, upsert_by_tracking_id
-    mut insertion_data: Vec<(ChunkMetadata, String, Option<Vec<uuid::Uuid>>, bool)>,
+    mut insertion_data: Vec<(
+        ChunkMetadata,
+        String,
+        Option<Vec<uuid::Uuid>>,
+        bool,
+        Option<BoostPhrase>,
+    )>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<(ChunkMetadata, String, Option<Vec<uuid::Uuid>>, bool)>, ServiceError> {
+) -> Result<
+    Vec<(
+        ChunkMetadata,
+        String,
+        Option<Vec<uuid::Uuid>>,
+        bool,
+        Option<BoostPhrase>,
+    )>,
+    ServiceError,
+> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -654,14 +669,14 @@ pub async fn bulk_insert_chunk_metadata_query(
         .await
         .expect("Failed to get connection to db");
 
-    let chunkmetadata_to_insert: Vec<ChunkMetadataTable> = insertion_data
+    let chunk_metadata_to_insert: Vec<ChunkMetadataTable> = insertion_data
         .clone()
         .iter()
-        .map(|(chunk_metadata, _, _, _)| chunk_metadata.clone().into())
+        .map(|(chunk_metadata, _, _, _, _)| chunk_metadata.clone().into())
         .collect();
 
     let inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
-        .values(&chunkmetadata_to_insert)
+        .values(&chunk_metadata_to_insert)
         .on_conflict_do_nothing()
         .get_results::<ChunkMetadataTable>(&mut conn)
         .await
@@ -676,7 +691,7 @@ pub async fn bulk_insert_chunk_metadata_query(
         })?;
 
     // mutates in place
-    insertion_data.retain(|(chunk_metadata, _, _, _)| {
+    insertion_data.retain(|(chunk_metadata, _, _, _, _)| {
         inserted_chunks
             .iter()
             .any(|inserted_chunk| inserted_chunk.id == chunk_metadata.id)
@@ -685,7 +700,7 @@ pub async fn bulk_insert_chunk_metadata_query(
     let chunk_group_bookmarks_to_insert: Vec<ChunkGroupBookmark> = insertion_data
         .clone()
         .iter()
-        .filter_map(|(chunk_metadata, _, group_ids, _)| {
+        .filter_map(|(chunk_metadata, _, group_ids, _, _)| {
             group_ids.as_ref().map(|group_ids| {
                 group_ids
                     .clone()
@@ -706,7 +721,7 @@ pub async fn bulk_insert_chunk_metadata_query(
     let chunk_tags_to_chunk_id: Vec<(Vec<DatasetTags>, uuid::Uuid)> = insertion_data
         .clone()
         .iter()
-        .filter_map(|(chunk_metadata, _, _, _)| {
+        .filter_map(|(chunk_metadata, _, _, _, _)| {
             chunk_metadata.clone().tag_set.map(|tags| {
                 let tags = tags
                     .into_iter()

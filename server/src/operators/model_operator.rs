@@ -2,6 +2,7 @@ use crate::{
     data::models::{ChunkMetadataTypes, ScoreChunkDTO, ServerDatasetConfiguration},
     errors::ServiceError,
     get_env,
+    handlers::chunk_handler::BoostPhrase,
 };
 use openai_dive::v1::{
     helpers::format_response,
@@ -224,8 +225,6 @@ pub async fn get_sparse_vector(
     }
 }
 
-// create_thirty_embeddings
-
 #[tracing::instrument]
 pub async fn create_embeddings(
     messages: Vec<String>,
@@ -366,6 +365,7 @@ pub async fn create_embeddings(
                         "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
                     ));
                 }
+
                 Ok((i, vectors))
             };
 
@@ -398,7 +398,7 @@ pub struct SpladeEmbedding {
     pub embeddings: Vec<(u32, f32)>,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 struct SpladeIndicies {
     index: u32,
     value: f32,
@@ -419,7 +419,7 @@ pub struct CustomSparseEmbedData {
 
 #[tracing::instrument]
 pub async fn get_sparse_vectors(
-    messages: Vec<String>,
+    messages: Vec<(String, Option<BoostPhrase>)>,
     embed_type: &str,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
@@ -429,9 +429,102 @@ pub async fn get_sparse_vectors(
         ));
     }
 
-    let thirty_message_groups = messages.chunks(30);
+    let contents = messages
+        .clone()
+        .into_iter()
+        .map(|(x, _)| x)
+        .collect::<Vec<String>>();
+    let thirty_content_groups = contents.chunks(30);
 
-    let vec_futures: Vec<_> = thirty_message_groups
+    let filtered_boosts_with_index = messages
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, (_, y))| {
+            if let Some(boost_phrase) = y {
+                Some((i, boost_phrase))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<(usize, BoostPhrase)>>();
+    let filtered_boosts_with_index_groups = filtered_boosts_with_index.chunks(30);
+
+    let vec_boost_futures: Vec<_> = filtered_boosts_with_index_groups
+        .enumerate()
+        .map(|(i, thirty_boosts)| {
+            let cur_client = reqwest_client.clone();
+
+            let origin_key = match embed_type {
+                "doc" => "SPARSE_SERVER_DOC_ORIGIN",
+                "query" => "SPARSE_SERVER_QUERY_ORIGIN",
+                _ => unreachable!("Invalid embed_type passed"),
+            };
+
+            async move {
+                let server_origin = std::env::var(origin_key)
+                    .ok()
+                    .filter(|s| !s.is_empty())
+                    .ok_or(ServiceError::BadRequest(format!(
+                        "env flag {} is not set",
+                        origin_key
+                    )))?;
+                let embedding_server_call = format!("{}/embed_sparse", server_origin);
+
+                let sparse_embed_req = CustomSparseEmbedData {
+                    inputs: thirty_boosts
+                        .iter()
+                        .map(|(_, y)| y.phrase.clone())
+                        .collect(),
+                    encode_type: embed_type.to_string(),
+                    truncate: true,
+                };
+
+                let sparse_vectors = cur_client
+                    .post(&embedding_server_call)
+                    .header("Content-Type", "application/json")
+                    .header(
+                        "Authorization",
+                        &format!(
+                            "Bearer {}",
+                            get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                        ),
+                    )
+                    .json(&sparse_embed_req)
+                    .send()
+                    .await
+                    .map_err(|err| {
+                        log::error!(
+                            "Failed parsing response from custom embedding server {:?}",
+                            err
+                        );
+                        ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+                    })?
+                    .json::<Vec<Vec<SpladeIndicies>>>()
+                    .await
+                    .map_err(|_e| {
+                        log::error!(
+                            "Failed parsing response from custom embedding server {:?}",
+                            _e
+                        );
+                        ServiceError::BadRequest(
+                            "Failed parsing response from custom embedding server".to_string(),
+                        )
+                    })?;
+
+                let index_vector_boosts: Vec<(usize, f64, Vec<SpladeIndicies>)> = thirty_boosts
+                    .iter()
+                    .zip(sparse_vectors)
+                    .map(|((og_index, y), sparse_vector)| {
+                        (og_index.clone(), y.boost_factor, sparse_vector)
+                    })
+                    .collect();
+
+                Ok((i, index_vector_boosts))
+            }
+        })
+        .collect();
+
+    let vec_content_futures: Vec<_> = thirty_content_groups
         .enumerate()
         .map(|(i, thirty_messages)| {
             let cur_client = reqwest_client.clone();
@@ -495,24 +588,55 @@ pub async fn get_sparse_vectors(
         })
         .collect();
 
-    let all_chunk_vectors: Vec<(usize, Vec<Vec<SpladeIndicies>>)> =
-        futures::future::join_all(vec_futures)
+    let all_content_vectors: Vec<(usize, Vec<Vec<SpladeIndicies>>)> =
+        futures::future::join_all(vec_content_futures)
             .await
             .into_iter()
             .collect::<Result<Vec<(usize, Vec<Vec<SpladeIndicies>>)>, ServiceError>>()?;
 
-    let mut vectors_sorted = vec![];
-    for index in 0..all_chunk_vectors.len() {
-        let (_, vectors_i) = all_chunk_vectors.iter().find(|(i, _)| *i == index).ok_or(
-            ServiceError::InternalServerError(
+    let mut content_vectors_sorted = vec![];
+    for index in 0..all_content_vectors.len() {
+        let (_, vectors_i) = all_content_vectors
+            .iter()
+            .find(|(i, _)| *i == index)
+            .ok_or(ServiceError::InternalServerError(
                 "Failed to get index i (this should never happen)".to_string(),
-            ),
-        )?;
+            ))?;
 
-        vectors_sorted.extend(vectors_i.clone());
+        content_vectors_sorted.extend(vectors_i.clone());
     }
 
-    Ok(vectors_sorted
+    let all_boost_vectors: Vec<(usize, Vec<(usize, f64, Vec<SpladeIndicies>)>)> =
+        futures::future::join_all(vec_boost_futures)
+            .await
+            .into_iter()
+            .collect::<Result<Vec<(usize, Vec<(usize, f64, Vec<SpladeIndicies>)>)>, ServiceError>>(
+            )?;
+
+    for (_, boost_vectors) in all_boost_vectors {
+        for (og_index, boost_amt, boost_vector) in boost_vectors {
+            content_vectors_sorted[og_index] = content_vectors_sorted[og_index]
+                .iter()
+                .map(|splade_indice| {
+                    if let Some(_) = boost_vector.iter().find(|boost_splade_indice| {
+                        boost_splade_indice.index == splade_indice.index
+                    }) {
+                        SpladeIndicies {
+                            index: splade_indice.index.clone(),
+                            value: splade_indice.value.clone() * (boost_amt as f32),
+                        }
+                    } else {
+                        SpladeIndicies {
+                            index: splade_indice.index.clone(),
+                            value: splade_indice.value.clone(),
+                        }
+                    }
+                })
+                .collect();
+        }
+    }
+
+    Ok(content_vectors_sorted
         .iter()
         .map(|sparse_vector| {
             sparse_vector
