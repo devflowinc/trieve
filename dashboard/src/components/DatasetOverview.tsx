@@ -7,13 +7,17 @@ import {
   createSignal,
   createEffect,
 } from "solid-js";
-import { Organization } from "../types/apiTypes";
 import { useNavigate } from "@solidjs/router";
 import { FiTrash } from "solid-icons/fi";
 import { FaSolidGear } from "solid-icons/fa";
 import { useDatasetPages } from "../hooks/useDatasetPages";
-import { AiFillCaretLeft, AiFillCaretRight } from "solid-icons/ai";
+import {
+  AiFillCaretLeft,
+  AiFillCaretRight,
+  AiOutlineClear,
+} from "solid-icons/ai";
 import { formatDate } from "../formatters";
+import { Organization } from "../types/apiTypes";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
@@ -61,6 +65,19 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       removeDataset(datasetId);
     });
   };
+
+  const clearDataset = (datasetId: string) => {
+    const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+    void fetch(`${api_host}/dataset/clear/${datasetId}`, {
+      method: "PUT",
+      headers: {
+        "TR-Dataset": datasetId,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+  };
+
   return (
     <>
       <div class="flex items-center">
@@ -190,7 +207,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           new Date(datasetAndUsage.dataset.created_at),
                         )}
                       </td>
-                      <td class="whitespace-nowrap py-4 text-right text-sm font-medium">
+                      <td class="flex items-center justify-end gap-4 whitespace-nowrap py-4 pr-2 text-right text-sm font-medium">
                         <button
                           class="text-lg text-neutral-500 hover:text-neutral-900"
                           onClick={() => {
@@ -202,7 +219,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           <FaSolidGear />
                         </button>
                         <button
-                          class="px-3 text-lg text-red-500 hover:text-neutral-900"
+                          class="text-lg text-red-500 hover:text-neutral-900"
                           onClick={() => {
                             confirm(
                               "Are you sure you want to delete this dataset?",
@@ -210,6 +227,16 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           }}
                         >
                           <FiTrash />
+                        </button>
+                        <button
+                          class="text-lg text-red-500 hover:text-neutral-900"
+                          onClick={() => {
+                            confirm(
+                              "Are you sure you want to clear this dataset?",
+                            ) && clearDataset(datasetAndUsage.dataset.id);
+                          }}
+                        >
+                          <AiOutlineClear />
                         </button>
                       </td>
                     </tr>

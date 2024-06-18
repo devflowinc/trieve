@@ -8,8 +8,9 @@ use crate::{
     errors::ServiceError,
     operators::{
         dataset_operator::{
-            create_dataset_query, get_dataset_by_id_query, get_dataset_usage_query,
-            get_datasets_by_organization_id, soft_delete_dataset_by_id_query, update_dataset_query,
+            clear_dataset_by_dataset_id_query, create_dataset_query, get_dataset_by_id_query,
+            get_dataset_usage_query, get_datasets_by_organization_id,
+            soft_delete_dataset_by_id_query, update_dataset_query,
         },
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
     },
@@ -236,6 +237,50 @@ pub async fn delete_dataset(
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     soft_delete_dataset_by_id_query(data.into_inner(), config, pool, redis_pool).await?;
+    Ok(HttpResponse::NoContent().finish())
+}
+
+/// Clear Dataset
+///
+/// Clears a dataset. The auth'ed user must be an owner of the organization to clear a dataset.
+#[utoipa::path(
+    put,
+    path = "/dataset/clear/{dataset_id}",
+    context_path = "/api",
+    tag = "dataset",
+    responses(
+        (status = 204, description = "Dataset cleared successfully"),
+        (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to clear."),
+
+    ),
+    security(
+        ("ApiKey" = ["owner"]),
+    )
+)]
+pub async fn clear_dataset(
+    data: web::Path<uuid::Uuid>,
+    redis_pool: web::Data<RedisPool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    user: OwnerOnly,
+) -> Result<HttpResponse, ServiceError> {
+    if dataset_org_plan_sub.dataset.id != *data {
+        return Err(ServiceError::BadRequest(
+            "Dataset header does not match provided dataset ID".to_string(),
+        ));
+    }
+    if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
+        return Err(ServiceError::Forbidden);
+    }
+
+    let config =
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    clear_dataset_by_dataset_id_query(data.into_inner(), config, redis_pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 

@@ -210,6 +210,7 @@ impl Modify for SecurityAddon {
         handlers::dataset_handler::get_usage_by_dataset_id,
         handlers::dataset_handler::get_datasets_from_organization,
         handlers::dataset_handler::get_client_dataset_config,
+        handlers::dataset_handler::clear_dataset,
         handlers::stripe_handler::direct_to_payment_link,
         handlers::stripe_handler::cancel_subscription,
         handlers::stripe_handler::update_subscription_plan,
@@ -568,7 +569,11 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::get().to(handlers::dataset_handler::get_dataset))
                                         .route(
                                             web::delete().to(handlers::dataset_handler::delete_dataset),
-                                        ),
+                                        )
+                                )
+                                .service(
+                                    web::resource("/clear/{dataset_id}")
+                                        .route(web::put().to(handlers::dataset_handler::clear_dataset)),
                                 )
                                 .service(
                                     web::resource("/tracking_id/{tracking_id}")
