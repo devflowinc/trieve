@@ -2504,8 +2504,7 @@ impl QdrantPayload {
                 .payload
                 .get("time_stamp")
                 .cloned()
-                .map(|x| x.as_integer())
-                .flatten(),
+                .and_then(|x| x.as_integer()),
             dataset_id: point
                 .payload
                 .get("dataset_id")
@@ -2525,8 +2524,7 @@ impl QdrantPayload {
                 .payload
                 .get("location")
                 .cloned()
-                .map(|value| serde_json::from_value(value.into()).ok())
-                .flatten(),
+                .and_then(|value| serde_json::from_value(value.into()).ok()),
             num_value: point
                 .payload
                 .get("num_value")
@@ -2568,16 +2566,14 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .payload
                 .get("time_stamp")
                 .cloned()
-                .map(|x| x.as_integer())
-                .flatten(),
+                .and_then(|x| x.as_integer()),
             dataset_id: point
                 .payload
                 .get("dataset_id")
                 .cloned()
                 .unwrap_or_default()
                 .as_str()
-                .map(|s| uuid::Uuid::parse_str(s).ok())
-                .flatten()
+                .and_then(|s| uuid::Uuid::parse_str(s).ok())
                 .unwrap_or_default(),
             group_ids: point.payload.get("group_ids").cloned().map(|x| {
                 x.as_list()
@@ -2598,8 +2594,7 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .payload
                 .get("location")
                 .cloned()
-                .map(|value| serde_json::from_value(value.into()).ok())
-                .flatten()
+                .and_then(|value| serde_json::from_value(value.into()).ok())
                 .unwrap_or_default(),
             num_value: point
                 .payload
