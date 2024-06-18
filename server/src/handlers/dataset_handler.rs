@@ -1,11 +1,11 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    af_middleware::auth_middleware::{verify_admin, verify_owner},
     data::models::{
         ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool, RedisPool,
         ServerDatasetConfiguration, StripePlan, UnifiedId,
     },
     errors::ServiceError,
+    middleware::auth_middleware::{verify_admin, verify_owner},
     operators::{
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, get_dataset_by_id_query,
