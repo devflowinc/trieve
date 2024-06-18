@@ -15,7 +15,7 @@ use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::{Key, SameSite},
-    middleware,
+    middleware::Logger,
     web::{self, PayloadConfig},
     App, HttpServer,
 };
@@ -31,10 +31,10 @@ use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
 
-pub mod af_middleware;
 pub mod data;
 pub mod errors;
 pub mod handlers;
+pub mod middleware;
 pub mod operators;
 pub mod randutil;
 
@@ -482,7 +482,8 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
                 .wrap(sentry_actix::Sentry::new())
-                .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
+                .wrap(middleware::logging_middleware::LoggingMiddlewareFactory)
+                .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
                     IdentityMiddleware::builder()
                         .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
@@ -511,7 +512,7 @@ pub fn main() -> std::io::Result<()> {
                     .cookie_path("/".to_owned())
                     .build(),
                 )
-                .wrap(middleware::Logger::default())
+                .wrap(Logger::default())
                 .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}")

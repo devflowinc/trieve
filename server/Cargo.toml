@@ -47,6 +47,7 @@ actix-session = { version = "0.9.0", features = [
 actix-web = { version = "4.3" }
 actix-cors = { version = "0.7" }
 
+
 async-stripe = { version = "0.37.0", features = [
     "runtime-tokio-hyper",
     "checkout",
@@ -132,6 +133,7 @@ utoipa-swagger-ui = { version = "7.0.1", features = ["actix-web"] }
 bb8-redis = "0.15.0"
 signal-hook = "0.3.17"
 blake3 = "1.5.1"
+actix-http = "3.7.0"
 
 
 [build-dependencies]
