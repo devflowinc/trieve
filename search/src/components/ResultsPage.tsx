@@ -246,7 +246,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     fetchChunkCollections();
 
     onCleanup(() => {
-      abortController.abort();
+      abortController.abort("cleanup");
     });
   });
 

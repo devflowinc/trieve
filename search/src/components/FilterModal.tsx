@@ -10,6 +10,7 @@ import {
   createMemo,
 } from "solid-js";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { FaRegularTrashCan } from "solid-icons/fa";
 
 export interface Filter {
   field: string;
@@ -63,7 +64,7 @@ export const FilterModal = (props: FilterModalProps) => {
       `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
   );
 
-  const saveFilters = () => {
+  const saveFilters = (hide: boolean) => {
     const filters = {
       must: mustFilters(),
       must_not: mustNotFilters(),
@@ -71,7 +72,7 @@ export const FilterModal = (props: FilterModalProps) => {
     };
     localStorage.setItem(curDatasetFiltersKey(), JSON.stringify(filters));
     window.dispatchEvent(new Event("filtersUpdated"));
-    props.setShowFilterModal(false);
+    if (hide) props.setShowFilterModal(false);
   };
 
   createEffect((prevFiltersKey) => {
@@ -149,7 +150,7 @@ export const FilterModal = (props: FilterModalProps) => {
         </button>
         <button
           class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-          onClick={() => saveFilters()}
+          onClick={() => saveFilters(true)}
         >
           Apply Filters
         </button>
@@ -166,6 +167,11 @@ export const FilterModal = (props: FilterModalProps) => {
                   setMustFilters(newFilters);
                 };
 
+                const onFilterDelete = () => {
+                  setMustFilters(mustFilters().filter((_, i) => i !== index()));
+                  saveFilters(false);
+                };
+
                 return (
                   <div
                     classList={{
@@ -176,6 +182,7 @@ export const FilterModal = (props: FilterModalProps) => {
                     <FilterItem
                       initialFilter={filter}
                       onFilterChange={onFilterChange}
+                      onFilterDelete={onFilterDelete}
                     />
                   </div>
                 );
@@ -197,6 +204,13 @@ export const FilterModal = (props: FilterModalProps) => {
                   setMustNotFilters(newFilters);
                 };
 
+                const onFilterDelete = () => {
+                  setMustNotFilters(
+                    mustNotFilters().filter((_, i) => i !== index()),
+                  );
+                  saveFilters(false);
+                };
+
                 return (
                   <div
                     classList={{
@@ -207,6 +221,7 @@ export const FilterModal = (props: FilterModalProps) => {
                     <FilterItem
                       initialFilter={filter}
                       onFilterChange={onFilterChange}
+                      onFilterDelete={onFilterDelete}
                     />
                   </div>
                 );
@@ -228,6 +243,13 @@ export const FilterModal = (props: FilterModalProps) => {
                   setShouldFilters(newFilters);
                 };
 
+                const onFilterDelete = () => {
+                  setShouldFilters(
+                    shouldFilters().filter((_, i) => i !== index()),
+                  );
+                  saveFilters(false);
+                };
+
                 return (
                   <div
                     classList={{
@@ -238,6 +260,7 @@ export const FilterModal = (props: FilterModalProps) => {
                     <FilterItem
                       initialFilter={filter}
                       onFilterChange={onFilterChange}
+                      onFilterDelete={onFilterDelete}
                     />
                   </div>
                 );
@@ -254,6 +277,7 @@ export const FilterModal = (props: FilterModalProps) => {
 export interface FilterItemProps {
   initialFilter?: Filter;
   onFilterChange: (filter: Filter) => void;
+  onFilterDelete?: () => void;
 }
 
 export const FilterItem = (props: FilterItemProps) => {
@@ -400,6 +424,11 @@ export const FilterItem = (props: FilterItemProps) => {
             }}
           </For>
         </select>
+        <div class="ml-auto" tabIndex={0}>
+          <button onClick={() => props.onFilterDelete?.()}>
+            <FaRegularTrashCan />
+          </button>
+        </div>
         <Show when={tempFilterField().startsWith("metadata")}>
           <div>
             <span class="p-2">.</span>
