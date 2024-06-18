@@ -28,7 +28,7 @@ export const Search = () => {
           </div>
         </div>
         <div class="py-8 outline outline-red-500">
-          {JSON.stringify(search.state)}
+          {JSON.stringify(search.debouncedState)}
         </div>
         <ResultsPage
           page={page()}
