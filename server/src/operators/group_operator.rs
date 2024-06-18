@@ -415,7 +415,7 @@ pub async fn get_bookmarks_for_group_query(
     };
 
     // let (chunk_metadata, tag_seet, chunk_count, chunk_group) :
-    let pairs: Vec<(uuid::Uuid, i64, ChunkGroup)> =
+    let pairs: Vec<(Option<uuid::Uuid>, i64, ChunkGroup)> =
         chunk_metadata_columns::chunk_metadata
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
@@ -431,18 +431,21 @@ pub async fn get_bookmarks_for_group_query(
                     .and(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
             )
             .select((
-                chunk_metadata_columns::id,
+                chunk_metadata_columns::qdrant_point_id,
                 sql::<Int8>("count(*) OVER() AS full_count"),
                 ChunkGroup::as_select(),
             ))
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
-            .load::<(uuid::Uuid, i64, ChunkGroup)>(&mut conn)
+            .load::<(Option<uuid::Uuid>, i64, ChunkGroup)>(&mut conn)
             .await
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
-    let chunk_ids = pairs.clone().into_iter().map(|(id, _, _)| id).collect();
-    let chunk_metadata = get_chunk_metadatas_from_point_ids(chunk_ids, pool).await?;
+    let point_ids = pairs
+        .iter()
+        .filter_map(|(point_id, _, _)| point_id.clone())
+        .collect::<Vec<uuid::Uuid>>();
+    let chunk_metadata = get_chunk_metadatas_from_point_ids(point_ids, pool).await?;
 
     let (chunk_count, chunk_group) = pairs
         .get(0)
