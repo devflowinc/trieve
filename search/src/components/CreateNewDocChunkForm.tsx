@@ -35,6 +35,12 @@ export const CreateNewDocChunkForm = () => {
   const [isSubmitting, setIsSubmitting] = createSignal(false);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [timestamp, setTimestamp] = createSignal<string | undefined>(undefined);
+  const [boostPhrase, setBoostPhrase] = createSignal<string | undefined>(
+    undefined,
+  );
+  const [boostFactor, setBoostFactor] = createSignal<number | undefined>(
+    undefined,
+  );
 
   const [editorHtmlContent, setEditorHtmlContent] = createSignal("");
   const [editorTextContent, setEditorTextContent] = createSignal("");
@@ -72,6 +78,13 @@ export const CreateNewDocChunkForm = () => {
       requestBody.location = {
         lat: locationLat(),
         lon: locationLon(),
+      };
+    }
+
+    if (boostPhrase() && boostFactor()) {
+      requestBody.boost_phrase = {
+        phrase: boostPhrase(),
+        boost_factor: boostFactor(),
       };
     }
 
@@ -222,6 +235,33 @@ export const CreateNewDocChunkForm = () => {
             onInput={(e) => setWeight(Number(e.currentTarget.value))}
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
           />
+          <div class="flex items-center gap-x-2">
+            <div>IDF Boost</div>
+            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+              <Tooltip
+                body={
+                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                }
+                tooltipText="Optional. Boost terms will multiplicatively increase the presence of terms in the fulltext document frequency index by the boost value."
+              />
+            </div>
+          </div>
+          <div class="flex gap-x-2">
+            <input
+              type="text"
+              placeholder="optional - space separated terms to boost in search results"
+              value={boostPhrase() ?? ""}
+              onInput={(e) => setBoostPhrase(e.target.value)}
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+            <input
+              type="number"
+              placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
+              value={boostFactor()}
+              onInput={(e) => setBoostFactor(Number(e.currentTarget.value))}
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+          </div>
         </div>
         <div class="flex flex-col space-y-2">
           <div class="flex items-center space-x-2">

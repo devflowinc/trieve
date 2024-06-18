@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -48,6 +49,12 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     initialChunkMetadata?.time_stamp,
   );
   const [numValue, setNumValue] = createSignal(initialChunkMetadata?.num_value);
+  const [boostPhrase, setBoostPhrase] = createSignal<string | undefined>(
+    undefined,
+  );
+  const [boostFactor, setBoostFactor] = createSignal<number | undefined>(
+    undefined,
+  );
   const [fetching, setFetching] = createSignal(true);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [groupIds, setGroupIds] = createSignal<string[]>();
@@ -132,6 +139,13 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       requestBody.location = {
         lat: locationLat(),
         lon: locationLon(),
+      };
+    }
+
+    if (boostPhrase() && boostFactor()) {
+      requestBody.boost_phrase = {
+        phrase: boostPhrase(),
+        boost_factor: boostFactor(),
       };
     }
 
@@ -333,6 +347,35 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                   onInput={(e) => setWeight(Number(e.currentTarget.value))}
                   class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
                 />
+                <div class="flex items-center gap-x-2">
+                  <div>IDF Boost</div>
+                  <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                    <Tooltip
+                      body={
+                        <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                      }
+                      tooltipText="Optional. Boost terms will multiplicatively increase the presence of terms in the fulltext document frequency index by the boost value."
+                    />
+                  </div>
+                </div>
+                <div class="flex gap-x-2">
+                  <input
+                    type="text"
+                    placeholder="optional - space separated terms to boost in search results"
+                    value={boostPhrase() ?? ""}
+                    onInput={(e) => setBoostPhrase(e.target.value)}
+                    class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+                  />
+                  <input
+                    type="number"
+                    placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
+                    value={boostFactor()}
+                    onInput={(e) =>
+                      setBoostFactor(Number(e.currentTarget.value))
+                    }
+                    class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+                  />
+                </div>
               </div>
               <div class="flex flex-col space-y-2">
                 <div class="flex items-center space-x-2">

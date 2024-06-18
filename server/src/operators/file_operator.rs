@@ -182,6 +182,7 @@ pub async fn create_file_chunks(
             convert_html_to_text: None,
             image_urls: None,
             num_value: None,
+            boost_phrase: None,
         };
         chunks.push(create_chunk_data);
     }

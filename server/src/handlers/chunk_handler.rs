@@ -32,6 +32,15 @@ use simple_server_timing_header::Timer;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
+/// Boost is useful for when you want to boost certain phrases in the fulltext search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct BoostPhrase {
+    /// The phrase to boost in the fulltext document frequency index
+    pub phrase: String,
+    /// Amount to multiplicatevly increase the frequency of the tokens in the phrase by
+    pub boost_factor: f64,
+}
+
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 #[schema(example = json!({
     "chunk_html": "<p>Some HTML content</p>",
@@ -52,6 +61,7 @@ use utoipa::ToSchema;
     "weight": 0.5,
     "split_avg": false,
     "convert_html_to_text": false,
+    "boost_phrase": {"phrase": "HTML", "boost": 5.0}
 }))]
 pub struct ChunkReqPayload {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
@@ -86,6 +96,8 @@ pub struct ChunkReqPayload {
     pub split_avg: Option<bool>,
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
     pub convert_html_to_text: Option<bool>,
+    /// Boost is useful for when you want to boost certain phrases in the fulltext search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
+    pub boost_phrase: Option<BoostPhrase>,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -485,6 +497,8 @@ pub struct UpdateChunkReqPayload {
     image_urls: Option<Vec<String>>,
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
     convert_html_to_text: Option<bool>,
+    /// Boost is useful for when you want to boost certain phrases in the fulltext search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
+    pub boost_phrase: Option<BoostPhrase>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -494,6 +508,7 @@ pub struct UpdateIngestionMessage {
     pub dataset_id: uuid::Uuid,
     pub group_ids: Option<Vec<UnifiedId>>,
     pub convert_html_to_text: Option<bool>,
+    pub boost_phrase: Option<BoostPhrase>,
 }
 
 /// Update Chunk
@@ -621,6 +636,7 @@ pub async fn update_chunk(
         dataset_id,
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,
+        boost_phrase: update_chunk_data.boost_phrase.clone(),
     };
 
     let mut redis_conn = redis_pool
@@ -770,6 +786,7 @@ pub async fn update_chunk_by_tracking_id(
         dataset_id,
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,
+        boost_phrase: None,
     };
 
     let mut redis_conn = redis_pool
