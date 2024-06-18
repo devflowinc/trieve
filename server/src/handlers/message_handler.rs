@@ -45,6 +45,47 @@ use simsearch::SimSearch;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
+pub fn check_completion_param_validity(
+    temperature: Option<f32>,
+    frequency_penalty: Option<f32>,
+    presence_penalty: Option<f32>,
+    stop_tokens: Option<Vec<String>>,
+) -> Result<(), ServiceError> {
+    if let Some(temperature) = temperature {
+        if !(0.0..=2.0).contains(&temperature) {
+            return Err(ServiceError::BadRequest(
+                "Temperature must be between 0 and 2".to_string(),
+            ));
+        }
+    }
+
+    if let Some(frequency_penalty) = frequency_penalty {
+        if !(-2.0..=2.0).contains(&frequency_penalty) {
+            return Err(ServiceError::BadRequest(
+                "Frequency penalty must be between -2.0 and 2.0".to_string(),
+            ));
+        }
+    }
+
+    if let Some(presence_penalty) = presence_penalty {
+        if !(-2.0..=2.0).contains(&presence_penalty) {
+            return Err(ServiceError::BadRequest(
+                "Presence penalty must be between -2.0 and 2.0".to_string(),
+            ));
+        }
+    }
+
+    if let Some(stop_tokens) = stop_tokens {
+        if stop_tokens.len() > 4 {
+            return Err(ServiceError::BadRequest(
+                "Stop tokens must be less than or equal to 4".to_string(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageReqPayload {
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
@@ -830,11 +871,7 @@ pub async fn stream_response(
         frequency_penalty: Some(frequency_penalty.unwrap_or(0.7)),
         presence_penalty: Some(presence_penalty.unwrap_or(0.7)),
         max_tokens,
-        stop: if let Some(stop_tokens) = stop_tokens {
-            Some(StopToken::Array(stop_tokens))
-        } else {
-            None
-        },
+        stop: stop_tokens.map(StopToken::Array),
         logit_bias: None,
         user: None,
         response_format: None,

@@ -439,13 +439,7 @@ pub async fn get_sparse_vectors(
     let filtered_boosts_with_index = messages
         .into_iter()
         .enumerate()
-        .filter_map(|(i, (_, y))| {
-            if let Some(boost_phrase) = y {
-                Some((i, boost_phrase))
-            } else {
-                None
-            }
-        })
+        .filter_map(|(i, (_, y))| y.map(|boost_phrase| (i, boost_phrase)))
         .collect::<Vec<(usize, BoostPhrase)>>();
     let filtered_boosts_with_index_groups = filtered_boosts_with_index.chunks(30);
 
@@ -515,7 +509,7 @@ pub async fn get_sparse_vectors(
                     .iter()
                     .zip(sparse_vectors)
                     .map(|((og_index, y), sparse_vector)| {
-                        (og_index.clone(), y.boost_factor, sparse_vector)
+                        (*og_index, y.boost_factor, sparse_vector)
                     })
                     .collect();
 
@@ -618,17 +612,21 @@ pub async fn get_sparse_vectors(
             content_vectors_sorted[og_index] = content_vectors_sorted[og_index]
                 .iter()
                 .map(|splade_indice| {
-                    if let Some(_) = boost_vector.iter().find(|boost_splade_indice| {
-                        boost_splade_indice.index == splade_indice.index
-                    }) {
+                    if boost_vector
+                        .iter()
+                        .find(|boost_splade_indice| {
+                            boost_splade_indice.index == splade_indice.index
+                        })
+                        .is_some()
+                    {
                         SpladeIndicies {
-                            index: splade_indice.index.clone(),
-                            value: splade_indice.value.clone() * (boost_amt as f32),
+                            index: splade_indice.index,
+                            value: splade_indice.value * (boost_amt as f32),
                         }
                     } else {
                         SpladeIndicies {
-                            index: splade_indice.index.clone(),
-                            value: splade_indice.value.clone(),
+                            index: splade_indice.index,
+                            value: splade_indice.value,
                         }
                     }
                 })

@@ -1766,7 +1766,7 @@ pub fn get_highlights(
         .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
         .flat_map(|x| {
             x.to_string()
-                .split_inclusive(" ")
+                .split_inclusive(' ')
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
                 .chunks(max_length.unwrap_or(5) as usize)
@@ -1823,7 +1823,7 @@ pub fn get_highlights(
                 }
                 let slice = get_slice_from_vec_string(split_content.clone(), start)?;
                 let candidate_words = slice
-                    .split_inclusive(" ")
+                    .split_inclusive(' ')
                     .take(half_window as usize - count)
                     .collect::<Vec<&str>>();
                 used_phrases.insert(
@@ -1841,7 +1841,7 @@ pub fn get_highlights(
             let mut count: usize = 0;
             while (count as u32) < half_window {
                 let slice = get_slice_from_vec_string(split_content.clone(), start)?;
-                let split_words = slice.split_inclusive(" ").collect::<Vec<&str>>();
+                let split_words = slice.split_inclusive(' ').collect::<Vec<&str>>();
                 if matched_idxs_set.contains(&start) {
                     break;
                 }
@@ -1884,7 +1884,7 @@ pub fn get_highlights(
             }
         }
         let highlighted_phrase = phrase.replace(
-            &phrase.trim(),
+            phrase.trim(),
             &format!("<mark><b>{}</b></mark>", phrase.trim()),
         );
         let windowed_phrase = format!("{}{}{}", prev_phrase, highlighted_phrase, next_phrase);
