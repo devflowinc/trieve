@@ -2,19 +2,15 @@ import { HomeNavbar } from "./components/Atoms/HomeNavbar";
 import { useContext } from "solid-js";
 import { DatasetAndUserContext } from "./components/Contexts/DatasetAndUserContext";
 import SearchForm from "./components/SearchForm";
-import { DefaultQueries } from "./components/DefaultQueries";
 import { Footer } from "./components/Footer";
 import { useSearch } from "./hooks/useSearch";
+import ResultsPage from "./components/ResultsPage";
 
 export const HomeSearch = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
   const search = useSearch();
 
   const $dataset = datasetAndUserContext.currentDataset;
-  const $env = datasetAndUserContext.clientConfig;
-  const suggestedQueries = $env()
-    .SUGGESTED_QUERIES?.split(",")
-    .filter((query) => query !== "");
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
@@ -40,9 +36,9 @@ export const HomeSearch = () => {
         </div>
         <div class="mt-8 w-full max-w-7xl px-4 sm:px-8 md:px-20">
           <SearchForm search={search} />
+          <ResultsPage search={search} />
         </div>
       </div>
-      <DefaultQueries suggestedQueries={suggestedQueries ?? []} />
       <div class="flex-1" />
       <Footer />
     </div>

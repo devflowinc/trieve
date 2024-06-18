@@ -5,7 +5,6 @@ import { Route, Router } from "@solidjs/router";
 import * as Sentry from "@sentry/browser";
 import { DEV } from "solid-js";
 import { Home } from "./layouts/HomeLayout";
-import { Search } from "./pages/Search";
 import { Upload } from "./pages/Upload";
 import { CreateChunk } from "./pages/CreateChunk";
 import { EditChunk } from "./pages/chunk/edit/EditChunk";
@@ -37,7 +36,6 @@ render(
   () => (
     <Router>
       <Route path="/" component={Home} />
-      <Route path="/search" component={Search} />
       <Route path="/upload" component={Upload} />
       <Route path="/create" component={CreateChunk} />
       <Route path="/chunk">

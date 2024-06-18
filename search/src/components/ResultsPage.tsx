@@ -5,8 +5,6 @@ import {
   createEffect,
   createSignal,
   For,
-  Setter,
-  Accessor,
   Match,
   Switch,
   useContext,
@@ -36,9 +34,6 @@ import { SearchStore } from "../hooks/useSearch";
 
 export interface ResultsPageProps {
   search: SearchStore;
-  page: number;
-  loading: Accessor<boolean>;
-  setLoading: Setter<boolean>;
 }
 
 const ResultsPage = (props: ResultsPageProps) => {
@@ -46,6 +41,9 @@ const ResultsPage = (props: ResultsPageProps) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $dataset = datasetAndUserContext.currentDataset;
+
+  const [loading, setLoading] = createSignal(false);
+  const [page] = createSignal(0);
 
   const [chunkCollections, setChunkCollections] = createSignal<ChunkGroupDTO[]>(
     [],
@@ -138,7 +136,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const requestBody: any = {
           query: props.search.debounced.query,
-          page: props.page,
+          page: page(),
           filters: filters(),
           search_type: props.search.debounced.searchType.includes(
             "autocomplete",
@@ -174,7 +172,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             props.search.debounced.extendResults ?? false;
         }
 
-        props.setLoading(true);
+        setLoading(true);
 
         setGroupResultChunks([]);
         setResultChunks([]);
@@ -241,7 +239,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           setClientSideRequestFinished(true);
 
           createEffect(() => {
-            props.setLoading(false);
+            setLoading(false);
           });
         });
 
@@ -309,7 +307,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         <Switch>
           <Match
             when={
-              props.loading() ||
+              loading() ||
               (resultChunks().length === 0 && !clientSideRequestFinished())
             }
           >
@@ -328,7 +326,7 @@ const ResultsPage = (props: ResultsPageProps) => {
               <p class="text-lg">You may need to adjust your filters</p>
             </div>
           </Match>
-          <Match when={!props.loading() && groupResultChunks().length == 0}>
+          <Match when={!loading() && groupResultChunks().length == 0}>
             <div class="flex w-full max-w-7xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
               <For each={resultChunks()}>
                 {(chunk) => (
@@ -353,10 +351,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
             <Show when={resultChunks().length > 0}>
               <div class="mx-auto my-12 flex items-center space-x-2">
-                <PaginationController
-                  page={props.page}
-                  totalPages={totalPages()}
-                />
+                <PaginationController page={page()} totalPages={totalPages()} />
               </div>
             </Show>
             <div>
@@ -426,7 +421,7 @@ const ResultsPage = (props: ResultsPageProps) => {
               </div>
             </div>
           </Match>
-          <Match when={!props.loading() && groupResultChunks().length > 0}>
+          <Match when={!loading() && groupResultChunks().length > 0}>
             <For each={groupResultChunks()}>
               {(group) => {
                 const [groupExpanded, setGroupExpanded] = createSignal(true);
@@ -501,10 +496,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             </For>
             <Show when={groupResultChunks().length > 0}>
               <div class="mx-auto my-12 flex items-center space-x-2">
-                <PaginationController
-                  page={props.page}
-                  totalPages={totalPages()}
-                />
+                <PaginationController page={page()} totalPages={totalPages()} />
               </div>
             </Show>
             <div>

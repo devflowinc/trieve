@@ -10,6 +10,7 @@ import {
   Match,
   createMemo,
   useContext,
+  on,
 } from "solid-js";
 import {
   type ChunkGroupDTO,
@@ -33,7 +34,7 @@ import { Portal } from "solid-js/web";
 import { ChatPopup } from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
-import { useLocation, useNavigate } from "@solidjs/router";
+import { useNavigate } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
 import { useSearch } from "../hooks/useSearch";
@@ -48,29 +49,11 @@ export const GroupPage = (props: GroupPageProps) => {
   const search = useSearch();
 
   const $dataset = datasetAndUserContext.currentDataset;
-  const location = useLocation();
   const navigate = useNavigate();
 
   const searchChunkMetadatasWithVotes: ScoreChunkDTO[] = [];
 
-  const [query, setQuery] = createSignal<string>("");
-  const [page, setPage] = createSignal<number>(1);
-  const [scoreThreshold, setScoreThreshold] = createSignal<number>(0.0);
-  const [searchType, setSearchType] = createSignal<string>("hybrid");
-  const [recencyBias, setRecencyBias] = createSignal<number>(0.0);
-  const [slimChunks, setSlimChunks] = createSignal(false);
-  const [pageSize, setPageSize] = createSignal<number>(10);
-  const [getTotalPages, setGetTotalPages] = createSignal(false);
-  const [highlightResults, setHighlightResults] = createSignal(true);
-  const [highlightDelimiters, setHighlightDelimiters] = createSignal<string[]>([
-    "?",
-    ",",
-    ".",
-    "!",
-  ]);
-  const [highlightMaxLength, setHighlightMaxLength] = createSignal<number>(8);
-  const [highlightMaxNum, setHighlightMaxNum] = createSignal<number>(3);
-  const [highlightWindow, setHighlightWindow] = createSignal<number>(0);
+  const [page] = createSignal<number>(1);
 
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<ChunkMetadata[]>([]);
@@ -132,135 +115,121 @@ export const GroupPage = (props: GroupPageProps) => {
     return curGroupRecVal;
   });
 
-  createEffect(() => {
-    setQuery(location.query.q ?? "");
-    setPage(Number(location.query.page) || 1);
-    setScoreThreshold(Number(location.query.scoreThreshold) || 0.0);
-    setSearchType(location.query.searchType ?? "hybrid");
-    setRecencyBias(Number(location.query.recencyBias) || 0.0);
-    setSlimChunks(location.query.slimChunks === "true");
-    setPageSize(Number(location.query.pageSize) || 10);
-    setGetTotalPages(location.query.getTotalPages === "false" ? false : true);
-    setHighlightResults(
-      location.query.highlightResults === "false" ? false : true,
-    );
-    setHighlightDelimiters(
-      location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
-    );
-    setHighlightMaxLength(Number(location.query.highlightMaxLength) || 8);
-    setHighlightMaxNum(Number(location.query.highlightMaxNum) || 3);
-    setHighlightWindow(Number(location.query.highlightWindow) || 0);
-  });
+  createEffect(
+    on(
+      () => [search.debounced.version, $dataset],
+      () => {
+        console.log("RUNNING");
+        const abortController = new AbortController();
+        let group_id: string | null = null;
+        const currentDataset = $dataset?.();
+        if (!currentDataset) return;
 
-  createEffect(() => {
-    const abortController = new AbortController();
-    let group_id: string | null = null;
-    const currentDataset = $dataset?.();
-    if (!currentDataset) return;
+        if (search.debounced.query === "") {
+          void fetch(`${apiHost}/chunk_group/${props.groupID}/${page()}`, {
+            method: "GET",
+            credentials: "include",
+            signal: abortController.signal,
+            headers: {
+              "TR-Dataset": currentDataset.dataset.id,
+            },
+          }).then((response) => {
+            if (response.ok) {
+              void response.json().then((data) => {
+                const groupBookmarks = data as ChunkGroupBookmarkDTO;
+                group_id = groupBookmarks.group.id;
+                setGroupInfo(groupBookmarks.group);
+                setTotalPages(groupBookmarks.total_pages);
+                setChunkMetadatas(groupBookmarks.chunks);
+                setError("");
+              });
+            }
+            if (response.status == 403) {
+              setError("You are not authorized to view this group");
+            }
+            if (response.status == 404) {
+              setError("Group not found, it never existed or was deleted");
+            }
+            setClientSideRequestFinished(true);
+          });
+        } else {
+          setSearchLoading(true);
 
-    if (query() === "") {
-      void fetch(`${apiHost}/chunk_group/${props.groupID}/${page()}`, {
-        method: "GET",
-        credentials: "include",
-        signal: abortController.signal,
-        headers: {
-          "TR-Dataset": currentDataset.dataset.id,
-        },
-      }).then((response) => {
-        if (response.ok) {
-          void response.json().then((data) => {
-            const groupBookmarks = data as ChunkGroupBookmarkDTO;
-            group_id = groupBookmarks.group.id;
-            setGroupInfo(groupBookmarks.group);
-            setTotalPages(groupBookmarks.total_pages);
-            setChunkMetadatas(groupBookmarks.chunks);
-            setError("");
+          void fetch(`${apiHost}/chunk_group/search`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "TR-Dataset": currentDataset.dataset.id,
+            },
+            signal: abortController.signal,
+            credentials: "include",
+            body: JSON.stringify({
+              query: search.debounced.query,
+              page: page(),
+              score_threshold: search.debounced.scoreThreshold,
+              group_id: props.groupID,
+              search_type: search.debounced.searchType,
+              slim_chunks: search.debounced.slimChunks,
+              page_size: search.debounced.pageSize,
+              get_total_pages: search.debounced.getTotalPages,
+              highlight_results: search.debounced.highlightResults,
+              highlight_delimiters: search.debounced.highlightDelimiters,
+              highlight_max_length: search.debounced.highlightMaxLength,
+              highlight_window: search.debounced.highlightWindow,
+              recency_bias: search.debounced.recencyBias,
+            }),
+          }).then((response) => {
+            if (response.ok) {
+              void response.json().then((data) => {
+                const groupBookmarks = data as ChunkGroupSearchDTO;
+                group_id = groupBookmarks.group.id;
+                setGroupInfo(groupBookmarks.group);
+                setTotalPages(groupBookmarks.total_pages);
+                setSearchMetadatasWithVotes(groupBookmarks.bookmarks);
+                setError("");
+              });
+            }
+            if (response.status == 403) {
+              setError("You are not authorized to view this group");
+            }
+            setClientSideRequestFinished(true);
+            setSearchLoading(false);
+          });
+
+          onCleanup(() => {
+            abortController.abort();
           });
         }
-        if (response.status == 403) {
-          setError("You are not authorized to view this group");
-        }
-        if (response.status == 404) {
-          setError("Group not found, it never existed or was deleted");
-        }
-        setClientSideRequestFinished(true);
-      });
-    } else {
-      setSearchLoading(true);
 
-      void fetch(`${apiHost}/chunk_group/search`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "TR-Dataset": currentDataset.dataset.id,
-        },
-        signal: abortController.signal,
-        credentials: "include",
-        body: JSON.stringify({
-          query: query(),
-          page: page(),
-          score_threshold: scoreThreshold(),
-          group_id: props.groupID,
-          search_type: searchType(),
-          slim_chunks: slimChunks(),
-          page_size: pageSize(),
-          get_total_pages: getTotalPages(),
-          highlight_results: highlightResults(),
-          highlight_delimiters: highlightDelimiters(),
-          highlight_max_length: highlightMaxLength(),
-          highlight_window: highlightWindow(),
-          recency_bias: recencyBias(),
-        }),
-      }).then((response) => {
-        if (response.ok) {
-          void response.json().then((data) => {
-            const groupBookmarks = data as ChunkGroupSearchDTO;
-            group_id = groupBookmarks.group.id;
-            setGroupInfo(groupBookmarks.group);
-            setTotalPages(groupBookmarks.total_pages);
-            setSearchMetadatasWithVotes(groupBookmarks.bookmarks);
-            setError("");
-          });
-        }
-        if (response.status == 403) {
-          setError("You are not authorized to view this group");
-        }
-        setClientSideRequestFinished(true);
-        setSearchLoading(false);
-      });
+        fetchChunkGroups();
 
-      onCleanup(() => {
-        abortController.abort();
-      });
-    }
+        setOnGroupDelete(() => {
+          return () => {
+            setDeleting(true);
+            if (group_id === null) return;
 
-    fetchChunkGroups();
-
-    setOnGroupDelete(() => {
-      return () => {
-        setDeleting(true);
-        if (group_id === null) return;
-
-        void fetch(`${apiHost}/chunk_group/${group_id}`, {
-          method: "DELETE",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "TR-Dataset": currentDataset.dataset.id,
-          },
-          signal: abortController.signal,
-        }).then((response) => {
-          setDeleting(false);
-          if (response.ok) {
-            navigate(`/`);
-          }
-          if (response.status == 403) {
-            setDeleting(false);
-          }
+            void fetch(`${apiHost}/chunk_group/${group_id}`, {
+              method: "DELETE",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+                "TR-Dataset": currentDataset.dataset.id,
+              },
+              signal: abortController.signal,
+            }).then((response) => {
+              setDeleting(false);
+              if (response.ok) {
+                navigate(`/`);
+              }
+              if (response.status == 403) {
+                setDeleting(false);
+              }
+            });
+          };
         });
-      };
-    });
-  });
+      },
+    ),
+  );
 
   createEffect(() => {
     resizeTextarea(
@@ -554,46 +523,20 @@ export const GroupPage = (props: GroupPageProps) => {
           </Show>
         </Show>
         <div class="flex w-full max-w-7xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
-          <Show when={query() != ""}>
-            <button
-              class="relative mx-auto ml-8 mt-8 h-fit max-h-[240px] rounded-md bg-neutral-100 p-2 dark:bg-neutral-700"
-              onClick={() => navigate(`/group/${props.groupID}`)}
+          <div class="mx-auto w-full">
+            <div
+              classList={{
+                "mx-auto w-full": true,
+                "mt-8": search.state.query == "",
+              }}
             >
-              ← Back
-            </button>
-          </Show>
-          <Show when={chunkMetadatas().length > 0}>
-            <div class="mx-auto w-full">
-              <div
-                classList={{
-                  "mx-auto w-full": true,
-                  "mt-8": query() == "",
-                }}
-              >
-                <Show when={!query()}>
-                  <SearchForm
-                    search={search}
-                    searchType={searchType()}
-                    scoreThreshold={scoreThreshold()}
-                    pageSize={pageSize()}
-                    getTotalPages={getTotalPages()}
-                    recencyBias={recencyBias()}
-                    groupID={props.groupID}
-                    slimChunks={slimChunks()}
-                    highlightResults={highlightResults()}
-                    highlightDelimiters={highlightDelimiters()}
-                    highlightMaxLength={highlightMaxLength()}
-                    highlightMaxNum={highlightMaxNum()}
-                    highlightWindow={highlightWindow()}
-                  />
-                </Show>
-              </div>
+              <SearchForm search={search} />
             </div>
-          </Show>
-          <Show when={query() != ""}>
+          </div>
+          <Show when={search.state.query != ""}>
             <div class="flex w-full flex-col items-center rounded-md px-8 py-2">
               <div class="text-xl font-semibold">
-                Search results for "{query()}"
+                Search results for "{search.state.query}"
               </div>
             </div>
           </Show>
@@ -613,7 +556,9 @@ export const GroupPage = (props: GroupPageProps) => {
             <Match when={!searchLoading()}>
               <For
                 each={
-                  query() == "" ? chunkMetadatas() : searchMetadatasWithVotes()
+                  search.state.query == ""
+                    ? chunkMetadatas()
+                    : searchMetadatasWithVotes()
                 }
               >
                 {(chunk) => (
@@ -630,7 +575,7 @@ export const GroupPage = (props: GroupPageProps) => {
                       setOnDelete={setOnDelete}
                       setShowConfirmModal={setShowConfirmDeleteModal}
                       showExpand={clientSideRequestFinished()}
-                      defaultShowMetadata={slimChunks()}
+                      defaultShowMetadata={search.state.slimChunks}
                       setChunkGroups={setChunkGroups}
                       setSelectedIds={setSelectedIds}
                       selectedIds={selectedIds}
