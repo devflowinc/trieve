@@ -143,7 +143,7 @@ export const AfMessage = (props: AfMessageProps) => {
       >
         <Resizable.Panel
           onResize={() => syncHeight()}
-          initialSize={0.2}
+          initialSize={0.6}
           ref={setLeftColumnRef}
           classList={{
             "dark:text-white self-start group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
@@ -236,7 +236,7 @@ export const AfMessage = (props: AfMessageProps) => {
         <Show when={metadata() && metadata().length > 0}>
           <Resizable.Panel
             ref={setRightColumnRef}
-            initialSize={0.8}
+            initialSize={0.4}
             // style={{
             //   height: height(),
             // }}
