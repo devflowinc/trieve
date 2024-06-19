@@ -43,7 +43,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const $dataset = datasetAndUserContext.currentDataset;
 
   const [loading, setLoading] = createSignal(false);
-  const [page] = createSignal(0);
+  const [page, setPage] = createSignal(0);
 
   const [chunkCollections, setChunkCollections] = createSignal<ChunkGroupDTO[]>(
     [],
@@ -66,7 +66,6 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [noResults, setNoResults] = createSignal(false);
   const [filters, setFilters] = createSignal<Filters>({} as Filters);
   const [totalPages, setTotalPages] = createSignal(0);
-  const [triggerSearch, setTriggerSearch] = createSignal(false);
 
   const fetchChunkCollections = () => {
     if (!$currentUser?.()) return;
@@ -123,133 +122,147 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   createEffect(
     on(
-      () => props.search.debounced.version,
+      () => [props.search.state.query],
       () => {
-        const dataset = $dataset?.();
-        if (!dataset) return;
-        if (!props.search.debounced.query) {
-          return;
-        }
-
-        triggerSearch();
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const requestBody: any = {
-          query: props.search.debounced.query,
-          page: page(),
-          filters: filters(),
-          search_type: props.search.debounced.searchType.includes(
-            "autocomplete",
-          )
-            ? props.search.debounced.searchType.replace("autocomplete-", "")
-            : props.search.debounced.searchType,
-          score_threshold: props.search.debounced.scoreThreshold,
-          recency_bias: props.search.debounced.recencyBias ?? 0.0,
-          get_collisions: true,
-          slim_chunks: props.search.debounced.slimChunks ?? false,
-          page_size: props.search.debounced.pageSize ?? 10,
-          get_total_pages: props.search.debounced.getTotalPages ?? false,
-          highlight_results: props.search.debounced.highlightResults ?? true,
-          highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
-            "?",
-            ".",
-            "!",
-          ],
-          highlight_max_length: props.search.debounced.highlightMaxLength ?? 8,
-          highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
-          highlight_window: props.search.debounced.highlightWindow ?? 0,
-        };
-
-        let searchRoute = "chunk/search";
-        const groupUnique = props.search.debounced.groupUniqueSearch;
-        if (groupUnique) {
-          searchRoute = "chunk_group/group_oriented_search";
-        }
-
-        if (props.search.debounced.searchType.includes("autocomplete")) {
-          searchRoute = "chunk/autocomplete";
-          requestBody["extend_results"] =
-            props.search.debounced.extendResults ?? false;
-        }
-
-        setLoading(true);
-
-        setGroupResultChunks([]);
-        setResultChunks([]);
-        setNoResults(false);
-
-        const abortController = new AbortController();
-
-        void fetch(`${apiHost}/${searchRoute}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "TR-Dataset": dataset.dataset.id,
-          },
-          signal: abortController.signal,
-          credentials: "include",
-          body: JSON.stringify(requestBody),
-        }).then((response) => {
-          if (response.ok) {
-            void response.json().then((data) => {
-              let resultingChunks: ScoreChunkDTO[] = [];
-              if (groupUnique) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                const groupResult = data.group_chunks as GroupScoreChunkDTO[];
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                setTotalPages(data.total_chunk_pages);
-
-                setGroupResultChunks(groupResult);
-
-                resultingChunks = groupResult.flatMap((groupChunkDTO) => {
-                  return groupChunkDTO.metadata;
-                });
-              } else {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                resultingChunks = data.score_chunks as ScoreChunkDTO[];
-
-                setResultChunks(resultingChunks);
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                setTotalPages(data.total_chunk_pages);
-              }
-
-              if (resultingChunks.length === 0) {
-                setNoResults(true);
-              }
-            });
-          } else {
-            void response
-              .json()
-              .then((data) => {
-                createToast({
-                  type: "error",
-                  message: data.message,
-                });
-              })
-              .catch(() => {
-                createToast({
-                  type: "error",
-                  message: "An unknown error occurred while searching",
-                });
-              });
-
-            setNoResults(true);
-          }
-
+        if (!props.search.state.query) {
+          setResultChunks([]);
+          setGroupResultChunks([]);
           setClientSideRequestFinished(true);
-
-          createEffect(() => {
-            setLoading(false);
-          });
-        });
-
-        fetchChunkCollections();
-
-        onCleanup(() => {
-          abortController.abort();
-        });
+        }
       },
     ),
+  );
+
+  const dataset = createMemo(() => {
+    if ($dataset) {
+      return $dataset();
+    } else {
+      return null;
+    }
+  });
+
+  createEffect(
+    on([() => props.search.debounced.version, dataset, page], () => {
+      const dataset = $dataset?.();
+      if (!dataset) return;
+      if (!props.search.debounced.query) {
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const requestBody: any = {
+        query: props.search.debounced.query,
+        page: page(),
+        filters: filters(),
+        search_type: props.search.debounced.searchType.includes("autocomplete")
+          ? props.search.debounced.searchType.replace("autocomplete-", "")
+          : props.search.debounced.searchType,
+        score_threshold: props.search.debounced.scoreThreshold,
+        recency_bias: props.search.debounced.recencyBias ?? 0.0,
+        get_collisions: true,
+        slim_chunks: props.search.debounced.slimChunks ?? false,
+        page_size: props.search.debounced.pageSize ?? 10,
+        get_total_pages: props.search.debounced.getTotalPages ?? false,
+        highlight_results: props.search.debounced.highlightResults ?? true,
+        highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
+          "?",
+          ".",
+          "!",
+        ],
+        highlight_max_length: props.search.debounced.highlightMaxLength ?? 8,
+        highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
+        highlight_window: props.search.debounced.highlightWindow ?? 0,
+      };
+
+      let searchRoute = "chunk/search";
+      const groupUnique = props.search.debounced.groupUniqueSearch;
+      if (groupUnique) {
+        searchRoute = "chunk_group/group_oriented_search";
+      }
+
+      if (props.search.debounced.searchType.includes("autocomplete")) {
+        searchRoute = "chunk/autocomplete";
+        requestBody["extend_results"] =
+          props.search.debounced.extendResults ?? false;
+      }
+
+      setLoading(true);
+
+      // setGroupResultChunks([]);
+      // setResultChunks([]);
+      setNoResults(false);
+
+      const abortController = new AbortController();
+
+      void fetch(`${apiHost}/${searchRoute}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "TR-Dataset": dataset.dataset.id,
+        },
+        signal: abortController.signal,
+        credentials: "include",
+        body: JSON.stringify(requestBody),
+      }).then((response) => {
+        if (response.ok) {
+          void response.json().then((data) => {
+            let resultingChunks: ScoreChunkDTO[] = [];
+            if (groupUnique) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              const groupResult = data.group_chunks as GroupScoreChunkDTO[];
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              setTotalPages(data.total_chunk_pages);
+
+              setGroupResultChunks(groupResult);
+
+              resultingChunks = groupResult.flatMap((groupChunkDTO) => {
+                return groupChunkDTO.metadata;
+              });
+            } else {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              resultingChunks = data.score_chunks as ScoreChunkDTO[];
+
+              setResultChunks(resultingChunks);
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              setTotalPages(data.total_chunk_pages);
+            }
+
+            if (resultingChunks.length === 0) {
+              setNoResults(true);
+            }
+          });
+        } else {
+          void response
+            .json()
+            .then((data) => {
+              createToast({
+                type: "error",
+                message: data.message,
+              });
+            })
+            .catch(() => {
+              createToast({
+                type: "error",
+                message: "An unknown error occurred while searching",
+              });
+            });
+
+          setNoResults(true);
+        }
+
+        setClientSideRequestFinished(true);
+
+        createEffect(() => {
+          setLoading(false);
+        });
+      });
+
+      fetchChunkCollections();
+
+      onCleanup(() => {
+        abortController.abort();
+      });
+    }),
   );
 
   createEffect((prevFiltersKey) => {
@@ -276,12 +289,6 @@ const ResultsPage = (props: ResultsPageProps) => {
   }, "");
 
   createEffect(() => {
-    window.addEventListener("triggerSearch", () => {
-      setTriggerSearch((prev) => !prev);
-    });
-  });
-
-  createEffect(() => {
     if (!openChat()) {
       setSelectedIds((prev) => (prev.length < 10 ? prev : []));
     }
@@ -305,12 +312,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       </Show>
       <div class="mt-12 flex w-full flex-col items-center space-y-4">
         <Switch>
-          <Match
-            when={
-              loading() ||
-              (resultChunks().length === 0 && !clientSideRequestFinished())
-            }
-          >
+          <Match when={loading()}>
             <div
               class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
               role="status"
@@ -351,7 +353,11 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
             <Show when={resultChunks().length > 0}>
               <div class="mx-auto my-12 flex items-center space-x-2">
-                <PaginationController page={page()} totalPages={totalPages()} />
+                <PaginationController
+                  setPage={setPage}
+                  page={page()}
+                  totalPages={totalPages()}
+                />
               </div>
             </Show>
             <div>
@@ -496,7 +502,11 @@ const ResultsPage = (props: ResultsPageProps) => {
             </For>
             <Show when={groupResultChunks().length > 0}>
               <div class="mx-auto my-12 flex items-center space-x-2">
-                <PaginationController page={page()} totalPages={totalPages()} />
+                <PaginationController
+                  setPage={setPage}
+                  page={page()}
+                  totalPages={totalPages()}
+                />
               </div>
             </Show>
             <div>

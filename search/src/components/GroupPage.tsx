@@ -53,7 +53,7 @@ export const GroupPage = (props: GroupPageProps) => {
 
   const searchChunkMetadatasWithVotes: ScoreChunkDTO[] = [];
 
-  const [page] = createSignal<number>(1);
+  const [page, setPage] = createSignal<number>(1);
 
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<ChunkMetadata[]>([]);
@@ -115,129 +115,126 @@ export const GroupPage = (props: GroupPageProps) => {
     return curGroupRecVal;
   });
 
+  const dataset = createMemo(() => {
+    if ($dataset) {
+      return $dataset();
+    } else {
+      return null;
+    }
+  });
+
   createEffect(
-    on(
-      () => [search.debounced.version, $dataset],
-      () => {
-        console.log("RUNNING");
-        const abortController = new AbortController();
-        let group_id: string | null = null;
-        const currentDataset = $dataset?.();
-        if (!currentDataset) return;
+    on([() => search.debounced.version, page, dataset], () => {
+      console.log("RUNNING");
+      const abortController = new AbortController();
+      let group_id: string | null = null;
+      const currentDataset = $dataset?.();
+      if (!currentDataset) return;
 
-        if (search.debounced.query === "") {
-          void fetch(`${apiHost}/chunk_group/${props.groupID}/${page()}`, {
-            method: "GET",
+      if (search.debounced.query === "") {
+        void fetch(`${apiHost}/chunk_group/${props.groupID}/${page()}`, {
+          method: "GET",
+          credentials: "include",
+          signal: abortController.signal,
+          headers: {
+            "TR-Dataset": currentDataset.dataset.id,
+          },
+        }).then((response) => {
+          if (response.ok) {
+            void response.json().then((data) => {
+              const groupBookmarks = data as ChunkGroupBookmarkDTO;
+              group_id = groupBookmarks.group.id;
+              setGroupInfo(groupBookmarks.group);
+              setTotalPages(groupBookmarks.total_pages);
+              setChunkMetadatas(groupBookmarks.chunks);
+              setError("");
+            });
+          }
+          if (response.status == 403) {
+            setError("You are not authorized to view this group");
+          }
+          if (response.status == 404) {
+            setError("Group not found, it never existed or was deleted");
+          }
+          setClientSideRequestFinished(true);
+        });
+      } else {
+        setSearchLoading(true);
+
+        void fetch(`${apiHost}/chunk_group/search`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "TR-Dataset": currentDataset.dataset.id,
+          },
+          signal: abortController.signal,
+          credentials: "include",
+          body: JSON.stringify({
+            query: search.debounced.query,
+            page: page(),
+            score_threshold: search.debounced.scoreThreshold,
+            group_id: props.groupID,
+            search_type: search.debounced.searchType,
+            slim_chunks: search.debounced.slimChunks,
+            page_size: search.debounced.pageSize,
+            get_total_pages: search.debounced.getTotalPages,
+            highlight_results: search.debounced.highlightResults,
+            highlight_delimiters: search.debounced.highlightDelimiters,
+            highlight_max_length: search.debounced.highlightMaxLength,
+            highlight_window: search.debounced.highlightWindow,
+            recency_bias: search.debounced.recencyBias,
+          }),
+        }).then((response) => {
+          if (response.ok) {
+            void response.json().then((data) => {
+              const groupBookmarks = data as ChunkGroupSearchDTO;
+              group_id = groupBookmarks.group.id;
+              setGroupInfo(groupBookmarks.group);
+              setTotalPages(groupBookmarks.total_pages);
+              setSearchMetadatasWithVotes(groupBookmarks.bookmarks);
+              setError("");
+            });
+          }
+          if (response.status == 403) {
+            setError("You are not authorized to view this group");
+          }
+          setClientSideRequestFinished(true);
+          setSearchLoading(false);
+        });
+
+        onCleanup(() => {
+          abortController.abort();
+        });
+      }
+
+      fetchChunkGroups();
+
+      setOnGroupDelete(() => {
+        return () => {
+          setDeleting(true);
+          if (group_id === null) return;
+
+          void fetch(`${apiHost}/chunk_group/${group_id}`, {
+            method: "DELETE",
             credentials: "include",
-            signal: abortController.signal,
-            headers: {
-              "TR-Dataset": currentDataset.dataset.id,
-            },
-          }).then((response) => {
-            if (response.ok) {
-              void response.json().then((data) => {
-                const groupBookmarks = data as ChunkGroupBookmarkDTO;
-                group_id = groupBookmarks.group.id;
-                setGroupInfo(groupBookmarks.group);
-                setTotalPages(groupBookmarks.total_pages);
-                setChunkMetadatas(groupBookmarks.chunks);
-                setError("");
-              });
-            }
-            if (response.status == 403) {
-              setError("You are not authorized to view this group");
-            }
-            if (response.status == 404) {
-              setError("Group not found, it never existed or was deleted");
-            }
-            setClientSideRequestFinished(true);
-          });
-        } else {
-          setSearchLoading(true);
-
-          void fetch(`${apiHost}/chunk_group/search`, {
-            method: "POST",
             headers: {
               "Content-Type": "application/json",
               "TR-Dataset": currentDataset.dataset.id,
             },
             signal: abortController.signal,
-            credentials: "include",
-            body: JSON.stringify({
-              query: search.debounced.query,
-              page: page(),
-              score_threshold: search.debounced.scoreThreshold,
-              group_id: props.groupID,
-              search_type: search.debounced.searchType,
-              slim_chunks: search.debounced.slimChunks,
-              page_size: search.debounced.pageSize,
-              get_total_pages: search.debounced.getTotalPages,
-              highlight_results: search.debounced.highlightResults,
-              highlight_delimiters: search.debounced.highlightDelimiters,
-              highlight_max_length: search.debounced.highlightMaxLength,
-              highlight_window: search.debounced.highlightWindow,
-              recency_bias: search.debounced.recencyBias,
-            }),
           }).then((response) => {
+            setDeleting(false);
             if (response.ok) {
-              void response.json().then((data) => {
-                const groupBookmarks = data as ChunkGroupSearchDTO;
-                group_id = groupBookmarks.group.id;
-                setGroupInfo(groupBookmarks.group);
-                setTotalPages(groupBookmarks.total_pages);
-                setSearchMetadatasWithVotes(groupBookmarks.bookmarks);
-                setError("");
-              });
+              navigate(`/`);
             }
             if (response.status == 403) {
-              setError("You are not authorized to view this group");
-            }
-            setClientSideRequestFinished(true);
-            setSearchLoading(false);
-          });
-
-          onCleanup(() => {
-            abortController.abort();
-          });
-        }
-
-        fetchChunkGroups();
-
-        setOnGroupDelete(() => {
-          return () => {
-            setDeleting(true);
-            if (group_id === null) return;
-
-            void fetch(`${apiHost}/chunk_group/${group_id}`, {
-              method: "DELETE",
-              credentials: "include",
-              headers: {
-                "Content-Type": "application/json",
-                "TR-Dataset": currentDataset.dataset.id,
-              },
-              signal: abortController.signal,
-            }).then((response) => {
               setDeleting(false);
-              if (response.ok) {
-                navigate(`/`);
-              }
-              if (response.status == 403) {
-                setDeleting(false);
-              }
-            });
-          };
-        });
-      },
-    ),
+            }
+          });
+        };
+      });
+    }),
   );
-
-  createEffect(() => {
-    resizeTextarea(
-      document.getElementById(
-        "group-query-textarea",
-      ) as HTMLTextAreaElement | null,
-    );
-  });
 
   // Fetch the chunk groups for the auth'ed user
   const fetchChunkGroups = () => {
@@ -389,12 +386,6 @@ export const GroupPage = (props: GroupPageProps) => {
 
       setLoadingRecommendations(false);
     });
-  };
-
-  const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
-    if (!textarea) return;
-
-    textarea.style.height = `${textarea.scrollHeight}px`;
   };
 
   const chatPopupChunks = createMemo(() => {
@@ -574,7 +565,12 @@ export const GroupPage = (props: GroupPageProps) => {
             </Match>
           </Switch>
           <div class="mx-auto my-12 flex items-center justify-center space-x-2">
-            <PaginationController page={page()} totalPages={totalPages()} />
+            {page()}
+            <PaginationController
+              setPage={setPage}
+              page={page()}
+              totalPages={totalPages()}
+            />
           </div>
           <Show when={recommendedChunks().length > 0}>
             <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">

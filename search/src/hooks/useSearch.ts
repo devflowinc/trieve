@@ -23,8 +23,6 @@ export const useSearch = () => {
   const [state, setSearch] = createStore(initalState);
 
   const [debounced, setDebouncedState] = createStore({
-    // Not spreading this results in debouncedState staying
-    // perfectly in line with state. Not sure why
     ...initalState,
   });
 
