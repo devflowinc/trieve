@@ -126,6 +126,7 @@ export const FilterModal = (props: FilterModalProps) => {
           </For>
         </select>
         <button
+          type="button"
           class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => {
             const curFilterType = tempFilterType();
@@ -164,6 +165,7 @@ export const FilterModal = (props: FilterModalProps) => {
           checked={jsonbPrefilter()}
         />
         <button
+          type="button"
           class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => {
             setMustFilters([]);
@@ -174,6 +176,7 @@ export const FilterModal = (props: FilterModalProps) => {
           Reset Filters
         </button>
         <button
+          type="button"
           class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => saveFilters()}
         >
