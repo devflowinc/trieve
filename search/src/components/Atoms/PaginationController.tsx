@@ -1,4 +1,3 @@
-import { useSearchParams } from "@solidjs/router";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { Show, For } from "solid-js";
 
@@ -23,19 +22,18 @@ export const createArrayWithCenteredRange = (center: number, range: number) => {
 };
 
 interface PaginationControllerProps {
+  setPage: (page: number) => void;
   page: number;
   totalPages: number;
 }
 
 export const PaginationController = (props: PaginationControllerProps) => {
-  const [, setSearchParams] = useSearchParams();
-
   return (
     <>
       <Show when={props.page != 1}>
         <button
           onClick={() => {
-            setSearchParams({ page: props.page - 1 });
+            props.setPage(props.page - 1);
           }}
         >
           <BiRegularChevronLeft class="h-8 w-8 fill-current text-neutral-400 dark:text-neutral-500" />
@@ -58,7 +56,7 @@ export const PaginationController = (props: PaginationControllerProps) => {
               "bg-neutral-200 dark:bg-neutral-700": n !== props.page,
             }}
             onClick={() => {
-              setSearchParams({ page: n });
+              props.setPage(n);
             }}
           >
             {n}
@@ -68,7 +66,7 @@ export const PaginationController = (props: PaginationControllerProps) => {
       <Show when={props.page < props.totalPages}>
         <button
           onClick={() => {
-            setSearchParams({ page: props.page + 1 });
+            props.setPage(props.page + 1);
           }}
         >
           <BiRegularChevronRight class="h-8 w-8 fill-current text-neutral-400 dark:text-neutral-500" />

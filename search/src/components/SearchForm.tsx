@@ -98,6 +98,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                     window.dispatchEvent(new Event("triggerSearch"));
                   }
                 }}
+                placeholder="Search for chunks..."
                 rows={props.search.state.query.split("\n").length}
               />
               <Show when={props.search.state.query}>
