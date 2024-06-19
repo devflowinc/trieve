@@ -9,7 +9,10 @@ import {
   useContext,
   createMemo,
 } from "solid-js";
+
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+
+import { FaSolidXmark } from "solid-icons/fa";
 
 export interface Filter {
   field: string;
@@ -154,99 +157,136 @@ export const FilterModal = (props: FilterModalProps) => {
           Apply Filters
         </button>
       </div>
-      <Show when={mustFilters().length > 0}>
-        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
-          must: [
-          <div class="flex flex-col gap-y-2">
-            <For each={mustFilters()}>
-              {(filter, index) => {
-                const onFilterChange = (newFilter: Filter) => {
-                  const newFilters = mustFilters();
-                  newFilters[index()] = newFilter;
-                  setMustFilters(newFilters);
-                };
-
-                return (
-                  <div
-                    classList={{
-                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
-                        index() < mustFilters().length - 1,
-                    }}
-                  >
-                    <FilterItem
-                      initialFilter={filter}
-                      onFilterChange={onFilterChange}
-                    />
-                  </div>
-                );
-              }}
-            </For>
+      <div class="flex flex-col gap-y-2">
+        <Show when={mustFilters().length > 0}>
+          <div class="relative border-b border-neutral-400 py-2 dark:border-neutral-900">
+            <button
+              class="absolute left-0 top-0 py-3 text-red-500 hover:text-red-700"
+              onClick={() => setMustFilters([])}
+              aria-label="Remove all must filters"
+            >
+              <FaSolidXmark />
+            </button>
+            <div class="ml-6">
+              <span class="border-b border-neutral-400 dark:border-neutral-900">
+                must:
+              </span>
+              {/* eslint-disable-next-line prettier/prettier */} [
+              <div class="flex flex-wrap gap-2">
+                <For each={mustFilters()}>
+                  {(filter, index) => {
+                    const onFilterChange = (newFilter: Filter) => {
+                      const newFilters = mustFilters();
+                      newFilters[index()] = newFilter;
+                      setMustFilters(newFilters);
+                    };
+                    return (
+                      <div
+                        classList={{
+                          "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                            index() < mustFilters().length - 1,
+                        }}
+                      >
+                        <FilterItem
+                          initialFilter={filter}
+                          onFilterChange={onFilterChange}
+                        />
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+              ]
+            </div>
           </div>
-          ]
-        </div>
-      </Show>
-      <Show when={mustNotFilters().length > 0}>
-        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
-          must not: [
-          <div class="flex flex-col gap-y-2">
-            <For each={mustNotFilters()}>
-              {(filter, index) => {
-                const onFilterChange = (newFilter: Filter) => {
-                  const newFilters = mustNotFilters();
-                  newFilters[index()] = newFilter;
-                  setMustNotFilters(newFilters);
-                };
+        </Show>
+        <Show when={mustNotFilters().length > 0}>
+          <div class="relative border-b border-neutral-400 py-2 dark:border-neutral-900">
+            <button
+              class="absolute left-0 top-0 py-3 text-red-500 hover:text-red-700"
+              onClick={() => setMustNotFilters([])}
+              aria-label="Remove all must not filters"
+            >
+              <FaSolidXmark />
+            </button>
+            <div class="ml-6">
+              <span class="border-b border-neutral-400 dark:border-neutral-900">
+                must not:
+              </span>{" "}
+              {/* eslint-disable-next-line prettier/prettier */} [
+                <div class="flex flex-col gap-y-2">
+                <For each={mustNotFilters()}>
+                  {(filter, index) => {
+                    const onFilterChange = (newFilter: Filter) => {
+                      const newFilters = mustNotFilters();
+                      newFilters[index()] = newFilter;
+                      setMustNotFilters(newFilters);
+                    };
 
-                return (
-                  <div
-                    classList={{
-                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
-                        index() < mustNotFilters().length - 1,
-                    }}
-                  >
-                    <FilterItem
-                      initialFilter={filter}
-                      onFilterChange={onFilterChange}
-                    />
-                  </div>
-                );
-              }}
-            </For>
+                    return (
+                      <div
+                        classList={{
+                          "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                            index() < mustNotFilters().length - 1,
+                        }}
+                      >
+                        <FilterItem
+                          initialFilter={filter}
+                          onFilterChange={onFilterChange}
+                        />
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+              ]
+            </div>
           </div>
-          ]
-        </div>
-      </Show>
-      <Show when={shouldFilters().length > 0}>
-        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
-          should: [
-          <div class="flex flex-col gap-y-2">
-            <For each={shouldFilters()}>
-              {(filter, index) => {
-                const onFilterChange = (newFilter: Filter) => {
-                  const newFilters = shouldFilters();
-                  newFilters[index()] = newFilter;
-                  setShouldFilters(newFilters);
-                };
+        </Show>
+        <Show when={shouldFilters().length > 0}>
+          <div class="relative border-b border-neutral-400 py-2 dark:border-neutral-900">
+            <button
+              class="absolute left-0 top-0 py-3 text-red-500 hover:text-red-700"
+              onClick={() => setShouldFilters([])}
+              aria-label="Remove all should filters"
+            >
+              <FaSolidXmark />
+            </button>
+            <div class="ml-6">
+              <span class="border-b border-neutral-400 dark:border-neutral-900">
+                should:
+              </span>{" "}
+              {/* eslint-disable-next-line prettier/prettier */} [
+                <div class="flex flex-col gap-y-2">
+                <For each={shouldFilters()}>
+                  {(filter, index) => {
+                    const onFilterChange = (newFilter: Filter) => {
+                      const newFilters = shouldFilters();
+                      newFilters[index()] = newFilter;
+                      setShouldFilters(newFilters);
+                    };
 
-                return (
-                  <div
-                    classList={{
-                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
-                        index() < shouldFilters().length - 1,
-                    }}
-                  >
-                    <FilterItem
-                      initialFilter={filter}
-                      onFilterChange={onFilterChange}
-                    />
-                  </div>
-                );
-              }}
-            </For>
+                    return (
+                      <div
+                        classList={{
+                          "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                            index() < shouldFilters().length - 1,
+                        }}
+                      >
+                        <FilterItem
+                          initialFilter={filter}
+                          onFilterChange={onFilterChange}
+                        />
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+              ]
+            </div>
           </div>
-          ]
-        </div>
-      </Show>
+        </Show>
+      </div>
     </div>
   );
 };
