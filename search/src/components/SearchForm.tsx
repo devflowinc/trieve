@@ -6,7 +6,6 @@ import {
   Switch,
   createEffect,
   createSignal,
-  on,
   useContext,
 } from "solid-js";
 import {
@@ -50,27 +49,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
       searchTypes().find((type) => type.isSelected)?.route ?? "hybrid",
     );
   });
-
-  const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
-    if (!textarea) return;
-
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  };
-
-  createEffect(() => {
-    setTimeout(() => {
-      resizeTextarea(document.querySelector("#search-query-textarea"));
-    }, 5);
-  });
-
-  createEffect(
-    on(
-      () => props.search.state.query,
-      () => {
-        resizeTextarea(document.querySelector("#search-query-textarea"));
-      },
-    ),
-  );
 
   createEffect(() => {
     $envs().CREATE_CHUNK_FEATURE?.valueOf();
@@ -120,7 +98,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                     window.dispatchEvent(new Event("triggerSearch"));
                   }
                 }}
-                rows="1"
+                rows={props.search.state.query.split("\n").length}
               />
               <Show when={props.search.state.query}>
                 <button

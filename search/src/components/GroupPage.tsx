@@ -524,22 +524,10 @@ export const GroupPage = (props: GroupPageProps) => {
         </Show>
         <div class="flex w-full max-w-7xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
           <div class="mx-auto w-full">
-            <div
-              classList={{
-                "mx-auto w-full": true,
-                "mt-8": search.state.query == "",
-              }}
-            >
+            <div class="mx-auto mt-8 w-full">
               <SearchForm search={search} />
             </div>
           </div>
-          <Show when={search.state.query != ""}>
-            <div class="flex w-full flex-col items-center rounded-md px-8 py-2">
-              <div class="text-xl font-semibold">
-                Search results for "{search.state.query}"
-              </div>
-            </div>
-          </Show>
           <Switch>
             <Match when={searchLoading()}>
               <div class="flex w-full justify-center">
