@@ -101,7 +101,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   return (
     <div
-      class="flex w-full scroll-mt-[30px] flex-col items-center border-b-neutral-300 pb-4 pr-4 dark:border-b-neutral-700 lg:ml-2 [&:not(:last-child)]:border-b-2"
+      class="mx:4 flex w-full scroll-mt-[30px] flex-col items-center border-b-neutral-300 px-4 pb-4 dark:border-b-neutral-700 md:pl-0 lg:ml-2 [&:not(:last-child)]:border-b-2"
       id={"doc_" + (props.order ?? "") + props.counter}
     >
       <div class="flex w-full flex-col space-y-2 dark:text-white">
