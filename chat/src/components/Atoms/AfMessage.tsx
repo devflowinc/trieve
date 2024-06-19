@@ -12,6 +12,7 @@ import {
 import { ChunkMetadataWithVotes } from "../../utils/apiTypes";
 import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
 import sanitizeHtml from "sanitize-html";
+import Resizable from "@corvu/resizable";
 
 export interface AfMessageProps {
   normalChat: boolean;
@@ -39,27 +40,29 @@ export const AfMessage = (props: AfMessageProps) => {
   const [rightColumnRef, setRightColumnRef] = createSignal<HTMLElement | null>(
     null,
   );
+
   createEffect(() => {
     const leftColumn = leftColumnRef();
     const rightColumn = rightColumnRef();
-
-    const height = Math.max(leftColumn?.clientHeight || 0, 500);
-
     if (leftColumn && rightColumn) {
-      const setRightColumnHeight = () => {
-        rightColumn.style.maxHeight = `${height}px`;
-      };
-
+      syncHeight();
       // Set the initial height and update on resize
-      setRightColumnHeight();
-      window.addEventListener("resize", setRightColumnHeight);
+      window.addEventListener("resize", syncHeight);
 
-      // Cleanup event listener on component unmount
       onCleanup(() => {
-        window.removeEventListener("resize", setRightColumnHeight);
+        window.removeEventListener("resize", syncHeight);
       });
     }
   });
+
+  const syncHeight = () => {
+    const leftColumn = leftColumnRef();
+    const rightColumn = rightColumnRef();
+    const height = Math.max(leftColumn?.clientHeight || 0, 500);
+    if (rightColumn) {
+      rightColumn.style.maxHeight = `${height}px`;
+    }
+  };
 
   createEffect(() => {
     setEditingMessageContent(props.content);
@@ -132,19 +135,20 @@ export const AfMessage = (props: AfMessageProps) => {
 
   return (
     <Show when={props.role !== "system"}>
-      <div
+      <Resizable
         classList={{
-          "lg:flex grow items-start": true,
           "self-start": props.role == "assistant",
           "self-end": props.role == "user",
         }}
       >
-        <div
+        <Resizable.Panel
+          onResize={() => syncHeight()}
+          initialSize={0.2}
           ref={setLeftColumnRef}
           classList={{
-            "dark:text-white group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
+            "dark:text-white self-start group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
               true,
-            "bg-neutral-200 min-w-[400px] border-neutral-300 dark:bg-neutral-700/70":
+            "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
               props.role === "assistant",
             "bg-white border-neutral-300 dark:bg-neutral-800 md:ml-16":
               props.role === "user",
@@ -218,13 +222,27 @@ export const AfMessage = (props: AfMessageProps) => {
               <BiRegularEdit class="fill-current" />
             </button>
           </Show>
-        </div>
-        <div>
-          <Show when={metadata() && metadata().length > 0}>
-            <div
-              ref={setRightColumnRef}
-              class="relative shrink flex-col space-y-3 overflow-scroll overflow-x-hidden overflow-y-scroll px-2 scrollbar-track-neutral-200 scrollbar-w-2.5 dark:scrollbar-track-zinc-700"
-            >
+        </Resizable.Panel>
+        <Show
+          when={
+            props.role === "assistant" && metadata() && metadata().length > 0
+          }
+        >
+          <Resizable.Handle
+            aria-label="Resize response and sources"
+            class="ml-2 w-2 rounded bg-transparent transition-colors hover:bg-neutral-300 active:bg-neutral-400"
+          />
+        </Show>
+        <Show when={metadata() && metadata().length > 0}>
+          <Resizable.Panel
+            ref={setRightColumnRef}
+            initialSize={0.8}
+            // style={{
+            //   height: height(),
+            // }}
+            class="relative shrink flex-col space-y-3 self-start overflow-scroll overflow-x-hidden overflow-y-scroll scrollbar-track-neutral-200 scrollbar-w-2.5 dark:scrollbar-track-zinc-700"
+          >
+            <div>
               <For each={chunkMetadatas()}>
                 {(chunk, i) => (
                   <ScoreChunk
@@ -243,9 +261,9 @@ export const AfMessage = (props: AfMessageProps) => {
               </For>
               <div class="sticky bottom-0 h-[40px] w-full bg-gradient-to-t from-neutral-100 to-transparent dark:from-neutral-900" />
             </div>
-          </Show>
-        </div>
-      </div>
+          </Resizable.Panel>
+        </Show>
+      </Resizable>
     </Show>
   );
 };
