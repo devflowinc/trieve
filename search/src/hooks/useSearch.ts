@@ -30,7 +30,6 @@ export const useSearch = () => {
     on(
       () => state.version,
       () => {
-        console.log("updated");
         const timeout = setTimeout(() => {
           setDebouncedState({ ...unwrap(state) });
         }, 400);
