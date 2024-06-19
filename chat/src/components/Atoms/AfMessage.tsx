@@ -47,6 +47,14 @@ export const AfMessage = (props: AfMessageProps) => {
     null,
   );
 
+  const [screenWidth, setScreenWidth] = createSignal(window.innerWidth);
+
+  createEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    onCleanup(() => window.removeEventListener("resize", handleResize));
+  });
+
   createEffect(() => {
     const leftColumn = leftColumnRef();
     const rightColumn = rightColumnRef();
@@ -142,6 +150,7 @@ export const AfMessage = (props: AfMessageProps) => {
   return (
     <Show when={props.role !== "system"}>
       <Resizable
+        orientation={screenWidth() > 768 ? "horizontal" : "vertical"}
         onSizesChange={(sizes) => {
           syncHeight();
           setMessageSizing(sizes);
@@ -232,9 +241,13 @@ export const AfMessage = (props: AfMessageProps) => {
             </button>
           </Show>
         </Resizable.Panel>
+        <div class="block h-10 lg:hidden" />
         <Show
           when={
-            props.role === "assistant" && metadata() && metadata().length > 0
+            props.role === "assistant" &&
+            metadata() &&
+            metadata().length > 0 &&
+            screenWidth() > 768
           }
         >
           <Resizable.Handle
