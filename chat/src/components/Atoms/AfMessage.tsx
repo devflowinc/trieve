@@ -43,9 +43,11 @@ export const AfMessage = (props: AfMessageProps) => {
     const leftColumn = leftColumnRef();
     const rightColumn = rightColumnRef();
 
+    const height = Math.max(leftColumn?.clientHeight || 0, 500);
+
     if (leftColumn && rightColumn) {
       const setRightColumnHeight = () => {
-        rightColumn.style.maxHeight = `${leftColumn.clientHeight}px`;
+        rightColumn.style.maxHeight = `${height}px`;
       };
 
       // Set the initial height and update on resize
@@ -142,7 +144,7 @@ export const AfMessage = (props: AfMessageProps) => {
           classList={{
             "dark:text-white group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
               true,
-            "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
+            "bg-neutral-200 min-w-[400px] border-neutral-300 dark:bg-neutral-700/70":
               props.role === "assistant",
             "bg-white border-neutral-300 dark:bg-neutral-800 md:ml-16":
               props.role === "user",
@@ -221,7 +223,7 @@ export const AfMessage = (props: AfMessageProps) => {
           <Show when={metadata() && metadata().length > 0}>
             <div
               ref={setRightColumnRef}
-              class="relative min-w-[300px] shrink-0 flex-grow flex-col space-y-3 overflow-scroll overflow-x-hidden overflow-y-scroll px-2 scrollbar-track-neutral-200 scrollbar-w-2.5 dark:scrollbar-track-zinc-700"
+              class="relative shrink flex-col space-y-3 overflow-scroll overflow-x-hidden overflow-y-scroll px-2 scrollbar-track-neutral-200 scrollbar-w-2.5 dark:scrollbar-track-zinc-700"
             >
               <For each={chunkMetadatas()}>
                 {(chunk, i) => (
