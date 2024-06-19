@@ -125,7 +125,6 @@ export const GroupPage = (props: GroupPageProps) => {
 
   createEffect(
     on([() => search.debounced.version, page, dataset], () => {
-      console.log("RUNNING");
       const abortController = new AbortController();
       let group_id: string | null = null;
       const currentDataset = $dataset?.();
@@ -565,7 +564,6 @@ export const GroupPage = (props: GroupPageProps) => {
             </Match>
           </Switch>
           <div class="mx-auto my-12 flex items-center justify-center space-x-2">
-            {page()}
             <PaginationController
               setPage={setPage}
               page={page()}
