@@ -23,3 +23,7 @@ mark > p {
   font-weight: bolder;
   width: fit-content;
 }
+
+html {
+  scrollbar-gutter: stable;
+}
