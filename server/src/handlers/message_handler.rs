@@ -1,6 +1,8 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunksReqPayload, check_completion_param_validity},
+    chunk_handler::{
+        check_completion_param_validity, ChunkFilter, ParsedQuery, SearchChunksReqPayload,
+    },
 };
 
 use crate::{
@@ -400,7 +402,6 @@ pub async fn edit_message(
         ("ApiKey" = ["readonly"]),
     )
 )]
-
 #[tracing::instrument(skip(pool))]
 pub async fn regenerate_message(
     data: web::Json<RegenerateMessageReqPayload>,
