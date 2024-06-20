@@ -237,10 +237,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   const useExpand = createMemo(() => {
     if (!props.chunk.chunk_html) return false;
-    return (
-      props.chunk.chunk_html.split(" ").length >
-      20 * ($envs().LINES_BEFORE_SHOW_MORE ?? 0)
-    );
+    return props.chunk.chunk_html.split(" ").length > 20 * 15;
   });
 
   const currentUserRole = createMemo(() => {
@@ -497,7 +494,8 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   props.chunk.tag_set &&
                   !$envs()
                     .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "tag_set")
+                    ?.find((val) => val == "tag_set") &&
+                  props.chunk.tag_set.length > 0
                 }
               >
                 <div class="flex space-x-2">
@@ -666,9 +664,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 true,
             }}
             style={
-              useExpand() && !expanded()
-                ? { "-webkit-line-clamp": $envs().LINES_BEFORE_SHOW_MORE }
-                : {}
+              useExpand() && !expanded() ? { "-webkit-line-clamp": 15 } : {}
             }
             // eslint-disable-next-line solid/no-innerhtml
             innerHTML={sanitizeHtml(

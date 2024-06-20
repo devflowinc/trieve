@@ -11,7 +11,7 @@ const initalState = {
   groupUniqueSearch: false,
   recencyBias: 0.0,
   pageSize: 10,
-  getTotalPages: false,
+  getTotalPages: true,
   highlightResults: true,
   highlightDelimiters: ["?", ".", "!"],
   highlightMaxLength: 8,
@@ -32,7 +32,7 @@ export const useSearch = () => {
       () => {
         const timeout = setTimeout(() => {
           setDebouncedState({ ...unwrap(state) });
-        }, 400);
+        }, 200);
         return () => clearTimeout(timeout);
       },
     ),

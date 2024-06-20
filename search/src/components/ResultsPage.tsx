@@ -43,7 +43,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const $dataset = datasetAndUserContext.currentDataset;
 
   const [loading, setLoading] = createSignal(false);
-  const [page, setPage] = createSignal(0);
+  const [page, setPage] = createSignal(1);
 
   const [chunkCollections, setChunkCollections] = createSignal<ChunkGroupDTO[]>(
     [],

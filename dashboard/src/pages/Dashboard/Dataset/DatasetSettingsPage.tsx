@@ -139,30 +139,6 @@ export const FrontendSettingsForm = () => {
               />
             </div>
 
-            <div class="col-span-4 sm:col-span-2">
-              <label
-                for="linesBeforeShowMore"
-                class="block text-sm font-medium leading-6"
-              >
-                Lines before show more
-              </label>
-              <input
-                type="number"
-                name="linesBeforeShowMore"
-                id="linesBeforeShowMore"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().LINES_BEFORE_SHOW_MORE}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      LINES_BEFORE_SHOW_MORE: e.target.valueAsNumber,
-                    };
-                  })
-                }
-              />
-            </div>
-
             <div class="col-span-4">
               <label
                 for="imageRangeStartKey"

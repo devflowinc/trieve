@@ -142,10 +142,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
 
   const useExpand = createMemo(() => {
     if (!props.chunk.chunk_html) return false;
-    return (
-      props.chunk.chunk_html.split(" ").length >
-      20 * ($envs().LINES_BEFORE_SHOW_MORE ?? 0)
-    );
+    return props.chunk.chunk_html.split(" ").length > 20 * 15;
   });
 
   const currentOrgId = createMemo(() => {
@@ -444,9 +441,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                 true,
             }}
             style={
-              useExpand() && !expanded()
-                ? { "-webkit-line-clamp": $envs().LINES_BEFORE_SHOW_MORE }
-                : {}
+              useExpand() && !expanded() ? { "-webkit-line-clamp": 15 } : {}
             }
             // eslint-disable-next-line solid/no-innerhtml
             innerHTML={sanitizeHtml(
