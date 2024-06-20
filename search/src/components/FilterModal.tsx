@@ -10,6 +10,8 @@ import {
   createMemo,
 } from "solid-js";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { Tooltip } from "./Atoms/Tooltip";
+import { BsQuestionCircle } from "solid-icons/bs";
 
 export interface Filter {
   field: string;
@@ -39,6 +41,7 @@ export interface Filters {
   must: Filter[];
   must_not: Filter[];
   should: Filter[];
+  jsonb_prefilter?: boolean | null;
 }
 
 export interface FilterModalProps {
@@ -57,6 +60,7 @@ export const FilterModal = (props: FilterModalProps) => {
   const [mustFilters, setMustFilters] = createSignal<Filter[]>([]);
   const [mustNotFilters, setMustNotFilters] = createSignal<Filter[]>([]);
   const [shouldFilters, setShouldFilters] = createSignal<Filter[]>([]);
+  const [jsonbPrefilter, setJsonbPrefilter] = createSignal<boolean>(true);
 
   const curDatasetFiltersKey = createMemo(
     () =>
@@ -68,6 +72,7 @@ export const FilterModal = (props: FilterModalProps) => {
       must: mustFilters(),
       must_not: mustNotFilters(),
       should: shouldFilters(),
+      jsonb_prefilter: jsonbPrefilter(),
     };
     localStorage.setItem(curDatasetFiltersKey(), JSON.stringify(filters));
     window.dispatchEvent(new Event("filtersUpdated"));
@@ -86,6 +91,7 @@ export const FilterModal = (props: FilterModalProps) => {
       setMustFilters(parsedFilters.must);
       setMustNotFilters(parsedFilters.must_not);
       setShouldFilters(parsedFilters.should);
+      setJsonbPrefilter(parsedFilters.jsonb_prefilter ?? true);
     }
   }, "");
 
@@ -137,6 +143,26 @@ export const FilterModal = (props: FilterModalProps) => {
           + Add Filter
         </button>
         <div class="flex-1" />
+        <label
+          aria-label="Change JSONB Prefilter"
+          class="flex items-center gap-x-1"
+        >
+          <Tooltip
+            body={
+              <BsQuestionCircle class="h-4 w-4 rounded-full fill-current" />
+            }
+            tooltipText="Only uncheck if on the enterprise plan and you wish to use custom indices for metadata filters."
+          />
+          <span>JSONB Prefilter:</span>
+        </label>
+        <input
+          type="checkbox"
+          class="rounded-md border border-neutral-400 bg-neutral-100 dark:border-neutral-900 dark:bg-neutral-800"
+          onChange={(e) => {
+            setJsonbPrefilter(e.currentTarget.checked);
+          }}
+          checked={jsonbPrefilter()}
+        />
         <button
           class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onClick={() => {

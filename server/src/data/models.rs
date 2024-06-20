@@ -2765,8 +2765,9 @@ impl FieldCondition {
     pub async fn convert_to_qdrant_condition(
         &self,
         condition_type: &str,
-        pool: web::Data<Pool>,
+        jsonb_prefilter: Option<bool>,
         dataset_id: uuid::Uuid,
+        pool: web::Data<Pool>,
     ) -> Result<Option<qdrant::Condition>, ServiceError> {
         if self.r#match.is_some() && self.range.is_some() {
             return Err(ServiceError::BadRequest(
@@ -2774,7 +2775,7 @@ impl FieldCondition {
             ));
         }
 
-        if self.field.starts_with("metadata.") {
+        if jsonb_prefilter.unwrap_or(true) && self.field.starts_with("metadata.") {
             return Ok(Some(
                 get_metadata_filter_condition(self, dataset_id, pool)
                     .await?
