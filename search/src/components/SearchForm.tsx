@@ -95,7 +95,9 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                     ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
                     (!e.shiftKey && e.key === "Enter")
                   ) {
-                    window.dispatchEvent(new Event("triggerSearch"));
+                    props.search.setSearch("version", (prev) => prev + 1);
+                    e.preventDefault();
+                    e.stopPropagation();
                   }
                 }}
                 placeholder="Search for chunks..."

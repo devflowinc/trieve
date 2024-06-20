@@ -452,7 +452,7 @@ export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
   SEARCH_QUERIES:
     "star github.com/devflowinc/trieve, no seriously please star github.com/devflowinc/trieve, you know you want to star github.com/devflowinc/trieve",
   FRONTMATTER_VALS: "link,tag_set,file_name,time_stamp,location",
-  LINES_BEFORE_SHOW_MORE: 10,
+  LINES_BEFORE_SHOW_MORE: 15,
   DATE_RANGE_VALUE: "Date",
   FILTER_ITEMS: [],
   SUGGESTED_QUERIES: "",

@@ -514,8 +514,8 @@ export const GroupPage = (props: GroupPageProps) => {
         </Show>
         <div class="flex w-full max-w-7xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
           <div class="mx-auto w-full">
-            <div class="mx-auto mt-8 w-full">
-              <SearchForm search={search} />
+            <div class="mx-auto my-4 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+              <SearchForm search={search} groupID={props.groupID} />
             </div>
           </div>
           <Switch>
