@@ -25,6 +25,7 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
 };
+use openai_dive::v1::resources::shared::StopToken;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -1813,6 +1814,14 @@ pub struct GenerateChunksRequest {
     pub stream_response: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>`` tags to the chunk_html of the chunks to highlight matching splits.
     pub highlight_results: Option<bool>,
+    /// What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.5.
+    pub temperature: Option<f32>,
+    /// Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
+    pub frequency_penalty: Option<f32>,
+    /// Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Default is 0.7.
+    pub presence_penalty: Option<f32>,
+    /// Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
+    pub stop_tokens: Option<Vec<String>>,
 }
 
 /// RAG on Specified Chunks
@@ -1836,6 +1845,7 @@ pub struct GenerateChunksRequest {
         ("ApiKey" = ["readonly"]),
     )
 )]
+
 #[tracing::instrument(skip(pool))]
 pub async fn generate_off_chunks(
     data: web::Json<GenerateChunksRequest>,
@@ -1843,6 +1853,7 @@ pub async fn generate_off_chunks(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
+    
     let prev_messages = data.prev_messages.clone();
 
     if prev_messages.iter().len() < 1 {
@@ -1852,7 +1863,9 @@ pub async fn generate_off_chunks(
     };
 
     let chunk_ids = data.chunk_ids.clone();
+    
     let prompt = data.prompt.clone();
+
     let stream_response = data.stream_response;
 
     let mut chunks =
@@ -1860,7 +1873,9 @@ pub async fn generate_off_chunks(
 
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
     let base_url = dataset_config.LLM_BASE_URL;
+    
     let default_model = dataset_config.LLM_DEFAULT_MODEL;
 
     let base_url = if base_url.is_empty() {
@@ -1888,7 +1903,15 @@ pub async fn generate_off_chunks(
 
     let mut messages: Vec<ChatMessage> = vec![];
 
+    check_completion_param_validity(
+        data.temperature,
+        data.frequency_penalty,
+        data.presence_penalty,
+        data.stop_tokens.clone(),
+    )?;
+
     messages.truncate(prev_messages.len() - 1);
+    
     messages.push(ChatMessage {
         role: Role::User,
         content: ChatMessageContent::Text("I am going to provide several pieces of information (docs) for you to use in response to a request or question.".to_string()),
@@ -1896,6 +1919,7 @@ pub async fn generate_off_chunks(
         name: None,
         tool_call_id: None,
     });
+
     messages.push(ChatMessage {
         role: Role::Assistant,
         content: ChatMessageContent::Text(
@@ -1906,6 +1930,7 @@ pub async fn generate_off_chunks(
         name: None,
         tool_call_id: None,
     });
+
     chunks.sort_by(|a, b| {
         data.chunk_ids
             .iter()
@@ -1913,6 +1938,7 @@ pub async fn generate_off_chunks(
             .unwrap()
             .cmp(&data.chunk_ids.iter().position(|&id| id == b.id).unwrap())
     });
+
     chunks.iter().enumerate().for_each(|(idx, bookmark)| {
         let content = convert_html_to_text(&(bookmark.chunk_html.clone().unwrap_or_default()));
         let first_2000_words = content
@@ -1928,6 +1954,7 @@ pub async fn generate_off_chunks(
             name: None,
             tool_call_id: None,
         });
+        
         messages.push(ChatMessage {
             role: Role::Assistant,
             content: ChatMessageContent::Text("".to_string()),
@@ -1940,7 +1967,9 @@ pub async fn generate_off_chunks(
     let last_prev_message = prev_messages
         .last()
         .expect("There needs to be at least 1 prior message");
+
     let mut prev_messages = prev_messages.clone();
+
     prev_messages.truncate(prev_messages.len() - 1);
 
     prev_messages
@@ -1965,13 +1994,17 @@ pub async fn generate_off_chunks(
         model: default_model,
         stream: stream_response,
         messages,
-        temperature: None,
+        temperature: Some(data.temperature.unwrap_or(0.5)),
         top_p: None,
         n: None,
-        stop: None,
+        stop: if let Some(stop_tokens) = &data.stop_tokens {
+            Some(StopToken::Array(stop_tokens.clone()))
+        } else {
+            None
+        },
         max_tokens: None,
-        presence_penalty: Some(0.8),
-        frequency_penalty: Some(0.8),
+        presence_penalty: Some(data.presence_penalty.unwrap_or(0.7)),
+        frequency_penalty: Some(data.frequency_penalty.unwrap_or(0.7)),
         logit_bias: None,
         user: None,
         response_format: None,
@@ -2017,4 +2050,46 @@ pub async fn generate_off_chunks(
             .into())
         },
     )))
+}
+
+pub fn check_completion_param_validity(
+    temperature: Option<f32>,
+    frequency_penalty: Option<f32>,
+    presence_penalty: Option<f32>,
+    stop_tokens: Option<Vec<String>>,
+) -> Result<(), ServiceError> {
+
+    if let Some(temperature) = temperature {
+        if temperature < 0.0 || temperature > 2.0 {
+            return Err(ServiceError::BadRequest(
+                "Temperature must be between 0 and 2".to_string(),
+            ));
+        }
+    }
+
+    if let Some(frequency_penalty) = frequency_penalty {
+        if frequency_penalty < -2.0 || frequency_penalty > 2.0 {
+            return Err(ServiceError::BadRequest(
+                "Frequency penalty must be between -2.0 and 2.0".to_string(),
+            ));
+        }
+    }
+
+    if let Some(presence_penalty) = presence_penalty {
+        if presence_penalty < -2.0 || presence_penalty > 2.0 {
+            return Err(ServiceError::BadRequest(
+                "Presence penalty must be between -2.0 and 2.0".to_string(),
+            ));
+        }
+    }
+
+    if let Some(stop_tokens) = stop_tokens {
+        if stop_tokens.len() > 4 {
+            return Err(ServiceError::BadRequest(
+                "Stop tokens must be less than or equal to 4".to_string(),
+            ));
+        }
+    }
+
+    Ok(())
 }
