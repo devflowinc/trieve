@@ -1845,7 +1845,6 @@ pub struct GenerateChunksRequest {
         ("ApiKey" = ["readonly"]),
     )
 )]
-
 #[tracing::instrument(skip(pool))]
 pub async fn generate_off_chunks(
     data: web::Json<GenerateChunksRequest>,
@@ -1853,7 +1852,6 @@ pub async fn generate_off_chunks(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    
     let prev_messages = data.prev_messages.clone();
 
     if prev_messages.iter().len() < 1 {
@@ -1863,7 +1861,7 @@ pub async fn generate_off_chunks(
     };
 
     let chunk_ids = data.chunk_ids.clone();
-    
+
     let prompt = data.prompt.clone();
 
     let stream_response = data.stream_response;
@@ -1875,7 +1873,7 @@ pub async fn generate_off_chunks(
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let base_url = dataset_config.LLM_BASE_URL;
-    
+
     let default_model = dataset_config.LLM_DEFAULT_MODEL;
 
     let base_url = if base_url.is_empty() {
@@ -1911,7 +1909,7 @@ pub async fn generate_off_chunks(
     )?;
 
     messages.truncate(prev_messages.len() - 1);
-    
+
     messages.push(ChatMessage {
         role: Role::User,
         content: ChatMessageContent::Text("I am going to provide several pieces of information (docs) for you to use in response to a request or question.".to_string()),
@@ -1954,7 +1952,7 @@ pub async fn generate_off_chunks(
             name: None,
             tool_call_id: None,
         });
-        
+
         messages.push(ChatMessage {
             role: Role::Assistant,
             content: ChatMessageContent::Text("".to_string()),
@@ -2058,7 +2056,6 @@ pub fn check_completion_param_validity(
     presence_penalty: Option<f32>,
     stop_tokens: Option<Vec<String>>,
 ) -> Result<(), ServiceError> {
-
     if let Some(temperature) = temperature {
         if temperature < 0.0 || temperature > 2.0 {
             return Err(ServiceError::BadRequest(
