@@ -129,51 +129,73 @@ pub async fn create_group_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_groups_for_specific_dataset_query(
+pub async fn get_groups_for_dataset_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<(ChunkGroupAndFile, Option<i32>)>, ServiceError> {
-    use crate::data::schema::chunk_group::dsl::*;
+) -> Result<(Vec<ChunkGroupAndFile>, Option<i32>), ServiceError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::dataset_group_counts::dsl as dataset_group_count_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let page = if page == 0 { 1 } else { page };
     let mut conn = pool.get().await.unwrap();
-    let groups = chunk_group
-        .left_outer_join(
-            groups_from_files_columns::groups_from_files
-                .on(id.eq(groups_from_files_columns::group_id)),
-        )
-        .left_outer_join(
-            dataset_group_count_columns::dataset_group_counts
-                .on(dataset_id.eq(dataset_group_count_columns::dataset_id.assume_not_null())),
+
+    let group_count_result = dataset_group_count_columns::dataset_group_counts
+        .filter(dataset_group_count_columns::dataset_id.eq(dataset_uuid))
+        .select(dataset_group_count_columns::group_count)
+        .first::<i32>(&mut conn)
+        .await;
+
+    let group_count: Option<i32> = match group_count_result {
+        Ok(count) => Some(count),
+        Err(_) => return Ok((vec![], None)),
+    };
+
+    let groups = chunk_group_columns::chunk_group
+        .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+        .order_by(chunk_group_columns::updated_at.desc())
+        .offset(((page - 1) * 10).try_into().unwrap_or(0))
+        .limit(10)
+        .load::<ChunkGroup>(&mut conn)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Error getting groups for dataset".to_string()))?;
+
+    let file_ids = groups_from_files_columns::groups_from_files
+        .filter(
+            groups_from_files_columns::group_id
+                .eq_any(groups.iter().map(|x| x.id).collect::<Vec<uuid::Uuid>>()),
         )
         .select((
-            (
-                id,
-                dataset_id,
-                name,
-                description,
-                created_at,
-                updated_at,
-                groups_from_files_columns::file_id.nullable(),
-                tracking_id,
-            ),
-            dataset_group_count_columns::group_count.nullable(),
+            groups_from_files_columns::group_id,
+            groups_from_files_columns::file_id,
         ))
-        .order_by(updated_at.desc())
-        .filter(dataset_id.eq(dataset_uuid))
-        .into_boxed();
-
-    let groups = groups
-        .limit(10)
-        .offset(((page - 1) * 10).try_into().unwrap_or(0))
-        .load::<(ChunkGroupAndFile, Option<i32>)>(&mut conn)
+        .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
         .await
-        .map_err(|_err| ServiceError::BadRequest("Error getting groups".to_string()))?;
+        .map_err(|_err| ServiceError::BadRequest("Error getting file ids".to_string()))?;
 
-    Ok(groups)
+    let group_and_files = groups
+        .into_iter()
+        .map(|group| {
+            let file_id = file_ids
+                .iter()
+                .find(|(group_id, _)| group.id == *group_id)
+                .map(|(_, file_id)| file_id.clone());
+
+            ChunkGroupAndFile {
+                id: group.id,
+                dataset_id: group.dataset_id,
+                name: group.name,
+                description: group.description,
+                created_at: group.created_at,
+                updated_at: group.updated_at,
+                file_id,
+                tracking_id: group.tracking_id,
+            }
+        })
+        .collect();
+
+    Ok((group_and_files, group_count))
 }
 
 #[tracing::instrument(skip(pool))]

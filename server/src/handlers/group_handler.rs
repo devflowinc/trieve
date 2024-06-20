@@ -159,32 +159,11 @@ pub async fn get_specific_dataset_chunk_groups(
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let groups = get_groups_for_specific_dataset_query(
-        dataset_and_page.page,
-        dataset_and_page.dataset_id,
-        pool,
-    )
-    .await?;
+    let groups =
+        get_groups_for_dataset_query(dataset_and_page.page, dataset_and_page.dataset_id, pool)
+            .await?;
 
-    Ok(HttpResponse::Ok().json(GroupData {
-        groups: groups
-            .iter()
-            .map(|(group, _)| ChunkGroupAndFile {
-                id: group.id,
-                dataset_id: group.dataset_id,
-                name: group.name.clone(),
-                description: group.description.clone(),
-                created_at: group.created_at,
-                updated_at: group.updated_at,
-                file_id: group.file_id,
-                tracking_id: group.tracking_id.clone(),
-            })
-            .collect(),
-        total_pages: groups
-            .first()
-            .map(|(_, count)| (count.unwrap_or(10) as f64 / 10.0).ceil() as i64)
-            .unwrap_or(1),
-    }))
+    Ok(HttpResponse::Ok().json(groups))
 }
 
 #[derive(Debug, Deserialize, Serialize)]
