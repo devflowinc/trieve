@@ -451,12 +451,14 @@ pub fn main() -> std::io::Result<()> {
             .limit(134200000)
             .error_handler(custom_json_error_handler);
 
-        log::info!("Creating qdrant collections");
-        let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes)
-            .await
-            .map_err(|err| {
-                log::error!("Failed to create new qdrant collection: {:?}", err);
-            });
+        if std::env::var("CREATE_QDRANT_COLLECTIONS").unwrap_or("true".to_string()) != "false" {
+            log::info!("Creating qdrant collections");
+            let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes)
+                .await
+                .map_err(|err| {
+                    log::error!("Failed to create new qdrant collection: {:?}", err);
+                });
+        }
 
         if std::env::var("ADMIN_API_KEY").is_ok() {
             let _ = create_default_user(
