@@ -850,6 +850,8 @@ pub struct ChunkFilter {
     pub must: Option<Vec<ConditionType>>,
     /// None of these field conditions can match for the chunk to be included in the result set.
     pub must_not: Option<Vec<ConditionType>>,
+    /// JOSNB prefilter tells the server to perform a full scan over the metadata JSONB column instead of using the filtered HNSW. Datasets on the enterprise plan with custom metadata indices will perform better with the filtered HNSW instead. When false, the server will use the filtered HNSW index to filter chunks. When true, the server will perform a full scan over the metadata JSONB column to filter chunks. Default is true.
+    pub jsonb_prefilter: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
@@ -863,18 +865,11 @@ pub struct ChunkFilter {
             {
                 "field": "metadata.key1",
                 "match": ["value1", "value2"],
-                "range": {
-                    "gte": 0.0,
-                    "lte": 1.0,
-                    "gt": 0.0,
-                    "lt": 1.0
-                }
             }
         ],
         "must": [
             {
-                "field": "metadata.key2",
-                "match": ["value3", "value4"],
+                "field": "num_value",
                 "range": {
                     "gte": 0.0,
                     "lte": 1.0,
@@ -887,12 +882,6 @@ pub struct ChunkFilter {
             {
                 "field": "metadata.key3",
                 "match": ["value5", "value6"],
-                "range": {
-                    "gte": 0.0,
-                    "lte": 1.0,
-                    "gt": 0.0,
-                    "lt": 1.0
-                }
             }
         ]
     },

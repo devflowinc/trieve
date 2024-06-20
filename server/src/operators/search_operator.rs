@@ -153,7 +153,12 @@ pub async fn assemble_qdrant_filter(
                                 .await?;
 
                         let qdrant_condition = should_condition
-                            .convert_to_qdrant_condition("should", pool.clone(), dataset_id)
+                            .convert_to_qdrant_condition(
+                                "should",
+                                filters.jsonb_prefilter,
+                                dataset_id,
+                                pool.clone(),
+                            )
                             .await?;
 
                         if let Some(condition) = qdrant_condition {
@@ -178,7 +183,12 @@ pub async fn assemble_qdrant_filter(
                                 .await?;
 
                         let qdrant_condition = must_condition
-                            .convert_to_qdrant_condition("must", pool.clone(), dataset_id)
+                            .convert_to_qdrant_condition(
+                                "must",
+                                filters.jsonb_prefilter,
+                                dataset_id,
+                                pool.clone(),
+                            )
                             .await?;
 
                         if let Some(condition) = qdrant_condition {
@@ -203,7 +213,12 @@ pub async fn assemble_qdrant_filter(
                                 .await?;
 
                         let qdrant_condition = must_not_condition
-                            .convert_to_qdrant_condition("must_not", pool.clone(), dataset_id)
+                            .convert_to_qdrant_condition(
+                                "must_not",
+                                filters.jsonb_prefilter,
+                                dataset_id,
+                                pool.clone(),
+                            )
                             .await?;
 
                         if let Some(condition) = qdrant_condition {
