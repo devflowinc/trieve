@@ -1,7 +1,8 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunksReqPayload},
+    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunksReqPayload, check_completion_param_validity},
 };
+
 use crate::{
     data::models::{
         self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetAndOrgWithSubAndPlan,
@@ -19,6 +20,7 @@ use crate::{
         search_operator::search_hybrid_chunks,
     },
 };
+
 use actix::Arbiter;
 use actix_web::{
     web::{self, Bytes},
@@ -43,46 +45,6 @@ use simsearch::SimSearch;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
-pub fn check_completion_param_validity(
-    temperature: Option<f32>,
-    frequency_penalty: Option<f32>,
-    presence_penalty: Option<f32>,
-    stop_tokens: Option<Vec<String>>,
-) -> Result<(), ServiceError> {
-    if let Some(temperature) = temperature {
-        if temperature < 0.0 || temperature > 2.0 {
-            return Err(ServiceError::BadRequest(
-                "Temperature must be between 0 and 2".to_string(),
-            ));
-        }
-    }
-
-    if let Some(frequency_penalty) = frequency_penalty {
-        if frequency_penalty < -2.0 || frequency_penalty > 2.0 {
-            return Err(ServiceError::BadRequest(
-                "Frequency penalty must be between -2.0 and 2.0".to_string(),
-            ));
-        }
-    }
-
-    if let Some(presence_penalty) = presence_penalty {
-        if presence_penalty < -2.0 || presence_penalty > 2.0 {
-            return Err(ServiceError::BadRequest(
-                "Presence penalty must be between -2.0 and 2.0".to_string(),
-            ));
-        }
-    }
-
-    if let Some(stop_tokens) = stop_tokens {
-        if stop_tokens.len() > 4 {
-            return Err(ServiceError::BadRequest(
-                "Stop tokens must be less than or equal to 4".to_string(),
-            ));
-        }
-    }
-
-    Ok(())
-}
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageReqPayload {
@@ -438,6 +400,7 @@ pub async fn edit_message(
         ("ApiKey" = ["readonly"]),
     )
 )]
+
 #[tracing::instrument(skip(pool))]
 pub async fn regenerate_message(
     data: web::Json<RegenerateMessageReqPayload>,
