@@ -1820,6 +1820,8 @@ pub struct GenerateChunksRequest {
     pub frequency_penalty: Option<f32>,
     /// Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Default is 0.7.
     pub presence_penalty: Option<f32>,
+    /// The maximum number of tokens to generate in the chat completion. Default is None.
+    pub max_tokens: Option<u32>,
     /// Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
     pub stop_tokens: Option<Vec<String>>,
 }
@@ -1992,17 +1994,17 @@ pub async fn generate_off_chunks(
         model: default_model,
         stream: stream_response,
         messages,
-        temperature: Some(data.temperature.unwrap_or(0.5)),
         top_p: None,
         n: None,
+        temperature: Some(data.temperature.unwrap_or(0.5)),
+        frequency_penalty: Some(data.frequency_penalty.unwrap_or(0.7)),
+        presence_penalty: Some(data.presence_penalty.unwrap_or(0.7)),
         stop: if let Some(stop_tokens) = &data.stop_tokens {
             Some(StopToken::Array(stop_tokens.clone()))
         } else {
             None
         },
-        max_tokens: None,
-        presence_penalty: Some(data.presence_penalty.unwrap_or(0.7)),
-        frequency_penalty: Some(data.frequency_penalty.unwrap_or(0.7)),
+        max_tokens: data.max_tokens,
         logit_bias: None,
         user: None,
         response_format: None,
