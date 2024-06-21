@@ -663,7 +663,7 @@ pub async fn cross_encoder(
     query: String,
     page_size: u64,
     results: Vec<ScoreChunkDTO>,
-    dataset_config: ServerDatasetConfiguration,
+    dataset_config: &ServerDatasetConfiguration,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {

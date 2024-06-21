@@ -28,6 +28,7 @@ pub struct SearchQueryEvent {
     pub query: String,
     pub request_params: String,
     pub latency: f32,
+    pub query_vector: Vec<f32>,
     pub results: Vec<String>,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
