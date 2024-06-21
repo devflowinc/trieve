@@ -316,6 +316,29 @@ services:
     networks:
       - app-network
 
+  clickhouse-db:
+    image: clickhouse/clickhouse-server:24.4.3.25
+    container_name: clickhouse-db
+    restart: always
+    environment:
+      - CLICKHOUSE_USER=clickhouse
+      - CLICKHOUSE_PASSWORD=password
+      - CLICKHOUSE_DB=trieve
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT version()'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"
+      - "9001:9000"
+      - "9009:9009"
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
@@ -328,3 +351,4 @@ volumes:
   s3-data:
   keycloak-data:
   pg-keycloak-data:
+  clickhouse-data:
