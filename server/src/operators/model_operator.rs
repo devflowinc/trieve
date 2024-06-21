@@ -705,37 +705,45 @@ pub async fn cross_encoder(
         })
         .collect::<Result<Vec<String>, ServiceError>>()?;
 
-    let resp = ureq::post(&embedding_server_call)
-        .set("Content-Type", "application/json")
-        .set(
-            "Authorization",
-            &format!(
-                "Bearer {}",
-                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
-            ),
-        )
-        .send_json(CrossEncoderData {
-            query,
-            texts: request_docs,
-            truncate: true,
-        })
-        .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
-        .into_json::<Vec<ScorePair>>()
-        .map_err(|_e| {
-            log::error!(
-                "Failed parsing response from custom embedding server {:?}",
-                _e
-            );
-            ServiceError::BadRequest(
-                "Failed parsing response from custom embedding server".to_string(),
-            )
-        })?;
+    let twenty_request_docs = request_docs
+        .chunks(20)
+        .map(|x| x.to_vec())
+        .collect::<Vec<Vec<String>>>();
 
     let mut results = results.clone();
+    for twenty_docs in twenty_request_docs {
+        let resp = ureq::post(&embedding_server_call)
+            .set("Content-Type", "application/json")
+            .set(
+                "Authorization",
+                &format!(
+                    "Bearer {}",
+                    get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                ),
+            )
+            .send_json(CrossEncoderData {
+                query: query.clone(),
+                texts: twenty_docs,
+                truncate: true,
+            })
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+            })?
+            .into_json::<Vec<ScorePair>>()
+            .map_err(|_e| {
+                log::error!(
+                    "Failed parsing response from custom embedding server {:?}",
+                    _e
+                );
+                ServiceError::BadRequest(
+                    "Failed parsing response from custom embedding server".to_string(),
+                )
+            })?;
 
-    resp.into_iter().for_each(|pair| {
-        results.index_mut(pair.index).score = pair.score as f64;
-    });
+        resp.into_iter().for_each(|pair| {
+            results.index_mut(pair.index).score = pair.score as f64;
+        });
+    }
 
     results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 

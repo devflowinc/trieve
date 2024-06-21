@@ -838,6 +838,7 @@ pub async fn search_qdrant_query(
                         ))
                     }
                 };
+
                 Ok(SearchPoints {
                     collection_name: qdrant_collection.to_string(),
                     vector: embedding_vector,
@@ -930,7 +931,6 @@ pub async fn search_qdrant_query(
                 .collect::<Vec<SearchResult>>()
         })
         .unique_by(|point| point.point_id)
-        .take(limit as usize)
         .collect();
 
     let point_count = point_count_response
