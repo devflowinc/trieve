@@ -176,7 +176,7 @@ impl Modify for SecurityAddon {
         handlers::user_handler::delete_user_api_key,
         handlers::group_handler::search_over_groups,
         handlers::group_handler::get_recommended_groups,
-        handlers::group_handler::get_specific_dataset_chunk_groups,
+        handlers::group_handler::get_groups_for_dataset,
         handlers::group_handler::create_chunk_group,
         handlers::group_handler::delete_chunk_group,
         handlers::group_handler::update_chunk_group,
@@ -588,7 +588,7 @@ pub fn main() -> std::io::Result<()> {
                                 )
                                 .service(
                                     web::resource("/groups/{dataset_id}/{page}").route(web::get().to(
-                                        handlers::group_handler::get_specific_dataset_chunk_groups,
+                                        handlers::group_handler::get_groups_for_dataset,
                                     )),
                                 )
                                 .service(web::resource("/files/{dataset_id}/{page}").route(

@@ -142,10 +142,13 @@ pub async fn create_file_chunks(
         dataset_org_plan_sub.dataset.id,
         upload_file_data.group_tracking_id.clone(),
         None,
-        None,
+        upload_file_data
+            .tag_set
+            .clone()
+            .map(|tag_set| tag_set.into_iter().map(Some).collect()),
     );
 
-    let chunk_group = create_group_query(chunk_group, false, pool.clone())
+    let chunk_group = create_group_query(chunk_group, true, pool.clone())
         .await
         .map_err(|e| {
             log::error!("Could not create group {:?}", e);

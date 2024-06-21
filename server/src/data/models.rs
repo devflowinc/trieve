@@ -1165,10 +1165,12 @@ pub struct ChunkGroupAndFile {
     pub dataset_id: uuid::Uuid,
     pub name: String,
     pub description: String,
+    pub tracking_id: Option<String>,
+    pub tag_set: Option<Vec<Option<String>>>,
+    pub metadata: Option<serde_json::Value>,
+    pub file_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub file_id: Option<uuid::Uuid>,
-    pub tracking_id: Option<String>,
 }
 
 #[derive(

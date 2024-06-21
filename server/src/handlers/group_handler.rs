@@ -122,7 +122,7 @@ pub async fn create_chunk_group(
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GroupData {
     pub groups: Vec<ChunkGroupAndFile>,
-    pub total_pages: i64,
+    pub total_pages: i32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -153,7 +153,7 @@ pub struct DatasetGroupQuery {
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn get_specific_dataset_chunk_groups(
+pub async fn get_groups_for_dataset(
     dataset_and_page: web::Path<DatasetGroupQuery>,
     _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -163,7 +163,10 @@ pub async fn get_specific_dataset_chunk_groups(
         get_groups_for_dataset_query(dataset_and_page.page, dataset_and_page.dataset_id, pool)
             .await?;
 
-    Ok(HttpResponse::Ok().json(groups))
+    Ok(HttpResponse::Ok().json(GroupData {
+        groups: groups.0,
+        total_pages: groups.1.unwrap_or(1),
+    }))
 }
 
 #[derive(Debug, Deserialize, Serialize)]
