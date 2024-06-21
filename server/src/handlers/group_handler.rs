@@ -9,11 +9,12 @@ use crate::{
     },
     errors::ServiceError,
     operators::{
-        chunk_operator::get_metadata_from_tracking_id_query,
-        clickhouse_operator::{
+        analytics_operator::{
             get_latency_from_header, send_to_clickhouse, ClickHouseEvent, SearchQueryEvent,
         },
+        chunk_operator::get_metadata_from_tracking_id_query,
         group_operator::*,
+        model_operator::create_embedding,
         qdrant_operator::{
             add_bookmark_to_qdrant_query, recommend_qdrant_groups_query,
             remove_bookmark_from_qdrant_query,
@@ -1214,6 +1215,18 @@ pub async fn search_within_group(
         }
     };
 
+    let mut clickhouse_event = SearchQueryEvent {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("search"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        query_vector: vec![],
+        latency: 0.0,
+        results: vec![],
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
     let parsed_query = parse_query(data.query.clone());
 
     let result_chunks = match data.search_type.as_str() {
@@ -1231,7 +1244,7 @@ pub async fn search_within_group(
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
-                server_dataset_config,
+                &server_dataset_config,
             )
             .await?
         }
@@ -1239,10 +1252,11 @@ pub async fn search_within_group(
             search_hybrid_groups(
                 data.clone(),
                 parsed_query,
+                &mut clickhouse_event,
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
-                server_dataset_config,
+                &server_dataset_config,
             )
             .await?
         }
@@ -1250,34 +1264,35 @@ pub async fn search_within_group(
             search_semantic_groups(
                 data.clone(),
                 parsed_query,
+                &mut clickhouse_event,
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
-                server_dataset_config,
+                &server_dataset_config,
             )
             .await?
         }
     };
     timer.add("search_chunks");
 
-    let latency = get_latency_from_header(timer.header_value());
+    clickhouse_event.latency = get_latency_from_header(timer.header_value());
+    clickhouse_event.results = result_chunks.into_response_payload();
 
-    let clickhouse_event = SearchQueryEvent {
-        id: uuid::Uuid::new_v4(),
-        search_type: String::from("search_within_groups"),
-        query: data.query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
-        latency,
-        results: result_chunks.into_response_payload(),
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-    };
+    tokio::spawn(async move {
+        if clickhouse_event.query_vector.len() == 0 {
+            clickhouse_event.query_vector =
+                create_embedding(data.query.clone(), "query", server_dataset_config.clone())
+                    .await?;
+        }
 
-    send_to_clickhouse(
-        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
-        &clickhouse_client,
-    )
-    .await?;
+        send_to_clickhouse(
+            ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+            &clickhouse_client,
+        )
+        .await?;
+
+        Ok::<(), ServiceError>(())
+    });
 
     Ok(HttpResponse::Ok().json(result_chunks))
 }
@@ -1352,6 +1367,18 @@ pub async fn search_over_groups(
 
     let parsed_query = parse_query(data.query.clone());
 
+    let mut clickhouse_event = SearchQueryEvent {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("search"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        query_vector: vec![],
+        latency: 0.0,
+        results: vec![],
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type.as_str() {
@@ -1368,7 +1395,7 @@ pub async fn search_over_groups(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                server_dataset_config,
+                &server_dataset_config,
                 &mut timer,
             )
             .await?
@@ -1377,9 +1404,10 @@ pub async fn search_over_groups(
             hybrid_search_over_groups(
                 data.clone(),
                 parsed_query,
+                &mut clickhouse_event,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                server_dataset_config,
+                &server_dataset_config,
                 &mut timer,
             )
             .await?
@@ -1388,33 +1416,34 @@ pub async fn search_over_groups(
             semantic_search_over_groups(
                 data.clone(),
                 parsed_query,
+                &mut clickhouse_event,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                server_dataset_config,
+                &server_dataset_config,
                 &mut timer,
             )
             .await?
         }
     };
 
-    let latency = get_latency_from_header(timer.header_value());
+    clickhouse_event.latency = get_latency_from_header(timer.header_value());
+    clickhouse_event.results = result_chunks.into_response_payload();
 
-    let clickhouse_event = SearchQueryEvent {
-        id: uuid::Uuid::new_v4(),
-        search_type: String::from("search_over_groups"),
-        query: data.query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
-        latency,
-        results: result_chunks.into_response_payload(),
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-    };
+    tokio::spawn(async move {
+        if clickhouse_event.query_vector.len() == 0 {
+            clickhouse_event.query_vector =
+                create_embedding(data.query.clone(), "query", server_dataset_config.clone())
+                    .await?;
+        }
 
-    send_to_clickhouse(
-        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
-        &clickhouse_client,
-    )
-    .await?;
+        send_to_clickhouse(
+            ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+            &clickhouse_client,
+        )
+        .await?;
+
+        Ok::<(), ServiceError>(())
+    });
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
