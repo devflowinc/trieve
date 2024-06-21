@@ -84,7 +84,6 @@ export const useSearch = () => {
       () => state.version,
       () => {
         setSearchParams({
-          // ...searchParams,
           ...fromStateToParams(unwrap(state)),
         });
 
