@@ -28,17 +28,25 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   const $envs = datasetAndUserContext.clientConfig;
 
   const [searchTypes, setSearchTypes] = createSignal([
-    { name: "FullText", isSelected: false, route: "fulltext" },
-    { name: "Semantic", isSelected: true, route: "semantic" },
+    {
+      name: "FullText",
+      isSelected: props.search.state.searchType === "fulltext",
+      route: "fulltext",
+    },
+    {
+      name: "Semantic",
+      isSelected: props.search.state.searchType === "semantic",
+      route: "semantic",
+    }, // This was the big issue
     { name: "Hybrid", isSelected: false, route: "hybrid" },
     {
       name: "AutoComplete Semantic",
-      isSelected: false,
+      isSelected: props.search.state.searchType === "autocomplete-semantic",
       route: "autocomplete-semantic",
     },
     {
       name: "AutoComplete FullText",
-      isSelected: false,
+      isSelected: props.search.state.searchType === "autocomplete-fulltext",
       route: "autocomplete-fulltext",
     },
   ]);
