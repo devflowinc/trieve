@@ -14,7 +14,7 @@ use super::qdrant_operator::{
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ConditionType,
     ContentChunkMetadata, Dataset, HasIDCondition, ScoreChunkDTO, ServerDatasetConfiguration,
-    UnifiedId,
+    SlimChunkMetadata, UnifiedId,
 };
 use crate::get_env;
 use crate::handlers::chunk_handler::{
@@ -1808,38 +1808,8 @@ pub async fn search_hybrid_chunks(
 
     timer.add("fetched metadata from postgres");
 
-    let reranked_chunks = {
-        let mut reranked_chunks = if result_chunks.score_chunks.len() > 20 {
-            let split_results = result_chunks
-                .score_chunks
-                .chunks(20)
-                .map(|chunk| chunk.to_vec())
-                .collect::<Vec<Vec<ScoreChunkDTO>>>();
-
-            let cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                split_results
-                    .get(0)
-                    .expect("Split results must exist")
-                    .to_vec(),
-                config.clone(),
-            )
-            .await?;
-
-            let score_chunks = rerank_chunks(
-                cross_encoder_results,
-                data.recency_bias,
-                data.tag_weights,
-                data.use_weights,
-            );
-
-            score_chunks
-                .iter()
-                .chain(split_results.get(1).unwrap().iter())
-                .cloned()
-                .collect::<Vec<ScoreChunkDTO>>()
-        } else {
+    let mut reranked_chunks = {
+        let mut reranked_chunks = {
             let cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
@@ -1869,6 +1839,30 @@ pub async fn search_hybrid_chunks(
             total_chunk_pages: result_chunks.total_chunk_pages,
         }
     };
+
+    if data.slim_chunks.unwrap_or(false) {
+        reranked_chunks.score_chunks = reranked_chunks
+            .score_chunks
+            .into_iter()
+            .map(|score_chunk| ScoreChunkDTO {
+                metadata: score_chunk
+                    .metadata
+                    .into_iter()
+                    .map(|metadata| {
+                        let slim_chunk = SlimChunkMetadata::from(metadata.metadata());
+
+                        match metadata {
+                            ChunkMetadataTypes::Metadata(_) => slim_chunk.into(),
+                            ChunkMetadataTypes::Content(_) => slim_chunk.into(),
+                            ChunkMetadataTypes::ID(_) => metadata.into(),
+                        }
+                    })
+                    .collect(),
+                highlights: score_chunk.highlights,
+                score: score_chunk.score,
+            })
+            .collect();
+    }
 
     transaction.finish();
     Ok(reranked_chunks)
