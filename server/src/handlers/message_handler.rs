@@ -4,7 +4,6 @@ use super::{
         check_completion_param_validity, ChunkFilter, ParsedQuery, SearchChunksReqPayload,
     },
 };
-
 use crate::{
     data::models::{
         self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetAndOrgWithSubAndPlan,
@@ -22,7 +21,6 @@ use crate::{
         search_operator::search_hybrid_chunks,
     },
 };
-
 use actix::Arbiter;
 use actix_web::{
     web::{self, Bytes},
@@ -40,7 +38,6 @@ use openai_dive::v1::{
         shared::StopToken,
     },
 };
-
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use simple_server_timing_header::Timer;
