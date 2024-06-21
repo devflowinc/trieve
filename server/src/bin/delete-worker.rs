@@ -57,17 +57,6 @@ fn main() {
         None
     };
 
-    let thread_num = if let Ok(thread_num) = std::env::var("THREAD_NUM") {
-        thread_num
-            .parse::<usize>()
-            .expect("THREAD_NUM must be a number")
-    } else {
-        std::thread::available_parallelism()
-            .expect("Failed to get available parallelism")
-            .get()
-            * 2
-    };
-
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
 
     let mut config = ManagerConfig::default();
