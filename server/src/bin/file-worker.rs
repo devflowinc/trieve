@@ -88,9 +88,9 @@ fn main() {
             async move {
                 let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
                 let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-                    .unwrap_or("30".to_string())
+                    .unwrap_or("2".to_string())
                     .parse()
-                    .unwrap_or(30);
+                    .unwrap_or(2);
 
                 let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
                     .expect("Failed to connect to redis");
@@ -107,21 +107,8 @@ fn main() {
                 let should_terminate = Arc::new(AtomicBool::new(false));
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
-                let threads: Vec<_> = (0..thread_num)
-                    .map(|i| {
-                        let web_pool = web_pool.clone();
-                        let web_redis_pool = web_redis_pool.clone();
-                        let should_terminate = Arc::clone(&should_terminate);
 
-                        tokio::spawn(async move {
-                            file_worker(should_terminate, i, web_redis_pool, web_pool).await
-                        })
-                    })
-                    .collect();
-
-                while !should_terminate.load(Ordering::Relaxed) {}
-                log::info!("Shutdown signal received, killing all children...");
-                futures::future::join_all(threads).await
+                file_worker(should_terminate, web_redis_pool, web_pool).await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -129,11 +116,10 @@ fn main() {
 
 async fn file_worker(
     should_terminate: Arc<AtomicBool>,
-    thread_num: usize,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
-    log::info!("Starting file worker service thread {}", thread_num);
+    log::info!("Starting file worker service thread");
 
     let mut redis_conn_sleep = std::time::Duration::from_secs(1);
 

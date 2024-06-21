@@ -109,8 +109,6 @@ spec:
             value: {{ .Values.config.trieve.unlimited | quote }}
           - name: REDIS_CONNECTIONS
             value: {{ .Values.config.redis.connections | quote }}
-          - name: NUM_THREADS
-            value: {{ .Values.config.ingest.num_threads | quote }}
           - name: AWS_REGION
             value: {{ .Values.config.s3.region }}
       {{- if eq $.Values.environment "gcloud" }}

@@ -116,6 +116,8 @@ spec:
             value: {{ .Values.config.redis.connections | quote }}
           - name: AWS_REGION
             value: {{ .Values.config.s3.region }}
+          - name: CREATE_QDRANT_COLLECTIONS
+            value: {{ .Values.qdrant.initCollections }}
       {{- if eq $.Values.environment "gcloud" }}
       - name: cloud-sql-proxy
         # It is recommended to use the latest version of the Cloud SQL Auth Proxy
