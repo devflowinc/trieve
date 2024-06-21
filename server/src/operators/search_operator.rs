@@ -1,3 +1,4 @@
+use super::analytics_operator::SearchQueryEvent;
 use super::chunk_operator::{
     get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
     get_content_chunk_from_point_ids_query, get_highlights, get_qdrant_ids_from_chunk_ids_query,
@@ -299,7 +300,7 @@ pub async fn retrieve_qdrant_points_query(
     page: u64,
     get_total_pages: bool,
     limit: u64,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
 ) -> Result<SearchChunkQueryResult, ServiceError> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -744,7 +745,7 @@ pub async fn retrieve_group_qdrant_points_query(
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
 ) -> Result<SearchOverGroupsQueryResult, ServiceError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -1494,9 +1495,10 @@ pub fn rerank_chunks(
 pub async fn search_semantic_chunks(
     data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1518,6 +1520,8 @@ pub async fn search_semantic_chunks(
 
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
+
+    event.query_vector = embedding_vector.clone();
 
     timer.add("computed dense embedding");
 
@@ -1565,7 +1569,7 @@ pub async fn search_full_text_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1643,9 +1647,10 @@ pub async fn search_full_text_chunks(
 pub async fn search_hybrid_chunks(
     data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1669,6 +1674,8 @@ pub async fn search_hybrid_chunks(
 
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
+
+    event.query_vector = dense_vector.clone();
 
     timer.add("computed sparse and dense embeddings");
 
@@ -1694,7 +1701,7 @@ pub async fn search_hybrid_chunks(
         data.page.unwrap_or(1),
         data.get_total_pages.unwrap_or(false),
         data.page_size.unwrap_or(10),
-        config.clone(),
+        config,
     )
     .await?;
 
@@ -1705,8 +1712,38 @@ pub async fn search_hybrid_chunks(
 
     timer.add("fetched metadata from postgres");
 
-    let mut reranked_chunks = {
-        let mut reranked_chunks = {
+    let reranked_chunks = {
+        let mut reranked_chunks = if result_chunks.score_chunks.len() > 20 {
+            let split_results = result_chunks
+                .score_chunks
+                .chunks(20)
+                .map(|chunk| chunk.to_vec())
+                .collect::<Vec<Vec<ScoreChunkDTO>>>();
+
+            let cross_encoder_results = cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                split_results
+                    .get(0)
+                    .expect("Split results must exist")
+                    .to_vec(),
+                config,
+            )
+            .await?;
+
+            let score_chunks = rerank_chunks(
+                cross_encoder_results,
+                data.recency_bias,
+                data.tag_weights,
+                data.use_weights,
+            );
+
+            score_chunks
+                .iter()
+                .chain(split_results.get(1).unwrap().iter())
+                .cloned()
+                .collect::<Vec<ScoreChunkDTO>>()
+        } else {
             let cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
@@ -1770,16 +1807,19 @@ pub async fn search_hybrid_chunks(
 pub async fn search_semantic_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     group: ChunkGroup,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
+
+    event.query_vector = embedding_vector.clone();
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
@@ -1827,7 +1867,7 @@ pub async fn search_full_text_groups(
     group: ChunkGroup,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let sparse_vector = get_sparse_vector(data.query.clone(), "query")
         .await
@@ -1876,10 +1916,11 @@ pub async fn search_full_text_groups(
 pub async fn search_hybrid_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     group: ChunkGroup,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -1890,6 +1931,8 @@ pub async fn search_hybrid_groups(
 
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
+
+    event.query_vector = dense_vector.clone();
 
     let qdrant_queries = vec![
         RetrievePointQuery {
@@ -1923,7 +1966,7 @@ pub async fn search_hybrid_groups(
         data.page.unwrap_or(1),
         data.get_total_pages.unwrap_or(false),
         data.page_size.unwrap_or(10),
-        config.clone(),
+        config,
     )
     .await?;
 
@@ -1956,7 +1999,7 @@ pub async fn search_hybrid_groups(
                     .get(0)
                     .expect("Split results must exist")
                     .to_vec(),
-                config.clone(),
+                config,
             )
             .await?;
             let score_chunks = rerank_chunks(
@@ -1976,7 +2019,7 @@ pub async fn search_hybrid_groups(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks.clone(),
-                config.clone(),
+                config,
             )
             .await?;
 
@@ -2009,9 +2052,10 @@ pub async fn search_hybrid_groups(
 pub async fn semantic_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchOverGroupsResults, actix_web::Error> {
     let dataset_config =
@@ -2021,6 +2065,8 @@ pub async fn semantic_search_over_groups(
 
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
+
+    event.query_vector = embedding_vector.clone();
 
     timer.add("computed dense embedding");
 
@@ -2073,7 +2119,7 @@ pub async fn full_text_search_over_groups(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchOverGroupsResults, actix_web::Error> {
     timer.add("start to get sparse vector");
@@ -2131,7 +2177,7 @@ async fn cross_encoder_for_groups(
     query: String,
     page_size: u64,
     groups_chunks: Vec<GroupScoreChunk>,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
 ) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
@@ -2191,9 +2237,10 @@ async fn cross_encoder_for_groups(
 pub async fn hybrid_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchOverGroupsResults, actix_web::Error> {
     let dataset_config =
@@ -2211,6 +2258,8 @@ pub async fn hybrid_search_over_groups(
         sparse_embedding_vector_future
     )?;
 
+    event.query_vector = dense_vector.clone();
+
     timer.add("computed dense embedding");
 
     let semantic_future = retrieve_group_qdrant_points_query(
@@ -2224,7 +2273,7 @@ pub async fn hybrid_search_over_groups(
         parsed_query.clone(),
         dataset.id,
         pool.clone(),
-        config.clone(),
+        config,
     );
 
     let full_text_future = retrieve_group_qdrant_points_query(
@@ -2238,7 +2287,7 @@ pub async fn hybrid_search_over_groups(
         parsed_query.clone(),
         dataset.id,
         pool.clone(),
-        config.clone(),
+        config,
     );
 
     let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
@@ -2286,7 +2335,7 @@ pub async fn hybrid_search_over_groups(
                 .get(0)
                 .expect("Split results must exist")
                 .to_vec(),
-            config.clone(),
+            config,
         )
         .await?;
 
@@ -2300,7 +2349,7 @@ pub async fn hybrid_search_over_groups(
             data.query.clone(),
             data.page_size.unwrap_or(10).into(),
             combined_result_chunks.group_chunks.clone(),
-            config.clone(),
+            config,
         )
         .await?
     };
@@ -2330,9 +2379,10 @@ pub async fn hybrid_search_over_groups(
 pub async fn autocomplete_semantic_chunks(
     mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -2354,6 +2404,8 @@ pub async fn autocomplete_semantic_chunks(
 
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
+
+    event.query_vector = embedding_vector.clone();
 
     timer.add("computed dense embedding");
 
@@ -2436,7 +2488,7 @@ pub async fn autocomplete_fulltext_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
