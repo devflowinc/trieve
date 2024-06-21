@@ -5,6 +5,7 @@ import {
   createContext,
   createEffect,
   createSignal,
+  onMount,
 } from "solid-js";
 import {
   ClientEnvsConfiguration,
@@ -16,6 +17,7 @@ import {
   isUserDTO,
 } from "../../../utils/apiTypes";
 import { createToast } from "../ShowToasts";
+import { useSearchParams } from "@solidjs/router";
 
 export interface DatasetAndUserStoreContextProps {
   children: JSX.Element;
@@ -65,6 +67,8 @@ export const DatasetAndUserContextWrapper = (
 ) => {
   const apiHost: string = import.meta.env.VITE_API_HOST as string;
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [user, setUser] = createSignal<UserDTO | null>(null);
   const [selectedOrganization, setSelectedOrganization] =
     createSignal<OrganizationDTO | null>(null);
@@ -109,7 +113,7 @@ export const DatasetAndUserContextWrapper = (
       });
   };
 
-  createEffect(() => {
+  onMount(() => {
     login();
   });
 
@@ -119,23 +123,18 @@ export const DatasetAndUserContextWrapper = (
       return;
     }
 
-    const params = new URL(window.location.href).searchParams;
-    params.set("dataset", dataset.dataset.id);
-    window.history.replaceState(
-      {},
-      "",
-      `${window.location.pathname}?${params.toString()}`,
-    );
+    setSearchParams({
+      dataset: dataset.dataset.id,
+    });
+
     localStorage.setItem("currentDataset", JSON.stringify(dataset));
   });
 
   createEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-
     let organization = selectedOrganization();
 
     if (!organization) {
-      const paramsOrg = params.get("organization");
+      const paramsOrg = searchParams.organization;
       const storedOrganization = localStorage.getItem("currentOrganization");
 
       const user_orgs = user()?.orgs;
@@ -166,14 +165,7 @@ export const DatasetAndUserContextWrapper = (
     }
 
     if (organization) {
-      const params = new URLSearchParams(window.location.search);
-
-      params.set("organization", organization.id);
-      window.history.replaceState(
-        {},
-        "",
-        `${window.location.pathname}?${params.toString()}`,
-      );
+      setSearchParams({ organization: organization.id });
       localStorage.setItem("currentOrganization", JSON.stringify(organization));
     }
   });
@@ -185,7 +177,6 @@ export const DatasetAndUserContextWrapper = (
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
     void fetch(`${apiHost}/dataset/organization/${selectedOrg.id}`, {
       method: "GET",
       credentials: "include",
@@ -208,7 +199,7 @@ export const DatasetAndUserContextWrapper = (
 
           let newDataset = data[0];
 
-          const paramsDataset = params.get("dataset");
+          const paramsDataset = searchParams.dataset;
           const storedDataset = localStorage.getItem("currentDataset");
 
           if (paramsDataset !== null) {
