@@ -37,7 +37,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
       name: "Semantic",
       isSelected: props.search.state.searchType === "semantic",
       route: "semantic",
-    }, // This was the big issue
+    },
     { name: "Hybrid", isSelected: false, route: "hybrid" },
     {
       name: "AutoComplete Semantic",
