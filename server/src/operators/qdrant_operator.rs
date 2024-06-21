@@ -1228,7 +1228,7 @@ pub async fn recommend_qdrant_groups_query(
 #[tracing::instrument]
 pub async fn get_point_count_qdrant_query(
     filters: Filter,
-    config: ServerDatasetConfiguration,
+    config: &ServerDatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<u64, ServiceError> {
     if !get_total_pages {
