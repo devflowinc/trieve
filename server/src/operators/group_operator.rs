@@ -187,10 +187,12 @@ pub async fn get_groups_for_dataset_query(
                 dataset_id: group.dataset_id,
                 name: group.name,
                 description: group.description,
+                tracking_id: group.tracking_id,
+                tag_set: group.tag_set,
+                metadata: group.metadata,
+                file_id,
                 created_at: group.created_at,
                 updated_at: group.updated_at,
-                file_id,
-                tracking_id: group.tracking_id,
             }
         })
         .collect();
