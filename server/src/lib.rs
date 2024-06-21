@@ -61,67 +61,19 @@ async fn run_clickhouse_migrations(client: &clickhouse::Client) {
     client
         .query(
             "
-        CREATE TABLE IF NOT EXISTS events 
-        (
-            id UUID,
-            path String,
-            method String,
-            dataset_id Nullable(UUID),
-            request_payload String,
-            response_payload String,
-            latency Float32,
-            created_at DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY (id);
-        ",
-        )
-        .execute()
-        .await
-        .unwrap();
-
-    client
-        .query(
-            "
         CREATE TABLE IF NOT EXISTS search_queries
         (
             id UUID,
             search_type String,
             query String,
-            event_id UUID,
-            results Array(String)
+            request_params String,
+            latency Float32,
+            results Array(String),
+            query_vector Array(Float32),
+            dataset_id UUID,
+            created_at DateTime
         ) ENGINE = MergeTree()
-        ORDER BY (id);
-        ",
-        )
-        .execute()
-        .await
-        .unwrap();
-
-    client
-        .query(
-            "
-        CREATE MATERIALIZED VIEW IF NOT EXISTS search_queries_mv TO search_queries AS
-    SELECT 
-        generateUUIDv4() AS id,
-        JSONExtractString(request_payload, 'search_type') AS search_type,
-        JSONExtractString(request_payload, 'query') AS query,
-        id AS event_id,
-        arrayMap(x -> 
-            concat(
-                JSONExtractString(JSONExtractArrayRaw(x, 'metadata')[1], 'id'),
-                ',',
-                replaceAll(JSONExtractString(JSONExtractArrayRaw(x, 'metadata')[1], 'tracking_id'), ',', '\\\\comma;'),
-                ',',
-                toString(JSONExtractFloat(x, 'score'))
-            ),
-            JSONExtractArrayRaw(response_payload, 'score_chunks')
-        ) AS results
-    FROM events
-    WHERE path = '/api/chunk/search'
-        AND method = 'POST'
-        AND JSONHas(request_payload, 'search_type')
-        AND JSONHas(request_payload, 'query');
-
+        ORDER BY (dataset_id, created_at, id);
         ",
         )
         .execute()
@@ -565,7 +517,6 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(redis_pool.clone()))
                 .app_data(web::Data::new(clickhouse_client.clone()))
                 .wrap(sentry_actix::Sentry::new())
-                .wrap(middleware::logging_middleware::LoggingMiddlewareFactory)
                 .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
                     IdentityMiddleware::builder()
