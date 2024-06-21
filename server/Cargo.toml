@@ -134,6 +134,7 @@ bb8-redis = "0.15.0"
 signal-hook = "0.3.17"
 blake3 = "1.5.1"
 actix-http = "3.7.0"
+clickhouse = {version="0.11.6", features = ["time", "uuid"]}
 
 
 [build-dependencies]
