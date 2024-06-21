@@ -139,7 +139,6 @@ clickhouse = { git = "https://github.com/loyd/clickhouse.rs", features = [
     "uuid",
 ] }
 
-
 [build-dependencies]
 dotenvy = "0.15.7"
 
