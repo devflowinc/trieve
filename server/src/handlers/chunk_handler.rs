@@ -10,6 +10,9 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
+use crate::operators::clickhouse_operator::{
+    get_latency_from_header, send_to_clickhouse, ClickHouseEvent, SearchQueryEvent,
+};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
@@ -1026,11 +1029,12 @@ pub fn parse_query(query: String) -> ParsedQuery {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn search_chunks(
     data: web::Json<SearchChunksReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -1057,7 +1061,7 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
                 &mut timer,
             )
@@ -1068,7 +1072,7 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
                 &mut timer,
             )
@@ -1079,7 +1083,7 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
                 &mut timer,
             )
@@ -1092,6 +1096,25 @@ pub async fn search_chunks(
             .into())
         }
     };
+
+    let latency = get_latency_from_header(timer.header_value());
+
+    let clickhouse_event = SearchQueryEvent {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("search"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        latency,
+        results: result_chunks.into_response_payload(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await?;
 
     transaction.finish();
 
@@ -1239,11 +1262,12 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn autocomplete(
     data: web::Json<AutocompleteReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -1270,7 +1294,7 @@ pub async fn autocomplete(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
                 &mut timer,
             )
@@ -1281,7 +1305,7 @@ pub async fn autocomplete(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
                 &mut timer,
             )
@@ -1294,6 +1318,25 @@ pub async fn autocomplete(
             .into())
         }
     };
+
+    let latency = get_latency_from_header(timer.header_value());
+
+    let clickhouse_event = SearchQueryEvent {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("autocomplete"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        latency,
+        results: result_chunks.into_response_payload(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await?;
 
     transaction.finish();
 
