@@ -3,6 +3,7 @@
 
 #[macro_use]
 extern crate diesel;
+
 use crate::{
     errors::{custom_json_error_handler, ServiceError},
     handlers::auth_handler::build_oidc_client,
@@ -56,6 +57,77 @@ fn run_migrations(url: &str) {
         .expect("Failed to run migrations");
 }
 
+async fn run_clickhouse_migrations(client: &clickhouse::Client) {
+    client
+        .query(
+            "
+        CREATE TABLE IF NOT EXISTS events 
+        (
+            id UUID,
+            path String,
+            method String,
+            dataset_id Nullable(UUID),
+            request_payload String,
+            response_payload String,
+            latency Float32,
+            created_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY (id);
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+
+    client
+        .query(
+            "
+        CREATE TABLE IF NOT EXISTS search_queries
+        (
+            id UUID,
+            search_type String,
+            query String,
+            event_id UUID,
+            results Array(String)
+        ) ENGINE = MergeTree()
+        ORDER BY (id);
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+
+    client
+        .query(
+            "
+        CREATE MATERIALIZED VIEW IF NOT EXISTS search_queries_mv TO search_queries AS
+    SELECT 
+        generateUUIDv4() AS id,
+        JSONExtractString(request_payload, 'search_type') AS search_type,
+        JSONExtractString(request_payload, 'query') AS query,
+        id AS event_id,
+        arrayMap(x -> 
+            concat(
+                JSONExtractString(JSONExtractArrayRaw(x, 'metadata')[1], 'id'),
+                ',',
+                replaceAll(JSONExtractString(JSONExtractArrayRaw(x, 'metadata')[1], 'tracking_id'), ',', '\\\\comma;'),
+                ',',
+                toString(JSONExtractFloat(x, 'score'))
+            ),
+            JSONExtractArrayRaw(response_payload, 'score_chunks')
+        ) AS results
+    FROM events
+    WHERE path = '/api/chunk/search'
+        AND method = 'POST'
+        AND JSONHas(request_payload, 'search_type')
+        AND JSONHas(request_payload, 'query');
+
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+}
 pub fn establish_connection(
     config: &str,
 ) -> BoxFuture<diesel::ConnectionResult<diesel_async::AsyncPgConnection>> {
@@ -470,6 +542,16 @@ pub fn main() -> std::io::Result<()> {
             });
         }
 
+        let clickhouse_client = clickhouse::Client::default()
+            .with_url(get_env!("CLICKHOUSE_URL", "CLICKHOUSE_URL should be set"))
+            .with_database(get_env!("CLICKHOUSE_DB", "CLICKHOUSE_DB should be set"))
+            .with_user(get_env!("CLICKHOUSE_USER", "CLICKHOUSE_USER should be set"))
+            .with_password(get_env!("CLICKHOUSE_PASSWORD", "CLICKHOUSE_PASSWORD should be set"))
+            .with_option("async_insert", "1")
+            .with_option("wait_for_async_insert", "0");
+
+        run_clickhouse_migrations(&clickhouse_client).await;
+
         HttpServer::new(move || {
             App::new()
                 .wrap(Cors::permissive())
@@ -482,6 +564,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(pool.clone()))
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
+                .app_data(web::Data::new(clickhouse_client.clone()))
                 .wrap(sentry_actix::Sentry::new())
                 .wrap(middleware::logging_middleware::LoggingMiddlewareFactory)
                 .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
