@@ -1,18 +1,6 @@
 import { Params, useSearchParams } from "@solidjs/router";
-import { createEffect, createSignal, on, onMount } from "solid-js";
-import { createStore, produce, unwrap } from "solid-js/store";
-
-// Function to get a Record<string, string> of the current browser search params
-function getSearchParams(): Record<string, string> {
-  const params = new URLSearchParams(window.location.search);
-  const result: Record<string, string> = {};
-
-  for (const [key, value] of params) {
-    result[key] = value;
-  }
-
-  return result;
-}
+import { createEffect, on } from "solid-js";
+import { createStore, unwrap } from "solid-js/store";
 
 const initalState = {
   version: 0, // Variable used to subscribe to entire store.
@@ -82,26 +70,23 @@ export const useSearch = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [state, setSearch] = createStore({
-    version: 0,
-    ...fromParamsToState(getSearchParams()),
+    ...initalState,
+    ...fromParamsToState(searchParams),
   });
 
   const [debounced, setDebouncedState] = createStore({
-    version: 0,
-    ...fromParamsToState(getSearchParams()),
+    ...initalState,
+    ...fromParamsToState(searchParams),
   });
 
   createEffect(
     on(
       () => state.version,
       () => {
-        // Mirror the state to the params
-        if (state.version > 0) {
-          setSearchParams({
-            // ...searchParams,
-            ...fromStateToParams(unwrap(state)),
-          });
-        }
+        setSearchParams({
+          // ...searchParams,
+          ...fromStateToParams(unwrap(state)),
+        });
 
         const timeout = setTimeout(() => {
           setDebouncedState({ ...unwrap(state) });
@@ -116,7 +101,6 @@ export const useSearch = () => {
     ...args: Parameters<typeof setSearch>
   ) => {
     if (!readFromLocation) return;
-    console.log("Setting from state");
     // @ts-expect-error args
     setSearch(...args);
     setSearch("version", (prev) => prev + 1);
@@ -124,8 +108,6 @@ export const useSearch = () => {
 
   createEffect(() => {
     const locationState = fromParamsToState(searchParams);
-    console.log(locationState);
-    console.log("Setting from location");
     readFromLocation = true;
     setSearch("searchType", locationState.searchType);
   });
