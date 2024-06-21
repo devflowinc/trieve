@@ -111,8 +111,6 @@ spec:
             value: {{ .Values.config.trieve.unlimited | quote }}
           - name: REDIS_CONNECTIONS
             value: {{ .Values.config.redis.connections | quote }}
-          - name: NUM_THREADS
-            value: {{ .Values.config.ingest.num_threads | quote }}
       {{- if eq $.Values.environment "gcloud" }}
       - name: cloud-sql-proxy
         # It is recommended to use the latest version of the Cloud SQL Auth Proxy

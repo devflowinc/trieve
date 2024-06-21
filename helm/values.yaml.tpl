@@ -37,7 +37,7 @@ config:
     sentryChatDsn: $SENTRY_CHAT_DSN
     dashboardUrl: $DASHBOARD_URL
   redis:
-    connections: 30
+    connections: 2
     useSubchart: true
     uri: "redis://:redis@trieve-redis-master.default.svc.cluster.local:6379" # Only used if useSubchart is false
   qdrant:
@@ -47,6 +47,7 @@ config:
     apiKey: "qdrant_password"
     quantizeVectors: false # If set to true will binary quantize
     replicationFactor: 2
+    initCollections: true
     vectorSizes:
       - 384
       - 512
@@ -54,8 +55,6 @@ config:
       - 1024
       - 1536
       - 3072
-  ingest:
-    num_threads: 1
   trieve:
     unlimited: true
     cookieSecure: false
