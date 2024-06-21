@@ -10,6 +10,9 @@ use crate::{
     errors::ServiceError,
     operators::{
         chunk_operator::get_metadata_from_tracking_id_query,
+        clickhouse_operator::{
+            get_latency_from_header, send_to_clickhouse, ClickHouseEvent, SearchQueryEvent,
+        },
         group_operator::*,
         qdrant_operator::{
             add_bookmark_to_qdrant_query, recommend_qdrant_groups_query,
@@ -1180,11 +1183,11 @@ pub struct SearchWithinGroupResults {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn search_within_group(
     data: web::Json<SearchWithinGroupData>,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1196,6 +1199,7 @@ pub async fn search_within_group(
     let group_id = data.group_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let search_pool = pool.clone();
+    let mut timer = Timer::new();
 
     let group = {
         if let Some(group_id) = group_id {
@@ -1226,7 +1230,7 @@ pub async fn search_within_group(
                 parsed_query,
                 group,
                 search_pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
             )
             .await?
@@ -1237,7 +1241,7 @@ pub async fn search_within_group(
                 parsed_query,
                 group,
                 search_pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
             )
             .await?
@@ -1248,12 +1252,32 @@ pub async fn search_within_group(
                 parsed_query,
                 group,
                 search_pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
             )
             .await?
         }
     };
+    timer.add("search_chunks");
+
+    let latency = get_latency_from_header(timer.header_value());
+
+    let clickhouse_event = SearchQueryEvent {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("search_within_groups"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        latency,
+        results: result_chunks.into_response_payload(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(result_chunks))
 }
@@ -1314,10 +1338,11 @@ pub struct SearchOverGroupsData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn search_over_groups(
     data: web::Json<SearchOverGroupsData>,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1342,7 +1367,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
                 &mut timer,
             )
@@ -1353,7 +1378,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
                 &mut timer,
             )
@@ -1364,13 +1389,32 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
+                dataset_org_plan_sub.dataset.clone(),
                 server_dataset_config,
                 &mut timer,
             )
             .await?
         }
     };
+
+    let latency = get_latency_from_header(timer.header_value());
+
+    let clickhouse_event = SearchQueryEvent {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("search_over_groups"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        latency,
+        results: result_chunks.into_response_payload(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
