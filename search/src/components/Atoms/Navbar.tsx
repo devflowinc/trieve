@@ -1,4 +1,3 @@
-import { A } from "@solidjs/router";
 import { Show, createSignal, useContext } from "solid-js";
 import { DatasetAndUserContext } from "../Contexts/DatasetAndUserContext";
 import { OrganizationSelectBox } from "../OrganizationSelectBox";
@@ -9,7 +8,6 @@ export const Navbar = () => {
 
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
-  const $envs = datasetAndUserContext.clientConfig;
   const $currentUser = datasetAndUserContext.user;
 
   const [isOpen, setIsOpen] = createSignal(false);
@@ -20,13 +18,23 @@ export const Navbar = () => {
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-7xl items-center justify-between">
             <div class="flex min-w-fit items-center space-x-2">
-              <a href="/">
+              <button
+                onClick={() => {
+                  window.history.replaceState(
+                    {},
+                    "",
+                    `/?dataset=${datasetAndUserContext.currentDataset?.()
+                      ?.dataset.id}`,
+                  );
+                  window.location.reload();
+                }}
+              >
                 <img
                   class="w-6 sm:w-12"
                   src="https://cdn.trieve.ai/trieve-logo.png"
                   alt="Logo"
                 />
-              </a>
+              </button>
               <Show when={$currentUser?.()}>
                 <div class="flex min-w-fit items-center space-x-2">
                   <OrganizationSelectBox />
@@ -43,28 +51,24 @@ export const Navbar = () => {
               >
                 Dashboard
               </a>
-              <A
+              <a
                 href="/group"
                 class="hidden text-center min-[420px]:text-lg min-[920px]:block"
               >
                 Groups
-              </A>
-              <Show when={$envs().CREATE_CHUNK_FEATURE}>
-                <A
-                  href="/create"
-                  class="hidden text-center min-[420px]:text-lg min-[920px]:block"
-                >
-                  Create Chunk
-                </A>
-              </Show>
-              <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>
-                <A
-                  href="/upload"
-                  class="hidden text-center min-[420px]:text-lg min-[920px]:block"
-                >
-                  Upload File
-                </A>
-              </Show>
+              </a>
+              <a
+                href="/create"
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Create Chunk
+              </a>
+              <a
+                href="/upload"
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Upload File
+              </a>
             </div>
           </div>
           <div class="-mr-2 flex md:hidden">
@@ -118,22 +122,30 @@ export const Navbar = () => {
         id="mobile-menu"
       >
         <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-          <Show when={$envs().CREATE_CHUNK_FEATURE}>
-            <a
-              href="/create"
-              class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-            >
-              Create Chunk
-            </a>
-          </Show>
-          <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>
-            <a
-              href="/upload"
-              class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-            >
-              Upload File
-            </a>
-          </Show>
+          <a
+            href={dashboardUrl}
+            class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+          >
+            Dashboard
+          </a>
+          <a
+            href="/group"
+            class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+          >
+            Groups
+          </a>
+          <a
+            href="/create"
+            class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+          >
+            Create Chunk
+          </a>
+          <a
+            href="/upload"
+            class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+          >
+            Upload File
+          </a>
         </div>
       </div>
     </nav>

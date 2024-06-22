@@ -71,7 +71,8 @@ export const Sidebar = () => {
                   target="_blank"
                   class="flex items-center"
                 >
-                  Search <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
+                  Search playground{" "}
+                  <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
                 </a>
               </div>
               <div class="flex items-center text-neutral-800 hover:text-fuchsia-800">
@@ -80,7 +81,7 @@ export const Sidebar = () => {
                   target="_blank"
                   class="flex items-center"
                 >
-                  <span>RAG chat</span>{" "}
+                  <span>RAG playground</span>{" "}
                   <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
                 </a>
               </div>

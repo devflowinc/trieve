@@ -89,6 +89,10 @@ const ResultsPage = (props: ResultsPageProps) => {
     });
   };
 
+  createEffect(() => {
+    fetchChunkCollections();
+  });
+
   const fetchBookmarks = () => {
     const dataset = $dataset?.();
     if (!dataset) return;
@@ -162,7 +166,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         get_collisions: true,
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
-        get_total_pages: props.search.debounced.getTotalPages ?? false,
+        get_total_pages: props.search.debounced.getTotalPages ?? true,
         highlight_results: props.search.debounced.highlightResults ?? true,
         highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
           "?",
@@ -188,8 +192,8 @@ const ResultsPage = (props: ResultsPageProps) => {
 
       setLoading(true);
 
-      // setGroupResultChunks([]);
-      // setResultChunks([]);
+      setGroupResultChunks([]);
+      setResultChunks([]);
       setNoResults(false);
 
       const abortController = new AbortController();
@@ -252,15 +256,11 @@ const ResultsPage = (props: ResultsPageProps) => {
 
         setClientSideRequestFinished(true);
 
-        createEffect(() => {
-          setLoading(false);
-        });
+        setLoading(false);
       });
 
-      fetchChunkCollections();
-
       onCleanup(() => {
-        abortController.abort();
+        abortController.abort("cleanup");
       });
     }),
   );
@@ -282,6 +282,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       const filters = JSON.parse(
         localStorage.getItem(filtersKey) ?? "{}",
       ) as Filters;
+      props.search.setSearch("version", (prev) => prev + 1);
       setFilters(filters);
     });
 

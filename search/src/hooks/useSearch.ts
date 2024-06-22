@@ -20,7 +20,7 @@ const initalState = {
   highlightWindow: 0,
 };
 
-type SearchOptions = typeof initalState;
+export type SearchOptions = typeof initalState;
 
 const fromStateToParams = (state: SearchOptions): Params => {
   return {
@@ -54,8 +54,8 @@ const fromParamsToState = (
     groupUniqueSearch: params.groupUniqueSearch === "true",
     recencyBias: parseFloat(params.recencyBias ?? "0.0"),
     pageSize: parseInt(params.pageSize ?? "10"),
-    getTotalPages: params.getTotalPages === "true",
-    highlightResults: params.highlightResults === "true",
+    getTotalPages: (params.getTotalPages ?? "true") === "true",
+    highlightResults: (params.highlightResults ?? "true") === "true",
     highlightDelimiters:
       params.highlightDelimiters?.split(",") ?? initalState.highlightDelimiters,
     highlightMaxLength: parseInt(params.highlightMaxLength ?? "8"),

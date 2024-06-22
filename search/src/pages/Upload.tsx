@@ -24,13 +24,13 @@ export const Upload = () => {
             src="https://cdn.trieve.ai/trieve-logo.png"
             alt="Logo"
           />
-          <h1 class="text-center text-4xl">Upload New Evidence File</h1>
+          <h1 class="text-center text-4xl">Upload File</h1>
         </div>
         <div>
           Warning! Large files may take up to 3 minutes to upload. Please do not
           close this page until the upload is complete.
         </div>
-        <div class="w-full max-w-4xl px-4 sm:px-8 md:px-20">
+        <div class="w-full max-w-7xl px-4 sm:px-8 md:px-20">
           <UploadFile />
         </div>
       </div>
