@@ -73,7 +73,8 @@ async fn run_clickhouse_migrations(client: &clickhouse::Client) {
             dataset_id UUID,
             created_at DateTime
         ) ENGINE = MergeTree()
-        ORDER BY (dataset_id, created_at, id);
+        ORDER BY (dataset_id, created_at, id)
+        TTL created_at + INTERVAL 30 DAY
         ",
         )
         .execute()
