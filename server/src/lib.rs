@@ -74,7 +74,29 @@ async fn run_clickhouse_migrations(client: &clickhouse::Client) {
             created_at DateTime
         ) ENGINE = MergeTree()
         ORDER BY (dataset_id, created_at, id)
+        PARTITION BY
+            (toYYYYMM(created_at),
+            dataset_id)
         TTL created_at + INTERVAL 30 DAY
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+
+    client
+        .query(
+            "
+        CREATE TABLE IF NOT EXISTS cluster_topics
+        (
+            id UUID,
+            dataset_id UUID,
+            topic String,
+            created_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY (dataset_id, id)
+        PARTITION BY
+            dataset_id
         ",
         )
         .execute()
