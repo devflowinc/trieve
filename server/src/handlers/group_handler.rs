@@ -15,7 +15,6 @@ use crate::{
         },
         chunk_operator::get_metadata_from_tracking_id_query,
         group_operator::*,
-        model_operator::create_embedding,
         qdrant_operator::{
             add_bookmark_to_qdrant_query, recommend_qdrant_groups_query,
             remove_bookmark_from_qdrant_query,
@@ -1254,6 +1253,7 @@ pub async fn search_within_group(
             search_full_text_groups(
                 data.clone(),
                 parsed_query,
+                &mut clickhouse_event,
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
@@ -1291,21 +1291,11 @@ pub async fn search_within_group(
     clickhouse_event.latency = get_latency_from_header(timer.header_value());
     clickhouse_event.results = result_chunks.into_response_payload();
 
-    tokio::spawn(async move {
-        if clickhouse_event.query_vector.len() == 0 {
-            clickhouse_event.query_vector =
-                create_embedding(data.query.clone(), "query", server_dataset_config.clone())
-                    .await?;
-        }
-
-        send_to_clickhouse(
-            ClickHouseEvent::SearchQueryEvent(clickhouse_event),
-            &clickhouse_client,
-        )
-        .await?;
-
-        Ok::<(), ServiceError>(())
-    });
+    send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(result_chunks))
 }
@@ -1406,6 +1396,7 @@ pub async fn search_over_groups(
             full_text_search_over_groups(
                 data.clone(),
                 parsed_query,
+                &mut clickhouse_event,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &server_dataset_config,
@@ -1442,21 +1433,11 @@ pub async fn search_over_groups(
     clickhouse_event.latency = get_latency_from_header(timer.header_value());
     clickhouse_event.results = result_chunks.into_response_payload();
 
-    tokio::spawn(async move {
-        if clickhouse_event.query_vector.len() == 0 {
-            clickhouse_event.query_vector =
-                create_embedding(data.query.clone(), "query", server_dataset_config.clone())
-                    .await?;
-        }
-
-        send_to_clickhouse(
-            ClickHouseEvent::SearchQueryEvent(clickhouse_event),
-            &clickhouse_client,
-        )
-        .await?;
-
-        Ok::<(), ServiceError>(())
-    });
+    send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
