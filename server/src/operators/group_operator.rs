@@ -177,7 +177,7 @@ pub async fn get_groups_for_dataset_query(
             let file_id = file_ids
                 .iter()
                 .find(|(group_id, _)| group.id == *group_id)
-                .map(|(_, file_id)| file_id.clone());
+                .map(|(_, file_id)| *file_id);
 
             ChunkGroupAndFile {
                 id: group.id,
@@ -464,7 +464,7 @@ pub async fn get_bookmarks_for_group_query(
 
     let point_ids = pairs
         .iter()
-        .filter_map(|(point_id, _, _)| point_id.clone())
+        .filter_map(|(point_id, _, _)| *point_id)
         .collect::<Vec<uuid::Uuid>>();
     let chunk_metadata = get_chunk_metadatas_from_point_ids(point_ids, pool).await?;
 
