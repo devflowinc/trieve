@@ -20,7 +20,7 @@ reset_s3_service() {
 
 start_local_services() {
     echo "Starting local services..."
-    docker compose up -d db redis qdrant-database s3 s3-client keycloak keycloak-db tika
+    docker compose up -d db redis qdrant-database s3 s3-client keycloak keycloak-db tika clickhouse-db
 }
 
 # Main script logic

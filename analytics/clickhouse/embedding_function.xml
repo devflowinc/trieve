@@ -1,0 +1,14 @@
+<functions>
+    <function>
+    <name>embed_p</name>
+   	 <type>executable_pool</type>
+   	 <pool_size>10</pool_size>
+   	 <send_chunk_header>true</send_chunk_header>
+   	 <format>TabSeparated</format>
+   	 <return_type>Array(Float32)</return_type>
+   	 <argument>
+   	   <type>String</type>
+   	 </argument>
+   	 <command>embed.py</command>
+    </function>
+</functions>
