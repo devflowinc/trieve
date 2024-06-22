@@ -1,4 +1,4 @@
-use super::analytics_operator::SearchQueryEvent;
+use super::analytics_operator::{create_full_vector, SearchQueryEvent};
 use super::chunk_operator::{
     get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
     get_content_chunk_from_point_ids_query, get_highlights, get_qdrant_ids_from_chunk_ids_query,
@@ -1623,7 +1623,7 @@ pub async fn search_semantic_chunks(
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
-    event.query_vector = embedding_vector.clone();
+    event.query_vector.clone_from(&embedding_vector);
 
     timer.add("computed dense embedding");
 
@@ -1669,6 +1669,7 @@ pub async fn search_semantic_chunks(
 pub async fn search_full_text_chunks(
     data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1693,7 +1694,9 @@ pub async fn search_full_text_chunks(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
-    timer.add("commputd sparse vector");
+    event.query_vector = create_full_vector(sparse_vector.clone());
+
+    timer.add("computed sparse vector");
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Sparse(sparse_vector),
@@ -1777,7 +1780,7 @@ pub async fn search_hybrid_chunks(
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
 
-    event.query_vector = dense_vector.clone();
+    event.query_vector.clone_from(&dense_vector);
 
     timer.add("computed sparse and dense embeddings");
 
@@ -1921,7 +1924,7 @@ pub async fn search_semantic_groups(
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
-    event.query_vector = embedding_vector.clone();
+    event.query_vector.clone_from(&embedding_vector);
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
@@ -1966,6 +1969,7 @@ pub async fn search_semantic_groups(
 pub async fn search_full_text_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     group: ChunkGroup,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -1974,6 +1978,8 @@ pub async fn search_full_text_groups(
     let sparse_vector = get_sparse_vector(data.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    event.query_vector = create_full_vector(sparse_vector.clone());
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Sparse(sparse_vector),
@@ -2034,7 +2040,7 @@ pub async fn search_hybrid_groups(
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
 
-    event.query_vector = dense_vector.clone();
+    event.query_vector.clone_from(&dense_vector);
 
     let qdrant_queries = vec![
         RetrievePointQuery {
@@ -2168,7 +2174,7 @@ pub async fn semantic_search_over_groups(
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
-    event.query_vector = embedding_vector.clone();
+    event.query_vector.clone_from(&embedding_vector);
 
     timer.add("computed dense embedding");
 
@@ -2219,6 +2225,7 @@ pub async fn semantic_search_over_groups(
 pub async fn full_text_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -2229,6 +2236,8 @@ pub async fn full_text_search_over_groups(
     let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    event.query_vector = create_full_vector(sparse_vector.clone());
 
     timer.add("computed sparse vector");
 
@@ -2360,7 +2369,7 @@ pub async fn hybrid_search_over_groups(
         sparse_embedding_vector_future
     )?;
 
-    event.query_vector = dense_vector.clone();
+    event.query_vector.clone_from(&dense_vector);
 
     timer.add("computed dense embedding");
 
@@ -2507,7 +2516,7 @@ pub async fn autocomplete_semantic_chunks(
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
-    event.query_vector = embedding_vector.clone();
+    event.query_vector.clone_from(&embedding_vector);
 
     timer.add("computed dense embedding");
 
@@ -2588,6 +2597,7 @@ pub async fn autocomplete_semantic_chunks(
 pub async fn autocomplete_fulltext_chunks(
     mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
+    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -2611,6 +2621,8 @@ pub async fn autocomplete_fulltext_chunks(
     let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    event.query_vector = create_full_vector(sparse_vector.clone());
 
     timer.add("computed sparse vector");
 
