@@ -13,7 +13,6 @@ use crate::operators::analytics_operator::{
 };
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::model_operator::create_embedding;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
@@ -1311,7 +1310,6 @@ pub async fn autocomplete(
             autocomplete_fulltext_chunks(
                 data.clone(),
                 parsed_query,
-                &mut clickhouse_event,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &server_dataset_config,
