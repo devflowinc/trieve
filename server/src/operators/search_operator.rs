@@ -1567,7 +1567,6 @@ pub async fn search_semantic_chunks(
 pub async fn search_full_text_chunks(
     data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1592,7 +1591,6 @@ pub async fn search_full_text_chunks(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
-    event.query_vector = create_full_vector(sparse_vector.clone());
 
     timer.add("computed sparse vector");
 
