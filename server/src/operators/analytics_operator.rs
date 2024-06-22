@@ -245,24 +245,47 @@ pub async fn send_to_clickhouse(
 ) -> Result<(), ServiceError> {
     match event {
         ClickHouseEvent::SearchQueryEvent(event) => {
-            let mut inserter =
+            if event.query_vector.is_empty() {
                 clickhouse_client
-                    .insert("trieve.search_queries")
+                    .query(
+                        "INSERT INTO trieve.search_queries (id, search_type, query, request_params, query_vector, latency, results, dataset_id, created_at) VALUES (?, ?, ?, ?, embed_p(?), ?, ?, ?, now())",
+                    )
+                    .bind(event.id)
+                    .bind(&event.search_type)
+                    .bind(&event.query)
+                    .bind(&event.request_params)
+                    .bind(&event.query)
+                    .bind(event.latency)
+                    .bind(&event.results)
+                    .bind(event.dataset_id)
+                    .execute()
+                    .await
                     .map_err(|err| {
-                        log::error!("Error creating ClickHouse inserter: {:?}", err);
-                        ServiceError::InternalServerError(
-                            "Error creating ClickHouse inserter".to_string(),
-                        )
+                        log::error!("Error writing to ClickHouse: {:?}", err);
+                        ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
                     })?;
+            } else {
+                let mut inserter =
+                    clickhouse_client
+                        .insert("trieve.search_queries")
+                        .map_err(|err| {
+                            log::error!("Error creating ClickHouse inserter: {:?}", err);
+                            ServiceError::InternalServerError(
+                                "Error creating ClickHouse inserter".to_string(),
+                            )
+                        })?;
 
-            inserter.write(&event).await.map_err(|err| {
-                log::error!("Error writing to ClickHouse: {:?}", err);
-                ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
-            })?;
-            inserter.end().await.map_err(|err| {
-                log::error!("Error ending ClickHouse inserter: {:?}", err);
-                ServiceError::InternalServerError("Error ending ClickHouse inserter".to_string())
-            })?;
+                inserter.write(&event).await.map_err(|err| {
+                    log::error!("Error writing to ClickHouse: {:?}", err);
+                    ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
+                })?;
+                inserter.end().await.map_err(|err| {
+                    log::error!("Error ending ClickHouse inserter: {:?}", err);
+                    ServiceError::InternalServerError(
+                        "Error ending ClickHouse inserter".to_string(),
+                    )
+                })?;
+            }
         }
     }
 
