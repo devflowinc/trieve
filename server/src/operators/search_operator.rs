@@ -1,4 +1,4 @@
-use super::analytics_operator::{create_full_vector, SearchQueryEvent};
+use super::analytics_operator::SearchQueryEvent;
 use super::chunk_operator::{
     get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
     get_content_chunk_from_point_ids_query, get_highlights, get_qdrant_ids_from_chunk_ids_query,
@@ -1693,7 +1693,6 @@ pub async fn search_full_text_chunks(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
-
     timer.add("computed sparse vector");
 
     let qdrant_query = RetrievePointQuery {
@@ -1967,7 +1966,6 @@ pub async fn search_semantic_groups(
 pub async fn search_full_text_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     group: ChunkGroup,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -1976,8 +1974,6 @@ pub async fn search_full_text_groups(
     let sparse_vector = get_sparse_vector(data.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
-
-    event.query_vector = create_full_vector(sparse_vector.clone());
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Sparse(sparse_vector),
@@ -2223,7 +2219,6 @@ pub async fn semantic_search_over_groups(
 pub async fn full_text_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -2234,8 +2229,6 @@ pub async fn full_text_search_over_groups(
     let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
-
-    event.query_vector = create_full_vector(sparse_vector.clone());
 
     timer.add("computed sparse vector");
 
@@ -2595,7 +2588,6 @@ pub async fn autocomplete_semantic_chunks(
 pub async fn autocomplete_fulltext_chunks(
     mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -2619,8 +2611,6 @@ pub async fn autocomplete_fulltext_chunks(
     let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
-
-    event.query_vector = create_full_vector(sparse_vector.clone());
 
     timer.add("computed sparse vector");
 
