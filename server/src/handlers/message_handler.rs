@@ -1,8 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{
-        check_completion_param_validity, ChunkFilter, ParsedQuery, SearchChunksReqPayload,
-    },
+    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{

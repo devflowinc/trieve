@@ -1815,7 +1815,7 @@ pub async fn search_hybrid_chunks(
 
     timer.add("fetched metadata from postgres");
 
-    let reranked_chunks = {
+    let mut reranked_chunks = {
         let mut reranked_chunks = if result_chunks.score_chunks.len() > 20 {
             let split_results = result_chunks
                 .score_chunks
@@ -1891,7 +1891,7 @@ pub async fn search_hybrid_chunks(
                         match metadata {
                             ChunkMetadataTypes::Metadata(_) => slim_chunk.into(),
                             ChunkMetadataTypes::Content(_) => slim_chunk.into(),
-                            ChunkMetadataTypes::ID(_) => metadata.into(),
+                            ChunkMetadataTypes::ID(_) => metadata,
                         }
                     })
                     .collect(),
