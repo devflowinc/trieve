@@ -2110,7 +2110,7 @@ pub fn check_completion_param_validity(
     stop_tokens: Option<Vec<String>>,
 ) -> Result<(), ServiceError> {
     if let Some(temperature) = temperature {
-        if temperature < 0.0 || temperature > 2.0 {
+        if !(0.0..=2.0).contains(&temperature) {
             return Err(ServiceError::BadRequest(
                 "Temperature must be between 0 and 2".to_string(),
             ));
@@ -2118,7 +2118,7 @@ pub fn check_completion_param_validity(
     }
 
     if let Some(frequency_penalty) = frequency_penalty {
-        if frequency_penalty < -2.0 || frequency_penalty > 2.0 {
+        if !(-2.0..=2.0).contains(&frequency_penalty) {
             return Err(ServiceError::BadRequest(
                 "Frequency penalty must be between -2.0 and 2.0".to_string(),
             ));
@@ -2126,7 +2126,7 @@ pub fn check_completion_param_validity(
     }
 
     if let Some(presence_penalty) = presence_penalty {
-        if presence_penalty < -2.0 || presence_penalty > 2.0 {
+        if !(-2.0..=2.0).contains(&presence_penalty) {
             return Err(ServiceError::BadRequest(
                 "Presence penalty must be between -2.0 and 2.0".to_string(),
             ));
