@@ -223,22 +223,6 @@ pub fn get_latency_from_header(header: String) -> f32 {
         .sum()
 }
 
-pub fn create_full_vector(pairs: Vec<(u32, f32)>) -> Vec<f32> {
-    // Step 1: Determine the size of the full vector based on the largest index
-    let max_index = pairs.iter().map(|&(index, _)| index).max().unwrap_or(0) as usize;
-    let size = max_index + 1; // +1 to account for zero-based indexing
-
-    // Step 2: Initialize a vector with zeros
-    let mut full_vector = vec![0.0; size];
-
-    // Step 3: Populate the vector with the given index-value pairs
-    for &(index, value) in &pairs {
-        full_vector[index as usize] = value;
-    }
-
-    full_vector
-}
-
 pub async fn send_to_clickhouse(
     event: ClickHouseEvent,
     clickhouse_client: &clickhouse::Client,

@@ -1253,7 +1253,6 @@ pub async fn search_within_group(
             search_full_text_groups(
                 data.clone(),
                 parsed_query,
-                &mut clickhouse_event,
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
@@ -1396,7 +1395,6 @@ pub async fn search_over_groups(
             full_text_search_over_groups(
                 data.clone(),
                 parsed_query,
-                &mut clickhouse_event,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &server_dataset_config,
