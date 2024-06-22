@@ -143,7 +143,7 @@ export const Sidebar = (props: SidebarProps) => {
               <span class="text-xl">
                 <BiRegularPlus class="fill-current" />
               </span>
-              <span>RAG Chat</span>
+              <span>RAG Playground</span>
             </div>
           </button>
         </div>

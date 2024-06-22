@@ -13,6 +13,12 @@ import { ViewGroup } from "./pages/group/ViewGroup";
 import { OrgGroups } from "./pages/group/OrgGroups";
 import { OrgFiles } from "./pages/file/OrgFiles";
 
+const NotFoundRedirect = () => {
+  window.location.href = "/";
+
+  return <></>;
+};
+
 if (!DEV) {
   Sentry.init({
     dsn: `${import.meta.env.VITE_SENTRY_SEARCH_DSN as string}`,
@@ -45,6 +51,7 @@ render(
       <Route path="/group" component={OrgGroups} />
       <Route path="/group/:id" component={ViewGroup} />
       <Route path="/files" component={OrgFiles} />
+      <Route path="/:not_found" component={NotFoundRedirect} />
     </Router>
   ),
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

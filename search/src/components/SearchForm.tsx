@@ -19,15 +19,19 @@ import { FaSolidCheck } from "solid-icons/fa";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FilterModal } from "./FilterModal";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
-import { SearchStore } from "../hooks/useSearch";
+import { SearchOptions, SearchStore } from "../hooks/useSearch";
 
 const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
-
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const $envs = datasetAndUserContext.clientConfig;
 
+  const [tempSearchValues, setTempSearchValues] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.search.state,
+  );
   const [searchTypes, setSearchTypes] = createSignal([
+    { name: "Hybrid", isSelected: false, route: "hybrid" },
     {
       name: "FullText",
       isSelected: props.search.state.searchType === "fulltext",
@@ -38,7 +42,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
       isSelected: props.search.state.searchType === "semantic",
       route: "semantic",
     },
-    { name: "Hybrid", isSelected: false, route: "hybrid" },
     {
       name: "AutoComplete Semantic",
       isSelected: props.search.state.searchType === "autocomplete-semantic",
@@ -61,20 +64,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   createEffect(() => {
     $envs().CREATE_CHUNK_FEATURE?.valueOf();
   });
-
-  const resetParams = () => {
-    props.search.setSearch("scoreThreshold", 0.0);
-    props.search.setSearch("extendResults", false);
-    props.search.setSearch("slimChunks", false);
-    props.search.setSearch("recencyBias", 0.0);
-    props.search.setSearch("pageSize", 10);
-    props.search.setSearch("getTotalPages", true);
-    props.search.setSearch("highlightResults", true);
-    props.search.setSearch("highlightDelimiters", ["?", ".", "!"]);
-    props.search.setSearch("highlightMaxLength", 8);
-    props.search.setSearch("highlightMaxNum", 3);
-    props.search.setSearch("highlightWindow", 0);
-  };
 
   return (
     <>
@@ -226,14 +215,22 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                   "flex w-full items-center justify-between rounded p-1 focus:text-black focus:outline-none dark:hover:text-white dark:focus:text-white":
                                     true,
                                   "bg-neutral-300 dark:bg-neutral-900":
-                                    option.isSelected,
+                                    option.isSelected ||
+                                    (option.route == "hybrid" &&
+                                      searchTypes().find(
+                                        (type) => type.isSelected,
+                                      )?.name == undefined),
                                 }}
                                 onClick={onClick}
                               >
                                 <div class="flex flex-row justify-start space-x-2">
                                   <span class="text-left">{option.name}</span>
                                 </div>
-                                {option.isSelected && (
+                                {(option.isSelected ||
+                                  (option.route == "hybrid" &&
+                                    searchTypes().find(
+                                      (type) => type.isSelected,
+                                    )?.name == undefined)) && (
                                   <span>
                                     <FaSolidCheck class="fill-current text-xl" />
                                   </span>
@@ -248,7 +245,16 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 </>
               )}
             </Popover>
-            <Popover defaultOpen={false} class="relative">
+            <Popover
+              defaultOpen={false}
+              class="relative"
+              onClose={() => {
+                const newSearchValues = tempSearchValues();
+                newSearchValues.version = props.search.state.version + 1;
+
+                props.search.setSearch(newSearchValues);
+              }}
+            >
               {({ isOpen }) => (
                 <>
                   <PopoverButton
@@ -278,7 +284,19 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             class="rounded-md border border-neutral-400 bg-neutral-100 px-2 py-1 dark:border-neutral-900 dark:bg-neutral-800"
                             onClick={(e) => {
                               e.preventDefault();
-                              resetParams();
+                              setTempSearchValues({
+                                scoreThreshold: 0.0,
+                                extendResults: false,
+                                slimChunks: false,
+                                recencyBias: 0.0,
+                                pageSize: 10,
+                                getTotalPages: true,
+                                highlightResults: true,
+                                highlightDelimiters: ["?", ".", "!"],
+                                highlightMaxLength: 8,
+                                highlightMaxNum: 3,
+                                highlightWindow: 0,
+                              } as SearchOptions);
                             }}
                           >
                             Reset
@@ -289,15 +307,17 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            min="0.0"
-                            max="1.0"
-                            step="0.00001"
-                            value={props.search.state.scoreThreshold}
+                            step="any"
+                            value={tempSearchValues().scoreThreshold}
                             onInput={(e) => {
-                              props.search.setSearch(
-                                "scoreThreshold",
-                                parseFloat(e.currentTarget.value),
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  scoreThreshold: parseFloat(
+                                    e.currentTarget.value,
+                                  ),
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -314,12 +334,14 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             <input
                               class="h-4 w-4"
                               type="checkbox"
-                              checked={props.search.state.extendResults}
+                              checked={tempSearchValues().extendResults}
                               onChange={(e) => {
-                                props.search.setSearch(
-                                  "extendResults",
-                                  e.target.checked,
-                                );
+                                setTempSearchValues((prev) => {
+                                  return {
+                                    ...prev,
+                                    extendResults: e.target.checked,
+                                  };
+                                });
                               }}
                             />
                           </div>
@@ -329,12 +351,14 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="h-4 w-4"
                             type="checkbox"
-                            checked={props.search.state.slimChunks}
+                            checked={tempSearchValues().slimChunks}
                             onChange={(e) => {
-                              props.search.setSearch(
-                                "slimChunks",
-                                e.target.checked,
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  slimChunks: e.target.checked,
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -343,15 +367,17 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            min="0.0"
-                            max="1.0"
-                            step="0.1"
-                            value={props.search.state.recencyBias}
+                            step="any"
+                            value={tempSearchValues().recencyBias}
                             onInput={(e) => {
-                              props.search.setSearch(
-                                "recencyBias",
-                                parseFloat(e.currentTarget.value),
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  recencyBias: parseFloat(
+                                    e.currentTarget.value,
+                                  ),
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -360,12 +386,14 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={props.search.state.pageSize}
+                            value={tempSearchValues().pageSize}
                             onInput={(e) => {
-                              props.search.setSearch(
-                                "pageSize",
-                                parseInt(e.currentTarget.value),
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  pageSize: parseInt(e.currentTarget.value),
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -374,12 +402,14 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="h-4 w-4"
                             type="checkbox"
-                            checked={props.search.state.getTotalPages}
+                            checked={tempSearchValues().getTotalPages}
                             onChange={(e) => {
-                              props.search.setSearch(
-                                "getTotalPages",
-                                e.target.checked,
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  getTotalPages: e.target.checked,
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -388,12 +418,14 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="h-4 w-4"
                             type="checkbox"
-                            checked={props.search.state.highlightResults}
+                            checked={tempSearchValues().highlightResults}
                             onChange={(e) => {
-                              props.search.setSearch(
-                                "highlightResults",
-                                e.target.checked,
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightResults: e.target.checked,
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -402,20 +434,26 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="text"
-                            value={props.search.state.highlightDelimiters.join(
+                            value={tempSearchValues().highlightDelimiters.join(
                               ",",
                             )}
                             onInput={(e) => {
                               if (e.currentTarget.value === " ") {
-                                props.search.setSearch("highlightDelimiters", [
-                                  " ",
-                                ]);
+                                setTempSearchValues((prev) => {
+                                  return {
+                                    ...prev,
+                                    highlightDelimiters: [" "],
+                                  };
+                                });
                               }
 
-                              props.search.setSearch(
-                                "highlightDelimiters",
-                                e.currentTarget.value.split(","),
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightDelimiters:
+                                    e.currentTarget.value.split(","),
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -424,12 +462,16 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={props.search.state.highlightMaxLength}
+                            value={tempSearchValues().highlightMaxLength}
                             onInput={(e) => {
-                              props.search.setSearch(
-                                "highlightMaxLength",
-                                parseInt(e.currentTarget.value),
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightMaxLength: parseInt(
+                                    e.currentTarget.value,
+                                  ),
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -438,12 +480,16 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={props.search.state.highlightMaxNum}
+                            value={tempSearchValues().highlightMaxNum}
                             onInput={(e) => {
-                              props.search.setSearch(
-                                "highlightMaxNum",
-                                parseInt(e.currentTarget.value),
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightMaxNum: parseInt(
+                                    e.currentTarget.value,
+                                  ),
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -452,12 +498,16 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={props.search.state.highlightWindow}
+                            value={tempSearchValues().highlightWindow}
                             onInput={(e) => {
-                              props.search.setSearch(
-                                "highlightWindow",
-                                parseInt(e.currentTarget.value),
-                              );
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightWindow: parseInt(
+                                    e.currentTarget.value,
+                                  ),
+                                };
+                              });
                             }}
                           />
                         </div>
