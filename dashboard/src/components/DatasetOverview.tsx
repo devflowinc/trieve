@@ -28,24 +28,14 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
   const navigate = useNavigate();
   const [page, setPage] = createSignal(0);
   const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
-  const [maxDatasetsLength, setMaxDatasetsLength] = createSignal(0);
 
-  const { datasets, maxPageDiscovered, removeDataset, hasLoaded } =
+  const { datasets, maxPageDiscovered, maxDatasets, removeDataset, hasLoaded } =
     useDatasetPages({
       org: props.selectedOrganization,
       searchQuery: datasetSearchQuery,
       page: page,
       setPage,
     });
-
-  createEffect((prevLength: number) => {
-    const datasetsLength = datasets().length;
-    if (datasetsLength > prevLength) {
-      setMaxDatasetsLength(datasetsLength);
-    }
-
-    return prevLength > datasetsLength ? prevLength : datasetsLength;
-  }, 0);
 
   createEffect(() => {
     props.selectedOrganization();
@@ -86,7 +76,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
             <h1 class="text-base font-semibold leading-6">Datasets</h1>
             <Show
               fallback={
-                maxDatasetsLength() > 0 ? (
+                maxDatasets() > 0 ? (
                   <p class="text-sm text-red-700">
                     No datasets match your search query.
                   </p>
@@ -114,7 +104,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
               placeholder="Search datasets..."
               class="rounded border border-neutral-300/80 bg-white px-2 py-1 text-sm placeholder:text-neutral-400"
             />
-            <Show when={maxDatasetsLength() != 0}>
+            <Show when={maxDatasets() != 0}>
               <button
                 class="rounded bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
                 onClick={() => props.setOpenNewDatasetModal(true)}
@@ -125,7 +115,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           </div>
         </div>
       </div>
-      <Show when={maxDatasetsLength() === 0 && page() === 0 && hasLoaded}>
+      <Show when={maxDatasets() === 0 && page() === 0 && hasLoaded}>
         <button
           onClick={() => props.setOpenNewDatasetModal(true)}
           class="relative block w-full rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2"
@@ -134,7 +124,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           <span class="mt-2 block font-semibold">Create A New Dataset</span>
         </button>
       </Show>
-      <Show when={maxDatasetsLength() > 0}>
+      <Show when={maxDatasets() > 0}>
         <div class="mt-8">
           <div class="overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5">
             <table class="min-w-full divide-y divide-neutral-300">
