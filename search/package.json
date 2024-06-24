@@ -1,5 +1,5 @@
 {
-  "name": "trieve-search-client",
+  "name": "search",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -17,7 +17,8 @@
     "sanitize-html": "^2.11.0",
     "solid-headless": "^0.13.1",
     "solid-icons": "^1.0.4",
-    "solid-js": "^1.4.3"
+    "solid-js": "^1.4.3",
+    "shared": "*"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.3",

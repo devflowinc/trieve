@@ -1,5 +1,5 @@
 {
-  "name": "trieve-chat",
+  "name": "chat",
   "private": false,
   "version": "0.0.0",
   "type": "module",
@@ -23,12 +23,13 @@
     "solid-js": "^1.8.5",
     "tailwind-gradient-mask-image": "^1.2.0",
     "tailwind-scrollbar": "^3.1.0",
-    "terracotta": "^1.0.3"
+    "terracotta": "^1.0.3",
+    "shared": "*"
   },
   "devDependencies": {
     "@types/sanitize-html": "^2.9.5",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
+    "@typescript-eslint/parser": "^7.14.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.13.0",
     "eslint-config-prettier": "^9.1.0",

@@ -74,3 +74,4 @@ override.tf.json
 terraform.rc
 
 embedding-server/data/*
+.turbo

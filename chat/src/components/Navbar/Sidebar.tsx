@@ -6,6 +6,8 @@ import {
   BiRegularTrash,
   BiRegularX,
 } from "solid-icons/bi";
+import { DrewsType } from "shared/types";
+import { drewsName } from "shared";
 import {
   Accessor,
   createEffect,
@@ -34,6 +36,7 @@ export interface SidebarProps {
   setCurrentTopic: (topic: Topic | undefined) => void;
   setSideBarOpen: Setter<boolean>;
   setSelectedNewTopic: Setter<boolean>;
+  drews: DrewsType;
 }
 
 export const Sidebar = (props: SidebarProps) => {
@@ -129,6 +132,7 @@ export const Sidebar = (props: SidebarProps) => {
     <div class="absolute z-50 flex h-screen w-screen flex-row dark:text-gray-50 lg:relative lg:w-full">
       <div class="flex h-full w-2/3 flex-col border-r border-neutral-300 bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 lg:w-full">
         <div class="flex w-full flex-col space-y-2 px-2 py-2">
+          {drewsName}
           <button
             onClick={() => {
               props.setIsCreatingTopic(true);
