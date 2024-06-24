@@ -6,7 +6,6 @@ import {
   BiRegularTrash,
   BiRegularX,
 } from "solid-icons/bi";
-import { DrewsType } from "shared/types";
 import { drewsName } from "shared";
 import {
   Accessor,
@@ -36,7 +35,6 @@ export interface SidebarProps {
   setCurrentTopic: (topic: Topic | undefined) => void;
   setSideBarOpen: Setter<boolean>;
   setSelectedNewTopic: Setter<boolean>;
-  drews: DrewsType;
 }
 
 export const Sidebar = (props: SidebarProps) => {

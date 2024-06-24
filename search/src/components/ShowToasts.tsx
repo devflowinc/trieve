@@ -33,6 +33,7 @@ const ShowToast = () => {
       const toastEvent = event as unknown as ToastEvent;
       setToastDetails((prev) => prev.concat(toastEvent.detail));
 
+      // @ts-expect-error node stuff
       timeOutId = setTimeout(() => {
         setToastDetails((prev) =>
           prev.filter(
