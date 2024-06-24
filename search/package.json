@@ -14,7 +14,6 @@
   "dependencies": {
     "@sentry/browser": "^7.110.0",
     "@solidjs/router": "^0.13.1",
-    "eslint-plugin-solid": "^0.14.1",
     "sanitize-html": "^2.11.0",
     "shared": "*",
     "solid-headless": "^0.13.1",
