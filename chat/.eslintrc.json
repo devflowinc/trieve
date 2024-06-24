@@ -1,5 +1,7 @@
 {
-  "env": { "browser": true },
+  "env": {
+    "browser": true
+  },
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
@@ -9,11 +11,30 @@
     "plugin:prettier/recommended"
   ],
   "parser": "@typescript-eslint/parser",
-  "parserOptions": { "project": ["./chat/tsconfig.json"] },
-  "plugins": ["@typescript-eslint", "solid"],
+  "parserOptions": {
+    "project": [
+      "./tsconfig.json"
+    ]
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "solid"
+  ],
   "rules": {
-    "prettier/prettier": ["error", { "endOfLine": "auto" }]
+    "prettier/prettier": [
+      "error",
+      {
+        "endOfLine": "auto"
+      }
+    ]
   },
   "overrides": [],
-  "ignorePatterns": ["node_modules", "dist", "tailwind.config.cjs", "prettier.config.cjs", "vite.config.ts", "postcss.config.cjs"]
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "tailwind.config.cjs",
+    "prettier.config.cjs",
+    "vite.config.ts",
+    "postcss.config.cjs"
+  ]
 }
