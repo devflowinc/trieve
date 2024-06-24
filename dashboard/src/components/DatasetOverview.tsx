@@ -31,6 +31,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
 
   const { datasets, maxPageDiscovered, maxDatasets, removeDataset, hasLoaded } =
     useDatasetPages({
+      // eslint-disable-next-line solid/reactivity
       org: props.selectedOrganization,
       searchQuery: datasetSearchQuery,
       page: page,
