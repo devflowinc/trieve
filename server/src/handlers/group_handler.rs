@@ -5,7 +5,8 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadata,
-        DatasetAndOrgWithSubAndPlan, Pool, ScoreChunkDTO, ServerDatasetConfiguration, UnifiedId,
+        DatasetAndOrgWithSubAndPlan, Pool, RedisPool, ScoreChunkDTO, ServerDatasetConfiguration,
+        UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -460,6 +461,9 @@ pub struct UpdateChunkGroupData {
     pub metadata: Option<serde_json::Value>,
     /// Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
     pub tag_set: Option<Vec<String>>,
+    /// Flag to update the chunks in the group. If true, each chunk in the group will be updated
+    /// by appending the group's tags to the chunk's tags.
+    pub update_chunks: bool,
 }
 
 /// Update Group
@@ -486,6 +490,7 @@ pub struct UpdateChunkGroupData {
 pub async fn update_chunk_group(
     data: web::Json<UpdateChunkGroupData>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -528,6 +533,10 @@ pub async fn update_chunk_group(
     );
 
     update_chunk_group_query(new_chunk_group, pool).await?;
+
+    if data.update_chunks {
+        soft_update_grouped_chunks_query(group, redis_pool).await?;
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
