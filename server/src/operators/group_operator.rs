@@ -1,10 +1,13 @@
-use crate::{data::models::ChunkGroupBookmark, errors::ServiceError};
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTable, Dataset, FileGroup, Pool,
-        ServerDatasetConfiguration, UnifiedId,
+        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTable, Dataset, DatasetTags,
+        FileGroup, Pool, RedisPool, ServerDatasetConfiguration, UnifiedId,
     },
     operators::chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
+};
+use crate::{
+    data::models::{ChunkGroupBookmark, ChunkMetadataTags},
+    errors::ServiceError,
 };
 use actix_web::web;
 use diesel::prelude::*;
@@ -15,6 +18,7 @@ use diesel::{
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use utoipa::ToSchema;
 
 #[tracing::instrument(skip(pool))]
@@ -703,4 +707,186 @@ pub async fn check_group_ids_exist_query(
         })?;
 
     Ok(existing_group_ids)
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GroupUpdateMessage {
+    pub group_id: uuid::Uuid,
+    pub attempt_number: usize,
+}
+
+pub async fn soft_update_grouped_chunks_query(
+    group_id: uuid::Uuid,
+    redis_pool: web::Data<RedisPool>,
+) -> Result<(), ServiceError> {
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let message = GroupUpdateMessage {
+        group_id,
+        attempt_number: 0,
+    };
+
+    let serialized_message =
+        serde_json::to_string(&message).map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    redis::cmd("lpush")
+        .arg("group_update_queue")
+        .arg(&serialized_message)
+        .query_async(&mut *redis_conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    Ok(())
+}
+
+pub async fn update_grouped_chunks_query(
+    group_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
+    use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let group = chunk_group_columns::chunk_group
+        .filter(chunk_group_columns::id.eq(group_id))
+        .first::<ChunkGroup>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound(format!("Group with id not found {:?}", group_id)))?;
+
+    if group.tag_set.is_none() {
+        return Ok(());
+    }
+
+    let group_tags = group
+        .tag_set
+        .unwrap()
+        .iter()
+        .filter_map(|tag| tag.clone())
+        .collect::<Vec<String>>();
+
+    let mut last_chunk_offset = uuid::Uuid::nil();
+
+    loop {
+        let chunk_ids: Vec<uuid::Uuid> = chunk_group_bookmarks_columns::chunk_group_bookmarks
+            .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
+            .filter(chunk_group_bookmarks_columns::chunk_metadata_id.gt(last_chunk_offset))
+            .limit(1000)
+            .order_by(chunk_group_bookmarks_columns::chunk_metadata_id)
+            .select(chunk_group_bookmarks_columns::chunk_metadata_id)
+            .load::<uuid::Uuid>(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Error getting chunk ids".to_string()))?;
+
+        if chunk_ids.is_empty() {
+            break;
+        }
+
+        last_chunk_offset = chunk_ids.last().unwrap().clone();
+
+        let chunk_tags: Vec<DatasetTags> = chunk_metadata_tags_columns::chunk_metadata_tags
+            .inner_join(
+                dataset_tags_columns::dataset_tags
+                    .on(chunk_metadata_tags_columns::tag_id.eq(dataset_tags_columns::id)),
+            )
+            .filter(chunk_metadata_tags_columns::chunk_metadata_id.eq_any(&chunk_ids))
+            .select((
+                chunk_metadata_tags_columns::chunk_metadata_id,
+                dataset_tags_columns::tag,
+                dataset_tags_columns::dataset_id,
+            ))
+            .load::<(uuid::Uuid, String, uuid::Uuid)>(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Error getting chunk tags".to_string()))?
+            .into_iter()
+            .map(|tag: (uuid::Uuid, String, uuid::Uuid)| DatasetTags {
+                id: tag.0,
+                tag: tag.1,
+                dataset_id: tag.2,
+            })
+            .collect();
+
+        let chunk_tag_map: HashMap<uuid::Uuid, HashSet<String>> =
+            chunk_tags.into_iter().fold(HashMap::new(), |mut acc, tag| {
+                if let Some(tags) = acc.get_mut(&tag.id) {
+                    tags.insert(tag.tag);
+                } else {
+                    let mut tags = HashSet::new();
+                    tags.insert(tag.tag);
+                    acc.insert(tag.id, tags);
+                }
+                acc
+            });
+
+        let mut new_chunk_metadata_tag_rows: Vec<ChunkMetadataTags> = Vec::new();
+        let mut new_dataset_tag_rows: Vec<DatasetTags> = Vec::new();
+
+        let mut processed_dataset_ids_and_tags: HashSet<(uuid::Uuid, String)> = HashSet::new();
+        for chunk_id in &chunk_ids {
+            let backup_hashset = HashSet::new();
+            let tags = chunk_tag_map.get(&chunk_id).unwrap_or(&backup_hashset);
+            let tags_to_insert = group_tags
+                .clone()
+                .iter()
+                .filter_map(|tag| {
+                    if !tags.contains(tag)
+                        && !processed_dataset_ids_and_tags
+                            .contains(&(group.dataset_id, tag.clone()))
+                    {
+                        processed_dataset_ids_and_tags.insert((group.dataset_id, tag.clone()));
+                        Some(DatasetTags {
+                            id: uuid::Uuid::new_v4(),
+                            tag: tag.clone(),
+                            dataset_id: group.dataset_id,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<DatasetTags>>();
+            new_dataset_tag_rows.extend(tags_to_insert);
+        }
+
+        let new_dataset_tags = diesel::insert_into(dataset_tags_columns::dataset_tags)
+            .values(&new_dataset_tag_rows)
+            .get_results::<DatasetTags>(&mut conn)
+            .await
+            .map_err(|e| {
+                ServiceError::BadRequest(format!("Error inserting dataset tags {:?}", e))
+            })?;
+
+        for chunk_id in &chunk_ids {
+            let backup_hashset = HashSet::new();
+            let tags = chunk_tag_map.get(&chunk_id).unwrap_or(&backup_hashset);
+            let tags_to_insert = new_dataset_tags
+                .clone()
+                .iter()
+                .filter_map(|tag| {
+                    if !tags.contains(&tag.tag) {
+                        Some(ChunkMetadataTags {
+                            id: uuid::Uuid::new_v4(),
+                            chunk_metadata_id: *chunk_id,
+                            tag_id: tag.id,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<ChunkMetadataTags>>();
+            new_chunk_metadata_tag_rows.extend(tags_to_insert);
+        }
+
+        diesel::insert_into(chunk_metadata_tags_columns::chunk_metadata_tags)
+            .values(&new_chunk_metadata_tag_rows)
+            .execute(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Error inserting chunk tags".to_string()))?;
+    }
+
+    Ok(())
 }
