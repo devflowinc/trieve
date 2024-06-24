@@ -711,12 +711,19 @@ pub async fn check_group_ids_exist_query(
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GroupUpdateMessage {
-    pub group_id: uuid::Uuid,
+    pub group: ChunkGroup,
     pub attempt_number: usize,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct JoinedChunkTagRow {
+    pub chunk_id: uuid::Uuid,
+    pub tag: String,
+    pub dataset_id: uuid::Uuid,
+}
+
 pub async fn soft_update_grouped_chunks_query(
-    group_id: uuid::Uuid,
+    group: ChunkGroup,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
     let mut redis_conn = redis_pool
@@ -725,7 +732,7 @@ pub async fn soft_update_grouped_chunks_query(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let message = GroupUpdateMessage {
-        group_id,
+        group,
         attempt_number: 0,
     };
 
@@ -789,7 +796,7 @@ pub async fn update_grouped_chunks_query(
 
         last_chunk_offset = chunk_ids.last().unwrap().clone();
 
-        let chunk_tags: Vec<DatasetTags> = chunk_metadata_tags_columns::chunk_metadata_tags
+        let chunk_tags: Vec<JoinedChunkTagRow> = chunk_metadata_tags_columns::chunk_metadata_tags
             .inner_join(
                 dataset_tags_columns::dataset_tags
                     .on(chunk_metadata_tags_columns::tag_id.eq(dataset_tags_columns::id)),
@@ -804,8 +811,8 @@ pub async fn update_grouped_chunks_query(
             .await
             .map_err(|_| ServiceError::BadRequest("Error getting chunk tags".to_string()))?
             .into_iter()
-            .map(|tag: (uuid::Uuid, String, uuid::Uuid)| DatasetTags {
-                id: tag.0,
+            .map(|tag: (uuid::Uuid, String, uuid::Uuid)| JoinedChunkTagRow {
+                chunk_id: tag.0,
                 tag: tag.1,
                 dataset_id: tag.2,
             })
@@ -813,12 +820,12 @@ pub async fn update_grouped_chunks_query(
 
         let chunk_tag_map: HashMap<uuid::Uuid, HashSet<String>> =
             chunk_tags.into_iter().fold(HashMap::new(), |mut acc, tag| {
-                if let Some(tags) = acc.get_mut(&tag.id) {
+                if let Some(tags) = acc.get_mut(&tag.chunk_id) {
                     tags.insert(tag.tag);
                 } else {
                     let mut tags = HashSet::new();
                     tags.insert(tag.tag);
-                    acc.insert(tag.id, tags);
+                    acc.insert(tag.chunk_id, tags);
                 }
                 acc
             });
