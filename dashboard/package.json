@@ -1,5 +1,5 @@
 {
-  "name": "arguflow-dashboard",
+  "name": "dashboard",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -19,7 +19,8 @@
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",
     "terracotta": "^1.0.3",
-    "vite-plugin-runtime-env": "^0.1.1"
+    "vite-plugin-runtime-env": "^0.1.1",
+    "shared": "*"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.10",

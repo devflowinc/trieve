@@ -1,0 +1,24 @@
+{
+  "name": "trieve",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "workspaces": [
+    "search",
+    "dashboard",
+    "chat",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint"
+  },
+  "repository": "git@github.com:devflowinc/trieve.git",
+  "author": "Drew Harris <harrisd@smu.edu>",
+  "license": "MIT",
+  "devDependencies": {
+    "turbo": "^2.0.4"
+  },
+  "packageManager": "yarn@1.22.22"
+}
