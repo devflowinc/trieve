@@ -1,1 +1,1 @@
-export const drewsName = "drew Harris";
+export const TEST_CONST = "TEST_CONST";
