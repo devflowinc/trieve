@@ -90,13 +90,19 @@ export const useDatasetPages = (props: {
     );
     return sliced;
   });
+
   const maxPageDiscovered = createMemo(() => {
     return Math.floor(realDatasets().length / PAGE_SIZE);
+  });
+
+  const maxDatasets = createMemo(() => {
+    return realDatasets().length;
   });
 
   return {
     datasets: currDatasets,
     maxPageDiscovered,
+    maxDatasets,
     removeDataset,
     hasLoaded,
   };
