@@ -309,7 +309,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             type="number"
                             step="any"
                             value={tempSearchValues().scoreThreshold}
-                            onInput={(e) => {
+                            onChange={(e) => {
                               setTempSearchValues((prev) => {
                                 return {
                                   ...prev,
@@ -369,7 +369,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             type="number"
                             step="any"
                             value={tempSearchValues().recencyBias}
-                            onInput={(e) => {
+                            onChange={(e) => {
                               setTempSearchValues((prev) => {
                                 return {
                                   ...prev,
@@ -387,7 +387,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
                             value={tempSearchValues().pageSize}
-                            onInput={(e) => {
+                            onChange={(e) => {
                               setTempSearchValues((prev) => {
                                 return {
                                   ...prev,
@@ -463,7 +463,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
                             value={tempSearchValues().highlightMaxLength}
-                            onInput={(e) => {
+                            onChange={(e) => {
                               setTempSearchValues((prev) => {
                                 return {
                                   ...prev,
@@ -481,7 +481,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
                             value={tempSearchValues().highlightMaxNum}
-                            onInput={(e) => {
+                            onChange={(e) => {
                               setTempSearchValues((prev) => {
                                 return {
                                   ...prev,
@@ -499,7 +499,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
                             value={tempSearchValues().highlightWindow}
-                            onInput={(e) => {
+                            onChange={(e) => {
                               setTempSearchValues((prev) => {
                                 return {
                                   ...prev,
