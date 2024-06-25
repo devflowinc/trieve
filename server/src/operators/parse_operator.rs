@@ -18,6 +18,7 @@ pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
     let max_chunk_len = 10000;
     let mut chunks = cur_chunks;
     let mut new_chunks: Vec<String> = vec![];
+
     for chunk in chunks.iter_mut() {
         let char_count = chunk.chars().count() as f32;
 
@@ -39,6 +40,8 @@ pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
 
             let new_chunk = chunk.chars().take(amt_to_take).collect::<String>();
             new_chunks.push(new_chunk);
+
+            amt_to_take = cmp::min(amt_to_take, chunk.chars().count());
             chunk.drain(0..amt_to_take as usize);
             total_length -= amt_to_remove as f32;
         }
@@ -86,8 +89,11 @@ pub fn coarse_doc_chunker(
 
     if rebalance_chunks {
         while remainder > 0.0 {
-            let group_size = target_splits_per_chunk
-                + cmp::min(remainder as usize, remainder_per_group as usize) as usize;
+            let group_size = cmp::min(
+                target_splits_per_chunk
+                    + cmp::min(remainder as usize, remainder_per_group as usize) as usize,
+                splits.len(),
+            );
             let group = splits
                 .iter()
                 .take(group_size)
@@ -101,6 +107,8 @@ pub fn coarse_doc_chunker(
     }
 
     while !splits.is_empty() {
+        let drain_amt = cmp::min(target_splits_per_chunk, splits.len());
+
         let group = splits
             .iter()
             .take(target_splits_per_chunk)
@@ -108,7 +116,7 @@ pub fn coarse_doc_chunker(
             .collect::<Vec<&str>>()
             .join("");
         groups.push(group);
-        splits.drain(0..target_splits_per_chunk);
+        splits.drain(0..drain_amt);
     }
 
     coarse_remove_large_chunks(groups)
