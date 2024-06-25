@@ -9,7 +9,7 @@ import {
 } from "terracotta";
 import { createToast } from "./ShowToasts";
 import { UserContext } from "../contexts/UserContext";
-import { Organization } from "../types/apiTypes";
+import { Organization } from "shared/types";
 import { useNavigate } from "@solidjs/router";
 
 export interface NewOrgModalProps {

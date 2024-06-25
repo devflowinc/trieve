@@ -1,0 +1,46 @@
+{
+  "name": "analytics-site",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5176",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "prettier --write  \"**/*.{js,jsx,ts,tsx,md,mdx,}\" && eslint --fix \"src/**/*.{js,ts,jsx,tsx,astro}\"",
+    "lint:only": "eslint --fix \"src/**/*.{js,ts,jsx,tsx,}\"",
+    "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
+  },
+  "dependencies": {
+    "@solidjs/router": "^0.13.6",
+    "@tanstack/solid-query": "^5.48.0",
+    "@types/matter-js": "^0.19.6",
+    "chart.js": "^4.4.3",
+    "date-fns": "^3.6.0",
+    "matter-js": "^0.20.0",
+    "shared": "*",
+    "solid-js": "^1.8.17",
+    "tailwind-gradient-mask-image": "^1.2.0",
+    "tailwind-scrollbar": "^3.1.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "7.14.1",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.13.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-semistandard": "^17.0.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-solid": "0.14.1",
+    "postcss": "^8.4.38",
+    "prettier-plugin-tailwindcss": "^0.5.11",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.2.2",
+    "vite": "^5.3.1",
+    "vite-plugin-solid": "^2.10.2"
+  }
+}

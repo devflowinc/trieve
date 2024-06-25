@@ -6,7 +6,7 @@ import {
   createSignal,
   useContext,
 } from "solid-js";
-import { Dataset } from "../types/apiTypes";
+import { Dataset } from "shared/types";
 import { UserContext } from "./UserContext";
 import { useParams } from "@solidjs/router";
 import { createToast } from "../components/ShowToasts";

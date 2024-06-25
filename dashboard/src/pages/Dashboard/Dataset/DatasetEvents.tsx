@@ -7,7 +7,7 @@ import {
   useContext,
 } from "solid-js";
 import { DatasetContext } from "../../../contexts/DatasetContext";
-import { Event, isEvent, isEventDTO } from "../../../types/apiTypes";
+import { Event, isEvent, isEventDTO } from "shared/types";
 import {
   BiRegularChevronDown,
   BiRegularChevronLeft,
