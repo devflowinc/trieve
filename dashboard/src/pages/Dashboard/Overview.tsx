@@ -11,7 +11,7 @@ import {
   OrganizationUsageCount,
   OrganizationAndSubAndPlan,
   Organization,
-} from "../../types/apiTypes";
+} from "shared/types";
 import NewDatasetModal from "../../components/NewDatasetModal";
 import { DatasetOverview } from "../../components/DatasetOverview";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";

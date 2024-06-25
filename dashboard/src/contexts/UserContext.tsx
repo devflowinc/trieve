@@ -5,8 +5,8 @@ import {
   createEffect,
   createSignal,
 } from "solid-js";
-import { SlimUser } from "../types/apiTypes";
 import { createToast } from "../components/ShowToasts";
+import { SlimUser } from "shared/types";
 
 export interface UserStoreContextProps {
   children: JSX.Element;

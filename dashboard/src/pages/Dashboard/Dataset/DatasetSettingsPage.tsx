@@ -14,7 +14,7 @@ import {
   ClientEnvsConfiguration,
   ServerEnvsConfiguration,
   availableEmbeddingModels,
-} from "../../../types/apiTypes";
+} from "shared/types";
 import { UserContext } from "../../../contexts/UserContext";
 import { createToast } from "../../../components/ShowToasts";
 import { AiOutlineInfoCircle } from "solid-icons/ai";

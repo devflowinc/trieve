@@ -5,7 +5,7 @@ import {
   SlimUser,
   fromI32ToUserRole,
   isInvitation,
-} from "../../types/apiTypes";
+} from "shared/types";
 import { InviteUserModal } from "../../components/InviteUserModal";
 import { EditUserModal } from "../../components/EditUserModal";
 import { createToast } from "../../components/ShowToasts";

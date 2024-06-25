@@ -18,9 +18,9 @@ import {
   AiOutlineClear,
 } from "solid-icons/ai";
 import { formatDate } from "../formatters";
-import { Organization } from "../types/apiTypes";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "./ShowToasts";
+import { Organization } from "shared/types";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
