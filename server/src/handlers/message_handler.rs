@@ -698,10 +698,13 @@ pub async fn stream_response(
                 tool_call_id: None,
             }],
             stream: Some(false),
-            temperature: None,
-            frequency_penalty: Some(0.8),
-            presence_penalty: Some(0.8),
-            stop: None,
+            temperature: dataset_config.TEMPERATURE.map(|temp| temp as f32),
+            frequency_penalty: Some(dataset_config.FREQUENCY_PENALTY.unwrap_or(0.8) as f32),
+            presence_penalty: Some(dataset_config.PRESENCE_PENALTY.unwrap_or(0.8) as f32),
+            stop: dataset_config
+                .STOP_TOKENS
+                .clone()
+                .map(|stop_tokens| StopToken::Array(stop_tokens)),
             top_p: None,
             n: None,
             max_tokens: None,
