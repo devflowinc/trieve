@@ -8,7 +8,8 @@ import {
   Show,
 } from "solid-js";
 import { apiHost } from "../utils/apiHost";
-import { OrgDatasetContextProvider } from "./OrgDatasetContext";
+import { OrgContextProvider } from "./OrgDatasetContext";
+import { TopBarLayout } from "../layouts/TopBarLayout";
 
 export const UserContext = createContext<UserContextType>();
 
@@ -24,7 +25,7 @@ export const UserAuthContextProvider: ParentComponent = (props) => {
       credentials: "include",
     });
     if (response.status === 401) {
-      window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/dashboard/foo`;
+      window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
     }
     const userData = await response.json();
     setUserInfo(userData);
@@ -43,9 +44,9 @@ export const UserAuthContextProvider: ParentComponent = (props) => {
               user: userInfo,
             }}
           >
-            <OrgDatasetContextProvider user={userInfo()}>
-              {props.children}
-            </OrgDatasetContextProvider>
+            <OrgContextProvider user={userInfo()}>
+              <TopBarLayout>{props.children}</TopBarLayout>
+            </OrgContextProvider>
           </UserContext.Provider>
         )}
       </Show>

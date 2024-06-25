@@ -10,10 +10,11 @@
   },
   "dependencies": {
     "@solidjs/router": "^0.13.6",
+    "@tanstack/solid-query": "^5.48.0",
+    "shared": "*",
     "solid-js": "^1.8.17",
     "tailwind-gradient-mask-image": "^1.2.0",
-    "tailwind-scrollbar": "^3.1.0",
-    "shared": "*"
+    "tailwind-scrollbar": "^3.1.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",

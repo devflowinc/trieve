@@ -5,7 +5,9 @@ import "./index.css";
 import { RouteDefinition, Router } from "@solidjs/router";
 import { Home } from "./pages/Home";
 import { UserAuthContextProvider } from "./contexts/UserAuthContext";
-import { ErrorPage } from "./pages/Error";
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
+
+const queryClient = new QueryClient();
 
 const routes: RouteDefinition[] = [
   {
@@ -16,12 +18,15 @@ const routes: RouteDefinition[] = [
       component: Home,
     },
   },
-  {
-    path: "/error",
-    component: ErrorPage,
-  },
 ];
 
 const root = document.getElementById("root");
 
-render(() => <Router>{routes}</Router>, root!);
+render(
+  () => (
+    <QueryClientProvider client={queryClient}>
+      <Router>{routes}</Router>
+    </QueryClientProvider>
+  ),
+  root!,
+);
