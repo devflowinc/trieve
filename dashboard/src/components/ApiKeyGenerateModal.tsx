@@ -23,7 +23,7 @@ import {
   fromI32ToUserRole,
   Organization,
   SetUserApiKeyResponse,
-} from "../types/apiTypes";
+} from "shared/types";
 import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
 import {

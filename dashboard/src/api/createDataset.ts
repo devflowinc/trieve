@@ -1,8 +1,4 @@
-import {
-  Dataset,
-  DefaultError,
-  ServerEnvsConfiguration,
-} from "../types/apiTypes";
+import { Dataset, DefaultError, ServerEnvsConfiguration } from "shared/types";
 
 const api_host = import.meta.env.VITE_API_HOST as unknown as string;
 

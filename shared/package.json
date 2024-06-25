@@ -14,12 +14,18 @@
     "./types": {
       "import": "./types.ts",
       "require": "./types.ts"
+    },
+    "./ui": {
+      "import": "./ui/index.ts",
+      "require": "./ui/index.ts"
     }
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "solid-js": "^1.8.17"
+  },
   "devDependencies": {
     "typescript": "^5.0.4"
   }
