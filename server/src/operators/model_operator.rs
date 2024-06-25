@@ -705,13 +705,11 @@ pub async fn cross_encoder(
         })
         .collect::<Result<Vec<String>, ServiceError>>()?;
 
-    let twenty_request_docs = request_docs
-        .chunks(20)
-        .map(|x| x.to_vec())
-        .collect::<Vec<Vec<String>>>();
-
     let mut results = results.clone();
-    for twenty_docs in twenty_request_docs {
+
+    let reqwest_client = reqwest::Client::new();
+
+    if request_docs.len() <= 20 {
         let resp = ureq::post(&embedding_server_call)
             .set("Content-Type", "application/json")
             .set(
@@ -723,7 +721,7 @@ pub async fn cross_encoder(
             )
             .send_json(CrossEncoderData {
                 query: query.clone(),
-                texts: twenty_docs,
+                texts: request_docs,
                 truncate: true,
             })
             .map_err(|err| {
@@ -743,6 +741,80 @@ pub async fn cross_encoder(
         resp.into_iter().for_each(|pair| {
             results.index_mut(pair.index).score = pair.score as f64;
         });
+    } else {
+        let vec_futures: Vec<_> = request_docs
+            .chunks(20)
+            .enumerate()
+            .map(|(i, docs_chunk)| {
+                let clipped_docs = docs_chunk
+                    .iter()
+                    .map(|doc| {
+                        if doc.len() > 7000 {
+                            doc.chars().take(20000).collect()
+                        } else {
+                            doc.clone()
+                        }
+                    })
+                    .collect::<Vec<String>>();
+
+                let parameters = CrossEncoderData {
+                    query: query.clone(),
+                    texts: clipped_docs,
+                    truncate: true,
+                };
+
+                let cur_client = reqwest_client.clone();
+                let url = embedding_server_call.clone();
+                let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API should be set");
+
+                async move {
+                    let embeddings_resp = cur_client
+                        .post(&url)
+                        .header(
+                            "Authorization",
+                            &format!("Bearer {}", &embedding_api_key),
+                        )
+                        .header("api-key", &embedding_api_key.to_string())
+                        .header("Content-Type", "application/json")
+                        .json(&parameters)
+                        .send()
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Failed to send message to embedding server".to_string(),
+                            )
+                        })?
+                        .text()
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Failed to get text from embeddings".to_string(),
+                            )
+                        })?;
+
+                    let embeddings: Vec<ScorePair> = serde_json::from_str(&embeddings_resp)
+                        .map_err(|e| {
+                            log::error!("Failed to format response from embeddings server {:?}", e);
+                            ServiceError::InternalServerError(
+                                "Failed to format response from embeddings server".to_owned(),
+                            )
+                        })?;
+
+                    Ok((i, embeddings))
+                }
+            })
+            .collect();
+
+        let all_chunk_scores: Vec<(usize, Vec<ScorePair>)> = futures::future::join_all(vec_futures)
+            .await
+            .into_iter()
+            .collect::<Result<Vec<(usize, Vec<ScorePair>)>, ServiceError>>()?;
+
+        for (_index, chunk_scores) in all_chunk_scores {
+            for pair in chunk_scores {
+                results.index_mut(pair.index).score = pair.score as f64;
+            }
+        }
     }
 
     results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
