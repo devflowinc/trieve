@@ -10,7 +10,6 @@ use crate::{
     errors::ServiceError,
     get_env,
     operators::{
-        analytics_operator::SearchQueryEvent,
         message_operator::{
             create_message_query, create_topic_message_query, delete_message_query,
             get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
@@ -796,17 +795,6 @@ pub async fn stream_response(
     let result_chunks = search_hybrid_chunks(
         search_chunk_data,
         parsed_query,
-        &mut SearchQueryEvent {
-            id: uuid::Uuid::new_v4(),
-            search_type: String::from(""),
-            query: String::from(""),
-            request_params: String::from(""),
-            query_vector: vec![],
-            latency: 0.0,
-            results: vec![],
-            dataset_id: uuid::Uuid::new_v4(),
-            created_at: time::OffsetDateTime::now_utc(),
-        },
         pool.clone(),
         dataset.clone(),
         &dataset_config,
@@ -1065,17 +1053,6 @@ pub async fn get_suggested_queries(
             query: data.query.clone(),
             quote_words: None,
             negated_words: None,
-        },
-        &mut SearchQueryEvent {
-            id: uuid::Uuid::new_v4(),
-            search_type: String::from(""),
-            query: String::from(""),
-            request_params: String::from(""),
-            query_vector: vec![],
-            latency: 0.0,
-            results: vec![],
-            dataset_id: uuid::Uuid::new_v4(),
-            created_at: time::OffsetDateTime::now_utc(),
         },
         pool,
         dataset_org_plan_sub.dataset.clone(),
