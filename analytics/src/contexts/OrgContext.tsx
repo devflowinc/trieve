@@ -21,7 +21,6 @@ interface OrgContextType {
 export const OrgContext = createContext() as Context<OrgContextType>;
 
 export const OrgContextProvider = (props: OrgDatasetContextProps) => {
-  // TODO: use localstorage
   const [params, setParams] = useSearchParams();
   const getInitialUserOrg = () => {
     if (props.user.orgs.length === 0) {

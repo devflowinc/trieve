@@ -8,7 +8,7 @@ import {
   Show,
 } from "solid-js";
 import { apiHost } from "../utils/apiHost";
-import { OrgContextProvider } from "./OrgDatasetContext";
+import { OrgContextProvider } from "./OrgContext";
 import { TopBarLayout } from "../layouts/TopBarLayout";
 
 export const UserContext = createContext<UserContextType>();
@@ -27,12 +27,12 @@ export const UserAuthContextProvider: ParentComponent = (props) => {
     if (response.status === 401) {
       window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
     }
-    const userData = await response.json();
+    const userData = (await response.json()) as SlimUser;
     setUserInfo(userData);
   };
 
-  onMount(async () => {
-    login();
+  onMount(() => {
+    void login();
   });
 
   return (
