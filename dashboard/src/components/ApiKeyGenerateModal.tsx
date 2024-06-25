@@ -340,7 +340,7 @@ export const ApiKeyGenerateModal = (props: {
                   </p>
                   <div class="mx-auto flex items-center justify-center gap-4 py-4">
                     <p class="font-semibold text-neutral-900">{apiKey()}</p>
-                    <div
+                    <button
                       class="rounded border border-transparent p-2 hover:border-neutral-200 hover:bg-neutral-100"
                       onClick={() => {
                         void navigator.clipboard.writeText(apiKey());
@@ -356,7 +356,7 @@ export const ApiKeyGenerateModal = (props: {
                       }}
                     >
                       <FaRegularClipboard />
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
