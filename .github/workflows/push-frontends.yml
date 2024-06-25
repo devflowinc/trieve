@@ -52,7 +52,7 @@ jobs:
           # platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=trieve/buildcache:chat
           cache-to: type=registry,ref=trieve/buildcache:chat,mode=max
-          file: ./chat.Dockerfile
+          file: ./chat/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -93,7 +93,7 @@ jobs:
           # platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=trieve/buildcache:search
           cache-to: type=registry,ref=trieve/buildcache:search,mode=max
-          file: ./search.Dockerfile
+          file: ./search/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -134,7 +134,7 @@ jobs:
           # platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=trieve/buildcache:dashboard
           cache-to: type=registry,ref=trieve/buildcache:dashboard,mode=max
-          file: ./dashboard.Dockerfile
+          file: ./dashboard/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
