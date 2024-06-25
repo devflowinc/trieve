@@ -1,4 +1,3 @@
-use super::analytics_operator::SearchQueryEvent;
 use super::chunk_operator::{
     get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
     get_content_chunk_from_point_ids_query, get_highlights, get_qdrant_ids_from_chunk_ids_query,
@@ -1597,7 +1596,6 @@ pub fn rerank_chunks(
 pub async fn search_semantic_chunks(
     data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1622,8 +1620,6 @@ pub async fn search_semantic_chunks(
 
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
-
-    event.query_vector.clone_from(&embedding_vector);
 
     timer.add("computed dense embedding");
 
@@ -1749,7 +1745,6 @@ pub async fn search_full_text_chunks(
 pub async fn search_hybrid_chunks(
     data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1776,8 +1771,6 @@ pub async fn search_hybrid_chunks(
 
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
-
-    event.query_vector.clone_from(&dense_vector);
 
     timer.add("computed sparse and dense embeddings");
 
@@ -1909,7 +1902,6 @@ pub async fn search_hybrid_chunks(
 pub async fn search_semantic_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     group: ChunkGroup,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -1920,8 +1912,6 @@ pub async fn search_semantic_groups(
 
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
-
-    event.query_vector.clone_from(&embedding_vector);
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
@@ -2018,7 +2008,6 @@ pub async fn search_full_text_groups(
 pub async fn search_hybrid_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     group: ChunkGroup,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -2033,8 +2022,6 @@ pub async fn search_hybrid_groups(
 
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
-
-    event.query_vector.clone_from(&dense_vector);
 
     let qdrant_queries = vec![
         RetrievePointQuery {
@@ -2154,7 +2141,6 @@ pub async fn search_hybrid_groups(
 pub async fn semantic_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -2167,8 +2153,6 @@ pub async fn semantic_search_over_groups(
 
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
-
-    event.query_vector.clone_from(&embedding_vector);
 
     timer.add("computed dense embedding");
 
@@ -2339,7 +2323,6 @@ async fn cross_encoder_for_groups(
 pub async fn hybrid_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -2359,8 +2342,6 @@ pub async fn hybrid_search_over_groups(
         dense_embedding_vectors_future,
         sparse_embedding_vector_future
     )?;
-
-    event.query_vector.clone_from(&dense_vector);
 
     timer.add("computed dense embedding");
 
@@ -2481,7 +2462,6 @@ pub async fn hybrid_search_over_groups(
 pub async fn autocomplete_semantic_chunks(
     mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
-    event: &mut SearchQueryEvent,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -2506,8 +2486,6 @@ pub async fn autocomplete_semantic_chunks(
 
     let embedding_vector =
         create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
-
-    event.query_vector.clone_from(&embedding_vector);
 
     timer.add("computed dense embedding");
 

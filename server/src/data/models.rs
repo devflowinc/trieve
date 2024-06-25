@@ -14,7 +14,9 @@ use crate::operators::search_operator::{
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
+use clickhouse::Row;
 use dateparser::DateTimeUtc;
+use derive_more::Display;
 use diesel::expression::ValidGrouping;
 use diesel::{
     deserialize::{self as deserialize, FromSql},
@@ -29,6 +31,7 @@ use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon,
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 // type alias to use in multiple places
@@ -2949,6 +2952,220 @@ impl FieldCondition {
                     "Invalid condition type".to_string(),
                 )),
             },
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct SearchQueryEvent {
+    pub id: uuid::Uuid,
+    pub search_type: String,
+    pub query: String,
+    pub request_params: String,
+    pub latency: f32,
+    pub top_score: f32,
+    pub results: Vec<String>,
+    pub dataset_id: uuid::Uuid,
+    pub created_at: String,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchQueryEventClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub search_type: String,
+    pub query: String,
+    pub request_params: String,
+    pub latency: f32,
+    pub top_score: f32,
+    pub results: Vec<String>,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
+    fn from(event: SearchQueryEventClickhouse) -> Self {
+        SearchQueryEvent {
+            id: uuid::Uuid::from_bytes(*event.id.as_bytes()),
+            search_type: event.search_type,
+            query: event.query,
+            request_params: event.request_params,
+            latency: event.latency,
+            top_score: event.top_score,
+            results: event.results,
+            dataset_id: uuid::Uuid::from_bytes(*event.dataset_id.as_bytes()),
+            created_at: event.created_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ClusterTopicsClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub topic: String,
+    pub density: i32,
+    pub avg_score: f32,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+impl From<ClusterTopicsClickhouse> for SearchClusterTopics {
+    fn from(cluster_topic: ClusterTopicsClickhouse) -> Self {
+        SearchClusterTopics {
+            id: uuid::Uuid::from_bytes(*cluster_topic.id.as_bytes()),
+            dataset_id: uuid::Uuid::from_bytes(*cluster_topic.dataset_id.as_bytes()),
+            topic: cluster_topic.topic,
+            density: cluster_topic.density,
+            avg_score: cluster_topic.avg_score,
+            created_at: cluster_topic.created_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct SearchClusterTopics {
+    pub id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub topic: String,
+    pub density: i32,
+    pub avg_score: f32,
+    pub created_at: String,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchClusterMembership {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub search_query: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub cluster_topic: uuid::Uuid,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchType {
+    #[display(fmt = "search")]
+    Search,
+    #[display(fmt = "autocomplete")]
+    Autocomplete,
+    #[display(fmt = "search_over_groups")]
+    SearchOverGroups,
+    #[display(fmt = "search_within_groups")]
+    SearchWithinGroups,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display)]
+#[serde(rename_all = "lowercase")]
+
+pub enum SearchMethod {
+    #[display(fmt = "fulltext")]
+    FullText,
+    #[display(fmt = "semantic")]
+    Semantic,
+    #[display(fmt = "hybrid")]
+    Hybrid,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct AnalyticsFilter {
+    pub date_range: Option<DateRange>,
+    pub search_method: Option<SearchMethod>,
+    pub search_type: Option<SearchType>,
+}
+
+impl AnalyticsFilter {
+    pub fn add_to_query(&self, mut query_string: String) -> String {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(search_type) = &self.search_type {
+            query_string.push_str(&format!(" AND search_type = '{}'", search_type.to_string()));
+        }
+        if let Some(search_method) = &self.search_method {
+            query_string.push_str(&format!(
+                " AND JSONExtractString(request_params, 'search_type') = '{}'",
+                search_method.to_string()
+            ));
+        }
+
+        query_string
+    }
+}
+
+#[derive(Debug, Row, ToSchema, Serialize, Deserialize)]
+pub struct DatasetAnalytics {
+    pub total_queries: i32,
+    pub search_rps: f64,
+    pub avg_latency: f64,
+    pub p99: f64,
+    pub p95: f64,
+    pub p50: f64,
+}
+
+#[derive(Debug, ToSchema, Row, Serialize, Deserialize)]
+pub struct HeadQueries {
+    pub query: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchRPSGraphClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub average_rps: f64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchRPSGraph {
+    pub time_stamp: String,
+    pub average_rps: f64,
+}
+
+impl From<SearchRPSGraphClickhouse> for SearchRPSGraph {
+    fn from(graph: SearchRPSGraphClickhouse) -> Self {
+        SearchRPSGraph {
+            time_stamp: graph.time_stamp.to_string(),
+            average_rps: graph.average_rps,
+        }
+    }
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchLatencyGraphClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub average_latency: f64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchLatencyGraph {
+    pub time_stamp: String,
+    pub average_latency: f64,
+}
+
+impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
+    fn from(graph: SearchLatencyGraphClickhouse) -> Self {
+        SearchLatencyGraph {
+            time_stamp: graph.time_stamp.to_string(),
+            average_latency: graph.average_latency,
         }
     }
 }
