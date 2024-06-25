@@ -268,7 +268,7 @@ impl RetrievePointQuery {
         dataset_id: uuid::Uuid,
         group_id: Option<uuid::Uuid>,
         pool: web::Data<Pool>,
-    ) -> QdrantSearchQuery {
+    ) -> Result<QdrantSearchQuery, ServiceError> {
         let mut filter = assemble_qdrant_filter(
             self.filter,
             parsed_query.quote_words,
@@ -277,7 +277,7 @@ impl RetrievePointQuery {
             pool,
         )
         .await
-        .unwrap();
+        .map_err(|_| ServiceError::BadRequest("Failed to assemble qdrant filter".to_string()))?;
 
         if let Some(group_id) = group_id {
             filter
@@ -285,11 +285,11 @@ impl RetrievePointQuery {
                 .push(Condition::matches("group_ids", group_id.to_string()));
         }
 
-        QdrantSearchQuery {
+        Ok(QdrantSearchQuery {
             vector: self.vector,
             score_threshold: self.score_threshold,
             filter: filter.clone(),
-        }
+        })
     }
 }
 
@@ -1630,7 +1630,7 @@ pub async fn search_semantic_chunks(
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
-    .await;
+    .await?;
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         vec![qdrant_query],
@@ -1698,7 +1698,7 @@ pub async fn search_full_text_chunks(
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
-    .await;
+    .await?;
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         vec![qdrant_query],
@@ -1782,14 +1782,14 @@ pub async fn search_hybrid_chunks(
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
-        .await,
+        .await?,
         RetrievePointQuery {
             vector: VectorType::Sparse(sparse_vector),
             score_threshold: None,
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
-        .await,
+        .await?,
     ];
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
@@ -1890,7 +1890,7 @@ pub async fn search_semantic_groups(
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, Some(group.id), pool.clone())
-    .await;
+    .await?;
 
     let search_semantic_chunk_query_results = retrieve_qdrant_points_query(
         vec![qdrant_query],
@@ -1942,7 +1942,7 @@ pub async fn search_full_text_groups(
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, Some(group.id), pool.clone())
-    .await;
+    .await?;
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         vec![qdrant_query],
@@ -2006,7 +2006,7 @@ pub async fn search_hybrid_groups(
             Some(group.id),
             pool.clone(),
         )
-        .await,
+        .await?,
         RetrievePointQuery {
             vector: VectorType::Sparse(sparse_vector),
             score_threshold: None,
@@ -2018,7 +2018,7 @@ pub async fn search_hybrid_groups(
             Some(group.id),
             pool.clone(),
         )
-        .await,
+        .await?,
     ];
 
     let mut qdrant_results = retrieve_qdrant_points_query(
@@ -2467,7 +2467,7 @@ pub async fn autocomplete_semantic_chunks(
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
-        .await,
+        .await?,
     ];
 
     qdrant_query[0]
@@ -2483,7 +2483,7 @@ pub async fn autocomplete_semantic_chunks(
                 filter: data.filters.clone(),
             }
             .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
-            .await,
+            .await?,
         );
     };
 
@@ -2570,7 +2570,7 @@ pub async fn autocomplete_fulltext_chunks(
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
-        .await,
+        .await?,
     ];
 
     qdrant_query[0]
@@ -2586,7 +2586,7 @@ pub async fn autocomplete_fulltext_chunks(
                 filter: data.filters.clone(),
             }
             .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
-            .await,
+            .await?,
         );
     }
 
