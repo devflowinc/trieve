@@ -356,56 +356,6 @@ export const ServerSettingsForm = () => {
 
             <div class="col-span-4 sm:col-span-2">
               <label
-                for="duplicateThreshold"
-                class="block text-sm font-medium leading-6"
-              >
-                Duplicate Threshold
-              </label>
-              <input
-                type="number"
-                step={0.1}
-                name="duplicateThreshold"
-                id="linesBeforeShowMore"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={serverConfig().DUPLICATE_DISTANCE_THRESHOLD}
-                onInput={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      DUPLICATE_DISTANCE_THRESHOLD:
-                        e.currentTarget.valueAsNumber,
-                    };
-                  })
-                }
-              />
-            </div>
-
-            <div class="col-span-4 sm:col-span-2">
-              <label
-                for="messageToQueryPrompt"
-                class="block text-sm font-medium leading-6"
-              >
-                Message to Query Prompt (HyDE)
-              </label>
-              <textarea
-                value={serverConfig().MESSAGE_TO_QUERY_PROMPT}
-                onInput={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      MESSAGE_TO_QUERY_PROMPT: e.currentTarget.value,
-                    };
-                  })
-                }
-                rows="4"
-                name="messageToQueryPrompt"
-                id="messageToQueryPrompt"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-
-            <div class="col-span-4 sm:col-span-2">
-              <label
                 for="temperature"
                 class="block text-sm font-medium leading-6"
               >
@@ -471,6 +421,30 @@ export const ServerSettingsForm = () => {
                     };
                   })
                 }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="messageToQueryPrompt"
+                class="block text-sm font-medium leading-6"
+              >
+                Message to Query Prompt (HyDE)
+              </label>
+              <textarea
+                value={serverConfig().MESSAGE_TO_QUERY_PROMPT}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      MESSAGE_TO_QUERY_PROMPT: e.currentTarget.value,
+                    };
+                  })
+                }
+                rows="4"
+                name="messageToQueryPrompt"
+                id="messageToQueryPrompt"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
 
@@ -604,29 +578,6 @@ export const ServerSettingsForm = () => {
                 class="block text-sm font-medium leading-6"
               >
                 Use Message to Query Prompt (HyDE)
-              </label>
-            </div>
-
-            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
-              <input
-                type="checkbox"
-                name="collisionsEnabled"
-                id="collisionsEnabled"
-                checked={serverConfig().COLLISIONS_ENABLED}
-                onInput={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      COLLISIONS_ENABLED: e.currentTarget.checked,
-                    };
-                  })
-                }
-              />
-              <label
-                for="collisionsEnabled"
-                class="block text-sm font-medium leading-6"
-              >
-                Collisions Enabled
               </label>
             </div>
 
