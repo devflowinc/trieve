@@ -14,8 +14,7 @@ export const UserAuthContextProvider: ParentComponent = (props) => {
     user: null,
   });
 
-  onMount(async () => {
-    // Fetch user info and throw to login if not correct
+  const login = async () => {
     const response = await fetch(`${apiHost}/auth/me`, {
       credentials: "include",
     });
@@ -24,11 +23,14 @@ export const UserAuthContextProvider: ParentComponent = (props) => {
     }
     const userData = await response.json();
     setUserInfo("user", userData);
+  };
+
+  onMount(async () => {
+    login();
   });
 
   return (
-    <div>
-      <div>User context</div>
+    <>
       <Show when={userInfo.user}>
         <UserContext.Provider
           value={{
@@ -38,6 +40,6 @@ export const UserAuthContextProvider: ParentComponent = (props) => {
           {props.children}
         </UserContext.Provider>
       </Show>
-    </div>
+    </>
   );
 };
