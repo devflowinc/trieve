@@ -770,10 +770,7 @@ pub async fn cross_encoder(
                 async move {
                     let embeddings_resp = cur_client
                         .post(&url)
-                        .header(
-                            "Authorization",
-                            &format!("Bearer {}", &embedding_api_key),
-                        )
+                        .header("Authorization", &format!("Bearer {}", &embedding_api_key))
                         .header("api-key", &embedding_api_key.to_string())
                         .header("Content-Type", "application/json")
                         .json(&parameters)
