@@ -2,7 +2,7 @@ import { Accessor } from "solid-js";
 import {
   OrganizationUsageCount,
   OrganizationAndSubAndPlan,
-} from "../types/apiTypes";
+} from "shared/types";
 
 export interface OrganizationUsageOverviewProps {
   organization: Accessor<OrganizationAndSubAndPlan | undefined>;
