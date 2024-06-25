@@ -12,7 +12,7 @@ import { useNavigate } from "@solidjs/router";
 import {
   ServerEnvsConfiguration,
   availableEmbeddingModels,
-} from "../types/apiTypes";
+} from "shared/types";
 import { defaultServerEnvsConfiguration } from "../pages/Dashboard/Dataset/DatasetSettingsPage";
 import { createToast } from "./ShowToasts";
 import { createNewDataset } from "../api/createDataset";

@@ -13,7 +13,7 @@ import {
   ApiKeyRespBody,
   fromI32ToApiKeyRole,
   fromI32ToUserRole,
-} from "../types/apiTypes";
+} from "shared/types";
 import { formatDate } from "../formatters";
 
 export const ApiKeys = () => {
