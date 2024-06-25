@@ -1,7 +1,9 @@
-import { Show, useContext } from "solid-js";
-import { OrgContext } from "../contexts/OrgDatasetContext";
+import { Show, useContext, For } from "solid-js";
+import { OrgContext } from "../contexts/OrgContext";
 import { UserContext } from "../contexts/UserAuthContext";
 import { DatasetAndUsage } from "shared/types";
+import { usePathname } from "../hooks/usePathname";
+import { useBetterNav } from "../utils/useBetterNav";
 
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
@@ -9,11 +11,25 @@ interface NavbarProps {
   setSelectedDataset: (dataset: DatasetAndUsage) => void;
 }
 
+const navbarRoutes = [
+  {
+    href: "/",
+    label: "Analytics",
+  },
+  {
+    href: "/trends",
+    label: "Trend Explorer",
+  },
+];
+
 export const Navbar = (props: NavbarProps) => {
   const userContext = useContext(UserContext);
   const orgContext = useContext(OrgContext);
+  const pathname = usePathname();
+  const navigate = useBetterNav();
+
   return (
-    <div class="flex p-4 border border-b-neutral-400 bg-neutral-50">
+    <div class="flex justify-between border border-b-neutral-400 bg-neutral-50 p-4">
       <div class="flex gap-3">
         <select
           onChange={(e) => {
@@ -22,9 +38,11 @@ export const Navbar = (props: NavbarProps) => {
           }}
           value={orgContext.selectedOrg().id}
         >
-          {userContext
-            ?.user()
-            .orgs?.map((org) => <option value={org.id}>{org.name}</option>)}
+          {
+            <For each={userContext?.user().orgs}>
+              {(org) => <option value={org.id}>{org.name}</option>}
+            </For>
+          }
         </select>
 
         <Show when={props.datasetOptions.length > 0}>
@@ -39,11 +57,36 @@ export const Navbar = (props: NavbarProps) => {
             }}
             value={props.selectedDataset?.dataset.id}
           >
-            {props.datasetOptions.map((dataset) => (
-              <option value={dataset.dataset.id}>{dataset.dataset.name}</option>
-            ))}
+            <For each={props.datasetOptions}>
+              {(dataset) => (
+                <option value={dataset.dataset.id}>
+                  {dataset.dataset.name}
+                </option>
+              )}
+            </For>
           </select>
         </Show>
+      </div>
+      <div class="flex gap-4">
+        <For each={navbarRoutes}>
+          {(link) => {
+            return (
+              <div
+                role="link"
+                classList={{
+                  "cursor-pointer": true,
+                  "text-purple-800 underline": pathname() === link.href,
+                  "text-black": pathname() !== link.href,
+                }}
+                onClick={() => {
+                  navigate(link.href);
+                }}
+              >
+                {link.label}
+              </div>
+            );
+          }}
+        </For>
       </div>
     </div>
   );

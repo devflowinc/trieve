@@ -9,7 +9,7 @@ import {
   Show,
   useContext,
 } from "solid-js";
-import { OrgContext } from "../contexts/OrgDatasetContext";
+import { OrgContext } from "../contexts/OrgContext";
 import { createQuery } from "@tanstack/solid-query";
 import { apiHost } from "../utils/apiHost";
 import { redirect, useSearchParams } from "@solidjs/router";
@@ -17,9 +17,8 @@ import { DatasetAndUsage } from "shared/types";
 import { Navbar } from "../components/Navbar";
 import { NoDatasetsErrorPage } from "../pages/errors/NoDatasetsErrorPage";
 
-interface DatasetContextType {
-  selectedDataset: Accessor<DatasetAndUsage | null>;
-}
+type DatasetContextType = Accessor<DatasetAndUsage>;
+
 export const DatasetContext =
   createContext<DatasetContextType>() as Context<DatasetContextType>;
 
@@ -48,7 +47,6 @@ export const TopBarLayout: ParentComponent = (props) => {
         );
       }
       const datasets = (await repsonse.json()) as unknown as DatasetAndUsage[];
-      console.log("gotdatasets", datasets);
       return datasets;
     },
     initialData: [],
@@ -80,7 +78,7 @@ export const TopBarLayout: ParentComponent = (props) => {
   };
 
   return (
-    <div class="min-h-screen flex flex-col bg-neutral-100">
+    <div class="flex min-h-screen flex-col bg-neutral-100">
       <Navbar
         datasetOptions={datasetsQuery.data || []}
         selectedDataset={selectedDataset()}
@@ -96,8 +94,10 @@ export const TopBarLayout: ParentComponent = (props) => {
         <NoDatasetsErrorPage orgId={org.selectedOrg().id} />
       </Show>
       <Show when={selectedDataset()}>
-        <DatasetContext.Provider value={{ selectedDataset: selectedDataset! }}>
-          {props.children}
+        <DatasetContext.Provider
+          value={selectedDataset as Accessor<DatasetAndUsage>}
+        >
+          <div class="p-4">{props.children}</div>
         </DatasetContext.Provider>
       </Show>
     </div>

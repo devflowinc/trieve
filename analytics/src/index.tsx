@@ -6,6 +6,7 @@ import { RouteDefinition, Router } from "@solidjs/router";
 import { Home } from "./pages/Home";
 import { UserAuthContextProvider } from "./contexts/UserAuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
+import { TrendExplorer } from "./pages/TrendExplorer";
 
 const queryClient = new QueryClient();
 
@@ -13,10 +14,16 @@ const routes: RouteDefinition[] = [
   {
     path: "/",
     component: UserAuthContextProvider,
-    children: {
-      path: "/",
-      component: Home,
-    },
+    children: [
+      {
+        path: "/",
+        component: Home,
+      },
+      {
+        path: "/trends",
+        component: TrendExplorer,
+      },
+    ],
   },
 ];
 
@@ -28,5 +35,6 @@ render(
       <Router>{routes}</Router>
     </QueryClientProvider>
   ),
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   root!,
 );
