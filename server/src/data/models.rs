@@ -1629,6 +1629,10 @@ impl DatasetAndUsage {
     "FULLTEXT_ENABLED": true,
     "EMBEDDING_QUERY_PREFIX": "Search for",
     "USE_MESSAGE_TO_QUERY_PROMPT": false,
+    "FREQUENCY_PENALTY": 0.0,
+    "TEMPERATURE": 0.5,
+    "PRESENCE_PENALTY": 0.0,
+    "STOP_TOKENS": ["\n\n", "\n"],
 }))]
 #[allow(non_snake_case)]
 pub struct ServerDatasetConfiguration {
@@ -1648,6 +1652,10 @@ pub struct ServerDatasetConfiguration {
     pub FULLTEXT_ENABLED: bool,
     pub EMBEDDING_QUERY_PREFIX: String,
     pub USE_MESSAGE_TO_QUERY_PROMPT: bool,
+    pub FREQUENCY_PENALTY: Option<f64>,
+    pub TEMPERATURE: Option<f64>,
+    pub PRESENCE_PENALTY: Option<f64>,
+    pub STOP_TOKENS: Option<Vec<String>>,
 }
 
 impl ServerDatasetConfiguration {
@@ -1805,6 +1813,19 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(&json!(false))
                 .as_bool()
                 .unwrap_or(false),
+            FREQUENCY_PENALTY: configuration
+                .get("FREQUENCY_PENALTY")
+                .and_then(|v| v.as_f64()),
+            TEMPERATURE: configuration
+                .get("TEMPERATURE")
+                .and_then(|v| v.as_f64()),
+            PRESENCE_PENALTY: configuration
+                .get("PRESENCE_PENALTY")
+                .and_then(|v| v.as_f64()),
+            STOP_TOKENS: configuration
+                .get("STOP_TOKENS")
+                .and_then(|v| v.as_str())
+                .map(|v| v.split(',').map(|s| s.to_string()).collect::<Vec<String>>()),
         }
     }
 }

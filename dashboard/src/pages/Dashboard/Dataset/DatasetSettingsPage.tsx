@@ -52,6 +52,10 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   QDRANT_COLLECTION_NAME: null,
   EMBEDDING_QUERY_PREFIX: "Search for: ",
   USE_MESSAGE_TO_QUERY_PROMPT: false,
+  FREQUENCY_PENALTY: null,
+  TEMPERATURE: null,
+  PRESENCE_PENALTY: null,
+  STOP_TOKENS: null,
 };
 
 export const FrontendSettingsForm = () => {
@@ -396,6 +400,100 @@ export const ServerSettingsForm = () => {
                 rows="4"
                 name="messageToQueryPrompt"
                 id="messageToQueryPrompt"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="temperature"
+                class="block text-sm font-medium leading-6"
+              >
+                Temperature (HyDE)
+              </label>
+              <input
+                type="number"
+                name="temperature"
+                id="linesBeforeShowMore"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={serverConfig().TEMPERATURE ?? 0}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      TEMPERATURE: e.currentTarget.valueAsNumber,
+                    };
+                  })
+                }
+              />
+            </div>
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="presencePenalty"
+                class="block text-sm font-medium leading-6"
+              >
+                Presence Penalty (HyDE)
+              </label>
+              <input
+                type="number"
+                name="presencePenalty"
+                id="linesBeforeShowMore"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={serverConfig().PRESENCE_PENALTY ?? 0}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      PRESENCE_PENALTY: e.currentTarget.valueAsNumber,
+                    };
+                  })
+                }
+              />
+            </div>
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="frequencyPenalty"
+                class="block text-sm font-medium leading-6"
+              >
+                Frequency Penalty (HyDE)
+              </label>
+              <input
+                type="number"
+                name="frequencyPenalty"
+                id="linesBeforeShowMore"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={serverConfig().FREQUENCY_PENALTY ?? 0}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      FREQUENCY_PENALTY: e.currentTarget.valueAsNumber,
+                    };
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="stopTokens"
+                class="block text-sm font-medium leading-6"
+              >
+                Stop Tokens (HyDE)
+              </label>
+              <textarea
+                value={serverConfig().STOP_TOKENS ?? ""}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      STOP_TOKENS: e.currentTarget.value,
+                    };
+                  })
+                }
+                rows="4"
+                name="ragPrompt"
+                id="ragPrompt"
                 class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
