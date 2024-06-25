@@ -2,13 +2,23 @@
 import { render } from "solid-js/web";
 
 import "./index.css";
-import App from "./App";
 import { RouteDefinition, Router } from "@solidjs/router";
+import { Home } from "./pages/Home";
+import { Login } from "./pages/Login";
+import { UserAuthContextProvider } from "./contexts/UserAuthContext";
 
 const routes: RouteDefinition[] = [
   {
     path: "/",
-    component: App,
+    component: UserAuthContextProvider,
+    children: {
+      path: "/",
+      component: Home,
+    },
+  },
+  {
+    path: "/login",
+    component: Login,
   },
 ];
 
