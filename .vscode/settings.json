@@ -12,5 +12,11 @@
   "rust-analyzer.showUnlinkedFileNotification": false,
   "rust-analyzer.server.path": "~/.cargo/bin/rust-analyzer",
   "python.analysis.typeCheckingMode": "basic",
-  "python.analysis.autoImportCompletions": true
+  "python.analysis.autoImportCompletions": true,
+  "eslint.workingDirectories": [
+    "./chat",
+    "./dashboard",
+    "./search",
+    "./analytics"
+  ]
 }
