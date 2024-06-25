@@ -166,9 +166,12 @@ pub async fn assemble_qdrant_filter(
                         }
                     }
                     ConditionType::HasID(cond) => {
-                        filter.should.push(Condition::has_id(
-                            get_qdrant_ids_from_condition(cond, pool.clone()).await?,
-                        ));
+                        let qdrant_ids =
+                            get_qdrant_ids_from_condition(cond, pool.clone()).await.ok();
+
+                        if let Some(qdrant_ids) = qdrant_ids {
+                            filter.should.push(Condition::has_id(qdrant_ids));
+                        }
                     }
                 }
             }
@@ -196,9 +199,12 @@ pub async fn assemble_qdrant_filter(
                         }
                     }
                     ConditionType::HasID(cond) => {
-                        filter.must.push(Condition::has_id(
-                            get_qdrant_ids_from_condition(cond, pool.clone()).await?,
-                        ));
+                        let qdrant_ids =
+                            get_qdrant_ids_from_condition(cond, pool.clone()).await.ok();
+
+                        if let Some(qdrant_ids) = qdrant_ids {
+                            filter.must.push(Condition::has_id(qdrant_ids));
+                        }
                     }
                 }
             }
@@ -226,9 +232,12 @@ pub async fn assemble_qdrant_filter(
                         }
                     }
                     ConditionType::HasID(cond) => {
-                        filter.must_not.push(Condition::has_id(
-                            get_qdrant_ids_from_condition(cond, pool.clone()).await?,
-                        ));
+                        let qdrant_ids =
+                            get_qdrant_ids_from_condition(cond, pool.clone()).await.ok();
+
+                        if let Some(qdrant_ids) = qdrant_ids {
+                            filter.must_not.push(Condition::has_id(qdrant_ids));
+                        }
                     }
                 }
             }
