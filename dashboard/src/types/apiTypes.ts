@@ -103,6 +103,10 @@ export interface ServerEnvsConfiguration {
   QDRANT_COLLECTION_NAME: string | null;
   EMBEDDING_QUERY_PREFIX: string;
   USE_MESSAGE_TO_QUERY_PROMPT: boolean;
+  FREQUENCY_PENALTY: number | null;
+  TEMPERATURE: number | null;
+  PRESENCE_PENALTY: number | null;
+  STOP_TOKENS: string | null;
 }
 
 export interface ClientEnvsConfiguration {
