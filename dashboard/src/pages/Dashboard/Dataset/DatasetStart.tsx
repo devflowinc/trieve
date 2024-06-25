@@ -13,11 +13,7 @@ import {
 import { UserContext } from "../../../contexts/UserContext";
 import { useLocation } from "@solidjs/router";
 import { createToast } from "../../../components/ShowToasts";
-import {
-  Dataset,
-  DatasetUsageCount,
-  DefaultError,
-} from "../../../types/apiTypes";
+import { Dataset, DatasetUsageCount, DefaultError } from "shared/types";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { FaRegularClipboard } from "solid-icons/fa";
 import { AiOutlineInfoCircle } from "solid-icons/ai";

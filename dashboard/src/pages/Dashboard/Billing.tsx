@@ -6,7 +6,7 @@ import {
   useContext,
 } from "solid-js";
 import { UserContext } from "../../contexts/UserContext";
-import { OrganizationAndSubAndPlan } from "../../types/apiTypes";
+import { OrganizationAndSubAndPlan } from "shared/types";
 import { PlansTable } from "../../components/PlansTable";
 import { createToast } from "../../components/ShowToasts";
 
