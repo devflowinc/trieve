@@ -1,0 +1,35 @@
+name: analytics test suite
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+on: 
+  pull_request:
+    paths:
+    - 'analytics/**'
+    - 'shared/**'
+
+jobs:
+  build-test:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn --cwd analytics
+      - name: Running lint
+        run: yarn --cwd analytics build
+  eslint:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn --cwd analytics
+      - name: Running lint
+        run: yarn --cwd analytics lint:CI
+      - name: Annotate Code Linting Results
+        uses: ataylorme/eslint-annotate-action@1.0.4
+        if: always()
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          report-json: './analytics/eslint_report.json'
