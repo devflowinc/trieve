@@ -338,16 +338,19 @@ export const ServerSettingsForm = () => {
                 N Retrivials To Include (RAG-inference)
               </label>
               <input
-                type="number"
                 name="nRetrivialsToInclude"
+                type="number"
+                placeholder="something"
                 id="linesBeforeShowMore"
                 class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().N_RETRIEVALS_TO_INCLUDE}
-                onInput={(e) =>
+                onChange={(e) =>
                   setServerConfig((prev) => {
                     return {
                       ...prev,
-                      N_RETRIEVALS_TO_INCLUDE: e.currentTarget.valueAsNumber,
+                      N_RETRIEVALS_TO_INCLUDE: parseFloat(
+                        e.currentTarget.value,
+                      ),
                     };
                   })
                 }
@@ -367,7 +370,7 @@ export const ServerSettingsForm = () => {
                 id="linesBeforeShowMore"
                 class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().TEMPERATURE ?? 0}
-                onInput={(e) =>
+                onChange={(e) =>
                   setServerConfig((prev) => {
                     return {
                       ...prev,
@@ -390,7 +393,7 @@ export const ServerSettingsForm = () => {
                 id="linesBeforeShowMore"
                 class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().PRESENCE_PENALTY ?? 0}
-                onInput={(e) =>
+                onChange={(e) =>
                   setServerConfig((prev) => {
                     return {
                       ...prev,
@@ -413,7 +416,7 @@ export const ServerSettingsForm = () => {
                 id="linesBeforeShowMore"
                 class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={serverConfig().FREQUENCY_PENALTY ?? 0}
-                onInput={(e) =>
+                onChange={(e) =>
                   setServerConfig((prev) => {
                     return {
                       ...prev,
