@@ -292,7 +292,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                   step="0.000001"
                   placeholder="optional - price, quantity, or some other numeric for filtering"
                   value={numValue() ?? ""}
-                  onInput={(e) => setNumValue(Number(e.currentTarget.value))}
+                  onChange={(e) => setNumValue(Number(e.currentTarget.value))}
                   class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
                 />
                 <div class="flex items-center gap-x-2">
@@ -312,7 +312,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                     step="0.00000001"
                     placeholder="Latitude"
                     value={locationLat()}
-                    onInput={(e) =>
+                    onChange={(e) =>
                       setLocationLat(Number(e.currentTarget.value))
                     }
                     class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
@@ -322,7 +322,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                     step="0.00000001"
                     placeholder="Longitude"
                     value={locationLon()}
-                    onInput={(e) =>
+                    onChange={(e) =>
                       setLocationLon(Number(e.currentTarget.value))
                     }
                     class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
@@ -344,7 +344,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                   step="0.000001"
                   placeholder="optional - weight is applied as linear boost to score for search"
                   value={weight()}
-                  onInput={(e) => setWeight(Number(e.currentTarget.value))}
+                  onChange={(e) => setWeight(Number(e.currentTarget.value))}
                   class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
                 />
                 <div class="flex items-center gap-x-2">
@@ -370,7 +370,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                     type="number"
                     placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
                     value={boostFactor()}
-                    onInput={(e) =>
+                    onChange={(e) =>
                       setBoostFactor(Number(e.currentTarget.value))
                     }
                     class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"

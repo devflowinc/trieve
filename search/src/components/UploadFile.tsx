@@ -166,7 +166,7 @@ export const UploadFile = () => {
             type="number"
             placeholder="optional"
             value={targetSplitsPerChunk()}
-            onInput={(e) => setTargetSplitsPerChunk(parseInt(e.target.value))}
+            onChange={(e) => setTargetSplitsPerChunk(parseInt(e.target.value))}
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
           />
         </div>
