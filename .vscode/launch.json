@@ -24,12 +24,26 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'ingestion-microservice'",
+      "name": "Debug executable 'ingestion-worker'",
       "cargo": {
         "args": [
           "build",
           "--manifest-path=./server/Cargo.toml",
-          "--bin=ingestion-microservice"
+          "--bin=ingestion-worker"
+        ]
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/server"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'file-worker'",
+      "cargo": {
+        "args": [
+          "build",
+          "--manifest-path=./server/Cargo.toml",
+          "--bin=file-worker"
         ]
       },
       "args": [],
