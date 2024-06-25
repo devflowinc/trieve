@@ -5,6 +5,7 @@ import "./index.css";
 import { RouteDefinition, Router } from "@solidjs/router";
 import { Home } from "./pages/Home";
 import { UserAuthContextProvider } from "./contexts/UserAuthContext";
+import { ErrorPage } from "./pages/Error";
 
 const routes: RouteDefinition[] = [
   {
@@ -14,6 +15,10 @@ const routes: RouteDefinition[] = [
       path: "/",
       component: Home,
     },
+  },
+  {
+    path: "/error",
+    component: ErrorPage,
   },
 ];
 
