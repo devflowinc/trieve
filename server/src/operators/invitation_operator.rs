@@ -47,17 +47,42 @@ pub async fn get_invitation_by_id_query(
 }
 
 #[tracing::instrument]
-pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), ServiceError> {
+pub async fn send_invitation(
+    inv_url: String,
+    invitation: Invitation,
+    org_name: String,
+) -> Result<(), ServiceError> {
     let sg_email_content = format!(
-        "You have been invited to join a Trieve organization. <br/>
+        "You have been invited to join a Trieve organization: <b>{}</b>. <br/>
          Please click on the link below to register. <br/>
          <a href=\"{}\">
-         {}</a>",
+         {}</a><br/><br/><br/>Cheers,<br/> The Trieve Team<br/>This email is intended for {}, if this isn't you, please let us know at 
+         <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>",
+        org_name,
         inv_url,
-        inv_url.split('?').collect::<Vec<&str>>()[0]
+        inv_url.split('?').collect::<Vec<&str>>()[0],
+        invitation.email
     );
 
     send_email(sg_email_content, invitation.email)
+}
+
+// bottom sign off
+// THis message was intended for you. If you did not request this email, please ignore it.
+
+#[tracing::instrument]
+pub async fn send_invitation_for_existing_user(
+    email: String,
+    org_name: String,
+) -> Result<(), ServiceError> {
+    let sg_email_content = format!(
+        "You've been added to a Trieve organization: <b>{}</b>. <br/><br/><br/>Cheers,
+        <br/> The Trieve Team<br/>This email is intended for {}, if this isn't you, please let us know at <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>",
+        org_name,
+        email
+    );
+
+    send_email(sg_email_content, email)
 }
 
 #[tracing::instrument(skip(pool))]
