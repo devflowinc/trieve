@@ -7,13 +7,13 @@ COPY package*.json ./
 COPY . .
 
 RUN yarn install
-RUN yarn run build
+RUN yarn run build --filter search
 
 FROM nginx:1.25.4-alpine-slim
 
 WORKDIR /usr/share/nginx/html
 
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/search/dist /usr/share/nginx/html
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
