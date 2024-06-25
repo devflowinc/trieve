@@ -75,6 +75,12 @@ pub async fn post_invitation(
         return Err(ServiceError::BadRequest("Invalid email".to_string()));
     }
 
+    if user.0.email == email {
+        return Err(ServiceError::BadRequest(
+            "Can not invite yourself".to_string(),
+        ));
+    }
+
     let org_role = user
         .0
         .user_orgs

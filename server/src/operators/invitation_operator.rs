@@ -67,9 +67,6 @@ pub async fn send_invitation(
     send_email(sg_email_content, invitation.email)
 }
 
-// bottom sign off
-// THis message was intended for you. If you did not request this email, please ignore it.
-
 #[tracing::instrument]
 pub async fn send_invitation_for_existing_user(
     email: String,
