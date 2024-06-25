@@ -102,6 +102,10 @@ export interface ServerEnvsConfiguration {
   FULLTEXT_ENABLED: boolean;
   QDRANT_COLLECTION_NAME: string | null;
   EMBEDDING_QUERY_PREFIX: string;
+  TEMPERATURE: number | null;
+  PRESENCE_PENALTY: number | null;
+  FREQUENCY_PENALTY: number | null;
+  STOP_TOKENS: string | null;
   USE_MESSAGE_TO_QUERY_PROMPT: boolean;
 }
 
