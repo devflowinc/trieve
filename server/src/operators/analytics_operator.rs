@@ -1,9 +1,5 @@
-use clickhouse::Row;
-use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
-
 use crate::{
-    data::models::ChunkMetadataTypes,
+    data::models::{ChunkMetadataTypes, SearchQueryEvent, SearchQueryEventClickhouse},
     errors::ServiceError,
     handlers::{
         chunk_handler::SearchChunkQueryResponseBody, group_handler::SearchWithinGroupResults,
@@ -13,27 +9,11 @@ use crate::{
 use super::search_operator::SearchOverGroupsResults;
 
 pub enum ClickHouseEvent {
-    SearchQueryEvent(SearchQueryEvent),
+    SearchQueryEvent(SearchQueryEventClickhouse),
     //TODO: Recommended Chunks
     //TODO: Recommeneded Groups
     //TODO: RAG over selected Chunks
     //TODO: RAG over all Chunks
-}
-
-#[derive(Debug, Row, Serialize, Deserialize)]
-pub struct SearchQueryEvent {
-    #[serde(with = "clickhouse::serde::uuid")]
-    pub id: uuid::Uuid,
-    pub search_type: String,
-    pub query: String,
-    pub request_params: String,
-    pub latency: f32,
-    pub query_vector: Vec<f32>,
-    pub results: Vec<String>,
-    #[serde(with = "clickhouse::serde::uuid")]
-    pub dataset_id: uuid::Uuid,
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub created_at: OffsetDateTime,
 }
 
 impl SearchChunkQueryResponseBody {
@@ -229,10 +209,9 @@ pub async fn send_to_clickhouse(
 ) -> Result<(), ServiceError> {
     match event {
         ClickHouseEvent::SearchQueryEvent(event) => {
-            if event.query_vector.is_empty() {
-                clickhouse_client
+            clickhouse_client
                     .query(
-                        "INSERT INTO trieve.search_queries (id, search_type, query, request_params, query_vector, latency, results, dataset_id, created_at) VALUES (?, ?, ?, ?, embed_p(?), ?, ?, ?, now())",
+                        "INSERT INTO trieve.search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES (?, ?, ?, ?, embed_p(?), ?,?, ?, ?, now())",
                     )
                     .bind(event.id)
                     .bind(&event.search_type)
@@ -240,6 +219,7 @@ pub async fn send_to_clickhouse(
                     .bind(&event.request_params)
                     .bind(&event.query)
                     .bind(event.latency)
+                    .bind(event.top_score)
                     .bind(&event.results)
                     .bind(event.dataset_id)
                     .execute()
@@ -248,28 +228,6 @@ pub async fn send_to_clickhouse(
                         log::error!("Error writing to ClickHouse: {:?}", err);
                         ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
                     })?;
-            } else {
-                let mut inserter =
-                    clickhouse_client
-                        .insert("trieve.search_queries")
-                        .map_err(|err| {
-                            log::error!("Error creating ClickHouse inserter: {:?}", err);
-                            ServiceError::InternalServerError(
-                                "Error creating ClickHouse inserter".to_string(),
-                            )
-                        })?;
-
-                inserter.write(&event).await.map_err(|err| {
-                    log::error!("Error writing to ClickHouse: {:?}", err);
-                    ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
-                })?;
-                inserter.end().await.map_err(|err| {
-                    log::error!("Error ending ClickHouse inserter: {:?}", err);
-                    ServiceError::InternalServerError(
-                        "Error ending ClickHouse inserter".to_string(),
-                    )
-                })?;
-            }
         }
     }
 

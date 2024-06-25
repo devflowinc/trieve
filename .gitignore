@@ -17,6 +17,7 @@ story_html.zip
 testing.ipynb
 output.json
 temp.json
+analytics/analytics-server/target
 server/target
 server/images
 server/tantivy

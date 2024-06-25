@@ -4,12 +4,13 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Pool,
-    RedisPool, ScoreChunkDTO, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
+    RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse, ServerDatasetConfiguration,
+    SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::analytics_operator::{
-    get_latency_from_header, send_to_clickhouse, ClickHouseEvent, SearchQueryEvent,
+    get_latency_from_header, send_to_clickhouse, ClickHouseEvent,
 };
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
@@ -1048,18 +1049,6 @@ pub async fn search_chunks(
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
     let mut timer = Timer::new();
 
-    let mut clickhouse_event = SearchQueryEvent {
-        id: uuid::Uuid::new_v4(),
-        search_type: String::from("search"),
-        query: data.query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
-        query_vector: vec![],
-        latency: 0.0,
-        results: vec![],
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-    };
-
     let result_chunks = match data.search_type.as_str() {
         "fulltext" | "full-text" | "full_text" | "full text" => {
             if !server_dataset_config.FULLTEXT_ENABLED {
@@ -1083,7 +1072,6 @@ pub async fn search_chunks(
             search_hybrid_chunks(
                 data.clone(),
                 parsed_query,
-                &mut clickhouse_event,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &server_dataset_config,
@@ -1095,7 +1083,6 @@ pub async fn search_chunks(
             search_semantic_chunks(
                 data.clone(),
                 parsed_query,
-                &mut clickhouse_event,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &server_dataset_config,
@@ -1110,15 +1097,31 @@ pub async fn search_chunks(
             .into())
         }
     };
+    timer.add("search_chunks");
 
-    clickhouse_event.latency = get_latency_from_header(timer.header_value());
-    clickhouse_event.results = result_chunks.into_response_payload();
+    let clickhouse_event = SearchQueryEventClickhouse {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("search"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        latency: get_latency_from_header(timer.header_value()),
+        top_score: result_chunks
+            .score_chunks
+            .first()
+            .map(|x| x.score as f32)
+            .unwrap_or(0.0),
+        results: result_chunks.into_response_payload(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
 
     send_to_clickhouse(
         ClickHouseEvent::SearchQueryEvent(clickhouse_event),
         &clickhouse_client,
     )
     .await?;
+
+    timer.add("send_to_clickhouse");
 
     transaction.finish();
 
@@ -1284,18 +1287,6 @@ pub async fn autocomplete(
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
-    let mut clickhouse_event = SearchQueryEvent {
-        id: uuid::Uuid::new_v4(),
-        search_type: String::from("search"),
-        query: data.query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
-        query_vector: vec![],
-        latency: 0.0,
-        results: vec![],
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-    };
-
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type.as_str() {
@@ -1321,7 +1312,6 @@ pub async fn autocomplete(
             autocomplete_semantic_chunks(
                 data.clone(),
                 parsed_query,
-                &mut clickhouse_event,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &server_dataset_config,
@@ -1336,15 +1326,30 @@ pub async fn autocomplete(
             .into())
         }
     };
+    timer.add("autocomplete_chunks");
 
-    clickhouse_event.latency = get_latency_from_header(timer.header_value());
-    clickhouse_event.results = result_chunks.into_response_payload();
+    let clickhouse_event = SearchQueryEventClickhouse {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("autocomplete"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        latency: get_latency_from_header(timer.header_value()),
+        top_score: result_chunks
+            .score_chunks
+            .first()
+            .map(|x| x.score as f32)
+            .unwrap_or(0.0),
+        results: result_chunks.into_response_payload(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
 
     send_to_clickhouse(
         ClickHouseEvent::SearchQueryEvent(clickhouse_event),
         &clickhouse_client,
     )
     .await?;
+    timer.add("send_to_clickhouse");
 
     transaction.finish();
 
@@ -2050,11 +2055,10 @@ pub async fn generate_off_chunks(
         temperature: Some(data.temperature.unwrap_or(0.5)),
         frequency_penalty: Some(data.frequency_penalty.unwrap_or(0.7)),
         presence_penalty: Some(data.presence_penalty.unwrap_or(0.7)),
-        stop: if let Some(stop_tokens) = &data.stop_tokens {
-            Some(StopToken::Array(stop_tokens.clone()))
-        } else {
-            None
-        },
+        stop: data
+            .stop_tokens
+            .as_ref()
+            .map(|stop_tokens| StopToken::Array(stop_tokens.clone())),
         max_tokens: data.max_tokens,
         logit_bias: None,
         user: None,
