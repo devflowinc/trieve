@@ -276,8 +276,7 @@ impl RetrievePointQuery {
             dataset_id,
             pool,
         )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to assemble qdrant filter".to_string()))?;
+        .await?;
 
         if let Some(group_id) = group_id {
             filter
