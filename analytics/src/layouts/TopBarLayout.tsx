@@ -12,7 +12,7 @@ import {
 import { OrgContext } from "../contexts/OrgDatasetContext";
 import { createQuery } from "@tanstack/solid-query";
 import { apiHost } from "../utils/apiHost";
-import { redirect } from "@solidjs/router";
+import { redirect, useSearchParams } from "@solidjs/router";
 import { DatasetAndUsage } from "shared/types";
 import { Navbar } from "../components/Navbar";
 import { NoDatasetsErrorPage } from "../pages/errors/NoDatasetsErrorPage";
@@ -24,6 +24,7 @@ export const DatasetContext =
   createContext<DatasetContextType>() as Context<DatasetContextType>;
 
 export const TopBarLayout: ParentComponent = (props) => {
+  const [params, setParams] = useSearchParams();
   const org = useContext(OrgContext);
 
   const datasetsQuery = createQuery(() => ({
@@ -60,21 +61,36 @@ export const TopBarLayout: ParentComponent = (props) => {
     on(
       () => datasetsQuery.data,
       () => {
-        setSelectedDataset(datasetsQuery.data?.at(0) || null);
+        if (params.dataset) {
+          setSelectedDataset(
+            datasetsQuery.data?.find((d) => d.dataset.id === params.dataset) ||
+              datasetsQuery.data?.at(0) ||
+              null,
+          );
+        } else {
+          setSelectedDataset(datasetsQuery.data?.at(0) || null);
+        }
       },
     ),
   );
+
+  const proxySetSelectedDataset = (dataset: DatasetAndUsage) => {
+    setSelectedDataset(dataset);
+    setParams({ dataset: dataset.dataset.id });
+  };
 
   return (
     <div class="min-h-screen flex flex-col bg-neutral-100">
       <Navbar
         datasetOptions={datasetsQuery.data || []}
         selectedDataset={selectedDataset()}
-        setSelectedDataset={setSelectedDataset}
+        setSelectedDataset={proxySetSelectedDataset}
       />
       <Show
         when={
-          datasetsQuery.status === "success" && datasetsQuery.data?.length === 0
+          datasetsQuery.status === "success" &&
+          datasetsQuery.data?.length === 0 &&
+          datasetsQuery.isFetchedAfterMount
         }
       >
         <NoDatasetsErrorPage orgId={org.selectedOrg().id} />
