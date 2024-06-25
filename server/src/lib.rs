@@ -68,12 +68,13 @@ async fn run_clickhouse_migrations(client: &clickhouse::Client) {
             query String,
             request_params String,
             latency Float32,
+            top_score Float32,
             results Array(String),
             query_vector Array(Float32),
             dataset_id UUID,
             created_at DateTime
         ) ENGINE = MergeTree()
-        ORDER BY (dataset_id, created_at, id)
+        ORDER BY (dataset_id, created_at, top_score, latency, id)
         PARTITION BY
             (toYYYYMM(created_at),
             dataset_id)
@@ -92,6 +93,8 @@ async fn run_clickhouse_migrations(client: &clickhouse::Client) {
             id UUID,
             dataset_id UUID,
             topic String,
+            density Int32,
+            avg_score Float32,
             created_at DateTime
         ) ENGINE = MergeTree()
         ORDER BY (dataset_id, id)
@@ -102,7 +105,25 @@ async fn run_clickhouse_migrations(client: &clickhouse::Client) {
         .execute()
         .await
         .unwrap();
+
+    client
+        .query(
+            "
+        CREATE TABLE IF NOT EXISTS search_cluster_memberships
+        (
+            id UUID,
+            search_id UUID,
+            cluster_id UUID,
+            distance_to_centroid Float32,
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
 }
+
 pub fn establish_connection(
     config: &str,
 ) -> BoxFuture<diesel::ConnectionResult<diesel_async::AsyncPgConnection>> {
@@ -262,6 +283,15 @@ impl Modify for SecurityAddon {
         handlers::stripe_handler::cancel_subscription,
         handlers::stripe_handler::update_subscription_plan,
         handlers::stripe_handler::get_all_plans,
+        handlers::analytics_handler::get_overall_topics,
+        handlers::analytics_handler::get_queries_for_topic,
+        handlers::analytics_handler::get_query,
+        handlers::analytics_handler::get_search_metrics,
+        handlers::analytics_handler::get_head_queries,
+        handlers::analytics_handler::get_low_confidence_queries,
+        handlers::analytics_handler::get_all_queries,
+        handlers::analytics_handler::get_rps_graph,
+        handlers::analytics_handler::get_latency_graph,
     ),
     components(
         schemas(
@@ -327,7 +357,20 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::CreateDatasetRequest,
             handlers::dataset_handler::UpdateDatasetRequest,
             handlers::dataset_handler::GetDatasetsPagination,
+            handlers::analytics_handler::GetDatasetMetricsRequest,
+            handlers::analytics_handler::GetHeadQueriesRequest,
+            handlers::analytics_handler::GetAllQueriesRequest,
+            handlers::analytics_handler::GetRPSGraphRequest,
+            data::models::SearchQueryEvent,
+            data::models::SearchClusterTopics,
+            data::models::SearchLatencyGraph,
+            data::models::AnalyticsFilter,
+            data::models::SearchMethod,
+            data::models::SearchType,
             data::models::ApiKeyRespBody,
+            data::models::SearchRPSGraph,
+            data::models::DatasetAnalytics,
+            data::models::HeadQueries,
             data::models::SlimUser,
             data::models::UserOrganization,
             data::models::Topic,
@@ -958,6 +1001,47 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("/plans")
                                         .route(web::get().to(handlers::stripe_handler::get_all_plans)),
                                 ),
+                        )
+                        .service(
+                            web::scope("/analytics")
+                            .service(
+                                web::resource("/{dataset_id}/topics")
+                                .route(web::get().to(handlers::analytics_handler::get_overall_topics)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/metrics")
+                                .route(web::post().to(handlers::analytics_handler::get_search_metrics)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/queries")
+                                .route(web::post().to(handlers::analytics_handler::get_all_queries)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/rps")
+                                .route(web::post().to(handlers::analytics_handler::get_rps_graph)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/latency")
+                                .route(web::post().to(handlers::analytics_handler::get_latency_graph)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/query/head")
+                                .route(web::post().to(handlers::analytics_handler::get_head_queries)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/query/low_confidence")
+                                .route(web::post().to(handlers::analytics_handler::get_low_confidence_queries)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/query/{search_id}")
+                                .route(web::get().to(handlers::analytics_handler::get_query)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/{cluster_id}/{page}")
+                                    .route(web::get().to(handlers::analytics_handler::get_queries_for_topic)),
+                            )
+
+
                         ),
                 )
         })

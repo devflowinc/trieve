@@ -1,3 +1,4 @@
+pub mod analytics_handler;
 pub mod auth_handler;
 pub mod chunk_handler;
 pub mod dataset_handler;

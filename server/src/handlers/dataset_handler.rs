@@ -229,6 +229,7 @@ pub async fn delete_dataset(
             "Dataset header does not match provided dataset ID".to_string(),
         ));
     }
+
     if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
         return Err(ServiceError::Forbidden);
     }
