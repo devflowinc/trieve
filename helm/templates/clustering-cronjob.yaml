@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: clustering-cronjob
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: clustering-task
+              image: trieve/clickhouse-clustering:latest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: ANTHROPIC_API_KEY
+                  value: { { .Values.config.clustering.anthropicAPIKey } }
+                - name: CLICKHOUSE_DSN
+                  value: { { .Values.config.clustering.clickhouseDSN } }
+
+          restartPolicy: OnFailure
