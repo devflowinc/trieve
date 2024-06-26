@@ -5,7 +5,7 @@ import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getLatency } from "../../api/latency";
 import { Chart } from "chart.js";
-import { lightFormat } from "date-fns";
+import { format } from "date-fns";
 
 function parseCustomDateString(dateString: string) {
   const [datePart, timePart] = dateString.split(" ");
@@ -17,8 +17,6 @@ function parseCustomDateString(dateString: string) {
 
   // Construct an ISO 8601 compliant string
   const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}`;
-
-  console.log(isoString);
 
   return new Date(isoString);
 }
@@ -61,6 +59,9 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
           ],
         },
         options: {
+          plugins: {
+            legend: { display: false },
+          },
           scales: {
             y: {
               beginAtZero: true,
@@ -75,10 +76,7 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
 
     // Update the chart data
     chartInstance.data.labels = data.map((point) =>
-      lightFormat(
-        new Date(parseCustomDateString(point.time_stamp)),
-        "HH:mm:ss",
-      ),
+      format(new Date(parseCustomDateString(point.time_stamp)), "HH:mm:ss"),
     );
     chartInstance.data.datasets[0].data = data.map(
       (point) => point.average_latency,
@@ -94,7 +92,7 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
   });
 
   return (
-    <ChartCard width={3}>
+    <ChartCard title="Search Latency" width={3}>
       <canvas ref={setCanvasElement} class="h-full w-full" />
     </ChartCard>
   );
