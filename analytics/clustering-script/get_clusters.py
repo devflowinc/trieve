@@ -70,8 +70,6 @@ def get_topics(kmeans, vectors, data, n_points=5):
             if row[4] == i:
                 row.append(cosine(centroid, row[3]))
 
-        print([data[idx][1] for idx in closest_indices])
-
         # Create a request to the ChatGPT model
         response = anthropic_client.messages.create(
             model="claude-3-haiku-20240307",
@@ -104,7 +102,6 @@ def append_cluster_membership(data, kmeans):
 def insert_centroids(
     client: clickhouse_connect.driver.client.Client, data, dataset_id, topics
 ):
-    print(data[0][5])
     cluster_ids_to_delete_query = """
         SELECT id
         FROM trieve.cluster_topics
@@ -115,7 +112,6 @@ def insert_centroids(
     cluster_ids_to_delete = [
         str(row[0]) for row in client.query(cluster_ids_to_delete_query).result_rows
     ]
-    print(cluster_ids_to_delete)
 
     delete_previous_query = """
         DELETE FROM trieve.cluster_topics

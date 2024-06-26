@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{ChunkMetadataTypes, SearchQueryEvent, SearchQueryEventClickhouse},
+    data::models::{ChunkMetadataTypes, SearchQueryEventClickhouse},
     errors::ServiceError,
     handlers::{
         chunk_handler::SearchChunkQueryResponseBody, group_handler::SearchWithinGroupResults,
