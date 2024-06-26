@@ -1,6 +1,5 @@
-from datetime import date
 import datetime
-import enum
+import os
 import uuid
 import anthropic
 import clickhouse_connect
@@ -9,9 +8,7 @@ import clickhouse_connect.driver.client
 import numpy as np
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import cosine
-import dotenv
 
-dotenv.load_dotenv()
 anthropic_client = anthropic.Anthropic()
 
 
@@ -172,11 +169,7 @@ def insert_centroids(
 if __name__ == "__main__":
     # Connect to ClickHouse
     client = clickhouse_connect.get_client(
-        host="localhost",
-        port=8123,
-        username="clickhouse",
-        password="password",
-        database="trieve",
+        dsn=os.getenv("CLICKHOUSE_DSN"),
     )
 
     dataset_ids = get_datasets(client)
