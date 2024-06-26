@@ -742,11 +742,10 @@ pub async fn cross_encoder(
             results.index_mut(pair.index).score = pair.score as f64;
         });
     } else {
-    let vec_futures: Vec<_> = request_docs
+        let vec_futures: Vec<_> = request_docs
             .chunks(20)
             .enumerate()
             .map(|(i, docs_chunk)| {
-
                 let parameters = CrossEncoderData {
                     query: query.clone(),
                     texts: docs_chunk.iter().map(|s| s.to_string()).collect(),
@@ -759,28 +758,32 @@ pub async fn cross_encoder(
 
                 let vectors_resp = async move {
                     let embeddings_resp = cur_client
-                    .post(&url)
-                    .header(
-                        "Authorization",
-                        &format!(
-                            "Bearer {}",
-                            get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
-                        ),
-                    )
-                    .header("api-key", &embedding_api_key.to_string())
-                    .header("Content-Type", "application/json")
-                    .json(&parameters)
-                    .send()
-                    .await
-                    .map_err(|_| {
-                        ServiceError::BadRequest("Failed to send message to embedding server".to_string())
-                    })?
-                    .text()
-                    .await
-                    .map_err(|_| {
-                        ServiceError::BadRequest("Failed to get text from embeddings".to_string())
-                    })?;
-        
+                        .post(&url)
+                        .header(
+                            "Authorization",
+                            &format!(
+                                "Bearer {}",
+                                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                            ),
+                        )
+                        .header("api-key", &embedding_api_key.to_string())
+                        .header("Content-Type", "application/json")
+                        .json(&parameters)
+                        .send()
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Failed to send message to embedding server".to_string(),
+                            )
+                        })?
+                        .text()
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Failed to get text from embeddings".to_string(),
+                            )
+                        })?;
+
                     let embeddings: Vec<ScorePair> = serde_json::from_str(&embeddings_resp)
                         .map_err(|e| {
                             log::error!("Failed to format response from embeddings server {:?}", e);
@@ -788,8 +791,9 @@ pub async fn cross_encoder(
                                 "Failed to format response from embeddings server".to_owned(),
                             )
                         })?;
-                    
-                    let vectors: Vec<Vec<f32>> = embeddings.into_iter().map(|x| vec![x.score]).collect();
+
+                    let vectors: Vec<Vec<f32>> =
+                        embeddings.into_iter().map(|x| vec![x.score]).collect();
 
                     Ok((i, vectors))
                 };
@@ -802,7 +806,7 @@ pub async fn cross_encoder(
             .await
             .into_iter()
             .collect::<Result<Vec<(usize, Vec<Vec<f32>>)>, ServiceError>>()?;
-    
+
         let mut results = vec![];
 
         for index in 0..all_chunk_vectors.len() {
