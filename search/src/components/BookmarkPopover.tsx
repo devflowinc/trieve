@@ -57,14 +57,13 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     const groupsToAdd: ChunkGroupDTO[] = [];
     props.bookmarks.forEach((b) => {
       b.slim_groups.forEach((c) => {
-        c.of_current_dataset &&
-          groupsToAdd.push({
-            id: c.id,
-            name: c.name,
-            description: "",
-            created_at: "",
-            updated_at: "",
-          });
+        groupsToAdd.push({
+          id: c.id,
+          name: c.name,
+          description: "",
+          created_at: "",
+          updated_at: "",
+        });
       });
     });
 
@@ -147,17 +146,15 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
 
             chunkBookmarks.forEach((chunkBookmark) => {
               chunkBookmark.slim_groups.forEach((group) => {
-                if (group.of_current_dataset) {
-                  const chunkGroup: ChunkGroupDTO = {
-                    id: group.id,
-                    name: group.name,
-                    description: "",
-                    created_at: "",
-                    updated_at: "",
-                  };
+                const chunkGroup: ChunkGroupDTO = {
+                  id: group.id,
+                  name: group.name,
+                  description: "",
+                  created_at: "",
+                  updated_at: "",
+                };
 
-                  groupsToAdd.push(chunkGroup);
-                }
+                groupsToAdd.push(chunkGroup);
               });
             });
 
@@ -210,17 +207,15 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
 
           chunkBookmarks.forEach((chunkBookmark) => {
             chunkBookmark.slim_groups.forEach((group) => {
-              if (group.of_current_dataset) {
-                const chunkGroup: ChunkGroupDTO = {
-                  id: group.id,
-                  name: group.name,
-                  description: "",
-                  created_at: "",
-                  updated_at: "",
-                };
+              const chunkGroup: ChunkGroupDTO = {
+                id: group.id,
+                name: group.name,
+                description: "",
+                created_at: "",
+                updated_at: "",
+              };
 
-                groupsToAdd.push(chunkGroup);
-              }
+              groupsToAdd.push(chunkGroup);
             });
           });
 

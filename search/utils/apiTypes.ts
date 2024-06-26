@@ -78,15 +78,20 @@ export interface ChunkGroupDTO {
   description: string;
 }
 
-export interface SlimGroup {
+export interface ChunkGroup {
   id: string;
   name: string;
-  of_current_dataset: boolean;
+  description: string;
+  dataset_id: string;
+  created_at: string;
+  updated_at: string;
+  tracking_id: string;
+  tag_set: string[];
 }
 
 export interface ChunkBookmarksDTO {
   chunk_uuid: string;
-  slim_groups: SlimGroup[];
+  slim_groups: ChunkGroup[];
 }
 
 export interface ChunksWithTotalPagesDTO {

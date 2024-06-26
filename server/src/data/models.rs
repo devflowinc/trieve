@@ -1135,20 +1135,6 @@ impl ChunkGroup {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
-#[schema(example = json!({
-    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "name": "Trieve",
-    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "of_current_dataset": true,
-}))]
-pub struct SlimGroup {
-    pub id: uuid::Uuid,
-    pub name: String,
-    pub dataset_id: uuid::Uuid,
-    pub of_current_dataset: bool,
-}
-
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, ToSchema)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",

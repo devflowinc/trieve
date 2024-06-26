@@ -133,7 +133,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.10.7",
+        version = "0.10.8",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -288,7 +288,6 @@ impl Modify for SecurityAddon {
             data::models::ChunkMetadata,
             data::models::ChatMessageProxy,
             data::models::Event,
-            data::models::SlimGroup,
             data::models::File,
             data::models::ChunkGroup,
             data::models::ChunkGroupAndFile,
@@ -473,6 +472,7 @@ pub fn main() -> std::io::Result<()> {
 
         HttpServer::new(move || {
             App::new()
+                .wrap(Cors::permissive())
                 .app_data(PayloadConfig::new(134200000))
                 .app_data(json_cfg.clone())
                 .app_data(
@@ -490,7 +490,6 @@ pub fn main() -> std::io::Result<()> {
                         .visit_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
                         .build(),
                 )
-                .wrap(Cors::permissive())
                 .wrap(
                     SessionMiddleware::builder(
                         redis_store.clone(),
