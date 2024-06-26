@@ -28,7 +28,7 @@ use super::auth_handler::AdminOnly;
     ),
      params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get query clusters for."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get query clusters for."),
 
     ),
     security(
@@ -88,9 +88,9 @@ pub struct GetTopicQueries {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get query clusters for."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get query clusters for."),
         ("page" = i32, Query, description = "The page number to get the queries for the topic"),
-        ("cluster_id" = uuid, Path, description = "The id of the cluster you want to get queries for.")
+        ("cluster_id" = uuid::Uuid, Path, description = "The id of the cluster you want to get queries for.")
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -151,8 +151,8 @@ pub struct GetQueryRequest {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get the search for."),
-        ("search_id" = uuid, Path, description = "The id of the search.")
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get the search for."),
+        ("search_id" = uuid::Uuid, Path, description = "The id of the search.")
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -209,7 +209,7 @@ pub struct GetDatasetMetricsRequest {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get search metrics for."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get search metrics for."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -279,7 +279,7 @@ pub struct GetHeadQueriesRequest {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get head queries for."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get head queries for."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -350,7 +350,7 @@ pub async fn get_head_queries(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get low confidence queries for."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get low confidence queries for."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -432,7 +432,7 @@ pub struct GetAllQueriesRequest {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get queries for."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get queries for."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -514,7 +514,7 @@ pub struct GetRPSGraphRequest {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get RPS graph for."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get RPS graph for."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -609,7 +609,7 @@ pub async fn get_rps_graph(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to get latency graph for."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get latency graph for."),
     ),
     security(
         ("ApiKey" = ["admin"]),
