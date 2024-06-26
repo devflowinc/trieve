@@ -7,8 +7,11 @@ import { Home } from "./pages/Home";
 import { UserAuthContextProvider } from "./contexts/UserAuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { TrendExplorer } from "./pages/TrendExplorer";
+import { Chart, registerables } from "chart.js";
 
 const queryClient = new QueryClient();
+
+Chart.register(...registerables);
 
 const routes: RouteDefinition[] = [
   {

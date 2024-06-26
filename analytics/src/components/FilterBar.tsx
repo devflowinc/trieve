@@ -55,6 +55,21 @@ export const FilterBar = (props: FilterBarProps) => {
           </For>
         </select>
       </div>
+
+      <select
+        value={props.filters.granularity}
+        onChange={(e) =>
+          props.setFilters(
+            "granularity",
+            e.currentTarget.value as AnalyticsParams["granularity"],
+          )
+        }
+      >
+        <option value="second">Second</option>
+        <option value="minute">Minute</option>
+        <option value="hour">Hour</option>
+        <option value="day">Day</option>
+      </select>
     </div>
   );
 };
