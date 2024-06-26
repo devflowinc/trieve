@@ -1,0 +1,30 @@
+apiVersion: clickhouse.altinity.com/v1
+kind: ClickHouseInstallation
+metadata:
+  name: trieve-clickhouse
+spec:
+  configuration:
+    users:
+      # printf 'test_password' | sha256sum
+      default/password: password
+      # to allow access outside from kubernetes
+      default/networks/ip:
+        - 0.0.0.0/0
+    clusters:
+      - name: cluster1
+        layout:
+          shardsCount: 1
+          replicasCount: 1
+  templates:
+    podTemplates:
+      - name: clickhouse-pod-template
+        spec:
+          containers:
+            - name: clickhouse
+              image: trieve/clickhouse:latest
+              env:
+                - name: EMBEDDING_SERVER_URL
+                  value: http://embedding-m3.default.svc.cluster.local # Cant use helm templating
+  defaults:
+    templates:
+      podTemplate: clickhouse-pod-template
