@@ -97,7 +97,7 @@ export const TopBarLayout: ParentComponent = (props) => {
         <DatasetContext.Provider
           value={selectedDataset as Accessor<DatasetAndUsage>}
         >
-          <div class="p-4">{props.children}</div>
+          {props.children}
         </DatasetContext.Provider>
       </Show>
     </div>

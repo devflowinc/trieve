@@ -15,7 +15,8 @@ export const TrendExplorer = () => {
   }));
 
   return (
-    <div>
+    <div class="grid grow grid-cols-[300px_1fr]">
+      <div class="border-r border-r-neutral-400 bg-neutral-200">Sidebar</div>
       <Show when={trendsQuery?.data}>
         {(trends) => <TrendExplorerCanvas topics={trends()} />}
       </Show>

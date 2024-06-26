@@ -1,4 +1,4 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, on, onMount } from "solid-js";
 import {
   Composite,
   Engine,
@@ -9,6 +9,7 @@ import {
   Events,
 } from "matter-js";
 import { SearchClusterTopics } from "shared/types";
+import { createStore, unwrap } from "solid-js/store";
 
 interface TrendExplorerCanvas {
   topics: SearchClusterTopics[];
@@ -17,20 +18,41 @@ interface TrendExplorerCanvas {
 // Get a shade of gray
 const getColorFromDensity = (density: number) => {
   const color = Math.floor(255 - 70 * density);
-  console.log(color);
   return `rgb(${color}, ${color}, ${color})`;
 };
 
 export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
 
+  const [containerSize, setContainerSize] = createStore({
+    width: 700,
+    height: 800,
+  });
+
+  // Subscribe with resize observer
+  onMount(() => {
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      setContainerSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+    if (canvasElement() !== undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      observer.observe(canvasElement()!);
+    }
+    return () => observer.disconnect();
+  });
+
+  const engine = Engine.create({
+    gravity: {
+      scale: 0,
+    },
+  });
+
   createEffect(() => {
     console.log("updating");
-    const engine = Engine.create({
-      gravity: {
-        scale: 0,
-      },
-    });
     const render = Render.create({
       canvas: canvasElement(),
       engine: engine,
@@ -44,7 +66,11 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
     });
 
     const circles = props.topics.map((topic) => {
-      const circle = Bodies.circle(300, 300, 1 * topic.density);
+      const circle = Bodies.circle(
+        containerSize.width / 2,
+        containerSize.height / 2,
+        1 * topic.density,
+      );
       // @ts-expect-error just debugging
       circle.id = topic.topic;
       // Make the circle gray
@@ -52,7 +78,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
       // Add a border
       circle.render.strokeStyle = "#333";
       circle.render.lineWidth = 1;
-
       return circle;
     });
 
@@ -62,14 +87,14 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
 
     const runner = Runner.create();
 
-    Events.on(runner, "beforeTick", (r) => {
+    Events.on(runner, "beforeTick", () => {
       // Pull the circles towards the center
       circles.forEach((circle) => {
         const x = circle.position.x;
         const y = circle.position.y;
-        let dx = 300 - x;
+        let dx = unwrap(containerSize).width / 2 - x;
         dx += Math.random() * 8 - 1;
-        const dy = 300 - y;
+        const dy = unwrap(containerSize).height / 2 - y;
         const angle = Math.atan2(dy, dx);
         const force = 0.001 * circle.density;
         const fx = Math.cos(angle) * force;
@@ -89,9 +114,13 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
   });
 
   return (
-    <div>
-      <div>Trend explorer canvas</div>
-      <canvas ref={setCanvasElement} width={700} height={800} />
-    </div>
+    <canvas
+      style={{
+        border: "1px solid red",
+        width: "100%",
+        height: "100%",
+      }}
+      ref={setCanvasElement}
+    />
   );
 };
