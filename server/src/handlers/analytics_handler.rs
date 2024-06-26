@@ -89,7 +89,7 @@ pub struct GetTopicQueries {
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get query clusters for."),
-        ("page" = i32, Query, description = "The page number to get the queries for the topic"),
+        ("page" = i32, Path, description = "The page number to get the queries for the topic"),
         ("cluster_id" = uuid::Uuid, Path, description = "The id of the cluster you want to get queries for.")
     ),
     security(
