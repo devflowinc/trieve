@@ -426,3 +426,8 @@ export interface LatencyDatapoint {
   average_latency: number;
   time_stamp: string;
 }
+
+export interface RpsDatapoint {
+  average_rps: number;
+  time_stamp: string;
+}
