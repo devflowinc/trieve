@@ -1,13 +1,10 @@
+use crate::{data::models::ChunkGroupBookmark, errors::ServiceError};
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTable, Dataset, FileGroup, Pool,
         ServerDatasetConfiguration, UnifiedId,
     },
     operators::chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
-};
-use crate::{
-    data::models::{ChunkGroupBookmark, SlimGroup},
-    errors::ServiceError,
 };
 use actix_web::web;
 use diesel::prelude::*;
@@ -485,7 +482,7 @@ pub async fn get_bookmarks_for_group_query(
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct BookmarkGroupResult {
     pub chunk_uuid: uuid::Uuid,
-    pub slim_groups: Vec<SlimGroup>,
+    pub slim_groups: Vec<ChunkGroup>,
 }
 
 #[tracing::instrument(skip(pool))]
@@ -499,7 +496,7 @@ pub async fn get_groups_for_bookmark_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let groups: Vec<(SlimGroup, uuid::Uuid)> = chunk_group_columns::chunk_group
+    let groups: Vec<(ChunkGroup, uuid::Uuid)> = chunk_group_columns::chunk_group
         .left_join(
             chunk_group_bookmarks_columns::chunk_group_bookmarks
                 .on(chunk_group_columns::id.eq(chunk_group_bookmarks_columns::group_id)),
@@ -507,34 +504,16 @@ pub async fn get_groups_for_bookmark_query(
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
         .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids))
         .select((
-            chunk_group_columns::id,
-            chunk_group_columns::name,
-            chunk_group_columns::dataset_id,
+            (ChunkGroup::as_select()),
             chunk_group_bookmarks_columns::chunk_metadata_id.nullable(),
         ))
-        .load::<(uuid::Uuid, String, uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
+        .load::<(ChunkGroup, Option<uuid::Uuid>)>(&mut conn)
         .await
-        .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?
+        .map_err(|_err| ServiceError::BadRequest("Error getting groups for chunks".to_string()))?
         .into_iter()
-        .map(|(id, name, dataset_id, chunk_id)| match chunk_id {
-            Some(chunk_id) => (
-                SlimGroup {
-                    id,
-                    name,
-                    dataset_id,
-                    of_current_dataset: dataset_id == dataset_uuid,
-                },
-                chunk_id,
-            ),
-            None => (
-                SlimGroup {
-                    id,
-                    name,
-                    dataset_id,
-                    of_current_dataset: dataset_id == dataset_uuid,
-                },
-                uuid::Uuid::default(),
-            ),
+        .map(|(chunk_group, chunk_id)| match chunk_id {
+            Some(chunk_id) => (chunk_group, chunk_id),
+            None => (chunk_group, uuid::Uuid::default()),
         })
         .collect();
 
