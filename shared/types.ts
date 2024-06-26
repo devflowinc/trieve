@@ -401,3 +401,28 @@ export interface SearchClusterTopics {
   avg_score: number;
   created_at: string;
 }
+
+export interface AnalyticsFilter {
+  date_range: {
+    gt?: Date;
+    lt?: Date;
+    gte?: Date;
+    lte?: Date;
+  };
+  search_method: "fulltext" | "hybrid" | "semantic";
+  search_type:
+    | "search"
+    | "autocomplete"
+    | "search_over_groups"
+    | "search_within_groups";
+}
+
+export interface AnalyticsParams {
+  filter: AnalyticsFilter;
+  granularity: "day" | "week" | "hour" | "month" | "minute" | "second";
+}
+
+export interface LatencyDatapoint {
+  average_latency: number;
+  time_stamp: string;
+}

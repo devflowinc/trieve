@@ -1,4 +1,4 @@
-import { createEffect, createSignal, on, onMount } from "solid-js";
+import { createEffect, createSignal, onMount } from "solid-js";
 import {
   Composite,
   Engine,
