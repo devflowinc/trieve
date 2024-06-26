@@ -707,8 +707,6 @@ pub async fn cross_encoder(
 
     let mut results = results.clone();
 
-    let reqwest_client = reqwest::Client::new();
-
     if request_docs.len() <= 20 {
         let resp = ureq::post(&embedding_server_call)
             .set("Content-Type", "application/json")
@@ -752,9 +750,9 @@ pub async fn cross_encoder(
                     truncate: true,
                 };
 
-                let cur_client = reqwest_client.clone();
+                let cur_client = reqwest::Client::new();
                 let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API should be set");
-                let url = embedding_server_call.clone();
+                let url = embedding_base_url.clone();
 
                 let vectors_resp = async move {
                     let embeddings_resp = cur_client
