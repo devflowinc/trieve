@@ -742,53 +742,45 @@ pub async fn cross_encoder(
             results.index_mut(pair.index).score = pair.score as f64;
         });
     } else {
-        let vec_futures: Vec<_> = request_docs
+    let vec_futures: Vec<_> = request_docs
             .chunks(20)
             .enumerate()
             .map(|(i, docs_chunk)| {
-                let clipped_docs = docs_chunk
-                    .iter()
-                    .map(|doc| {
-                        if doc.len() > 7000 {
-                            doc.chars().take(20000).collect()
-                        } else {
-                            doc.clone()
-                        }
-                    })
-                    .collect::<Vec<String>>();
 
                 let parameters = CrossEncoderData {
                     query: query.clone(),
-                    texts: clipped_docs,
+                    texts: docs_chunk.iter().map(|s| s.to_string()).collect(),
                     truncate: true,
                 };
 
                 let cur_client = reqwest_client.clone();
-                let url = embedding_server_call.clone();
                 let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API should be set");
+                let url = embedding_server_call.clone();
 
-                async move {
+                let vectors_resp = async move {
                     let embeddings_resp = cur_client
-                        .post(&url)
-                        .header("Authorization", &format!("Bearer {}", &embedding_api_key))
-                        .header("api-key", &embedding_api_key.to_string())
-                        .header("Content-Type", "application/json")
-                        .json(&parameters)
-                        .send()
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest(
-                                "Failed to send message to embedding server".to_string(),
-                            )
-                        })?
-                        .text()
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest(
-                                "Failed to get text from embeddings".to_string(),
-                            )
-                        })?;
-
+                    .post(&url)
+                    .header(
+                        "Authorization",
+                        &format!(
+                            "Bearer {}",
+                            get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                        ),
+                    )
+                    .header("api-key", &embedding_api_key.to_string())
+                    .header("Content-Type", "application/json")
+                    .json(&parameters)
+                    .send()
+                    .await
+                    .map_err(|_| {
+                        ServiceError::BadRequest("Failed to send message to embedding server".to_string())
+                    })?
+                    .text()
+                    .await
+                    .map_err(|_| {
+                        ServiceError::BadRequest("Failed to get text from embeddings".to_string())
+                    })?;
+        
                     let embeddings: Vec<ScorePair> = serde_json::from_str(&embeddings_resp)
                         .map_err(|e| {
                             log::error!("Failed to format response from embeddings server {:?}", e);
@@ -796,21 +788,30 @@ pub async fn cross_encoder(
                                 "Failed to format response from embeddings server".to_owned(),
                             )
                         })?;
+                    
+                    let vectors: Vec<Vec<f32>> = embeddings.into_iter().map(|x| vec![x.score]).collect();
 
-                    Ok((i, embeddings))
-                }
+                    Ok((i, vectors))
+                };
+
+                vectors_resp
             })
             .collect();
 
-        let all_chunk_scores: Vec<(usize, Vec<ScorePair>)> = futures::future::join_all(vec_futures)
+        let all_chunk_vectors: Vec<(usize, Vec<Vec<f32>>)> = futures::future::join_all(vec_futures)
             .await
             .into_iter()
-            .collect::<Result<Vec<(usize, Vec<ScorePair>)>, ServiceError>>()?;
+            .collect::<Result<Vec<(usize, Vec<Vec<f32>>)>, ServiceError>>()?;
+    
+        let mut results = vec![];
 
-        for (_index, chunk_scores) in all_chunk_scores {
-            for pair in chunk_scores {
-                results.index_mut(pair.index).score = pair.score as f64;
-            }
+        for index in 0..all_chunk_vectors.len() {
+            let (_, vectors_i) = all_chunk_vectors.iter().find(|(i, _)| *i == index).ok_or(
+                ServiceError::InternalServerError(
+                    "Failed to get index i (this should never happen)".to_string(),
+                ),
+            )?;
+            results.extend(vectors_i.clone());
         }
     }
 
@@ -819,5 +820,6 @@ pub async fn cross_encoder(
     results.truncate(page_size.try_into().unwrap());
 
     transaction.finish();
+
     Ok(results)
 }
