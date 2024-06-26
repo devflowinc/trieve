@@ -392,3 +392,12 @@ export const isInvitation = (data: unknown): data is Invitation => {
 
   return true;
 };
+
+export interface SearchClusterTopics {
+  id: string;
+  dataset_id: string;
+  topic: string;
+  density: number;
+  avg_score: number;
+  created_at: string;
+}

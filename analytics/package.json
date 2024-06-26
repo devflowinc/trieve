@@ -14,20 +14,17 @@
   "dependencies": {
     "@solidjs/router": "^0.13.6",
     "@tanstack/solid-query": "^5.48.0",
+    "@types/matter-js": "^0.19.6",
+    "matter-js": "^0.20.0",
     "shared": "*",
     "solid-js": "^1.8.17",
     "tailwind-gradient-mask-image": "^1.2.0",
     "tailwind-scrollbar": "^3.1.0"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.4",
-    "typescript": "^5.2.2",
-    "vite": "^5.3.1",
-    "vite-plugin-solid": "^2.10.2",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "7.14.1",
+    "autoprefixer": "^10.4.19",
     "eslint": "^8.13.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-config-semistandard": "^17.0.0",
@@ -37,6 +34,11 @@
     "eslint-plugin-prettier": "^5.0.1",
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-solid": "0.14.1",
-    "prettier-plugin-tailwindcss": "^0.5.11"
+    "postcss": "^8.4.38",
+    "prettier-plugin-tailwindcss": "^0.5.11",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.2.2",
+    "vite": "^5.3.1",
+    "vite-plugin-solid": "^2.10.2"
   }
 }
