@@ -149,7 +149,11 @@ const ResultsPage = (props: ResultsPageProps) => {
     on([() => props.search.debounced.version, dataset, page], () => {
       const dataset = $dataset?.();
       if (!dataset) return;
-      if (!props.search.debounced.query) {
+      if (
+        !props.search.debounced.query ||
+        props.search.debounced.query === ""
+      ) {
+        setLoading(false);
         return;
       }
 
