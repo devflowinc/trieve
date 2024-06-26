@@ -64,7 +64,17 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
           },
           scales: {
             y: {
+              title: {
+                text: "Latency (ms)",
+                display: true,
+              },
               beginAtZero: true,
+            },
+            x: {
+              title: {
+                text: "Timestamp",
+                display: true,
+              },
             },
           },
           animation: {
