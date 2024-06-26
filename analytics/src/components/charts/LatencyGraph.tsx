@@ -66,6 +66,9 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
               beginAtZero: true,
             },
           },
+          animation: {
+            duration: 0,
+          },
         },
       });
     }
