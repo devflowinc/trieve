@@ -7,12 +7,16 @@ import {
   Runner,
   Body,
   Events,
+  Mouse,
+  MouseConstraint,
 } from "matter-js";
 import { SearchClusterTopics } from "shared/types";
-import { createStore, unwrap } from "solid-js/store";
+import { createStore } from "solid-js/store";
+import Matter from "matter-js";
 
-interface TrendExplorerCanvas {
+interface TrendExplorerCanvasProps {
   topics: SearchClusterTopics[];
+  onSelectTopic: (topicId: string) => void;
 }
 
 // Get a shade of gray
@@ -25,7 +29,7 @@ const centeredRandom = (factor: number) => {
   return Math.random() * factor - factor / 2;
 };
 
-export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
+export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
   const [render, setRender] = createSignal<Render | null>(null);
 
@@ -95,13 +99,15 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
         1 * topic.density,
       );
       // @ts-expect-error just debugging
-      circle.id = topic.topic;
+      circle.id = topic.id;
       circle.render.fillStyle = getColorFromDensity(topic.avg_score);
       circle.render.strokeStyle = "#333";
       circle.render.lineWidth = 1;
       circle.timeScale = 0.2;
       circle.friction = 0.9999;
       circle.density = 0.9999;
+
+      // Add a click handler to the circle
 
       return circle;
     });
@@ -119,6 +125,35 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
         Body.applyForce(circle, { x: x, y: y }, { x: fx, y: fy });
       });
     });
+
+    const mouse = Mouse.create(render.canvas);
+    const mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: {
+        stiffness: 0.2,
+        render: {
+          visible: false,
+        },
+      },
+    });
+
+    // eslint-disable-next-line solid/reactivity
+    Events.on(mouseConstraint, "mousedown", (event) => {
+      const mousePosition = event.mouse.position;
+      const bodiesUnderMouse = Matter.Query.point(circles, mousePosition);
+
+      if (bodiesUnderMouse.length > 0) {
+        const clickedCircle = bodiesUnderMouse[0];
+        const topicId = clickedCircle.id;
+        // @ts-expect-error accessing custom property
+        props.onSelectTopic(topicId);
+      }
+    });
+
+    Composite.add(engine.world, mouseConstraint);
+
+    // Ensure the mouse captures events even when outside the canvas
+    render.mouse = mouse;
 
     // center the camera on (0, 0)
     setRender(render);
@@ -145,9 +180,9 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvas) => {
   return (
     <canvas
       style={{
-        border: "1px solid red",
         width: "100%",
         height: "100%",
+        "max-height": "80vh",
       }}
       ref={setCanvasElement}
     />

@@ -431,3 +431,15 @@ export interface RpsDatapoint {
   average_rps: number;
   time_stamp: string;
 }
+
+export interface SearchQueryEvent {
+  id: string;
+  search_type: string;
+  query: string;
+  request_params: string;
+  latency: number;
+  top_score: number;
+  results: string[];
+  dataset_id: string;
+  created_at: string;
+}
