@@ -577,7 +577,6 @@ pub fn main() -> std::io::Result<()> {
             log::info!("Analytics disabled");
             clickhouse::Client::default()
         };
-    
 
 
         HttpServer::new(move || {
