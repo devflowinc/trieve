@@ -8,20 +8,32 @@ use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[tracing::instrument(skip(pool))]
-pub async fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(), ServiceError> {
-    use crate::data::schema::events::dsl as events_columns;
+#[tracing::instrument(skip(client))]
+pub async fn create_event_query(
+    event: Event,
+    client: web::Data<clickhouse::Client>,
+) -> Result<(), ServiceError> {
+    if std::env::var("USE_ANALYTICS")
+        .unwrap_or("false".to_string())
+        .parse()
+        .unwrap_or(false) { 
+        let query = format!(
+            "INSERT INTO dataset_events (id, dataset_id, event_type, event_data, created_at) VALUES ('{}', '{}', '{}', '{}', now())",
+            event.id,
+            event.dataset_id,
+            event.event_type,
+            event.event_data    
+        );
 
-    let mut conn = pool.get().await.unwrap();
-
-    diesel::insert_into(events_columns::events)
-        .values(&event)
-        .execute(&mut conn)
-        .await
-        .map_err(|err| {
-            log::error!("Failed to create event: {:?}", err);
-            ServiceError::BadRequest("Failed to create event".to_string())
-        })?;
+        client
+            .query(&query)
+            .execute()
+            .await
+            .map_err(|err| {
+                log::error!("Failed to create event {:?}", err);
+                ServiceError::BadRequest("Failed to create event".to_string())
+            })?;
+    }
 
     Ok(())
 }
