@@ -5,7 +5,6 @@ import { subDays } from "date-fns";
 import { LatencyGraph } from "../components/charts/LatencyGraph";
 import { RpsGraph } from "../components/charts/RpsGraph";
 import { HeadQueries } from "../components/charts/HeadQueries";
-import { Suspense } from "solid-js";
 
 export const Home = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
