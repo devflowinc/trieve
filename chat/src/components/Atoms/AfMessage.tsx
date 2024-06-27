@@ -13,12 +13,6 @@ import { ChunkMetadataWithVotes } from "../../utils/apiTypes";
 import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
 import sanitizeHtml from "sanitize-html";
 import Resizable from "@corvu/resizable";
-import {
-  handleHover,
-  messageSizing,
-  setHandleHover,
-  setMessageSizing,
-} from "../../utils/messageSizing";
 
 export interface AfMessageProps {
   normalChat: boolean;
@@ -37,6 +31,8 @@ export const AfMessage = (props: AfMessageProps) => {
     ChunkMetadataWithVotes[]
   >([]);
   const [metadata, setMetadata] = createSignal<ChunkMetadataWithVotes[]>([]);
+
+  const [sizes, setSizes] = createSignal([50, 50]);
 
   // Used to syncrhonize the response height with the citations height
   // CSS is not enough
@@ -151,11 +147,8 @@ export const AfMessage = (props: AfMessageProps) => {
     <Show when={props.role !== "system"}>
       <Resizable
         orientation={screenWidth() > 768 ? "horizontal" : "vertical"}
-        onSizesChange={(sizes) => {
-          syncHeight();
-          setMessageSizing(sizes);
-        }}
-        sizes={messageSizing()}
+        sizes={sizes()}
+        onSizesChange={(sizes) => setSizes(sizes)}
         classList={{
           "self-start": props.role == "assistant",
           "self-end": props.role == "user",
@@ -252,15 +245,8 @@ export const AfMessage = (props: AfMessageProps) => {
         >
           <Resizable.Handle
             aria-label="Resize response and sources"
-            onMouseEnter={() => setHandleHover("hover")}
-            onMouseLeave={() => setHandleHover("none")}
-            onHandleDragStart={() => setHandleHover("hold")}
-            onHandleDragEnd={() => setHandleHover("none")}
             classList={{
-              "ml-2 w-2 rounded transition-colors": true,
-              "bg-transparent": handleHover() == "none",
-              "bg-neutral-300": handleHover() == "hover",
-              "bg-neutral-400": handleHover() == "hold",
+              "ml-2 hover:bg-neutral-300 w-2 rounded transition-colors": true,
             }}
           />
         </Show>
