@@ -4,12 +4,16 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Pool,
-    RedisPool, ScoreChunkDTO, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
+    RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse, ServerDatasetConfiguration,
+    SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
+use crate::operators::clickhouse_operator::{
+    get_latency_from_header, send_to_clickhouse, ClickHouseEvent,
+};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
@@ -1026,11 +1030,12 @@ pub fn parse_query(query: String) -> ParsedQuery {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn search_chunks(
     data: web::Json<SearchChunksReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -1057,8 +1062,8 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
                 &mut timer,
             )
             .await?
@@ -1068,8 +1073,8 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
                 &mut timer,
             )
             .await?
@@ -1079,8 +1084,8 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
                 &mut timer,
             )
             .await?
@@ -1092,6 +1097,31 @@ pub async fn search_chunks(
             .into())
         }
     };
+    timer.add("search_chunks");
+
+    let clickhouse_event = SearchQueryEventClickhouse {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("search"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        latency: get_latency_from_header(timer.header_value()),
+        top_score: result_chunks
+            .score_chunks
+            .first()
+            .map(|x| x.score as f32)
+            .unwrap_or(0.0),
+        results: result_chunks.into_response_payload(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    let _ = send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await;
+
+    timer.add("send_to_clickhouse");
 
     transaction.finish();
 
@@ -1239,11 +1269,12 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn autocomplete(
     data: web::Json<AutocompleteReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -1255,6 +1286,7 @@ pub async fn autocomplete(
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
+
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type.as_str() {
@@ -1270,8 +1302,8 @@ pub async fn autocomplete(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
                 &mut timer,
             )
             .await?
@@ -1281,8 +1313,8 @@ pub async fn autocomplete(
                 data.clone(),
                 parsed_query,
                 pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
                 &mut timer,
             )
             .await?
@@ -1294,6 +1326,30 @@ pub async fn autocomplete(
             .into())
         }
     };
+    timer.add("autocomplete_chunks");
+
+    let clickhouse_event = SearchQueryEventClickhouse {
+        id: uuid::Uuid::new_v4(),
+        search_type: String::from("autocomplete"),
+        query: data.query.clone(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        latency: get_latency_from_header(timer.header_value()),
+        top_score: result_chunks
+            .score_chunks
+            .first()
+            .map(|x| x.score as f32)
+            .unwrap_or(0.0),
+        results: result_chunks.into_response_payload(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    let _ = send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await;
+    timer.add("send_to_clickhouse");
 
     transaction.finish();
 
@@ -1999,11 +2055,10 @@ pub async fn generate_off_chunks(
         temperature: Some(data.temperature.unwrap_or(0.5)),
         frequency_penalty: Some(data.frequency_penalty.unwrap_or(0.7)),
         presence_penalty: Some(data.presence_penalty.unwrap_or(0.7)),
-        stop: if let Some(stop_tokens) = &data.stop_tokens {
-            Some(StopToken::Array(stop_tokens.clone()))
-        } else {
-            None
-        },
+        stop: data
+            .stop_tokens
+            .as_ref()
+            .map(|stop_tokens| StopToken::Array(stop_tokens.clone())),
         max_tokens: data.max_tokens,
         logit_bias: None,
         user: None,
@@ -2059,7 +2114,7 @@ pub fn check_completion_param_validity(
     stop_tokens: Option<Vec<String>>,
 ) -> Result<(), ServiceError> {
     if let Some(temperature) = temperature {
-        if temperature < 0.0 || temperature > 2.0 {
+        if !(0.0..=2.0).contains(&temperature) {
             return Err(ServiceError::BadRequest(
                 "Temperature must be between 0 and 2".to_string(),
             ));
@@ -2067,7 +2122,7 @@ pub fn check_completion_param_validity(
     }
 
     if let Some(frequency_penalty) = frequency_penalty {
-        if frequency_penalty < -2.0 || frequency_penalty > 2.0 {
+        if !(-2.0..=2.0).contains(&frequency_penalty) {
             return Err(ServiceError::BadRequest(
                 "Frequency penalty must be between -2.0 and 2.0".to_string(),
             ));
@@ -2075,7 +2130,7 @@ pub fn check_completion_param_validity(
     }
 
     if let Some(presence_penalty) = presence_penalty {
-        if presence_penalty < -2.0 || presence_penalty > 2.0 {
+        if !(-2.0..=2.0).contains(&presence_penalty) {
             return Err(ServiceError::BadRequest(
                 "Presence penalty must be between -2.0 and 2.0".to_string(),
             ));

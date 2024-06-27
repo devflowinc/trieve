@@ -149,7 +149,11 @@ const ResultsPage = (props: ResultsPageProps) => {
     on([() => props.search.debounced.version, dataset, page], () => {
       const dataset = $dataset?.();
       if (!dataset) return;
-      if (!props.search.debounced.query) {
+      if (
+        !props.search.debounced.query ||
+        props.search.debounced.query === ""
+      ) {
+        setLoading(false);
         return;
       }
 
@@ -166,7 +170,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         get_collisions: true,
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
-        get_total_pages: props.search.debounced.getTotalPages ?? true,
+        get_total_pages: props.search.debounced.getTotalPages ?? false,
         highlight_results: props.search.debounced.highlightResults ?? true,
         highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
           "?",
@@ -176,6 +180,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         highlight_max_length: props.search.debounced.highlightMaxLength ?? 8,
         highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
         highlight_window: props.search.debounced.highlightWindow ?? 0,
+        group_size: props.search.debounced.group_size ?? 3,
       };
 
       let searchRoute = "chunk/search";

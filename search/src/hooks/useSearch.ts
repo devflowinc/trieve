@@ -12,12 +12,13 @@ const initalState = {
   groupUniqueSearch: false,
   recencyBias: 0.0,
   pageSize: 10,
-  getTotalPages: true,
+  getTotalPages: false,
   highlightResults: true,
   highlightDelimiters: ["?", ".", "!"],
   highlightMaxLength: 8,
   highlightMaxNum: 3,
   highlightWindow: 0,
+  group_size: 3,
 };
 
 export type SearchOptions = typeof initalState;
@@ -39,6 +40,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     highlightMaxLength: state.highlightMaxLength.toString(),
     highlightMaxNum: state.highlightMaxNum.toString(),
     highlightWindow: state.highlightWindow.toString(),
+    group_size: state.group_size?.toString(),
   };
 };
 
@@ -61,6 +63,7 @@ const fromParamsToState = (
     highlightMaxLength: parseInt(params.highlightMaxLength ?? "8"),
     highlightMaxNum: parseInt(params.highlightMaxNum ?? "3"),
     highlightWindow: parseInt(params.highlightWindow ?? "0"),
+    group_size: parseInt(params.group_size ?? "3"),
   };
 };
 
@@ -95,12 +98,12 @@ export const useSearch = () => {
     ),
   );
 
-  // @ts-expect-error args
+  // @ts-expect-error args are passed to setSearch
   const proxiedSet: typeof setSearch = (
     ...args: Parameters<typeof setSearch>
   ) => {
     if (!readFromLocation) return;
-    // @ts-expect-error args
+    // @ts-expect-error args are passed to setSearch
     setSearch(...args);
     setSearch("version", (prev) => prev + 1);
   };

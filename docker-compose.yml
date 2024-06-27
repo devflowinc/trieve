@@ -316,6 +316,25 @@ services:
     networks:
       - app-network
 
+  clickhouse-db:
+    image: trieve/clickhouse:latest
+    container_name: clickhouse-db
+    restart: always
+    environment:
+      - CLICKHOUSE_USER=clickhouse
+      - CLICKHOUSE_PASSWORD=password
+      - CLICKHOUSE_DB=trieve
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+      - EMBEDDING_SERVER_URL=${EMBEDDING_SERVER_ORIGIN}
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"
+      - "9001:9000"
+      - "9009:9009"
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
@@ -328,3 +347,4 @@ volumes:
   s3-data:
   keycloak-data:
   pg-keycloak-data:
+  clickhouse-data:

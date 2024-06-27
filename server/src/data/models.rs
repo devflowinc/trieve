@@ -10,11 +10,13 @@ use super::schema::*;
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
-    get_metadata_filter_condition, get_num_value_filter_condition,
+    get_metadata_filter_condition,
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
+use clickhouse::Row;
 use dateparser::DateTimeUtc;
+use derive_more::Display;
 use diesel::expression::ValidGrouping;
 use diesel::{
     deserialize::{self as deserialize, FromSql},
@@ -29,6 +31,7 @@ use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon,
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 // type alias to use in multiple places
@@ -1335,7 +1338,19 @@ impl From<File> for FileDTO {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, Row, ToSchema)]
+pub struct ClickhouseEvent {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub event_type: String,
+    pub event_data: String,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01T00:00:00",
@@ -1344,41 +1359,49 @@ impl From<File> for FileDTO {
     "event_type": "file_uploaded",
     "event_data": {"group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3", "file_name": "file.txt"},
 }))]
-#[diesel(table_name = events)]
 pub struct Event {
     pub id: uuid::Uuid,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: String,
     pub dataset_id: uuid::Uuid,
     pub event_type: String,
-    pub event_data: serde_json::Value,
+    pub event_data: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+impl From<ClickhouseEvent> for Event {
+    fn from(clickhouse_event: ClickhouseEvent) -> Self {
+        Event {
+            id: uuid::Uuid::from_bytes(*clickhouse_event.id.as_bytes()),
+            created_at: clickhouse_event.created_at.to_string(),
+            dataset_id: uuid::Uuid::from_bytes(*clickhouse_event.dataset_id.as_bytes()),
+            event_type: clickhouse_event.event_type,
+            event_data: clickhouse_event.event_data,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Display)]
+#[serde(untagged)]
 pub enum EventType {
+    #[display(fmt = "file_uploaded")]
     FileUploaded {
         file_id: uuid::Uuid,
         file_name: String,
     },
-    FileUploadFailed {
-        file_id: uuid::Uuid,
-        error: String,
-    },
-    ChunksUploaded {
-        chunk_ids: Vec<uuid::Uuid>,
-    },
-    ChunkActionFailed {
-        chunk_id: uuid::Uuid,
-        error: String,
-    },
-    ChunkUpdated {
-        chunk_id: uuid::Uuid,
-    },
+    #[display(fmt = "file_upload_failed")]
+    FileUploadFailed { file_id: uuid::Uuid, error: String },
+    #[display(fmt = "chunks_uploaded")]
+    ChunksUploaded { chunk_ids: Vec<uuid::Uuid> },
+    #[display(fmt = "chunk_action_failed")]
+    ChunkActionFailed { chunk_id: uuid::Uuid, error: String },
+    #[display(fmt = "chunk_updated")]
+    ChunkUpdated { chunk_id: uuid::Uuid },
+    #[display(fmt = "qdrant_index_failed")]
     QdrantUploadFailed {
         chunk_id: uuid::Uuid,
         qdrant_point_id: uuid::Uuid,
         error: String,
     },
+    #[display(fmt = "bulk_chunk_action_failed")]
     BulkChunkActionFailed {
         chunk_ids: Vec<uuid::Uuid>,
         error: String,
@@ -1386,21 +1409,10 @@ pub enum EventType {
 }
 
 impl EventType {
-    pub fn as_str(&self) -> String {
-        match self {
-            EventType::FileUploaded { .. } => "file_uploaded".to_string(),
-            EventType::FileUploadFailed { .. } => "file_upload_failed".to_string(),
-            EventType::ChunksUploaded { .. } => "chunks_uploaded".to_string(),
-            EventType::ChunkActionFailed { .. } => "chunk_action_failed".to_string(),
-            EventType::ChunkUpdated { .. } => "chunk_updated".to_string(),
-            EventType::QdrantUploadFailed { .. } => "qdrant_index_failed".to_string(),
-            EventType::BulkChunkActionFailed { .. } => "bulk_chunk_action_failed".to_string(),
-        }
-    }
-
     pub fn get_all_event_types() -> Vec<String> {
         vec![
             "file_uploaded".to_string(),
+            "file_upload_failed".to_string(),
             "chunks_uploaded".to_string(),
             "chunk_action_failed".to_string(),
             "chunk_updated".to_string(),
@@ -1410,39 +1422,14 @@ impl EventType {
     }
 }
 
-impl From<EventType> for serde_json::Value {
-    fn from(val: EventType) -> Self {
-        match val {
-            EventType::FileUploaded { file_id, file_name } => {
-                json!({"file_id": file_id, "file_name": file_name})
-            }
-            EventType::FileUploadFailed { file_id, error } => {
-                json!({"file_id": file_id, "error": error})
-            }
-            EventType::ChunksUploaded { chunk_ids } => json!({"chunk_ids": chunk_ids}),
-            EventType::ChunkActionFailed { chunk_id, error } => {
-                json!({"chunk_id": chunk_id, "error": error})
-            }
-            EventType::ChunkUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
-            EventType::QdrantUploadFailed {
-                chunk_id, error, ..
-            } => json!({"chunk_id": chunk_id, "error": error}),
-            EventType::BulkChunkActionFailed {
-                chunk_ids, error, ..
-            } => json!({"chunk_ids": chunk_ids, "error": error}),
-        }
-    }
-}
-
 impl Event {
     pub fn from_details(dataset_id: uuid::Uuid, event_type: EventType) -> Self {
         Event {
             id: uuid::Uuid::new_v4(),
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local().to_string(),
             dataset_id,
-            event_type: event_type.as_str(),
-            event_data: event_type.into(),
+            event_type: event_type.to_string(),
+            event_data: serde_json::to_value(event_type).unwrap().to_string(),
         }
     }
 }
@@ -2486,8 +2473,7 @@ impl QdrantPayload {
                 .payload
                 .get("time_stamp")
                 .cloned()
-                .map(|x| x.as_integer())
-                .flatten(),
+                .and_then(|x| x.as_integer()),
             dataset_id: point
                 .payload
                 .get("dataset_id")
@@ -2507,14 +2493,12 @@ impl QdrantPayload {
                 .payload
                 .get("location")
                 .cloned()
-                .map(|value| serde_json::from_value(value.into()).ok())
-                .flatten(),
+                .and_then(|value| serde_json::from_value(value.into()).ok()),
             num_value: point
                 .payload
                 .get("num_value")
                 .cloned()
-                .map(|x| x.as_double())
-                .flatten(),
+                .and_then(|x| x.as_double()),
         }
     }
 }
@@ -2539,16 +2523,14 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .payload
                 .get("time_stamp")
                 .cloned()
-                .map(|x| x.as_integer())
-                .flatten(),
+                .and_then(|x| x.as_integer()),
             dataset_id: point
                 .payload
                 .get("dataset_id")
                 .cloned()
                 .unwrap_or_default()
                 .as_str()
-                .map(|s| uuid::Uuid::parse_str(s).ok())
-                .flatten()
+                .and_then(|s| uuid::Uuid::parse_str(s).ok())
                 .unwrap_or_default(),
             group_ids: point.payload.get("group_ids").cloned().map(|x| {
                 x.as_list()
@@ -2567,15 +2549,13 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .payload
                 .get("location")
                 .cloned()
-                .map(|value| serde_json::from_value(value.into()).ok())
-                .flatten()
+                .and_then(|value| serde_json::from_value(value.into()).ok())
                 .unwrap_or_default(),
             num_value: point
                 .payload
                 .get("num_value")
                 .cloned()
-                .map(|x| x.as_double())
-                .flatten(),
+                .and_then(|x| x.as_double()),
         }
     }
 }
@@ -2808,14 +2788,6 @@ impl FieldCondition {
             ));
         }
 
-        if self.field == "num_value" {
-            return Ok(Some(
-                get_num_value_filter_condition(self, dataset_id, pool)
-                    .await?
-                    .into(),
-            ));
-        }
-
         if let Some(date_range) = self.date_range.clone() {
             let time_range = get_date_range(date_range)?;
             return Ok(Some(qdrant::Condition::range(
@@ -2956,6 +2928,220 @@ impl FieldCondition {
                     "Invalid condition type".to_string(),
                 )),
             },
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct SearchQueryEvent {
+    pub id: uuid::Uuid,
+    pub search_type: String,
+    pub query: String,
+    pub request_params: String,
+    pub latency: f32,
+    pub top_score: f32,
+    pub results: Vec<String>,
+    pub dataset_id: uuid::Uuid,
+    pub created_at: String,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchQueryEventClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub search_type: String,
+    pub query: String,
+    pub request_params: String,
+    pub latency: f32,
+    pub top_score: f32,
+    pub results: Vec<String>,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
+    fn from(event: SearchQueryEventClickhouse) -> Self {
+        SearchQueryEvent {
+            id: uuid::Uuid::from_bytes(*event.id.as_bytes()),
+            search_type: event.search_type,
+            query: event.query,
+            request_params: event.request_params,
+            latency: event.latency,
+            top_score: event.top_score,
+            results: event.results,
+            dataset_id: uuid::Uuid::from_bytes(*event.dataset_id.as_bytes()),
+            created_at: event.created_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ClusterTopicsClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub topic: String,
+    pub density: i32,
+    pub avg_score: f32,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+impl From<ClusterTopicsClickhouse> for SearchClusterTopics {
+    fn from(cluster_topic: ClusterTopicsClickhouse) -> Self {
+        SearchClusterTopics {
+            id: uuid::Uuid::from_bytes(*cluster_topic.id.as_bytes()),
+            dataset_id: uuid::Uuid::from_bytes(*cluster_topic.dataset_id.as_bytes()),
+            topic: cluster_topic.topic,
+            density: cluster_topic.density,
+            avg_score: cluster_topic.avg_score,
+            created_at: cluster_topic.created_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct SearchClusterTopics {
+    pub id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub topic: String,
+    pub density: i32,
+    pub avg_score: f32,
+    pub created_at: String,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchClusterMembership {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub search_query: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub cluster_topic: uuid::Uuid,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchType {
+    #[display(fmt = "search")]
+    Search,
+    #[display(fmt = "autocomplete")]
+    Autocomplete,
+    #[display(fmt = "search_over_groups")]
+    SearchOverGroups,
+    #[display(fmt = "search_within_groups")]
+    SearchWithinGroups,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display)]
+#[serde(rename_all = "lowercase")]
+
+pub enum SearchMethod {
+    #[display(fmt = "fulltext")]
+    FullText,
+    #[display(fmt = "semantic")]
+    Semantic,
+    #[display(fmt = "hybrid")]
+    Hybrid,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct AnalyticsFilter {
+    pub date_range: Option<DateRange>,
+    pub search_method: Option<SearchMethod>,
+    pub search_type: Option<SearchType>,
+}
+
+impl AnalyticsFilter {
+    pub fn add_to_query(&self, mut query_string: String) -> String {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(search_type) = &self.search_type {
+            query_string.push_str(&format!(" AND search_type = '{}'", search_type.to_string()));
+        }
+        if let Some(search_method) = &self.search_method {
+            query_string.push_str(&format!(
+                " AND JSONExtractString(request_params, 'search_type') = '{}'",
+                search_method.to_string()
+            ));
+        }
+
+        query_string
+    }
+}
+
+#[derive(Debug, Row, ToSchema, Serialize, Deserialize)]
+pub struct DatasetAnalytics {
+    pub total_queries: i32,
+    pub search_rps: f64,
+    pub avg_latency: f64,
+    pub p99: f64,
+    pub p95: f64,
+    pub p50: f64,
+}
+
+#[derive(Debug, ToSchema, Row, Serialize, Deserialize)]
+pub struct HeadQueries {
+    pub query: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchRPSGraphClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub average_rps: f64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchRPSGraph {
+    pub time_stamp: String,
+    pub average_rps: f64,
+}
+
+impl From<SearchRPSGraphClickhouse> for SearchRPSGraph {
+    fn from(graph: SearchRPSGraphClickhouse) -> Self {
+        SearchRPSGraph {
+            time_stamp: graph.time_stamp.to_string(),
+            average_rps: graph.average_rps,
+        }
+    }
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchLatencyGraphClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub average_latency: f64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchLatencyGraph {
+    pub time_stamp: String,
+    pub average_latency: f64,
+}
+
+impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
+    fn from(graph: SearchLatencyGraphClickhouse) -> Self {
+        SearchLatencyGraph {
+            time_stamp: graph.time_stamp.to_string(),
+            average_latency: graph.average_latency,
         }
     }
 }

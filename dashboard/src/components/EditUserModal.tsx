@@ -2,12 +2,8 @@ import { Show, createEffect, createMemo, useContext } from "solid-js";
 import { createSignal } from "solid-js";
 import { Dialog, DialogOverlay, DialogPanel, DialogTitle } from "terracotta";
 import { UserContext } from "../contexts/UserContext";
-import { DefaultError, SlimUser, fromI32ToUserRole } from "../types/apiTypes";
-import {
-  UserRole,
-  fromUserRoleToI32,
-  stringToUserRole,
-} from "../types/apiTypes";
+import { DefaultError, SlimUser, fromI32ToUserRole } from "shared/types";
+import { UserRole, fromUserRoleToI32, stringToUserRole } from "shared/types";
 import { createToast } from "./ShowToasts";
 
 export interface InviteUserModalProps {

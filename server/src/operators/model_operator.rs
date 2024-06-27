@@ -439,13 +439,7 @@ pub async fn get_sparse_vectors(
     let filtered_boosts_with_index = messages
         .into_iter()
         .enumerate()
-        .filter_map(|(i, (_, y))| {
-            if let Some(boost_phrase) = y {
-                Some((i, boost_phrase))
-            } else {
-                None
-            }
-        })
+        .filter_map(|(i, (_, y))| y.map(|boost_phrase| (i, boost_phrase)))
         .collect::<Vec<(usize, BoostPhrase)>>();
     let filtered_boosts_with_index_groups = filtered_boosts_with_index.chunks(30);
 
@@ -515,7 +509,7 @@ pub async fn get_sparse_vectors(
                     .iter()
                     .zip(sparse_vectors)
                     .map(|((og_index, y), sparse_vector)| {
-                        (og_index.clone(), y.boost_factor, sparse_vector)
+                        (*og_index, y.boost_factor, sparse_vector)
                     })
                     .collect();
 
@@ -618,17 +612,21 @@ pub async fn get_sparse_vectors(
             content_vectors_sorted[og_index] = content_vectors_sorted[og_index]
                 .iter()
                 .map(|splade_indice| {
-                    if let Some(_) = boost_vector.iter().find(|boost_splade_indice| {
-                        boost_splade_indice.index == splade_indice.index
-                    }) {
+                    if boost_vector
+                        .iter()
+                        .find(|boost_splade_indice| {
+                            boost_splade_indice.index == splade_indice.index
+                        })
+                        .is_some()
+                    {
                         SpladeIndicies {
-                            index: splade_indice.index.clone(),
-                            value: splade_indice.value.clone() * (boost_amt as f32),
+                            index: splade_indice.index,
+                            value: splade_indice.value * (boost_amt as f32),
                         }
                     } else {
                         SpladeIndicies {
-                            index: splade_indice.index.clone(),
-                            value: splade_indice.value.clone(),
+                            index: splade_indice.index,
+                            value: splade_indice.value,
                         }
                     }
                 })
@@ -665,7 +663,7 @@ pub async fn cross_encoder(
     query: String,
     page_size: u64,
     results: Vec<ScoreChunkDTO>,
-    dataset_config: ServerDatasetConfiguration,
+    dataset_config: &ServerDatasetConfiguration,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -690,28 +688,23 @@ pub async fn cross_encoder(
         return Ok(vec![]);
     }
 
-    let request_docs = results
-        .clone()
-        .into_iter()
-        .map(|x| {
-            let chunk = match x.metadata[0].clone() {
-                ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
-                _ => Err(ServiceError::BadRequest("Metadata not found".to_string())),
-            }?;
-
-            Ok(convert_html_to_text(
-                &(chunk.chunk_html.unwrap_or_default()),
-            ))
-        })
-        .collect::<Result<Vec<String>, ServiceError>>()?;
-
-    let twenty_request_docs = request_docs
-        .chunks(20)
-        .map(|x| x.to_vec())
-        .collect::<Vec<Vec<String>>>();
-
     let mut results = results.clone();
-    for twenty_docs in twenty_request_docs {
+
+    if results.len() <= 20 {
+        let request_docs = results
+            .clone()
+            .into_iter()
+            .map(|x| {
+                let chunk = match x.metadata[0].clone() {
+                    ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
+                    _ => Err(ServiceError::BadRequest("Metadata not found".to_string())),
+                }?;
+
+                Ok(convert_html_to_text(
+                    &(chunk.chunk_html.unwrap_or_default()),
+                ))
+            })
+            .collect::<Result<Vec<String>, ServiceError>>()?;
         let resp = ureq::post(&embedding_server_call)
             .set("Content-Type", "application/json")
             .set(
@@ -723,7 +716,7 @@ pub async fn cross_encoder(
             )
             .send_json(CrossEncoderData {
                 query: query.clone(),
-                texts: twenty_docs,
+                texts: request_docs,
                 truncate: true,
             })
             .map_err(|err| {
@@ -743,6 +736,88 @@ pub async fn cross_encoder(
         resp.into_iter().for_each(|pair| {
             results.index_mut(pair.index).score = pair.score as f64;
         });
+    } else {
+        let vec_futures: Vec<_> = results
+            .chunks_mut(20)
+            .map(|docs_chunk| {
+                let query = query.clone();
+                let cur_client = reqwest::Client::new();
+                let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API should be set");
+                let url = embedding_server_call.clone();
+
+                let vectors_resp = async move {
+                    let request_docs = docs_chunk
+                        .into_iter()
+                        .map(|x| {
+                            let chunk = match x.metadata[0].clone() {
+                                ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
+                                _ => {
+                                    Err(ServiceError::BadRequest("Metadata not found".to_string()))
+                                }
+                            }?;
+
+                            Ok(convert_html_to_text(
+                                &(chunk.chunk_html.unwrap_or_default()),
+                            ))
+                        })
+                        .collect::<Result<Vec<String>, ServiceError>>()?;
+
+                    let parameters = CrossEncoderData {
+                        query: query.clone(),
+                        texts: request_docs,
+                        truncate: true,
+                    };
+
+                    let embeddings_resp = cur_client
+                        .post(&url)
+                        .header(
+                            "Authorization",
+                            &format!(
+                                "Bearer {}",
+                                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                            ),
+                        )
+                        .header("api-key", &embedding_api_key.to_string())
+                        .header("Content-Type", "application/json")
+                        .json(&parameters)
+                        .send()
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Failed to send message to embedding server".to_string(),
+                            )
+                        })?
+                        .text()
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Failed to get text from embeddings".to_string(),
+                            )
+                        })?;
+
+                    let embeddings: Vec<ScorePair> = serde_json::from_str(&embeddings_resp)
+                        .map_err(|e| {
+                            log::error!("Failed to format response from embeddings server {:?}", e);
+                            ServiceError::InternalServerError(
+                                "Failed to format response from embeddings server".to_owned(),
+                            )
+                        })?;
+
+                    embeddings.into_iter().for_each(|pair| {
+                        docs_chunk.index_mut(pair.index).score = pair.score as f64;
+                    });
+
+                    Ok(())
+                };
+
+                vectors_resp
+            })
+            .collect();
+
+        futures::future::join_all(vec_futures)
+            .await
+            .into_iter()
+            .collect::<Result<(), ServiceError>>()?;
     }
 
     results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());

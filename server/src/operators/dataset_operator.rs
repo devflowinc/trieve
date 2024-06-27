@@ -267,7 +267,12 @@ pub async fn delete_chunks_in_dataset(
                 chunk_metadata_columns::qdrant_point_id,
             ))
             .order(chunk_metadata_columns::id)
-            .limit(1000)
+            .limit(
+                option_env!("DELETE_CHUNK_BATCH_SIZE")
+                    .unwrap_or("5000")
+                    .parse::<i64>()
+                    .unwrap_or(5000),
+            )
             .load::<(uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
             .await
             .map_err(|err| {

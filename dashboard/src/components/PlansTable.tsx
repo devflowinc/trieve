@@ -4,7 +4,7 @@ import {
   OrganizationAndSubAndPlan,
   StripePlan,
   StripeSubscription,
-} from "../types/apiTypes";
+} from "shared/types";
 import { BsCheck } from "solid-icons/bs";
 import {
   formatBytesDecimal,

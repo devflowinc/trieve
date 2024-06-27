@@ -1,8 +1,8 @@
 use crate::{
-    af_middleware::auth_middleware::verify_owner,
     data::models::Pool,
     errors::ServiceError,
     get_env,
+    middleware::auth_middleware::verify_owner,
     operators::{
         organization_operator::get_org_from_id_query,
         stripe_operator::{

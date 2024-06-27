@@ -69,6 +69,29 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
+    let clickhouse_client = if std::env::var("USE_ANALYTICS")
+        .unwrap_or("false".to_string())
+        .parse()
+        .unwrap_or(false)
+    {
+        log::info!("Analytics enabled");
+
+        clickhouse::Client::default()
+            .with_url(
+                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
+            )
+            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
+            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
+            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
+            .with_option("async_insert", "1")
+            .with_option("wait_for_async_insert", "0")
+    } else {
+        log::info!("Analytics disabled");
+        clickhouse::Client::default()
+    };
+
+    let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
+
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -97,7 +120,13 @@ fn main() {
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
 
-                file_worker(should_terminate, web_redis_pool, web_pool).await
+                file_worker(
+                    should_terminate,
+                    web_redis_pool,
+                    web_pool,
+                    web_clickhouse_client,
+                )
+                .await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -107,6 +136,7 @@ async fn file_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
+    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
 ) {
     log::info!("Starting file worker service thread");
 
@@ -185,6 +215,7 @@ async fn file_worker(
         match upload_file(
             file_worker_message.clone(),
             web_pool.clone(),
+            clickhouse_client.clone(),
             redis_connection.clone(),
         )
         .await
@@ -219,6 +250,7 @@ async fn file_worker(
 async fn upload_file(
     file_worker_message: FileWorkerMessage,
     web_pool: actix_web::web::Data<models::Pool>,
+    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
     redis_conn: MultiplexedConnection,
 ) -> Result<Option<uuid::Uuid>, ServiceError> {
     let file_id = uuid::Uuid::new_v4();
@@ -308,6 +340,7 @@ async fn upload_file(
         html_content,
         file_worker_message.dataset_org_plan_sub,
         web_pool.clone(),
+        clickhouse_client.clone(),
         redis_conn,
     )
     .await?;

@@ -1,6 +1,7 @@
 # Self hosting guide
 
 We currently offer 3 ways to self host Trieve.
+
 - [Docker Compose](#docker-compose)
 - [Kubernetes (AWS EKS)](#aws-eks)
 - [Kubernetes (GCP GKE)](#gcp-gke)
@@ -12,6 +13,7 @@ We reccomend GKE for production deployments, EKS is not able to have the embeddi
 The Docker Compose self hosted option is the easiest way to get started self hosting Trieve.
 
 Things you need
+
 - Domain name
 - System with at least 4 CPU cores and 8GB of RAM (excluding the cpu embedding servers)
 - System with at least 4 CPU cores and >25GB of RAM (including the cpu embedding servers)
@@ -35,7 +37,6 @@ cd trieve
 cp .env.example .env
 ```
 
-
 ### Start Trieve Services
 
 ```sh
@@ -57,6 +58,7 @@ docker compose -f docker-compose-cpu-embeddings.yml up -d
 ```
 
 \* Note on embedding servers. If you want to use a separate GPU enabled device for embedding servers you will need to update the following parameters
+
 ```sh
 SPARSE_SERVER_QUERY_ORIGIN
 SPARSE_SERVER_DOC_ORIGIN
@@ -69,11 +71,13 @@ SPARSE_SERVER_QUERY_ORIGIN
 Install Caddy
 
 Edit the Caddyfile
+
 ```sh
 nano /etc/caddy/Caddyfile
 ```
 
 Add the following configuration
+
 ```Caddyfile
 dashboard.yourdomain.com {
     reverse_proxy localhost:5173
@@ -96,7 +100,7 @@ auth.yourdomain.com {
 }
 ```
 
-Start Caddy, you may also need to reload the service 
+Start Caddy, you may also need to reload the service
 
 ```sh
 sudo systemctl reload caddy.service
@@ -115,6 +119,7 @@ A api.yourdomain.com your-server-ip
 ### Edit .env
 
 Most values can be left as default, the ones you do need to edit are
+
 ```
 KEYCLOAK_HOST="auth.yourdomain.com"
 
@@ -135,6 +140,7 @@ Go to auth.yourdomain.com and login with the default credentials (user: admin pa
 1. Change the Realm from master to trieve
 2. Go to Clients -> vault -> Settings
 3. Add the following to the Valid Redirect URIs and Valid Post Logout Redirect URIs
+
 ```
 https://api.yourdomain.com/*
 https://dashboard.yourdomain.com/*
@@ -145,6 +151,7 @@ https://search.yourdomain.com/*
 ### Testing
 
 The fastest way to test is using the trieve cli
+
 ```
 trieve init
 trieve dataset example
@@ -156,6 +163,7 @@ Happy hacking 🚀
 ## AWS EKS
 
 Things you need
+
 - Domain name
 - An allowance for at least 8vCPU for G and VT instances
 - helm cli
@@ -218,28 +226,27 @@ helm/from-env.sh
 
 This step generates a file in `helm/values.yaml`. It alllows you to modify the environment variables
 
-Additionally, you will need to modify values.yaml in two ways, 
+Additionally, you will need to modify values.yaml in two ways,
 
 First you will need to change all the embedding server origins to point to the embedding server url as follows.
 
 ```yaml
 config:
-...
-
-  trieve:
-...
-
-    sparseServerDocOrigin:	http://<ip>:5000
-    sparseServerQueryOrigin:	http://<ip>:6000
-    embeddingServerOrigin:      http://<ip>:7000
-    embeddingServerOriginBGEM3: http://<ip>:8000
-    rerankerServerOrigin:	http://<ip>:9000
+---
+trieve:
+---
+sparseServerDocOrigin: http://<ip>:5000
+sparseServerQueryOrigin: http://<ip>:6000
+embeddingServerOrigin: http://<ip>:7000
+embeddingServerOriginBGEM3: http://<ip>:8000
+rerankerServerOrigin: http://<ip>:9000
 ```
 
 Since the embbedding servers are not included in the kubernetes cluster, remove all items in the embeddings list below and leave it empty as follows
 
 ```yaml
-...
+
+---
 embeddings:
 ```
 
@@ -297,6 +304,7 @@ A) Create a new realm called `trieve`
 B) Go into Clients and create a new client called `trieve`.
 
 Enable client authentication and set the following allowed redirect url's
+
 - https://api.domain.com/*
 - https://search.domain.com/*
 - https://chat.domain.com/*
@@ -305,6 +313,7 @@ Enable client authentication and set the following allowed redirect url's
 You will get the client secret in the `Credentials` tab.
 
 You will need to set the following values in the `helm/values.yaml` file, it should be prefilled already with default values
+
 ```
 config:
   oidc:
@@ -317,6 +326,7 @@ config:
 ### Testing
 
 The fastest way to test is using the trieve cli
+
 ```
 trieve init
 trieve dataset example
@@ -325,10 +335,10 @@ trieve dataset example
 And there you have it. Your very own Trieve stack.
 Happy hacking 🚀
 
-
 ## GCP GKE
 
 Things you need
+
 - Domain name
 - helm cli
 - google cloud cli
@@ -432,6 +442,7 @@ A) Create a new realm called `trieve`
 B) Go into Clients and create a new client called `trieve`.
 
 Enable client authentication and set the following allowed redirect url's
+
 - https://api.domain.com/*
 - https://search.domain.com/*
 - https://chat.domain.com/*
@@ -440,6 +451,7 @@ Enable client authentication and set the following allowed redirect url's
 You will get the client secret in the `Credentials` tab.
 
 You will need to set the following values in the `helm/values.yaml` file, it should be prefilled already with default values
+
 ```
 config:
   oidc:
@@ -452,6 +464,7 @@ config:
 ### Testing
 
 The fastest way to test is using the trieve cli
+
 ```
 trieve login # Make sure to set the api url to https://api.domain.com
 trieve dataset example

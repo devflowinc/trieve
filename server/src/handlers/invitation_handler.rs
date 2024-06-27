@@ -1,8 +1,8 @@
 use super::auth_handler::AdminOnly;
 use crate::{
-    af_middleware::auth_middleware::verify_admin,
     data::models::{Invitation, Pool, RedisPool},
     errors::ServiceError,
+    middleware::auth_middleware::verify_admin,
     operators::{
         invitation_operator::{
             create_invitation_query, delete_invitation_by_id_query, get_invitation_by_id_query,
