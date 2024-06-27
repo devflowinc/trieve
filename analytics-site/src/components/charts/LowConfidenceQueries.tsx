@@ -82,7 +82,7 @@ const QueryCard = (props: QueryCardProps) => {
   return (
     <div class="flex justify-between">
       <div class="truncate">{props.query.query}</div>
-      <div class="truncate">{props.query.search_type}</div>
+      <div class="truncate">{props.query.top_score.toFixed(5)}</div>
     </div>
   );
 };
