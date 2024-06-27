@@ -303,7 +303,7 @@ pub async fn send_to_clickhouse(
         ClickHouseEvent::SearchQueryEvent(event) => {
             clickhouse_client
                     .query(
-                        "INSERT INTO trieve.search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES (?, ?, ?, ?, embed_p(?), ?,?, ?, ?, now())",
+                        "INSERT INTO default.search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES (?, ?, ?, ?, embed_p(?), ?,?, ?, ?, now())",
                     )
                     .bind(event.id)
                     .bind(&event.search_type)
