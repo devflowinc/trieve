@@ -255,7 +255,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function renderMetadataElements(value: any) {
+  const renderMetadataElements = (value: any) => {
     if (Array.isArray(value)) {
       // Determine if the array consists solely of objects
       const allObjects = value.every(
@@ -307,7 +307,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     } else {
       return value !== null && value !== undefined ? value.toString() : "null";
     }
-  }
+  };
 
   return (
     <>
