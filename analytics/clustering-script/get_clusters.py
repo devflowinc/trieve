@@ -18,7 +18,7 @@ def fetch_dataset_vectors(
 ):
     query = """
         SELECT id, query, top_score, query_vector 
-        FROM trieve.search_queries 
+        FROM default.search_queries 
         WHERE dataset_id = '{}'
             AND created_at >= now() - INTERVAL 7 DAY
         ORDER BY rand() 
@@ -37,7 +37,7 @@ def fetch_dataset_vectors(
 def get_datasets(client: clickhouse_connect.driver.client.Client):
     query = """
         SELECT DISTINCT dataset_id
-        FROM search_queries
+        FROM default.search_queries
         """
 
     dataset_result = client.query(query)
@@ -101,7 +101,7 @@ def insert_centroids(
 ):
     cluster_ids_to_delete_query = """
         SELECT id
-        FROM trieve.cluster_topics
+        FROM default.cluster_topics
         WHERE dataset_id = '{}'
         """.format(
         str(dataset_id[0])
@@ -111,7 +111,7 @@ def insert_centroids(
     ]
 
     delete_previous_query = """
-        DELETE FROM trieve.cluster_topics
+        DELETE FROM default.cluster_topics
         WHERE dataset_id = '{}'
         """.format(
         str(dataset_id[0])
@@ -119,7 +119,7 @@ def insert_centroids(
     client.query(delete_previous_query)
     if len(cluster_ids_to_delete) > 0:
         delete_previous_search_cluster_memberships_query = """
-        DELETE FROM trieve.search_cluster_memberships
+        DELETE FROM default.search_cluster_memberships
         WHERE cluster_id IN ('{}')
         """.format(
             "', '".join(cluster_ids_to_delete)

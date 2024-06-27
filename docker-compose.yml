@@ -323,7 +323,6 @@ services:
     environment:
       - CLICKHOUSE_USER=clickhouse
       - CLICKHOUSE_PASSWORD=password
-      - CLICKHOUSE_DB=trieve
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
       - EMBEDDING_SERVER_URL=${EMBEDDING_SERVER_ORIGIN}
     volumes:
