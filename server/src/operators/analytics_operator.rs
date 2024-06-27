@@ -207,6 +207,10 @@ pub async fn send_to_clickhouse(
     event: ClickHouseEvent,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<(), ServiceError> {
+    if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()) != "true" {
+        return Ok(());
+    }
+
     match event {
         ClickHouseEvent::SearchQueryEvent(event) => {
             clickhouse_client
