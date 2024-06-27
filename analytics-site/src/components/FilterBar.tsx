@@ -1,5 +1,4 @@
 import { AnalyticsFilter, AnalyticsParams } from "shared/types";
-import { Select } from "./shared/Select";
 import { SetStoreFunction } from "solid-js/store";
 import { For } from "solid-js";
 
