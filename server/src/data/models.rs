@@ -2452,6 +2452,7 @@ pub struct QdrantPayload {
     pub group_ids: Option<Vec<uuid::Uuid>>,
     pub location: Option<GeoInfo>,
     pub num_value: Option<f64>,
+    pub group_tag_set: Option<Vec<Option<String>>>,
 }
 
 impl From<QdrantPayload> for Payload {
@@ -2468,6 +2469,7 @@ impl QdrantPayload {
         chunk_metadata: ChunkMetadata,
         group_ids: Option<Vec<uuid::Uuid>>,
         dataset_id: Option<uuid::Uuid>,
+        group_tag_set: Option<Vec<Option<String>>>,
     ) -> Self {
         QdrantPayload {
             tag_set: chunk_metadata.tag_set,
@@ -2479,6 +2481,7 @@ impl QdrantPayload {
             group_ids,
             location: chunk_metadata.location,
             num_value: chunk_metadata.num_value,
+            group_tag_set,
         }
     }
 
@@ -2530,6 +2533,13 @@ impl QdrantPayload {
                 .cloned()
                 .map(|x| x.as_double())
                 .flatten(),
+            group_tag_set: point.payload.get("group_tag_set").cloned().map(|x| {
+                x.as_list()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|value| Some(value.to_string()))
+                    .collect()
+            }),
         }
     }
 }
@@ -2541,10 +2551,14 @@ impl From<RetrievedPoint> for QdrantPayload {
                 x.as_list()
                     .unwrap_or_default()
                     .iter()
-                    .map(|value| Some(value.to_string()))
+                    .map(|value| Some(value.to_string().replace("\"", "").replace("\\", "")))
                     .collect()
             }),
-            link: point.payload.get("link").cloned().map(|x| x.to_string()),
+            link: point
+                .payload
+                .get("link")
+                .cloned()
+                .map(|x| x.to_string().replace("\"", "").replace("\\", "")),
             metadata: point
                 .payload
                 .get("metadata")
@@ -2577,7 +2591,9 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .get("content")
                 .cloned()
                 .unwrap_or_default()
-                .to_string(),
+                .to_string()
+                .replace("\"", "")
+                .replace("\\", ""),
             location: point
                 .payload
                 .get("location")
@@ -2591,6 +2607,13 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .cloned()
                 .map(|x| x.as_double())
                 .flatten(),
+            group_tag_set: point.payload.get("group_tag_set").cloned().map(|x| {
+                x.as_list()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|value| Some(value.to_string().replace("\"", "").replace("\\", "")))
+                    .collect()
+            }),
         }
     }
 }

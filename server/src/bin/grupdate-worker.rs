@@ -183,7 +183,14 @@ async fn grupdate_worker(
             }
         };
 
-        match update_grouped_chunks_query(group_update_msg.group.id, web_pool.clone()).await {
+        match update_grouped_chunks_query(
+            group_update_msg.prev_group.clone(),
+            group_update_msg.group.clone(),
+            web_pool.clone(),
+            group_update_msg.config.clone(),
+        )
+        .await
+        {
             Ok(_) => {
                 log::info!("Updated group {}", group_update_msg.group.id);
                 let _ = create_event_query(

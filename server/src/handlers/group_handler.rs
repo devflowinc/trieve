@@ -532,10 +532,14 @@ pub async fn update_chunk_group(
         group_tag_set.or(group.tag_set.clone()),
     );
 
-    update_chunk_group_query(new_chunk_group, pool).await?;
+    update_chunk_group_query(new_chunk_group.clone(), pool).await?;
 
     if data.update_chunks {
-        soft_update_grouped_chunks_query(group, redis_pool).await?;
+        let server_dataset_config = ServerDatasetConfiguration::from_json(
+            dataset_org_plan_sub.dataset.server_configuration.clone(),
+        );
+        soft_update_grouped_chunks_query(new_chunk_group, group, redis_pool, server_dataset_config)
+            .await?;
     }
 
     Ok(HttpResponse::NoContent().finish())

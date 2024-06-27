@@ -1,6 +1,7 @@
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
+use futures_util::StreamExt;
 use itertools::izip;
 use qdrant_client::qdrant::{PointStruct, Vector};
 use sentry::{Hub, SentryFutureExt};
@@ -23,6 +24,7 @@ use trieve_server::operators::chunk_operator::{
     update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
+use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
 use trieve_server::operators::model_operator::{
     create_embedding, create_embeddings, get_sparse_vectors,
 };
@@ -541,16 +543,27 @@ pub async fn bulk_upload_chunks(
 
     embedding_transaction.finish();
 
-    let qdrant_points = izip!(
+    let qdrant_points = tokio_stream::iter(izip!(
         inserted_chunk_metadatas.clone(),
         embedding_vectors.iter(),
         splade_vectors.iter(),
-    )
-    .filter_map(
-        |((chunk_metadata, _, group_ids, _, _), embedding_vector, splade_vector)| {
+    ))
+    .then(
+        |((chunk_metadata, _, group_ids, _, _), embedding_vector, splade_vector)| async {
             let qdrant_point_id = chunk_metadata.qdrant_point_id;
 
-            let payload = QdrantPayload::new(chunk_metadata, group_ids, None).into();
+            let chunk_tags: Vec<Option<String>> = get_groups_from_group_ids_query(
+                group_ids.clone().unwrap_or_default(),
+                web_pool.clone(),
+            )
+            .await?
+            .iter()
+            .filter_map(|group| group.tag_set.clone())
+            .flatten()
+            .collect();
+
+            let payload =
+                QdrantPayload::new(chunk_metadata, group_ids, None, Some(chunk_tags)).into();
 
             let vector_name = match embedding_vector.len() {
                 384 => "384_vectors",
@@ -559,7 +572,7 @@ pub async fn bulk_upload_chunks(
                 1024 => "1024_vectors",
                 3072 => "3072_vectors",
                 1536 => "1536_vectors",
-                _ => return None,
+                _ => return Ok(None),
             };
 
             let vector_payload = HashMap::from([
@@ -574,11 +587,24 @@ pub async fn bulk_upload_chunks(
             ]);
 
             // If qdrant_point_id does not exist, does not get written to qdrant
-            qdrant_point_id
-                .map(|point_id| PointStruct::new(point_id.to_string(), vector_payload, payload))
+            Ok(qdrant_point_id
+                .map(|point_id| PointStruct::new(point_id.to_string(), vector_payload, payload)))
         },
     )
-    .collect();
+    .collect::<Vec<Result<Option<PointStruct>, ServiceError>>>()
+    .await;
+
+    if qdrant_points.iter().any(|point| point.is_err()) {
+        Err(ServiceError::InternalServerError(
+            "Failed to create qdrant points".to_string(),
+        ))?;
+    }
+
+    let qdrant_points: Vec<PointStruct> = qdrant_points
+        .into_iter()
+        .filter_map(|point| point.ok())
+        .filter_map(|point| point)
+        .collect();
 
     let insert_tx = transaction.start_child(
         "calling_BULK_create_new_qdrant_points_query",
@@ -783,6 +809,7 @@ async fn upload_chunk(
             payload.ingest_specific_chunk_metadata.dataset_id,
             splade_vector,
             dataset_config.clone(),
+            web_pool.clone(),
         )
         .await
         .map_err(|err| {
@@ -828,7 +855,23 @@ async fn upload_chunk(
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
 
-        let payload = QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None).into();
+        let chunk_tags: Vec<Option<String>> = get_groups_from_group_ids_query(
+            payload.chunk.group_ids.clone().unwrap_or_default(),
+            web_pool.clone(),
+        )
+        .await?
+        .iter()
+        .filter_map(|group| group.tag_set.clone())
+        .flatten()
+        .collect();
+
+        let payload = QdrantPayload::new(
+            chunk_metadata,
+            payload.chunk.group_ids,
+            None,
+            Some(chunk_tags),
+        )
+        .into();
 
         let vector_name = match embedding_vector.len() {
             384 => "384_vectors",
@@ -948,6 +991,7 @@ async fn update_chunk(
                 payload.dataset_id,
                 splade_vector,
                 server_dataset_config,
+                web_pool.clone(),
             )
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
@@ -974,6 +1018,7 @@ async fn update_chunk(
             payload.dataset_id,
             splade_vector,
             server_dataset_config,
+            web_pool.clone(),
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
