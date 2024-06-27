@@ -101,13 +101,14 @@ pub async fn create_file_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, redis_conn))]
+#[tracing::instrument(skip(pool, redis_conn, clickhouse_client))]
 pub async fn create_file_chunks(
     created_file_id: uuid::Uuid,
     upload_file_data: UploadFileReqPayload,
     html_content: String,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     mut redis_conn: MultiplexedConnection,
 ) -> Result<(), ServiceError> {
     let file_text = convert_html_to_text(&html_content);
@@ -253,7 +254,7 @@ pub async fn create_file_chunks(
                 file_name: name,
             },
         ),
-        pool.clone(),
+        clickhouse_client.clone(),
     )
     .await
     .map_err(|_| ServiceError::BadRequest("Thread error creating notification".to_string()))?;
