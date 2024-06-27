@@ -296,9 +296,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     {renderMetadataElements(value[subKey])}
                   </span>
                 </div>
-                {/* {subIndex() < Object.keys(value).length - 1 && (
-                  <hr class="my-2 border-neutral-300 dark:border-neutral-600" />
-                )} */}
               </div>
             )}
           </For>
@@ -661,10 +658,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                                 )}
                             </span>
                           </div>
-                          {/* {index() <
-                            Object.keys(props.chunk.metadata).length - 1 && (
-                            <hr class="my-2 border-neutral-300 dark:border-neutral-600" />
-                          )} */}
                         </div>
                       </Show>
                     )}

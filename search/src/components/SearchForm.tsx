@@ -79,25 +79,37 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
     { name: "Hybrid", isSelected: false, route: "hybrid" },
     {
       name: "FullText",
-      isSelected: props.search.state.searchType === "fulltext",
+      isSelected: false,
       route: "fulltext",
     },
     {
       name: "Semantic",
-      isSelected: props.search.state.searchType === "semantic",
+      isSelected: false,
       route: "semantic",
     },
     {
       name: "AutoComplete Semantic",
-      isSelected: props.search.state.searchType === "autocomplete-semantic",
+      isSelected: false,
       route: "autocomplete-semantic",
     },
     {
       name: "AutoComplete FullText",
-      isSelected: props.search.state.searchType === "autocomplete-fulltext",
+      isSelected: false,
       route: "autocomplete-fulltext",
     },
   ]);
+
+  createEffect(() => {
+    setSearchTypes((prev) => {
+      return prev.map((type) => {
+        if (type.route === props.search.state.searchType) {
+          return { ...type, isSelected: true };
+        } else {
+          return { ...type, isSelected: false };
+        }
+      });
+    });
+  });
 
   createEffect(() => {
     props.search.setSearch(
@@ -689,7 +701,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           <input
                             class="w-16 rounded border border-neutral-400 p-0.5 text-black"
                             type="number"
-                            value={tempSearchValues().group_size}
+                            value={tempSearchValues().group_size ?? 3}
                             onChange={(e) => {
                               setTempSearchValues((prev) => {
                                 return {
