@@ -17,7 +17,7 @@ pub async fn create_event_query(
         .unwrap_or(false)
     {
         client
-            .query("INSERT INTO trieve.dataset_events (id, dataset_id, event_type, event_data, created_at) VALUES (?, ?, ?, ?, now())")
+            .query("INSERT INTO default.dataset_events (id, dataset_id, event_type, event_data, created_at) VALUES (?, ?, ?, ?, now())")
             .bind(event.id)
             .bind(event.dataset_id)
             .bind(event.event_type)
@@ -53,7 +53,7 @@ pub async fn get_events_query(
             event_type,
             event_data,
             created_at
-        FROM trieve.dataset_events
+        FROM default.dataset_events
         WHERE dataset_id = '{dataset_id}' AND event_type IN ({event_types})
         ORDER BY created_at DESC
         LIMIT {limit} OFFSET {offset}
@@ -85,7 +85,7 @@ pub async fn get_events_query(
     let count_query = format!(
         "
         SELECT count(*) / {page_size}
-        FROM trieve.dataset_events
+        FROM default.dataset_events
         WHERE dataset_id = '{dataset_id}' AND event_type IN ({event_types})
         ",
         dataset_id = dataset_id.to_string(),

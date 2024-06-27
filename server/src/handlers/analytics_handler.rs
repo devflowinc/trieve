@@ -236,7 +236,7 @@ pub async fn get_search_metrics(
             quantile(0.99)(latency) as p99,
             quantile(0.95)(latency) as p95,
             quantile(0.5)(latency) as p50
-        FROM trieve.search_queries
+        FROM default.search_queries
         WHERE dataset_id = ?",
     );
 
@@ -303,7 +303,7 @@ pub async fn get_head_queries(
             query, 
             count(*) AS count
         FROM 
-            trieve.search_queries
+            default.search_queries
         WHERE dataset_id = ?",
     );
 
@@ -373,7 +373,7 @@ pub async fn get_low_confidence_queries(
         "SELECT 
             ?fields
         FROM 
-            trieve.search_queries
+            default.search_queries
         WHERE dataset_id = ?",
     );
 
@@ -455,7 +455,7 @@ pub async fn get_all_queries(
         "SELECT 
             ?fields
         FROM 
-            trieve.search_queries
+            default.search_queries
         WHERE dataset_id = ?",
     );
 
@@ -539,7 +539,7 @@ pub async fn get_rps_graph(
                 toDateTime(toUnixTimestamp(created_at) - (toUnixTimestamp(created_at) % 1)) AS second,
                 count(*) AS requests_per_second
             FROM 
-                trieve.search_queries
+                default.search_queries
             WHERE 
                 dataset_id = ?
         ",
@@ -634,7 +634,7 @@ pub async fn get_latency_graph(
                 toDateTime(toUnixTimestamp(created_at) - (toUnixTimestamp(created_at) % 1)) AS second,
                 avg(latency) AS latency_per_second
             FROM 
-                trieve.search_queries
+                default.search_queries
             WHERE 
                 dataset_id = ?
         ",
