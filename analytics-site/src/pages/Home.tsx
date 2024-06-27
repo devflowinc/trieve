@@ -5,6 +5,7 @@ import { subDays } from "date-fns";
 import { LatencyGraph } from "../components/charts/LatencyGraph";
 import { RpsGraph } from "../components/charts/RpsGraph";
 import { HeadQueries } from "../components/charts/HeadQueries";
+import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries";
 
 export const Home = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
@@ -25,6 +26,7 @@ export const Home = () => {
         <LatencyGraph filters={analyticsFilters} />
         <RpsGraph filters={analyticsFilters} />
         <HeadQueries filters={analyticsFilters} />
+        <LowConfidenceQueries filters={analyticsFilters} />
       </div>
     </div>
   );
