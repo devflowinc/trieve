@@ -18,6 +18,7 @@ const initalState = {
   highlightMaxLength: 8,
   highlightMaxNum: 3,
   highlightWindow: 0,
+  group_size: 3,
 };
 
 export type SearchOptions = typeof initalState;
@@ -39,6 +40,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     highlightMaxLength: state.highlightMaxLength.toString(),
     highlightMaxNum: state.highlightMaxNum.toString(),
     highlightWindow: state.highlightWindow.toString(),
+    group_size: state.group_size?.toString(),
   };
 };
 
@@ -61,6 +63,7 @@ const fromParamsToState = (
     highlightMaxLength: parseInt(params.highlightMaxLength ?? "8"),
     highlightMaxNum: parseInt(params.highlightMaxNum ?? "3"),
     highlightWindow: parseInt(params.highlightWindow ?? "0"),
+    group_size: parseInt(params.group_size ?? "3"),
   };
 };
 
