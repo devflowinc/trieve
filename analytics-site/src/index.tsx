@@ -1,5 +1,5 @@
 /* @refresh reload */
-import { render } from "solid-js/web";
+import { render, Show } from "solid-js/web";
 
 import "./index.css";
 import { RouteDefinition, Router } from "@solidjs/router";
@@ -8,6 +8,7 @@ import { UserAuthContextProvider } from "./contexts/UserAuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { TrendExplorer } from "./pages/TrendExplorer";
 import { Chart, registerables } from "chart.js";
+import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,9 @@ render(
   () => (
     <QueryClientProvider client={queryClient}>
       <Router>{routes}</Router>
+      <Show when={import.meta.env.DEV}>
+        <SolidQueryDevtools initialIsOpen={false} />
+      </Show>
     </QueryClientProvider>
   ),
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
