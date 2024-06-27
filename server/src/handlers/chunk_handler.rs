@@ -9,11 +9,11 @@ use crate::data::models::{
 };
 use crate::errors::ServiceError;
 use crate::get_env;
-use crate::operators::analytics_operator::{
-    get_latency_from_header, send_to_clickhouse, ClickHouseEvent,
-};
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
+use crate::operators::clickhouse_operator::{
+    get_latency_from_header, send_to_clickhouse, ClickHouseEvent,
+};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
