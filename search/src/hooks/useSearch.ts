@@ -12,7 +12,7 @@ const initalState = {
   groupUniqueSearch: false,
   recencyBias: 0.0,
   pageSize: 10,
-  getTotalPages: true,
+  getTotalPages: false,
   highlightResults: true,
   highlightDelimiters: ["?", ".", "!"],
   highlightMaxLength: 8,
