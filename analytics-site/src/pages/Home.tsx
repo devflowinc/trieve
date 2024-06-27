@@ -4,6 +4,8 @@ import { AnalyticsParams } from "shared/types";
 import { subDays } from "date-fns";
 import { LatencyGraph } from "../components/charts/LatencyGraph";
 import { RpsGraph } from "../components/charts/RpsGraph";
+import { HeadQueries } from "../components/charts/HeadQueries";
+import { Suspense } from "solid-js";
 
 export const Home = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
@@ -23,6 +25,7 @@ export const Home = () => {
       <div class="grid grid-cols-10 items-start gap-2 p-2">
         <LatencyGraph filters={analyticsFilters} />
         <RpsGraph filters={analyticsFilters} />
+        <HeadQueries filters={analyticsFilters} />
       </div>
     </div>
   );
