@@ -1383,6 +1383,13 @@ pub enum EventType {
         chunk_ids: Vec<uuid::Uuid>,
         error: String,
     },
+    GroupChunksUpdated {
+        group_id: uuid::Uuid,
+    },
+    GroupChunksActionFailed {
+        group_id: uuid::Uuid,
+        error: String,
+    },
 }
 
 impl EventType {
@@ -1395,6 +1402,8 @@ impl EventType {
             EventType::ChunkUpdated { .. } => "chunk_updated".to_string(),
             EventType::QdrantUploadFailed { .. } => "qdrant_index_failed".to_string(),
             EventType::BulkChunkActionFailed { .. } => "bulk_chunk_action_failed".to_string(),
+            EventType::GroupChunksUpdated { .. } => "group_chunks_updated".to_string(),
+            EventType::GroupChunksActionFailed { .. } => "group_chunks_action_failed".to_string(),
         }
     }
 
@@ -1406,6 +1415,8 @@ impl EventType {
             "chunk_updated".to_string(),
             "qdrant_index_failed".to_string(),
             "bulk_chunk_action_failed".to_string(),
+            "group_chunks_updated".to_string(),
+            "group_chunks_action_failed".to_string(),
         ]
     }
 }
@@ -1430,6 +1441,10 @@ impl From<EventType> for serde_json::Value {
             EventType::BulkChunkActionFailed {
                 chunk_ids, error, ..
             } => json!({"chunk_ids": chunk_ids, "error": error}),
+            EventType::GroupChunksUpdated { group_id } => json!({"group_id": group_id}),
+            EventType::GroupChunksActionFailed { group_id, error } => {
+                json!({"group_id": group_id, "error": error})
+            }
         }
     }
 }
