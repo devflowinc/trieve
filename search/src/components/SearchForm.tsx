@@ -550,6 +550,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 highlightMaxLength: 8,
                                 highlightMaxNum: 3,
                                 highlightWindow: 0,
+                                group_size: 3,
                               } as SearchOptions);
                             }}
                           >
@@ -678,6 +679,22 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 return {
                                   ...prev,
                                   highlightResults: e.target.checked,
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Group size:</label>
+                          <input
+                            class="h-4 w-4"
+                            type="number"
+                            value={tempSearchValues().group_size}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  group_size: parseInt(e.currentTarget.value),
                                 };
                               });
                             }}
