@@ -230,6 +230,7 @@ pub async fn send_to_clickhouse(
                     .await
                     .map_err(|err| {
                         log::error!("Error writing to ClickHouse: {:?}", err);
+                        sentry::capture_message(&format!("Error writing to ClickHouse: {:?}", err), sentry::Level::Error);
                         ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
                     })?;
         }
