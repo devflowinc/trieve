@@ -560,15 +560,26 @@ pub fn main() -> std::io::Result<()> {
             });
         }
 
-        let clickhouse_client = clickhouse::Client::default()
-            .with_url(get_env!("CLICKHOUSE_URL", "CLICKHOUSE_URL should be set"))
-            .with_database(get_env!("CLICKHOUSE_DB", "CLICKHOUSE_DB should be set"))
-            .with_user(get_env!("CLICKHOUSE_USER", "CLICKHOUSE_USER should be set"))
-            .with_password(get_env!("CLICKHOUSE_PASSWORD", "CLICKHOUSE_PASSWORD should be set"))
-            .with_option("async_insert", "1")
-            .with_option("wait_for_async_insert", "0");
 
-        run_clickhouse_migrations(&clickhouse_client).await;
+        let clickhouse_client = if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()).parse().unwrap_or(false) {
+                        log::info!("Analytics enabled");
+
+            let clickhouse_client = clickhouse::Client::default()
+                .with_url(std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()))
+                .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
+                .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
+                .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
+                .with_option("async_insert", "1")
+                .with_option("wait_for_async_insert", "0");
+
+            run_clickhouse_migrations(&clickhouse_client).await;
+            clickhouse_client
+        } else {
+            log::info!("Analytics disabled");
+            clickhouse::Client::default()
+        };
+    
+
 
         HttpServer::new(move || {
             App::new()
