@@ -684,6 +684,22 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             }}
                           />
                         </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Group size:</label>
+                          <input
+                            class="h-4 w-4"
+                            type="number"
+                            value={tempSearchValues().group_size}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  group_size: parseInt(e.currentTarget.value),
+                                };
+                              });
+                            }}
+                          />
+                        </div>
                         <div class="items flex justify-between space-x-2 p-1">
                           <label>Group size:</label>
                           <input
