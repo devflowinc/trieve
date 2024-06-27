@@ -1,4 +1,3 @@
-import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import CreateChunkRequest from "../../../components/CreateChunkRequest.md";
 import HybridSearchReqeust from "../../../components/HybridSearchRequest.md";
 import { BuildingSomething } from "../../../components/BuildingSomething";
@@ -19,10 +18,14 @@ import {
   DefaultError,
 } from "../../../types/apiTypes";
 import { DatasetContext } from "../../../contexts/DatasetContext";
+
 import { FaRegularClipboard } from "solid-icons/fa";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
-import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
+import { TbReload } from "solid-icons/tb";
+import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import { BsMagic } from "solid-icons/bs";
+
+import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 import { Tooltip } from "../../../components/Tooltip";
 
 const SAMPLE_DATASET_SIZE = 921;
@@ -76,6 +79,54 @@ export const DatasetStart = () => {
       }
     },
   );
+
+  const reloadChunkCount = () => {
+    const datasetId = currDatasetId();
+    if (!datasetId) {
+      console.error("Dataset ID is undefined.");
+      return;
+    }
+
+    void (async () => {
+      try {
+        const response = await fetch(`${api_host}/dataset/usage/${datasetId}`, {
+          method: "GET",
+          headers: {
+            "TR-Dataset": datasetId,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch dataset usage");
+        }
+
+        const newData = (await response.json()) as DatasetUsageCount;
+        if (usage()?.chunk_count === newData.chunk_count) {
+          createToast({
+            title: "No Update Needed",
+            type: "info",
+            message: "Chunk count is already up to date",
+          });
+        } else {
+          mutateUsage(() => newData);
+          createToast({
+            title: "Updated",
+            type: "success",
+            message: "Updated chunk count",
+          });
+        }
+      } catch (error) {
+        console.error("Error reloading chunk count:", error);
+        createToast({
+          title: "Error",
+          type: "error",
+          message: "Failed to reload chunk count.",
+        });
+      }
+    })();
+  };
 
   const [updatedTrackingId, setUpdatedTrackingId] = createSignal<
     string | undefined
@@ -241,6 +292,7 @@ export const DatasetStart = () => {
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">Chunk Count:</p>
                 <p class="w-fit text-sm">{usage()?.chunk_count || 0}</p>
+                <TbReload onClick={reloadChunkCount} />
               </div>
               <div class="flex items-center space-x-3">
                 <label class="block text-sm font-medium">tracking id:</label>
