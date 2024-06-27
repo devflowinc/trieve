@@ -6,11 +6,15 @@ use std::sync::{
     Arc,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use trieve_server::data::models::Event;
 use trieve_server::{
     data::models,
     errors::ServiceError,
     establish_connection, get_env,
-    operators::group_operator::{update_grouped_chunks_query, GroupUpdateMessage},
+    operators::{
+        event_operator::create_event_query,
+        group_operator::{update_grouped_chunks_query, GroupUpdateMessage},
+    },
 };
 
 fn main() {
@@ -179,9 +183,24 @@ async fn grupdate_worker(
             }
         };
 
-        match update_grouped_chunks_query(group_update_msg.group_id, web_pool.clone()).await {
+        match update_grouped_chunks_query(group_update_msg.group.id, web_pool.clone()).await {
             Ok(_) => {
-                log::info!("Updated group {}", group_update_msg.group_id);
+                log::info!("Updated group {}", group_update_msg.group.id);
+                let _ = create_event_query(
+                    Event::from_details(
+                        group_update_msg.group.dataset_id,
+                        models::EventType::GroupChunksUpdated {
+                            group_id: group_update_msg.group.id,
+                        },
+                    ),
+                    web_pool.clone(),
+                )
+                .await
+                .map_err(|err| {
+                    log::error!("Failed to create event {:?}", err);
+                    err
+                });
+
                 let _ = redis::cmd("LREM")
                     .arg("group_update_processing")
                     .arg(1)
@@ -189,15 +208,20 @@ async fn grupdate_worker(
                     .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
                     .await;
             }
-
             Err(err) => {
                 log::error!(
                     "Failed to update group {}: {:?}",
-                    group_update_msg.group_id,
+                    group_update_msg.group.id,
                     err
                 );
 
-                let _ = read_group_error_to_queue(group_update_msg, err, redis_pool.clone()).await;
+                let _ = read_group_error_to_queue(
+                    group_update_msg,
+                    err,
+                    redis_pool.clone(),
+                    web_pool.clone(),
+                )
+                .await;
             }
         };
 
@@ -205,11 +229,12 @@ async fn grupdate_worker(
     }
 }
 
-#[tracing::instrument(skip(redis_pool))]
+#[tracing::instrument(skip(redis_pool, web_pool))]
 pub async fn read_group_error_to_queue(
     mut payload: GroupUpdateMessage,
     error: ServiceError,
     redis_pool: actix_web::web::Data<models::RedisPool>,
+    web_pool: actix_web::web::Data<models::Pool>,
 ) -> Result<(), ServiceError> {
     let old_payload_message = serde_json::to_string(&payload).map_err(|_| {
         ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
@@ -219,6 +244,21 @@ pub async fn read_group_error_to_queue(
 
     if payload.attempt_number == 3 {
         log::error!("Failed to update group 3 times quitting {:?}", error);
+        let _ = create_event_query(
+            Event::from_details(
+                payload.group.dataset_id,
+                models::EventType::GroupChunksActionFailed {
+                    group_id: payload.group.id,
+                    error: error.to_string(),
+                },
+            ),
+            web_pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            log::error!("Failed to create event {:?}", err);
+            err
+        });
         return Err(ServiceError::InternalServerError(format!(
             "Failed to update grouped chunks 3 times {:?}",
             error
