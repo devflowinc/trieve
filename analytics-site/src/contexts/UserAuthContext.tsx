@@ -24,9 +24,11 @@ export const UserAuthContextProvider: ParentComponent = (props) => {
     const response = await fetch(`${apiHost}/auth/me`, {
       credentials: "include",
     });
+
     if (response.status === 401) {
       window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
     }
+
     const userData = (await response.json()) as SlimUser;
     setUserInfo(userData);
   };
