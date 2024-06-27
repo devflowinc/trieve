@@ -706,15 +706,27 @@ pub async fn cross_encoder(
     if request_docs.len() <= 20 {
         let resp = ureq::post(&embedding_server_call)
             .set("Content-Type", "application/json")
-            .set("Authorization", &format!("Bearer {}", get_env!("OPENAI_API_KEY", "OPENAI_API should be set")))
+            .set(
+                "Authorization",
+                &format!(
+                    "Bearer {}",
+                    get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                ),
+            )
             .send_json(CrossEncoderData {
                 query: query.clone(),
                 texts: request_docs,
                 truncate: true,
             })
-            .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+            })?
             .into_json::<Vec<ScorePair>>()
-            .map_err(|_e| ServiceError::BadRequest("Failed parsing response from custom embedding server".to_string()))?;
+            .map_err(|_e| {
+                ServiceError::BadRequest(
+                    "Failed parsing response from custom embedding server".to_string(),
+                )
+            })?;
 
         for pair in resp {
             if let Some(result) = results.get_mut(pair.index as usize) {
@@ -734,15 +746,30 @@ pub async fn cross_encoder(
                 let client = reqwest::Client::new();
                 let url = embedding_server_call.clone();
                 async move {
-                    let embeddings_resp = client.post(&url)
-                        .header("Authorization", &format!("Bearer {}", get_env!("OPENAI_API_KEY", "OPENAI_API should be set")))
+                    let embeddings_resp = client
+                        .post(&url)
+                        .header(
+                            "Authorization",
+                            &format!(
+                                "Bearer {}",
+                                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                            ),
+                        )
                         .json(&parameters)
                         .send()
                         .await
-                        .map_err(|_| ServiceError::BadRequest("Failed to send message to embedding server".to_string()))?
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Failed to send message to embedding server".to_string(),
+                            )
+                        })?
                         .json::<Vec<ScorePair>>()
                         .await
-                        .map_err(|_| ServiceError::InternalServerError("Failed to format response from embeddings server".to_string()))?;
+                        .map_err(|_| {
+                            ServiceError::InternalServerError(
+                                "Failed to format response from embeddings server".to_string(),
+                            )
+                        })?;
 
                     Ok((i, embeddings_resp))
                 }
@@ -764,7 +791,11 @@ pub async fn cross_encoder(
         }
     }
 
-    results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     results.truncate(page_size as usize);
 
     transaction.finish();
