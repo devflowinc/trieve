@@ -1,5 +1,6 @@
+import { Show } from "solid-js";
 /* @refresh reload */
-import { render, Show } from "solid-js/web";
+import { render } from "solid-js/web";
 
 import "./index.css";
 import { RouteDefinition, Router } from "@solidjs/router";
