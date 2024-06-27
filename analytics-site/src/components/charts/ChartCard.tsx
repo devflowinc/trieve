@@ -1,4 +1,4 @@
-import { JSX, ParentComponent, Show, splitProps } from "solid-js";
+import { JSX, Show, splitProps } from "solid-js";
 
 interface ChartCardProps extends JSX.HTMLAttributes<HTMLDivElement> {
   title?: string;
