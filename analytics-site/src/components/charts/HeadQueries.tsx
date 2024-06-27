@@ -1,9 +1,11 @@
 import { AnalyticsParams, HeadQuery } from "shared/types";
 import { ChartCard } from "./ChartCard";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import { createEffect, createSignal, For, Show, useContext } from "solid-js";
+import { createEffect, For, Show, useContext } from "solid-js";
 import { getHeadQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
+import { usePagination } from "../../hooks/usePagination";
+import { PaginationButtons } from "../PaginationButtons";
 
 interface HeadQueriesProps {
   filters: AnalyticsParams;
@@ -11,21 +13,20 @@ interface HeadQueriesProps {
 
 export const HeadQueries = (props: HeadQueriesProps) => {
   const dataset = useContext(DatasetContext);
-  const [page, setPage] = createSignal(1);
-  const [maxPage, setMaxPage] = createSignal(1);
+  const pages = usePagination();
   const queryClient = useQueryClient();
 
   createEffect(() => {
     // Preload the next page
     const filters = props.filters;
     const datasetId = dataset().dataset.id;
-    const curPage = page();
+    const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: ["head-queries", { filters, page: curPage + 1 }],
       queryFn: async () => {
         const results = await getHeadQueries(filters, datasetId, curPage + 1);
         if (results.length === 0) {
-          setMaxPage(curPage);
+          pages.setMaxPageDiscovered(curPage);
         }
         return results;
       },
@@ -33,14 +34,14 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   });
 
   const headQueriesQuery = createQuery(() => ({
-    queryKey: ["head-queries", { filters: props.filters, page: page() }],
+    queryKey: ["head-queries", { filters: props.filters, page: pages.page() }],
     queryFn: () => {
-      return getHeadQueries(props.filters, dataset().dataset.id, page());
+      return getHeadQueries(props.filters, dataset().dataset.id, pages.page());
     },
   }));
 
   return (
-    <ChartCard class="px-4" width={3}>
+    <ChartCard class="px-4" width={4}>
       <div class="text-lg">Head Queries</div>
       <Show
         fallback={<div class="py-8">Loading...</div>}
@@ -56,9 +57,8 @@ export const HeadQueries = (props: HeadQueriesProps) => {
           </div>
         )}
       </Show>
-      <div class="flex justify-between">
-        <button onClick={() => setPage((prev) => prev - 1)}>Prev page</button>
-        <button onClick={() => setPage((prev) => prev + 1)}>Next page</button>
+      <div class="flex justify-end">
+        <PaginationButtons size={24} pages={pages} />
       </div>
     </ChartCard>
   );
@@ -70,7 +70,7 @@ interface QueryCardProps {
 const QueryCard = (props: QueryCardProps) => {
   return (
     <div class="flex justify-between">
-      <div>{props.query.query}</div>
+      <div class="truncate">{props.query.query}</div>
       <div>{props.query.count}</div>
     </div>
   );
