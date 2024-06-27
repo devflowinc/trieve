@@ -98,12 +98,12 @@ export const useSearch = () => {
     ),
   );
 
-  // @ts-expect-error args
+  // @ts-expect-error args are passed to setSearch
   const proxiedSet: typeof setSearch = (
     ...args: Parameters<typeof setSearch>
   ) => {
     if (!readFromLocation) return;
-    // @ts-expect-error args
+    // @ts-expect-error args are passed to setSearch
     setSearch(...args);
     setSearch("version", (prev) => prev + 1);
   };
