@@ -19,7 +19,7 @@ export const PaginationButtons = (props: PaginationButtonsProps) => {
           size={props.size || 24}
         />
       </button>
-      {props.pages.page()}
+      <div class="w-[14px] text-center">{props.pages.page()}</div>
       <button
         disabled={props.pages.page() === props.pages.maxPageDiscovered()}
         onClick={() => props.pages.nextPage()}
