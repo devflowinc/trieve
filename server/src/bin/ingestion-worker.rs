@@ -99,6 +99,29 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
+    let clickhouse_client = if std::env::var("USE_ANALYTICS")
+        .unwrap_or("false".to_string())
+        .parse()
+        .unwrap_or(false)
+    {
+        log::info!("Analytics enabled");
+
+        clickhouse::Client::default()
+            .with_url(
+                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
+            )
+            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
+            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
+            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
+            .with_option("async_insert", "1")
+            .with_option("wait_for_async_insert", "0")
+    } else {
+        log::info!("Analytics disabled");
+        clickhouse::Client::default()
+    };
+
+    let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
+
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -127,17 +150,24 @@ fn main() {
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
 
-                ingestion_worker(should_terminate, web_redis_pool, web_pool).await
+                ingestion_worker(
+                    should_terminate,
+                    web_redis_pool,
+                    web_pool,
+                    web_clickhouse_client,
+                )
+                .await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
 }
 
-#[tracing::instrument(skip(should_terminate, web_pool, redis_pool))]
+#[tracing::instrument(skip(should_terminate, web_pool, redis_pool, clickhouse_client))]
 async fn ingestion_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
+    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
 ) {
     log::info!("Starting ingestion service thread");
 
@@ -235,7 +265,7 @@ async fn ingestion_worker(
                                 payload.dataset_id,
                                 models::EventType::ChunksUploaded { chunk_ids },
                             ),
-                            web_pool.clone(),
+                            clickhouse_client.clone(),
                         )
                         .await
                         .map_err(|err| {
@@ -257,8 +287,8 @@ async fn ingestion_worker(
                         let _ = readd_error_to_queue(
                             ingestion_message,
                             err,
-                            web_pool.clone(),
                             redis_pool.clone(),
+                            clickhouse_client.clone(),
                         )
                         .await;
                     }
@@ -282,7 +312,7 @@ async fn ingestion_worker(
                                     chunk_id: payload.chunk_metadata.id,
                                 },
                             ),
-                            web_pool.clone(),
+                            clickhouse_client.clone(),
                         )
                         .await
                         .map_err(|err| {
@@ -302,8 +332,8 @@ async fn ingestion_worker(
                         let _ = readd_error_to_queue(
                             ingestion_message,
                             err,
-                            web_pool.clone(),
                             redis_pool.clone(),
+                            clickhouse_client.clone(),
                         )
                         .await;
                     }
@@ -1030,12 +1060,12 @@ async fn update_chunk(
     Ok(())
 }
 
-#[tracing::instrument(skip(web_pool, redis_pool))]
+#[tracing::instrument(skip(redis_pool, clickhouse_client))]
 pub async fn readd_error_to_queue(
     message: IngestionMessage,
     error: ServiceError,
-    web_pool: actix_web::web::Data<models::Pool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
+    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
 ) -> Result<(), ServiceError> {
     if let ServiceError::DuplicateTrackingId(_) = error {
         log::info!("Duplicate");
@@ -1066,7 +1096,7 @@ pub async fn readd_error_to_queue(
                         error: format!("Failed to upload {:} chunks: {:?}", count, error),
                     },
                 ),
-                web_pool.clone(),
+                clickhouse_client.clone(),
             )
             .await
             .map_err(|err| {

@@ -10,8 +10,8 @@ use crate::{
     },
     errors::ServiceError,
     operators::{
-        analytics_operator::{get_latency_from_header, send_to_clickhouse, ClickHouseEvent},
         chunk_operator::get_metadata_from_tracking_id_query,
+        clickhouse_operator::{get_latency_from_header, send_to_clickhouse, ClickHouseEvent},
         group_operator::*,
         qdrant_operator::{
             add_bookmark_to_qdrant_query, recommend_qdrant_groups_query,

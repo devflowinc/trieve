@@ -8,6 +8,7 @@ use crate::{
     errors::{custom_json_error_handler, ServiceError},
     handlers::auth_handler::build_oidc_client,
     operators::{
+        clickhouse_operator::run_clickhouse_migrations,
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
     },
 };
@@ -55,73 +56,6 @@ fn run_migrations(url: &str) {
     // &mut impl MigrationHarness<diesel::pg::Pg>
     conn.run_pending_migrations(MIGRATIONS)
         .expect("Failed to run migrations");
-}
-
-async fn run_clickhouse_migrations(client: &clickhouse::Client) {
-    client
-        .query(
-            "
-        CREATE TABLE IF NOT EXISTS search_queries
-        (
-            id UUID,
-            search_type String,
-            query String,
-            request_params String,
-            latency Float32,
-            top_score Float32,
-            results Array(String),
-            query_vector Array(Float32),
-            dataset_id UUID,
-            created_at DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY (dataset_id, created_at, top_score, latency, id)
-        PARTITION BY
-            (toYYYYMM(created_at),
-            dataset_id)
-        TTL created_at + INTERVAL 30 DAY
-        ",
-        )
-        .execute()
-        .await
-        .unwrap();
-
-    client
-        .query(
-            "
-        CREATE TABLE IF NOT EXISTS cluster_topics
-        (
-            id UUID,
-            dataset_id UUID,
-            topic String,
-            density Int32,
-            avg_score Float32,
-            created_at DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY (dataset_id, id)
-        PARTITION BY
-            dataset_id
-        ",
-        )
-        .execute()
-        .await
-        .unwrap();
-
-    client
-        .query(
-            "
-        CREATE TABLE IF NOT EXISTS search_cluster_memberships
-        (
-            id UUID,
-            search_id UUID,
-            cluster_id UUID,
-            distance_to_centroid Float32,
-        ) ENGINE = MergeTree()
-        ORDER BY id
-        ",
-        )
-        .execute()
-        .await
-        .unwrap();
 }
 
 pub fn establish_connection(
@@ -561,13 +495,13 @@ pub fn main() -> std::io::Result<()> {
 
 
         let clickhouse_client = if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()).parse().unwrap_or(false) {
-                        log::info!("Analytics enabled");
+            log::info!("Analytics enabled");
 
             let clickhouse_client = clickhouse::Client::default()
                 .with_url(std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()))
                 .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
                 .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
-                .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
+                .with_database(std::env::var("CLICKHOUSE_DB").unwrap_or("default".to_string()))
                 .with_option("async_insert", "1")
                 .with_option("wait_for_async_insert", "0");
 
