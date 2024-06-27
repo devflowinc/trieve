@@ -25,7 +25,7 @@ pub async fn run_clickhouse_migrations(client: &clickhouse::Client) {
                 created_at DateTime,
                 dataset_id UUID,
                 event_type String,
-                event_data JSON
+                event_data String
             ) ENGINE = MergeTree()
             ORDER BY (dataset_id, created_at, event_type, id)
             PARTITION BY
