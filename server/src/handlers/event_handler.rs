@@ -1,6 +1,6 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, EventType, Pool},
+    data::models::{DatasetAndOrgWithSubAndPlan, EventType},
     errors::ServiceError,
     operators::event_operator::get_events_query,
 };
@@ -43,12 +43,12 @@ pub struct GetEventsData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(clickhouse_client))]
 pub async fn get_events(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     get_events_data: web::Json<GetEventsData>,
-    pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let event_types = match &get_events_data.event_types {
         Some(event_types) => {
@@ -56,7 +56,11 @@ pub async fn get_events(
             if event_types.is_empty() {
                 EventType::get_all_event_types()
             } else {
-                event_types.clone()
+                event_types
+                    .clone()
+                    .into_iter()
+                    .map(|x| x.to_string())
+                    .collect()
             }
         }
         None => EventType::get_all_event_types(),
@@ -67,7 +71,7 @@ pub async fn get_events(
         get_events_data.page.unwrap_or(1),
         get_events_data.page_size.unwrap_or(10),
         event_types,
-        pool,
+        clickhouse_client.clone(),
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
