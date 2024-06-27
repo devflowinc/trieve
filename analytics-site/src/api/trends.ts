@@ -40,6 +40,5 @@ export const getQueriesForTopic = async (
   }
 
   const data = (await response.json()) as unknown as SearchQueryEvent[];
-  console.log("GOT DATA", data);
   return data;
 };
