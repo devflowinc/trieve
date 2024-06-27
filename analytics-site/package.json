@@ -16,13 +16,16 @@
     "@tanstack/solid-query": "^5.48.0",
     "@tanstack/solid-query-devtools": "^5.48.0",
     "@types/matter-js": "^0.19.6",
+    "add": "^2.0.6",
     "chart.js": "^4.4.3",
     "date-fns": "^3.6.0",
     "matter-js": "^0.20.0",
     "shared": "*",
+    "solid-icons": "^1.1.0",
     "solid-js": "^1.8.17",
     "tailwind-gradient-mask-image": "^1.2.0",
-    "tailwind-scrollbar": "^3.1.0"
+    "tailwind-scrollbar": "^3.1.0",
+    "yarn": "^1.22.22"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.14.0",
