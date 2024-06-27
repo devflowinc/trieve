@@ -170,7 +170,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         get_collisions: true,
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
-        get_total_pages: props.search.debounced.getTotalPages ?? true,
+        get_total_pages: props.search.debounced.getTotalPages ?? false,
         highlight_results: props.search.debounced.highlightResults ?? true,
         highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
           "?",
