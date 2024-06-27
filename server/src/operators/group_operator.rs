@@ -1,13 +1,14 @@
+use crate::{data::models::ChunkGroupBookmark, errors::ServiceError};
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTable, Dataset, DatasetTags,
-        FileGroup, Pool, RedisPool, ServerDatasetConfiguration, UnifiedId,
+        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTable, Dataset, FileGroup, Pool,
+        QdrantPayload, RedisPool, ServerDatasetConfiguration, UnifiedId,
     },
-    operators::chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
-};
-use crate::{
-    data::models::{ChunkGroupBookmark, ChunkMetadataTags},
-    errors::ServiceError,
+    get_env,
+    operators::{
+        chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
+        qdrant_operator::get_qdrant_connection,
+    },
 };
 use actix_web::web;
 use diesel::prelude::*;
@@ -17,8 +18,10 @@ use diesel::{
 };
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
+use qdrant_client::qdrant::{
+    points_selector::PointsSelectorOneOf, PointId, PointsIdsList, PointsSelector,
+};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
 use utoipa::ToSchema;
 
 #[tracing::instrument(skip(pool))]
@@ -711,20 +714,17 @@ pub async fn check_group_ids_exist_query(
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GroupUpdateMessage {
+    pub config: ServerDatasetConfiguration,
     pub group: ChunkGroup,
+    pub prev_group: ChunkGroup,
     pub attempt_number: usize,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct JoinedChunkTagRow {
-    pub chunk_id: uuid::Uuid,
-    pub tag: String,
-    pub dataset_id: uuid::Uuid,
-}
-
 pub async fn soft_update_grouped_chunks_query(
-    group: ChunkGroup,
+    new_group: ChunkGroup,
+    prev_group: ChunkGroup,
     redis_pool: web::Data<RedisPool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     let mut redis_conn = redis_pool
         .get()
@@ -732,7 +732,9 @@ pub async fn soft_update_grouped_chunks_query(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let message = GroupUpdateMessage {
-        group,
+        config,
+        group: new_group,
+        prev_group,
         attempt_number: 0,
     };
 
@@ -750,149 +752,123 @@ pub async fn soft_update_grouped_chunks_query(
 }
 
 pub async fn update_grouped_chunks_query(
-    group_id: uuid::Uuid,
+    prev_group: ChunkGroup,
+    new_group: ChunkGroup,
     pool: web::Data<Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
-    use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
-    use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut offset = uuid::Uuid::nil();
 
     let mut conn = pool.get().await.unwrap();
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
-    let group = chunk_group_columns::chunk_group
-        .filter(chunk_group_columns::id.eq(group_id))
-        .first::<ChunkGroup>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::NotFound(format!("Group with id not found {:?}", group_id)))?;
-
-    if group.tag_set.is_none() {
-        return Ok(());
-    }
-
-    let group_tags = group
+    let group_id = new_group.id;
+    let prev_group_tag_set = prev_group
         .tag_set
-        .unwrap()
+        .unwrap_or_default()
         .iter()
-        .filter_map(|tag| tag.clone())
+        .filter_map(|x| x.clone())
+        .collect::<Vec<String>>();
+    let new_group_tag_set = new_group
+        .tag_set
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|x| x.clone())
         .collect::<Vec<String>>();
 
-    let mut last_chunk_offset = uuid::Uuid::nil();
-
     loop {
-        let chunk_ids: Vec<uuid::Uuid> = chunk_group_bookmarks_columns::chunk_group_bookmarks
-            .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
-            .filter(chunk_group_bookmarks_columns::chunk_metadata_id.gt(last_chunk_offset))
-            .limit(1000)
-            .order_by(chunk_group_bookmarks_columns::chunk_metadata_id)
-            .select(chunk_group_bookmarks_columns::chunk_metadata_id)
-            .load::<uuid::Uuid>(&mut conn)
-            .await
-            .map_err(|_| ServiceError::BadRequest("Error getting chunk ids".to_string()))?;
-
-        if chunk_ids.is_empty() {
+        let qdrant_ids: Vec<(Option<uuid::Uuid>, uuid::Uuid)> =
+            chunk_group_bookmarks_columns::chunk_group_bookmarks
+                .inner_join(chunk_metadata_columns::chunk_metadata.on(
+                    chunk_metadata_columns::id.eq(chunk_group_bookmarks_columns::chunk_metadata_id),
+                ))
+                .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
+                .filter(chunk_metadata_columns::id.gt(offset))
+                .limit(1000)
+                .order_by(chunk_metadata_columns::id)
+                .select((
+                    chunk_metadata_columns::qdrant_point_id,
+                    chunk_metadata_columns::id,
+                ))
+                .load::<(Option<uuid::Uuid>, uuid::Uuid)>(&mut conn)
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to load chunks".to_string()))?;
+        if qdrant_ids.is_empty() {
             break;
         }
 
-        last_chunk_offset = chunk_ids.last().unwrap().clone();
+        offset = qdrant_ids.last().unwrap().1;
 
-        let chunk_tags: Vec<JoinedChunkTagRow> = chunk_metadata_tags_columns::chunk_metadata_tags
-            .inner_join(
-                dataset_tags_columns::dataset_tags
-                    .on(chunk_metadata_tags_columns::tag_id.eq(dataset_tags_columns::id)),
-            )
-            .filter(chunk_metadata_tags_columns::chunk_metadata_id.eq_any(&chunk_ids))
-            .select((
-                chunk_metadata_tags_columns::chunk_metadata_id,
-                dataset_tags_columns::tag,
-                dataset_tags_columns::dataset_id,
-            ))
-            .load::<(uuid::Uuid, String, uuid::Uuid)>(&mut conn)
-            .await
-            .map_err(|_| ServiceError::BadRequest("Error getting chunk tags".to_string()))?
-            .into_iter()
-            .map(|tag: (uuid::Uuid, String, uuid::Uuid)| JoinedChunkTagRow {
-                chunk_id: tag.0,
-                tag: tag.1,
-                dataset_id: tag.2,
-            })
+        let points: Vec<PointId> = qdrant_ids
+            .iter()
+            .filter_map(|x| x.0.clone())
+            .map(|x| x.to_string().into())
             .collect();
 
-        let chunk_tag_map: HashMap<uuid::Uuid, HashSet<String>> =
-            chunk_tags.into_iter().fold(HashMap::new(), |mut acc, tag| {
-                if let Some(tags) = acc.get_mut(&tag.chunk_id) {
-                    tags.insert(tag.tag);
-                } else {
-                    let mut tags = HashSet::new();
-                    tags.insert(tag.tag);
-                    acc.insert(tag.chunk_id, tags);
-                }
-                acc
-            });
-
-        let mut new_chunk_metadata_tag_rows: Vec<ChunkMetadataTags> = Vec::new();
-        let mut new_dataset_tag_rows: Vec<DatasetTags> = Vec::new();
-
-        let mut processed_dataset_ids_and_tags: HashSet<(uuid::Uuid, String)> = HashSet::new();
-        for chunk_id in &chunk_ids {
-            let backup_hashset = HashSet::new();
-            let tags = chunk_tag_map.get(&chunk_id).unwrap_or(&backup_hashset);
-            let tags_to_insert = group_tags
-                .clone()
-                .iter()
-                .filter_map(|tag| {
-                    if !tags.contains(tag)
-                        && !processed_dataset_ids_and_tags
-                            .contains(&(group.dataset_id, tag.clone()))
-                    {
-                        processed_dataset_ids_and_tags.insert((group.dataset_id, tag.clone()));
-                        Some(DatasetTags {
-                            id: uuid::Uuid::new_v4(),
-                            tag: tag.clone(),
-                            dataset_id: group.dataset_id,
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<DatasetTags>>();
-            new_dataset_tag_rows.extend(tags_to_insert);
-        }
-
-        let new_dataset_tags = diesel::insert_into(dataset_tags_columns::dataset_tags)
-            .values(&new_dataset_tag_rows)
-            .get_results::<DatasetTags>(&mut conn)
+        let results = qdrant_client
+            .get_points(
+                qdrant_collection.clone(),
+                None,
+                &points,
+                false.into(),
+                true.into(),
+                None,
+            )
             .await
             .map_err(|e| {
-                ServiceError::BadRequest(format!("Error inserting dataset tags {:?}", e))
+                log::info!("Failed to fetch points from qdrant {:?}", e);
+                ServiceError::BadRequest("Failed to fetch points from qdrant".to_string())
             })?;
-
-        for chunk_id in &chunk_ids {
-            let backup_hashset = HashSet::new();
-            let tags = chunk_tag_map.get(&chunk_id).unwrap_or(&backup_hashset);
-            let tags_to_insert = new_dataset_tags
+        let qdrant_payloads: Vec<QdrantPayload> = results
+            .result
+            .iter()
+            .map(|x| x.clone().into())
+            .collect::<Vec<QdrantPayload>>();
+        for (point, payload) in points.iter().zip(qdrant_payloads) {
+            let mut payload_tags: Vec<Option<String>> = payload
+                .group_tag_set
                 .clone()
+                .unwrap_or_default()
                 .iter()
-                .filter_map(|tag| {
-                    if !tags.contains(&tag.tag) {
-                        Some(ChunkMetadataTags {
-                            id: uuid::Uuid::new_v4(),
-                            chunk_metadata_id: *chunk_id,
-                            tag_id: tag.id,
-                        })
-                    } else {
-                        None
-                    }
+                .filter(|tag| match tag {
+                    Some(tag) => !prev_group_tag_set.contains(tag),
+                    None => false,
                 })
-                .collect::<Vec<ChunkMetadataTags>>();
-            new_chunk_metadata_tag_rows.extend(tags_to_insert);
+                .map(|x| x.clone())
+                .collect();
+            let new_tags = new_group_tag_set.iter().map(|x| Some(x.clone()));
+            payload_tags.extend(new_tags);
+            let point_selector = PointsSelector {
+                points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
+                    ids: vec![point.clone()],
+                })),
+            };
+            let new_payload = QdrantPayload {
+                group_tag_set: Some(payload_tags.clone()),
+                ..payload
+            };
+            qdrant_client
+                .overwrite_payload(
+                    qdrant_collection.clone(),
+                    None,
+                    &point_selector,
+                    new_payload.into(),
+                    None,
+                    None,
+                )
+                .await
+                .map_err(|_| {
+                    ServiceError::BadRequest("Failed updating chunk payload in qdrant".into())
+                })?;
         }
-
-        diesel::insert_into(chunk_metadata_tags_columns::chunk_metadata_tags)
-            .values(&new_chunk_metadata_tag_rows)
-            .execute(&mut conn)
-            .await
-            .map_err(|_| ServiceError::BadRequest("Error inserting chunk tags".to_string()))?;
     }
 
     Ok(())

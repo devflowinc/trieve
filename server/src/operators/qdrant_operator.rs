@@ -1,4 +1,7 @@
-use super::search_operator::{assemble_qdrant_filter, SearchResult};
+use super::{
+    group_operator::get_groups_from_group_ids_query,
+    search_operator::{assemble_qdrant_filter, SearchResult},
+};
 use crate::{
     data::models::{ChunkMetadata, Pool, QdrantPayload, ServerDatasetConfiguration},
     errors::ServiceError,
@@ -291,6 +294,17 @@ pub async fn create_new_qdrant_collection_query(
             )
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+        qdrant_client
+            .create_field_index(
+                qdrant_collection.clone(),
+                "group_tag_set",
+                FieldType::Keyword,
+                None,
+                None,
+            )
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
     }
 
     Ok(())
@@ -328,7 +342,7 @@ pub async fn bulk_upsert_qdrant_points_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(embedding_vector))]
+#[tracing::instrument(skip(embedding_vector, pool))]
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
     embedding_vector: Vec<f32>,
@@ -336,8 +350,17 @@ pub async fn create_new_qdrant_point_query(
     splade_vector: Vec<(u32, f32)>,
     group_ids: Option<Vec<uuid::Uuid>>,
     config: ServerDatasetConfiguration,
+    pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    let payload = QdrantPayload::new(chunk_metadata, group_ids, None).into();
+    let chunk_tags: Vec<Option<String>> =
+        get_groups_from_group_ids_query(group_ids.clone().unwrap_or_default(), pool.clone())
+            .await?
+            .iter()
+            .filter_map(|group| group.tag_set.clone())
+            .flatten()
+            .collect();
+
+    let payload = QdrantPayload::new(chunk_metadata, group_ids, None, Some(chunk_tags)).into();
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let vector_name = match embedding_vector.len() {
@@ -379,7 +402,7 @@ pub async fn create_new_qdrant_point_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(updated_vector))]
+#[tracing::instrument(skip(updated_vector, web_pool))]
 pub async fn update_qdrant_point_query(
     metadata: Option<ChunkMetadata>,
     point_id: uuid::Uuid,
@@ -388,6 +411,7 @@ pub async fn update_qdrant_point_query(
     dataset_id: uuid::Uuid,
     splade_vector: Vec<(u32, f32)>,
     config: ServerDatasetConfiguration,
+    web_pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
@@ -415,7 +439,7 @@ pub async fn update_qdrant_point_query(
     let current_point = current_point_vec.first();
 
     let payload = if let Some(metadata) = metadata.clone() {
-        let group_ids = if let Some(group_ids) = group_ids {
+        let group_ids = if let Some(group_ids) = group_ids.clone() {
             group_ids
         } else if let Some(current_point) = current_point {
             current_point
@@ -435,7 +459,20 @@ pub async fn update_qdrant_point_query(
             vec![]
         };
 
-        QdrantPayload::new(metadata, group_ids.into(), Some(dataset_id))
+        let chunk_tags: Vec<Option<String>> =
+            get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
+                .await?
+                .iter()
+                .filter_map(|group| group.tag_set.clone())
+                .flatten()
+                .collect();
+
+        QdrantPayload::new(
+            metadata,
+            group_ids.into(),
+            Some(dataset_id),
+            Some(chunk_tags),
+        )
     } else if let Some(current_point) = current_point {
         QdrantPayload::from(current_point.clone())
     } else {
@@ -534,7 +571,7 @@ pub async fn add_bookmark_to_qdrant_query(
             .get("group_ids")
             .unwrap_or(&Value::from(vec![] as Vec<&str>))
             .iter_list()
-            .unwrap()
+            .unwrap_or(Value::from(vec![] as Vec<&str>).iter_list().unwrap())
             .map(|id| {
                 id.as_str()
                     .unwrap_or(&"".to_owned())
