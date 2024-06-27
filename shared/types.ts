@@ -443,3 +443,8 @@ export interface SearchQueryEvent {
   dataset_id: string;
   created_at: string;
 }
+
+export interface HeadQuery {
+  query: string;
+  count: number;
+}
