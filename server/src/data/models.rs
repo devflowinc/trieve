@@ -1639,6 +1639,7 @@ pub struct ServerDatasetConfiguration {
     pub TEMPERATURE: Option<f64>,
     pub PRESENCE_PENALTY: Option<f64>,
     pub STOP_TOKENS: Option<Vec<String>>,
+    pub LOCK_DATASET: Option<bool>,
 }
 
 impl ServerDatasetConfiguration {
@@ -1695,16 +1696,16 @@ impl ServerDatasetConfiguration {
                 }).unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
             RAG_PROMPT: configuration
                 .get("RAG_PROMPT")
-                .unwrap_or(&json!("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()))
+                .unwrap_or(&json!("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. Additionally, consider the context from previous messages in this conversation when formulating your response. If the user asks a follow-up question or requests an example related to previous information, provide it based on the ongoing context. If the user asks for clarification or an example with a brief query like 'Can you explain that?' or 'Give me an example,' refer to the most recent topic discussed and provide the requested information. Remember to maintain coherence throughout the conversation and build upon previously shared information when appropriate. These are the docs:".to_string()))
                 .as_str()
                 .map(|s|
                     if s.is_empty() {
-                        "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()
+                        "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. Additionally, consider the context from previous messages in this conversation when formulating your response. If the user asks a follow-up question or requests an example related to previous information, provide it based on the ongoing context. If the user asks for clarification or an example with a brief query like 'Can you explain that?' or 'Give me an example,' refer to the most recent topic discussed and provide the requested information. Remember to maintain coherence throughout the conversation and build upon previously shared information when appropriate. These are the docs:".to_string()
                     } else {
                         s.to_string()
                     }
                 )
-                .unwrap_or("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()),
+                .unwrap_or("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. Additionally, consider the context from previous messages in this conversation when formulating your response. If the user asks a follow-up question or requests an example related to previous information, provide it based on the ongoing context. If the user asks for clarification or an example with a brief query like 'Can you explain that?' or 'Give me an example,' refer to the most recent topic discussed and provide the requested information. Remember to maintain coherence throughout the conversation and build upon previously shared information when appropriate. These are the docs:".to_string()),
             N_RETRIEVALS_TO_INCLUDE: configuration
                 .get("N_RETRIEVALS_TO_INCLUDE")
                 .unwrap_or(&json!(5))
@@ -1809,6 +1810,9 @@ impl ServerDatasetConfiguration {
                 .get("STOP_TOKENS")
                 .and_then(|v| v.as_str())
                 .map(|v| v.split(',').map(|s| s.to_string()).collect::<Vec<String>>()),
+            LOCK_DATASET: configuration
+                .get("LOCK_DATASET")
+                .and_then(|v| v.as_bool()),
         }
     }
 }

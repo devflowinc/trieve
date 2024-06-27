@@ -236,6 +236,12 @@ pub async fn delete_dataset(
     let config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
+    if config.LOCK_DATASET.unwrap_or(false) {
+        return Err(ServiceError::BadRequest(
+            "Dataset is locked and cannot be cleared".to_string(),
+        ));
+    }
+
     soft_delete_dataset_by_id_query(data.into_inner(), config, pool, redis_pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
@@ -279,6 +285,12 @@ pub async fn clear_dataset(
 
     let config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    if config.LOCK_DATASET.unwrap_or(false) {
+        return Err(ServiceError::BadRequest(
+            "Dataset is locked and cannot be cleared".to_string(),
+        ));
+    }
 
     clear_dataset_by_dataset_id_query(data.into_inner(), config, redis_pool).await?;
     Ok(HttpResponse::NoContent().finish())
@@ -325,6 +337,12 @@ pub async fn delete_dataset_by_tracking_id(
 
     let config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    if config.LOCK_DATASET.unwrap_or(false) {
+        return Err(ServiceError::BadRequest(
+            "Dataset is locked and cannot be cleared".to_string(),
+        ));
+    }
 
     soft_delete_dataset_by_id_query(dataset_org_plan_sub.dataset.id, config, pool, redis_pool)
         .await?;

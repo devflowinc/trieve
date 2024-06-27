@@ -56,6 +56,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   TEMPERATURE: null,
   PRESENCE_PENALTY: null,
   STOP_TOKENS: null,
+  LOCK_DATASET: false,
 };
 
 export const FrontendSettingsForm = () => {
@@ -581,6 +582,29 @@ export const ServerSettingsForm = () => {
                 class="block text-sm font-medium leading-6"
               >
                 Use Message to Query Prompt (HyDE)
+              </label>
+            </div>
+
+            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
+              <input
+                type="checkbox"
+                name="lock_dataset"
+                id="lock_dataset"
+                checked={serverConfig().LOCK_DATASET}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      LOCK_DATASET: e.currentTarget.checked,
+                    };
+                  })
+                }
+              />
+              <label
+                for="lock_dataset"
+                class="block text-sm font-medium leading-6"
+              >
+                Lock Dataset
               </label>
             </div>
 
