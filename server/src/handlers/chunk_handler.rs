@@ -1115,11 +1115,11 @@ pub async fn search_chunks(
         created_at: time::OffsetDateTime::now_utc(),
     };
 
-    send_to_clickhouse(
+    let _ = send_to_clickhouse(
         ClickHouseEvent::SearchQueryEvent(clickhouse_event),
         &clickhouse_client,
     )
-    .await?;
+    .await;
 
     timer.add("send_to_clickhouse");
 
@@ -1344,11 +1344,11 @@ pub async fn autocomplete(
         created_at: time::OffsetDateTime::now_utc(),
     };
 
-    send_to_clickhouse(
+    let _ = send_to_clickhouse(
         ClickHouseEvent::SearchQueryEvent(clickhouse_event),
         &clickhouse_client,
     )
-    .await?;
+    .await;
     timer.add("send_to_clickhouse");
 
     transaction.finish();

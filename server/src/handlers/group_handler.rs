@@ -1275,11 +1275,11 @@ pub async fn search_within_group(
         created_at: time::OffsetDateTime::now_utc(),
     };
 
-    send_to_clickhouse(
+    let _ = send_to_clickhouse(
         ClickHouseEvent::SearchQueryEvent(clickhouse_event),
         &clickhouse_client,
     )
-    .await?;
+    .await;
     timer.add("send_to_clickhouse");
 
     Ok(HttpResponse::Ok().json(result_chunks))
@@ -1417,11 +1417,11 @@ pub async fn search_over_groups(
         created_at: time::OffsetDateTime::now_utc(),
     };
 
-    send_to_clickhouse(
+    let _ = send_to_clickhouse(
         ClickHouseEvent::SearchQueryEvent(clickhouse_event),
         &clickhouse_client,
     )
-    .await?;
+    .await;
     timer.add("send_to_clickhouse");
 
     Ok(HttpResponse::Ok()
