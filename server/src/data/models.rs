@@ -1338,7 +1338,19 @@ impl From<File> for FileDTO {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, Row, ToSchema)]
+pub struct ClickhouseEvent {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub event_type: String,
+    pub event_data: String,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01T00:00:00",
@@ -1347,41 +1359,49 @@ impl From<File> for FileDTO {
     "event_type": "file_uploaded",
     "event_data": {"group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3", "file_name": "file.txt"},
 }))]
-#[diesel(table_name = events)]
 pub struct Event {
     pub id: uuid::Uuid,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: String,
     pub dataset_id: uuid::Uuid,
     pub event_type: String,
-    pub event_data: serde_json::Value,
+    pub event_data: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+impl From<ClickhouseEvent> for Event {
+    fn from(clickhouse_event: ClickhouseEvent) -> Self {
+        Event {
+            id: uuid::Uuid::from_bytes(*clickhouse_event.id.as_bytes()),
+            created_at: clickhouse_event.created_at.to_string(),
+            dataset_id: uuid::Uuid::from_bytes(*clickhouse_event.dataset_id.as_bytes()),
+            event_type: clickhouse_event.event_type,
+            event_data: clickhouse_event.event_data,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Display)]
+#[serde(untagged)]
 pub enum EventType {
+    #[display(fmt = "file_uploaded")]
     FileUploaded {
         file_id: uuid::Uuid,
         file_name: String,
     },
-    FileUploadFailed {
-        file_id: uuid::Uuid,
-        error: String,
-    },
-    ChunksUploaded {
-        chunk_ids: Vec<uuid::Uuid>,
-    },
-    ChunkActionFailed {
-        chunk_id: uuid::Uuid,
-        error: String,
-    },
-    ChunkUpdated {
-        chunk_id: uuid::Uuid,
-    },
+    #[display(fmt = "file_upload_failed")]
+    FileUploadFailed { file_id: uuid::Uuid, error: String },
+    #[display(fmt = "chunks_uploaded")]
+    ChunksUploaded { chunk_ids: Vec<uuid::Uuid> },
+    #[display(fmt = "chunk_action_failed")]
+    ChunkActionFailed { chunk_id: uuid::Uuid, error: String },
+    #[display(fmt = "chunk_updated")]
+    ChunkUpdated { chunk_id: uuid::Uuid },
+    #[display(fmt = "qdrant_index_failed")]
     QdrantUploadFailed {
         chunk_id: uuid::Uuid,
         qdrant_point_id: uuid::Uuid,
         error: String,
     },
+    #[display(fmt = "bulk_chunk_action_failed")]
     BulkChunkActionFailed {
         chunk_ids: Vec<uuid::Uuid>,
         error: String,
@@ -1389,21 +1409,10 @@ pub enum EventType {
 }
 
 impl EventType {
-    pub fn as_str(&self) -> String {
-        match self {
-            EventType::FileUploaded { .. } => "file_uploaded".to_string(),
-            EventType::FileUploadFailed { .. } => "file_upload_failed".to_string(),
-            EventType::ChunksUploaded { .. } => "chunks_uploaded".to_string(),
-            EventType::ChunkActionFailed { .. } => "chunk_action_failed".to_string(),
-            EventType::ChunkUpdated { .. } => "chunk_updated".to_string(),
-            EventType::QdrantUploadFailed { .. } => "qdrant_index_failed".to_string(),
-            EventType::BulkChunkActionFailed { .. } => "bulk_chunk_action_failed".to_string(),
-        }
-    }
-
     pub fn get_all_event_types() -> Vec<String> {
         vec![
             "file_uploaded".to_string(),
+            "file_upload_failed".to_string(),
             "chunks_uploaded".to_string(),
             "chunk_action_failed".to_string(),
             "chunk_updated".to_string(),
@@ -1413,39 +1422,14 @@ impl EventType {
     }
 }
 
-impl From<EventType> for serde_json::Value {
-    fn from(val: EventType) -> Self {
-        match val {
-            EventType::FileUploaded { file_id, file_name } => {
-                json!({"file_id": file_id, "file_name": file_name})
-            }
-            EventType::FileUploadFailed { file_id, error } => {
-                json!({"file_id": file_id, "error": error})
-            }
-            EventType::ChunksUploaded { chunk_ids } => json!({"chunk_ids": chunk_ids}),
-            EventType::ChunkActionFailed { chunk_id, error } => {
-                json!({"chunk_id": chunk_id, "error": error})
-            }
-            EventType::ChunkUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
-            EventType::QdrantUploadFailed {
-                chunk_id, error, ..
-            } => json!({"chunk_id": chunk_id, "error": error}),
-            EventType::BulkChunkActionFailed {
-                chunk_ids, error, ..
-            } => json!({"chunk_ids": chunk_ids, "error": error}),
-        }
-    }
-}
-
 impl Event {
     pub fn from_details(dataset_id: uuid::Uuid, event_type: EventType) -> Self {
         Event {
             id: uuid::Uuid::new_v4(),
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local().to_string(),
             dataset_id,
-            event_type: event_type.as_str(),
-            event_data: event_type.into(),
+            event_type: event_type.to_string(),
+            event_data: serde_json::to_value(event_type).unwrap().to_string(),
         }
     }
 }
