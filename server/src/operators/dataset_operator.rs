@@ -351,7 +351,7 @@ pub async fn delete_dataset_by_id_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    delete_chunks_in_dataset(id, pool.clone(), clickhouse_client, config.clone()).await?;
+    delete_chunks_in_dataset(id, pool.clone(), clickhouse_client.clone(), config.clone()).await?;
 
     let dataset: Dataset =
         diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
@@ -361,6 +361,65 @@ pub async fn delete_dataset_by_id_query(
                 log::error!("Could not delete dataset: {}", err);
                 ServiceError::BadRequest("Could not delete dataset".to_string())
             })?;
+
+    clickhouse_client
+        .query(&format!(
+            "DELETE FROM default.dataset_events WHERE dataset_id = '{}'",
+            id
+        ))
+        .execute()
+        .await
+        .map_err(|err| {
+            log::error!("Could not delete dataset events: {}", err);
+            ServiceError::BadRequest("Could not delete dataset events".to_string())
+        })?;
+
+    clickhouse_client
+        .query(
+            "
+        ALTER TABLE default.dataset_events
+        DELETE WHERE dataset_id = '{dataset_id}';
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+
+    clickhouse_client
+        .query(
+            "
+        ALTER TABLE default.search_queries
+        DELETE WHERE dataset_id = '{dataset_id}';
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+
+    clickhouse_client
+        .query(
+            "
+        ALTER TABLE default.search_cluster_memberships
+        DELETE WHERE cluster_id IN (
+            SELECT id FROM cluster_topics WHERE dataset_id = '{dataset_id}'
+        );
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+
+    clickhouse_client
+        .query(
+            "
+        ALTER TABLE default.cluster_topics
+        DELETE WHERE dataset_id = '{dataset_id}';
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+
     Ok(dataset)
 }
 
