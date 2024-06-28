@@ -13,6 +13,7 @@ use crate::{
 use actix_identity::Identity;
 use actix_web::{
     dev::{forward_ready, Payload, Service, ServiceRequest, ServiceResponse, Transform},
+    http::header::HeaderMap,
     web, Error, FromRequest, HttpMessage, HttpRequest,
 };
 use futures_util::future::LocalBoxFuture;
@@ -65,15 +66,8 @@ where
 
             get_user_span.finish();
 
-            let org_id = match req.headers().get("TR-Dataset") {
-                Some(dataset_header) => {
-                    let dataset_id = dataset_header
-                        .to_str()
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Dataset must be valid string".to_string())
-                        })?
-                        .to_string();
-
+            let org_id = match get_dataset_id_from_headers(req.headers()) {
+                Some(dataset_id) => {
                     let get_dataset_and_org_span = transaction
                         .start_child("get_dataset_and_org", "Getting dataset and organization");
 
@@ -126,20 +120,12 @@ where
                     dataset_org_plan_sub.organization.organization.id
                 }
                 None => {
-                    if let Some(org_header) = req.headers().get("TR-Organization") {
-                        org_header
-                            .to_str()
-                            .map_err(|_| {
-                                Into::<Error>::into(ServiceError::BadRequest(
-                                    "Could not convert Organization to str".to_string(),
-                                ))
-                            })?
-                            .parse::<uuid::Uuid>()
-                            .map_err(|_| {
-                                Into::<Error>::into(ServiceError::BadRequest(
-                                    "Could not convert Organization to UUID".to_string(),
-                                ))
-                            })?
+                    if let Some(org_header) = get_org_id_from_headers(req.headers()) {
+                        org_header.parse::<uuid::Uuid>().map_err(|_| {
+                            Into::<Error>::into(ServiceError::BadRequest(
+                                "Could not convert Organization to UUID".to_string(),
+                            ))
+                        })?
                     } else {
                         let res = srv.call(req).await?;
                         return Ok(res);
@@ -226,51 +212,98 @@ async fn get_user(
     None
 }
 
+// Can either be Bearer {}, or x-api-key, or Authorization
+fn get_api_key_from_headers(headers: &HeaderMap) -> Option<String> {
+    if let Some(auth_header_value) = headers.get("Authorization") {
+        // Check if the Authorization header is a Bearer token
+        if let Ok(auth_header_value) = auth_header_value.to_str() {
+            if auth_header_value.starts_with("Bearer ") {
+                return Some(auth_header_value[7..].to_string());
+            } else {
+                return Some(auth_header_value.to_string());
+            }
+        }
+    }
+    // Check for x-api-key,
+    if let Some(api_key_header_value) = headers.get("x-api-key") {
+        if let Ok(api_key_header_value) = api_key_header_value.to_str() {
+            return Some(api_key_header_value.to_string());
+        }
+    }
+
+    None
+}
+
+fn get_dataset_id_from_headers(headers: &HeaderMap) -> Option<String> {
+    if let Some(dataset_id_header) = headers.get("TR-Dataset") {
+        if let Ok(dataset_id) = dataset_id_header.to_str() {
+            return Some(dataset_id.to_string());
+        }
+    }
+
+    if let Some(dataset_id_header) = headers.get("x-dataset") {
+        if let Ok(dataset_id) = dataset_id_header.to_str() {
+            return Some(dataset_id.to_string());
+        }
+    }
+
+    None
+}
+
+fn get_org_id_from_headers(headers: &HeaderMap) -> Option<String> {
+    if let Some(org_id_header) = headers.get("TR-Organization") {
+        if let Ok(org_id) = org_id_header.to_str() {
+            return Some(org_id.to_string());
+        }
+    }
+
+    if let Some(org_id_header) = headers.get("x-organization") {
+        if let Ok(org_id) = org_id_header.to_str() {
+            return Some(org_id.to_string());
+        }
+    }
+
+    None
+}
+
 async fn auth_with_api_key(
     req: &HttpRequest,
     tx: Transaction,
     pool: web::Data<Pool>,
 ) -> Result<(Option<LoggedUser>, Option<UserApiKey>), ServiceError> {
-    if let Some(authen_header) = req.headers().get("Authorization") {
-        if let Ok(authen_header) = authen_header.to_str() {
-            if authen_header == std::env::var("ADMIN_API_KEY").unwrap_or("".to_string()) {
-                if let Some(org_id_header) = req.headers().get("TR-Organization") {
-                    if let Ok(org_id) = org_id_header.to_str() {
-                        if let Ok(org_id) = org_id.parse::<uuid::Uuid>() {
-                            if let Ok(user) =
-                                get_arbitrary_org_owner_from_org_id(org_id, pool.clone()).await
-                            {
-                                return Ok((Some(user), None));
-                            }
-                        }
-                    }
-                }
-
-                if let Some(dataset_id_header) = req.headers().get("TR-Dataset") {
-                    if let Ok(dataset_id) = dataset_id_header.to_str() {
-                        if let Ok(dataset_id) = dataset_id.parse::<uuid::Uuid>() {
-                            if let Ok(user) =
-                                get_arbitrary_org_owner_from_dataset_id(dataset_id, pool.clone())
-                                    .await
-                            {
-                                return Ok((Some(user), None));
-                            }
-                        }
+    if let Some(authen_header) = get_api_key_from_headers(req.headers()) {
+        if authen_header == std::env::var("ADMIN_API_KEY").unwrap_or("".to_string()) {
+            if let Some(org_id) = get_org_id_from_headers(req.headers()) {
+                if let Ok(org_id) = org_id.parse::<uuid::Uuid>() {
+                    if let Ok(user) =
+                        get_arbitrary_org_owner_from_org_id(org_id, pool.clone()).await
+                    {
+                        return Ok((Some(user), None));
                     }
                 }
             }
 
-            let get_user_from_api_key_span =
-                tx.start_child("get_user_from_api_key", "Getting user from api key");
-            //TODO: Cache the api key in redis
-            if let Ok((user, api_key)) =
-                get_user_from_api_key_query(authen_header, pool.clone()).await
-            {
-                return Ok((Some(user), Some(api_key)));
+            if let Some(dataset_id) = get_dataset_id_from_headers(req.headers()) {
+                if let Ok(dataset_id) = dataset_id.parse::<uuid::Uuid>() {
+                    if let Ok(user) =
+                        get_arbitrary_org_owner_from_dataset_id(dataset_id, pool.clone()).await
+                    {
+                        return Ok((Some(user), None));
+                    }
+                }
             }
-
-            get_user_from_api_key_span.finish();
         }
+
+        let get_user_from_api_key_span =
+            tx.start_child("get_user_from_api_key", "Getting user from api key");
+        //TODO: Cache the api key in redis
+        if let Ok((user, api_key)) =
+            get_user_from_api_key_query(authen_header.as_str(), pool.clone()).await
+        {
+            return Ok((Some(user), Some(api_key)));
+        }
+
+        get_user_from_api_key_span.finish();
     }
 
     //TODO: Add path scoped api key using the path field of `HTTPRequest` struct
