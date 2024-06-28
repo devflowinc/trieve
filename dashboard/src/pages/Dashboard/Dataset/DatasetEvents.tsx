@@ -121,6 +121,14 @@ export const DatasetEvents = () => {
                       name: "Chunk Updated",
                     },
                     {
+                      id: "bulk_chunks_deleted",
+                      name: "Bulk Chunks Deleted",
+                    },
+                    {
+                      id: "dataset_delete_failed",
+                      name: "Dataset Delete Failed",
+                    },
+                    {
                       id: "qdrant_index_failed",
                       name: "Qdrant Index Failed",
                     },
