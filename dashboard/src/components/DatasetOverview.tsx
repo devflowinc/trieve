@@ -87,7 +87,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           setUsage(newUsage);
         })
         .catch((error) => {
-          console.error("Failed to fetch initial usage:", error);
+          console.error("Failed to fetch initial usage: ", error);
         });
     };
 
