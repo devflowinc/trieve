@@ -311,7 +311,7 @@ pub async fn delete_chunks_in_dataset(
             Event::from_details(
                 id,
                 EventType::BulkChunksDeleted {
-                    chunk_ids: chunk_ids.clone(),
+                    message: format!("Deleted {} chunks", chunk_ids.len()),
                 },
             ),
             clickhouse_client.clone(),

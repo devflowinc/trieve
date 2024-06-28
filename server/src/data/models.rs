@@ -1407,7 +1407,7 @@ pub enum EventType {
     },
     #[display(fmt = "bulk_chunks_deleted")]
     BulkChunksDeleted {
-        chunk_ids: Vec<uuid::Uuid>,
+        message: String,
     },
     #[display(fmt = "dataset_delete_failed")]
     DatasetDeleteFailed {
