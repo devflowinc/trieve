@@ -462,8 +462,8 @@ pub struct UpdateChunkGroupData {
     /// Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
     pub tag_set: Option<Vec<String>>,
     /// Flag to update the chunks in the group. If true, each chunk in the group will be updated
-    /// by appending the group's tags to the chunk's tags.
-    pub update_chunks: bool,
+    /// by appending the group's tags to the chunk's tags. Default is false.
+    pub update_chunks: Option<bool>,
 }
 
 /// Update Group
@@ -534,7 +534,7 @@ pub async fn update_chunk_group(
 
     update_chunk_group_query(new_chunk_group.clone(), pool).await?;
 
-    if data.update_chunks {
+    if data.update_chunks.unwrap_or(false) {
         let server_dataset_config = ServerDatasetConfiguration::from_json(
             dataset_org_plan_sub.dataset.server_configuration.clone(),
         );
