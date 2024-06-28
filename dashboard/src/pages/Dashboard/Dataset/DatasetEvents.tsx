@@ -113,10 +113,6 @@ export const DatasetEvents = () => {
                       name: "File Upload Failed",
                     },
                     {
-                      id: "chunk_action_failed",
-                      name: "Chunk Upload Failed",
-                    },
-                    {
                       id: "chunks_uploaded",
                       name: "Chunks Uploaded",
                     },
@@ -129,8 +125,8 @@ export const DatasetEvents = () => {
                       name: "Qdrant Index Failed",
                     },
                     {
-                      id: "bulk_chunk_action_failed",
-                      name: "Bulk Chunk Action Failed",
+                      id: "bulk_chunk_upload_failed",
+                      name: "Bulk Chunk Upload Failed",
                     },
                   ]}
                   setSelected={(
