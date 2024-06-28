@@ -17,7 +17,7 @@ pub async fn create_event_query(
         .unwrap_or(false)
     {
         client
-            .query("INSERT INTO default.dataset_events (id, dataset_id, event_type, event_data, created_at) VALUES (?, ?, ?, ?, now())")
+            .query("INSERT INTO trieve.dataset_events (id, dataset_id, event_type, event_data, created_at) VALUES (?, ?, ?, ?, now())")
             .bind(event.id)
             .bind(event.dataset_id)
             .bind(event.event_type)
