@@ -18,13 +18,11 @@ import {
   DefaultError,
 } from "../../../types/apiTypes";
 import { DatasetContext } from "../../../contexts/DatasetContext";
-
 import { FaRegularClipboard } from "solid-icons/fa";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
 import { TbReload } from "solid-icons/tb";
 import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import { BsMagic } from "solid-icons/bs";
-
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 import { Tooltip } from "../../../components/Tooltip";
 
@@ -87,45 +85,50 @@ export const DatasetStart = () => {
       return;
     }
 
-    void (async () => {
-      try {
-        const response = await fetch(`${api_host}/dataset/usage/${datasetId}`, {
-          method: "GET",
-          headers: {
-            "TR-Dataset": datasetId,
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
+    fetch(`${api_host}/dataset/usage/${datasetId}`, {
+      method: "GET",
+      headers: {
+        "TR-Dataset": datasetId,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    })
+      .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to fetch dataset usage");
         }
+        return response.json();
+      })
+      .then((newData) => {
+        const currentUsage = usage();
+        const prevCount = currentUsage?.chunk_count || 0;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const newCount: number = newData.chunk_count as number;
+        const countDifference = newCount - prevCount;
 
-        const newData = (await response.json()) as DatasetUsageCount;
-        if (usage()?.chunk_count === newData.chunk_count) {
-          createToast({
-            title: "No Update Needed",
-            type: "info",
-            message: "Chunk count is already up to date",
-          });
-        } else {
-          mutateUsage(() => newData);
-          createToast({
-            title: "Updated",
-            type: "success",
-            message: "Updated chunk count",
-          });
-        }
-      } catch (error) {
-        console.error("Error reloading chunk count:", error);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        mutateUsage(() => newData);
+        createToast({
+          title: "Updated",
+          type: "success",
+          message: `Successfully updated chunk count: ${countDifference} chunk${
+            Math.abs(countDifference) === 1 ? " has" : "s have"
+          } been ${
+            countDifference > 0
+              ? "added"
+              : countDifference < 0
+                ? "removed"
+                : "added or removed"
+          } since last update.`,
+        });
+      })
+      .catch((error) => {
         createToast({
           title: "Error",
           type: "error",
-          message: "Failed to reload chunk count.",
+          message: `Failed to reload chunk count: ${error}`,
         });
-      }
-    })();
+      });
   };
 
   const [updatedTrackingId, setUpdatedTrackingId] = createSignal<
