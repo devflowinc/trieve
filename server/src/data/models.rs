@@ -1388,31 +1388,17 @@ pub enum EventType {
         file_name: String,
     },
     #[display(fmt = "file_upload_failed")]
-    FileUploadFailed {
-        file_id: uuid::Uuid,
-        error: String,
-    },
+    FileUploadFailed { file_id: uuid::Uuid, error: String },
     #[display(fmt = "chunks_uploaded")]
-    ChunksUploaded {
-        chunk_ids: Vec<uuid::Uuid>,
-    },
+    ChunksUploaded { chunk_ids: Vec<uuid::Uuid> },
     #[display(fmt = "chunk_action_failed")]
-    ChunkActionFailed {
-        chunk_id: uuid::Uuid,
-        error: String,
-    },
+    ChunkActionFailed { chunk_id: uuid::Uuid, error: String },
     #[display(fmt = "chunk_updated")]
-    ChunkUpdated {
-        chunk_id: uuid::Uuid,
-    },
+    ChunkUpdated { chunk_id: uuid::Uuid },
     #[display(fmt = "bulk_chunks_deleted")]
-    BulkChunksDeleted {
-        message: String,
-    },
+    BulkChunksDeleted { message: String },
     #[display(fmt = "dataset_delete_failed")]
-    DatasetDeleteFailed {
-        error: String,
-    },
+    DatasetDeleteFailed { error: String },
     #[display(fmt = "qdrant_index_failed")]
     QdrantUploadFailed {
         chunk_id: uuid::Uuid,
@@ -1424,13 +1410,10 @@ pub enum EventType {
         chunk_ids: Vec<uuid::Uuid>,
         error: String,
     },
-    GroupChunksUpdated {
-        group_id: uuid::Uuid,
-    },
-    GroupChunksActionFailed {
-        group_id: uuid::Uuid,
-        error: String,
-    },
+    #[display(fmt = "group_chunks_updated")]
+    GroupChunksUpdated { group_id: uuid::Uuid },
+    #[display(fmt = "group_chunks_action_failed")]
+    GroupChunksActionFailed { group_id: uuid::Uuid, error: String },
 }
 
 impl EventType {
