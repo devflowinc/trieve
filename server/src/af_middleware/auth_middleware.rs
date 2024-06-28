@@ -227,7 +227,11 @@ fn get_api_key_from_headers(headers: &HeaderMap) -> Option<String> {
     // Check for x-api-key,
     if let Some(api_key_header_value) = headers.get("x-api-key") {
         if let Ok(api_key_header_value) = api_key_header_value.to_str() {
-            return Some(api_key_header_value.to_string());
+            if api_key_header_value.starts_with("Bearer ") {
+                return Some(api_key_header_value[7..].to_string());
+            } else {
+                return Some(api_key_header_value.to_string());
+            }
         }
     }
 
