@@ -1405,6 +1405,14 @@ pub enum EventType {
     ChunkUpdated {
         chunk_id: uuid::Uuid,
     },
+    #[display(fmt = "bulk_chunks_deleted")]
+    BulkChunksDeleted {
+        chunk_ids: Vec<uuid::Uuid>,
+    },
+    #[display(fmt = "dataset_delete_failed")]
+    DatasetDeleteFailed {
+        error: String,
+    },
     #[display(fmt = "qdrant_index_failed")]
     QdrantUploadFailed {
         chunk_id: uuid::Uuid,
@@ -1432,6 +1440,8 @@ impl EventType {
             "file_upload_failed".to_string(),
             "chunks_uploaded".to_string(),
             "chunk_updated".to_string(),
+            "bulk_chunks_deleted".to_string(),
+            "dataset_delete_failed".to_string(),
             "qdrant_index_failed".to_string(),
             "group_chunks_updated".to_string(),
             "group_chunks_action_failed".to_string(),
