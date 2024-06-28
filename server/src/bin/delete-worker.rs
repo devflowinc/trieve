@@ -13,6 +13,7 @@ use trieve_server::{
     establish_connection, get_env,
     operators::{
         dataset_operator::{delete_chunks_in_dataset, delete_dataset_by_id_query, DeleteMessage},
+        event_operator::create_event_query,
         organization_operator::{
             delete_actual_organization_query, get_soft_deleted_datasets_for_organization,
         },
@@ -74,6 +75,29 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
+    let clickhouse_client = if std::env::var("USE_ANALYTICS")
+        .unwrap_or("false".to_string())
+        .parse()
+        .unwrap_or(false)
+    {
+        log::info!("Analytics enabled");
+
+        clickhouse::Client::default()
+            .with_url(
+                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
+            )
+            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
+            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
+            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
+            .with_option("async_insert", "1")
+            .with_option("wait_for_async_insert", "0")
+    } else {
+        log::info!("Analytics disabled");
+        clickhouse::Client::default()
+    };
+
+    let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
+
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -102,7 +126,13 @@ fn main() {
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
 
-                delete_worker(should_terminate, web_redis_pool, web_pool).await
+                delete_worker(
+                    should_terminate,
+                    web_redis_pool,
+                    web_pool,
+                    web_clickhouse_client,
+                )
+                .await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -112,6 +142,7 @@ async fn delete_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
+    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
 ) {
     log::info!("Starting delete worker service thread");
 
@@ -189,6 +220,7 @@ async fn delete_worker(
             match delete_chunks_in_dataset(
                 delete_worker_message.dataset_id,
                 web_pool.clone(),
+                clickhouse_client.clone(),
                 delete_worker_message.server_config.clone(),
             )
             .await
@@ -211,6 +243,19 @@ async fn delete_worker(
                 }
                 Err(err) => {
                     log::error!("Failed to delete all chunks for dataset: {:?}", err);
+                    let _ = create_event_query(
+                        models::Event::from_details(
+                            delete_worker_message.dataset_id,
+                            models::EventType::DatasetDeleteFailed {
+                                error: err.to_string(),
+                            },
+                        ),
+                        clickhouse_client.clone(),
+                    )
+                    .await
+                    .map_err(|err| {
+                        log::error!("Failed to create event: {:?}", err);
+                    });
                     let _ =
                         readd_error_to_queue(delete_worker_message, err, redis_pool.clone()).await;
                     continue;
@@ -221,6 +266,7 @@ async fn delete_worker(
         match delete_dataset_by_id_query(
             delete_worker_message.dataset_id,
             web_pool.clone(),
+            clickhouse_client.clone(),
             delete_worker_message.server_config.clone(),
         )
         .await

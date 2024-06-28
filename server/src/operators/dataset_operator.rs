@@ -5,9 +5,10 @@ use crate::data::models::{
 };
 use crate::get_env;
 use crate::handlers::dataset_handler::GetDatasetsPagination;
+use crate::operators::event_operator::create_event_query;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
-    data::models::{Dataset, Pool},
+    data::models::{Dataset, Event, EventType, Pool},
     errors::ServiceError,
 };
 use actix_web::web;
@@ -237,10 +238,11 @@ pub async fn clear_dataset_by_dataset_id_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn delete_chunks_in_dataset(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
@@ -305,6 +307,20 @@ pub async fn delete_chunks_in_dataset(
             ServiceError::BadRequest("Could not delete chunks".to_string())
         })?;
 
+        let _ = create_event_query(
+            Event::from_details(
+                id,
+                EventType::BulkChunksDeleted {
+                    chunk_ids: chunk_ids.clone(),
+                },
+            ),
+            clickhouse_client.clone(),
+        )
+        .await
+        .map_err(|err| {
+            log::error!("Failed to create event: {:?}", err);
+        });
+
         qdrant_client
             .delete_points(
                 qdrant_collection.clone(),
@@ -324,17 +340,18 @@ pub async fn delete_chunks_in_dataset(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
+    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
     config: ServerDatasetConfiguration,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    delete_chunks_in_dataset(id, pool.clone(), config.clone()).await?;
+    delete_chunks_in_dataset(id, pool.clone(), clickhouse_client, config.clone()).await?;
 
     let dataset: Dataset =
         diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
