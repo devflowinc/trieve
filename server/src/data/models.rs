@@ -1391,8 +1391,6 @@ pub enum EventType {
     FileUploadFailed { file_id: uuid::Uuid, error: String },
     #[display(fmt = "chunks_uploaded")]
     ChunksUploaded { chunk_ids: Vec<uuid::Uuid> },
-    #[display(fmt = "chunk_action_failed")]
-    ChunkActionFailed { chunk_id: uuid::Uuid, error: String },
     #[display(fmt = "chunk_updated")]
     ChunkUpdated { chunk_id: uuid::Uuid },
     #[display(fmt = "qdrant_index_failed")]
@@ -1401,8 +1399,8 @@ pub enum EventType {
         qdrant_point_id: uuid::Uuid,
         error: String,
     },
-    #[display(fmt = "bulk_chunk_action_failed")]
-    BulkChunkActionFailed {
+    #[display(fmt = "bulk_chunk_upload_failed")]
+    BulkChunkUploadFailed {
         chunk_ids: Vec<uuid::Uuid>,
         error: String,
     },
@@ -1414,10 +1412,9 @@ impl EventType {
             "file_uploaded".to_string(),
             "file_upload_failed".to_string(),
             "chunks_uploaded".to_string(),
-            "chunk_action_failed".to_string(),
             "chunk_updated".to_string(),
             "qdrant_index_failed".to_string(),
-            "bulk_chunk_action_failed".to_string(),
+            "bulk_chunk_upload_failed".to_string(),
         ]
     }
 }

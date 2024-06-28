@@ -1061,7 +1061,7 @@ pub async fn readd_error_to_queue(
             let _ = create_event_query(
                 Event::from_details(
                     payload.dataset_id,
-                    models::EventType::BulkChunkActionFailed {
+                    models::EventType::BulkChunkUploadFailed {
                         chunk_ids,
                         error: format!("Failed to upload {:} chunks: {:?}", count, error),
                     },
