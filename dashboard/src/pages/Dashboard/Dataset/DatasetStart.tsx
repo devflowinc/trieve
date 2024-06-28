@@ -64,7 +64,6 @@ export const DatasetStart = () => {
 
       if (response.ok) {
         const data = (await response.json()) as unknown as DatasetUsageCount;
-        console.log("Got good repsonse", data);
         return data;
       } else {
         createToast({
@@ -120,6 +119,7 @@ export const DatasetStart = () => {
                 ? "removed"
                 : "added or removed"
           } since last update.`,
+          timeout: 3000,
         });
       })
       .catch((error) => {
@@ -295,7 +295,12 @@ export const DatasetStart = () => {
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">Chunk Count:</p>
                 <p class="w-fit text-sm">{usage()?.chunk_count || 0}</p>
-                <TbReload onClick={reloadChunkCount} />
+                <button
+                  onClick={reloadChunkCount}
+                  class="hover:text-fuchsia-500"
+                >
+                  <TbReload />
+                </button>
               </div>
               <div class="flex items-center space-x-3">
                 <label class="block text-sm font-medium">tracking id:</label>
