@@ -363,10 +363,8 @@ pub async fn delete_dataset_by_id_query(
             })?;
 
     clickhouse_client
-        .query(&format!(
-            "DELETE FROM default.dataset_events WHERE dataset_id = '{}'",
-            id
-        ))
+        .query("DELETE FROM default.dataset_events WHERE dataset_id = ?")
+        .bind(id)
         .execute()
         .await
         .map_err(|err| {
@@ -378,9 +376,10 @@ pub async fn delete_dataset_by_id_query(
         .query(
             "
         ALTER TABLE default.dataset_events
-        DELETE WHERE dataset_id = '{dataset_id}';
+        DELETE WHERE dataset_id = ?;
         ",
         )
+        .bind(id)
         .execute()
         .await
         .unwrap();
@@ -389,9 +388,10 @@ pub async fn delete_dataset_by_id_query(
         .query(
             "
         ALTER TABLE default.search_queries
-        DELETE WHERE dataset_id = '{dataset_id}';
+        DELETE WHERE dataset_id = ?;
         ",
         )
+        .bind(id)
         .execute()
         .await
         .unwrap();
@@ -401,10 +401,11 @@ pub async fn delete_dataset_by_id_query(
             "
         ALTER TABLE default.search_cluster_memberships
         DELETE WHERE cluster_id IN (
-            SELECT id FROM cluster_topics WHERE dataset_id = '{dataset_id}'
+            SELECT id FROM cluster_topics WHERE dataset_id = ?
         );
         ",
         )
+        .bind(id)
         .execute()
         .await
         .unwrap();
@@ -413,9 +414,10 @@ pub async fn delete_dataset_by_id_query(
         .query(
             "
         ALTER TABLE default.cluster_topics
-        DELETE WHERE dataset_id = '{dataset_id}';
+        DELETE WHERE dataset_id = ?;
         ",
         )
+        .bind(id)
         .execute()
         .await
         .unwrap();
