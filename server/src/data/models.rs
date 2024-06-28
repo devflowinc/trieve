@@ -1394,7 +1394,7 @@ pub enum EventType {
     #[display(fmt = "chunk_updated")]
     ChunkUpdated { chunk_id: uuid::Uuid },
     #[display(fmt = "bulk_chunks_deleted")]
-    BulkChunksDeleted { chunk_ids: Vec<uuid::Uuid> },
+    BulkChunksDeleted { message: String },
     #[display(fmt = "dataset_delete_failed")]
     DatasetDeleteFailed { error: String },
     #[display(fmt = "qdrant_index_failed")]
