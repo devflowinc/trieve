@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use futures_util::StreamExt;
-use itertools::izip;
+use itertools::{izip, Itertools};
 use qdrant_client::qdrant::{PointStruct, Vector};
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
@@ -552,18 +552,21 @@ pub async fn bulk_upload_chunks(
         |((chunk_metadata, _, group_ids, _, _), embedding_vector, splade_vector)| async {
             let qdrant_point_id = chunk_metadata.qdrant_point_id;
 
-            let chunk_tags: Vec<Option<String>> = get_groups_from_group_ids_query(
-                group_ids.clone().unwrap_or_default(),
-                web_pool.clone(),
-            )
-            .await?
-            .iter()
-            .filter_map(|group| group.tag_set.clone())
-            .flatten()
-            .collect();
+            let chunk_tags: Option<Vec<Option<String>>> = if let Some(ref group_ids) = group_ids {
+                Some(
+                    get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
+                        .await?
+                        .iter()
+                        .filter_map(|group| group.tag_set.clone())
+                        .flatten()
+                        .dedup()
+                        .collect(),
+                )
+            } else {
+                None
+            };
 
-            let payload =
-                QdrantPayload::new(chunk_metadata, group_ids, None, Some(chunk_tags)).into();
+            let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags).into();
 
             let vector_name = match embedding_vector.len() {
                 384 => "384_vectors",
@@ -855,23 +858,23 @@ async fn upload_chunk(
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
 
-        let chunk_tags: Vec<Option<String>> = get_groups_from_group_ids_query(
-            payload.chunk.group_ids.clone().unwrap_or_default(),
-            web_pool.clone(),
-        )
-        .await?
-        .iter()
-        .filter_map(|group| group.tag_set.clone())
-        .flatten()
-        .collect();
+        let chunk_tags: Option<Vec<Option<String>>> =
+            if let Some(ref group_ids) = payload.chunk.group_ids {
+                Some(
+                    get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
+                        .await?
+                        .iter()
+                        .filter_map(|group| group.tag_set.clone())
+                        .flatten()
+                        .dedup()
+                        .collect(),
+                )
+            } else {
+                None
+            };
 
-        let payload = QdrantPayload::new(
-            chunk_metadata,
-            payload.chunk.group_ids,
-            None,
-            Some(chunk_tags),
-        )
-        .into();
+        let payload =
+            QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None, chunk_tags).into();
 
         let vector_name = match embedding_vector.len() {
             384 => "384_vectors",
@@ -1035,24 +1038,6 @@ pub async fn readd_error_to_queue(
     redis_pool: actix_web::web::Data<models::RedisPool>,
 ) -> Result<(), ServiceError> {
     if let ServiceError::DuplicateTrackingId(_) = error {
-        // Should No longer be triggered
-        // let _ = create_event_query(
-        //     Event::from_details(
-        //         message.get_dataset_id(),
-        //         models::EventType::ChunkActionFailed {
-        //             chunk_id: message.get_chunkmetadata_id(),
-        //             error: format!(
-        //                 "Failed to upload chunk with tracking_id: {:?}: {:?}",
-        //                 tracking_id, error
-        //             ),
-        //         },
-        //     ),
-        //     web_pool.clone(),
-        // )
-        // .await
-        // .map_err(|err| {
-        //     log::error!("Failed to create event: {:?}", err);
-        // });
         log::info!("Duplicate");
         return Ok(());
     }

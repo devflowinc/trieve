@@ -352,15 +352,21 @@ pub async fn create_new_qdrant_point_query(
     config: ServerDatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    let chunk_tags: Vec<Option<String>> =
-        get_groups_from_group_ids_query(group_ids.clone().unwrap_or_default(), pool.clone())
-            .await?
-            .iter()
-            .filter_map(|group| group.tag_set.clone())
-            .flatten()
-            .collect();
+    let chunk_tags: Option<Vec<Option<String>>> = if let Some(ref group_ids) = group_ids {
+        Some(
+            get_groups_from_group_ids_query(group_ids.clone(), pool.clone())
+                .await?
+                .iter()
+                .filter_map(|group| group.tag_set.clone())
+                .flatten()
+                .dedup()
+                .collect(),
+        )
+    } else {
+        None
+    };
 
-    let payload = QdrantPayload::new(chunk_metadata, group_ids, None, Some(chunk_tags)).into();
+    let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags).into();
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let vector_name = match embedding_vector.len() {

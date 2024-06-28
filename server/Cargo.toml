@@ -30,10 +30,6 @@ name = "grupdate-worker"
 path = "src/bin/grupdate-worker.rs"
 
 [[bin]]
-name = "create-new-qdrant"
-path = "src/bin/create-new-qdrant.rs"
-
-[[bin]]
 name = "redoc_ci"
 path = "src/bin/redoc_ci.rs"
 

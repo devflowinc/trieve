@@ -844,8 +844,11 @@ pub async fn update_grouped_chunks_query(
                 })
                 .map(|x| x.clone())
                 .collect();
+
             let new_tags = new_group_tag_set.iter().map(|x| Some(x.clone()));
             payload_tags.extend(new_tags);
+            payload_tags.dedup();
+
             let point_selector = PointsSelector {
                 points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
                     ids: vec![point.clone()],
