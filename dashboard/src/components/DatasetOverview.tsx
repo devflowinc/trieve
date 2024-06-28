@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { TbDatabasePlus } from "solid-icons/tb";
 import {
   Show,
@@ -18,6 +19,8 @@ import {
 } from "solid-icons/ai";
 import { formatDate } from "../formatters";
 import { Organization } from "../types/apiTypes";
+import { TbReload } from "solid-icons/tb";
+import { createToast } from "./ShowToasts";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
@@ -28,7 +31,9 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
   const navigate = useNavigate();
   const [page, setPage] = createSignal(0);
   const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
-
+  const [usage, setUsage] = createSignal<
+    Record<string, { chunk_count: number }>
+  >({});
   const { datasets, maxPageDiscovered, maxDatasets, removeDataset, hasLoaded } =
     useDatasetPages({
       // eslint-disable-next-line solid/reactivity
@@ -37,6 +42,57 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       page: page,
       setPage,
     });
+
+  createEffect(() => {
+    const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+    const newUsage: Record<string, { chunk_count: number }> = {};
+
+    const fetchUsage = (datasetId: string) => {
+      return new Promise((resolve, reject) => {
+        fetch(`${api_host}/dataset/usage/${datasetId}`, {
+          method: "GET",
+          headers: {
+            "TR-Dataset": datasetId,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        })
+          .then((response) => {
+            if (!response.ok) {
+              reject(new Error("Failed to fetch dataset usage"));
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            newUsage[datasetId] = data;
+            resolve(data);
+          })
+          .catch((error) => {
+            console.error(
+              `Failed to fetch usage for dataset ${datasetId}:`,
+              error,
+            );
+            reject(error);
+          });
+      });
+    };
+
+    const fetchInitialUsage = () => {
+      const promises = datasets().map((dataset) =>
+        fetchUsage(dataset.dataset.id),
+      );
+      Promise.all(promises)
+        .then(() => {
+          setUsage(newUsage);
+        })
+        .catch((error) => {
+          console.error("Failed to fetch initial usage:", error);
+        });
+    };
+
+    fetchInitialUsage();
+  });
 
   createEffect(() => {
     props.selectedOrganization();
@@ -67,6 +123,62 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       },
       credentials: "include",
     });
+  };
+
+  const reloadChunkCount = (datasetId: string) => {
+    const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+    if (!datasetId) {
+      console.error("Dataset ID is undefined.");
+      return;
+    }
+
+    fetch(`${api_host}/dataset/usage/${datasetId}`, {
+      method: "GET",
+      headers: {
+        "TR-Dataset": datasetId,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch dataset usage");
+        }
+        return response.json();
+      })
+      .then((newData) => {
+        const currentUsage = usage();
+        const prevCount = currentUsage[datasetId]?.chunk_count || 0;
+        const newCount: number = newData.chunk_count as number;
+        const countDifference = newCount - prevCount;
+
+        setUsage((prevUsage) => ({
+          ...prevUsage,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          [datasetId]: newData,
+        }));
+
+        createToast({
+          title: "Updated",
+          type: "success",
+          message: `Successfully updated chunk count: ${countDifference} chunk${
+            Math.abs(countDifference) === 1 ? " has" : "s have"
+          } been ${
+            countDifference > 0
+              ? "added"
+              : countDifference < 0
+                ? "removed"
+                : "added or removed"
+          } since last update.`,
+        });
+      })
+      .catch((error) => {
+        createToast({
+          title: "Error",
+          type: "error",
+          message: `Failed to reload chunk count: ${error}`,
+        });
+      });
   };
 
   return (
@@ -173,15 +285,25 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                       >
                         {datasetAndUsage.dataset.name}
                       </td>
-                      <td
-                        class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600"
-                        onClick={() => {
-                          navigate(
-                            `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
-                          );
-                        }}
-                      >
-                        {datasetAndUsage.dataset_usage.chunk_count}
+                      <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600">
+                        <span class="inline-flex items-center">
+                          <div
+                            onClick={() => {
+                              navigate(
+                                `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
+                              );
+                            }}
+                          >
+                            {usage()[datasetAndUsage.dataset.id]?.chunk_count ??
+                              datasetAndUsage.dataset_usage.chunk_count}{" "}
+                          </div>
+                          <TbReload
+                            class="ml-2 cursor-pointer"
+                            onClick={() => {
+                              reloadChunkCount(datasetAndUsage.dataset.id);
+                            }}
+                          />
+                        </span>
                       </td>
                       <td
                         class="hidden whitespace-nowrap px-3 py-4 text-sm text-neutral-600 lg:block"
