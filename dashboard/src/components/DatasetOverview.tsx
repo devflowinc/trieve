@@ -132,6 +132,8 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       return;
     }
 
+    const currentUsage = usage();
+
     fetch(`${api_host}/dataset/usage/${datasetId}`, {
       method: "GET",
       headers: {
@@ -147,7 +149,6 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
         return response.json();
       })
       .then((newData) => {
-        const currentUsage = usage();
         const prevCount = currentUsage[datasetId]?.chunk_count || 0;
         const newCount: number = newData.chunk_count as number;
         const countDifference = newCount - prevCount;
@@ -170,6 +171,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                 ? "removed"
                 : "added or removed"
           } since last update.`,
+          timeout: 3000,
         });
       })
       .catch((error) => {
@@ -285,24 +287,29 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                       >
                         {datasetAndUsage.dataset.name}
                       </td>
-                      <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600">
+                      <td
+                        class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600"
+                        onClick={() => {
+                          navigate(
+                            `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
+                          );
+                        }}
+                      >
                         <span class="inline-flex items-center">
-                          <div
-                            onClick={() => {
-                              navigate(
-                                `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
-                              );
-                            }}
-                          >
+                          <div>
                             {usage()[datasetAndUsage.dataset.id]?.chunk_count ??
                               datasetAndUsage.dataset_usage.chunk_count}{" "}
                           </div>
-                          <TbReload
-                            class="ml-2 cursor-pointer"
-                            onClick={() => {
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
                               reloadChunkCount(datasetAndUsage.dataset.id);
                             }}
-                          />
+                            class="ml-2 hover:text-fuchsia-500"
+                          >
+                            <TbReload />
+                          </button>
                         </span>
                       </td>
                       <td
