@@ -17,9 +17,9 @@ use qdrant_client::{
         quantization_config::Quantization, BinaryQuantization, CountPoints, CreateCollection,
         Distance, FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
         QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy,
-        SearchBatchPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig,
-        SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector, VectorParams,
-        VectorParamsMap, VectorsConfig,
+        SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints, SparseIndexConfig,
+        SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector,
+        VectorParams, VectorParamsMap, VectorsConfig,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -761,6 +761,11 @@ pub async fn search_over_groups_query(
                     group_by: "group_ids".to_string(),
                     group_size: if group_size == 0 { 1 } else { group_size },
                     timeout: Some(60),
+                    params: Some(SearchParams {
+                        exact: Some(false),
+                        indexed_only: Some(true),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 })
                 .await
@@ -781,6 +786,11 @@ pub async fn search_over_groups_query(
                     group_by: "group_ids".to_string(),
                     group_size: if group_size == 0 { 1 } else { group_size },
                     timeout: Some(60),
+                    params: Some(SearchParams {
+                        exact: Some(false),
+                        indexed_only: Some(true),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 })
                 .await
@@ -892,7 +902,11 @@ pub async fn search_qdrant_query(
                     with_payload: None,
                     filter: Some(query.filter.clone()),
                     timeout: Some(60),
-                    params: None,
+                    params: Some(SearchParams {
+                        exact: Some(false),
+                        indexed_only: Some(true),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 })
             }
@@ -1070,7 +1084,11 @@ pub async fn recommend_qdrant_query(
         filter: Some(filter),
         limit,
         with_payload: None,
-        params: None,
+        params: Some(SearchParams {
+            exact: Some(false),
+            indexed_only: Some(true),
+            ..Default::default()
+        }),
         score_threshold: None,
         offset: None,
         using: Some(vector_name.to_string()),
@@ -1196,7 +1214,11 @@ pub async fn recommend_qdrant_groups_query(
         filter: Some(filters),
         limit: limit.try_into().unwrap_or(10),
         with_payload: None,
-        params: None,
+        params: Some(SearchParams {
+            exact: Some(false),
+            indexed_only: Some(true),
+            ..Default::default()
+        }),
         score_threshold: None,
         using: Some(vector_name.to_string()),
         with_vectors: None,
