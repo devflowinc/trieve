@@ -94,7 +94,9 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     setTopLevelError("You are not authorized to view this chunk.");
   }
   if (props.defaultResultChunk.status == 404) {
-    setTopLevelError("This chunk could not be found.");
+    setTopLevelError(
+      "This chunk could not be found. It may be in a different dataset or deleted.",
+    );
   }
 
   const updateChunk = () => {
@@ -223,7 +225,9 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
         });
       }
       if (response.status == 403 || response.status == 404) {
-        setTopLevelError("This chunk could not be found.");
+        setTopLevelError(
+          "This chunk could not be found. It may be in a different dataset or deleted.",
+        );
         setFetching(false);
       }
     });

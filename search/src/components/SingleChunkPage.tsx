@@ -64,7 +64,9 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     setError("You are not authorized to view this chunk.");
   }
   if (props.defaultResultChunk.status == 404) {
-    setError("This chunk could not be found.");
+    setError(
+      "This chunk could not be found. It may be in a different dataset or deleted.",
+    );
   }
 
   // Fetch the chunk groups for the auth'ed user
@@ -175,7 +177,9 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         });
       }
       if (response.status == 404) {
-        setError("This chunk could not be found.");
+        setError(
+          "This chunk could not be found. It may be in a different dataset or deleted.",
+        );
       }
       setClientSideRequestFinished(true);
       setFetching(false);
