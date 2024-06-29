@@ -1,8 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
-        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool, RedisPool,
-        ServerDatasetConfiguration, StripePlan, UnifiedId,
+        Dataset, DatasetAndOrgWithSubAndPlan, Pool, RedisPool, ServerDatasetConfiguration,
+        StripePlan, UnifiedId,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -369,9 +369,7 @@ pub async fn get_dataset(
     d.server_configuration = json!(ServerDatasetConfiguration::from_json(
         d.server_configuration
     ));
-    d.client_configuration = json!(ClientDatasetConfiguration::from_json(
-        d.client_configuration
-    ));
+    d.client_configuration = json!(d.client_configuration);
     Ok(HttpResponse::Ok().json(d))
 }
 
@@ -447,9 +445,7 @@ pub async fn get_dataset_by_tracking_id(
     d.server_configuration = json!(ServerDatasetConfiguration::from_json(
         d.server_configuration
     ));
-    d.client_configuration = json!(ClientDatasetConfiguration::from_json(
-        d.client_configuration
-    ));
+    d.client_configuration = json!(d.client_configuration);
     Ok(HttpResponse::Ok().json(d))
 }
 
@@ -522,7 +518,7 @@ pub async fn get_datasets_from_organization(
     context_path = "/api",
     tag = "dataset",
     responses(
-        (status = 200, description = "Dataset environment variables", body = ClientDatasetConfiguration),
+        (status = 200, description = "Dataset environment variables", body = serde_json::Value),
         (status = 400, description = "Service error relating to retrieving the dataset. Typically this only happens when your auth credentials are invalid.", body = ErrorResponseBody),
     ),
     params(
@@ -537,9 +533,5 @@ pub async fn get_client_dataset_config(
     dataset: DatasetAndOrgWithSubAndPlan,
     _logged_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
-    Ok(
-        HttpResponse::Ok().json(ClientDatasetConfiguration::from_json(
-            dataset.dataset.client_configuration,
-        )),
-    )
+    Ok(HttpResponse::Ok().json(dataset.dataset.client_configuration))
 }
