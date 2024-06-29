@@ -299,7 +299,6 @@ impl Modify for SecurityAddon {
             data::models::DatasetUsageCount,
             data::models::DatasetDTO,
             data::models::DatasetUsageCount,
-            data::models::ClientDatasetConfiguration,
             data::models::StripePlan,
             data::models::SlimChunkMetadata,
             data::models::RangeCondition,
