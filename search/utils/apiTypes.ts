@@ -488,8 +488,8 @@ export interface DatasetDTO {
   created_at: string;
   updated_at: string;
   organization_id: string;
-  server_configuration: Record<string, string>;
-  client_configuration: Record<string, string>;
+  server_configuration: Record<string, any>;
+  client_configuration: Record<string, any>;
 }
 
 export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {

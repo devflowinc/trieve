@@ -175,8 +175,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                           <div class="flex items-center gap-3">
                             <Show
                               when={
-                                serverConfig()?.["DOCUMENT_DOWNLOAD_FEATURE"] &&
-                                group.file_id
+                                serverConfig()?.["DOCUMENT_DOWNLOAD_FEATURE"] !=
+                                  false && group.file_id
                               }
                             >
                               <button
