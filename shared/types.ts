@@ -107,6 +107,7 @@ export interface ServerEnvsConfiguration {
   FREQUENCY_PENALTY: number | null;
   STOP_TOKENS: string | null;
   USE_MESSAGE_TO_QUERY_PROMPT: boolean;
+  INDEXED_ONLY: boolean;
 }
 
 export interface ClientEnvsConfiguration {
