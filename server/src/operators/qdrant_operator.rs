@@ -839,6 +839,10 @@ pub async fn search_qdrant_query(
     config: ServerDatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<(Vec<SearchResult>, u64, Vec<usize>), ServiceError> {
+    if limit <= 0 {
+        return Ok((vec![], 0, vec![]));
+    }
+
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(

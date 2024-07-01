@@ -332,13 +332,13 @@ export const ServerSettingsForm = () => {
 
             <div class="col-span-4 sm:col-span-2">
               <label
-                for="nRetrivialsToInclude"
+                for="nRetreivalsToInclude"
                 class="block text-sm font-medium leading-6"
               >
-                N Retrivials To Include (RAG-inference)
+                N Retrievals To Include (RAG-inference)
               </label>
               <input
-                name="nRetrivialsToInclude"
+                name="nRetreivalsToInclude"
                 type="number"
                 placeholder="something"
                 id="linesBeforeShowMore"

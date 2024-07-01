@@ -86,6 +86,12 @@ pub struct CreateMessageReqPayload {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
     pub search_type: Option<String>,
+    /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
+    pub concat_user_messages_query: Option<bool>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
@@ -265,6 +271,12 @@ pub struct RegenerateMessageReqPayload {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: Option<String>,
+    /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
+    pub concat_user_messages_query: Option<bool>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
@@ -297,6 +309,12 @@ pub struct EditMessageReqPayload {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: Option<String>,
+    /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
+    pub concat_user_messages_query: Option<bool>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
@@ -323,6 +341,9 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             highlight_results: data.highlight_citations,
             highlight_delimiters: data.highlight_delimiters,
             search_type: data.search_type,
+            concat_user_messages_query: data.concat_user_messages_query,
+            search_query: data.search_query,
+            page_size: data.page_size,
             filters: data.filters,
             completion_first: data.completion_first,
             stream_response: data.stream_response,
@@ -343,6 +364,9 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             highlight_results: data.highlight_citations,
             highlight_delimiters: data.highlight_delimiters,
             search_type: data.search_type,
+            concat_user_messages_query: data.concat_user_messages_query,
+            search_query: data.search_query,
+            page_size: data.page_size,
             filters: data.filters,
             completion_first: data.completion_first,
             stream_response: data.stream_response,
@@ -526,10 +550,10 @@ pub async fn regenerate_message(
         previous_messages_to_regenerate.push(message.clone());
     }
 
-    let _ = delete_message_query(message_id, topic_id, dataset_id, &pool).await;
+    delete_message_query(message_id, topic_id, dataset_id, &pool).await?;
 
     stream_response(
-        previous_messages,
+        previous_messages_to_regenerate,
         topic_id,
         dataset_org_plan_sub.dataset,
         create_message_pool,
