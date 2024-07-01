@@ -1615,6 +1615,7 @@ impl DatasetAndUsage {
     "PRESENCE_PENALTY": 0.0,
     "STOP_TOKENS": ["\n\n", "\n"],
     "INDEXED_ONLY": false,
+    "LOCKED": false,
 }))]
 #[allow(non_snake_case)]
 pub struct ServerDatasetConfiguration {
@@ -1639,6 +1640,7 @@ pub struct ServerDatasetConfiguration {
     pub PRESENCE_PENALTY: Option<f64>,
     pub STOP_TOKENS: Option<Vec<String>>,
     pub INDEXED_ONLY: bool,
+    pub LOCKED: bool,
 }
 
 impl ServerDatasetConfiguration {
@@ -1811,6 +1813,11 @@ impl ServerDatasetConfiguration {
                 .map(|v| v.split(',').map(|s| s.to_string()).collect::<Vec<String>>()),
             INDEXED_ONLY: configuration
                 .get("INDEXED_ONLY")
+                .unwrap_or(&json!(false))
+                .as_bool()
+                .unwrap_or(false),
+            LOCKED: configuration
+                .get("LOCKED")
                 .unwrap_or(&json!(false))
                 .as_bool()
                 .unwrap_or(false),

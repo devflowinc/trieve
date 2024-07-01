@@ -108,6 +108,7 @@ export interface ServerEnvsConfiguration {
   PRESENCE_PENALTY: number | null;
   STOP_TOKENS: string | null;
   INDEXED_ONLY: boolean;
+  LOCKED: boolean;
 }
 
 export interface ClientEnvsConfiguration {

@@ -20,7 +20,7 @@ import {
 import { formatDate } from "../formatters";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "./ShowToasts";
-import { Organization } from "shared/types";
+import { DefaultError, Organization } from "shared/types";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
@@ -99,23 +99,31 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
     setPage(0);
   });
 
-  const deleteDataset = (datasetId: string) => {
+  const deleteDataset = async (datasetId: string) => {
     const api_host = import.meta.env.VITE_API_HOST as unknown as string;
-    void fetch(`${api_host}/dataset/${datasetId}`, {
+    const response = await fetch(`${api_host}/dataset/${datasetId}`, {
       method: "DELETE",
       headers: {
         "TR-Dataset": datasetId,
         "Content-Type": "application/json",
       },
       credentials: "include",
-    }).then(() => {
-      removeDataset(datasetId);
     });
+    if (response.ok) {
+      removeDataset(datasetId);
+    } else {
+      const error = (await response.json()) as DefaultError;
+      createToast({
+        title: "Error",
+        type: "error",
+        message: `Failed to delete dataset: ${error.message}`,
+      });
+    }
   };
 
-  const clearDataset = (datasetId: string) => {
+  const clearDataset = async (datasetId: string) => {
     const api_host = import.meta.env.VITE_API_HOST as unknown as string;
-    void fetch(`${api_host}/dataset/clear/${datasetId}`, {
+    const response = await fetch(`${api_host}/dataset/clear/${datasetId}`, {
       method: "PUT",
       headers: {
         "TR-Dataset": datasetId,
@@ -123,6 +131,15 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       },
       credentials: "include",
     });
+
+    if (!response.ok) {
+      const error = (await response.json()) as DefaultError;
+      createToast({
+        title: "Error",
+        type: "error",
+        message: `Failed to clear dataset: ${error.message}`,
+      });
+    }
   };
 
   const reloadChunkCount = (datasetId: string) => {
@@ -343,7 +360,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           onClick={() => {
                             confirm(
                               "Are you sure you want to delete this dataset?",
-                            ) && deleteDataset(datasetAndUsage.dataset.id);
+                            ) && void deleteDataset(datasetAndUsage.dataset.id);
                           }}
                         >
                           <FiTrash />
@@ -353,7 +370,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           onClick={() => {
                             confirm(
                               "Are you sure you want to clear this dataset?",
-                            ) && clearDataset(datasetAndUsage.dataset.id);
+                            ) && void clearDataset(datasetAndUsage.dataset.id);
                           }}
                         >
                           <AiOutlineClear />
