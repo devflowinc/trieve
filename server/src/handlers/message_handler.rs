@@ -627,28 +627,55 @@ pub async fn get_topic_string(
     Ok(topic)
 }
 
+pub struct StreamResponseParams {
+    pub topic_id: uuid::Uuid,
+    pub should_stream: Option<bool>,
+    pub highlight_results: Option<bool>,
+    pub highlight_delimiters: Option<Vec<String>>,
+    pub search_type: Option<String>,
+    pub concat_user_messages_query: Option<bool>,
+    pub search_query: Option<String>,
+    pub page_size: Option<u64>,
+    pub filters: Option<ChunkFilter>,
+    pub completion_first: Option<bool>,
+    pub temperature: Option<f32>,
+    pub frequency_penalty: Option<f32>,
+    pub presence_penalty: Option<f32>,
+    pub max_tokens: Option<u32>,
+    pub stop_tokens: Option<Vec<String>>,
+}
+
+// impl StreamResponseParams From CreateMessageReqPayload
+impl From<CreateMessageReqPayload> for StreamResponseParams {
+    fn from(data: CreateMessageReqPayload) -> Self {
+        StreamResponseParams {
+            topic_id: data.topic_id,
+            should_stream: data.stream_response,
+            highlight_results: data.highlight_results,
+            highlight_delimiters: data.highlight_delimiters,
+            search_type: data.search_type,
+            concat_user_messages_query: data.concat_user_messages_query,
+            search_query: data.search_query,
+            page_size: data.page_size,
+            filters: data.filters,
+            completion_first: data.completion_first,
+            temperature: data.temperature,
+            frequency_penalty: data.frequency_penalty,
+            presence_penalty: data.presence_penalty,
+            max_tokens: data.max_tokens,
+            stop_tokens: data.stop_tokens,
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn stream_response(
     messages: Vec<models::Message>,
-    topic_id: uuid::Uuid,
-    should_stream: Option<bool>,
-    highlight_results: Option<bool>,
-    highlight_delimiters: Option<Vec<String>>,
-    search_type: Option<String>,
-    concat_user_messages_query: Option<bool>,
-    search_query: Option<String>,
-    page_size: Option<u64>,
-    filters: Option<ChunkFilter>,
+    stream_response_params: StreamResponseParams,
     dataset: Dataset,
-    pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
-    completion_first: Option<bool>,
-    temperature: Option<f32>,
-    frequency_penalty: Option<f32>,
-    presence_penalty: Option<f32>,
-    max_tokens: Option<u32>,
-    stop_tokens: Option<Vec<String>>,
+    pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
