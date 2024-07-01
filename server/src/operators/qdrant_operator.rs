@@ -763,7 +763,7 @@ pub async fn search_over_groups_query(
                     timeout: Some(60),
                     params: Some(SearchParams {
                         exact: Some(false),
-                        indexed_only: Some(true),
+                        indexed_only: Some(config.INDEXED_ONLY),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -788,7 +788,7 @@ pub async fn search_over_groups_query(
                     timeout: Some(60),
                     params: Some(SearchParams {
                         exact: Some(false),
-                        indexed_only: Some(true),
+                        indexed_only: Some(config.INDEXED_ONLY),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -904,7 +904,7 @@ pub async fn search_qdrant_query(
                     timeout: Some(60),
                     params: Some(SearchParams {
                         exact: Some(false),
-                        indexed_only: Some(true),
+                        indexed_only: Some(config.INDEXED_ONLY),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -1086,7 +1086,7 @@ pub async fn recommend_qdrant_query(
         with_payload: None,
         params: Some(SearchParams {
             exact: Some(false),
-            indexed_only: Some(true),
+            indexed_only: Some(config.INDEXED_ONLY),
             ..Default::default()
         }),
         score_threshold: None,
@@ -1216,7 +1216,7 @@ pub async fn recommend_qdrant_groups_query(
         with_payload: None,
         params: Some(SearchParams {
             exact: Some(false),
-            indexed_only: Some(true),
+            indexed_only: Some(config.INDEXED_ONLY),
             ..Default::default()
         }),
         score_threshold: None,

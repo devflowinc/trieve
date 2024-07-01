@@ -56,6 +56,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   TEMPERATURE: null,
   PRESENCE_PENALTY: null,
   STOP_TOKENS: null,
+  INDEXED_ONLY: false,
 };
 
 export const FrontendSettingsForm = () => {
@@ -500,7 +501,7 @@ export const ServerSettingsForm = () => {
             </div>
 
             <div class="col-span-4 space-y-1 sm:col-span-2">
-              <div class="flex">
+              <div class="flex items-center">
                 <label
                   for="embeddingSize"
                   class="mr-2 block text-sm font-medium leading-6"
@@ -508,7 +509,7 @@ export const ServerSettingsForm = () => {
                   Embedding Model
                 </label>
                 <AiOutlineInfoCircle
-                  class="h-5 w-5 text-neutral-400"
+                  class="h-5 w-5 text-neutral-400 hover:cursor-help"
                   title="Embedding Model is only editable on creation"
                 />
               </div>
@@ -532,7 +533,7 @@ export const ServerSettingsForm = () => {
             </div>
 
             <div class="col-span-4 space-y-1 sm:col-span-2">
-              <div class="flex">
+              <div class="flex items-center">
                 <label
                   for="embeddingSize"
                   class="mr-2 block text-sm font-medium leading-6"
@@ -540,7 +541,7 @@ export const ServerSettingsForm = () => {
                   Embedding Query Prefix
                 </label>
                 <AiOutlineInfoCircle
-                  class="h-5 w-5 text-neutral-400"
+                  class="h-5 w-5 text-neutral-400 hover:cursor-help"
                   title="For some embedding models, the training data includes query prefixes. The default for Jina is 'Search for: '. You can experiment with different values."
                 />
               </div>
@@ -651,6 +652,34 @@ export const ServerSettingsForm = () => {
               >
                 Document download feature
               </label>
+            </div>
+            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
+              <input
+                type="checkbox"
+                name="indexedOnly"
+                id="indexedOnly"
+                checked={serverConfig().INDEXED_ONLY}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      INDEXED_ONLY: e.currentTarget.checked,
+                    };
+                  })
+                }
+              />
+              <div class="flex items-center">
+                <label
+                  for="embeddingSize"
+                  class="mr-2 block text-sm font-medium leading-6"
+                >
+                  Indexed Only
+                </label>
+                <AiOutlineInfoCircle
+                  class="h-5 w-5 text-neutral-400 hover:cursor-help"
+                  title="If enabled, only indexed documents will be returned in search results. This defaults to false because it can make it seem like ingested documents are missing because they are not yet indexed."
+                />
+              </div>
             </div>
           </div>
         </div>
