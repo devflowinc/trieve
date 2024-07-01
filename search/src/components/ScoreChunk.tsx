@@ -38,6 +38,7 @@ import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { A } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { ImageModal } from "./ImageModal";
+import { defaultClientEnvsConfiguration } from "../../utils/apiTypes";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -89,7 +90,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const $currentDataset = datasetAndUserContext.currentDataset;
   const $currentUser = datasetAndUserContext.user;
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $envs = datasetAndUserContext.clientConfig;
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [showPropsModal, setShowPropsModal] = createSignal(false);
@@ -105,7 +105,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [imageLink, setImageLink] = createSignal<string | null>(null);
 
   createEffect(() => {
-    const fileNameKey = $envs().FILE_NAME_KEY;
+    const fileNameKey = defaultClientEnvsConfiguration.FILE_NAME_KEY;
 
     if (
       !fileNameKey ||
@@ -143,8 +143,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   });
 
   const imgInformation = createMemo(() => {
-    const imgRangeStartKey = $envs().IMAGE_RANGE_START_KEY;
-    const imgRangeEndKey = $envs().IMAGE_RANGE_END_KEY;
+    const imgRangeStartKey =
+      defaultClientEnvsConfiguration.IMAGE_RANGE_START_KEY;
+    const imgRangeEndKey = defaultClientEnvsConfiguration.IMAGE_RANGE_END_KEY;
 
     if (
       !imgRangeStartKey ||
@@ -505,9 +506,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.link &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "link")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "link")
                 }
               >
                 <a
@@ -527,9 +528,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.tracking_id &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "tag_set")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "tag_set")
                 }
               >
                 <div class="flex space-x-2">
@@ -544,9 +545,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.tag_set &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "tag_set") &&
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "tag_set") &&
                   props.chunk.tag_set.length > 0
                 }
               >
@@ -562,9 +563,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.time_stamp &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "time_stamp")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "time_stamp")
                 }
               >
                 <div class="flex space-x-2">
@@ -579,9 +580,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.num_value &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "num_value")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "num_value")
                 }
               >
                 <div class="flex gap-x-2">
@@ -596,9 +597,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.location &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "location") &&
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "location") &&
                   props.chunk.location.lat &&
                   props.chunk.location.lon
                 }
@@ -639,9 +640,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     {(key) => (
                       <Show
                         when={
-                          !$envs()
-                            .FRONTMATTER_VALS?.split(",")
-                            ?.find((val) => val === key) &&
+                          !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                            ",",
+                          )?.find((val) => val === key) &&
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           (props.chunk.metadata as any)[key] !== undefined
                         }
