@@ -254,7 +254,9 @@ export const DatasetEvents = () => {
                                         )}
                                       </button>
                                     </Show>
-                                    {JSON.stringify(event.event_data)}
+                                    {JSON.stringify(
+                                      JSON.parse(event.event_data),
+                                    )}
                                   </div>
                                 </td>
                               </tr>
