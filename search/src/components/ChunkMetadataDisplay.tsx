@@ -32,6 +32,7 @@ import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { createToast } from "./ShowToasts";
+import { defaultClientEnvsConfiguration } from "../../utils/apiTypes";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -63,8 +64,6 @@ export interface ChunkMetadataDisplayProps {
 const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const datasetAndUserContext = useContext(DatasetAndUserContext);
-
-  const $envs = datasetAndUserContext.clientConfig;
 
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
@@ -105,8 +104,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   };
 
   const imgInformation = createMemo(() => {
-    const imgRangeStartKey = $envs().IMAGE_RANGE_START_KEY;
-    const imgRangeEndKey = $envs().IMAGE_RANGE_END_KEY;
+    const imgRangeStartKey =
+      defaultClientEnvsConfiguration.IMAGE_RANGE_START_KEY;
+    const imgRangeEndKey = defaultClientEnvsConfiguration.IMAGE_RANGE_END_KEY;
 
     if (
       !imgRangeStartKey ||
@@ -272,9 +272,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.link &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "link")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "link")
                 }
               >
                 <a
@@ -294,9 +294,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.tracking_id &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "tag_set")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "tag_set")
                 }
               >
                 <div class="flex space-x-2">
@@ -311,9 +311,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.tag_set &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "tag_set")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "tag_set")
                 }
               >
                 <div class="flex space-x-2">
@@ -328,9 +328,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.time_stamp &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "time_stamp")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "time_stamp")
                 }
               >
                 <div class="flex space-x-2">
@@ -345,9 +345,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.num_value &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "num_value")
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "num_value")
                 }
               >
                 <div class="flex gap-x-2">
@@ -362,9 +362,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.location != null &&
-                  !$envs()
-                    .FRONTMATTER_VALS?.split(",")
-                    ?.find((val) => val == "location") &&
+                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                    ",",
+                  )?.find((val) => val == "location") &&
                   props.chunk.location.lat &&
                   props.chunk.location.lon
                 }
@@ -404,9 +404,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                         <Show
                           when={
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                            !$envs()
-                              .FRONTMATTER_VALS?.split(",")
-                              ?.find((val) => val == key) &&
+                            !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
+                              ",",
+                            )?.find((val) => val == key) &&
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             (props.chunk.metadata as any)[key]
                           }

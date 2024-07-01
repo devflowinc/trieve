@@ -23,6 +23,7 @@ import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import { SearchOptions, SearchStore } from "../hooks/useSearch";
 import { Tooltip } from "./Atoms/Tooltip";
 import { BsQuestionCircle } from "solid-icons/bs";
+import { defaultClientEnvsConfiguration } from "../../utils/apiTypes";
 
 const defaultFilter = {
   field: "",
@@ -30,9 +31,6 @@ const defaultFilter = {
 
 const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const $envs = datasetAndUserContext.clientConfig;
-
   const [tempSearchValues, setTempSearchValues] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.search.state,
@@ -119,7 +117,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   });
 
   createEffect(() => {
-    $envs().CREATE_CHUNK_FEATURE?.valueOf();
+    defaultClientEnvsConfiguration.CREATE_CHUNK_FEATURE?.valueOf();
   });
 
   return (
