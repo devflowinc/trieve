@@ -107,6 +107,7 @@ export interface ServerEnvsConfiguration {
   TEMPERATURE: number | null;
   PRESENCE_PENALTY: number | null;
   STOP_TOKENS: string | null;
+  INDEXED_ONLY: boolean;
 }
 
 export interface ClientEnvsConfiguration {
