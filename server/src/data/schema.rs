@@ -1,16 +1,6 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    chunk_collisions (id) {
-        id -> Uuid,
-        chunk_id -> Uuid,
-        collision_qdrant_id -> Nullable<Uuid>,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     chunk_group (id) {
         id -> Uuid,
         name -> Text,
@@ -38,7 +28,7 @@ diesel::table! {
     chunk_metadata (id) {
         id -> Uuid,
         link -> Nullable<Text>,
-        qdrant_point_id -> Nullable<Uuid>,
+        qdrant_point_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         chunk_html -> Nullable<Text>,
@@ -298,7 +288,6 @@ diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    chunk_collisions,
     chunk_group,
     chunk_group_bookmarks,
     chunk_metadata,

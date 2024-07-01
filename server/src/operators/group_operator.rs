@@ -1,13 +1,14 @@
+use crate::data::models::ChunkMetadataTypes;
+use crate::operators::chunk_operator::get_chunk_metadatas_from_point_ids_query;
 use crate::{data::models::ChunkGroupBookmark, errors::ServiceError};
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTable, Dataset, FileGroup, Pool,
-        QdrantPayload, RedisPool, ServerDatasetConfiguration, UnifiedId,
+        ChunkGroup, ChunkGroupAndFile, ChunkMetadataTable, Dataset, FileGroup, Pool, QdrantPayload,
+        RedisPool, ServerDatasetConfiguration, UnifiedId,
     },
     get_env,
     operators::{
-        chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
-        qdrant_operator::get_qdrant_connection,
+        chunk_operator::delete_chunk_metadata_query, qdrant_operator::get_qdrant_connection,
     },
 };
 use actix_web::web;
@@ -232,7 +233,6 @@ pub async fn delete_group_by_id_query(
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
@@ -242,7 +242,6 @@ pub async fn delete_group_by_id_query(
     let mut conn = pool.get().await.unwrap();
 
     let mut chunk_ids = vec![];
-    let mut collisions = vec![];
     let delete_chunks = delete_chunks.unwrap_or(false);
 
     if delete_chunks {
@@ -254,27 +253,7 @@ pub async fn delete_group_by_id_query(
             .await
             .map_err(|_err| ServiceError::BadRequest("Error getting chunks".to_string()))?;
 
-        chunk_ids = chunks
-            .iter()
-            .filter_map(|chunk| {
-                if chunk.qdrant_point_id.is_some() {
-                    Some(chunk.id)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        collisions = chunks
-            .iter()
-            .filter_map(|chunk| {
-                if chunk.qdrant_point_id.is_none() {
-                    Some(chunk.id)
-                } else {
-                    None
-                }
-            })
-            .collect();
+        chunk_ids = chunks.iter().map(|chunk| chunk.id).collect();
     }
 
     let transaction_result = conn
@@ -290,23 +269,6 @@ pub async fn delete_group_by_id_query(
                 )
                 .execute(conn)
                 .await?;
-
-                if delete_chunks {
-                    diesel::delete(
-                        chunk_collisions_columns::chunk_collisions
-                            .filter(chunk_collisions_columns::chunk_id.eq_any(collisions.clone())),
-                    )
-                    .execute(conn)
-                    .await?;
-                    // there cannot be collisions for a collision, just delete the chunk_metadata without issue
-                    diesel::delete(
-                        chunk_metadata_columns::chunk_metadata
-                            .filter(chunk_metadata_columns::id.eq_any(collisions.clone()))
-                            .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
-                    )
-                    .execute(conn)
-                    .await?;
-                }
 
                 diesel::delete(
                     groups_from_files_columns::groups_from_files
@@ -381,7 +343,7 @@ pub async fn update_chunk_group_query(
 pub async fn create_chunk_bookmark_query(
     pool: web::Data<Pool>,
     bookmark: ChunkGroupBookmark,
-) -> Result<Option<uuid::Uuid>, ServiceError> {
+) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl::*;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -401,7 +363,7 @@ pub async fn create_chunk_bookmark_query(
     let qdrant_point_id = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::id.eq(bookmark.chunk_metadata_id))
         .select(chunk_metadata_columns::qdrant_point_id)
-        .first::<Option<uuid::Uuid>>(&mut conn)
+        .first::<uuid::Uuid>(&mut conn)
         .await
         .map_err(|_err| {
             log::error!("Error getting qdrant_point_id {:}", _err);
@@ -411,7 +373,7 @@ pub async fn create_chunk_bookmark_query(
     Ok(qdrant_point_id)
 }
 pub struct GroupsBookmarkQueryResult {
-    pub metadata: Vec<ChunkMetadata>,
+    pub metadata: Vec<ChunkMetadataTypes>,
     pub group: ChunkGroup,
     pub total_pages: i64,
 }
@@ -443,7 +405,7 @@ pub async fn get_bookmarks_for_group_query(
     };
 
     // let (chunk_metadata, tag_seet, chunk_count, chunk_group) :
-    let pairs: Vec<(Option<uuid::Uuid>, i64, ChunkGroup)> =
+    let pairs: Vec<(uuid::Uuid, i64, ChunkGroup)> =
         chunk_metadata_columns::chunk_metadata
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
@@ -465,15 +427,16 @@ pub async fn get_bookmarks_for_group_query(
             ))
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
-            .load::<(Option<uuid::Uuid>, i64, ChunkGroup)>(&mut conn)
+            .load::<(uuid::Uuid, i64, ChunkGroup)>(&mut conn)
             .await
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
     let point_ids = pairs
         .iter()
-        .filter_map(|(point_id, _, _)| point_id.clone())
+        .map(|(point_id, _, _)| point_id.clone())
         .collect::<Vec<uuid::Uuid>>();
-    let chunk_metadata = get_chunk_metadatas_from_point_ids(point_ids, pool).await?;
+
+    let chunk_metadata = get_chunk_metadatas_from_point_ids_query(point_ids, pool).await?;
 
     let (chunk_count, chunk_group) = pairs
         .get(0)
@@ -552,7 +515,7 @@ pub async fn delete_chunk_from_group_query(
     chunk_id: uuid::Uuid,
     group_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Option<uuid::Uuid>, ServiceError> {
+) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -573,7 +536,7 @@ pub async fn delete_chunk_from_group_query(
     let qdrant_point_id = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::id.eq(chunk_id))
         .select(chunk_metadata_columns::qdrant_point_id)
-        .first::<Option<uuid::Uuid>>(&mut conn)
+        .first::<uuid::Uuid>(&mut conn)
         .await
         .map_err(|_err| {
             log::error!("Error getting qdrant_point_id {:}", _err);
@@ -635,12 +598,9 @@ pub async fn get_point_ids_from_unified_group_ids(
             )
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .select(chunk_metadata_columns::qdrant_point_id)
-            .load::<Option<uuid::Uuid>>(&mut conn)
+            .load::<uuid::Uuid>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
-            .into_iter()
-            .flatten()
-            .collect(),
+            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
         UnifiedId::TrackingId(_) => chunk_group_columns::chunk_group
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks)
             .inner_join(chunk_metadata_columns::chunk_metadata.on(
@@ -656,12 +616,9 @@ pub async fn get_point_ids_from_unified_group_ids(
             )
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .select(chunk_metadata_columns::qdrant_point_id)
-            .load::<Option<uuid::Uuid>>(&mut conn)
+            .load::<uuid::Uuid>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
-            .into_iter()
-            .flatten()
-            .collect(),
+            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
     };
 
     Ok(qdrant_point_ids)
@@ -785,7 +742,7 @@ pub async fn update_grouped_chunks_query(
         .collect::<Vec<String>>();
 
     loop {
-        let qdrant_ids: Vec<(Option<uuid::Uuid>, uuid::Uuid)> =
+        let qdrant_ids: Vec<(uuid::Uuid, uuid::Uuid)> =
             chunk_group_bookmarks_columns::chunk_group_bookmarks
                 .inner_join(chunk_metadata_columns::chunk_metadata.on(
                     chunk_metadata_columns::id.eq(chunk_group_bookmarks_columns::chunk_metadata_id),
@@ -798,7 +755,7 @@ pub async fn update_grouped_chunks_query(
                     chunk_metadata_columns::qdrant_point_id,
                     chunk_metadata_columns::id,
                 ))
-                .load::<(Option<uuid::Uuid>, uuid::Uuid)>(&mut conn)
+                .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to load chunks".to_string()))?;
         if qdrant_ids.is_empty() {
@@ -809,8 +766,7 @@ pub async fn update_grouped_chunks_query(
 
         let points: Vec<PointId> = qdrant_ids
             .iter()
-            .filter_map(|x| x.0.clone())
-            .map(|x| x.to_string().into())
+            .map(|(qdrant_id, _)| qdrant_id.clone().to_string().into())
             .collect();
 
         let results = qdrant_client

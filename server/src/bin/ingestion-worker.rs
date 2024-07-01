@@ -19,9 +19,7 @@ use trieve_server::handlers::chunk_handler::{
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
-    get_chunk_metadatas_from_point_ids, get_qdrant_id_from_chunk_id_query,
-    insert_chunk_metadata_query, insert_duplicate_chunk_metadata_query,
-    update_chunk_metadata_query,
+    get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
@@ -34,7 +32,6 @@ use trieve_server::operators::parse_operator::{
 use trieve_server::operators::qdrant_operator::{
     bulk_upsert_qdrant_points_query, update_qdrant_point_query,
 };
-use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 use trieve_server::{establish_connection, get_env};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -356,7 +353,6 @@ pub async fn bulk_upload_chunks(
     if raw_vectors_being_used
         || split_average_being_used
         || dataset_config.DUPLICATE_DISTANCE_THRESHOLD < 1.0
-        || dataset_config.COLLISIONS_ENABLED
         || upsert_by_tracking_id_being_used
     {
         let mut chunk_ids = vec![];
@@ -391,10 +387,7 @@ pub async fn bulk_upload_chunks(
                 message.chunk.chunk_html.clone().unwrap_or_default()
             };
 
-            let qdrant_point_id = message
-                .ingest_specific_chunk_metadata
-                .qdrant_point_id
-                .unwrap_or(uuid::Uuid::new_v4());
+            let qdrant_point_id = message.ingest_specific_chunk_metadata.qdrant_point_id;
 
             let chunk_tag_set = message.chunk.tag_set.clone().map(|tag_set| {
                 tag_set
@@ -424,7 +417,7 @@ pub async fn bulk_upload_chunks(
             let chunk_metadata = ChunkMetadata {
                 id: message.ingest_specific_chunk_metadata.id,
                 link: message.chunk.link.clone(),
-                qdrant_point_id: Some(qdrant_point_id),
+                qdrant_point_id: qdrant_point_id,
                 created_at: chrono::Utc::now().naive_local(),
                 updated_at: chrono::Utc::now().naive_local(),
                 chunk_html: message.chunk.chunk_html.clone(),
@@ -575,7 +568,11 @@ pub async fn bulk_upload_chunks(
                 1024 => "1024_vectors",
                 3072 => "3072_vectors",
                 1536 => "1536_vectors",
-                _ => return Ok(None),
+                _ => {
+                    return Err(ServiceError::BadRequest(
+                        "Invalid embedding vector size".into(),
+                    ))
+                }
             };
 
             let vector_payload = HashMap::from([
@@ -590,11 +587,14 @@ pub async fn bulk_upload_chunks(
             ]);
 
             // If qdrant_point_id does not exist, does not get written to qdrant
-            Ok(qdrant_point_id
-                .map(|point_id| PointStruct::new(point_id.to_string(), vector_payload, payload)))
+            Ok(PointStruct::new(
+                qdrant_point_id.to_string(),
+                vector_payload,
+                payload,
+            ))
         },
     )
-    .collect::<Vec<Result<Option<PointStruct>, ServiceError>>>()
+    .collect::<Vec<Result<PointStruct, ServiceError>>>()
     .await;
 
     if qdrant_points.iter().any(|point| point.is_err()) {
@@ -606,7 +606,6 @@ pub async fn bulk_upload_chunks(
     let qdrant_points: Vec<PointStruct> = qdrant_points
         .into_iter()
         .filter_map(|point| point.ok())
-        .filter_map(|point| point)
         .collect();
 
     let insert_tx = transaction.start_child(
@@ -631,7 +630,7 @@ pub async fn bulk_upload_chunks(
 
 #[tracing::instrument(skip(payload, web_pool))]
 async fn upload_chunk(
-    mut payload: UploadIngestionMessage,
+    payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
 ) -> Result<uuid::Uuid, ServiceError> {
@@ -644,7 +643,7 @@ async fn upload_chunk(
 
     let dataset_config = payload.dataset_config;
 
-    let mut qdrant_point_id = uuid::Uuid::new_v4();
+    let qdrant_point_id = uuid::Uuid::new_v4();
     let content = match payload.chunk.convert_html_to_text.unwrap_or(true) {
         true => convert_html_to_text(&(payload.chunk.chunk_html.clone().unwrap_or_default())),
         false => payload.chunk.chunk_html.clone().unwrap_or_default(),
@@ -682,7 +681,7 @@ async fn upload_chunk(
     let chunk_metadata = ChunkMetadata {
         id: payload.ingest_specific_chunk_metadata.id,
         link: payload.chunk.link.clone(),
-        qdrant_point_id: Some(qdrant_point_id),
+        qdrant_point_id,
         created_at: chrono::Utc::now().naive_local(),
         updated_at: chrono::Utc::now().naive_local(),
         chunk_html: payload.chunk.chunk_html.clone(),
@@ -751,172 +750,77 @@ async fn upload_chunk(
         vec![(0, 0.0)]
     };
 
-    let mut collision: Option<uuid::Uuid> = None;
+    let insert_tx = transaction.start_child(
+        "calling_insert_chunk_metadata_query",
+        "calling_insert_chunk_metadata_query",
+    );
 
-    let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD;
+    let inserted_chunk = insert_chunk_metadata_query(
+        chunk_metadata.clone(),
+        payload.chunk.group_ids.clone(),
+        payload.dataset_id,
+        payload.upsert_by_tracking_id,
+        web_pool.clone(),
+    )
+    .await?;
 
-    if duplicate_distance_threshold < 1.0 && dataset_config.COLLISIONS_ENABLED {
-        let collision_detection_span = transaction.start_child(
-            "collision_check",
-            "global_unfiltered_top_match_query and get_metadata_from_point_ids",
-        );
+    insert_tx.finish();
 
-        let first_semantic_result = global_unfiltered_top_match_query(
-            embedding_vector.clone(),
-            payload.ingest_specific_chunk_metadata.dataset_id,
-            dataset_config.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!("Failed to get top match: {:?}", err))
-        })?;
-
-        if first_semantic_result.score >= duplicate_distance_threshold as f32 {
-            //Sets collision to collided chunk id
-            collision = Some(first_semantic_result.point_id);
-
-            let score_chunk_result = get_chunk_metadatas_from_point_ids(
-                vec![first_semantic_result.point_id],
-                web_pool.clone(),
+    let chunk_tags: Option<Vec<Option<String>>> =
+        if let Some(ref group_ids) = payload.chunk.group_ids {
+            Some(
+                get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
+                    .await?
+                    .iter()
+                    .filter_map(|group| group.tag_set.clone())
+                    .flatten()
+                    .dedup()
+                    .collect(),
             )
-            .await;
+        } else {
+            None
+        };
 
-            match score_chunk_result {
-                Ok(chunk_results) => chunk_results
-                    .first()
-                    .expect("First chunk must exist on collision check")
-                    .clone(),
-                Err(err) => {
-                    return Err(ServiceError::InternalServerError(format!(
-                        "Failed to get chunk metadata: {:?}",
-                        err
-                    )))
-                }
-            };
-        }
-        collision_detection_span.finish();
-    }
+    let payload =
+        QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None, chunk_tags).into();
 
-    //if collision is not nil, insert chunk with collision
-    let chunk_metadata_id = if collision.is_some() {
-        let update_collision_span = transaction.start_child(
-            "update_collision",
-            "update_qdrant_point_query and insert_duplicate_chunk_metadata_query",
-        );
-
-        update_qdrant_point_query(
-            None,
-            collision.expect("Collision must be some"),
-            None,
-            None,
-            payload.ingest_specific_chunk_metadata.dataset_id,
-            splade_vector,
-            dataset_config.clone(),
-            web_pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!("Failed to update qdrant point: {:?}", err))
-        })?;
-
-        insert_duplicate_chunk_metadata_query(
-            chunk_metadata.clone(),
-            collision.expect("Collision should must be some"),
-            payload.chunk.group_ids,
-            web_pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!(
-                "Failed to insert duplicate chunk metadata: {:?}",
-                err
+    let vector_name = match embedding_vector.len() {
+        384 => "384_vectors",
+        512 => "512_vectors",
+        768 => "768_vectors",
+        1024 => "1024_vectors",
+        3072 => "3072_vectors",
+        1536 => "1536_vectors",
+        _ => {
+            return Err(ServiceError::BadRequest(
+                "Invalid embedding vector size".into(),
             ))
-        })?;
-
-        update_collision_span.finish();
-        chunk_metadata.id
-    }
-    //if collision is nil and embedding vector is some, insert chunk with no collision
-    else {
-        payload.ingest_specific_chunk_metadata.qdrant_point_id = Some(qdrant_point_id);
-
-        let insert_tx = transaction.start_child(
-            "calling_insert_chunk_metadata_query",
-            "calling_insert_chunk_metadata_query",
-        );
-
-        let inserted_chunk = insert_chunk_metadata_query(
-            chunk_metadata.clone(),
-            payload.chunk.group_ids.clone(),
-            payload.dataset_id,
-            payload.upsert_by_tracking_id,
-            web_pool.clone(),
-        )
-        .await?;
-
-        insert_tx.finish();
-
-        qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
-
-        let chunk_tags: Option<Vec<Option<String>>> =
-            if let Some(ref group_ids) = payload.chunk.group_ids {
-                Some(
-                    get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
-                        .await?
-                        .iter()
-                        .filter_map(|group| group.tag_set.clone())
-                        .flatten()
-                        .dedup()
-                        .collect(),
-                )
-            } else {
-                None
-            };
-
-        let payload =
-            QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None, chunk_tags).into();
-
-        let vector_name = match embedding_vector.len() {
-            384 => "384_vectors",
-            512 => "512_vectors",
-            768 => "768_vectors",
-            1024 => "1024_vectors",
-            3072 => "3072_vectors",
-            1536 => "1536_vectors",
-            _ => {
-                return Err(ServiceError::BadRequest(
-                    "Invalid embedding vector size".into(),
-                ))
-            }
-        };
-
-        let vector_payload = HashMap::from([
-            (vector_name.to_string(), Vector::from(embedding_vector)),
-            ("sparse_vectors".to_string(), Vector::from(splade_vector)),
-        ]);
-
-        let point = PointStruct::new(qdrant_point_id.clone().to_string(), vector_payload, payload);
-        let insert_tx = transaction.start_child(
-            "calling_bulk_create_new_qdrant_points_query",
-            "calling_bulk_create_new_qdrant_points_query",
-        );
-
-        if let Err(e) = bulk_upsert_qdrant_points_query(vec![point], dataset_config).await {
-            log::error!("Failed to create qdrant point: {:?}", e);
-
-            bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone())
-                .await?;
-
-            return Err(e);
-        };
-
-        insert_tx.finish();
-
-        inserted_chunk.id
+        }
     };
 
+    let vector_payload = HashMap::from([
+        (vector_name.to_string(), Vector::from(embedding_vector)),
+        ("sparse_vectors".to_string(), Vector::from(splade_vector)),
+    ]);
+
+    let point = PointStruct::new(qdrant_point_id.clone().to_string(), vector_payload, payload);
+    let insert_tx = transaction.start_child(
+        "calling_bulk_create_new_qdrant_points_query",
+        "calling_bulk_create_new_qdrant_points_query",
+    );
+
+    if let Err(e) = bulk_upsert_qdrant_points_query(vec![point], dataset_config).await {
+        log::error!("Failed to create qdrant point: {:?}", e);
+
+        bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone()).await?;
+
+        return Err(e);
+    };
+
+    insert_tx.finish();
+
     transaction.finish();
-    Ok(chunk_metadata_id)
+    Ok(inserted_chunk.id)
 }
 
 #[tracing::instrument(skip(web_pool))]
@@ -972,7 +876,7 @@ async fn update_chunk(
             chunk_group_ids.push(group.id);
         }
 
-        let chunk = update_chunk_metadata_query(
+        update_chunk_metadata_query(
             chunk_metadata.clone(),
             Some(chunk_group_ids.clone()),
             payload.dataset_id,
@@ -980,25 +884,18 @@ async fn update_chunk(
         )
         .await?;
 
-        if let Some(qdrant_point_id) = chunk.qdrant_point_id {
-            update_qdrant_point_query(
-                // If the chunk is a collision, we don't want to update the qdrant point
-                if chunk_metadata.qdrant_point_id.is_none() {
-                    None
-                } else {
-                    Some(chunk_metadata)
-                },
-                qdrant_point_id,
-                Some(embedding_vector),
-                Some(chunk_group_ids),
-                payload.dataset_id,
-                splade_vector,
-                server_dataset_config,
-                web_pool.clone(),
-            )
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-        }
+        update_qdrant_point_query(
+            chunk_metadata,
+            qdrant_point_id,
+            Some(embedding_vector),
+            Some(chunk_group_ids),
+            payload.dataset_id,
+            splade_vector,
+            server_dataset_config,
+            web_pool.clone(),
+        )
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     } else {
         update_chunk_metadata_query(
             chunk_metadata.clone(),
@@ -1009,12 +906,7 @@ async fn update_chunk(
         .await?;
 
         update_qdrant_point_query(
-            // If the chunk is a collision, we don't want to update the qdrant point
-            if chunk_metadata.qdrant_point_id.is_none() {
-                None
-            } else {
-                Some(chunk_metadata)
-            },
+            chunk_metadata,
             qdrant_point_id,
             Some(embedding_vector),
             None,

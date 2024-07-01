@@ -410,7 +410,7 @@ pub async fn create_new_qdrant_point_query(
 
 #[tracing::instrument(skip(updated_vector, web_pool))]
 pub async fn update_qdrant_point_query(
-    metadata: Option<ChunkMetadata>,
+    metadata: ChunkMetadata,
     point_id: uuid::Uuid,
     updated_vector: Option<Vec<f32>>,
     group_ids: Option<Vec<uuid::Uuid>>,
@@ -444,7 +444,7 @@ pub async fn update_qdrant_point_query(
 
     let current_point = current_point_vec.first();
 
-    let payload = if let Some(metadata) = metadata.clone() {
+    let payload = {
         let group_ids = if let Some(group_ids) = group_ids.clone() {
             group_ids
         } else if let Some(current_point) = current_point {
@@ -479,10 +479,6 @@ pub async fn update_qdrant_point_query(
             Some(dataset_id),
             Some(chunk_tags),
         )
-    } else if let Some(current_point) = current_point {
-        QdrantPayload::from(current_point.clone())
-    } else {
-        return Err(ServiceError::BadRequest("No metadata points found".into()).into());
     };
 
     let points_selector = qdrant_point_id.into();
@@ -1323,37 +1319,4 @@ pub async fn get_point_count_qdrant_query(
         })?;
 
     Ok(data.result.expect("Failed to get result from qdrant").count)
-}
-
-#[tracing::instrument]
-pub async fn point_ids_exists_in_qdrant(
-    point_ids: Vec<uuid::Uuid>,
-    config: ServerDatasetConfiguration,
-) -> Result<bool, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
-
-    let qdrant_client = get_qdrant_connection(
-        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
-        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
-    )
-    .await?;
-
-    let points: Vec<PointId> = point_ids.iter().map(|x| x.to_string().into()).collect();
-
-    let data = qdrant_client
-        .get_points(
-            qdrant_collection,
-            None,
-            &points,
-            false.into(),
-            false.into(),
-            None,
-        )
-        .await
-        .map_err(|err| {
-            log::info!("Failed to fetch points from qdrant {:?}", err);
-            ServiceError::BadRequest("Failed to fetch points from qdrant".to_string())
-        })?;
-
-    Ok(data.result.len() == point_ids.len())
 }
