@@ -46,8 +46,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           # platforms: linux/amd64,linux/arm64
-          context: analytics/clickhouse-clustering/
-          file: ./analytics/clickhouse-clustering/Dockerfile
+          context: analytics/clustering-script/
+          file: ./analytics/clustering-script/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
