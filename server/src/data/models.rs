@@ -2519,8 +2519,7 @@ impl QdrantPayload {
                 .payload
                 .get("num_value")
                 .cloned()
-                .map(|x| x.as_double())
-                .flatten(),
+                .and_then(|x| x.as_double()),
             group_tag_set: point.payload.get("group_tag_set").cloned().map(|x| {
                 x.as_list()
                     .unwrap_or_default()
@@ -2539,14 +2538,14 @@ impl From<RetrievedPoint> for QdrantPayload {
                 x.as_list()
                     .unwrap_or_default()
                     .iter()
-                    .map(|value| Some(value.to_string().replace("\"", "").replace("\\", "")))
+                    .map(|value| Some(value.to_string().replace(['"', '\\'], "")))
                     .collect()
             }),
             link: point
                 .payload
                 .get("link")
                 .cloned()
-                .map(|x| x.to_string().replace("\"", "").replace("\\", "")),
+                .map(|x| x.to_string().replace(['"', '\\'], "")),
             metadata: point
                 .payload
                 .get("metadata")
@@ -2578,8 +2577,7 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .cloned()
                 .unwrap_or_default()
                 .to_string()
-                .replace("\"", "")
-                .replace("\\", ""),
+                .replace(['"', '\\'], ""),
             location: point
                 .payload
                 .get("location")
@@ -2590,13 +2588,12 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .payload
                 .get("num_value")
                 .cloned()
-                .map(|x| x.as_double())
-                .flatten(),
+                .and_then(|x| x.as_double()),
             group_tag_set: point.payload.get("group_tag_set").cloned().map(|x| {
                 x.as_list()
                     .unwrap_or_default()
                     .iter()
-                    .map(|value| Some(value.to_string().replace("\"", "").replace("\\", "")))
+                    .map(|value| Some(value.to_string().replace(['"', '\\'], "")))
                     .collect()
             }),
         }
@@ -3116,12 +3113,12 @@ impl AnalyticsFilter {
         }
 
         if let Some(search_type) = &self.search_type {
-            query_string.push_str(&format!(" AND search_type = '{}'", search_type.to_string()));
+            query_string.push_str(&format!(" AND search_type = '{}'", search_type));
         }
         if let Some(search_method) = &self.search_method {
             query_string.push_str(&format!(
                 " AND JSONExtractString(request_params, 'search_type') = '{}'",
-                search_method.to_string()
+                search_method
             ));
         }
 

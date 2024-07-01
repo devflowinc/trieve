@@ -58,7 +58,7 @@ pub async fn get_events_query(
         ORDER BY created_at DESC
         LIMIT {limit} OFFSET {offset}
         ",
-        dataset_id = dataset_id.to_string(),
+        dataset_id = dataset_id,
         event_types = event_types
             .iter()
             .map(|x| format!("'{}'", x))
@@ -88,7 +88,7 @@ pub async fn get_events_query(
         FROM default.dataset_events
         WHERE dataset_id = '{dataset_id}' AND event_type IN ({event_types})
         ",
-        dataset_id = dataset_id.to_string(),
+        dataset_id = dataset_id,
         event_types = event_types
             .iter()
             .map(|x| format!("'{}'", x))

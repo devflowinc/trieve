@@ -809,7 +809,7 @@ pub async fn update_grouped_chunks_query(
 
         let points: Vec<PointId> = qdrant_ids
             .iter()
-            .filter_map(|x| x.0.clone())
+            .filter_map(|x| x.0)
             .map(|x| x.to_string().into())
             .collect();
 
@@ -842,7 +842,7 @@ pub async fn update_grouped_chunks_query(
                     Some(tag) => !prev_group_tag_set.contains(tag),
                     None => false,
                 })
-                .map(|x| x.clone())
+                .cloned()
                 .collect();
 
             let new_tags = new_group_tag_set.iter().map(|x| Some(x.clone()));

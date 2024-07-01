@@ -600,6 +600,7 @@ pub async fn get_sparse_vectors(
         content_vectors_sorted.extend(vectors_i.clone());
     }
 
+    #[allow(clippy::type_complexity)]
     let all_boost_vectors: Vec<(usize, Vec<(usize, f64, Vec<SpladeIndicies>)>)> =
         futures::future::join_all(vec_boost_futures)
             .await
@@ -612,12 +613,10 @@ pub async fn get_sparse_vectors(
             content_vectors_sorted[og_index] = content_vectors_sorted[og_index]
                 .iter()
                 .map(|splade_indice| {
+                    // Any is here because we multiply all of the matching indices by the boost amount and the boost amount is not unique to any index
                     if boost_vector
                         .iter()
-                        .find(|boost_splade_indice| {
-                            boost_splade_indice.index == splade_indice.index
-                        })
-                        .is_some()
+                        .any(|boost_splade_indice| boost_splade_indice.index == splade_indice.index)
                     {
                         SpladeIndicies {
                             index: splade_indice.index,
@@ -747,7 +746,7 @@ pub async fn cross_encoder(
 
                 let vectors_resp = async move {
                     let request_docs = docs_chunk
-                        .into_iter()
+                        .iter_mut()
                         .map(|x| {
                             let chunk = match x.metadata[0].clone() {
                                 ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),

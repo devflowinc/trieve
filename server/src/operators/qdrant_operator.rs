@@ -408,6 +408,7 @@ pub async fn create_new_qdrant_point_query(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(updated_vector, web_pool))]
 pub async fn update_qdrant_point_query(
     metadata: Option<ChunkMetadata>,
@@ -849,7 +850,7 @@ pub async fn search_qdrant_query(
     config: ServerDatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<(Vec<SearchResult>, u64, Vec<usize>), ServiceError> {
-    if limit <= 0 {
+    if limit == 0 {
         return Ok((vec![], 0, vec![]));
     }
 

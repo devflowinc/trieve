@@ -217,8 +217,8 @@ fn get_api_key_from_headers(headers: &HeaderMap) -> Option<String> {
     if let Some(auth_header_value) = headers.get("Authorization") {
         // Check if the Authorization header is a Bearer token
         if let Ok(auth_header_value) = auth_header_value.to_str() {
-            if auth_header_value.starts_with("Bearer ") {
-                return Some(auth_header_value[7..].to_string());
+            if let Some(stripeped_auth_header) = auth_header_value.strip_prefix("Bearer ") {
+                return Some(stripeped_auth_header.to_string());
             } else {
                 return Some(auth_header_value.to_string());
             }
@@ -227,8 +227,10 @@ fn get_api_key_from_headers(headers: &HeaderMap) -> Option<String> {
     // Check for x-api-key,
     if let Some(api_key_header_value) = headers.get("x-api-key") {
         if let Ok(api_key_header_value) = api_key_header_value.to_str() {
-            if api_key_header_value.starts_with("Bearer ") {
-                return Some(api_key_header_value[7..].to_string());
+            if let Some(stripeped_api_key_header_value) =
+                api_key_header_value.strip_prefix("Bearer ")
+            {
+                return Some(stripeped_api_key_header_value.to_string());
             } else {
                 return Some(api_key_header_value.to_string());
             }
