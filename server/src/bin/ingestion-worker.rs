@@ -636,7 +636,7 @@ pub async fn bulk_upload_chunks(
     let qdrant_points: Vec<PointStruct> = qdrant_points
         .into_iter()
         .filter_map(|point| point.ok())
-        .filter_map(|point| point)
+        .flatten()
         .collect();
 
     let insert_tx = transaction.start_child(
