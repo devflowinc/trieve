@@ -312,7 +312,7 @@ export interface Event {
   created_at: string;
   dataset_id: string;
   event_type: string;
-  event_data: object;
+  event_data: string;
 }
 
 export const isEvent = (data: unknown): data is Event => {
@@ -336,7 +336,7 @@ export const isEvent = (data: unknown): data is Event => {
     return false;
   }
 
-  if (typeof (data as Event).event_data !== "object") {
+  if (typeof (data as Event).event_data !== "string") {
     return false;
   }
 
