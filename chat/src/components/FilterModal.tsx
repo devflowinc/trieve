@@ -90,10 +90,10 @@ export const FilterModal = (props: FilterModalProps) => {
   }, "");
 
   return (
-    <div class="flex max-h-[300px] grow flex-col gap-2 overflow-auto px-2 pr-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 xl:min-w-[50vw] 2xl:min-w-[40vw]">
+    <div class="flex max-h-[300px] grow flex-col gap-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 xl:min-w-[50vw] 2xl:min-w-[40vw]">
       <div class="mb-4 flex w-full items-center space-x-2 border-b border-neutral-200 py-2 pb-4 dark:border-neutral-900">
         <label aria-label="Change Filter Type">
-          <span class="p-1">Filter Type:</span>
+          <span>Filter Type:</span>
         </label>
         <select
           class="h-fit rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"

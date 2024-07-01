@@ -32,15 +32,6 @@ export interface LayoutProps {
   setSelectedNewTopic: Setter<boolean>;
 }
 
-const scrollToBottomOfMessages = () => {
-  // const element = document.getElementById("topic-messages");
-  // if (!element) {
-  //   console.error("Could not find element with id 'topic-messages'");
-  //   return;
-  // }
-  // element.scrollIntoView({ block: "end" });
-};
-
 const getFiltersFromStorage = (datasetId: string) => {
   const filters = window.localStorage.getItem(`filters-${datasetId}`);
   if (!filters) {
@@ -64,35 +55,16 @@ const MainLayout = (props: LayoutProps) => {
 
   const [messages, setMessages] = createSignal<Message[]>([]);
   const [newMessageContent, setNewMessageContent] = createSignal<string>("");
+  const [concatUserMessagesQuery, setConcatUserMessagesQuery] = createSignal<
+    boolean | null
+  >(null);
+  const [pageSize, setPageSize] = createSignal<number | null>(null);
+  const [searchQuery, setSearchQuery] = createSignal<string | null>(null);
   const [streamingCompletion, setStreamingCompletion] =
     createSignal<boolean>(false);
   const [completionAbortController, setCompletionAbortController] =
     createSignal<AbortController>(new AbortController());
-  const [disableAutoScroll, setDisableAutoScroll] =
-    createSignal<boolean>(false);
-  const [triggerScrollToBottom, setTriggerScrollToBottom] =
-    createSignal<boolean>(false);
   const [showFilterModal, setShowFilterModal] = createSignal<boolean>(false);
-
-  createEffect(() => {
-    window.addEventListener("wheel", (event) => {
-      const delta = Math.sign(event.deltaY);
-      7;
-
-      if (delta === -1) {
-        setDisableAutoScroll(true);
-      }
-    });
-  });
-
-  createEffect(() => {
-    const triggerScrollToBottomVal = triggerScrollToBottom();
-    const disableAutoScrollVal = disableAutoScroll();
-    if (triggerScrollToBottomVal && !disableAutoScrollVal) {
-      scrollToBottomOfMessages();
-      setTriggerScrollToBottom(false);
-    }
-  });
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -118,8 +90,6 @@ const MainLayout = (props: LayoutProps) => {
           };
           return [...prev.slice(0, prev.length - 1), newMessage];
         });
-
-        setTriggerScrollToBottom(true);
       }
     }
   };
@@ -214,6 +184,9 @@ const MainLayout = (props: LayoutProps) => {
         credentials: "include",
         body: JSON.stringify({
           filters: getFiltersFromStorage(dataset.dataset.id),
+          concat_user_messages_query: concatUserMessagesQuery(),
+          page_size: pageSize(),
+          search_query: searchQuery() != "" ? searchQuery() : undefined,
           new_message_content,
           topic_id: finalTopicId,
         }),
@@ -254,8 +227,6 @@ const MainLayout = (props: LayoutProps) => {
     if (data && isMessageArray(data)) {
       setMessages(data);
     }
-
-    scrollToBottomOfMessages();
   };
 
   createEffect(() => {
@@ -321,6 +292,10 @@ const MainLayout = (props: LayoutProps) => {
                       signal: completionAbortController().signal,
                       body: JSON.stringify({
                         filters: getFiltersFromStorage(dataset.dataset.id),
+                        concat_user_messages_query: concatUserMessagesQuery(),
+                        page_size: pageSize(),
+                        search_query:
+                          searchQuery() != "" ? searchQuery() : undefined,
                         new_message_content: content,
                         message_sort_order: idx(),
                         topic_id: props.selectedTopic?.id,
@@ -335,7 +310,6 @@ const MainLayout = (props: LayoutProps) => {
                           return;
                         }
                         setStreamingCompletion(true);
-                        setDisableAutoScroll(false);
                         handleReader(reader).catch((e) => {
                           console.error("Error handling reader: ", e);
                         });
@@ -400,7 +374,50 @@ const MainLayout = (props: LayoutProps) => {
               class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded border border-neutral-300 bg-neutral-50 px-4 py-1 text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
               defaultOpen={false}
             >
-              <PopoverPanel class="mb-1 flex w-full gap-2 border-b border-b-neutral-300 py-4">
+              <PopoverPanel
+                class="mb-1 flex w-full flex-col gap-4 border-b border-b-neutral-300 py-4"
+                tabIndex={0}
+              >
+                <div class="flex flex-col gap-2">
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="concat_user_messages">
+                      Concatenate User Messages:
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="concat_user_messages"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={concatUserMessagesQuery() ?? false}
+                      onChange={(e) => {
+                        setConcatUserMessagesQuery(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="page_size">Page Size:</label>
+                    <input
+                      type="number"
+                      id="page_size"
+                      class="w-12 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      value={pageSize() ?? ""}
+                      onChange={(e) => {
+                        setPageSize(parseInt(e.target.value));
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="search_query">Search Query:</label>
+                    <input
+                      type="text"
+                      id="search_query"
+                      class="w-3/4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      value={searchQuery() ?? ""}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                      }}
+                    />
+                  </div>
+                </div>
                 <FilterModal
                   setShowFilterModal={setShowFilterModal}
                   showFilterModal={showFilterModal}
