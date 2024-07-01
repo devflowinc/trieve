@@ -28,6 +28,8 @@ RUN set -eux; \
     libpq-dev \
     build-essential \
     libclang-dev \
+    g++ \
+    curl
     ; \
     dpkgArch="$(dpkg --print-architecture)"; \
     case "${dpkgArch##*-}" in \
