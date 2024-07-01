@@ -517,7 +517,7 @@ pub fn main() -> std::io::Result<()> {
 
 
         let metrics = Metrics::new().map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::Other, "Failed to create metrics")
+            std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create metrics {:?}", e))
         })?;
 
 
