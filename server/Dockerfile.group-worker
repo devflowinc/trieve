@@ -21,8 +21,8 @@ FROM debian:bookworm-slim as runtime
 RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates 
 WORKDIR /app
 COPY ./migrations/ /app/migrations
-COPY --from=builder /app/target/release/delete-worker /app/grupdate-worker
+COPY --from=builder /app/target/release/grupdate-worker /app/grupdate-worker
 
 
 EXPOSE 8090
-ENTRYPOINT ["/app/grupdate"]
+ENTRYPOINT ["/app/grupdate-worker"]
