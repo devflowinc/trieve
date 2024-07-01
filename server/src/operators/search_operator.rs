@@ -13,8 +13,8 @@ use super::qdrant_operator::{
 };
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ConditionType,
-    ContentChunkMetadata, Dataset, HasIDCondition, ScoreChunkDTO, ServerDatasetConfiguration,
-    SlimChunkMetadata, UnifiedId,
+    ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunkDTO,
+    ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::get_env;
 use crate::handlers::chunk_handler::{
@@ -1400,6 +1400,7 @@ pub fn rerank_chunks(
     recency_weight: Option<f32>,
     tag_weights: Option<HashMap<String, f32>>,
     use_weights: Option<bool>,
+    query_location: Option<GeoInfoWithBias>,
 ) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
     if use_weights.unwrap_or(true) {
@@ -1459,6 +1460,44 @@ pub fn rerank_chunks(
                 })
                 .collect::<Vec<ScoreChunkDTO>>();
         }
+    }
+
+    if query_location.is_some() && query_location.unwrap().bias > 0.0 {
+        let info_with_bias = query_location.unwrap();
+        let query_location = info_with_bias.info;
+        let location_bias = info_with_bias.bias;
+        let distances = reranked_chunks
+            .iter()
+            .filter_map(|chunk| chunk.metadata[0].metadata().location)
+            .map(|location| query_location.haversine_distance_to(&location));
+        let max_distance = distances.clone().max_by(|a, b| a.partial_cmp(b).unwrap());
+        let min_distance = distances.clone().min_by(|a, b| a.partial_cmp(b).unwrap());
+        let max_score = reranked_chunks
+            .iter()
+            .map(|chunk| chunk.score)
+            .max_by(|a, b| a.partial_cmp(b).unwrap());
+        let min_score = reranked_chunks
+            .iter()
+            .map(|chunk| chunk.score)
+            .min_by(|a, b| a.partial_cmp(b).unwrap());
+
+        reranked_chunks = reranked_chunks
+            .iter_mut()
+            .map(|chunk| {
+                let normalized_distance = (chunk.metadata[0]
+                    .metadata()
+                    .location
+                    .map(|location| query_location.haversine_distance_to(&location))
+                    .unwrap_or(0.0)
+                    - min_distance.unwrap_or(0.0))
+                    / (max_distance.unwrap_or(1.0) - min_distance.unwrap_or(0.0));
+                let normalized_chunk_score = (chunk.score - min_score.unwrap_or(0.0))
+                    / (max_score.unwrap_or(1.0) - min_score.unwrap_or(0.0));
+                chunk.score = (normalized_chunk_score * (1.0 - location_bias) as f64)
+                    + (location_bias * (1.0 - normalized_distance)) as f64;
+                chunk.clone()
+            })
+            .collect::<Vec<ScoreChunkDTO>>();
     }
 
     if let Some(tag_weights) = tag_weights {
@@ -1550,6 +1589,7 @@ pub async fn search_semantic_chunks(
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
+        data.location,
     );
 
     timer.add("reranking");
@@ -1618,6 +1658,7 @@ pub async fn search_full_text_chunks(
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
+        data.location,
     );
 
     timer.add("reranking");
@@ -1750,6 +1791,7 @@ pub async fn search_hybrid_chunks(
                 data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
+                data.location,
             )
         };
 
@@ -1840,6 +1882,7 @@ pub async fn search_semantic_groups(
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
+        data.location,
     );
 
     Ok(SearchWithinGroupResults {
@@ -1892,6 +1935,7 @@ pub async fn search_full_text_groups(
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
+        data.location,
     );
 
     Ok(SearchWithinGroupResults {
@@ -1994,6 +2038,7 @@ pub async fn search_hybrid_groups(
                 data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
+                data.location,
             );
 
             score_chunks
@@ -2015,6 +2060,7 @@ pub async fn search_hybrid_groups(
                 data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
+                data.location,
             )
         };
 
@@ -2444,12 +2490,14 @@ pub async fn autocomplete_semantic_chunks(
         data.recency_bias,
         data.tag_weights.clone(),
         data.use_weights,
+        data.location,
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
+        data.location,
     ));
 
     result_chunks.score_chunks = reranked_chunks;
@@ -2547,12 +2595,14 @@ pub async fn autocomplete_fulltext_chunks(
         data.recency_bias,
         data.tag_weights.clone(),
         data.use_weights,
+        data.location,
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
+        data.location,
     ));
 
     result_chunks.score_chunks = reranked_chunks;

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
-    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Pool,
+    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, GeoInfoWithBias IngestSpecificChunkMetadata, Pool,
     RagQueryEventClickhouse, RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse,
     ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
 };
@@ -916,6 +916,8 @@ pub struct SearchChunksReqPayload {
     pub filters: Option<ChunkFilter>,
     /// Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
     pub recency_bias: Option<f32>,
+    /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
+    pub location: Option<GeoInfoWithBias>,
     /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
     pub use_weights: Option<bool>,
     /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
@@ -952,6 +954,7 @@ impl Default for SearchChunksReqPayload {
             page_size: Some(10),
             filters: None,
             recency_bias: None,
+            location: None,
             use_weights: None,
             tag_weights: None,
             get_collisions: None,
@@ -1196,6 +1199,8 @@ pub struct AutocompleteReqPayload {
     pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
+    /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
+    pub location: Option<GeoInfoWithBias>,
     /// Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
     pub recency_bias: Option<f32>,
     /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
@@ -1242,6 +1247,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
                     .highlight_delimiters
                     .unwrap_or(vec![" ".to_string()]),
             ),
+            location: autocomplete_data.location,
             highlight_max_length: autocomplete_data.highlight_max_length,
             highlight_max_num: autocomplete_data.highlight_max_num,
             highlight_window: autocomplete_data.highlight_window,
