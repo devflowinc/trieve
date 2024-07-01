@@ -17,9 +17,9 @@
     "@solidjs/router": "^0.10.1",
     "papaparse": "^5.4.1",
     "shared": "*",
+    "shiki": "^1.10.0",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",
-    "shiki": "^1.10.0",
     "terracotta": "^1.0.3",
     "vite-plugin-runtime-env": "^0.1.1"
   },
