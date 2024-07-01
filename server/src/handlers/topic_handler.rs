@@ -1,11 +1,13 @@
-use super::message_handler::get_topic_string;
 use crate::{
     data::models::{DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, Topic},
     errors::ServiceError,
     handlers::auth_handler::AdminOnly,
-    operators::topic_operator::{
-        create_topic_query, delete_topic_query, get_all_topics_for_owner_id_query,
-        update_topic_query,
+    operators::{
+        message_operator::get_topic_string,
+        topic_operator::{
+            create_topic_query, delete_topic_query, get_all_topics_for_owner_id_query,
+            update_topic_query,
+        },
     },
 };
 use actix_web::{web, HttpResponse};
