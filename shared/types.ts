@@ -143,7 +143,7 @@ export interface SetUserApiKeyResponse {
 }
 
 export const isComboboxValues = (
-  values: unknown,
+  values: unknown
 ): values is ComboboxSection[] => {
   if (!Array.isArray(values)) {
     return false;
@@ -310,7 +310,6 @@ export const isEventDTO = (data: unknown): data is EventDTO => {
 export interface Event {
   id: string;
   created_at: string;
-  updated_at: string;
   dataset_id: string;
   event_type: string;
   event_data: object;
@@ -326,10 +325,6 @@ export const isEvent = (data: unknown): data is Event => {
   }
 
   if (typeof (data as Event).created_at !== "string") {
-    return false;
-  }
-
-  if (typeof (data as Event).updated_at !== "string") {
     return false;
   }
 
