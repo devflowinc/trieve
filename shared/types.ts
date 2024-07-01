@@ -108,6 +108,7 @@ export interface ServerEnvsConfiguration {
   STOP_TOKENS: string | null;
   USE_MESSAGE_TO_QUERY_PROMPT: boolean;
   INDEXED_ONLY: boolean;
+  LOCKED: boolean;
 }
 
 export interface ClientEnvsConfiguration {
