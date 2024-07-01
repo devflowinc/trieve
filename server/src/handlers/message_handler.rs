@@ -57,6 +57,12 @@ pub struct CreateMessageReqPayload {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
     pub search_type: Option<String>,
+    /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
+    pub concat_user_messages_query: Option<bool>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
@@ -187,6 +193,9 @@ pub async fn create_message(
         create_message_data.highlight_results,
         create_message_data.highlight_delimiters,
         create_message_data.search_type,
+        create_message_data.concat_user_messages_query,
+        create_message_data.search_query,
+        create_message_data.page_size,
         create_message_data.filters,
         dataset_org_plan_sub.dataset,
         stream_response_pool,
@@ -246,6 +255,12 @@ pub struct RegenerateMessageReqPayload {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: Option<String>,
+    /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
+    pub concat_user_messages_query: Option<bool>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
@@ -278,6 +293,12 @@ pub struct EditMessageReqPayload {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: Option<String>,
+    /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
+    pub concat_user_messages_query: Option<bool>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
@@ -363,6 +384,9 @@ pub async fn edit_message(
             highlight_results: data.highlight_citations,
             highlight_delimiters: data.highlight_delimiters.clone(),
             search_type: data.search_type.clone(),
+            concat_user_messages_query: data.concat_user_messages_query,
+            search_query: data.search_query.clone(),
+            page_size: data.page_size,
             filters: data.filters.clone(),
             completion_first: data.completion_first,
             temperature: data.temperature,
@@ -612,6 +636,9 @@ pub async fn stream_response(
     highlight_results: Option<bool>,
     highlight_delimiters: Option<Vec<String>>,
     search_type: Option<String>,
+    concat_user_messages_query: Option<bool>,
+    search_query: Option<String>,
+    page_size: Option<u64>,
     filters: Option<ChunkFilter>,
     dataset: Dataset,
     pool: web::Data<Pool>,
@@ -626,13 +653,16 @@ pub async fn stream_response(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let user_message = match messages.last() {
-        Some(message) => message.clone().content,
-        None => {
-            return Err(
-                ServiceError::BadRequest("No messages found for the topic".to_string()).into(),
-            );
-        }
+    let user_message_query = match concat_user_messages_query {
+        Some(true) => messages
+            .iter()
+            .filter(|message| message.role == "user")
+            .map(|message| message.content.clone())
+            .join("\n\n"),
+        _ => match search_query {
+            Some(query) => query,
+            None => "".to_string(),
+        },
     };
 
     let openai_messages: Vec<ChatMessage> = messages
@@ -670,7 +700,8 @@ pub async fn stream_response(
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
     let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
-    let mut query = user_message;
+    let mut query = user_message_query;
+
     let use_message_to_query_prompt = dataset_config.USE_MESSAGE_TO_QUERY_PROMPT;
     if use_message_to_query_prompt {
         let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
