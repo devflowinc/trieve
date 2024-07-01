@@ -407,34 +407,6 @@ pub async fn create_user_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let old_user: Option<User> = users_columns::users
-        .select(User::as_select())
-        .filter(users_columns::email.eq(&email))
-        .first::<User>(&mut conn)
-        .await
-        .optional()
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!("Error loading user {:?}", err))
-        })?;
-
-    if let Some(old_user) = old_user {
-        let mut conn = pool.get().await.unwrap();
-
-        diesel::update(users_columns::users.filter(users_columns::id.eq(old_user.id)))
-            .set(users_columns::id.eq(user_id))
-            .execute(&mut conn)
-            .await
-            .map_err(|e| {
-                log::error!("Error updating ids: {:?}", e);
-
-                ServiceError::InternalServerError("Error creating user".to_string())
-            })?;
-
-        let user = get_user_by_id_query(&user_id, pool).await?;
-
-        return Ok(user);
-    }
-
     let user = User::from_details_with_id(user_id, email, name);
     let user_org = UserOrganization::from_details(user_id, org_id, role);
 
