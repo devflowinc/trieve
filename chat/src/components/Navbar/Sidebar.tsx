@@ -269,7 +269,6 @@ export const Sidebar = (props: SidebarProps) => {
               </div>
               <div class="align-top text-lg">
                 <span>Trieve</span>
-                <span class="text-magenta">Chat</span>\
               </div>
             </div>
           </a>

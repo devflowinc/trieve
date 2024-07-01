@@ -211,7 +211,6 @@ pub async fn delete_message_query(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn stream_response(
     messages: Vec<models::Message>,
@@ -219,18 +218,27 @@ pub async fn stream_response(
     dataset: Dataset,
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
-    data: CreateMessageReqPayload,
+    create_message_req_payload: CreateMessageReqPayload,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let user_message = match messages.last() {
-        Some(message) => message.clone().content,
-        None => {
-            return Err(
-                ServiceError::BadRequest("No messages found for the topic".to_string()).into(),
-            );
-        }
+    let user_message_query = match create_message_req_payload.concat_user_messages_query {
+        Some(true) => messages
+            .iter()
+            .filter(|message| message.role == "user")
+            .map(|message| message.content.clone())
+            .collect::<Vec<String>>()
+            .join("\n\n"),
+        _ => match messages.last() {
+            Some(message) => message.clone().content,
+            None => {
+                return Err(ServiceError::BadRequest(
+                    "No messages found for the topic".to_string(),
+                )
+                .into());
+            }
+        },
     };
 
     let openai_messages: Vec<ChatMessage> = messages
@@ -268,9 +276,15 @@ pub async fn stream_response(
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
     let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
-    let mut query = user_message;
+    let mut query =
+        if let Some(create_message_query) = create_message_req_payload.search_query.clone() {
+            create_message_query
+        } else {
+            user_message_query
+        };
+
     let use_message_to_query_prompt = dataset_config.USE_MESSAGE_TO_QUERY_PROMPT;
-    if use_message_to_query_prompt {
+    if create_message_req_payload.search_query.is_none() && use_message_to_query_prompt {
         let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
 
         let gen_inference_parameters = ChatCompletionParameters {
@@ -278,18 +292,8 @@ pub async fn stream_response(
             messages: vec![ChatMessage {
                 role: Role::User,
                 content: ChatMessageContent::Text(format!(
-                    "{}{}",
-                    message_to_query_prompt,
-                    match openai_messages
-                        .clone()
-                        .last()
-                        .expect("No messages")
-                        .clone()
-                        .content
-                    {
-                        ChatMessageContent::Text(text) => text,
-                        _ => "".to_string(),
-                    }
+                    "{}\n{}",
+                    message_to_query_prompt, query
                 )),
                 tool_calls: None,
                 name: None,
@@ -336,12 +340,18 @@ pub async fn stream_response(
 
     let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
     let search_chunk_data = SearchChunksReqPayload {
-        search_type: data.search_type.unwrap_or("hybrid".to_string()),
+        search_type: create_message_req_payload
+            .search_type
+            .unwrap_or("hybrid".to_string()),
         query: query.clone(),
-        page_size: Some(n_retrievals_to_include.try_into().unwrap_or(8)),
-        highlight_results: data.highlight_results,
-        highlight_delimiters: data.highlight_delimiters,
-        filters: data.filters,
+        page_size: Some(
+            create_message_req_payload
+                .page_size
+                .unwrap_or(n_retrievals_to_include.try_into().unwrap_or(8)),
+        ),
+        highlight_results: create_message_req_payload.highlight_results,
+        highlight_delimiters: create_message_req_payload.highlight_delimiters,
+        filters: create_message_req_payload.filters,
         ..Default::default()
     };
     let parsed_query = ParsedQuery {
@@ -350,7 +360,7 @@ pub async fn stream_response(
         negated_words: None,
     };
     let mut search_timer = Timer::new();
-    //TODO: actually do the clickhouse event here
+
     let result_chunks = search_hybrid_chunks(
         search_chunk_data,
         parsed_query,
@@ -428,12 +438,12 @@ pub async fn stream_response(
         messages: open_ai_messages,
         top_p: None,
         n: None,
-        stream: Some(data.stream_response.unwrap_or(true)),
-        temperature: Some(data.temperature.unwrap_or(0.5)),
-        frequency_penalty: Some(data.frequency_penalty.unwrap_or(0.7)),
-        presence_penalty: Some(data.presence_penalty.unwrap_or(0.7)),
-        max_tokens: data.max_tokens,
-        stop: data.stop_tokens.map(StopToken::Array),
+        stream: Some(create_message_req_payload.stream_response.unwrap_or(true)),
+        temperature: Some(create_message_req_payload.temperature.unwrap_or(0.5)),
+        frequency_penalty: Some(create_message_req_payload.frequency_penalty.unwrap_or(0.7)),
+        presence_penalty: Some(create_message_req_payload.presence_penalty.unwrap_or(0.7)),
+        max_tokens: create_message_req_payload.max_tokens,
+        stop: create_message_req_payload.stop_tokens.map(StopToken::Array),
         logit_bias: None,
         user: None,
         response_format: None,
@@ -444,7 +454,7 @@ pub async fn stream_response(
         seed: None,
     };
 
-    if !data.stream_response.unwrap_or(true) {
+    if !create_message_req_payload.stream_response.unwrap_or(true) {
         let assistant_completion =
             client
                 .chat()
@@ -492,11 +502,12 @@ pub async fn stream_response(
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
     if !chunk_metadatas_stringified.is_empty() {
-        chunk_metadatas_stringified = if data.completion_first.unwrap_or(false) {
-            format!("||{}", chunk_metadatas_stringified.replace("||", ""))
-        } else {
-            format!("{}||", chunk_metadatas_stringified.replace("||", ""))
-        };
+        chunk_metadatas_stringified =
+            if create_message_req_payload.completion_first.unwrap_or(false) {
+                format!("||{}", chunk_metadatas_stringified.replace("||", ""))
+            } else {
+                format!("{}||", chunk_metadatas_stringified.replace("||", ""))
+            };
         chunk_metadatas_stringified1.clone_from(&chunk_metadatas_stringified);
     }
 
@@ -532,7 +543,7 @@ pub async fn stream_response(
         .into())
     });
 
-    if data.completion_first.unwrap_or(false) {
+    if create_message_req_payload.completion_first.unwrap_or(false) {
         return Ok(HttpResponse::Ok().streaming(completion_stream.chain(chunk_stream)));
     }
 
