@@ -57,6 +57,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   PRESENCE_PENALTY: null,
   STOP_TOKENS: null,
   INDEXED_ONLY: false,
+  LOCKED: false,
 };
 
 export const FrontendSettingsForm = () => {
@@ -628,6 +629,26 @@ export const ServerSettingsForm = () => {
                 class="block text-sm font-medium"
               >
                 Document upload feature
+              </label>
+            </div>
+
+            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
+              <input
+                type="checkbox"
+                name="lockDataset"
+                id="lockDataset"
+                checked={serverConfig().LOCKED}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      LOCKED: e.currentTarget.checked,
+                    };
+                  })
+                }
+              />
+              <label for="lockDataset" class="block text-sm font-medium">
+                Lock dataset
               </label>
             </div>
 

@@ -172,6 +172,12 @@ pub async fn soft_delete_dataset_by_id_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
+    if config.LOCKED {
+        return Err(ServiceError::BadRequest(
+            "Cannot delete a locked dataset".to_string(),
+        ));
+    }
+
     diesel::sql_query(format!(
         "UPDATE datasets SET deleted = 1, tracking_id = NULL WHERE id = '{}'::uuid",
         id
@@ -213,6 +219,11 @@ pub async fn clear_dataset_by_dataset_id_query(
     config: ServerDatasetConfiguration,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
+    if config.LOCKED {
+        return Err(ServiceError::BadRequest(
+            "Cannot delete a locked dataset".to_string(),
+        ));
+    }
     let mut redis_conn = redis_pool
         .get()
         .await
