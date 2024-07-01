@@ -1,6 +1,8 @@
-import CreateChunkRequest from "../../../components/CreateChunkRequest.md";
-import HybridSearchReqeust from "../../../components/HybridSearchRequest.md";
 import { BuildingSomething } from "../../../components/BuildingSomething";
+import {
+  createChunkRequest,
+  hybridSearchRequest,
+} from "../../../utils/createCodeSnippets";
 import {
   Show,
   createEffect,
@@ -21,6 +23,7 @@ import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import { BsMagic } from "solid-icons/bs";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 import { Tooltip } from "../../../components/Tooltip";
+import { Codeblock } from "../../../components/Codeblock";
 
 const SAMPLE_DATASET_SIZE = 921;
 
@@ -363,9 +366,7 @@ export const DatasetStart = () => {
                   </div>
                 </div>
               </div>
-              <div class="rounded-md border-[0.5px] border-neutral-300">
-                <CreateChunkRequest />
-              </div>
+              <Codeblock content={createChunkRequest(currDatasetId())} />
             </div>
             <div class="flex flex-col space-y-4">
               <p class="mt-3">2. Start Searching</p>
@@ -395,9 +396,7 @@ export const DatasetStart = () => {
                   </div>
                 </div>
               </div>
-              <div class="rounded-md border-[0.5px] border-neutral-300">
-                <HybridSearchReqeust />
-              </div>
+              <Codeblock content={hybridSearchRequest(currDatasetId())} />
             </div>
           </section>
         </div>

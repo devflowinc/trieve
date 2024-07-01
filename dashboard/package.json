@@ -19,6 +19,7 @@
     "shared": "*",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",
+    "shiki": "^1.10.0",
     "terracotta": "^1.0.3",
     "vite-plugin-runtime-env": "^0.1.1"
   },
@@ -40,14 +41,9 @@
     "postcss": "^8.4.32",
     "prettier": "3.1.1",
     "prettier-plugin-tailwindcss": "^0.5.11",
-    "rehype-pretty-code": "^0.12.5",
-    "remark-gfm": "^4.0.0",
-    "shiki": "^0.14.7",
-    "shikiji": "^0.9.0",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.2.2",
     "vite": "^5.0.0",
-    "vite-plugin-solid": "^2.8.2",
-    "vite-plugin-solid-markdown": "^0.0.6"
+    "vite-plugin-solid": "^2.8.2"
   }
 }

@@ -2,36 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-code[data-theme*=" "],
-code[data-theme*=" "] span {
-  color: var(--shiki-light);
-  background-color: var(--shiki-light-bg);
-}
- 
-@media (prefers-color-scheme: dark) {
-  code[data-theme*=" "],
-  code[data-theme*=" "] span {
-    color: var(--shiki-dark);
-    background-color: var(--shiki-dark-bg);
-  }
-}
-
 pre {
   overflow-x: auto;
   padding: 1rem 0;
 }
- 
-pre [data-line] {
-  padding: 0 1rem;
-}
 
-pre {
-  border-radius: 0.375rem;
-  background-color: var(--shiki-light-bg);
-}
-
-@media (prefers-color-scheme: dark) {
-  pre {
-    background-color: var(--shiki-dark-bg);
-  }
+pre.shiki {
+  border-radius: 8px;
+  padding-right: 14px;
+  padding-left: 14px;
 }
