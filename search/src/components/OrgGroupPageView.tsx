@@ -11,6 +11,9 @@ import {
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { getLocalTime } from "./ChunkMetadataDisplay";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { useDatasetServerConfig } from "../hooks/useDatasetServerConfig";
+import { downloadFile } from "../utils/downloadFile";
+import { FaSolidDownload } from "solid-icons/fa";
 
 export interface GroupUserPageViewProps {
   setOnDelete: Setter<() => void>;
@@ -27,6 +30,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const [groupPage, setGroupPage] = createSignal(1);
   const [groupPageCount, setGroupPageCount] = createSignal(1);
   const [deleting, setDeleting] = createSignal(false);
+  const serverConfig = useDatasetServerConfig();
 
   createEffect(() => {
     const userId = $user?.()?.id;
@@ -91,6 +95,14 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
 
     props.setShowConfirmModal(true);
   };
+
+  const handleDownloadFile = (group: ChunkGroupDTO) => {
+    const datasetId = $dataset?.()?.dataset.id;
+    if (group.file_id && datasetId) {
+      void downloadFile(group.file_id, datasetId);
+    }
+  };
+
   return (
     <>
       <Show when={groups().length == 0}>
@@ -160,15 +172,33 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                               .replace(/:\d+\s/, " ")}
                         </td>
                         <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                          <button
-                            classList={{
-                              "h-fit text-red-700 dark:text-red-400": true,
-                              "animate-pulse": deleting(),
-                            }}
-                            onClick={() => deleteGroup(group)}
-                          >
-                            <FiTrash class="h-5 w-5" />
-                          </button>
+                          <div class="flex items-center gap-3">
+                            <Show
+                              when={
+                                serverConfig()?.["DOCUMENT_DOWNLOAD_FEATURE"] &&
+                                group.file_id
+                              }
+                            >
+                              <button
+                                title="Download uploaded file"
+                                class="h-fit text-neutral-400 dark:text-neutral-300"
+                                onClick={() => {
+                                  handleDownloadFile(group);
+                                }}
+                              >
+                                <FaSolidDownload />
+                              </button>
+                            </Show>
+                            <button
+                              classList={{
+                                "h-fit text-red-700 dark:text-red-400": true,
+                                "animate-pulse": deleting(),
+                              }}
+                              onClick={() => deleteGroup(group)}
+                            >
+                              <FiTrash class="h-5 w-5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )}

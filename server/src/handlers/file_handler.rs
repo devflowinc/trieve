@@ -268,7 +268,7 @@ pub async fn get_file_handler(
     let download_enabled =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
             .DOCUMENT_DOWNLOAD_FEATURE;
-    if download_enabled {
+    if !download_enabled {
         return Err(
             ServiceError::BadRequest("Document download feature is disabled".to_string()).into(),
         );
