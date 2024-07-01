@@ -72,12 +72,6 @@ export const isChunkMetadata = (chunk: unknown): chunk is ChunkMetadata => {
   );
 };
 
-export interface ChunkGroupDTO {
-  id: string;
-  name: string;
-  description: string;
-}
-
 export interface ChunkGroup {
   id: string;
   name: string;
@@ -277,6 +271,7 @@ export interface ChunkGroupDTO {
   id: string;
   name: string;
   description: string;
+  file_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -493,8 +488,8 @@ export interface DatasetDTO {
   created_at: string;
   updated_at: string;
   organization_id: string;
-  server_configuration: string;
-  client_configuration: object;
+  server_configuration: Record<string, string>;
+  client_configuration: Record<string, string>;
 }
 
 export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {
@@ -574,8 +569,9 @@ export interface ChunkFile {
   updated_at: string;
   size: number;
   tag_set: string | null;
-  metadata: object | null;
+  metadata: Record<string, any> | null;
   link: string | null;
+  s3_url?: string;
   time_stamp: string | null;
   dataset_id: string;
 }
