@@ -7,6 +7,7 @@ extern crate diesel;
 use crate::{
     errors::{custom_json_error_handler, ServiceError},
     handlers::auth_handler::build_oidc_client,
+    metrics::Metrics,
     operators::{
         clickhouse_operator::run_clickhouse_migrations,
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
@@ -36,6 +37,7 @@ use utoipa_swagger_ui::SwaggerUi;
 pub mod data;
 pub mod errors;
 pub mod handlers;
+pub mod metrics;
 pub mod middleware;
 pub mod operators;
 pub mod randutil;
@@ -514,6 +516,11 @@ pub fn main() -> std::io::Result<()> {
         };
 
 
+        let metrics = Metrics::new().map_err(|e| {
+            std::io::Error::new(std::io::ErrorKind::Other, "Failed to create metrics")
+        })?;
+
+
         HttpServer::new(move || {
             App::new()
                 .wrap(Cors::permissive())
@@ -527,6 +534,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
                 .app_data(web::Data::new(clickhouse_client.clone()))
+                .app_data(web::Data::new(metrics.clone()))
                 .wrap(sentry_actix::Sentry::new())
                 .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
@@ -573,6 +581,10 @@ pub fn main() -> std::io::Result<()> {
                 .service(
                     web::resource("/")
                     .route(web::get().to(handlers::auth_handler::health_check))
+                )
+                .service(
+                    web::resource("/metrics")
+                    .route(web::get().to(handlers::metrics_handler::get_metrics))
                 )
                 // everything under '/api/' route
                 .service(

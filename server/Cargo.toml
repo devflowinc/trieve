@@ -138,6 +138,7 @@ clickhouse = { git = "https://github.com/loyd/clickhouse.rs", features = [
     "time",
     "uuid",
 ] }
+prometheus = "0.13.4"
 
 [build-dependencies]
 dotenvy = "0.15.7"
