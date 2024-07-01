@@ -174,18 +174,22 @@ if __name__ == "__main__":
 
     dataset_ids = get_datasets(client)
     for dataset_id in dataset_ids:
-        # Fetch data
-        data = fetch_dataset_vectors(client, dataset_id[0], 3000)
+        try:
+            # Fetch data
+            data = fetch_dataset_vectors(client, dataset_id[0], 3000)
 
-        # Perform spherical k-means clustering
-        n_clusters = 15  # Change this to the desired number of clusters
-        kmeans, vectors = kmeans_clustering(data, n_clusters)
+            # Perform spherical k-means clustering
+            n_clusters = 15  # Change this to the desired number of clusters
+            kmeans, vectors = kmeans_clustering(data, n_clusters)
 
-        # Append cluster membership to the data
-        data = append_cluster_membership(data, kmeans)
+            # Append cluster membership to the data
+            data = append_cluster_membership(data, kmeans)
 
-        # Find the closest queries to the centroids
-        data, topics = get_topics(kmeans, vectors, data)
+            # Find the closest queries to the centroids
+            data, topics = get_topics(kmeans, vectors, data)
 
-        # Insert the topics into the database
-        insert_centroids(client, data, dataset_id, topics)
+            # Insert the topics into the database
+            insert_centroids(client, data, dataset_id, topics)
+        except Exception as e:
+            print(f"ERROR: {e}")
+            continue
