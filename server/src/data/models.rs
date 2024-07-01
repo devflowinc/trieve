@@ -234,9 +234,36 @@ impl From<GeoTypes> for f64 {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, ToSchema, AsExpression)]
 #[diesel(sql_type = Jsonb)]
+pub struct GeoInfoWithBias {
+    pub info: GeoInfo,
+    pub bias: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, ToSchema, AsExpression)]
+#[diesel(sql_type = Jsonb)]
 pub struct GeoInfo {
     pub lat: GeoTypes,
     pub lon: GeoTypes,
+}
+
+impl GeoInfo {
+    pub fn haversine_distance_to(&self, other: &GeoInfo) -> f64 {
+        let lat1: f64 = self.lat.into();
+        let lon1: f64 = self.lon.into();
+        let lat2: f64 = other.lat.into();
+        let lon2: f64 = other.lon.into();
+
+        let r = 6371.0; // Earth radius in km
+
+        let d_lat = (lat2 - lat1).to_radians();
+        let d_lon = (lon2 - lon1).to_radians();
+        let lat1_rad = lat1.to_radians();
+        let lat2_rad = lat2.to_radians();
+        let a = (d_lat / 2.0).sin().powi(2)
+            + lat1_rad.cos() * lat2_rad.cos() * (d_lon / 2.0).sin().powi(2);
+        let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+        r * c
+    }
 }
 
 impl FromSql<Jsonb, Pg> for GeoInfo {

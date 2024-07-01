@@ -309,6 +309,7 @@ impl Modify for SecurityAddon {
             data::models::ChunkMetadataWithScore,
             data::models::SlimChunkMetadataWithScore,
             data::models::GeoInfo,
+            data::models::GeoInfoWithBias,
             data::models::GeoTypes,
             data::models::ScoreChunkDTO,
             data::models::ChunkMetadataTypes,
