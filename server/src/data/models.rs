@@ -1631,6 +1631,7 @@ impl DatasetAndUsage {
     "TEMPERATURE": 0.5,
     "PRESENCE_PENALTY": 0.0,
     "STOP_TOKENS": ["\n\n", "\n"],
+    "INDEXED_ONLY": false,
 }))]
 #[allow(non_snake_case)]
 pub struct ServerDatasetConfiguration {
@@ -1654,6 +1655,7 @@ pub struct ServerDatasetConfiguration {
     pub TEMPERATURE: Option<f64>,
     pub PRESENCE_PENALTY: Option<f64>,
     pub STOP_TOKENS: Option<Vec<String>>,
+    pub INDEXED_ONLY: bool,
 }
 
 impl ServerDatasetConfiguration {
@@ -1824,6 +1826,11 @@ impl ServerDatasetConfiguration {
                 .get("STOP_TOKENS")
                 .and_then(|v| v.as_str())
                 .map(|v| v.split(',').map(|s| s.to_string()).collect::<Vec<String>>()),
+            INDEXED_ONLY: configuration
+                .get("INDEXED_ONLY")
+                .unwrap_or(&json!(false))
+                .as_bool()
+                .unwrap_or(false),
         }
     }
 }
