@@ -4,18 +4,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
-on: 
+on:
   pull_request:
     paths:
-    - 'chat/**'
-    - 'shared/**'
+      - "chat/**"
+      - "shared/**"
 jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
-      - name: Setting up 
-        run: sed -i 's/chat\///' ./chat/.eslintrc.json
       - name: Install dependencies
         run: yarn --cwd chat
       - name: Running lint
@@ -24,8 +22,6 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
-      - name: Setting up 
-        run: sed -i 's/chat\///' ./chat/.eslintrc.json
       - name: Install dependencies
         run: yarn --cwd chat
       - name: Running lint
@@ -34,5 +30,5 @@ jobs:
         uses: ataylorme/eslint-annotate-action@1.0.4
         if: always()
         with:
-          repo-token: '${{ secrets.GITHUB_TOKEN }}'
-          report-json: './chat/eslint_report.json'
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          report-json: "./chat/eslint_report.json"
