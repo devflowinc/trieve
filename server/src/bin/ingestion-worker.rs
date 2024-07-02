@@ -712,7 +712,7 @@ pub async fn bulk_upload_chunks(
 #[tracing::instrument(skip(payload, web_pool))]
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
-    ingestion_data: ChunkData,
+    mut ingestion_data: ChunkData,
     web_pool: actix_web::web::Data<models::Pool>,
     redis_connection: &mut bb8_redis::bb8::PooledConnection<'_, bb8_redis::RedisConnectionManager>,
     reqwest_client: reqwest::Client,
@@ -1003,6 +1003,8 @@ async fn upload_chunk(
             if let Err(err) = create_point_result {
                 return Err(err);
             }
+
+            ingestion_data.chunk_metadata.qdrant_point_id = Some(qdrant_point_id);
 
             let message = PGInsertQueueMessage {
                 chunk_metadatas: ingestion_data,

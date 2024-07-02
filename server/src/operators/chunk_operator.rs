@@ -1978,7 +1978,7 @@ pub async fn create_chunk_metadata(
             &chunk.chunk_html.clone(),
             &chunk.link,
             &chunk_tag_set,
-            None,
+            Some(uuid::Uuid::new_v4()),
             chunk.metadata.clone(),
             chunk_tracking_id,
             timestamp,
