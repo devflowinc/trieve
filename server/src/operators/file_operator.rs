@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::chunk_operator::{create_chunk_metadata, get_row_count_for_dataset_id_query};
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
@@ -275,7 +277,7 @@ pub async fn get_file_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let file_metadata: File = files_columns::files
+    let file: File = files_columns::files
         .filter(files_columns::id.eq(file_uuid))
         .filter(files_columns::dataset_id.eq(dataset_id))
         .get_result(&mut conn)
@@ -286,9 +288,15 @@ pub async fn get_file_query(
             ServiceError::NotFound("File with specified id not found".to_string())
         })?;
 
+    let mut custom_queries = HashMap::new();
+    custom_queries.insert(
+        "response-content-disposition".into(),
+        format!("attachment; filename=\"{}\"", file.file_name),
+    );
+
     let bucket = get_aws_bucket()?;
     let s3_url = bucket
-        .presign_get(file_metadata.id.to_string(), 300, None)
+        .presign_get(file.id.to_string(), 6000, Some(custom_queries))
         .await
         .map_err(|e| {
             log::error!("Could not get presigned url {:?}", e);
@@ -296,7 +304,7 @@ pub async fn get_file_query(
             ServiceError::NotFound("Could not get presigned url".to_string())
         })?;
 
-    let file_dto: FileDTO = file_metadata.into();
+    let file_dto: FileDTO = file.into();
     let file_dto: FileDTO = FileDTO { s3_url, ..file_dto };
 
     Ok(file_dto)
