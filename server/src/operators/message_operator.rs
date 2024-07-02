@@ -572,7 +572,7 @@ pub async fn stream_response(
             results: chunk_ids,
             user_message: query.clone(),
             rag_type: "all_chunks".to_string(),
-            llm_response: new_message.content.clone(),
+            llm_response: completion.clone(),
         };
 
         let _ = send_to_clickhouse(
