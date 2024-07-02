@@ -209,8 +209,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         setChunkGroups={setChunkGroups}
         counter={"0"}
         total={1}
-        begin={0}
-        end={0}
         selectedIds={selectedIds}
         setSelectedIds={setSelectedIds}
       />

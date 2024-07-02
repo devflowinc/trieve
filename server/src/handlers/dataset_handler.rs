@@ -1,8 +1,8 @@
-use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
+use super::auth_handler::{AdminOnly, OwnerOnly};
 use crate::{
     data::models::{
-        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool, RedisPool,
-        ServerDatasetConfiguration, StripePlan, UnifiedId,
+        Dataset, DatasetAndOrgWithSubAndPlan, Pool, RedisPool, ServerDatasetConfiguration,
+        StripePlan, UnifiedId,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -107,7 +107,6 @@ pub async fn create_dataset(
         data.organization_id,
         data.tracking_id.clone(),
         data.server_configuration.clone(),
-        data.client_configuration.clone(),
     );
 
     let d = create_dataset_query(dataset, pool).await?;
@@ -119,7 +118,6 @@ pub async fn create_dataset(
     "dataset_id": "00000000-0000-0000-0000-000000000000",
     "dataset_name": "My Dataset",
     "server_configuration": {},
-    "client_configuration": {}
 }))]
 pub struct UpdateDatasetRequest {
     /// The id of the dataset you want to update.
@@ -183,9 +181,6 @@ pub async fn update_dataset(
         data.server_configuration
             .clone()
             .unwrap_or(curr_dataset.server_configuration),
-        data.client_configuration
-            .clone()
-            .unwrap_or(curr_dataset.client_configuration),
         data.new_tracking_id.clone(),
         pool.clone(),
     )
@@ -369,9 +364,7 @@ pub async fn get_dataset(
     d.server_configuration = json!(ServerDatasetConfiguration::from_json(
         d.server_configuration
     ));
-    d.client_configuration = json!(ClientDatasetConfiguration::from_json(
-        d.client_configuration
-    ));
+
     Ok(HttpResponse::Ok().json(d))
 }
 
@@ -447,9 +440,7 @@ pub async fn get_dataset_by_tracking_id(
     d.server_configuration = json!(ServerDatasetConfiguration::from_json(
         d.server_configuration
     ));
-    d.client_configuration = json!(ClientDatasetConfiguration::from_json(
-        d.client_configuration
-    ));
+
     Ok(HttpResponse::Ok().json(d))
 }
 
@@ -511,35 +502,4 @@ pub async fn get_datasets_from_organization(
             .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(dataset_and_usages))
-}
-
-/// Get Client Configuration
-///
-/// Get the client configuration for a dataset. Will use the TR-D
-#[utoipa::path(
-    get,
-    path = "/dataset/envs",
-    context_path = "/api",
-    tag = "dataset",
-    responses(
-        (status = 200, description = "Dataset environment variables", body = ClientDatasetConfiguration),
-        (status = 400, description = "Service error relating to retrieving the dataset. Typically this only happens when your auth credentials are invalid.", body = ErrorResponseBody),
-    ),
-    params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-    ),
-    security(
-        ("ApiKey" = ["readonly"]),
-    )
-)]
-#[tracing::instrument]
-pub async fn get_client_dataset_config(
-    dataset: DatasetAndOrgWithSubAndPlan,
-    _logged_user: LoggedUser,
-) -> Result<HttpResponse, ServiceError> {
-    Ok(
-        HttpResponse::Ok().json(ClientDatasetConfiguration::from_json(
-            dataset.dataset.client_configuration,
-        )),
-    )
 }

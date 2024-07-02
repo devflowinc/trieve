@@ -1481,7 +1481,6 @@ pub struct DatasetEventCount {
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "tracking_id": "3",
     "server_configuration": {"key": "value"},
-    "client_configuration": {"key": "value"},
 }))]
 #[diesel(table_name = datasets)]
 pub struct Dataset {
@@ -1491,7 +1490,6 @@ pub struct Dataset {
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
     pub server_configuration: serde_json::Value,
-    pub client_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
 }
@@ -1502,7 +1500,6 @@ impl Dataset {
         organization_id: uuid::Uuid,
         tracking_id: Option<String>,
         server_configuration: serde_json::Value,
-        client_configuration: serde_json::Value,
     ) -> Self {
         Dataset {
             id: uuid::Uuid::new_v4(),
@@ -1510,7 +1507,6 @@ impl Dataset {
             organization_id,
             tracking_id,
             server_configuration,
-            client_configuration,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             deleted: 0,
@@ -1526,7 +1522,6 @@ impl Dataset {
     "updated_at": "2021-01-01T00:00:00",
     "tracking_id": "3",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "client_configuration": {"key": "value"},
 }))]
 pub struct DatasetDTO {
     pub id: uuid::Uuid,
@@ -1535,7 +1530,6 @@ pub struct DatasetDTO {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
-    pub client_configuration: serde_json::Value,
 }
 
 impl From<Dataset> for DatasetDTO {
@@ -1547,7 +1541,6 @@ impl From<Dataset> for DatasetDTO {
             updated_at: dataset.updated_at,
             tracking_id: dataset.tracking_id,
             organization_id: dataset.organization_id,
-            client_configuration: dataset.client_configuration,
         }
     }
 }
@@ -1840,88 +1833,7 @@ impl ServerDatasetConfiguration {
     "DOCUMENT_UPLOAD_FEATURE": true,
     "FILE_NAME_KEY": "file_name_key",
 }))]
-#[allow(non_snake_case)]
-pub struct ClientDatasetConfiguration {
-    pub CREATE_CHUNK_FEATURE: Option<bool>,
-    pub SEARCH_QUERIES: Option<String>,
-    pub FRONTMATTER_VALS: Option<String>,
-    pub LINES_BEFORE_SHOW_MORE: Option<usize>,
-    pub DATE_RANGE_VALUE: Option<String>,
-    pub FILTER_ITEMS: Option<serde_json::Value>,
-    pub SUGGESTED_QUERIES: Option<String>,
-    pub IMAGE_RANGE_START_KEY: Option<String>,
-    pub IMAGE_RANGE_END_KEY: Option<String>,
-    pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
-    pub FILE_NAME_KEY: String,
-}
 
-impl ClientDatasetConfiguration {
-    pub fn from_json(configuration: serde_json::Value) -> Self {
-        let default_config = json!({});
-        let configuration = configuration
-            .as_object()
-            .unwrap_or(default_config.as_object().unwrap());
-
-        ClientDatasetConfiguration {
-            CREATE_CHUNK_FEATURE: configuration
-                .get("CREATE_CHUNK_FEATURE")
-                .unwrap_or(&json!(true))
-                .as_bool(),
-            SEARCH_QUERIES: configuration
-                .get("SEARCH_QUERIES")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .map(|s| s.to_string()),
-            FRONTMATTER_VALS: configuration
-                .get("FRONTMATTER_VALS")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .map(|s| s.to_string()),
-            LINES_BEFORE_SHOW_MORE: configuration
-                .get("LINES_BEFORE_SHOW_MORE")
-                .unwrap_or(&json!(10))
-                .as_u64()
-                .map(|u| u as usize),
-            DATE_RANGE_VALUE: configuration
-                .get("DATE_RANGE_VALUE")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .map(|s| s.to_string()),
-            FILTER_ITEMS: configuration
-                .get("FILTER_ITEMS")
-                .unwrap_or(&json!([]))
-                .as_array()
-                .map(|a| serde_json::Value::Array(a.clone())),
-            SUGGESTED_QUERIES: configuration
-                .get("SUGGESTED_QUERIES")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .map(|s| s.to_string()),
-            IMAGE_RANGE_START_KEY: configuration
-                .get("IMAGE_RANGE_START_KEY")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .map(|s| s.to_string()),
-            IMAGE_RANGE_END_KEY: configuration
-                .get("IMAGE_RANGE_END_KEY")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .map(|s| s.to_string()),
-            DOCUMENT_UPLOAD_FEATURE: configuration
-                .get("DOCUMENT_UPLOAD_FEATURE")
-                .unwrap_or(&json!(true))
-                .as_bool(),
-            FILE_NAME_KEY: configuration
-                .get("FILE_NAME_KEY")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .expect("FILE_NAME_KEY should exist")
-                .to_string(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DatasetAndOrgWithSubAndPlan {
     pub dataset: Dataset,
     pub organization: OrganizationWithSubAndPlan,

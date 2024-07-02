@@ -72,7 +72,6 @@ export interface Dataset {
   updated_at: string;
   organization_id: string;
   server_configuration: ServerEnvsConfiguration;
-  client_configuration: ClientEnvsConfiguration;
 }
 
 export interface DatasetUsageCount {
@@ -109,21 +108,6 @@ export interface ServerEnvsConfiguration {
   USE_MESSAGE_TO_QUERY_PROMPT: boolean;
   INDEXED_ONLY: boolean;
   LOCKED: boolean;
-}
-
-export interface ClientEnvsConfiguration {
-  CREATE_CHUNK_FEATURE: boolean;
-  DOCUMENT_UPLOAD_FEATURE: boolean;
-  SEARCH_QUERIES: string;
-  FRONTMATTER_VALS: string;
-  LINES_BEFORE_SHOW_MORE: number;
-  DATE_RANGE_VALUE: string;
-  FILTER_ITEMS: ComboboxSection[];
-  SUGGESTED_QUERIES: string;
-  SHOW_GITHUB_STARS: boolean;
-  IMAGE_RANGE_START_KEY: string;
-  IMAGE_RANGE_END_KEY: string;
-  FILE_NAME_KEY: string;
 }
 
 export interface DefaultError {

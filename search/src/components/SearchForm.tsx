@@ -30,9 +30,6 @@ const defaultFilter = {
 
 const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const $envs = datasetAndUserContext.clientConfig;
-
   const [tempSearchValues, setTempSearchValues] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.search.state,
@@ -116,10 +113,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
       "searchType",
       searchTypes().find((type) => type.isSelected)?.route ?? "hybrid",
     );
-  });
-
-  createEffect(() => {
-    $envs().CREATE_CHUNK_FEATURE?.valueOf();
   });
 
   return (
