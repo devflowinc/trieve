@@ -13,7 +13,7 @@
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": [
-      "./analytics-site/tsconfig.json"
+      "./tsconfig.json"
     ]
   },
   "plugins": [
