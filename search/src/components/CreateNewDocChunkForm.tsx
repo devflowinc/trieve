@@ -41,6 +41,12 @@ export const CreateNewDocChunkForm = () => {
   const [boostFactor, setBoostFactor] = createSignal<number | undefined>(
     undefined,
   );
+  const [distanceBoostPhrase, setDistanceBoostPhrase] = createSignal<
+    string | undefined
+  >(undefined);
+  const [distanceBoostFactor, setDistanceBoostFactor] = createSignal<
+    number | undefined
+  >(undefined);
 
   const [editorHtmlContent, setEditorHtmlContent] = createSignal("");
   const [editorTextContent, setEditorTextContent] = createSignal("");
@@ -85,6 +91,13 @@ export const CreateNewDocChunkForm = () => {
       requestBody.boost_phrase = {
         phrase: boostPhrase(),
         boost_factor: boostFactor(),
+      };
+    }
+
+    if (boostPhrase() && boostFactor()) {
+      requestBody.distance_phrase = {
+        phrase: distanceBoostPhrase(),
+        boost_factor: distanceBoostFactor(),
       };
     }
 
@@ -259,6 +272,35 @@ export const CreateNewDocChunkForm = () => {
               placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
               value={boostFactor()}
               onChange={(e) => setBoostFactor(Number(e.currentTarget.value))}
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+          </div>
+          <div class="flex items-center gap-x-2">
+            <div>Distance Boost</div>
+            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+              <Tooltip
+                body={
+                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                }
+                tooltipText="Optional. Boost terms will multiplicatively increase the presence of terms in the fulltext document frequency index by the boost value."
+              />
+            </div>
+          </div>
+          <div class="flex gap-x-2">
+            <input
+              type="text"
+              placeholder="optional - space separated terms to boost in search results"
+              value={distanceBoostPhrase() ?? ""}
+              onInput={(e) => setDistanceBoostPhrase(e.target.value)}
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+            <input
+              type="number"
+              placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
+              value={distanceBoostFactor()}
+              onChange={(e) =>
+                setDistanceBoostFactor(Number(e.currentTarget.value))
+              }
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
           </div>
