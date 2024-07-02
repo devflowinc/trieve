@@ -181,7 +181,7 @@ diesel::table! {
         user_count -> Int4,
         file_storage -> Int8,
         message_count -> Int4,
-        chunk_count -> Nullable<Int4>,
+        chunk_count -> Int4,
     }
 }
 
