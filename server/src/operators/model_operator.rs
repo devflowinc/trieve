@@ -2,7 +2,7 @@ use crate::{
     data::models::{ChunkMetadataTypes, ScoreChunkDTO, ServerDatasetConfiguration},
     errors::ServiceError,
     get_env,
-    handlers::chunk_handler::BoostPhrase,
+    handlers::chunk_handler::{BoostPhrase, DistancePhrase, DistancePhraseDirection},
 };
 use openai_dive::v1::{
     helpers::format_response,
@@ -227,11 +227,15 @@ pub async fn get_sparse_vector(
 
 #[tracing::instrument]
 pub async fn create_embeddings(
-    messages: Vec<String>,
+    content_and_boosts: Vec<(String, Option<DistancePhrase>)>,
     embed_type: &str,
     dataset_config: ServerDatasetConfiguration,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<f32>>, ServiceError> {
+    let messages = content_and_boosts
+        .iter()
+        .map(|(x, _)| x.clone())
+        .collect::<Vec<String>>();
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -249,7 +253,6 @@ pub async fn create_embeddings(
 
     let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
     let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
-
     let embedding_base_url = match config_embedding_base_url.as_str() {
         "" => get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string(),
         "https://api.openai.com/v1" => {
@@ -285,6 +288,105 @@ pub async fn create_embeddings(
         };
 
     let thirty_message_groups = messages.chunks(30);
+
+    let filtered_boosts_with_index = content_and_boosts
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, (_, y))| y.map(|boost_phrase| (i, boost_phrase)))
+        .collect::<Vec<(usize, DistancePhrase)>>();
+
+    let filtered_boosts_with_index_groups = filtered_boosts_with_index.chunks(30);
+
+    let vec_boost_future: Vec<_> =
+        filtered_boosts_with_index_groups
+            .enumerate()
+            .map(|(i, thirty_boosts)| {
+                let clipped_boosts = thirty_boosts
+                    .iter()
+                    .map(|(_, boost)| {
+                        if boost.phrase.len() > 7000 {
+                            boost.phrase.chars().take(20000).collect()
+                        } else {
+                            boost.phrase.clone()
+                        }
+                    })
+                    .collect::<Vec<String>>();
+                let input = match embed_type {
+                    "doc" => EmbeddingInput::StringArray(clipped_boosts),
+                    "query" => EmbeddingInput::String(
+                        format!(
+                            "{}{}",
+                            dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_boosts[0]
+                        )
+                        .to_string(),
+                    ),
+                    _ => EmbeddingInput::StringArray(clipped_boosts),
+                };
+
+                let parameters = EmbeddingParameters {
+                    model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
+                    input,
+                };
+                let cur_client = reqwest_client.clone();
+                let url = embedding_base_url.clone();
+                let embedding_api_key = embedding_api_key.clone();
+                let vectors_resp = async move {
+                    let embeddings_resp = cur_client
+                        .post(&format!("{}/embeddings?api-version=2023-05-15", url))
+                        .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
+                        .header("api-key", &embedding_api_key.clone())
+                        .header("Content-Type", "application/json")
+                        .json(&parameters)
+                        .send()
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Failed to send message to embedding server".to_string())
+                        })?
+                        .text()
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Failed to get text from embeddings".to_string())
+                        })?;
+
+                let embeddings: EmbeddingResponse = format_response(embeddings_resp)
+                    .map_err(|e| {
+                        log::error!("Failed to format response from embeddings server {:?}", e);
+                        ServiceError::InternalServerError(
+                            "Failed to format response from embeddings server".to_owned(),
+                        )
+                    })?;
+
+                let vectors: Vec<Vec<f32>> = embeddings
+                .data
+                .into_iter()
+                .map(|x| match x.embedding {
+                    EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
+                    EmbeddingOutput::Base64(_) => {
+                        log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
+                        vec![]
+                    }
+                })
+                .collect();
+
+                if vectors.iter().any(|x| x.is_empty()) {
+                    return Err(ServiceError::InternalServerError(
+                        "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
+                    ));
+                }
+
+                let index_vector_boosts: Vec<(usize, f64, DistancePhraseDirection, Vec<f32>)> = thirty_boosts
+                    .iter()
+                    .zip(vectors)
+                    .map(|((og_index, y), vector)| {
+                        (*og_index, y.distance_factor, y.direction.clone(), vector)
+                    })
+                    .collect();
+
+                Ok((i, index_vector_boosts))
+            };
+                vectors_resp
+            })
+            .collect();
 
     let vec_futures: Vec<_> = thirty_message_groups
         .enumerate()
@@ -388,6 +490,45 @@ pub async fn create_embeddings(
 
         vectors_sorted.extend(vectors_i.clone());
     }
+    let all_boost_vectors: Vec<(usize, Vec<(usize, f64, DistancePhraseDirection, Vec<f32>)>)> =
+        futures::future::join_all(vec_boost_future)
+            .await
+            .into_iter()
+            .collect::<Result<
+                Vec<(usize, Vec<(usize, f64, DistancePhraseDirection, Vec<f32>)>)>,
+                ServiceError,
+            >>()?;
+
+    for (_, boost_vectors) in all_boost_vectors {
+        for (og_index, boost_amt, direction, boost_vector) in boost_vectors {
+            let l2_distance = vectors_sorted[og_index]
+                .iter()
+                .zip(boost_vector.clone())
+                .map(|(vector_val, boost_val)| (vector_val - boost_val).powi(2))
+                .sum::<f32>()
+                .sqrt();
+            let new_l2_distance = match direction {
+                DistancePhraseDirection::Away => l2_distance / (boost_amt as f32),
+                DistancePhraseDirection::Far => l2_distance * (boost_amt as f32),
+            };
+            let direction_vector: Vec<f32> = vectors_sorted[og_index]
+                .iter()
+                .zip(boost_vector.clone())
+                .map(|(vector_val, boost_val)| vector_val - boost_val)
+                .collect();
+
+            let direction_normalized: Vec<f32> = direction_vector
+                .iter()
+                .map(|x| x / new_l2_distance)
+                .collect();
+
+            vectors_sorted[og_index] = direction_normalized
+                .iter()
+                .zip(boost_vector.clone())
+                .map(|(vector_val, boost_val)| vector_val - (boost_val * (boost_amt as f32)))
+                .collect();
+        }
+    }
 
     transaction.finish();
     Ok(vectors_sorted)
@@ -403,7 +544,6 @@ struct SpladeIndicies {
     index: u32,
     value: f32,
 }
-
 impl SpladeIndicies {
     pub fn into_tuple(self) -> (u32, f32) {
         (self.index, self.value)

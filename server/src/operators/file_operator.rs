@@ -189,6 +189,7 @@ pub async fn create_file_chunks(
             image_urls: None,
             num_value: None,
             boost_phrase: None,
+            distance_phrase: None,
         };
         chunks.push(create_chunk_data);
     }
