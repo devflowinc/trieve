@@ -216,6 +216,11 @@ async fn delete_worker(
         let delete_worker_message: DeleteMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
+        log::info!(
+            "Deleting chunks for dataset {:?}",
+            delete_worker_message.dataset_id
+        );
+
         if delete_worker_message.empty_dataset {
             match delete_chunks_in_dataset(
                 delete_worker_message.dataset_id,
