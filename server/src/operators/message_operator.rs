@@ -406,6 +406,21 @@ pub async fn stream_response(
         )
         .collect::<Vec<ChunkMetadataStringTagSet>>();
 
+    let chunk_ids = result_chunks
+        .score_chunks
+        .iter()
+        .filter_map(|x| {
+            x.metadata
+                .clone()
+                .into_iter()
+                .find_map(|metadata| match metadata {
+                    ChunkMetadataTypes::ID(metadata) => Some(metadata.id),
+                    ChunkMetadataTypes::Metadata(metadata) => Some(metadata.id),
+                    ChunkMetadataTypes::Content(metadata) => Some(metadata.id),
+                })
+        })
+        .collect::<Vec<uuid::Uuid>>();
+
     let mut chunk_metadatas_stringified =
         serde_json::to_string(&chunk_metadatas).expect("Failed to serialize citation chunks");
     let mut chunk_metadatas_stringified1 = chunk_metadatas_stringified.clone();
@@ -554,6 +569,7 @@ pub async fn stream_response(
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
             search_id: clickhouse_search_event.id,
+            results: chunk_ids,
             user_message: query.clone(),
             rag_type: "all_chunks".to_string(),
             llm_response: new_message.content.clone(),
