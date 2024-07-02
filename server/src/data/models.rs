@@ -9,7 +9,7 @@ use crate::operators::clickhouse_operator::CHSlimResponse;
 use crate::operators::parse_operator::convert_html_to_text;
 
 use super::schema::*;
-use crate::handlers::chunk_handler::BoostPhrase;
+use crate::handlers::chunk_handler::{BoostPhrase, DistancePhrase};
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
@@ -3278,4 +3278,5 @@ pub struct ChunkData {
     pub group_ids: Option<Vec<uuid::Uuid>>,
     pub upsert_by_tracking_id: bool,
     pub boost_phrase: Option<BoostPhrase>,
+    pub distance_phrase: Option<DistancePhrase>,
 }

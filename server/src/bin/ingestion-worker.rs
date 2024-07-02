@@ -15,7 +15,8 @@ use trieve_server::data::models::{
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
-    BoostPhrase, BulkUploadIngestionMessage, UpdateIngestionMessage, UploadIngestionMessage,
+    BoostPhrase, BulkUploadIngestionMessage, DistancePhrase, UpdateIngestionMessage,
+    UploadIngestionMessage,
 };
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
@@ -374,7 +375,6 @@ pub async fn bulk_upload_chunks(
         "ingestion worker bulk_upload_chunk",
     );
     let transaction = sentry::start_transaction(tx_ctx);
-
     let precompute_transaction = transaction.start_child(
         "precomputing_data_before_insert",
         "precomputing some important data before insert",
@@ -512,10 +512,17 @@ pub async fn bulk_upload_chunks(
     precompute_transaction.finish();
 
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
-    let content_and_boosts: Vec<(String, Option<BoostPhrase>)> = ingestion_data
-        .iter()
-        .map(|data| (data.content.clone(), data.boost_phrase.clone()))
-        .collect();
+    let content_and_boosts: Vec<(String, Option<BoostPhrase>, Option<DistancePhrase>)> =
+        ingestion_data
+            .iter()
+            .map(|data| {
+                (
+                    data.content.clone(),
+                    data.boost_phrase.clone(),
+                    data.distance_phrase.clone(),
+                )
+            })
+            .collect();
 
     let contents: Vec<String> = content_and_boosts
         .iter()
@@ -529,7 +536,10 @@ pub async fn bulk_upload_chunks(
 
     // Assuming split average is false, Assume Explicit Vectors don't exist
     let embedding_vectors = match create_embeddings(
-        contents.clone(),
+        content_and_boosts
+            .iter()
+            .map(|(content, _, distance_boost)| (content.clone(), distance_boost.clone()))
+            .collect(),
         "doc",
         dataset_config.clone(),
         reqwest_client.clone(),
