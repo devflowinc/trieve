@@ -22,9 +22,6 @@ fn check_x_api_access(req: &actix_web::HttpRequest) -> bool {
         (status = 200, description = "Prometheus metrics for the server", body = String),
         (status = 500, description = "Internal Server Error", body = ErrorResponseBody),
     ),
-    security(
-        ("X-API-KEY" = ["internal"]),
-    )
 )]
 #[tracing::instrument(skip(redis_pool))]
 pub async fn get_metrics(
