@@ -131,11 +131,12 @@ pub struct CreateMessageReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn create_message(
     data: web::Json<CreateMessageReqPayload>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let message_count_pool = pool.clone();
@@ -220,6 +221,7 @@ pub async fn create_message(
         topic_id,
         dataset_org_plan_sub.dataset,
         stream_response_pool,
+        clickhouse_client,
         server_dataset_configuration,
         create_message_data,
     )
@@ -399,12 +401,13 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn edit_message(
     data: web::Json<EditMessageReqPayload>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id: uuid::Uuid = data.topic_id;
     let message_sort_order = data.message_sort_order;
@@ -440,6 +443,7 @@ pub async fn edit_message(
         actix_web::web::Json(data.into_inner().into()),
         user,
         dataset_org_plan_sub,
+        clickhouse_client,
         third_pool,
     )
     .await
@@ -466,12 +470,13 @@ pub async fn edit_message(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn regenerate_message(
     data: web::Json<RegenerateMessageReqPayload>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let server_dataset_configuration = ServerDatasetConfiguration::from_json(
@@ -504,6 +509,7 @@ pub async fn regenerate_message(
             topic_id,
             dataset_org_plan_sub.dataset,
             create_message_pool,
+            clickhouse_client,
             server_dataset_configuration,
             data.into_inner().into(),
         )
@@ -557,6 +563,7 @@ pub async fn regenerate_message(
         topic_id,
         dataset_org_plan_sub.dataset,
         create_message_pool,
+        clickhouse_client,
         server_dataset_configuration,
         data.into_inner().into(),
     )
