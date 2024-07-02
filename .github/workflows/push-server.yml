@@ -154,7 +154,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           cache-from: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.runner}}
           cache-to: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.runner}},mode=max
           context: server/
