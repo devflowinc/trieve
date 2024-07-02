@@ -216,12 +216,8 @@ async fn delete_worker(
         let delete_worker_message: DeleteMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
-        log::info!(
-            "Deleting chunks for dataset {:?}",
-            delete_worker_message.dataset_id
-        );
-
         if delete_worker_message.empty_dataset {
+            log::info!("Cleaning dataset {:?}", delete_worker_message.dataset_id);
             match delete_chunks_in_dataset(
                 delete_worker_message.dataset_id,
                 web_pool.clone(),
@@ -267,6 +263,8 @@ async fn delete_worker(
                 }
             }
         }
+
+        log::info!("Deleting dataset {:?}", delete_worker_message.dataset_id);
 
         match delete_dataset_by_id_query(
             delete_worker_message.dataset_id,
