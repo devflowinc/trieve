@@ -30,6 +30,10 @@ name = "grupdate-worker"
 path = "src/bin/grupdate-worker.rs"
 
 [[bin]]
+name = "pg-worker"
+path = "src/bin/pg-worker.rs"
+
+[[bin]]
 name = "redoc_ci"
 path = "src/bin/redoc_ci.rs"
 

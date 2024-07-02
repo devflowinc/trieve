@@ -1,12 +1,12 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::data::models::{
-    ChunkCollision, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes,
-    ContentChunkMetadata, Dataset, DatasetTags, IngestSpecificChunkMetadata,
+    ChunkCollision, ChunkData, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags,
+    ChunkMetadataTypes, ContentChunkMetadata, Dataset, DatasetTags, IngestSpecificChunkMetadata,
     ServerDatasetConfiguration, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::get_env;
-use crate::handlers::chunk_handler::{BoostPhrase, UploadIngestionMessage};
+use crate::handlers::chunk_handler::UploadIngestionMessage;
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
@@ -641,25 +641,10 @@ pub async fn get_metadata_from_tracking_ids_query(
 #[tracing::instrument(skip(pool))]
 pub async fn bulk_insert_chunk_metadata_query(
     // ChunkMetadata, group_ids, upsert_by_tracking_id
-    mut insertion_data: Vec<(
-        ChunkMetadata,
-        String,
-        Option<Vec<uuid::Uuid>>,
-        bool,
-        Option<BoostPhrase>,
-    )>,
+    mut insertion_data: Vec<ChunkData>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<
-    Vec<(
-        ChunkMetadata,
-        String,
-        Option<Vec<uuid::Uuid>>,
-        bool,
-        Option<BoostPhrase>,
-    )>,
-    ServiceError,
-> {
+) -> Result<Vec<ChunkData>, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -672,7 +657,7 @@ pub async fn bulk_insert_chunk_metadata_query(
     let chunk_metadata_to_insert: Vec<ChunkMetadataTable> = insertion_data
         .clone()
         .iter()
-        .map(|(chunk_metadata, _, _, _, _)| chunk_metadata.clone().into())
+        .map(|data| data.chunk_metadata.clone().into())
         .collect();
 
     let inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
@@ -691,21 +676,23 @@ pub async fn bulk_insert_chunk_metadata_query(
         })?;
 
     // mutates in place
-    insertion_data.retain(|(chunk_metadata, _, _, _, _)| {
+    insertion_data.retain(|data| {
         inserted_chunks
             .iter()
-            .any(|inserted_chunk| inserted_chunk.id == chunk_metadata.id)
+            .any(|inserted_chunk| inserted_chunk.id == data.chunk_metadata.id)
     });
 
     let chunk_group_bookmarks_to_insert: Vec<ChunkGroupBookmark> = insertion_data
         .clone()
         .iter()
-        .filter_map(|(chunk_metadata, _, group_ids, _, _)| {
-            group_ids.as_ref().map(|group_ids| {
+        .filter_map(|data| {
+            data.group_ids.as_ref().map(|group_ids| {
                 group_ids
                     .clone()
                     .iter()
-                    .map(|group_id| ChunkGroupBookmark::from_details(*group_id, chunk_metadata.id))
+                    .map(|group_id| {
+                        ChunkGroupBookmark::from_details(*group_id, data.chunk_metadata.id)
+                    })
                     .collect::<Vec<ChunkGroupBookmark>>()
             })
         })
@@ -721,8 +708,8 @@ pub async fn bulk_insert_chunk_metadata_query(
     let chunk_tags_to_chunk_id: Vec<(Vec<DatasetTags>, uuid::Uuid)> = insertion_data
         .clone()
         .iter()
-        .filter_map(|(chunk_metadata, _, _, _, _)| {
-            chunk_metadata.clone().tag_set.map(|tags| {
+        .filter_map(|data| {
+            data.chunk_metadata.clone().tag_set.map(|tags| {
                 let tags = tags
                     .into_iter()
                     .filter_map(|maybe_tag| {
@@ -734,7 +721,7 @@ pub async fn bulk_insert_chunk_metadata_query(
                     })
                     .collect_vec();
 
-                (tags, chunk_metadata.id)
+                (tags, data.chunk_metadata.id)
             })
         })
         .collect_vec();
