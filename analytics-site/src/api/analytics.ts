@@ -60,7 +60,7 @@ export const getHeadQueries = async (
   const response = await fetch(`${apiHost}/analytics/${datasetId}/query/head`, {
     credentials: "include",
     method: "POST",
-    body: JSON.stringify({ filter: transformParams(filters), page: page }),
+    body: JSON.stringify(transformParams(filters, page)),
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -85,7 +85,7 @@ export const getLowConfidenceQueries = async (
     {
       credentials: "include",
       method: "POST",
-      body: JSON.stringify({ filter: transformParams(filters), page: page }),
+      body: JSON.stringify(transformParams(filters, page)),
       headers: {
         "TR-Dataset": datasetId,
         "Content-Type": "application/json",

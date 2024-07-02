@@ -14,7 +14,7 @@ export const formatdateforapi = (date: Date) => {
     .replace(",", "");
 };
 
-export const transformParams = (params: AnalyticsParams) => {
+export const transformParams = (params: AnalyticsParams, page?: number) => {
   return {
     ...params,
     filter: {
@@ -35,5 +35,6 @@ export const transformParams = (params: AnalyticsParams) => {
           : undefined,
       },
     },
+    page: page,
   };
 };

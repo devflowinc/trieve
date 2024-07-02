@@ -8,7 +8,9 @@ import clickhouse_connect.driver.client
 import numpy as np
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import cosine
+import dotenv
 
+dotenv.load_dotenv()
 anthropic_client = anthropic.Anthropic()
 
 
@@ -190,6 +192,8 @@ if __name__ == "__main__":
 
             # Insert the topics into the database
             insert_centroids(client, data, dataset_id, topics)
+
+            print(f"Finished clustering for {dataset_id[0]}")
         except Exception as e:
             print(f"ERROR: {e}")
             continue

@@ -417,6 +417,7 @@ export interface AnalyticsFilter {
 export interface AnalyticsParams {
   filter: AnalyticsFilter;
   granularity: "day" | "week" | "hour" | "month" | "minute" | "second";
+  page: number;
 }
 
 export interface LatencyDatapoint {
