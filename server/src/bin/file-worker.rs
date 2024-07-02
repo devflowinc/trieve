@@ -253,8 +253,8 @@ async fn upload_file(
     clickhouse_client: actix_web::web::Data<clickhouse::Client>,
     redis_conn: MultiplexedConnection,
 ) -> Result<Option<uuid::Uuid>, ServiceError> {
-    let file_id = uuid::Uuid::new_v4();
-    // Get file from s3
+    let file_id = file_worker_message.file_id;
+
     let tx_ctx =
         sentry::TransactionContext::new("file worker upload_file", "file worker upload_file");
     let transaction = sentry::start_transaction(tx_ctx);
@@ -264,11 +264,11 @@ async fn upload_file(
 
     let bucket = get_aws_bucket()?;
     let file_data = bucket
-        .get_object(file_worker_message.file_id.clone().to_string())
+        .get_object(file_id.clone().to_string())
         .await
         .map_err(|e| {
-            log::error!("Could not upload file to S3 {:?}", e);
-            ServiceError::BadRequest("Could not upload file to S3".to_string())
+            log::error!("Could not get file from S3 {:?}", e);
+            ServiceError::BadRequest("File is not present in s3".to_string())
         })?
         .as_slice()
         .to_vec();
