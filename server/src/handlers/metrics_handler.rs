@@ -14,6 +14,9 @@ fn check_x_api_access(req: &actix_web::HttpRequest) -> bool {
     false
 }
 
+/// Get Prometheus Metrics
+///
+/// This route allows you to view the number of items in each queue in the Prometheus format.
 #[utoipa::path(
     post,
     path = "/metrics",
@@ -22,6 +25,9 @@ fn check_x_api_access(req: &actix_web::HttpRequest) -> bool {
         (status = 200, description = "Prometheus metrics for the server", body = String),
         (status = 500, description = "Internal Server Error", body = ErrorResponseBody),
     ),
+    security(
+        ("X-API-KEY" = []),
+    )
 )]
 #[tracing::instrument(skip(redis_pool))]
 pub async fn get_metrics(
