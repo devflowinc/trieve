@@ -470,6 +470,7 @@ pub async fn bulk_upload_chunks(
                 group_ids: message.chunk.group_ids.clone(),
                 upsert_by_tracking_id: message.upsert_by_tracking_id,
                 boost_phrase: message.chunk.boost_phrase.clone(),
+                distance_phrase: message.chunk.distance_phrase.clone(),
             }
         })
         .collect();
@@ -524,17 +525,11 @@ pub async fn bulk_upload_chunks(
             })
             .collect();
 
-    let contents: Vec<String> = content_and_boosts
-        .iter()
-        .map(|(content, _)| content.clone())
-        .collect();
-
     let embedding_transaction = transaction.start_child(
         "calling_create_all_embeddings",
         "calling_create_all_embeddings",
     );
 
-    println!("Creating embeddings");
     // Assuming split average is false, Assume Explicit Vectors don't exist
     let embedding_vectors = match create_embeddings(
         content_and_boosts

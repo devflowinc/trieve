@@ -271,6 +271,7 @@ impl Modify for SecurityAddon {
             data::models::Range,
             handlers::chunk_handler::GetChunksData,
             handlers::chunk_handler::GetTrackingChunksData,
+            handlers::chunk_handler::DistancePhrase,
             data::models::MatchCondition,
             handlers::user_handler::UpdateUserOrgRoleData,
             handlers::user_handler::SetUserApiKeyRequest,
