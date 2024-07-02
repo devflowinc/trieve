@@ -55,8 +55,6 @@ pub struct DistancePhrase {
     pub phrase: String,
     /// Amount to multiplicatevly increase the frequency of the tokens in the phrase by
     pub distance_factor: f64,
-    /// Far | Away
-    pub direction: DistancePhraseDirection,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]

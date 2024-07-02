@@ -374,11 +374,11 @@ pub async fn create_embeddings(
                     ));
                 }
 
-                let index_vector_boosts: Vec<(usize, f64, DistancePhraseDirection, Vec<f32>)> = thirty_boosts
+                let index_vector_boosts: Vec<(usize, f64, Vec<f32>)> = thirty_boosts
                     .iter()
                     .zip(vectors)
                     .map(|((og_index, y), vector)| {
-                        (*og_index, y.distance_factor, y.direction.clone(), vector)
+                        (*og_index, y.distance_factor, vector)
                     })
                     .collect();
 
@@ -490,26 +490,23 @@ pub async fn create_embeddings(
 
         vectors_sorted.extend(vectors_i.clone());
     }
-    let all_boost_vectors: Vec<(usize, Vec<(usize, f64, DistancePhraseDirection, Vec<f32>)>)> =
+    let all_boost_vectors: Vec<(usize, Vec<(usize, f64, Vec<f32>)>)> =
         futures::future::join_all(vec_boost_future)
             .await
             .into_iter()
-            .collect::<Result<
-                Vec<(usize, Vec<(usize, f64, DistancePhraseDirection, Vec<f32>)>)>,
-                ServiceError,
-            >>()?;
+            .collect::<Result<Vec<(usize, Vec<(usize, f64, Vec<f32>)>)>, ServiceError>>()?;
 
     for (_, boost_vectors) in all_boost_vectors {
-        for (og_index, boost_amt, direction, boost_vector) in boost_vectors {
+        for (og_index, boost_amt, boost_vector) in boost_vectors {
             let l2_distance = vectors_sorted[og_index]
                 .iter()
                 .zip(boost_vector.clone())
                 .map(|(vector_val, boost_val)| (vector_val - boost_val).powi(2))
                 .sum::<f32>()
                 .sqrt();
-            let new_l2_distance = match direction {
-                DistancePhraseDirection::Away => l2_distance / (boost_amt as f32),
-                DistancePhraseDirection::Far => l2_distance * (boost_amt as f32),
+            let new_l2_distance = match boost_amt > 0.0 {
+                true => l2_distance * (boost_amt as f32),
+                false => l2_distance / (boost_amt.abs() as f32),
             };
             let direction_vector: Vec<f32> = vectors_sorted[og_index]
                 .iter()
