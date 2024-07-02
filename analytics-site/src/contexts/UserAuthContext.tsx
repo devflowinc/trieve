@@ -29,6 +29,8 @@ export const UserAuthContextProvider: ParentComponent = (props) => {
       window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
     }
 
+    console.log("response", response)
+
     const userData = (await response.json()) as SlimUser;
     setUserInfo(userData);
   };
