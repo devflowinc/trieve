@@ -58,8 +58,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:no-ocr-${{matrix.platform}}
-          cache-to: type=registry,ref=trieve/buildcache:no-ocr-${{matrix.platform}},mode=max
+          cache-from: type=registry,ref=trieve/buildcache:no-ocr-${{matrix.runner}}
+          cache-to: type=registry,ref=trieve/buildcache:no-ocr-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.no-ocr
           push: true
@@ -107,8 +107,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:ingest-${{matrix.platform}}
-          cache-to: type=registry,ref=trieve/buildcache:ingest-${{matrix.platform}},mode=max
+          cache-from: type=registry,ref=trieve/buildcache:ingest-${{matrix.runner}}
+          cache-to: type=registry,ref=trieve/buildcache:ingest-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.ingestion-worker
           push: true
@@ -155,8 +155,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: linux/amd64,linux/arm64
-          cache-from: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.platform}}
-          cache-to: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.platform}},mode=max
+          cache-from: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.runner}}
+          cache-to: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.delete-worker
           push: true
@@ -204,8 +204,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:file_worker-${{matrix.platform}}
-          cache-to: type=registry,ref=trieve/buildcache:file_worker-${{matrix.platform}},mode=max
+          cache-from: type=registry,ref=trieve/buildcache:file_worker-${{matrix.runner}}
+          cache-to: type=registry,ref=trieve/buildcache:file_worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.file-worker
           push: true
@@ -252,52 +252,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:group_worker-${{matrix.platform}}
-          cache-to: type=registry,ref=trieve/buildcache:group_worker-${{matrix.platform}},mode=max
+          cache-from: type=registry,ref=trieve/buildcache:group_worker-${{matrix.runner}}
+          cache-to: type=registry,ref=trieve/buildcache:group_worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.group-worker
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-  # ocr-image:
-  #   name: Push OCR Image
-  #   runs-on: blacksmith-8vcpu-ubuntu-2204
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     # - name: Set up QEMU
-  #     #   uses: docker/setup-qemu-action@v3
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/server
-  #         tags: |
-  #           type=raw,ocr
-  #           type=sha,prefix=sha-ocr-
-  #
-  #     - name: Build and push Docker image
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         # platforms: linux/amd64,linux/arm64
-  #         cache-from: type=registry,ref=trieve/buildcache:ocr
-  #         cache-to: type=registry,ref=trieve/buildcache:ocr,mode=max
-  #         context: server/
-  #         file: ./server/Dockerfile.ocr
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
