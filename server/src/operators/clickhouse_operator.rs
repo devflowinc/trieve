@@ -12,7 +12,6 @@ pub enum ClickHouseEvent {
     SearchQueryEvent(SearchQueryEventClickhouse),
     //TODO: Recommended Chunks
     //TODO: Recommeneded Groups
-    //TODO: RAG over selected Chunks
     RagQueryEvent(RagQueryEventClickhouse),
 }
 
@@ -111,6 +110,7 @@ pub async fn run_clickhouse_migrations(client: &clickhouse::Client) {
                 rag_type String,
                 user_message String,
                 search_id UUID,
+                results Array(UUID),
                 llm_response String,
                 dataset_id UUID,
                 created_at DateTime,
@@ -349,12 +349,13 @@ pub async fn send_to_clickhouse(
         ClickHouseEvent::RagQueryEvent(event) => {
             clickhouse_client
                     .query(
-                        "INSERT INTO default.rag_queries (id, rag_type, user_message, search_id, llm_response, dataset_id, created_at) VALUES (?, ?, ?, ?, ?, ?, now())",
+                        "INSERT INTO default.rag_queries (id, rag_type, user_message, search_id, results, llm_response, dataset_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, now())",
                     )
                     .bind(event.id)
                     .bind(&event.rag_type)
                     .bind(&event.user_message)
                     .bind(&event.search_id)
+                    .bind(&event.results)
                     .bind(&event.llm_response)
                     .bind(event.dataset_id)
                     .execute()

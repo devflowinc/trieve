@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
-    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Message,
-    Pool, RagQueryEventClickhouse, RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse,
+    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Pool,
+    RagQueryEventClickhouse, RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse,
     ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
@@ -26,7 +26,6 @@ use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use crossbeam_channel::unbounded;
 use dateparser::DateTimeUtc;
-use futures_util::stream;
 use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
@@ -2109,6 +2108,7 @@ pub async fn generate_off_chunks(
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset_org_plan_sub.dataset.id,
             search_id: uuid::Uuid::nil(),
+            results: data.chunk_ids.clone().into_iter().collect(),
             user_message: prompt,
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion,

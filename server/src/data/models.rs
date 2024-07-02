@@ -2943,6 +2943,7 @@ pub struct RagQueryEvent {
     pub rag_type: String,
     pub user_message: String,
     pub search_id: uuid::Uuid,
+    pub results: Vec<uuid::Uuid>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
 }
@@ -2954,6 +2955,7 @@ impl From<RagQueryEventClickhouse> for RagQueryEvent {
             rag_type: event.rag_type,
             user_message: event.user_message,
             search_id: uuid::Uuid::from_bytes(*event.search_id.as_bytes()),
+            results: event.results,
             dataset_id: uuid::Uuid::from_bytes(*event.dataset_id.as_bytes()),
             created_at: event.created_at.to_string(),
         }
@@ -2968,6 +2970,7 @@ pub struct RagQueryEventClickhouse {
     pub user_message: String,
     #[serde(with = "clickhouse::serde::uuid")]
     pub search_id: uuid::Uuid,
+    pub results: Vec<uuid::Uuid>,
     pub llm_response: String,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
