@@ -57,12 +57,6 @@ pub struct DistancePhrase {
     pub distance_factor: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub enum DistancePhraseDirection {
-    Far,
-    Away,
-}
-
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 #[schema(example = json!({
     "chunk_html": "<p>Some HTML content</p>",
