@@ -8,7 +8,7 @@ on:
   pull_request:
     paths:
     - 'chat/**'
-
+    - 'shared/**'
 jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204
