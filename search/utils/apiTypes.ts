@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { ComboboxSection } from "../src/components/Atoms/ComboboxChecklist";
-
 export interface ChunkMetadata {
   id: string;
   chunk_html?: string;
@@ -431,36 +429,6 @@ export const messageRoleFromIndex = (idx: number) => {
   return "user";
 };
 
-export interface ClientEnvsConfiguration {
-  CREATE_CHUNK_FEATURE?: boolean;
-  SEARCH_QUERIES?: string;
-  FRONTMATTER_VALS?: string;
-  LINES_BEFORE_SHOW_MORE?: number;
-  DATE_RANGE_VALUE?: string;
-  FILTER_ITEMS?: ComboboxSection[];
-  SUGGESTED_QUERIES?: string;
-  IMAGE_RANGE_START_KEY?: string;
-  IMAGE_RANGE_END_KEY?: string;
-  DOCUMENT_UPLOAD_FEATURE?: boolean;
-  FILE_NAME_KEY?: string;
-  IMAGE_METADATA_KEY?: string;
-}
-
-export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
-  CREATE_CHUNK_FEATURE: true,
-  DOCUMENT_UPLOAD_FEATURE: true,
-  SEARCH_QUERIES:
-    "star github.com/devflowinc/trieve, no seriously please star github.com/devflowinc/trieve, you know you want to star github.com/devflowinc/trieve",
-  FRONTMATTER_VALS: "link,tag_set,file_name,time_stamp,location",
-  LINES_BEFORE_SHOW_MORE: 15,
-  DATE_RANGE_VALUE: "Date",
-  FILTER_ITEMS: [],
-  SUGGESTED_QUERIES: "",
-  IMAGE_RANGE_START_KEY: "",
-  IMAGE_RANGE_END_KEY: "",
-  FILE_NAME_KEY: "",
-};
-
 export interface OrganizationDTO {
   id: string;
   name: string;
@@ -505,10 +473,7 @@ export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {
     indirectHasOwnProperty(dataset, "updated_at") &&
     typeof (dataset as DatasetDTO).updated_at === "string" &&
     indirectHasOwnProperty(dataset, "organization_id") &&
-    typeof (dataset as DatasetDTO).organization_id === "string" &&
-    indirectHasOwnProperty(dataset, "client_configuration") &&
-    (typeof (dataset as DatasetDTO).client_configuration === "string" ||
-      typeof (dataset as DatasetDTO).client_configuration === "object")
+    typeof (dataset as DatasetDTO).organization_id === "string"
   );
 };
 

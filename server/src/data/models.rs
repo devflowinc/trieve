@@ -1481,7 +1481,6 @@ pub struct DatasetEventCount {
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "tracking_id": "3",
     "server_configuration": {"key": "value"},
-    "client_configuration": {"key": "value"},
 }))]
 #[diesel(table_name = datasets)]
 pub struct Dataset {
@@ -1491,7 +1490,6 @@ pub struct Dataset {
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
     pub server_configuration: serde_json::Value,
-    pub client_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
 }
@@ -1502,7 +1500,6 @@ impl Dataset {
         organization_id: uuid::Uuid,
         tracking_id: Option<String>,
         server_configuration: serde_json::Value,
-        client_configuration: serde_json::Value,
     ) -> Self {
         Dataset {
             id: uuid::Uuid::new_v4(),
@@ -1510,7 +1507,6 @@ impl Dataset {
             organization_id,
             tracking_id,
             server_configuration,
-            client_configuration,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             deleted: 0,
@@ -1526,7 +1522,6 @@ impl Dataset {
     "updated_at": "2021-01-01T00:00:00",
     "tracking_id": "3",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "client_configuration": {"key": "value"},
 }))]
 pub struct DatasetDTO {
     pub id: uuid::Uuid,
@@ -1535,7 +1530,6 @@ pub struct DatasetDTO {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
-    pub client_configuration: serde_json::Value,
 }
 
 impl From<Dataset> for DatasetDTO {
@@ -1547,7 +1541,6 @@ impl From<Dataset> for DatasetDTO {
             updated_at: dataset.updated_at,
             tracking_id: dataset.tracking_id,
             organization_id: dataset.organization_id,
-            client_configuration: dataset.client_configuration,
         }
     }
 }

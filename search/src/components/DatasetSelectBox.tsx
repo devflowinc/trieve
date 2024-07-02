@@ -17,6 +17,7 @@ export const DatasetSelectBox = () => {
   const $currentDataset = datasetAndUserContext.currentDataset;
 
   const datasetList = createMemo(() => $datasetsAndUsages?.());
+  console.log(datasetList());
 
   return (
     <Show when={$datasetsAndUsages?.().length != 0}>
