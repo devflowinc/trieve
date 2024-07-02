@@ -110,7 +110,7 @@ pub async fn run_clickhouse_migrations(client: &clickhouse::Client) {
                 id UUID,
                 rag_type String,
                 user_message String,
-                search_id Nullable(UUID),
+                search_id UUID,
                 llm_response String,
                 dataset_id UUID,
                 created_at DateTime,
