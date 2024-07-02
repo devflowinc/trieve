@@ -534,6 +534,7 @@ pub async fn bulk_upload_chunks(
         "calling_create_all_embeddings",
     );
 
+    println!("Creating embeddings");
     // Assuming split average is false, Assume Explicit Vectors don't exist
     let embedding_vectors = match create_embeddings(
         content_and_boosts

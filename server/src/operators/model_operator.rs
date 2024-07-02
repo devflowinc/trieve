@@ -146,8 +146,6 @@ pub async fn create_embedding(
     })
     .collect();
 
-    println!("Vector embeddings: {:?}", vectors);
-
     if vectors.iter().any(|x| x.is_empty()) {
         return Err(ServiceError::InternalServerError(
             "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
@@ -206,36 +204,27 @@ pub async fn create_embedding(
         })
         .collect();
 
-        println!("Boost vectors: {:?}", boost_vectors);
-
         if boost_vectors.iter().any(|x| x.is_empty()) {
             return Err(ServiceError::InternalServerError(
             "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
         ));
         }
 
-        let mut distance_factor = distance_phrase.unwrap().distance_factor;
+        let distance_factor = distance_phrase.unwrap().distance_factor;
 
         vectors = vectors
             .iter()
             .zip(boost_vectors)
             .map(|(vector, boost_vec)| {
-                distance_factor = match distance_factor > 0.0 {
-                    true => distance_factor,
-                    false => distance_factor / (1.0 - distance_factor),
-                };
-
                 vector
                     .iter()
                     .zip(boost_vec)
                     .map(|(vec_elem, boost_vec_elem)| {
-                        vec_elem + distance_factor as f32 * (boost_vec_elem - vec_elem)
+                        vec_elem + distance_factor as f32 * boost_vec_elem
                     })
                     .collect()
             })
             .collect();
-
-        println!("New vectors: {:?}", vectors);
     }
 
     transaction.finish();
@@ -589,11 +578,7 @@ pub async fn create_embeddings(
                 .iter()
                 .zip(boost_vector)
                 .map(|(vector_elem, boost_vec_elem)| {
-                    let boost_factor = match boost_amt > 0.0 {
-                        true => boost_amt,
-                        false => boost_amt / (1.0 - boost_amt),
-                    };
-                    vector_elem + boost_factor as f32 * (boost_vec_elem - vector_elem)
+                    vector_elem + boost_amt as f32 * boost_vec_elem
                 })
                 .collect();
         }
