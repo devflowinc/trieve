@@ -21,11 +21,11 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
-        include:
+        exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/amd64
-          - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -58,8 +58,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:no-ocr
-          cache-to: type=registry,ref=trieve/buildcache:no-ocr,mode=max
+          cache-from: type=registry,ref=trieve/buildcache:no-ocr-${{matrix.platform}}
+          cache-to: type=registry,ref=trieve/buildcache:no-ocr-${{matrix.platform}},mode=max
           context: server/
           file: ./server/Dockerfile.no-ocr
           push: true
@@ -74,11 +74,11 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
-        include:
+        exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/amd64
-          - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -107,8 +107,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:ingest
-          cache-to: type=registry,ref=trieve/buildcache:ingest,mode=max
+          cache-from: type=registry,ref=trieve/buildcache:ingest-${{matrix.platform}}
+          cache-to: type=registry,ref=trieve/buildcache:ingest-${{matrix.platform}},mode=max
           context: server/
           file: ./server/Dockerfile.ingestion-worker
           push: true
@@ -122,11 +122,11 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
-        include:
+        exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/amd64
-          - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -155,8 +155,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: linux/amd64,linux/arm64
-          cache-from: type=registry,ref=trieve/buildcache:delete_worker
-          cache-to: type=registry,ref=trieve/buildcache:delete_worker,mode=max
+          cache-from: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.platform}}
+          cache-to: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.platform}},mode=max
           context: server/
           file: ./server/Dockerfile.delete-worker
           push: true
@@ -171,11 +171,11 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
-        include:
+        exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/amd64
-          - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -204,8 +204,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:file_worker
-          cache-to: type=registry,ref=trieve/buildcache:file_worker,mode=max
+          cache-from: type=registry,ref=trieve/buildcache:file_worker-${{matrix.platform}}
+          cache-to: type=registry,ref=trieve/buildcache:file_worker-${{matrix.platform}},mode=max
           context: server/
           file: ./server/Dockerfile.file-worker
           push: true
@@ -219,11 +219,11 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
-        include:
+        exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/amd64
-          - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -252,8 +252,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:group_worker
-          cache-to: type=registry,ref=trieve/buildcache:group_worker,mode=max
+          cache-from: type=registry,ref=trieve/buildcache:group_worker-${{matrix.platform}}
+          cache-to: type=registry,ref=trieve/buildcache:group_worker-${{matrix.platform}},mode=max
           context: server/
           file: ./server/Dockerfile.group-worker
           push: true
