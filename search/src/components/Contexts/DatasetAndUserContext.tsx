@@ -8,11 +8,9 @@ import {
   onMount,
 } from "solid-js";
 import {
-  ClientEnvsConfiguration,
   DatasetAndUsageDTO,
   OrganizationDTO,
   UserDTO,
-  defaultClientEnvsConfiguration,
   isDatasetAndUsageDTO,
   isUserDTO,
 } from "../../../utils/apiTypes";
@@ -38,14 +36,9 @@ export interface DatasetAndUserStore {
   currentDataset: Accessor<DatasetAndUsageDTO | null> | null;
   setCurrentDataset: (dataset: DatasetAndUsageDTO | null) => void;
   datasetsAndUsages: Accessor<DatasetAndUsageDTO[]> | null;
-  clientConfig: Accessor<ClientEnvsConfiguration>;
   login: () => void;
   logout: () => void;
 }
-
-const [clientConfig] = createSignal<ClientEnvsConfiguration>(
-  defaultClientEnvsConfiguration,
-);
 
 export const DatasetAndUserContext: Context<DatasetAndUserStore> =
   createContext<DatasetAndUserStore>({
@@ -57,7 +50,6 @@ export const DatasetAndUserContext: Context<DatasetAndUserStore> =
     currentDataset: null,
     setCurrentDataset: () => {},
     datasetsAndUsages: null,
-    clientConfig: clientConfig,
     login: () => {},
     logout: () => {},
   });
@@ -79,9 +71,6 @@ export const DatasetAndUserContextWrapper = (
   const [datasetsAndUsages, setDatasetsAndUsages] = createSignal<
     DatasetAndUsageDTO[]
   >([]);
-  const [clientConfig, setClientConfig] = createSignal<ClientEnvsConfiguration>(
-    defaultClientEnvsConfiguration,
-  );
 
   const login = () => {
     fetch(`${apiHost}/auth/me`, {
@@ -230,34 +219,6 @@ export const DatasetAndUserContextWrapper = (
     });
   });
 
-  createEffect(() => {
-    const dataset = currentDataset();
-    if (!dataset) {
-      return;
-    }
-
-    void fetch(`${apiHost}/dataset/envs`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "TR-Dataset": dataset.dataset.id,
-      },
-    }).then((res) => {
-      if (res.ok) {
-        void res
-          .json()
-          .then((data) => {
-            if (data) {
-              setClientConfig(data);
-            }
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      }
-    });
-  });
-
   const datasetAndUserStore: DatasetAndUserStore = {
     user: user,
     setUser: setUser,
@@ -266,7 +227,6 @@ export const DatasetAndUserContextWrapper = (
     setCurrentOrganization: setSelectedOrganization,
     currentDataset: currentDataset,
     setCurrentDataset: setCurrentDataset,
-    clientConfig: clientConfig,
     datasetsAndUsages: datasetsAndUsages,
     login: login,
     logout: () => {},

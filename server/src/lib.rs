@@ -211,7 +211,6 @@ impl Modify for SecurityAddon {
         handlers::dataset_handler::get_dataset,
         handlers::dataset_handler::get_usage_by_dataset_id,
         handlers::dataset_handler::get_datasets_from_organization,
-        handlers::dataset_handler::get_client_dataset_config,
         handlers::dataset_handler::clear_dataset,
         handlers::stripe_handler::direct_to_payment_link,
         handlers::stripe_handler::cancel_subscription,
@@ -602,9 +601,6 @@ pub fn main() -> std::io::Result<()> {
                                         ),
                                     ),
                                 )
-                                .service(web::resource("/envs").route(
-                                    web::get().to(handlers::dataset_handler::get_client_dataset_config),
-                                ))
                                 .service(
                                     web::resource("/usage/{dataset_id}")
                                         .route(web::get().to(handlers::dataset_handler::get_usage_by_dataset_id)),

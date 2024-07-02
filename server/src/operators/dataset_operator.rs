@@ -441,7 +441,6 @@ pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
     server_configuration: serde_json::Value,
-    client_configuration: serde_json::Value,
     new_tracking_id: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
@@ -462,7 +461,6 @@ pub async fn update_dataset_query(
         datasets_columns::name.eq(name),
         datasets_columns::updated_at.eq(diesel::dsl::now),
         datasets_columns::server_configuration.eq(server_configuration),
-        datasets_columns::client_configuration.eq(client_configuration),
     ))
     .get_result(&mut conn)
     .await

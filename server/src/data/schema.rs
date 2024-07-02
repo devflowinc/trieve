@@ -101,7 +101,6 @@ diesel::table! {
         updated_at -> Timestamp,
         organization_id -> Uuid,
         server_configuration -> Jsonb,
-        client_configuration -> Jsonb,
         tracking_id -> Nullable<Text>,
         deleted -> Int4,
     }
