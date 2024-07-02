@@ -1577,6 +1577,7 @@ pub async fn delete_chunk_metadata_query(
 
                 let new_embedding_vector = create_embedding(
                     collision_content,
+                    None,
                     "doc",
                     ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
                 )

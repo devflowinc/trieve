@@ -2,7 +2,7 @@ use crate::{
     data::models::{ChunkMetadataTypes, ScoreChunkDTO, ServerDatasetConfiguration},
     errors::ServiceError,
     get_env,
-    handlers::chunk_handler::{BoostPhrase, DistancePhrase, DistancePhraseDirection},
+    handlers::chunk_handler::{BoostPhrase, DistancePhrase},
 };
 use openai_dive::v1::{
     helpers::format_response,
@@ -25,6 +25,7 @@ pub struct EmbeddingParameters {
 #[tracing::instrument]
 pub async fn create_embedding(
     message: String,
+    distance_phrase: Option<DistancePhrase>,
     embed_type: &str,
     dataset_config: ServerDatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
@@ -133,7 +134,7 @@ pub async fn create_embedding(
             )
         })?;
 
-    let vectors: Vec<Vec<f32>> = embeddings
+    let mut vectors: Vec<Vec<f32>> = embeddings
     .data
     .into_iter()
     .map(|x| match x.embedding {
@@ -145,10 +146,96 @@ pub async fn create_embedding(
     })
     .collect();
 
+    println!("Vector embeddings: {:?}", vectors);
+
     if vectors.iter().any(|x| x.is_empty()) {
         return Err(ServiceError::InternalServerError(
             "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
         ));
+    }
+
+    if distance_phrase.is_some() {
+        let clipped_boost = if distance_phrase.as_ref().unwrap().phrase.len() > 7000 {
+            distance_phrase
+                .as_ref()
+                .unwrap()
+                .phrase
+                .chars()
+                .take(20000)
+                .collect()
+        } else {
+            distance_phrase.as_ref().unwrap().phrase.clone()
+        };
+
+        let boost_embeddings_resp = ureq::post(&format!(
+            "{}/embeddings?api-version=2023-05-15",
+            embedding_base_url
+        ))
+        .set("Authorization", &format!("Bearer {}", &embedding_api_key))
+        .set("api-key", &embedding_api_key)
+        .set("Content-Type", "application/json")
+        .send_json(EmbeddingParameters {
+            model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
+            input: EmbeddingInput::StringArray(vec![clipped_boost]),
+        })
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!(
+                "Could not get embeddings from server: {:?}, {:?}",
+                e,
+                e.to_string()
+            ))
+        })?;
+
+        let boost_embeddings: EmbeddingResponse =
+            format_response(boost_embeddings_resp.into_string().unwrap()).map_err(|e| {
+                log::error!("Failed to format response from embeddings server {:?}", e);
+                ServiceError::InternalServerError(
+                    "Failed to format response from embeddings server".to_owned(),
+                )
+            })?;
+
+        let boost_vectors: Vec<Vec<f32>> = boost_embeddings
+        .data
+        .into_iter()
+        .map(|x| match x.embedding {
+            EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
+            EmbeddingOutput::Base64(_) => {
+                log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
+                vec![]
+            }
+        })
+        .collect();
+
+        println!("Boost vectors: {:?}", boost_vectors);
+
+        if boost_vectors.iter().any(|x| x.is_empty()) {
+            return Err(ServiceError::InternalServerError(
+            "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
+        ));
+        }
+
+        let mut distance_factor = distance_phrase.unwrap().distance_factor;
+
+        vectors = vectors
+            .iter()
+            .zip(boost_vectors)
+            .map(|(vector, boost_vec)| {
+                distance_factor = match distance_factor > 0.0 {
+                    true => distance_factor,
+                    false => distance_factor / (1.0 - distance_factor),
+                };
+
+                vector
+                    .iter()
+                    .zip(boost_vec)
+                    .map(|(vec_elem, boost_vec_elem)| {
+                        vec_elem + distance_factor as f32 * (boost_vec_elem - vec_elem)
+                    })
+                    .collect()
+            })
+            .collect();
+
+        println!("New vectors: {:?}", vectors);
     }
 
     transaction.finish();
@@ -498,31 +585,16 @@ pub async fn create_embeddings(
 
     for (_, boost_vectors) in all_boost_vectors {
         for (og_index, boost_amt, boost_vector) in boost_vectors {
-            let l2_distance = vectors_sorted[og_index]
+            vectors_sorted[og_index] = vectors_sorted[og_index]
                 .iter()
-                .zip(boost_vector.clone())
-                .map(|(vector_val, boost_val)| (vector_val - boost_val).powi(2))
-                .sum::<f32>()
-                .sqrt();
-            let new_l2_distance = match boost_amt > 0.0 {
-                true => l2_distance * (boost_amt as f32),
-                false => l2_distance / (boost_amt.abs() as f32),
-            };
-            let direction_vector: Vec<f32> = vectors_sorted[og_index]
-                .iter()
-                .zip(boost_vector.clone())
-                .map(|(vector_val, boost_val)| vector_val - boost_val)
-                .collect();
-
-            let direction_normalized: Vec<f32> = direction_vector
-                .iter()
-                .map(|x| x / new_l2_distance)
-                .collect();
-
-            vectors_sorted[og_index] = direction_normalized
-                .iter()
-                .zip(boost_vector.clone())
-                .map(|(vector_val, boost_val)| vector_val - (boost_val * (boost_amt as f32)))
+                .zip(boost_vector)
+                .map(|(vector_elem, boost_vec_elem)| {
+                    let boost_factor = match boost_amt > 0.0 {
+                        true => boost_amt,
+                        false => boost_amt / (1.0 - boost_amt),
+                    };
+                    vector_elem + boost_factor as f32 * (boost_vec_elem - vector_elem)
+                })
                 .collect();
         }
     }

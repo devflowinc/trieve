@@ -561,7 +561,16 @@ pub async fn bulk_upload_chunks(
     );
 
     let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vectors(content_and_boosts, "doc", reqwest_client).await {
+        match get_sparse_vectors(
+            content_and_boosts
+                .iter()
+                .map(|(content, boost, _)| (content.clone(), boost.clone()))
+                .collect(),
+            "doc",
+            reqwest_client,
+        )
+        .await
+        {
             Ok(vectors) => Ok(vectors),
             Err(err) => Err(err),
         }
@@ -806,7 +815,10 @@ async fn upload_chunk(
                 let chunks = coarse_doc_chunker(content.clone(), None, false, 20);
 
                 let embeddings = create_embeddings(
-                    chunks,
+                    chunks
+                        .iter()
+                        .map(|chunk| (chunk.clone(), payload.chunk.distance_phrase.clone()))
+                        .collect(),
                     "doc",
                     dataset_config.clone(),
                     reqwest_client.clone(),
@@ -817,7 +829,7 @@ async fn upload_chunk(
             }
             false => {
                 let embedding_vectors = create_embeddings(
-                    vec![content.clone()],
+                    vec![(content.clone(), payload.chunk.distance_phrase.clone())],
                     "doc",
                     dataset_config.clone(),
                     reqwest_client.clone(),
@@ -1091,10 +1103,14 @@ async fn update_chunk(
 
     let chunk_metadata = payload.chunk_metadata.clone();
 
-    let embedding_vector =
-        create_embedding(content.to_string(), "doc", server_dataset_config.clone())
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let embedding_vector = create_embedding(
+        content.to_string(),
+        payload.distance_phrase,
+        "doc",
+        server_dataset_config.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let qdrant_point_id = get_qdrant_id_from_chunk_id_query(chunk_metadata.id, web_pool.clone())
         .await

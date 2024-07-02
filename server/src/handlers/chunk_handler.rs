@@ -519,6 +519,8 @@ pub struct UpdateChunkReqPayload {
     convert_html_to_text: Option<bool>,
     /// Boost is useful for when you want to boost certain phrases in the fulltext search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
     pub boost_phrase: Option<BoostPhrase>,
+
+    pub distance_phrase: Option<DistancePhrase>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -529,6 +531,7 @@ pub struct UpdateIngestionMessage {
     pub group_ids: Option<Vec<UnifiedId>>,
     pub convert_html_to_text: Option<bool>,
     pub boost_phrase: Option<BoostPhrase>,
+    pub distance_phrase: Option<DistancePhrase>,
 }
 
 /// Update Chunk
@@ -657,6 +660,7 @@ pub async fn update_chunk(
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,
         boost_phrase: update_chunk_data.boost_phrase.clone(),
+        distance_phrase: update_chunk_data.distance_phrase.clone(),
     };
 
     let mut redis_conn = redis_pool
@@ -807,6 +811,7 @@ pub async fn update_chunk_by_tracking_id(
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,
         boost_phrase: None,
+        distance_phrase: None,
     };
 
     let mut redis_conn = redis_pool
