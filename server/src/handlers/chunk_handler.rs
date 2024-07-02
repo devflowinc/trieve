@@ -297,10 +297,12 @@ pub async fn create_chunk(
         CreateChunkReqPayloadEnum::Batch(chunks) => chunks.0,
     };
 
-    let count_dataset_id = dataset_org_plan_sub.dataset.id;
-
     let mut timer = Timer::new();
-    let chunk_count = get_row_count_for_dataset_id_query(count_dataset_id, pool.clone()).await?;
+    let chunk_count = get_row_count_for_organization_id_query(
+        dataset_org_plan_sub.organization.organization.id,
+        pool.clone(),
+    )
+    .await?;
     timer.add("get dataset count");
 
     if chunks.len() > 120 {

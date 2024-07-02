@@ -1915,20 +1915,21 @@ fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> Chunk
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_row_count_for_dataset_id_query(
-    dataset_id: uuid::Uuid,
+pub async fn get_row_count_for_organization_id_query(
+    organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<usize, ServiceError> {
-    use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
+    use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
     let mut conn = pool.get().await.expect("Failed to get connection to db");
 
-    let chunk_metadata_count = dataset_usage_counts_columns::dataset_usage_counts
-        .filter(dataset_usage_counts_columns::dataset_id.eq(dataset_id))
-        .select(dataset_usage_counts_columns::chunk_count)
+    let chunk_metadata_count = organization_usage_counts_columns::organization_usage_counts
+        .filter(organization_usage_counts_columns::org_id.eq(organization_id))
+        .select(organization_usage_counts_columns::chunk_count)
         .first::<i32>(&mut conn)
         .await
         .map_err(|_| {
+            log::error!("Failed to get chunk count for organization");
             ServiceError::BadRequest("Failed to get chunk count for dataset".to_string())
         })?;
 

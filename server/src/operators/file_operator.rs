@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::chunk_operator::{create_chunk_metadata, get_row_count_for_dataset_id_query};
+use super::chunk_operator::{create_chunk_metadata, get_row_count_for_organization_id_query};
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
 use super::parse_operator::{build_chunking_regex, coarse_doc_chunker, convert_html_to_text};
@@ -194,7 +194,8 @@ pub async fn create_file_chunks(
     }
 
     let chunk_count =
-        get_row_count_for_dataset_id_query(dataset_org_plan_sub.dataset.id, pool.clone()).await?;
+        get_row_count_for_organization_id_query(dataset_org_plan_sub.dataset.id, pool.clone())
+            .await?;
 
     if chunk_count + chunks.len()
         > dataset_org_plan_sub
