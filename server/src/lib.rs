@@ -120,6 +120,10 @@ impl Modify for SecurityAddon {
             "ApiKey",
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
         );
+        components.add_security_scheme(
+            "X-API-KEY",
+            SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("X-API-KEY"))),
+        );
     }
 }
 
