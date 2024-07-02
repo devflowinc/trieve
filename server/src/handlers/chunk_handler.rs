@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
-    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Pool,
-    RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse, ServerDatasetConfiguration,
-    SlimChunkMetadataWithScore, UnifiedId,
+    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, IngestSpecificChunkMetadata, Message,
+    Pool, RagQueryEventClickhouse, RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse,
+    ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -20,10 +20,13 @@ use crate::operators::search_operator::{
     autocomplete_fulltext_chunks, autocomplete_semantic_chunks, search_full_text_chunks,
     search_hybrid_chunks, search_semantic_chunks,
 };
+use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
+use crossbeam_channel::unbounded;
 use dateparser::DateTimeUtc;
+use futures_util::stream;
 use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
@@ -1905,10 +1908,11 @@ pub struct GenerateChunksRequest {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn generate_off_chunks(
     data: web::Json<GenerateChunksRequest>,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -2089,24 +2093,49 @@ pub async fn generate_off_chunks(
         return Ok(HttpResponse::Ok().json(chat_content));
     }
 
+    let (s, r) = unbounded::<String>();
     let stream = client
         .chat()
         .create_stream(parameters.clone())
         .await
         .unwrap();
 
-    Ok(HttpResponse::Ok().streaming(stream.map(
-        move |response| -> Result<Bytes, actix_web::Error> {
-            if let Ok(response) = response {
-                let chat_content = response.choices[0].delta.content.clone();
-                return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+    Arbiter::new().spawn(async move {
+        let chunk_v: Vec<String> = r.iter().collect();
+        let completion = chunk_v.join("");
+
+        let clickhouse_rag_event = RagQueryEventClickhouse {
+            id: uuid::Uuid::new_v4(),
+            created_at: time::OffsetDateTime::now_utc(),
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            search_id: uuid::Uuid::nil(),
+            user_message: prompt,
+            rag_type: "chosen_chunks".to_string(),
+            llm_response: completion,
+        };
+
+        let _ = send_to_clickhouse(
+            ClickHouseEvent::RagQueryEvent(clickhouse_rag_event),
+            &clickhouse_client,
+        )
+        .await;
+    });
+
+    let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
+        if let Ok(response) = response {
+            let chat_content = response.choices[0].delta.content.clone();
+            if let Some(message) = chat_content.clone() {
+                s.send(message).unwrap();
             }
-            Err(ServiceError::InternalServerError(
-                "Model Response Error. Please try again later".into(),
-            )
-            .into())
-        },
-    )))
+            return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+        }
+        Err(ServiceError::InternalServerError(
+            "Model Response Error. Please try again later.".into(),
+        )
+        .into())
+    });
+
+    Ok(HttpResponse::Ok().streaming(completion_stream))
 }
 
 pub fn check_completion_param_validity(
