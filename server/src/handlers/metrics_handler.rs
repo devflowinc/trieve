@@ -40,7 +40,7 @@ pub async fn get_metrics(
         return Ok(HttpResponse::Unauthorized().finish());
     }
 
-    let _ = metrics.update_queue_gauges(redis_pool);
+    let _ = metrics.update_queue_gauges(redis_pool).await;
     let reponse = metrics.get_response();
     Ok(HttpResponse::Ok().content_type("text/plain").body(reponse))
 }
