@@ -7,6 +7,7 @@ use crate::get_env;
 use crate::operators::parse_operator::convert_html_to_text;
 
 use super::schema::*;
+use crate::handlers::chunk_handler::BoostPhrase;
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
@@ -3191,4 +3192,20 @@ impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
             average_latency: graph.average_latency,
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct PGInsertQueueMessage {
+    pub chunk_metadatas: ChunkData,
+    pub dataset_id: uuid::Uuid,
+    pub dataset_config: ServerDatasetConfiguration,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ChunkData {
+    pub chunk_metadata: ChunkMetadata,
+    pub content: String,
+    pub group_ids: Option<Vec<uuid::Uuid>>,
+    pub upsert_by_tracking_id: bool,
+    pub boost_phrase: Option<BoostPhrase>,
 }
