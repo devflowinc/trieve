@@ -442,8 +442,7 @@ export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {
     indirectHasOwnProperty(dataset, "updated_at") &&
     typeof (dataset as DatasetDTO).updated_at === "string" &&
     indirectHasOwnProperty(dataset, "organization_id") &&
-    typeof (dataset as DatasetDTO).organization_id === "string" &&
-    indirectHasOwnProperty(dataset, "client_configuration")
+    typeof (dataset as DatasetDTO).organization_id === "string"
   );
 };
 
