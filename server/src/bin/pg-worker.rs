@@ -330,3 +330,80 @@ async fn upload_bulk_pg_chunk(
     }
     Ok(dataset_chunk_ids)
 }
+
+#[tracing::instrument(skip(redis_pool, clickhouse_client))]
+pub async fn readd_error_to_queue(
+    mut message: Vec<PGInsertQueueMessage>,
+    error: ServiceError,
+    redis_pool: actix_web::web::Data<models::RedisPool>,
+    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+) -> Result<(), ServiceError> {
+    if let ServiceError::DuplicateTrackingId(_) = error {
+        log::info!("Duplicate");
+        return Ok(());
+    }
+
+    for payload in message.iter_mut() {
+        let old_payload_message = serde_json::to_string(&payload).map_err(|_| {
+            ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
+        })?;
+
+        payload.attempt_number += 1;
+
+        if payload.attempt_number == 10 {
+            log::error!("Failed to insert data 10 times quitting {:?}", error);
+            let chunk_id = payload.chunk_metadatas.chunk_metadata.id;
+
+            let _ = create_event_query(
+                Event::from_details(
+                    payload.dataset_id,
+                    models::EventType::BulkChunkUploadFailed {
+                        chunk_ids: vec![chunk_id],
+                        error: format!("Failed to upload chunks to postgres"),
+                    },
+                ),
+                clickhouse_client.clone(),
+            )
+            .await
+            .map_err(|err| {
+                log::error!("Failed to create event: {:?}", err);
+            });
+
+            return Err(ServiceError::InternalServerError(format!(
+                "Failed to create new qdrant point: {:?}",
+                error
+            )));
+        }
+
+        let new_payload_message = serde_json::to_string(&payload).map_err(|_| {
+            ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
+        })?;
+
+        let mut redis_conn = redis_pool
+            .get()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        log::error!(
+            "Failed to insert data, re-adding {:?} retry: {:?}",
+            error,
+            payload.attempt_number
+        );
+
+        let _ = redis::cmd("LREM")
+            .arg("bulk_pg_processing")
+            .arg(1)
+            .arg(old_payload_message)
+            .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+            .await;
+
+        redis::cmd("lpush")
+            .arg("bulk_pg_queue")
+            .arg(&new_payload_message)
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+    }
+
+    Ok(())
+}

@@ -657,6 +657,7 @@ pub async fn bulk_upload_chunks(
                 chunk_metadatas: data,
                 dataset_id: payload.dataset_id,
                 dataset_config: dataset_config.clone(),
+                attempt_number: 0,
             })
             .collect();
 
@@ -1007,6 +1008,7 @@ async fn upload_chunk(
                 chunk_metadatas: ingestion_data,
                 dataset_id: payload.dataset_id,
                 dataset_config,
+                attempt_number: 0,
             };
 
             let _ = redis::cmd("LPUSH")

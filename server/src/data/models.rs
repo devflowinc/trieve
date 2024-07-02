@@ -3199,6 +3199,7 @@ pub struct PGInsertQueueMessage {
     pub chunk_metadatas: ChunkData,
     pub dataset_id: uuid::Uuid,
     pub dataset_config: ServerDatasetConfiguration,
+    pub attempt_number: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
