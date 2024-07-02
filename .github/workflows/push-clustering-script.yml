@@ -10,7 +10,7 @@ on:
     branches:
       - 'main'
     paths:
-    - 'analytics/clustering-script/**'
+    - 'docker/clustering-script/**'
 
 jobs:
   build_clustering_script:
@@ -46,8 +46,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           # platforms: linux/amd64,linux/arm64
-          context: analytics/clustering-script/
-          file: ./analytics/clustering-script/Dockerfile
+          context: docker/clustering-script/
+          file: ./docker/clustering-script/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

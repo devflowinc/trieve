@@ -16,7 +16,16 @@ on:
 jobs:
   build_server:
     name: Push No OCR image
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/arm64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -48,7 +57,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          # platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           cache-from: type=registry,ref=trieve/buildcache:no-ocr
           cache-to: type=registry,ref=trieve/buildcache:no-ocr,mode=max
           context: server/
@@ -57,15 +66,22 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+
   ingest_worker:
     name: Push Ingest image
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/arm64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
@@ -90,7 +106,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          # platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           cache-from: type=registry,ref=trieve/buildcache:ingest
           cache-to: type=registry,ref=trieve/buildcache:ingest,mode=max
           context: server/
@@ -101,13 +117,19 @@ jobs:
 
   delete_worker:
     name: Push Delete worker
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/arm64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
@@ -132,7 +154,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=trieve/buildcache:delete_worker
           cache-to: type=registry,ref=trieve/buildcache:delete_worker,mode=max
           context: server/
@@ -144,13 +166,19 @@ jobs:
 
   file_worker:
     name: Push File Worker image
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/arm64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
@@ -175,7 +203,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          # platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           cache-from: type=registry,ref=trieve/buildcache:file_worker
           cache-to: type=registry,ref=trieve/buildcache:file_worker,mode=max
           context: server/
@@ -186,13 +214,19 @@ jobs:
 
   group_worker:
     name: Push Group worker
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/arm64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
@@ -217,7 +251,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          # platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           cache-from: type=registry,ref=trieve/buildcache:group_worker
           cache-to: type=registry,ref=trieve/buildcache:group_worker,mode=max
           context: server/
