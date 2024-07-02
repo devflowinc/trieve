@@ -15,6 +15,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
+      - name: Setting up 
+        run: sed -i 's/analytics-site\///' ./analytics-site/.eslintrc.json
       - name: Install dependencies
         run: yarn --cwd analytics-site
       - name: Running lint
@@ -23,6 +25,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
+      - name: Setting up 
+        run: sed -i 's/analytics-site\///' ./analytics-site/.eslintrc.json
       - name: Install dependencies
         run: yarn --cwd analytics-site
       - name: Running lint
