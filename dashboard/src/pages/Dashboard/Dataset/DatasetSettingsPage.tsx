@@ -11,29 +11,12 @@ import {
 } from "solid-js";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import {
-  ClientEnvsConfiguration,
   ServerEnvsConfiguration,
   availableEmbeddingModels,
 } from "shared/types";
-import { UserContext } from "../../../contexts/UserContext";
 import { createToast } from "../../../components/ShowToasts";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
 import { useNavigate } from "@solidjs/router";
-
-export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
-  CREATE_CHUNK_FEATURE: true,
-  DOCUMENT_UPLOAD_FEATURE: true,
-  SEARCH_QUERIES: "",
-  FRONTMATTER_VALS: "",
-  LINES_BEFORE_SHOW_MORE: 0,
-  DATE_RANGE_VALUE: "",
-  FILTER_ITEMS: [],
-  SUGGESTED_QUERIES: "",
-  SHOW_GITHUB_STARS: false,
-  IMAGE_RANGE_START_KEY: "",
-  IMAGE_RANGE_END_KEY: "",
-  FILE_NAME_KEY: "",
-};
 
 export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LLM_BASE_URL: "",
@@ -58,159 +41,6 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   STOP_TOKENS: null,
   INDEXED_ONLY: false,
   LOCKED: false,
-};
-
-export const FrontendSettingsForm = () => {
-  const datasetContext = useContext(DatasetContext);
-  const userContext = useContext(UserContext);
-
-  const [clientConfig, setClientConfig] = createSignal<ClientEnvsConfiguration>(
-    datasetContext.dataset?.()?.client_configuration ??
-      defaultClientEnvsConfiguration,
-  );
-
-  const [name, setName] = createSignal<string>(
-    datasetContext.dataset?.()?.name ?? "",
-  );
-
-  createEffect(() => {
-    setName(datasetContext.dataset?.()?.name ?? "");
-  });
-
-  createEffect(() => {
-    setClientConfig(
-      datasetContext.dataset?.()?.client_configuration ??
-        defaultClientEnvsConfiguration,
-    );
-  });
-
-  const [saved, setSaved] = createSignal<boolean>(false);
-
-  const onSave = () => {
-    void fetch(`${import.meta.env.VITE_API_HOST}/dataset`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "TR-Organization": userContext.selectedOrganizationId?.() as string,
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        dataset_id: datasetContext.dataset?.()?.id,
-        dataset_name: name(),
-        client_configuration: clientConfig(),
-      }),
-    })
-      .then(() => {
-        setSaved(true);
-        void new Promise((r) => setTimeout(r, 1000)).then(() =>
-          setSaved(false),
-        );
-      })
-      .catch(() => {
-        createToast({
-          title: "Error",
-          type: "error",
-          message: "Error Saving Dataset",
-        });
-      });
-  };
-
-  return (
-    <form>
-      <div class="border shadow sm:overflow-hidden sm:rounded-md">
-        <div class="border border-neutral-50 bg-white px-4 py-6 sm:p-6">
-          <div>
-            <h2 id="user-details-name" class="text-lg font-medium leading-6">
-              Frontend Settings
-            </h2>
-            <p class="mt-1 text-sm text-neutral-600">
-              Update settings for how the frontend behaves.
-            </p>
-          </div>
-          <div class="mt-6 grid grid-cols-4 gap-6">
-            <div class="col-span-4 sm:col-span-2">
-              <label
-                for="datasetName"
-                class="block text-sm font-medium leading-6"
-              >
-                Dataset Name
-              </label>
-              <input
-                type="text"
-                name="datasetName"
-                id="datasetName"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={name()}
-                onInput={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div class="col-span-4">
-              <label
-                for="imageRangeStartKey"
-                class="block text-sm font-medium leading-6"
-              >
-                Image Range Start Key
-              </label>
-              <input
-                type="text"
-                name="imageRangeStartKey"
-                id="imageRangeStartKey"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().IMAGE_RANGE_START_KEY}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      IMAGE_RANGE_START_KEY: e.target.value,
-                    };
-                  })
-                }
-              />
-            </div>
-
-            <div class="col-span-4">
-              <label
-                for="imageRangeEndKey"
-                class="block text-sm font-medium leading-6"
-              >
-                Image Range End Key
-              </label>
-              <input
-                type="text"
-                name="imageRangeEndKey"
-                id="imageRangeEndKey"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().IMAGE_RANGE_END_KEY}
-                onInput={(e) =>
-                  setClientConfig((prev) => {
-                    return {
-                      ...prev,
-                      IMAGE_RANGE_END_KEY: e.target.value,
-                    };
-                  })
-                }
-              />
-            </div>
-          </div>
-        </div>
-        <div class="border-t bg-neutral-50 px-4 py-3 text-right sm:px-6">
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              onSave();
-            }}
-            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
-          >
-            Save
-          </button>
-          <Show when={saved()}>
-            <span class="ml-3 text-sm">Saved!</span>
-          </Show>
-        </div>
-      </div>
-    </form>
-  );
 };
 
 export const ServerSettingsForm = () => {
@@ -840,9 +670,6 @@ export const DatasetSettingsPage = () => {
     <div class="flex flex-col gap-3 pb-4">
       <div>
         <ServerSettingsForm />
-      </div>
-      <div>
-        <FrontendSettingsForm />
       </div>
       <div>
         <DangerZoneForm />

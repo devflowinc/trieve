@@ -85,8 +85,6 @@ export const AfMessage = (props: AfMessageProps) => {
                         showExpand={!props.streamingCompletion()}
                         counter={(idx() + 1).toString()}
                         order={props.order.toString()}
-                        begin={undefined}
-                        end={undefined}
                         total={0}
                         selectedIds={selectedIds}
                         setSelectedIds={setSelectedIds}

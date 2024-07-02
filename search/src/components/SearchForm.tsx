@@ -23,7 +23,6 @@ import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import { SearchOptions, SearchStore } from "../hooks/useSearch";
 import { Tooltip } from "./Atoms/Tooltip";
 import { BsQuestionCircle } from "solid-icons/bs";
-import { defaultClientEnvsConfiguration } from "../../utils/apiTypes";
 
 const defaultFilter = {
   field: "",
@@ -114,10 +113,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
       "searchType",
       searchTypes().find((type) => type.isSelected)?.route ?? "hybrid",
     );
-  });
-
-  createEffect(() => {
-    defaultClientEnvsConfiguration.CREATE_CHUNK_FEATURE?.valueOf();
   });
 
   return (

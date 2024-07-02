@@ -22,23 +22,16 @@ import {
   type ChunkGroupDTO,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
-import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
 import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
 import { FiEdit, FiTrash, FiCheck } from "solid-icons/fi";
-import {
-  FaRegularFileCode,
-  FaRegularFileImage,
-  FaRegularFilePdf,
-} from "solid-icons/fa";
+import { FaRegularFileCode } from "solid-icons/fa";
 import { Tooltip } from "./Atoms/Tooltip";
-import { AiOutlineCopy, AiOutlineFile } from "solid-icons/ai";
+import { AiOutlineCopy } from "solid-icons/ai";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { A } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
-import { ImageModal } from "./ImageModal";
-import { defaultClientEnvsConfiguration } from "../../utils/apiTypes";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -76,9 +69,7 @@ export interface ScoreChunkProps {
   setChunkGroups?: Setter<ChunkGroupDTO[]>;
   counter: string;
   order?: string;
-  total: number;
-  begin: number | undefined;
-  end: number | undefined;
+  total?: number;
   setSelectedIds: Setter<string[]>;
   selectedIds: Accessor<string[]>;
   chat?: boolean;
@@ -86,6 +77,7 @@ export interface ScoreChunkProps {
 
 const ScoreChunk = (props: ScoreChunkProps) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
+  console.log(props.chunk);
 
   const $currentDataset = datasetAndUserContext.currentDataset;
   const $currentUser = datasetAndUserContext.user;
@@ -96,39 +88,11 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
-  const [showImageModal, setShowImageModal] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(
     props.defaultShowMetadata ?? false,
   );
-  const [fileLink, setFileLink] = createSignal<string | null>(null);
   const [imageLink, setImageLink] = createSignal<string | null>(null);
-
-  createEffect(() => {
-    const fileNameKey = defaultClientEnvsConfiguration.FILE_NAME_KEY;
-
-    if (
-      !fileNameKey ||
-      !props.chunk.metadata ||
-      !indirectHasOwnProperty(props.chunk.metadata, fileNameKey)
-    ) {
-      return null;
-    }
-
-    const fileName = props.chunk.metadata[fileNameKey] as string;
-
-    void fetch(`${apiHost}/file/get_signed_url/${fileName}`, {
-      headers: {
-        "TR-Dataset": $currentDataset?.()?.dataset.id ?? "",
-      },
-      credentials: "include",
-    }).then((response) => {
-      void response.json().then((data) => {
-        const signedUrl = data.signed_url as string;
-        setFileLink(signedUrl);
-      });
-    });
-  });
 
   createEffect(() => {
     if (
@@ -140,43 +104,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
     const imageLink = props.chunk.image_urls?.[0] as string;
     setImageLink(imageLink);
-  });
-
-  const imgInformation = createMemo(() => {
-    const imgRangeStartKey =
-      defaultClientEnvsConfiguration.IMAGE_RANGE_START_KEY;
-    const imgRangeEndKey = defaultClientEnvsConfiguration.IMAGE_RANGE_END_KEY;
-
-    if (
-      !imgRangeStartKey ||
-      !imgRangeEndKey ||
-      !props.chunk.metadata ||
-      !indirectHasOwnProperty(props.chunk.metadata, imgRangeStartKey) ||
-      !indirectHasOwnProperty(props.chunk.metadata, imgRangeEndKey)
-    ) {
-      return null;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeStartVal = (props.chunk.metadata as any)[
-      imgRangeStartKey
-    ] as unknown as string;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeEndVal = (props.chunk.metadata as any)[
-      imgRangeEndKey
-    ] as unknown as string;
-    const imgRangeStart = parseInt(imgRangeStartVal.replace(/\D+/g, ""), 10);
-    const imgRangeEnd = parseInt(imgRangeEndVal.replace(/\D+/g, ""), 10);
-    const imgRangePrefix = imgRangeStartVal.slice(
-      0,
-      -imgRangeStart.toString().length,
-    );
-
-    return {
-      imgRangeStart,
-      imgRangeEnd,
-      imgRangePrefix,
-    };
   });
 
   createEffect(() => {
@@ -249,10 +176,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
       (org) => org.organization_id === curDatasetOrg,
     );
     return curUserOrg?.role ?? 0;
-  });
-
-  const currentOrgId = createMemo(() => {
-    return $currentDataset?.()?.dataset.organization_id;
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -336,100 +259,12 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-green-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
                 />
               </Show>
-              <Show when={props.total > 1}>
-                <span class="font-semibold">
-                  {props.counter} of {props.total} duplicates
-                  <Show when={props.begin && props.end}>
-                    {props.begin != props.end ? " between" : " on"}{" "}
-                    {formatDate(new Date(props.begin ?? 0))}
-                    {props.begin != props.end &&
-                      ` and ${formatDate(new Date(props.end ?? 0))}`}
-                  </Show>
-                </span>
-              </Show>
               <Show when={props.chat}>
                 <span class="font-semibold">
                   Doc: {props.counter.toString()}
                 </span>
               </Show>
               <div class="flex-1" />
-              <Tooltip
-                body={
-                  <Show when={imgInformation()}>
-                    <button
-                      class="h-fit"
-                      onClick={() => setShowImageModal(true)}
-                      title="View Images"
-                    >
-                      <FaRegularFileImage class="h-5 w-5 fill-current" />
-                    </button>
-                  </Show>
-                }
-                tooltipText="View Full Document"
-              />
-              <Tooltip
-                body={
-                  <Show when={imgInformation()}>
-                    <a
-                      class="h-fit"
-                      href={`${apiHost}/file/pdf_from_range/${currentOrgId()}/${
-                        imgInformation()?.imgRangeStart ?? 0
-                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
-                        imgInformation()?.imgRangePrefix ?? ""
-                      }/${
-                        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        props.chunk.metadata?.file_name ??
-                        imgInformation()?.imgRangeStart ??
-                        "Trieve PDF From Range"
-                      }/false`}
-                      target="_blank"
-                      title="Open PDF"
-                    >
-                      <FaRegularFilePdf class="h-5 w-5 fill-current" />
-                    </a>
-                  </Show>
-                }
-                tooltipText="View PDF"
-              />
-              <Tooltip
-                body={
-                  <Show when={imgInformation()}>
-                    <a
-                      class="h-fit"
-                      href={`${apiHost}/file/pdf_from_range/${currentOrgId()}/${
-                        imgInformation()?.imgRangeStart ?? 0
-                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
-                        imgInformation()?.imgRangePrefix ?? ""
-                      }/${
-                        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        props.chunk.metadata?.file_name ??
-                        imgInformation()?.imgRangeStart ??
-                        "Trieve PDF From Range"
-                      }/true`}
-                      target="_blank"
-                      title="Open PDF"
-                    >
-                      <RiOthersCharacterRecognitionLine class="h-5 w-5 fill-current" />
-                    </a>
-                  </Show>
-                }
-                tooltipText="View PDF With OCR"
-              />
-              <Tooltip
-                body={
-                  <Show when={fileLink()}>
-                    <a
-                      class="h-fit"
-                      href={`${fileLink()}`}
-                      target="_blank"
-                      title="Open PDF"
-                    >
-                      <AiOutlineFile class="h-5 w-5 fill-current" />
-                    </a>
-                  </Show>
-                }
-                tooltipText="View File"
-              />
               <Tooltip
                 body={
                   <Show when={Object.keys(props.chunk.metadata ?? {}).length}>
@@ -503,14 +338,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </Show>
             </div>
             <div class="flex w-full flex-col">
-              <Show
-                when={
-                  props.chunk.link &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "link")
-                }
-              >
+              <Show when={props.chunk.link}>
                 <a
                   class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
                   target="_blank"
@@ -525,14 +353,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   <span>{props.score.toPrecision(3)}</span>
                 </Show>
               </div>
-              <Show
-                when={
-                  props.chunk.tracking_id &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "tag_set")
-                }
-              >
+              <Show when={props.chunk.tracking_id}>
                 <div class="flex space-x-2">
                   <span class="whitespace-nowrap text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                     Tracking ID:{" "}
@@ -543,13 +364,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 </div>
               </Show>
               <Show
-                when={
-                  props.chunk.tag_set &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "tag_set") &&
-                  props.chunk.tag_set.length > 0
-                }
+                when={props.chunk.tag_set && props.chunk.tag_set.length > 0}
               >
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
@@ -560,14 +375,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   </span>
                 </div>
               </Show>
-              <Show
-                when={
-                  props.chunk.time_stamp &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "time_stamp")
-                }
-              >
+              <Show when={props.chunk.time_stamp}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Time Stamp:{" "}
@@ -577,14 +385,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   </span>
                 </div>
               </Show>
-              <Show
-                when={
-                  props.chunk.num_value &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "num_value")
-                }
-              >
+              <Show when={props.chunk.num_value}>
                 <div class="flex gap-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Num Value:{" "}
@@ -597,9 +398,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.location &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "location") &&
                   props.chunk.location.lat &&
                   props.chunk.location.lon
                 }
@@ -640,9 +438,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     {(key) => (
                       <Show
                         when={
-                          !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                            ",",
-                          )?.find((val) => val === key) &&
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           (props.chunk.metadata as any)[key] !== undefined
                         }
@@ -712,13 +507,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
             </button>
           </Show>
         </div>
-      </Show>
-      <Show when={imgInformation()}>
-        <ImageModal
-          showImageModal={showImageModal}
-          setShowImageModal={setShowImageModal}
-          imgInformation={imgInformation}
-        />
       </Show>
       <Show when={showMetadata()}>
         <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>

@@ -1,20 +1,8 @@
 import { Footer } from "../components/Footer";
 import { UploadFile } from "../components/UploadFile";
 import { SearchLayout } from "../layouts/SearchLayout";
-import { useNavigate } from "@solidjs/router";
-import { useContext } from "solid-js";
-import { DatasetAndUserContext } from "../components/Contexts/DatasetAndUserContext";
 
 export const Upload = () => {
-  const navigate = useNavigate();
-  const datasetAndUserContext = useContext(DatasetAndUserContext);
-
-  const $env = datasetAndUserContext.clientConfig;
-
-  const documentUploadFeature = $env().DOCUMENT_UPLOAD_FEATURE;
-  if (!documentUploadFeature) {
-    navigate("/404");
-  }
   return (
     <SearchLayout>
       <div class="mt-4 flex w-full flex-col items-center space-y-4 px-4 sm:mt-12">

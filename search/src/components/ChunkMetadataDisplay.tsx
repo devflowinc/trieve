@@ -23,16 +23,10 @@ import BookmarkPopover from "./BookmarkPopover";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { formatDate, sanitzerOptions } from "./ScoreChunk";
 import { Tooltip } from "./Atoms/Tooltip";
-import {
-  FaRegularFileCode,
-  FaRegularFileImage,
-  FaRegularFilePdf,
-} from "solid-icons/fa";
+import { FaRegularFileCode } from "solid-icons/fa";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { createToast } from "./ShowToasts";
-import { defaultClientEnvsConfiguration } from "../../utils/apiTypes";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -68,7 +62,6 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
-  const [showImageModal, setShowImageModal] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
   const $currentDataset = datasetAndUserContext.currentDataset;
@@ -103,50 +96,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
     props.setShowConfirmModal(true);
   };
 
-  const imgInformation = createMemo(() => {
-    const imgRangeStartKey =
-      defaultClientEnvsConfiguration.IMAGE_RANGE_START_KEY;
-    const imgRangeEndKey = defaultClientEnvsConfiguration.IMAGE_RANGE_END_KEY;
-
-    if (
-      !imgRangeStartKey ||
-      !imgRangeEndKey ||
-      !props.chunk.metadata ||
-      !indirectHasOwnProperty(props.chunk.metadata, imgRangeStartKey) ||
-      !indirectHasOwnProperty(props.chunk.metadata, imgRangeEndKey)
-    ) {
-      return null;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeStartVal =
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      props.chunk.metadata[imgRangeStartKey] as unknown as string;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeEndVal = props.chunk.metadata[
-      imgRangeEndKey
-    ] as unknown as string;
-    const imgRangeStart = parseInt(imgRangeStartVal.replace(/\D+/g, ""), 10);
-    const imgRangeEnd = parseInt(imgRangeEndVal.replace(/\D+/g, ""), 10);
-    const imgRangePrefix = imgRangeStartVal.slice(
-      0,
-      -imgRangeStart.toString().length,
-    );
-
-    return {
-      imgRangeStart,
-      imgRangeEnd,
-      imgRangePrefix,
-    };
-  });
-
   const useExpand = createMemo(() => {
     if (!props.chunk.chunk_html) return false;
     return props.chunk.chunk_html.split(" ").length > 20 * 15;
-  });
-
-  const currentOrgId = createMemo(() => {
-    return $currentDataset?.()?.dataset.organization_id;
   });
 
   return (
@@ -156,68 +108,6 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           <div class="flex w-full flex-col space-y-2">
             <div class="flex h-fit items-center space-x-1">
               <div class="flex-1" />
-              <Tooltip
-                body={
-                  <Show when={imgInformation()}>
-                    <button
-                      class="h-fit"
-                      onClick={() => setShowImageModal(true)}
-                      title="View Images"
-                    >
-                      <FaRegularFileImage class="h-5 w-5 fill-current" />
-                    </button>
-                  </Show>
-                }
-                tooltipText="View Full Document"
-              />
-              <Tooltip
-                body={
-                  <Show when={imgInformation()}>
-                    <a
-                      class="h-fit"
-                      href={`${apiHost}/file/pdf_from_range/${currentOrgId()}/${
-                        imgInformation()?.imgRangeStart ?? 0
-                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
-                        imgInformation()?.imgRangePrefix ?? ""
-                      }/${
-                        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        props.chunk.metadata?.file_name ??
-                        imgInformation()?.imgRangeStart ??
-                        "Trieve PDF From Range"
-                      }/false`}
-                      target="_blank"
-                      title="Open PDF"
-                    >
-                      <FaRegularFilePdf class="h-5 w-5 fill-current" />
-                    </a>
-                  </Show>
-                }
-                tooltipText="View PDF"
-              />
-              <Tooltip
-                body={
-                  <Show when={imgInformation()}>
-                    <a
-                      class="h-fit"
-                      href={`${apiHost}/file/pdf_from_range/${currentOrgId()}/${
-                        imgInformation()?.imgRangeStart ?? 0
-                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
-                        imgInformation()?.imgRangePrefix ?? ""
-                      }/${
-                        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        props.chunk.metadata?.file_name ??
-                        imgInformation()?.imgRangeStart ??
-                        "Trieve PDF From Range"
-                      }/true`}
-                      target="_blank"
-                      title="Open PDF"
-                    >
-                      <RiOthersCharacterRecognitionLine class="h-5 w-5 fill-current" />
-                    </a>
-                  </Show>
-                }
-                tooltipText="View PDF With OCR"
-              />
               <Tooltip
                 body={
                   <Show when={Object.keys(props.chunk.metadata ?? {}).length}>
@@ -269,14 +159,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               />
             </div>
             <div class="flex w-full flex-col">
-              <Show
-                when={
-                  props.chunk.link &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "link")
-                }
-              >
+              <Show when={props.chunk.link}>
                 <a
                   class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
                   target="_blank"
@@ -291,14 +174,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   <span>{props.score?.toPrecision(3)}</span>
                 </Show>
               </div>
-              <Show
-                when={
-                  props.chunk.tracking_id &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "tag_set")
-                }
-              >
+              <Show when={props.chunk.tracking_id}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Tracking ID:{" "}
@@ -308,14 +184,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   </span>
                 </div>
               </Show>
-              <Show
-                when={
-                  props.chunk.tag_set &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "tag_set")
-                }
-              >
+              <Show when={props.chunk.tag_set}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Tag Set:{" "}
@@ -325,14 +194,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   </span>
                 </div>
               </Show>
-              <Show
-                when={
-                  props.chunk.time_stamp &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "time_stamp")
-                }
-              >
+              <Show when={props.chunk.time_stamp}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Time Stamp:{" "}
@@ -342,14 +204,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   </span>
                 </div>
               </Show>
-              <Show
-                when={
-                  props.chunk.num_value &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "num_value")
-                }
-              >
+              <Show when={props.chunk.num_value}>
                 <div class="flex gap-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Num Value:{" "}
@@ -362,9 +217,6 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.location != null &&
-                  !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                    ",",
-                  )?.find((val) => val == "location") &&
                   props.chunk.location.lat &&
                   props.chunk.location.lon
                 }
@@ -403,11 +255,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                       <>
                         <Show
                           when={
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                            !defaultClientEnvsConfiguration.FRONTMATTER_VALS?.split(
-                              ",",
-                            )?.find((val) => val == key) &&
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
                             (props.chunk.metadata as any)[key]
                           }
                         >
@@ -479,29 +327,6 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
             </button>
           </Show>
         </div>
-      </Show>
-      <Show when={showImageModal() && imgInformation()}>
-        <FullScreenModal isOpen={showImageModal} setIsOpen={setShowImageModal}>
-          <div class="flex max-h-[75vh] max-w-[75vw] flex-col space-y-2 overflow-auto">
-            <For
-              each={Array.from({
-                length:
-                  (imgInformation()?.imgRangeEnd ?? 0) -
-                  (imgInformation()?.imgRangeStart ?? 0) +
-                  1,
-              })}
-            >
-              {(_, i) => (
-                <img
-                  class="mx-auto my-auto"
-                  src={`${apiHost}/image/${
-                    imgInformation()?.imgRangePrefix ?? ""
-                  }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
-                />
-              )}
-            </For>
-          </div>
-        </FullScreenModal>
       </Show>
       <Show when={showMetadata()}>
         <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>
