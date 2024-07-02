@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5176",
-    "build": "tsc -b && vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "prettier --write  \"**/*.{js,jsx,ts,tsx,md,mdx,}\" && eslint --fix \"src/**/*.{js,ts,jsx,tsx,astro}\"",
     "lint:only": "eslint --fix \"src/**/*.{js,ts,jsx,tsx,}\"",
