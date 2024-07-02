@@ -2905,7 +2905,7 @@ pub struct SearchQueryEvent {
     pub created_at: String,
 }
 
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SearchQueryEventClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub id: uuid::Uuid,
@@ -2935,6 +2935,46 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
             created_at: event.created_at.to_string(),
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RagQueryEvent {
+    pub id: uuid::Uuid,
+    pub rag_type: String,
+    pub user_message: String,
+    pub search_id: Option<uuid::Uuid>,
+    pub dataset_id: uuid::Uuid,
+    pub created_at: String,
+}
+
+impl From<RagQueryEventClickhouse> for RagQueryEvent {
+    fn from(event: RagQueryEventClickhouse) -> Self {
+        RagQueryEvent {
+            id: uuid::Uuid::from_bytes(*event.id.as_bytes()),
+            rag_type: event.rag_type,
+            user_message: event.user_message,
+            search_id: event
+                .search_id
+                .map(|id| uuid::Uuid::from_bytes(*id.as_bytes())),
+            dataset_id: uuid::Uuid::from_bytes(*event.dataset_id.as_bytes()),
+            created_at: event.created_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct RagQueryEventClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub rag_type: String,
+    pub user_message: String,
+    #[serde(with = "clickhouse::serde::uuid::option")]
+    pub search_id: Option<uuid::Uuid>,
+    pub llm_response: String,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]

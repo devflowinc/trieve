@@ -972,6 +972,17 @@ pub struct SearchChunkQueryResponseBody {
     pub total_chunk_pages: i64,
 }
 
+// Have to do this because calling .first on a Vec<ScoreChunkDTO>
+// will try to use Diesel and OOM if diesel_async::RunQueryDsl is in scope
+impl SearchChunkQueryResponseBody {
+    pub fn get_top_score(&self) -> f32 {
+        self.score_chunks
+            .first()
+            .map(|x| x.score as f32)
+            .unwrap_or(0.0)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ParsedQuery {
     pub query: String,

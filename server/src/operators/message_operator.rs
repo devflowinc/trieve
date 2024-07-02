@@ -1,13 +1,15 @@
 use crate::data::models::{
-    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, ServerDatasetConfiguration,
+    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, RagQueryEventClickhouse,
+    ServerDatasetConfiguration,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
 use crate::handlers::chunk_handler::{ParsedQuery, SearchChunksReqPayload};
 use crate::handlers::message_handler::CreateMessageReqPayload;
+use crate::operators::clickhouse_operator::{send_to_clickhouse, ClickHouseEvent};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::{
-    data::models::{Message, Pool},
+    data::models::{Message, Pool, SearchQueryEventClickhouse},
     errors::ServiceError,
 };
 use actix::Arbiter;
@@ -27,6 +29,7 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 
+use super::clickhouse_operator::get_latency_from_header;
 use super::search_operator::search_hybrid_chunks;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -211,12 +214,13 @@ pub async fn delete_message_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn stream_response(
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
     dataset: Dataset,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     config: ServerDatasetConfiguration,
     create_message_req_payload: CreateMessageReqPayload,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -359,7 +363,7 @@ pub async fn stream_response(
     let mut search_timer = Timer::new();
 
     let result_chunks = search_hybrid_chunks(
-        search_chunk_data,
+        search_chunk_data.clone(),
         parsed_query,
         pool.clone(),
         dataset.clone(),
@@ -367,6 +371,24 @@ pub async fn stream_response(
         &mut search_timer,
     )
     .await?;
+
+    let clickhouse_search_event = SearchQueryEventClickhouse {
+        request_params: serde_json::to_string(&search_chunk_data.clone()).unwrap(),
+        id: uuid::Uuid::new_v4(),
+        search_type: "rag".to_string(),
+        query: query.clone(),
+        dataset_id: dataset.id,
+        top_score: result_chunks.get_top_score(),
+        latency: get_latency_from_header(search_timer.header_value()),
+        results: result_chunks.into_response_payload(),
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    let _ = send_to_clickhouse(
+        ClickHouseEvent::SearchQueryEvent(clickhouse_search_event.clone()),
+        &clickhouse_client,
+    )
+    .await;
 
     let chunk_metadatas = result_chunks
         .score_chunks
@@ -521,6 +543,22 @@ pub async fn stream_response(
             Some(chunk_v.len().try_into().unwrap()),
             dataset.id,
         );
+
+        let clickhouse_rag_event = RagQueryEventClickhouse {
+            id: uuid::Uuid::new_v4(),
+            created_at: time::OffsetDateTime::now_utc(),
+            dataset_id: dataset.id,
+            search_id: Some(clickhouse_search_event.id),
+            user_message: query.clone(),
+            rag_type: "all_chunks".to_string(),
+            llm_response: new_message.content.clone(),
+        };
+
+        let _ = send_to_clickhouse(
+            ClickHouseEvent::RagQueryEvent(clickhouse_rag_event),
+            &clickhouse_client,
+        )
+        .await;
 
         let _ = create_message_query(new_message, &pool).await;
     });

@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{ChunkMetadataTypes, SearchQueryEventClickhouse},
+    data::models::{ChunkMetadataTypes, RagQueryEventClickhouse, SearchQueryEventClickhouse},
     errors::ServiceError,
     handlers::{
         chunk_handler::SearchChunkQueryResponseBody, group_handler::SearchWithinGroupResults,
@@ -13,7 +13,7 @@ pub enum ClickHouseEvent {
     //TODO: Recommended Chunks
     //TODO: Recommeneded Groups
     //TODO: RAG over selected Chunks
-    //TODO: RAG over all Chunks
+    RagQueryEvent(RagQueryEventClickhouse),
 }
 
 pub async fn run_clickhouse_migrations(client: &clickhouse::Client) {
@@ -97,6 +97,29 @@ pub async fn run_clickhouse_migrations(client: &clickhouse::Client) {
             distance_to_centroid Float32,
         ) ENGINE = MergeTree()
         ORDER BY id
+        ",
+        )
+        .execute()
+        .await
+        .unwrap();
+
+    client
+        .query(
+            "
+            CREATE TABLE IF NOT EXISTS rag_queries (
+                id UUID,
+                rag_type String,
+                user_message String,
+                search_id Nullable(UUID),
+                llm_response String,
+                dataset_id UUID,
+                created_at DateTime,
+            ) ENGINE = MergeTree()
+            ORDER BY (id, created_at)
+            PARTITION BY
+                (toYYYYMM(created_at),
+                dataset_id)
+            TTL created_at + INTERVAL 30 DAY;
         ",
         )
         .execute()
@@ -313,6 +336,26 @@ pub async fn send_to_clickhouse(
                     .bind(event.latency)
                     .bind(event.top_score)
                     .bind(&event.results)
+                    .bind(event.dataset_id)
+                    .execute()
+                    .await
+                    .map_err(|err| {
+                        log::error!("Error writing to ClickHouse: {:?}", err);
+                        sentry::capture_message(&format!("Error writing to ClickHouse: {:?}", err), sentry::Level::Error);
+                        ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
+                    })?;
+        }
+
+        ClickHouseEvent::RagQueryEvent(event) => {
+            clickhouse_client
+                    .query(
+                        "INSERT INTO default.rag_queries (id, rag_type, user_message, search_id, llm_response, dataset_id, created_at) VALUES (?, ?, ?, ?, ?, ?, now())",
+                    )
+                    .bind(event.id)
+                    .bind(&event.rag_type)
+                    .bind(&event.user_message)
+                    .bind(&event.search_id)
+                    .bind(&event.llm_response)
                     .bind(event.dataset_id)
                     .execute()
                     .await
