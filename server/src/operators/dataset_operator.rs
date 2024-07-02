@@ -318,6 +318,18 @@ pub async fn delete_chunks_in_dataset(
             ServiceError::BadRequest("Could not delete chunks".to_string())
         })?;
 
+        qdrant_client
+            .delete_points(
+                qdrant_collection.clone(),
+                None,
+                &Filter::must([Condition::has_id(qdrant_point_ids)]).into(),
+                None,
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))
+            })?;
+
         let _ = create_event_query(
             Event::from_details(
                 id,
@@ -332,17 +344,7 @@ pub async fn delete_chunks_in_dataset(
             log::error!("Failed to create event: {:?}", err);
         });
 
-        qdrant_client
-            .delete_points(
-                qdrant_collection.clone(),
-                None,
-                &Filter::must([Condition::has_id(qdrant_point_ids)]).into(),
-                None,
-            )
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))
-            })?;
+        log::info!("Deleted {} chunks from {}", chunk_ids.len(), id);
 
         // Move to the next batch
         last_offset_id = *chunk_ids.last().unwrap();
