@@ -1770,6 +1770,7 @@ pub async fn search_hybrid_chunks(
                 data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
+                data.location,
             );
 
             score_chunks
