@@ -2,7 +2,7 @@ use prometheus::{Encoder, Error, Gauge, Registry};
 
 use crate::{data::models::RedisPool, errors::ServiceError};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Metrics {
     registry: Registry,
     pub ingest_queue_gauge: Gauge,
@@ -74,13 +74,13 @@ impl Metrics {
             .map_err(|err| ServiceError::InternalServerError(err.to_string()))?;
 
         let (
-            ingest_count,
-            delete_count,
-            file_count,
+            ingestion,
+            delete_dataset_queue,
+            file_ingestion,
             file_processing,
-            delete_processing,
-            ingest_processing,
-            group_update_count,
+            delete_dataset_processing,
+            processing,
+            group_update_queue,
             group_update_processing,
         ): (i32, i32, i32, i32, i32, i32, i32, i32) = redis::pipe()
             .cmd("LLEN")
@@ -103,13 +103,14 @@ impl Metrics {
             .await
             .map_err(|err| ServiceError::InternalServerError(err.to_string()))?;
 
-        self.ingest_queue_gauge.set(ingest_count as f64);
-        self.delete_queue_gauge.set(delete_count as f64);
-        self.file_queue_gauge.set(file_count as f64);
+        self.ingest_queue_gauge.set(ingestion as f64);
+        self.delete_queue_gauge.set(delete_dataset_queue as f64);
+        self.file_queue_gauge.set(file_ingestion as f64);
         self.file_processing_gauge.set(file_processing as f64);
-        self.delete_processing_gauge.set(delete_processing as f64);
-        self.ingest_processing_gauge.set(ingest_processing as f64);
-        self.update_queue_gauge.set(group_update_count as f64);
+        self.delete_processing_gauge
+            .set(delete_dataset_processing as f64);
+        self.ingest_processing_gauge.set(processing as f64);
+        self.update_queue_gauge.set(group_update_queue as f64);
         self.group_update_processing_gauge
             .set(group_update_processing as f64);
 

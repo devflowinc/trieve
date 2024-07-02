@@ -228,6 +228,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_all_queries,
         handlers::analytics_handler::get_rps_graph,
         handlers::analytics_handler::get_latency_graph,
+        handlers::metrics_handler::get_metrics,
     ),
     components(
         schemas(
@@ -359,6 +360,7 @@ impl Modify for SecurityAddon {
         (name = "message", description = "Message chat endpoint. Messages are units belonging to a topic in the context of a chat with a LLM. There are system, user, and assistant messages."),
         (name = "stripe", description = "Stripe endpoint. Used for the managed SaaS version of this app. Eventually this will become a micro-service. Reach out to the team using contact info found at `docs.trieve.ai` for more information."),
         (name = "health", description = "Health check endpoint. Used to check if the server is up and running."),
+        (name = "metrics", description = "Metrics endpoint. Used to get information for monitoring"),
     ),
 )]
 pub struct ApiDoc;
