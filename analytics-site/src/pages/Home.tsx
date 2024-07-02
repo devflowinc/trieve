@@ -17,6 +17,7 @@ export const Home = () => {
       search_type: "search",
     },
     granularity: "minute",
+    page: 1,
   });
 
   return (

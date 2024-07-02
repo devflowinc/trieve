@@ -52,7 +52,7 @@ export const RpsGraph = (props: RpsGraphProps) => {
           labels: [],
           datasets: [
             {
-              label: "Time",
+              label: "Requests",
               data: [],
               borderWidth: 1,
             },
