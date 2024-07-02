@@ -7,6 +7,7 @@ extern crate diesel;
 use crate::{
     errors::{custom_json_error_handler, ServiceError},
     handlers::auth_handler::build_oidc_client,
+    metrics::Metrics,
     operators::{
         clickhouse_operator::run_clickhouse_migrations,
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
@@ -36,6 +37,7 @@ use utoipa_swagger_ui::SwaggerUi;
 pub mod data;
 pub mod errors;
 pub mod handlers;
+pub mod metrics;
 pub mod middleware;
 pub mod operators;
 pub mod randutil;
@@ -117,6 +119,10 @@ impl Modify for SecurityAddon {
         components.add_security_scheme(
             "ApiKey",
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
+        );
+        components.add_security_scheme(
+            "X-API-KEY",
+            SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("X-API-KEY"))),
         );
     }
 }
@@ -226,6 +232,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_all_queries,
         handlers::analytics_handler::get_rps_graph,
         handlers::analytics_handler::get_latency_graph,
+        handlers::metrics_handler::get_metrics,
     ),
     components(
         schemas(
@@ -357,6 +364,7 @@ impl Modify for SecurityAddon {
         (name = "message", description = "Message chat endpoint. Messages are units belonging to a topic in the context of a chat with a LLM. There are system, user, and assistant messages."),
         (name = "stripe", description = "Stripe endpoint. Used for the managed SaaS version of this app. Eventually this will become a micro-service. Reach out to the team using contact info found at `docs.trieve.ai` for more information."),
         (name = "health", description = "Health check endpoint. Used to check if the server is up and running."),
+        (name = "metrics", description = "Metrics endpoint. Used to get information for monitoring"),
     ),
 )]
 pub struct ApiDoc;
@@ -514,6 +522,11 @@ pub fn main() -> std::io::Result<()> {
         };
 
 
+        let metrics = Metrics::new().map_err(|e| {
+            std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create metrics {:?}", e))
+        })?;
+
+
         HttpServer::new(move || {
             App::new()
                 .wrap(Cors::permissive())
@@ -527,6 +540,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
                 .app_data(web::Data::new(clickhouse_client.clone()))
+                .app_data(web::Data::new(metrics.clone()))
                 .wrap(sentry_actix::Sentry::new())
                 .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
@@ -573,6 +587,10 @@ pub fn main() -> std::io::Result<()> {
                 .service(
                     web::resource("/")
                     .route(web::get().to(handlers::auth_handler::health_check))
+                )
+                .service(
+                    web::resource("/metrics")
+                    .route(web::get().to(handlers::metrics_handler::get_metrics))
                 )
                 // everything under '/api/' route
                 .service(
