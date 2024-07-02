@@ -378,7 +378,12 @@ pub async fn stream_response(
         search_type: "rag".to_string(),
         query: query.clone(),
         dataset_id: dataset.id,
-        top_score: result_chunks.get_top_score(),
+        top_score: result_chunks
+            .score_chunks
+            .get(0)
+            .map(|x| x.score as f32)
+            .unwrap_or(0.0),
+
         latency: get_latency_from_header(search_timer.header_value()),
         results: result_chunks.into_response_payload(),
         created_at: time::OffsetDateTime::now_utc(),
@@ -548,7 +553,7 @@ pub async fn stream_response(
             id: uuid::Uuid::new_v4(),
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
-            search_id: Some(clickhouse_search_event.id),
+            search_id: clickhouse_search_event.id,
             user_message: query.clone(),
             rag_type: "all_chunks".to_string(),
             llm_response: new_message.content.clone(),
