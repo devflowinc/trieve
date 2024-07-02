@@ -94,10 +94,10 @@ export const CreateNewDocChunkForm = () => {
       };
     }
 
-    if (boostPhrase() && boostFactor()) {
+    if (distanceBoostFactor() && distanceBoostPhrase()) {
       requestBody.distance_phrase = {
         phrase: distanceBoostPhrase(),
-        boost_factor: distanceBoostFactor(),
+        distance_factor: distanceBoostFactor(),
       };
     }
 
@@ -296,6 +296,7 @@ export const CreateNewDocChunkForm = () => {
             />
             <input
               type="number"
+              step="any"
               placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
               value={distanceBoostFactor()}
               onChange={(e) =>
