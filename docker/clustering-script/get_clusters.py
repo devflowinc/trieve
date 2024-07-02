@@ -8,9 +8,6 @@ import clickhouse_connect.driver.client
 import numpy as np
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import cosine
-import dotenv
-
-dotenv.load_dotenv()
 anthropic_client = anthropic.Anthropic()
 
 
