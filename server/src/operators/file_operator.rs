@@ -194,9 +194,11 @@ pub async fn create_file_chunks(
         chunks.push(create_chunk_data);
     }
 
-    let chunk_count =
-        get_row_count_for_organization_id_query(dataset_org_plan_sub.dataset.id, pool.clone())
-            .await?;
+    let chunk_count = get_row_count_for_organization_id_query(
+        dataset_org_plan_sub.organization.organization.id,
+        pool.clone(),
+    )
+    .await?;
 
     if chunk_count + chunks.len()
         > dataset_org_plan_sub
