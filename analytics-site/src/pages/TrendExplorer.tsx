@@ -102,7 +102,7 @@ const QueryCard = (props: QueryCardProps) => {
 interface SearchQueryEventModalProps {
   searchEvent: SearchQueryEvent;
 }
-const SearchQueryEventModal = (props: SearchQueryEventModalProps) => {
+export const SearchQueryEventModal = (props: SearchQueryEventModalProps) => {
   return (
     <div class="min-w-60 pt-4">
       <SmallCol
