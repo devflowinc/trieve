@@ -289,7 +289,7 @@ export const CreateNewDocChunkForm = () => {
           <div class="flex gap-x-2">
             <input
               type="text"
-              placeholder="optional - terms to boost in search results"
+              placeholder="optional - terms to move the embedding vector to in search results"
               value={distanceBoostPhrase() ?? ""}
               onInput={(e) => setDistanceBoostPhrase(e.target.value)}
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
@@ -297,7 +297,7 @@ export const CreateNewDocChunkForm = () => {
             <input
               type="number"
               step="any"
-              placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
+              placeholder="optional - boost factor to move the embedding vector to in search results"
               value={distanceBoostFactor()}
               onChange={(e) =>
                 setDistanceBoostFactor(Number(e.currentTarget.value))
