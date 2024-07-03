@@ -1,6 +1,7 @@
 import { AnalyticsFilter, AnalyticsParams } from "shared/types";
 import { SetStoreFunction } from "solid-js/store";
-import { For } from "solid-js";
+import { Select } from "shared/ui";
+import { toTitleCase } from "../utils/titleCase";
 
 const ALL_SEARCH_METHODS: AnalyticsFilter["search_method"][] = [
   "fulltext",
@@ -20,55 +21,54 @@ interface FilterBarProps {
   setFilters: SetStoreFunction<AnalyticsParams>;
 }
 
+const timeFrameOptions: AnalyticsParams["granularity"][] = [
+  "day",
+  "week",
+  "month",
+  "hour",
+  "minute",
+  "second",
+];
+
 export const FilterBar = (props: FilterBarProps) => {
   return (
     <div class="flex justify-between border-b border-neutral-300 bg-neutral-100 px-3 py-2">
       <div class="flex gap-2">
-        <select
-          value={props.filters.filter.search_method}
-          onChange={(e) =>
+        <Select
+          class="min-w-[200px]"
+          display={(s) => toTitleCase(s)}
+          selected={props.filters.filter.search_method}
+          onSelected={(e) =>
             props.setFilters("filter", {
               ...props.filters.filter,
-              search_method: e.currentTarget
-                .value as AnalyticsFilter["search_method"],
+              search_method: e,
             })
           }
-        >
-          <For each={ALL_SEARCH_METHODS}>
-            {(method) => <option value={method}>{method}</option>}
-          </For>
-        </select>
+          options={ALL_SEARCH_METHODS}
+        />
 
-        <select
-          value={props.filters.filter.search_type}
-          onChange={(e) =>
+        <Select
+          class="min-w-[180px]"
+          display={(s) => toTitleCase(s)}
+          selected={props.filters.filter.search_type}
+          onSelected={(e) =>
             props.setFilters("filter", {
               ...props.filters.filter,
-              search_type: e.currentTarget
-                .value as AnalyticsFilter["search_type"],
+              search_type: e,
             })
           }
-        >
-          <For each={ALL_SEARCH_TYPES}>
-            {(type) => <option value={type}>{type}</option>}
-          </For>
-        </select>
+          options={ALL_SEARCH_TYPES}
+        />
       </div>
 
-      <select
-        value={props.filters.granularity}
-        onChange={(e) =>
-          props.setFilters(
-            "granularity",
-            e.currentTarget.value as AnalyticsParams["granularity"],
-          )
-        }
-      >
-        <option value="second">Second</option>
-        <option value="minute">Minute</option>
-        <option value="hour">Hour</option>
-        <option value="day">Day</option>
-      </select>
+      <Select
+        display={(s) => toTitleCase(s as string)}
+        selected={props.filters.granularity}
+        onSelected={(e) => {
+          props.setFilters("granularity", e);
+        }}
+        options={timeFrameOptions}
+      />
     </div>
   );
 };
