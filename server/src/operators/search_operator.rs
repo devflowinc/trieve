@@ -12,7 +12,7 @@ use super::qdrant_operator::{
     VectorType,
 };
 use crate::data::models::{
-    convert_to_date_time, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTypes, ConditionType,
+    convert_to_date_time, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes, ConditionType,
     ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunkDTO,
     ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
@@ -1725,7 +1725,7 @@ pub async fn search_hybrid_chunks(
 pub async fn search_semantic_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroupAndFile,
+    group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1780,7 +1780,7 @@ pub async fn search_semantic_groups(
 pub async fn search_full_text_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroupAndFile,
+    group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1833,7 +1833,7 @@ pub async fn search_full_text_groups(
 pub async fn search_hybrid_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroupAndFile,
+    group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1959,7 +1959,7 @@ pub async fn search_hybrid_groups(
     };
 
     Ok(SearchWithinGroupResults {
-        bookmarks: result_chunks.score_chunks,
+        bookmarks: reranked_chunks.score_chunks,
         group,
         total_pages: result_chunks.total_chunk_pages,
     })

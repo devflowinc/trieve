@@ -328,7 +328,7 @@ impl Modify for SecurityAddon {
             data::models::Event,
             data::models::File,
             data::models::ChunkGroup,
-            data::models::ChunkGroupAndFile,
+            data::models::ChunkGroupAndFileId,
             data::models::FileDTO,
             data::models::Organization,
             data::models::OrganizationUsageCount,

@@ -1,8 +1,8 @@
 use crate::{data::models::ChunkGroupBookmark, errors::ServiceError};
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, ChunkMetadataTable, Dataset, FileGroup, Pool,
-        QdrantPayload, RedisPool, ServerDatasetConfiguration, UnifiedId,
+        ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTable, Dataset, FileGroup,
+        Pool, QdrantPayload, RedisPool, ServerDatasetConfiguration, UnifiedId,
     },
     get_env,
     operators::{
@@ -29,7 +29,7 @@ pub async fn get_group_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroupAndFile, ServiceError> {
+) -> Result<ChunkGroupAndFileId, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
@@ -50,7 +50,7 @@ pub async fn get_group_from_tracking_id_query(
         .await
         .map_err(|_| ServiceError::NotFound("Group with tracking_id not found".to_string()))?;
 
-    Ok(ChunkGroupAndFile::from_group(group, file_id))
+    Ok(ChunkGroupAndFileId::from_group(group, file_id))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -146,7 +146,7 @@ pub async fn get_groups_for_dataset_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(Vec<ChunkGroupAndFile>, Option<i32>), ServiceError> {
+) -> Result<(Vec<ChunkGroupAndFileId>, Option<i32>), ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::dataset_group_counts::dsl as dataset_group_count_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
@@ -195,7 +195,7 @@ pub async fn get_groups_for_dataset_query(
                 .find(|(group_id, _)| group.id == *group_id)
                 .map(|(_, file_id)| *file_id);
 
-            ChunkGroupAndFile {
+            ChunkGroupAndFileId {
                 id: group.id,
                 dataset_id: group.dataset_id,
                 name: group.name,
@@ -218,7 +218,7 @@ pub async fn get_group_by_id_query(
     group_id: uuid::Uuid,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroupAndFile, ServiceError> {
+) -> Result<ChunkGroupAndFileId, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
@@ -238,7 +238,7 @@ pub async fn get_group_by_id_query(
         .first::<(ChunkGroup, Option<uuid::Uuid>)>(&mut conn)
         .await
         .map_err(|_| ServiceError::NotFound(format!("Group with id not found {:?}", group_id)))?;
-    Ok(ChunkGroupAndFile::from_group(group, file_id))
+    Ok(ChunkGroupAndFileId::from_group(group, file_id))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -388,7 +388,7 @@ pub async fn create_chunk_bookmark_query(
 }
 pub struct GroupsBookmarkQueryResult {
     pub metadata: Vec<ChunkMetadata>,
-    pub group: ChunkGroupAndFile,
+    pub group: ChunkGroupAndFileId,
     pub total_pages: i64,
 }
 #[tracing::instrument(skip(pool))]
@@ -466,14 +466,14 @@ pub async fn get_bookmarks_for_group_query(
 
     Ok(GroupsBookmarkQueryResult {
         metadata: chunk_metadata,
-        group: ChunkGroupAndFile::from_group(chunk_group, file_id),
+        group: ChunkGroupAndFileId::from_group(chunk_group, file_id),
         total_pages: (chunk_count as f64 / 10.0).ceil() as i64,
     })
 }
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct BookmarkGroupResult {
     pub chunk_uuid: uuid::Uuid,
-    pub slim_groups: Vec<ChunkGroupAndFile>,
+    pub slim_groups: Vec<ChunkGroupAndFileId>,
 }
 
 #[tracing::instrument(skip(pool))]
@@ -528,12 +528,12 @@ pub async fn get_groups_for_bookmark_query(
                 //if it is, add group to it
                 output_item
                     .slim_groups
-                    .push(ChunkGroupAndFile::from_group(item.0, item.2));
+                    .push(ChunkGroupAndFileId::from_group(item.0, item.2));
             } else {
                 //if not make new output item
                 acc.push(BookmarkGroupResult {
                     chunk_uuid: item.1,
-                    slim_groups: vec![ChunkGroupAndFile::from_group(item.0, item.2)],
+                    slim_groups: vec![ChunkGroupAndFileId::from_group(item.0, item.2)],
                 });
             }
             acc
@@ -660,7 +660,7 @@ pub async fn get_point_ids_from_unified_group_ids(
 pub async fn get_groups_from_group_ids_query(
     group_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkGroupAndFile>, ServiceError> {
+) -> Result<Vec<ChunkGroupAndFileId>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
@@ -683,7 +683,7 @@ pub async fn get_groups_from_group_ids_query(
 
     Ok(chunk_groups_and_files
         .iter()
-        .map(|(group, file_id)| ChunkGroupAndFile::from_group(group.clone(), file_id.clone()))
+        .map(|(group, file_id)| ChunkGroupAndFileId::from_group(group.clone(), file_id.clone()))
         .collect())
 }
 

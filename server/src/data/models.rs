@@ -1157,7 +1157,7 @@ impl ChunkGroup {
     "file_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "tracking_id": "3",
 }))]
-pub struct ChunkGroupAndFile {
+pub struct ChunkGroupAndFileId {
     pub id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub name: String,
@@ -1170,7 +1170,7 @@ pub struct ChunkGroupAndFile {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl ChunkGroupAndFile {
+impl ChunkGroupAndFileId {
     pub fn from_group(group: ChunkGroup, file_id: Option<uuid::Uuid>) -> Self {
         Self {
             id: group.id,
