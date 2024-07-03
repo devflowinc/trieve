@@ -2,6 +2,8 @@ import { AnalyticsFilter, AnalyticsParams } from "shared/types";
 import { SetStoreFunction } from "solid-js/store";
 import { Select } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
+import { subDays, subHours } from "date-fns";
+import { createSignal } from "solid-js";
 
 const ALL_SEARCH_METHODS: AnalyticsFilter["search_method"][] = [
   "fulltext",
@@ -30,7 +32,34 @@ const timeFrameOptions: AnalyticsParams["granularity"][] = [
   "second",
 ];
 
+type DateRangeOption = {
+  date: Date;
+  label: string;
+};
+
+const dateRanges: DateRangeOption[] = [
+  {
+    label: "Past Hour",
+    date: subHours(new Date(), 1),
+  },
+  {
+    label: "Past Day",
+    date: subDays(new Date(), 1),
+  },
+  {
+    label: "Past Week",
+    date: subDays(new Date(), 7),
+  },
+  {
+    label: "Past Month",
+    date: subDays(new Date(), 30),
+  },
+];
+
 export const FilterBar = (props: FilterBarProps) => {
+  const [dateSelection, setDateSelection] = createSignal<DateRangeOption>(
+    dateRanges[0],
+  );
   return (
     <div class="flex justify-between border-b border-neutral-300 bg-neutral-100 px-3 py-2">
       <div class="flex gap-2">
@@ -61,14 +90,31 @@ export const FilterBar = (props: FilterBarProps) => {
         />
       </div>
 
-      <Select
-        display={(s) => toTitleCase(s as string)}
-        selected={props.filters.granularity}
-        onSelected={(e) => {
-          props.setFilters("granularity", e);
-        }}
-        options={timeFrameOptions}
-      />
+      <div class="flex gap-2">
+        <Select
+          class="min-w-[200px]"
+          display={(s) => s.label}
+          selected={dateSelection()}
+          onSelected={(e) => {
+            setDateSelection(e);
+            props.setFilters("filter", {
+              ...props.filters.filter,
+              date_range: {
+                gt: e.date,
+              },
+            });
+          }}
+          options={dateRanges}
+        />
+        <Select
+          display={(s) => toTitleCase(s as string)}
+          selected={props.filters.granularity}
+          onSelected={(e) => {
+            props.setFilters("granularity", e);
+          }}
+          options={timeFrameOptions}
+        />
+      </div>
     </div>
   );
 };
