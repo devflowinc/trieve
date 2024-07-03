@@ -14,7 +14,7 @@ import {
   MouseConstraint,
 } from "matter-js";
 import { SearchClusterTopics } from "shared/types";
-import { createStore } from "solid-js/store";
+import { createStore, unwrap } from "solid-js/store";
 import Matter from "matter-js";
 
 interface TrendExplorerCanvasProps {
@@ -40,8 +40,8 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
   const [render, setRender] = createSignal<Render | null>(null);
 
   const [containerSize, setContainerSize] = createStore({
-    width: 700,
-    height: 800,
+    width: window.innerWidth,
+    height: window.innerHeight - 58,
   });
 
   // Subscribe with resize observer
@@ -86,22 +86,23 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
 
   createEffect(() => {
     console.log("updating");
+    const sizes = unwrap(containerSize);
     const render = Render.create({
       canvas: canvasElement(),
       engine: engine,
       options: {
         background: "#f5f5f5",
-        height: window.innerHeight - 120,
-        width: 700,
+        height: sizes.height,
+        width: sizes.width,
         wireframes: false,
       },
     });
 
     const circles = props.topics.map((topic) => {
       const circle = Bodies.circle(
+        centeredRandom(3) + 850,
         centeredRandom(3) + 500,
-        centeredRandom(3) + 500,
-        Math.max(1.2 * topic.density, 30),
+        Math.max(1.3 * topic.density, 30),
         {
           id: topic.density,
           label: topic.topic,
@@ -125,7 +126,7 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       circles.forEach((circle) => {
         const x = circle.position.x;
         const y = circle.position.y;
-        const targetX = 500;
+        const targetX = 850;
         const targetY = 500;
 
         // Calculate the difference between current position and target
@@ -219,6 +220,7 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
     <canvas
       style={{
         width: "100%",
+        height: "100%",
       }}
       ref={setCanvasElement}
     />
