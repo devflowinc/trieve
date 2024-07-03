@@ -30,7 +30,7 @@ export const Navbar = (props: NavbarProps) => {
   const navigate = useBetterNav();
 
   return (
-    <div class="flex justify-between border border-b-neutral-400 bg-neutral-50 p-4">
+    <div class="flex justify-between border border-b-neutral-300 bg-neutral-50 p-4">
       <div class="flex gap-3">
         <Select
           display={(org) => org.name}

@@ -62,7 +62,6 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
           ],
         },
         options: {
-          color: "purple",
           plugins: {
             legend: { display: false },
           },

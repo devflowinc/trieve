@@ -14,7 +14,7 @@ export const ChartCard = (props: ChartCardProps) => {
       style={{
         "grid-column": `span ${props.width}`,
       }}
-      class={`rounded-lg bg-white p-2 shadow-md ${classStuff.class}`}
+      class={`shadow-xs rounded-lg border border-neutral-300 bg-white p-2 ${classStuff.class}`}
     >
       <Show when={props.title}>
         {(title) => <div class="mb-2 ml-2 text-lg">{title()}</div>}
