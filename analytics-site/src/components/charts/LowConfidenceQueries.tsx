@@ -92,11 +92,11 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   }));
 
   return (
-    <ChartCard class="px-4" width={3}>
-      <div>
+    <ChartCard class="px-4" width={4}>
+      <div class="flex items-start justify-between gap-2">
         <div class="text-lg">Low Confidence Queries</div>
         <input
-          class="w-full px-2"
+          class="mt-1 border-neutral-800 px-2 text-end text-sm outline-none ring-0 ring-0 active:border-b-2"
           type="text"
           placeholder="Enter threshold.."
           value={thresholdText()}
