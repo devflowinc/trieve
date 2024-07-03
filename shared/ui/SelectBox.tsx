@@ -46,7 +46,7 @@ export const Select = <T,>(props: SelectProps<T>) => {
                     class="group min-w-full w-[max-content] rounded-md focus:outline-none"
                     value={option}
                   >
-                    {({ isActive, isSelected }): JSX.Element => (
+                    {({ isSelected }): JSX.Element => (
                       <div
                         classList={{
                           "bg-magenta-100 text-magenta-900": isSelected(),
