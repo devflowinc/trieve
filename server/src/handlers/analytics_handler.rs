@@ -340,6 +340,13 @@ pub async fn get_head_queries(
     Ok(HttpResponse::Ok().json(clickhouse_query))
 }
 
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
+pub struct GetLowConfidenceQueriesRequest {
+    pub filter: Option<SearchAnalyticsFilter>,
+    pub page: Option<u32>,
+    pub threshold: Option<f32>,
+}
+
 /// Get Low Confidence Queries
 ///
 /// This route allows you to get the queries that have the lowest confidence scores.
@@ -364,7 +371,7 @@ pub async fn get_head_queries(
 )]
 pub async fn get_low_confidence_queries(
     dataset_id: web::Path<uuid::Uuid>,
-    data: web::Json<GetHeadQueriesRequest>,
+    data: web::Json<GetLowConfidenceQueriesRequest>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
@@ -386,6 +393,18 @@ pub async fn get_low_confidence_queries(
 
     if let Some(filter) = &data.filter {
         query_string = filter.add_to_query(query_string);
+    }
+
+    if let Some(threshold) = data.threshold {
+        query_string.push_str(
+            format!(
+                " 
+                AND top_score < {}
+                ",
+                threshold
+            )
+            .as_str(),
+        );
     }
 
     query_string.push_str(
