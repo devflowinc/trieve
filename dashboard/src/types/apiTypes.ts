@@ -109,6 +109,7 @@ export interface ServerEnvsConfiguration {
   STOP_TOKENS: string | null;
   INDEXED_ONLY: boolean;
   LOCKED: boolean;
+  SYSTEM_PROMPT: string | null;
 }
 
 export interface ClientEnvsConfiguration {

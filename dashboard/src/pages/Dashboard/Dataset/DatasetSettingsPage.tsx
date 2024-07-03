@@ -41,6 +41,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   STOP_TOKENS: null,
   INDEXED_ONLY: false,
   LOCKED: false,
+  SYSTEM_PROMPT: null,
 };
 
 export const ServerSettingsForm = () => {
@@ -273,6 +274,29 @@ export const ServerSettingsForm = () => {
                     return {
                       ...prev,
                       MESSAGE_TO_QUERY_PROMPT: e.currentTarget.value,
+                    };
+                  })
+                }
+                rows="4"
+                name="messageToQueryPrompt"
+                id="messageToQueryPrompt"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="messageToQueryPrompt"
+                class="block text-sm font-medium leading-6"
+              >
+                System Prompt
+              </label>
+              <textarea
+                value={serverConfig().SYSTEM_PROMPT ?? ""}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      SYSTEM_PROMPT: e.currentTarget.value,
                     };
                   })
                 }
