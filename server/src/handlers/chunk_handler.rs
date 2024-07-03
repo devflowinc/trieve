@@ -894,7 +894,7 @@ pub struct ChunkFilter {
             }
         ]
     },
-    "date_bias": true,
+    "recency_bias": 1.0,
     "use_weights": true,
     "get_collisions": true,
     "highlight_results": true,
