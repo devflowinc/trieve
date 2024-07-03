@@ -272,7 +272,7 @@ pub enum CreateChunkReqPayloadEnum {
     post,
     path = "/chunk",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = CreateChunkReqPayloadEnum, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
@@ -383,7 +383,7 @@ pub async fn create_chunk(
     delete,
     path = "/chunk/{chunk_id}",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     responses(
         (status = 204, description = "Confirmation that the chunk with the id specified was deleted"),
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
@@ -427,7 +427,7 @@ pub async fn delete_chunk(
     delete,
     path = "/chunk/tracking_id/{tracking_id}",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     responses(
         (status = 204, description = "Confirmation that the chunk with the tracking_id specified was deleted"),
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
@@ -527,7 +527,7 @@ pub struct UpdateIngestionMessage {
     put,
     path = "/chunk",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = UpdateChunkReqPayload, description = "JSON request payload to update a chunk (chunk)", content_type = "application/json"),
     responses(
         (status = 204, description = "No content Ok response indicating the chunk was updated as requested",),
@@ -692,7 +692,7 @@ pub struct UpdateChunkByTrackingIdData {
     put,
     path = "/chunk/tracking_id/update",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = UpdateChunkByTrackingIdData, description = "JSON request payload to update a chunk by tracking_id (chunks)", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk has been updated as per your request",),
@@ -1020,7 +1020,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
     post,
     path = "/chunk/search",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = SearchChunksReqPayload, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkQueryResponseBody),
@@ -1259,7 +1259,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     post,
     path = "/chunk/autocomplete",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = AutocompleteReqPayload, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkQueryResponseBody),
@@ -1369,7 +1369,7 @@ pub async fn autocomplete(
     get,
     path = "/chunk/{chunk_id}",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     responses(
         (status = 200, description = "chunk with the id that you were searching for", body = ChunkMetadataStringTagSet),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
@@ -1421,7 +1421,7 @@ pub async fn get_chunk_by_id(
     get,
     path = "/chunk/tracking_id/{tracking_id}",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     responses(
         (status = 200, description = "chunk with the tracking_id that you were searching for", body = ChunkMetadataStringTagSet),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
@@ -1482,7 +1482,7 @@ pub struct GetChunksData {
     post,
     path = "/chunks",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = GetChunksData, description = "JSON request payload to get the chunks in the request", content_type = "application/json"),
     responses(
         (status = 200, description = "chunks with the id that you were searching for", body = Vec<ChunkMetadataStringTagSet>),
@@ -1546,7 +1546,7 @@ pub struct GetTrackingChunksData {
     post,
     path = "/chunks/tracking",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = GetTrackingChunksData, description = "JSON request payload to get the chunks in the request", content_type = "application/json"),
     responses(
         (status = 200, description = "Chunks with one the ids which were specified", body = Vec<ChunkMetadataStringTagSet>),
@@ -1626,7 +1626,7 @@ pub struct RecommendChunksRequest {
     post,
     path = "/chunk/recommend",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
 
@@ -1893,7 +1893,7 @@ pub struct GenerateChunksRequest {
     post,
     path = "/chunk/generate",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = GenerateChunksRequest, description = "JSON request payload to perform RAG on some chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),

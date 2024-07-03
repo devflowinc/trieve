@@ -150,7 +150,7 @@ fn check_x_api_access(req: &actix_web::HttpRequest) -> bool {
 #[utoipa::path(
     post,
     path = "/metrics",
-    tag = "metrics",
+    tag = "Metrics",
     responses(
         (status = 200, description = "Prometheus metrics for the server", body = String),
         (status = 500, description = "Internal Server Error", body = ErrorResponseBody),

@@ -161,7 +161,7 @@ pub struct GetDirectPaymentLinkData {
     get,
     path = "/stripe/payment_link/{plan_id}/{organization_id}",
     context_path = "/api",
-    tag = "stripe",
+    tag = "Stripe",
     responses(
         (status = 303, description = "SeeOther response redirecting user to stripe checkout page"),
         (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = ErrorResponseBody),
@@ -209,7 +209,7 @@ pub async fn direct_to_payment_link(
     delete,
     path = "/stripe/subscription/{subscription_id}",
     context_path = "/api",
-    tag = "stripe",
+    tag = "Stripe",
     responses(
         (status = 200, description = "Confirmation that the subscription was cancelled"),
         (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = ErrorResponseBody),
@@ -254,7 +254,7 @@ pub struct UpdateSubscriptionData {
     patch,
     path = "/stripe/subscription_plan/{subscription_id}/{plan_id}",
     context_path = "/api",
-    tag = "stripe",
+    tag = "Stripe",
     responses(
         (status = 200, description = "Confirmation that the subscription was updated to the new plan"),
         (status = 400, description = "Service error relating to updating the subscription to the new plan", body = ErrorResponseBody),
@@ -303,7 +303,7 @@ pub async fn update_subscription_plan(
     get,
     path = "/stripe/plans",
     context_path = "/api",
-    tag = "stripe",
+    tag = "Stripe",
     responses(
         (status = 200, description = "List of all plans", body = Vec<StripePlan>),
         (status = 400, description = "Service error relating to getting all plans", body = ErrorResponseBody),

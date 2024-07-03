@@ -31,7 +31,7 @@ pub struct CreateTopicReqPayload {
     post,
     path = "/topic",
     context_path = "/api",
-    tag = "topic",
+    tag = "Topic",
     request_body(content = CreateTopicReqPayload, description = "JSON request payload to create chat topic", content_type = "application/json"),
     responses(
         (status = 200, description = "The JSON response payload containing the created topic", body = Topic),
@@ -103,7 +103,7 @@ pub struct DeleteTopicData {
     delete,
     path = "/topic/{topic_id}",
     context_path = "/api",
-    tag = "topic",
+    tag = "Topic",
     responses(
         (status = 204, description = "Confirmation that the topic was deleted"),
         (status = 400, description = "Service error relating to topic deletion", body = ErrorResponseBody),
@@ -145,7 +145,7 @@ pub struct UpdateTopicReqPayload {
     put,
     path = "/topic",
     context_path = "/api",
-    tag = "topic",
+    tag = "Topic",
     request_body(content = UpdateTopicReqPayload, description = "JSON request payload to update a chat topic", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the topic was updated"),
@@ -185,7 +185,7 @@ pub async fn update_topic(
     get,
     path = "/topic/owner/{owner_id}",
     context_path = "/api",
-    tag = "topic",
+    tag = "Topic",
     responses(
         (status = 200, description = "All topics belonging to a given owner_id", body = Vec<Topic>),
         (status = 400, description = "Service error relating to getting topics for the owner_id", body = ErrorResponseBody),

@@ -49,7 +49,7 @@ pub struct InvitationData {
     post,
     path = "/invitation",
     context_path = "/api",
-    tag = "invitation",
+    tag = "Invitation",
     request_body(content = InvitationData, description = "JSON request payload to send an invitation", content_type = "application/json"),
     responses(
         (status = 204, description = "Ok response. Indicates that invitation email was sent correctly."),
@@ -165,7 +165,7 @@ pub async fn create_invitation(
     get,
     path = "/invitation/{organization_id}",
     context_path = "/api",
-    tag = "invitation",
+    tag = "Invitation",
     responses(
         (status = 200, description = "Invitations for the dataset", body = Vec<Invitation>),
         (status = 400, description = "Service error relating to getting invitations for the dataset", body = ErrorResponseBody),
@@ -194,7 +194,7 @@ pub async fn get_invitations(
     delete,
     path = "/invitation/{invitation_id}",
     context_path = "/api",
-    tag = "invitation",
+    tag = "Invitation",
     responses(
         (status = 204, description = "Ok response. Indicates that invitation was deleted."),
         (status = 400, description = "Service error relating to deleting invitation", body = ErrorResponseBody),

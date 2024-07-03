@@ -22,7 +22,7 @@ use super::auth_handler::AdminOnly;
     get,
     path = "/analytics/{dataset_id}/topics",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     responses(
         (status = 200, description = "The top 15 topics that users are searching for", body = SearchClusterTopics),
 
@@ -82,7 +82,7 @@ pub struct GetTopicQueries {
     get,
     path = "/analytics/{dataset_id}/{cluster_id}/{page}",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     responses(
         (status = 200, description = "The queries are contained in a topic sorted by distance to the centeroid", body = SearchQueryEvent),
 
@@ -148,7 +148,7 @@ pub struct GetQueryRequest {
     get,
     path = "/analytics/{dataset_id}/query/{search_id}",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     responses(
         (status = 200, description = "The query that has been requested", body = SearchQueryEvent),
 
@@ -206,7 +206,7 @@ pub struct GetDatasetMetricsRequest {
     post,
     path = "/analytics/{dataset_id}/metrics",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     request_body(content = GetDatasetMetricsRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "Metrics for the dataset", body = DatasetAnalytics),
@@ -276,7 +276,7 @@ pub struct GetHeadQueriesRequest {
     post,
     path = "/analytics/{dataset_id}/query/head",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     request_body(content = GetHeadQueriesRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "Head Queries for the dataset", body = Vec<HeadQueries>),
@@ -347,7 +347,7 @@ pub async fn get_head_queries(
     post,
     path = "/analytics/{dataset_id}/query/low_confidence",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     request_body(content = GetHeadQueriesRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "Low Confidence Queries for the dataset", body = Vec<SearchQueryEvent>),
@@ -432,7 +432,7 @@ pub struct GetAllQueriesRequest {
     post,
     path = "/analytics/{dataset_id}/queries",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     request_body(content = GetAllQueriesRequest, description = "JSON request payload to filter the queries", content_type = "application/json"),
     responses(
         (status = 200, description = "Queries for the dataset", body = Vec<SearchQueryEvent>),
@@ -517,7 +517,7 @@ pub struct GetRPSGraphRequest {
     post,
     path = "/analytics/{dataset_id}/rps",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     request_body(content = GetRPSGraphRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "RPS graph for the dataset", body = Vec<SearchRPSGraph>),
@@ -612,7 +612,7 @@ pub async fn get_rps_graph(
     post,
     path = "/analytics/{dataset_id}/latency",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     request_body(content = GetRPSGraphRequest, description = "JSON request payload to filter the graph", content_type = "application/json"),
     responses(
         (status = 200, description = "latency graph for the dataset", body = Vec<SearchLatencyGraph>),
@@ -712,7 +712,7 @@ pub struct GetRagQueriesRequest {
     post,
     path = "/analytics/{dataset_id}/rag",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     request_body(content = GetRPSGraphRequest, description = "JSON request payload to filter the graph", content_type = "application/json"),
     responses(
         (status = 200, description = "RAG queries for the dataset", body = Vec<GetRagQueriesRequest>),
@@ -793,7 +793,7 @@ pub struct RAGUsageResponse {
     get,
     path = "/analytics/{dataset_id}/rag/usage",
     context_path = "/api",
-    tag = "analytics",
+    tag = "Analytics",
     responses(
         (status = 200, description = "RAG usage for the dataset", body = RAGUsageResponse),
         (status = 400, description = "Service error relating to getting RAG usage", body = ErrorResponseBody),

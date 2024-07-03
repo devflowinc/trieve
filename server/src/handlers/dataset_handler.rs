@@ -67,7 +67,7 @@ pub struct CreateDatasetRequest {
     post,
     path = "/dataset",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     request_body(content = CreateDatasetRequest, description = "JSON request payload to create a new dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Dataset created successfully", body = Dataset),
@@ -141,7 +141,7 @@ pub struct UpdateDatasetRequest {
     put,
     path = "/dataset",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     request_body(content = UpdateDatasetRequest, description = "JSON request payload to update a dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Dataset updated successfully", body = Dataset),
@@ -196,7 +196,7 @@ pub async fn update_dataset(
     delete,
     path = "/dataset/{dataset_id}",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     responses(
         (status = 204, description = "Dataset deleted successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
@@ -243,7 +243,7 @@ pub async fn delete_dataset(
     put,
     path = "/dataset/clear/{dataset_id}",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     responses(
         (status = 204, description = "Dataset cleared successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
@@ -287,7 +287,7 @@ pub async fn clear_dataset(
     delete,
     path = "/dataset/tracking_id/{tracking_id}",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     responses(
         (status = 204, description = "Dataset deleted successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
@@ -334,7 +334,7 @@ pub async fn delete_dataset_by_tracking_id(
     get,
     path = "/dataset/{dataset_id}",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     responses(
         (status = 200, description = "Dataset retrieved successfully", body = Dataset),
         (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),
@@ -375,7 +375,7 @@ pub async fn get_dataset(
     get,
     path = "/dataset/usage/{dataset_id}",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     responses(
         (status = 200, description = "Dataset usage retrieved successfully", body = DatasetUsageCount),
         (status = 400, description = "Service error relating to retrieving the dataset usage", body = ErrorResponseBody),
@@ -409,7 +409,7 @@ pub async fn get_usage_by_dataset_id(
     get,
     path = "/dataset/tracking_id/{tracking_id}",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     responses(
         (status = 200, description = "Dataset retrieved successfully", body = Dataset),
         (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),
@@ -457,7 +457,7 @@ pub struct GetDatasetsPagination {
     get,
     path = "/dataset/organization/{organization_id}",
     context_path = "/api",
-    tag = "dataset",
+    tag = "Dataset",
     responses(
         (status = 200, description = "Datasets retrieved successfully", body = Vec<DatasetAndUsage>),
         (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),

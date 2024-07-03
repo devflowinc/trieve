@@ -100,7 +100,7 @@ pub struct UploadFileResult {
     post,
     path = "/file",
     context_path = "/api",
-    tag = "file",
+    tag = "File",
     request_body(content = UploadFileReqPayload, description = "JSON request payload to upload a file", content_type = "application/json"),
     responses(
         (status = 200, description = "Confirmation that the file is uploading", body = UploadFileResult),
@@ -244,7 +244,7 @@ pub async fn upload_file_handler(
     get,
     path = "/file/{file_id}",
     context_path = "/api",
-    tag = "file",
+    tag = "File",
     responses(
         (status = 200, description = "The signed s3 url corresponding to the file_id requested", body = FileDTO),
         (status = 400, description = "Service error relating to finding the file", body = ErrorResponseBody),
@@ -297,7 +297,7 @@ pub struct FileData {
     get,
     path = "/dataset/files/{dataset_id}/{page}",
     context_path = "/api",
-    tag = "file",
+    tag = "File",
     responses(
         (status = 200, description = "JSON body representing the files in the current dataset", body = Vec<File>),
         (status = 400, description = "Service error relating to getting the files in the current datase", body = ErrorResponseBody),
@@ -355,7 +355,7 @@ pub async fn get_dataset_files_handler(
     delete,
     path = "/file/{file_id}",
     context_path = "/api",
-    tag = "file",
+    tag = "File",
     responses(
         (status = 204, description = "Confirmation that the file has been deleted"),
         (status = 400, description = "Service error relating to finding or deleting the file", body = ErrorResponseBody),
