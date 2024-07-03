@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadata,
+        ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
         DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool, RedisPool, ScoreChunkDTO,
         SearchQueryEventClickhouse, ServerDatasetConfiguration, UnifiedId,
     },
@@ -35,7 +35,7 @@ pub async fn dataset_owns_group(
     unified_group_id: UnifiedId,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroupAndFile, ServiceError> {
+) -> Result<ChunkGroupAndFileId, ServiceError> {
     let group = match unified_group_id {
         UnifiedId::TrieveUuid(group_id) => {
             get_group_by_id_query(group_id, dataset_id, pool.clone()).await?
@@ -123,7 +123,7 @@ pub async fn create_chunk_group(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GroupData {
-    pub groups: Vec<ChunkGroupAndFile>,
+    pub groups: Vec<ChunkGroupAndFileId>,
     pub total_pages: i32,
 }
 
@@ -186,7 +186,7 @@ pub struct GetGroupByTrackingIDData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroupAndFile),
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroupAndFileId),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
@@ -232,7 +232,7 @@ pub struct GetGroupData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroupAndFile),
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroupAndFileId),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
@@ -679,7 +679,7 @@ pub async fn add_chunk_to_group_by_tracking_id(
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct BookmarkData {
     pub chunks: Vec<ChunkMetadata>,
-    pub group: ChunkGroupAndFile,
+    pub group: ChunkGroupAndFileId,
     pub total_pages: i64,
 }
 
@@ -1173,7 +1173,7 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchWithinGroupResults {
     pub bookmarks: Vec<ScoreChunkDTO>,
-    pub group: ChunkGroupAndFile,
+    pub group: ChunkGroupAndFileId,
     pub total_pages: i64,
 }
 
