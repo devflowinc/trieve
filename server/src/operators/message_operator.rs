@@ -532,6 +532,27 @@ pub async fn stream_response(
             dataset.id,
         );
 
+        let clickhouse_rag_event = RagQueryEventClickhouse {
+            id: uuid::Uuid::new_v4(),
+            created_at: time::OffsetDateTime::now_utc(),
+            dataset_id: dataset.id,
+            search_id: uuid::Uuid::nil(),
+            results: chunk_ids
+                .clone()
+                .into_iter()
+                .map(|s| s.to_string())
+                .collect(),
+            user_message: query.clone(),
+            rag_type: "chosen_chunks".to_string(),
+            llm_response: completion_content.clone(),
+        };
+
+        let _ = send_to_clickhouse(
+            ClickHouseEvent::RagQueryEvent(clickhouse_rag_event),
+            &clickhouse_client,
+        )
+        .await;
+
         let _ = create_message_query(new_message, &pool).await;
 
         return Ok(HttpResponse::Ok().json(completion_content));
