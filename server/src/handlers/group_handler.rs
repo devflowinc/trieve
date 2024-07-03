@@ -75,7 +75,7 @@ pub struct CreateChunkGroupReqPayload {
     post,
     path = "/chunk_group",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = CreateChunkGroupReqPayload, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
     responses(
         (status = 200, description = "Returns the created chunkGroup", body = ChunkGroup),
@@ -140,7 +140,7 @@ pub struct DatasetGroupQuery {
     get,
     path = "/dataset/groups/{dataset_id}/{page}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     responses(
         (status = 200, description = "JSON body representing the groups created by the given dataset", body = GroupData),
         (status = 400, description = "Service error relating to getting the groups created by the given dataset", body = ErrorResponseBody),
@@ -184,7 +184,7 @@ pub struct GetGroupByTrackingIDData {
     get,
     path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     responses(
         (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
@@ -230,7 +230,7 @@ pub struct GetGroupData {
     get,
     path = "/chunk_group/{group_id}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     responses(
         (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
@@ -279,7 +279,7 @@ pub struct UpdateGroupByTrackingIDReqPayload {
     put,
     path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = UpdateGroupByTrackingIDReqPayload, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was updated"),
@@ -341,7 +341,7 @@ pub struct DeleteGroupByTrackingIDData {
     delete,
     path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was deleted"),
         (status = 400, description = "Service error relating to deleting the chunkGroup", body = ErrorResponseBody),
@@ -400,7 +400,7 @@ pub struct DeleteGroupData {
     delete,
     path = "/chunk_group/{group_id}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was deleted"),
         (status = 400, description = "Service error relating to deleting the chunkGroup", body = ErrorResponseBody),
@@ -474,7 +474,7 @@ pub struct UpdateChunkGroupData {
     put,
     path = "/chunk_group",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = UpdateChunkGroupData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was updated"),
@@ -561,7 +561,7 @@ pub struct AddChunkToGroupData {
     post,
     path = "/chunk_group/chunk/{group_id}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk was added to the group (bookmark'ed)."),
@@ -624,7 +624,7 @@ pub struct AddChunkToGroupByTrackingIdData {
     post,
     path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk was added to the group (bookmark'ed)."),
@@ -694,7 +694,7 @@ pub struct GetAllBookmarksData {
     get,
     path = "/chunk_group/{group_id}/{page}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     responses(
         (status = 200, description = "Chunks present within the specified group", body = BookmarkData),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
@@ -748,7 +748,7 @@ pub struct GetAllBookmarksByTrackingIdData {
     get,
     path = "/chunk_group/tracking_id/{group_tracking_id}/{page}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     responses(
         (status = 200, description = "Chunks present within the specified group", body = BookmarkData),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
@@ -804,7 +804,7 @@ pub struct GetGroupsForChunksData {
     post,
     path = "/chunk_group/chunks",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = GetGroupsForChunksData, description = "JSON request payload to get the groups that a chunk is in", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the groups that the chunk is in", body = Vec<BookmarkGroupResult>),
@@ -846,7 +846,7 @@ pub struct RemoveChunkFromGroupReqPayload {
     delete,
     path = "/chunk_group/chunk/{group_id}",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = RemoveChunkFromGroupReqPayload, description = "JSON request payload to remove a chunk from a group", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk was removed to the group"),
@@ -924,7 +924,7 @@ pub struct RecommendGroupChunksRequest {
     post,
     path = "/chunk_group/recommend",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = RecommendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = Vec<GroupScoreChunk>),
@@ -1181,7 +1181,7 @@ pub struct SearchWithinGroupResults {
     post,
     path = "/chunk_group/search",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = SearchWithinGroupData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchWithinGroupResults),
@@ -1340,7 +1340,7 @@ pub struct SearchOverGroupsData {
     post,
     path = "/chunk_group/group_oriented_search",
     context_path = "/api",
-    tag = "chunk_group",
+    tag = "Chunk Group",
     request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResults),

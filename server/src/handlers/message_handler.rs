@@ -117,7 +117,7 @@ pub struct CreateMessageReqPayload {
     post,
     path = "/message",
     context_path = "/api",
-    tag = "message",
+    tag = "Message",
     request_body(content = CreateMessageReqPayload, description = "JSON request payload to create a message completion", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
@@ -235,7 +235,7 @@ pub async fn create_message(
     get,
     path = "/messages/{messages_topic_id}",
     context_path = "/api",
-    tag = "message",
+    tag = "Message",
     responses(
         (status = 200, description = "All messages relating to the topic with the given ID", body = Vec<Message>),
         (status = 400, description = "Service error relating to getting the messages", body = ErrorResponseBody),
@@ -388,7 +388,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
     put,
     path = "/message",
     context_path = "/api",
-    tag = "message",
+    tag = "Message",
     request_body(content = EditMessageReqPayload, description = "JSON request payload to edit a message and get a new stream", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
@@ -456,7 +456,7 @@ pub async fn edit_message(
     delete,
     path = "/message",
     context_path = "/api",
-    tag = "message",
+    tag = "Message",
     request_body(content = RegenerateMessageReqPayload, description = "JSON request payload to delete an agent message then regenerate it in a strem", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
@@ -588,7 +588,7 @@ pub struct SuggestedQueriesResponse {
     post,
     path = "/chunk/gen_suggestions",
     context_path = "/api",
-    tag = "chunk",
+    tag = "Chunk",
     request_body(content = SuggestedQueriesReqPayload, description = "JSON request payload to get alternative suggested queries", content_type = "application/json"),
     responses(
         (status = 200, description = "A JSON object containing a list of alternative suggested queries", body = SuggestedQueriesResponse),

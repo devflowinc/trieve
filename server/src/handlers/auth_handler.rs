@@ -227,7 +227,7 @@ pub struct LogoutRequest {
     delete,
     path = "/auth",
     context_path = "/api",
-    tag = "auth",
+    tag = "Auth",
     responses(
         (status = 204, description = "Confirmation that your current auth token has been invalidated. This does not invalidate your API key."),
     ),
@@ -305,7 +305,7 @@ pub struct LoginState {
     get,
     path = "/auth",
     context_path = "/api",
-    tag = "auth",
+    tag = "Auth",
     params(AuthQuery),
     responses(
         (status = 303, description = "Response that redirects to OAuth provider through a Location header to be handled by browser."),
@@ -374,7 +374,7 @@ pub async fn login(
     get,
     path = "/auth/callback",
     context_path = "/api",
-    tag = "auth",
+    tag = "Auth",
     responses(
         (status = 200, description = "Response that returns with set-cookie header", body = SlimUser),
         (status = 400, description = "Email or password empty or incorrect", body = ErrorResponseBody),
@@ -537,7 +537,7 @@ pub async fn callback(
     get,
     path = "/auth/me",
     context_path = "/api",
-    tag = "auth",
+    tag = "Auth",
     responses(
         (status = 200, description = "The user corresponding to your current auth credentials", body = SlimUser),
         (status = 400, description = "Error message indicitating you are not currently signed in", body = ErrorResponseBody),
@@ -565,7 +565,7 @@ pub async fn get_me(
     get,
     path = "/health",
     context_path = "/api",
-    tag = "health",
+    tag = "Health",
     responses(
         (status = 200, description = "Confirmation that the service is healthy and can make embedding vectors"),
         (status = 400, description = "Service error relating to making an embedding or overall service health", body = ErrorResponseBody),

@@ -30,7 +30,7 @@ pub struct GetEventsData {
     post,
     path = "/events",
     context_path = "/api",
-    tag = "events",
+    tag = "Events",
     request_body(content = GetEventsData, description = "JSON request payload to get events for a dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Events for the dataset", body = EventReturn),

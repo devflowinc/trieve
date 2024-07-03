@@ -22,7 +22,7 @@ use utoipa::ToSchema;
     get,
     path = "/organization/{organization_id}",
     context_path = "/api",
-    tag = "organization",
+    tag = "Organization",
     responses(
         (status = 200, description = "Organization with the id that was requested", body = Organization),
         (status = 400, description = "Service error relating to finding the organization by id", body = ErrorResponseBody),
@@ -59,7 +59,7 @@ pub async fn get_organization(
     delete,
     path = "/organization/{organization_id}",
     context_path = "/api",
-    tag = "organization",
+    tag = "Organization",
     responses(
         (status = 204, description = "Confirmation that the organization was deleted"),
         (status = 400, description = "Service error relating to deleting the organization by id", body = ErrorResponseBody),
@@ -113,7 +113,7 @@ pub struct UpdateOrganizationData {
     put,
     path = "/organization",
     context_path = "/api",
-    tag = "organization",
+    tag = "Organization",
     request_body(content = UpdateOrganizationData, description = "The organization data that you want to update", content_type = "application/json"),
     responses(
         (status = 200, description = "Updated organization object", body = Organization),
@@ -167,7 +167,7 @@ pub struct CreateOrganizationData {
     post,
     path = "/organization",
     context_path = "/api",
-    tag = "organization",
+    tag = "Organization",
     request_body(content = CreateOrganizationData, description = "The organization data that you want to create", content_type = "application/json"),
     responses(
         (status = 200, description = "Created organization object", body = Organization),
@@ -209,7 +209,7 @@ pub async fn create_organization(
     get,
     path = "/organization/usage/{organization_id}",
     context_path = "/api",
-    tag = "organization",
+    tag = "Organization",
     responses(
         (status = 200, description = "The current usage of the specified organization", body = OrganizationUsageCount),
         (status = 400, description = "Service error relating to finding the organization's usage by id", body = ErrorResponseBody),
@@ -246,7 +246,7 @@ pub async fn get_organization_usage(
     get,
     path = "/organization/users/{organization_id}",
     context_path = "/api",
-    tag = "organization",
+    tag = "Organization",
     responses(
         (status = 200, description = "Array of users who belong to the specified by organization", body = Vec<SlimUser>),
         (status = 400, description = "Service error relating to finding the organization's users by id", body = ErrorResponseBody),
@@ -291,7 +291,7 @@ pub struct RemoveUserFromOrgData {
     delete,
     path = "/organization/{organization_id}/user/{user_id}",
     context_path = "/api",
-    tag = "organization",
+    tag = "Organization",
     responses(
         (status = 204, description = "Confirmation that the user was removed from the organization"),
         (status = 400, description = "Service error relating to removing the user from the organization", body = ErrorResponseBody),

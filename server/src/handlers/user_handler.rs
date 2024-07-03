@@ -36,7 +36,7 @@ pub struct GetUserWithChunksData {
     put,
     path = "/user",
     context_path = "/api",
-    tag = "user",
+    tag = "User",
     request_body(content = UpdateUserOrgRoleData, description = "JSON request payload to update user information for the auth'ed user", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the user's role was updated"),
@@ -130,7 +130,7 @@ pub struct SetUserApiKeyResponse {
     post,
     path = "/user/api_key",
     context_path = "/api",
-    tag = "user",
+    tag = "User",
     request_body(content = SetUserApiKeyRequest, description = "JSON request payload to create a new user api key", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the api_key for the user", body = SetUserApiKeyResponse),
@@ -171,7 +171,7 @@ pub async fn set_user_api_key(
     post,
     path = "/user/api_key",
     context_path = "/api",
-    tag = "user",
+    tag = "User",
     responses(
         (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyRespBody>),
         (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
@@ -205,7 +205,7 @@ pub struct DeleteUserApiKeyRequest {
     delete,
     path = "/user/api_key/{api_key_id}",
     context_path = "/api",
-    tag = "user",
+    tag = "User",
     responses(
         (status = 204, description = "Confirmation that the api key was deleted"),
         (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
