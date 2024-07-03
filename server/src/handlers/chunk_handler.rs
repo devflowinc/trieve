@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
-    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, GeoInfoWithBias IngestSpecificChunkMetadata, Pool,
-    RagQueryEventClickhouse, RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse,
-    ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
+    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, GeoInfoWithBias,
+    IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RedisPool, ScoreChunkDTO,
+    SearchQueryEventClickhouse, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
