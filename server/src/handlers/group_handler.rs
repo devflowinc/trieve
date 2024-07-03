@@ -35,7 +35,7 @@ pub async fn dataset_owns_group(
     unified_group_id: UnifiedId,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, ServiceError> {
+) -> Result<ChunkGroupAndFile, ServiceError> {
     let group = match unified_group_id {
         UnifiedId::TrieveUuid(group_id) => {
             get_group_by_id_query(group_id, dataset_id, pool.clone()).await?
@@ -213,9 +213,7 @@ pub async fn get_group_by_tracking_id(
     )
     .await?;
 
-    let group_and_file = get_group_and_file_from_group_query(group, pool.clone()).await?;
-
-    Ok(HttpResponse::Ok().json(group_and_file))
+    Ok(HttpResponse::Ok().json(group))
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -261,9 +259,7 @@ pub async fn get_chunk_group(
     )
     .await?;
 
-    let group_and_file = get_group_and_file_from_group_query(group, pool.clone()).await?;
-
-    Ok(HttpResponse::Ok().json(group_and_file))
+    Ok(HttpResponse::Ok().json(group))
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -520,6 +516,7 @@ pub async fn update_chunk_group(
             pool.clone(),
         )
         .await?
+        .to_group()
     } else if let Some(tracking_id) = data.tracking_id.clone() {
         dataset_owns_group(
             UnifiedId::TrackingId(tracking_id),
@@ -527,6 +524,7 @@ pub async fn update_chunk_group(
             pool.clone(),
         )
         .await?
+        .to_group()
     } else {
         return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
     };
@@ -732,11 +730,9 @@ pub async fn get_chunks_in_group(
     )
     .await?;
 
-    let group_and_file = get_group_and_file_from_group_query(bookmarks.group, pool.clone()).await?;
-
     Ok(HttpResponse::Ok().json(BookmarkData {
         chunks: bookmarks.metadata,
-        group: group_and_file,
+        group: bookmarks.group,
         total_pages: bookmarks.total_pages,
     }))
 }
@@ -790,11 +786,9 @@ pub async fn get_chunks_in_group_by_tracking_id(
         .await?
     };
 
-    let group_and_file = get_group_and_file_from_group_query(bookmarks.group, pool.clone()).await?;
-
     Ok(HttpResponse::Ok().json(BookmarkData {
         chunks: bookmarks.metadata,
-        group: group_and_file,
+        group: bookmarks.group,
         total_pages: bookmarks.total_pages,
     }))
 }
