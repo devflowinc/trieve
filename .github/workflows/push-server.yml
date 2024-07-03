@@ -50,18 +50,17 @@ jobs:
           images: |
             trieve/server
           tags: |
-            type=raw,no-ocr
             type=raw,latest
-            type=sha,prefix=sha-noocr-
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:no-ocr-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:no-ocr-${{matrix.runner}},mode=max
+          cache-from: type=registry,ref=trieve/buildcache:server-${{matrix.runner}}
+          cache-to: type=registry,ref=trieve/buildcache:server-${{matrix.runner}},mode=max
           context: server/
-          file: ./server/Dockerfile.no-ocr
+          file: ./server/Dockerfile.server
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

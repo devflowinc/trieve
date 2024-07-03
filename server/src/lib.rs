@@ -872,12 +872,6 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("/get_signed_url/{file_name}")
                                         .route(web::get().to(handlers::file_handler::get_signed_url)),
                                 )
-                                .service(
-                                    web::resource(
-                                        "/pdf_from_range/{organization_id}/{file_start}/{file_end}/{prefix}/{file_name}/{ocr}",
-                                    )
-                                    .route(web::get().to(handlers::file_handler::get_pdf_from_range)),
-                                ),
                         )
                         .service(
                             web::scope("/events").service(
