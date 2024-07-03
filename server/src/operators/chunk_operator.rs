@@ -1376,13 +1376,14 @@ pub enum TransactionResult {
 
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_metadata_query(
-    chunk_uuid: uuid::Uuid,
+    chunk_uuid: Vec<uuid::Uuid>,
     dataset: Dataset,
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let chunk_metadata = get_metadata_from_id_query(chunk_uuid, dataset.id, pool.clone()).await?;
-    if chunk_metadata.dataset_id != dataset.id {
+    let chunk_metadata =
+        get_metadata_from_ids_query(chunk_uuid.clone(), dataset.id, pool.clone()).await?;
+    if chunk_metadata.get(0).unwrap().dataset_id != dataset.id {
         return Err(ServiceError::BadRequest(
             "chunk does not belong to dataset".to_string(),
         ));
@@ -1397,17 +1398,15 @@ pub async fn delete_chunk_metadata_query(
         .transaction::<_, diesel::result::Error, _>(|conn| {
             async move {
                 {
-                    diesel::delete(
-                        chunk_group_bookmarks_columns::chunk_group_bookmarks.filter(
-                            chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_uuid),
-                        ),
-                    )
+                    diesel::delete(chunk_group_bookmarks_columns::chunk_group_bookmarks.filter(
+                        chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(chunk_uuid.clone()),
+                    ))
                     .execute(conn)
                     .await?;
 
                     let deleted_chunk_collision_count = diesel::delete(
                         chunk_collisions_columns::chunk_collisions
-                            .filter(chunk_collisions_columns::chunk_id.eq(chunk_uuid)),
+                            .filter(chunk_collisions_columns::chunk_id.eq_any(chunk_uuid.clone())),
                     )
                     .execute(conn)
                     .await?;
@@ -1416,7 +1415,7 @@ pub async fn delete_chunk_metadata_query(
                         // there cannot be collisions for a collision, just delete the chunk_metadata without issue
                         diesel::delete(
                             chunk_metadata_columns::chunk_metadata
-                                .filter(chunk_metadata_columns::id.eq(chunk_uuid))
+                                .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
                                 .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
                         )
                         .execute(conn)
@@ -1432,7 +1431,7 @@ pub async fn delete_chunk_metadata_query(
                                     .on(chunk_metadata_columns::qdrant_point_id
                                         .eq(chunk_collisions_columns::collision_qdrant_id)),
                             )
-                            .filter(chunk_metadata_columns::id.eq(chunk_uuid))
+                            .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
                             .filter(chunk_metadata_columns::dataset_id.eq(dataset.id))
                             .select((ChunkCollision::as_select(), ChunkMetadataTable::as_select()))
                             .order_by(chunk_collisions_columns::created_at.asc())
@@ -1481,7 +1480,7 @@ pub async fn delete_chunk_metadata_query(
                         // delete the original chunk_metadata
                         diesel::delete(
                             chunk_metadata_columns::chunk_metadata
-                                .filter(chunk_metadata_columns::id.eq(chunk_uuid))
+                                .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
                                 .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
                         )
                         .execute(conn)
@@ -1529,7 +1528,7 @@ pub async fn delete_chunk_metadata_query(
                     // if there were no collisions, just delete the chunk_metadata without issue
                     diesel::delete(
                         chunk_metadata_columns::chunk_metadata
-                            .filter(chunk_metadata_columns::id.eq(chunk_uuid))
+                            .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
                             .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
                     )
                     .execute(conn)
@@ -1550,22 +1549,17 @@ pub async fn delete_chunk_metadata_query(
     )
     .await?;
 
+    let point_ids = chunk_metadata
+        .iter()
+        .filter_map(|x| x.qdrant_point_id.clone())
+        .map(|x| x.to_string().into())
+        .collect::<Vec<PointId>>();
+
     match transaction_result {
         Ok(result) => match result {
             TransactionResult::ChunkCollisionNotDetected => {
                 let _ = qdrant_client
-                    .delete_points(
-                        qdrant_collection,
-                        None,
-                        &vec![<String as Into<PointId>>::into(
-                            chunk_metadata
-                                .qdrant_point_id
-                                .unwrap_or_default()
-                                .to_string(),
-                        )]
-                        .into(),
-                        None,
-                    )
+                    .delete_points_blocking(qdrant_collection, None, &point_ids.into(), None)
                     .await
                     .map_err(|_e| {
                         Err::<(), ServiceError>(ServiceError::BadRequest(

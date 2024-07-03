@@ -337,10 +337,8 @@ pub async fn delete_group_by_id_query(
         .await;
 
     if delete_chunks {
-        for chunk_id in chunk_ids {
-            delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone(), config.clone())
-                .await?;
-        }
+        delete_chunk_metadata_query(chunk_ids, dataset.clone(), pool.clone(), config.clone())
+            .await?;
     }
 
     match transaction_result {
@@ -473,6 +471,7 @@ pub async fn get_bookmarks_for_group_query(
         .iter()
         .filter_map(|(point_id, _, _)| *point_id)
         .collect::<Vec<uuid::Uuid>>();
+
     let chunk_metadata = get_chunk_metadatas_from_point_ids(point_ids, pool).await?;
 
     let (chunk_count, chunk_group) = pairs

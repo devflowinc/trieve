@@ -319,7 +319,7 @@ pub async fn delete_chunks_in_dataset(
         })?;
 
         qdrant_client
-            .delete_points(
+            .delete_points_blocking(
                 qdrant_collection.clone(),
                 None,
                 &Filter::must([Condition::has_id(qdrant_point_ids)]).into(),

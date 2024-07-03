@@ -410,7 +410,7 @@ pub async fn delete_chunk(
     let chunk_id = chunk_id.into_inner();
 
     delete_chunk_metadata_query(
-        chunk_id,
+        vec![chunk_id],
         dataset_org_plan_sub.dataset,
         pool,
         server_dataset_config,
@@ -457,7 +457,7 @@ pub async fn delete_chunk_by_tracking_id(
         get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone()).await?;
 
     delete_chunk_metadata_query(
-        chunk_metadata.id,
+        vec![chunk_metadata.id],
         dataset_org_plan_sub.dataset,
         pool,
         server_dataset_config,
