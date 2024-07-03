@@ -41,6 +41,9 @@ path = "src/bin/redoc_ci.rs"
 name = "create-new-qdrant"
 path = "src/bin/create-new-qdrant.rs"
 
+[[bin]]
+name = "sync-qdrant"
+path = "src/bin/sync-qdrant.rs"
 
 [dependencies]
 actix-identity = { version = "0.7.1" }

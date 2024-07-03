@@ -77,7 +77,6 @@ export interface ScoreChunkProps {
 
 const ScoreChunk = (props: ScoreChunkProps) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
-  console.log(props.chunk);
 
   const $currentDataset = datasetAndUserContext.currentDataset;
   const $currentUser = datasetAndUserContext.user;
