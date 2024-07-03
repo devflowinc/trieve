@@ -715,7 +715,7 @@ pub struct GetRagQueriesRequest {
     tag = "analytics",
     request_body(content = GetRPSGraphRequest, description = "JSON request payload to filter the graph", content_type = "application/json"),
     responses(
-        (status = 200, description = "RAG queries for the dataset", body = Vec<SearchLatencyGraph>),
+        (status = 200, description = "RAG queries for the dataset", body = Vec<GetRagQueriesRequest>),
 
         (status = 400, description = "Service error relating to getting RAG queries", body = ErrorResponseBody),
     ),
@@ -796,7 +796,6 @@ pub struct RAGUsageResponse {
     tag = "analytics",
     responses(
         (status = 200, description = "RAG usage for the dataset", body = RAGUsageResponse),
-
         (status = 400, description = "Service error relating to getting RAG usage", body = ErrorResponseBody),
     ),
     params(
