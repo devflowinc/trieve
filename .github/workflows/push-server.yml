@@ -115,7 +115,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   bulk_ingest_worker:
-      name: Push Ingest image
+      name: Push Bulk Ingest image
       runs-on: ${{ matrix.runner }}
       strategy:
         matrix:
