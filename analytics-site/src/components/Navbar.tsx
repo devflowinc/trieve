@@ -30,8 +30,13 @@ export const Navbar = (props: NavbarProps) => {
   const navigate = useBetterNav();
 
   return (
-    <div class="flex justify-between border border-b-neutral-300 bg-neutral-50 p-4">
-      <div class="flex gap-3">
+    <div class="flex justify-between border border-b-neutral-300 bg-neutral-50 p-2 px-4 pr-8">
+      <div class="flex items-center gap-3">
+        <img
+          class="h-12 w-12 cursor-pointer"
+          src="https://cdn.trieve.ai/trieve-logo.png"
+          alt="Logo"
+        />
         <Select
           display={(org) => org.name}
           onSelected={(e) => {
@@ -54,7 +59,7 @@ export const Navbar = (props: NavbarProps) => {
           )}
         </Show>
       </div>
-      <div class="flex gap-4">
+      <div class="flex items-center gap-4">
         <For each={navbarRoutes}>
           {(link) => {
             return (
