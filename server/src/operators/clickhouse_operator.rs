@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     data::models::{ChunkMetadataTypes, RagQueryEventClickhouse, SearchQueryEventClickhouse},
     errors::ServiceError,
@@ -110,7 +112,7 @@ pub async fn run_clickhouse_migrations(client: &clickhouse::Client) {
                 rag_type String,
                 user_message String,
                 search_id UUID,
-                results Array(UUID),
+                results Array(String),
                 llm_response String,
                 dataset_id UUID,
                 created_at DateTime,
@@ -127,55 +129,40 @@ pub async fn run_clickhouse_migrations(client: &clickhouse::Client) {
         .unwrap();
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CHSlimResponse {
+    pub id: uuid::Uuid,
+    pub tracking_id: Option<String>,
+    pub score: f64,
+}
+
 impl SearchChunkQueryResponseBody {
     pub fn into_response_payload(&self) -> Vec<String> {
-        self.score_chunks
+        let response = self
+            .score_chunks
             .clone()
             .into_iter()
             .map(|score_chunk| match &score_chunk.metadata[0] {
-                ChunkMetadataTypes::Content(chunk) => match &chunk.tracking_id {
-                    Some(tracking_id) => {
-                        format!(
-                            "{{\"id\": \"{}\", \"tracking_id\":\"{}\", \"score\": {}}}",
-                            chunk.id, tracking_id, score_chunk.score
-                        )
-                    }
-                    None => {
-                        format!(
-                            "{{\"id\": \"{}\", \"score\": {}}}",
-                            chunk.id, score_chunk.score
-                        )
-                    }
+                ChunkMetadataTypes::Content(chunk) => CHSlimResponse {
+                    id: chunk.id,
+                    tracking_id: chunk.tracking_id.clone(),
+                    score: score_chunk.score,
                 },
-                ChunkMetadataTypes::ID(chunk) => match &chunk.tracking_id {
-                    Some(tracking_id) => {
-                        format!(
-                            "{{\"id\": \"{}\", \"tracking_id\":\"{}\", \"score\": {}}}",
-                            chunk.id, tracking_id, score_chunk.score
-                        )
-                    }
-                    None => {
-                        format!(
-                            "{{\"id\": \"{}\", \"score\": {}}}",
-                            chunk.id, score_chunk.score
-                        )
-                    }
+                ChunkMetadataTypes::ID(chunk) => CHSlimResponse {
+                    id: chunk.id,
+                    tracking_id: chunk.tracking_id.clone(),
+                    score: score_chunk.score,
                 },
-                ChunkMetadataTypes::Metadata(chunk) => match &chunk.tracking_id {
-                    Some(tracking_id) => {
-                        format!(
-                            "{{\"id\": \"{}\", \"tracking_id\":\"{}\", \"score\": {}}}",
-                            chunk.id, tracking_id, score_chunk.score
-                        )
-                    }
-                    None => {
-                        format!(
-                            "{{\"id\": \"{}\", \"score\": {}}}",
-                            chunk.id, score_chunk.score
-                        )
-                    }
+                ChunkMetadataTypes::Metadata(chunk) => CHSlimResponse {
+                    id: chunk.id,
+                    tracking_id: chunk.tracking_id.clone(),
+                    score: score_chunk.score,
                 },
             })
+            .collect::<Vec<CHSlimResponse>>();
+        response
+            .into_iter()
+            .map(|r| serde_json::to_string(&r).unwrap_or("".to_string()))
             .collect::<Vec<String>>()
     }
 }

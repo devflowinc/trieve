@@ -2108,7 +2108,12 @@ pub async fn generate_off_chunks(
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset_org_plan_sub.dataset.id,
             search_id: uuid::Uuid::nil(),
-            results: data.chunk_ids.clone().into_iter().collect(),
+            results: data
+                .chunk_ids
+                .clone()
+                .into_iter()
+                .map(|s| s.to_string())
+                .collect(),
             user_message: prompt,
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion,
