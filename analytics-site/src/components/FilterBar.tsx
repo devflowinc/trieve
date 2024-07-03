@@ -62,58 +62,70 @@ export const FilterBar = (props: FilterBarProps) => {
   );
   return (
     <div class="flex justify-between border-b border-neutral-300 bg-neutral-100/90 px-3 py-2">
-      <div class="flex gap-2">
-        <Select
-          class="min-w-[200px]"
-          display={(s) => toTitleCase(s)}
-          selected={props.filters.filter.search_method}
-          onSelected={(e) =>
-            props.setFilters("filter", {
-              ...props.filters.filter,
-              search_method: e,
-            })
-          }
-          options={ALL_SEARCH_METHODS}
-        />
+      <div class="flex items-center gap-2">
+        <div>
+          <Select
+            label=<div class="text-xs text-neutral-600">Search Type</div>
+            class="min-w-[200px]"
+            display={(s) => toTitleCase(s)}
+            selected={props.filters.filter.search_method}
+            onSelected={(e) =>
+              props.setFilters("filter", {
+                ...props.filters.filter,
+                search_method: e,
+              })
+            }
+            options={ALL_SEARCH_METHODS}
+          />
+        </div>
 
-        <Select
-          class="min-w-[180px]"
-          display={(s) => toTitleCase(s)}
-          selected={props.filters.filter.search_type}
-          onSelected={(e) =>
-            props.setFilters("filter", {
-              ...props.filters.filter,
-              search_type: e,
-            })
-          }
-          options={ALL_SEARCH_TYPES}
-        />
+        <div>
+          <Select
+            label=<div class="text-xs text-neutral-600">Search Method</div>
+            class="min-w-[180px]"
+            display={(s) => toTitleCase(s)}
+            selected={props.filters.filter.search_type}
+            onSelected={(e) =>
+              props.setFilters("filter", {
+                ...props.filters.filter,
+                search_type: e,
+              })
+            }
+            options={ALL_SEARCH_TYPES}
+          />
+        </div>
       </div>
 
       <div class="flex gap-2">
-        <Select
-          class="min-w-[80px]"
-          display={(s) => s.label}
-          selected={dateSelection()}
-          onSelected={(e) => {
-            setDateSelection(e);
-            props.setFilters("filter", {
-              ...props.filters.filter,
-              date_range: {
-                gt: e.date,
-              },
-            });
-          }}
-          options={dateRanges}
-        />
-        <Select
-          display={(s) => toTitleCase(s as string)}
-          selected={props.filters.granularity}
-          onSelected={(e) => {
-            props.setFilters("granularity", e);
-          }}
-          options={timeFrameOptions}
-        />
+        <div>
+          <Select
+            label=<div class="text-xs text-neutral-600">Date Range</div>
+            class="min-w-[80px]"
+            display={(s) => s.label}
+            selected={dateSelection()}
+            onSelected={(e) => {
+              setDateSelection(e);
+              props.setFilters("filter", {
+                ...props.filters.filter,
+                date_range: {
+                  gt: e.date,
+                },
+              });
+            }}
+            options={dateRanges}
+          />
+        </div>
+        <div>
+          <Select
+            label=<div class="text-xs text-neutral-600">Granularity</div>
+            display={(s) => toTitleCase(s as string)}
+            selected={props.filters.granularity}
+            onSelected={(e) => {
+              props.setFilters("granularity", e);
+            }}
+            options={timeFrameOptions}
+          />
+        </div>
       </div>
     </div>
   );
