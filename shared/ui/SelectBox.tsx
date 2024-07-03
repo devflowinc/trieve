@@ -20,7 +20,7 @@ export const Select = <T,>(props: SelectProps<T>) => {
   const [open, setOpen] = createSignal(false);
   return (
     <Listbox
-      class={`bg-neutral-200 min-w-[100px] relative border rounded border-neutral-300 ${props.class}`}
+      class={`bg-neutral-200/70 min-w-[100px] relative border rounded border-neutral-300 ${props.class}`}
       value={props.selected}
       defaultOpen={false}
     >
