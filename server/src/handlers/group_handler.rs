@@ -38,10 +38,10 @@ pub async fn dataset_owns_group(
 ) -> Result<ChunkGroup, ServiceError> {
     let group = match unified_group_id {
         UnifiedId::TrieveUuid(group_id) => {
-            get_group_by_id_query(group_id, dataset_id, pool).await?
+            get_group_by_id_query(group_id, dataset_id, pool.clone()).await?
         }
         UnifiedId::TrackingId(tracking_id) => {
-            get_group_from_tracking_id_query(tracking_id, dataset_id, pool).await?
+            get_group_from_tracking_id_query(tracking_id, dataset_id, pool.clone()).await?
         }
     };
 
@@ -186,7 +186,7 @@ pub struct GetGroupByTrackingIDData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroupAndFile),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
@@ -209,11 +209,13 @@ pub async fn get_group_by_tracking_id(
     let group = get_group_from_tracking_id_query(
         data.tracking_id.clone(),
         dataset_org_plan_sub.dataset.id,
-        pool,
+        pool.clone(),
     )
     .await?;
 
-    Ok(HttpResponse::Ok().json(group))
+    let group_and_file = get_group_and_file_from_group_query(group, pool.clone()).await?;
+
+    Ok(HttpResponse::Ok().json(group_and_file))
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -232,7 +234,7 @@ pub struct GetGroupData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroupAndFile),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
@@ -252,10 +254,16 @@ pub async fn get_chunk_group(
     _user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let group =
-        get_group_by_id_query(group_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
+    let group = get_group_by_id_query(
+        group_id.into_inner(),
+        dataset_org_plan_sub.dataset.id,
+        pool.clone(),
+    )
+    .await?;
 
-    Ok(HttpResponse::Ok().json(group))
+    let group_and_file = get_group_and_file_from_group_query(group, pool.clone()).await?;
+
+    Ok(HttpResponse::Ok().json(group_and_file))
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -673,7 +681,7 @@ pub async fn add_chunk_to_group_by_tracking_id(
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct BookmarkData {
     pub chunks: Vec<ChunkMetadata>,
-    pub group: ChunkGroup,
+    pub group: ChunkGroupAndFile,
     pub total_pages: i64,
 }
 
@@ -720,13 +728,15 @@ pub async fn get_chunks_in_group(
         page,
         None,
         dataset_id,
-        pool,
+        pool.clone(),
     )
     .await?;
 
+    let group_and_file = get_group_and_file_from_group_query(bookmarks.group, pool.clone()).await?;
+
     Ok(HttpResponse::Ok().json(BookmarkData {
         chunks: bookmarks.metadata,
-        group: bookmarks.group,
+        group: group_and_file,
         total_pages: bookmarks.total_pages,
     }))
 }
@@ -775,14 +785,16 @@ pub async fn get_chunks_in_group_by_tracking_id(
             page,
             None,
             dataset_id,
-            pool,
+            pool.clone(),
         )
         .await?
     };
 
+    let group_and_file = get_group_and_file_from_group_query(bookmarks.group, pool.clone()).await?;
+
     Ok(HttpResponse::Ok().json(BookmarkData {
         chunks: bookmarks.metadata,
-        group: bookmarks.group,
+        group: group_and_file,
         total_pages: bookmarks.total_pages,
     }))
 }
@@ -1167,7 +1179,7 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchWithinGroupResults {
     pub bookmarks: Vec<ScoreChunkDTO>,
-    pub group: ChunkGroup,
+    pub group: ChunkGroupAndFile,
     pub total_pages: i64,
 }
 
