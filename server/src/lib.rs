@@ -7,7 +7,7 @@ extern crate diesel;
 use crate::{
     errors::{custom_json_error_handler, ServiceError},
     handlers::auth_handler::build_oidc_client,
-    metrics::Metrics,
+    handlers::metrics_handler::Metrics,
     operators::{
         clickhouse_operator::run_clickhouse_migrations,
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
@@ -37,7 +37,6 @@ use utoipa_swagger_ui::SwaggerUi;
 pub mod data;
 pub mod errors;
 pub mod handlers;
-pub mod metrics;
 pub mod middleware;
 pub mod operators;
 pub mod randutil;
