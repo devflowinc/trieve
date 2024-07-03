@@ -23,6 +23,7 @@ import {
 import { formatDate } from "../formatters";
 import { TbReload } from "solid-icons/tb";
 import { FiSearch } from "solid-icons/fi";
+import { BsChatRightText } from "solid-icons/bs";
 import { createToast } from "./ShowToasts";
 import { DefaultError, Organization } from "shared/types";
 
@@ -215,6 +216,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
   };
 
   const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
+  const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
 
   const orgDatasetParams = (datasetId: string) => {
     const orgId = props.selectedOrganization()?.id;
@@ -362,6 +364,18 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                             class="ml-2 hover:text-fuchsia-500"
                           >
                             <FiSearch />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              window.location.href = `${chatUiURL}${orgDatasetParams(
+                                datasetAndUsage.dataset.id,
+                              )}`;
+                            }}
+                            class="ml-2 hover:text-fuchsia-500"
+                          >
+                            <BsChatRightText />{" "}
                           </button>
                         </span>
                       </td>
