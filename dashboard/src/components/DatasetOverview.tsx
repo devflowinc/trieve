@@ -357,9 +357,11 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              window.location.href = `${searchUiURL}${orgDatasetParams(
-                                datasetAndUsage.dataset.id,
-                              )}`;
+                              window.open(
+                                `${searchUiURL}${orgDatasetParams(
+                                  datasetAndUsage.dataset.id,
+                                )}`,
+                              );
                             }}
                             class="ml-2 hover:text-fuchsia-500"
                           >
@@ -369,9 +371,11 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              window.location.href = `${chatUiURL}${orgDatasetParams(
-                                datasetAndUsage.dataset.id,
-                              )}`;
+                              window.open(
+                                `${chatUiURL}${orgDatasetParams(
+                                  datasetAndUsage.dataset.id,
+                                )}`,
+                              );
                             }}
                             class="ml-2 hover:text-fuchsia-500"
                           >

@@ -62,6 +62,18 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     DatasetAndUsageDTO[]
   >([]);
 
+  const getQueryParam = (name: string) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+  };
+
+  const setQueryParam = (name: string, value: string) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set(name, value);
+    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+    window.history.replaceState({}, "", newUrl);
+  };
+
   const login = () => {
     const apiHost: string = import.meta.env.VITE_API_HOST as string;
     fetch(`${apiHost}/auth/me`, {
@@ -69,9 +81,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     })
       .then((res) => {
         if (res.status === 401) {
-          if (res.status === 401) {
-            window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
-          }
+          window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
           setUser(null);
           setOrganizations([]);
           return null;
@@ -82,6 +92,14 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
         if (isUserDTO(data)) {
           setUser(data);
           setOrganizations(data.orgs);
+
+          const orgId = getQueryParam("organization");
+          if (orgId) {
+            const organization = data.orgs.find((org) => org.id === orgId);
+            if (organization) {
+              setSelectedOrganization(organization);
+            }
+          }
         }
       })
       .catch((err) => {
@@ -128,11 +146,41 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
               setDatasetsAndUsages([]);
             }
             if (data.length > 0 && data.every(isDatasetAndUsageDTO)) {
-              setCurrentDataset(data[0]);
               setDatasetsAndUsages(data);
+
+              const datasetId = getQueryParam("dataset");
+              if (datasetId) {
+                const dataset = data.find((d) => d.dataset.id === datasetId);
+                if (dataset) {
+                  setCurrentDataset(dataset);
+                } else {
+                  setCurrentDataset(data[0]);
+                }
+              } else {
+                setCurrentDataset(data[0]);
+              }
             }
           }
+        })
+        .catch((err) => {
+          console.error("Error fetching datasets:", err);
         });
+    }
+  });
+
+  createEffect(() => {
+    const dataset = currentDataset();
+    if (dataset) {
+      setQueryParam("dataset", dataset.dataset.id);
+      localStorage.setItem("currentDataset", JSON.stringify(dataset));
+    }
+  });
+
+  createEffect(() => {
+    const selectedOrg = selectedOrganization();
+    if (selectedOrg) {
+      setQueryParam("organization", selectedOrg.id);
+      localStorage.setItem("currentOrganization", JSON.stringify(selectedOrg));
     }
   });
 
