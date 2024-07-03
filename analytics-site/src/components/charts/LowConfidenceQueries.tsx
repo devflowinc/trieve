@@ -1,7 +1,14 @@
 import { AnalyticsParams, SearchQueryEvent } from "shared/types";
 import { ChartCard } from "./ChartCard";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import { createEffect, createSignal, For, Show, useContext } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  For,
+  on,
+  Show,
+  useContext,
+} from "solid-js";
 import { getLowConfidenceQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
@@ -25,6 +32,16 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   const queryClient = useQueryClient();
 
   const [thresholdText, setThresholdText] = createSignal("");
+
+  createEffect(
+    on(
+      () => [props.filters, dataset().dataset.id, thresholdText()],
+      () => {
+        console.log("resetting max page");
+        pages.resetMaxPageDiscovered();
+      },
+    ),
+  );
 
   createEffect(() => {
     // Preload the next page
