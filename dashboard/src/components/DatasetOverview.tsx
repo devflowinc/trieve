@@ -22,6 +22,7 @@ import {
 } from "solid-icons/ai";
 import { formatDate } from "../formatters";
 import { TbReload } from "solid-icons/tb";
+import { FiSearch } from "solid-icons/fi";
 import { createToast } from "./ShowToasts";
 import { DefaultError, Organization } from "shared/types";
 
@@ -213,6 +214,15 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       });
   };
 
+  const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
+
+  const orgDatasetParams = (datasetId: string) => {
+    const orgId = props.selectedOrganization()?.id;
+    return orgId && datasetId
+      ? `/?organization=${orgId}&dataset=${datasetId}`
+      : "";
+  };
+
   return (
     <>
       <div class="flex items-center">
@@ -337,7 +347,23 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           );
                         }}
                       >
-                        {datasetAndUsage.dataset.name}
+                        <span>
+                          <div class="inline-flex items-center">
+                            {datasetAndUsage.dataset.name}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              window.location.href = `${searchUiURL}${orgDatasetParams(
+                                datasetAndUsage.dataset.id,
+                              )}`;
+                            }}
+                            class="ml-2 hover:text-fuchsia-500"
+                          >
+                            <FiSearch />
+                          </button>
+                        </span>
                       </td>
                       <td
                         class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600"
