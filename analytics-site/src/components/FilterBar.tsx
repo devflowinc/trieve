@@ -61,12 +61,12 @@ export const FilterBar = (props: FilterBarProps) => {
     dateRanges[0],
   );
   return (
-    <div class="flex justify-between border-b border-neutral-300 bg-neutral-100/90 px-3 py-2">
+    <div class="flex justify-between border-neutral-400 px-3 py-2">
       <div class="flex items-center gap-2">
         <div>
           <Select
-            label=<div class="text-xs text-neutral-600">Search Type</div>
-            class="min-w-[200px]"
+            label=<div class="text-sm text-neutral-600">Search Type</div>
+            class="min-w-[200px] !bg-white"
             display={(s) => toTitleCase(s)}
             selected={props.filters.filter.search_method}
             onSelected={(e) =>
@@ -81,8 +81,8 @@ export const FilterBar = (props: FilterBarProps) => {
 
         <div>
           <Select
-            label=<div class="text-xs text-neutral-600">Search Method</div>
-            class="min-w-[180px]"
+            label=<div class="text-sm text-neutral-600">Search Method</div>
+            class="min-w-[180px] !bg-white"
             display={(s) => toTitleCase(s)}
             selected={props.filters.filter.search_type}
             onSelected={(e) =>
@@ -99,8 +99,8 @@ export const FilterBar = (props: FilterBarProps) => {
       <div class="flex gap-2">
         <div>
           <Select
-            label=<div class="text-xs text-neutral-600">Date Range</div>
-            class="min-w-[80px]"
+            label=<div class="text-sm text-neutral-600">Date Range</div>
+            class="min-w-[80px] !bg-white"
             display={(s) => s.label}
             selected={dateSelection()}
             onSelected={(e) => {
@@ -117,13 +117,14 @@ export const FilterBar = (props: FilterBarProps) => {
         </div>
         <div>
           <Select
-            label=<div class="text-xs text-neutral-600">Granularity</div>
+            label=<div class="text-sm text-neutral-600">Granularity</div>
             display={(s) => toTitleCase(s as string)}
             selected={props.filters.granularity}
             onSelected={(e) => {
               props.setFilters("granularity", e);
             }}
             options={timeFrameOptions}
+            class="!bg-white"
           />
         </div>
       </div>

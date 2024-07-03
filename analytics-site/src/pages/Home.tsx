@@ -21,9 +21,9 @@ export const Home = () => {
   });
 
   return (
-    <div class="grow bg-neutral-200">
+    <div class="grow bg-neutral-200 p-4 pt-2">
       <FilterBar filters={analyticsFilters} setFilters={setAnalyticsFilters} />
-      <div class="grid grid-cols-10 items-start gap-2 p-2">
+      <div class="grid grid-cols-10 items-start gap-2 p-2 pt-3">
         <LatencyGraph filters={analyticsFilters} />
         <RpsGraph filters={analyticsFilters} />
         <HeadQueries filters={analyticsFilters} />
