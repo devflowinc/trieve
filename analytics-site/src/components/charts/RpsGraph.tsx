@@ -7,7 +7,7 @@ import { getRps } from "../../api/analytics";
 import { Chart } from "chart.js";
 import { format } from "date-fns";
 
-function parseCustomDateString(dateString: string) {
+export function parseCustomDateString(dateString: string) {
   const [datePart, timePart] = dateString.split(" ");
   const [year, month, day] = datePart.split("-");
   const [hour, minute, second] = timePart.split(":");

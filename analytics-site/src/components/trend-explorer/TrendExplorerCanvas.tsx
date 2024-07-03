@@ -78,7 +78,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
         if (localRender === null) {
           return;
         }
-        // Update the canvas size
         localRender.canvas.width = containerSize.width;
         localRender.canvas.height = containerSize.height;
       },
@@ -92,7 +91,7 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       engine: engine,
       options: {
         background: "#f5f5f5",
-        height: 1600,
+        height: window.innerHeight - 120,
         width: 700,
         wireframes: false,
       },
@@ -100,8 +99,8 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
 
     const circles = props.topics.map((topic) => {
       const circle = Bodies.circle(
-        centeredRandom(3) + 400,
-        centeredRandom(3) + 400,
+        centeredRandom(3) + 500,
+        centeredRandom(3) + 500,
         Math.max(1.2 * topic.density, 30),
         {
           id: topic.density,
@@ -126,8 +125,8 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       circles.forEach((circle) => {
         const x = circle.position.x;
         const y = circle.position.y;
-        const targetX = 400;
-        const targetY = 400;
+        const targetX = 500;
+        const targetY = 500;
 
         // Calculate the difference between current position and target
         const dx = targetX - x;
@@ -220,7 +219,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
     <canvas
       style={{
         width: "100%",
-        height: "100%",
       }}
       ref={setCanvasElement}
     />
