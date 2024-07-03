@@ -1513,7 +1513,6 @@ pub async fn create_chunk_metadata(
         );
         chunk_metadatas.push(chunk_metadata.clone());
 
-        // check if a group_id is not in existent_group_ids and return an error if it is not
         if let Some(group_ids) = chunk.group_ids.clone() {
             let existent_group_ids = check_group_ids_exist_query(
                 chunk.group_ids.clone().unwrap_or_default(),

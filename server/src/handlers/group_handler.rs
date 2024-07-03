@@ -680,13 +680,14 @@ pub async fn add_chunk_to_group_by_tracking_id(
 pub struct BookmarkData {
     pub chunks: Vec<ChunkMetadata>,
     pub group: ChunkGroupAndFileId,
-    pub total_pages: i64,
+    pub total_pages: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetAllBookmarksData {
     pub group_id: uuid::Uuid,
     pub page: Option<u64>,
+    pub limit: Option<u64>,
 }
 
 /// Get Chunks in Group
@@ -719,12 +720,13 @@ pub async fn get_chunks_in_group(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = group_data.page.unwrap_or(1);
+    let limit = group_data.limit.unwrap_or(10);
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let bookmarks = get_bookmarks_for_group_query(
         UnifiedId::TrieveUuid(group_data.group_id),
         page,
-        None,
+        Some(limit),
         dataset_id,
         pool.clone(),
     )
