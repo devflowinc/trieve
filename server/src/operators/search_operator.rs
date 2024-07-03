@@ -1464,7 +1464,7 @@ pub fn rerank_chunks(
 
     if query_location.is_some() && query_location.unwrap().bias > 0.0 {
         let info_with_bias = query_location.unwrap();
-        let query_location = info_with_bias.info;
+        let query_location = info_with_bias.location;
         let location_bias = info_with_bias.bias;
         let distances = reranked_chunks
             .iter()
@@ -1589,7 +1589,7 @@ pub async fn search_semantic_chunks(
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
-        data.location,
+        data.location_bias,
     );
 
     timer.add("reranking");
@@ -1658,7 +1658,7 @@ pub async fn search_full_text_chunks(
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
-        data.location,
+        data.location_bias,
     );
 
     timer.add("reranking");
@@ -1770,7 +1770,7 @@ pub async fn search_hybrid_chunks(
                 data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
-                data.location,
+                data.location_bias,
             );
 
             score_chunks
@@ -1792,7 +1792,7 @@ pub async fn search_hybrid_chunks(
                 data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
-                data.location,
+                data.location_bias,
             )
         };
 
@@ -1883,7 +1883,7 @@ pub async fn search_semantic_groups(
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
-        data.location,
+        data.location_bias,
     );
 
     Ok(SearchWithinGroupResults {
@@ -1936,7 +1936,7 @@ pub async fn search_full_text_groups(
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
-        data.location,
+        data.location_bias,
     );
 
     Ok(SearchWithinGroupResults {
@@ -2039,7 +2039,7 @@ pub async fn search_hybrid_groups(
                 data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
-                data.location,
+                data.location_bias,
             );
 
             score_chunks
@@ -2061,7 +2061,7 @@ pub async fn search_hybrid_groups(
                 data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
-                data.location,
+                data.location_bias,
             )
         };
 
@@ -2491,14 +2491,14 @@ pub async fn autocomplete_semantic_chunks(
         data.recency_bias,
         data.tag_weights.clone(),
         data.use_weights,
-        data.location,
+        data.location_bias,
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
-        data.location,
+        data.location_bias,
     ));
 
     result_chunks.score_chunks = reranked_chunks;
@@ -2596,14 +2596,14 @@ pub async fn autocomplete_fulltext_chunks(
         data.recency_bias,
         data.tag_weights.clone(),
         data.use_weights,
-        data.location,
+        data.location_bias,
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
-        data.location,
+        data.location_bias,
     ));
 
     result_chunks.score_chunks = reranked_chunks;

@@ -1118,7 +1118,7 @@ pub struct SearchWithinGroupData {
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
     /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
-    pub location: Option<GeoInfoWithBias>,
+    pub location_bias: Option<GeoInfoWithBias>,
     /// Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0.
     pub recency_bias: Option<f32>,
     /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
@@ -1153,7 +1153,7 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
             filters: search_within_group_data.filters,
             search_type: search_within_group_data.search_type,
             recency_bias: search_within_group_data.recency_bias,
-            location: search_within_group_data.location,
+            location_bias: search_within_group_data.location_bias,
             use_weights: search_within_group_data.use_weights,
             tag_weights: search_within_group_data.tag_weights,
             get_collisions: Some(false),
