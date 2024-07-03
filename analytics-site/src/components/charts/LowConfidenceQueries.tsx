@@ -121,7 +121,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
         )}
       </Show>
       <div class="flex justify-end">
-        <PaginationButtons size={24} pages={pages} />
+        <PaginationButtons size={18} pages={pages} />
       </div>
     </ChartCard>
   );

@@ -43,6 +43,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   return (
     <ChartCard class="px-4" width={4}>
       <div class="text-lg">Head Queries</div>
+      <div class="text-sm text-neutral-600">The most popular searches.</div>
       <Show
         fallback={<div class="py-8">Loading...</div>}
         when={headQueriesQuery.data}
@@ -58,7 +59,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
         )}
       </Show>
       <div class="flex justify-end">
-        <PaginationButtons size={24} pages={pages} />
+        <PaginationButtons size={18} pages={pages} />
       </div>
     </ChartCard>
   );

@@ -92,7 +92,7 @@ export const FilterBar = (props: FilterBarProps) => {
 
       <div class="flex gap-2">
         <Select
-          class="min-w-[200px]"
+          class="min-w-[80px]"
           display={(s) => s.label}
           selected={dateSelection()}
           onSelected={(e) => {
