@@ -19,10 +19,7 @@ use trieve_server::handlers::chunk_handler::{
     UploadIngestionMessage,
 };
 use trieve_server::handlers::group_handler::dataset_owns_group;
-use trieve_server::operators::chunk_operator::{
-    bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
-    insert_chunk_metadata_query, update_chunk_metadata_query,
-};
+use trieve_server::operators::chunk_operator::update_chunk_metadata_query;
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
 use trieve_server::operators::model_operator::{
@@ -261,31 +258,7 @@ async fn ingestion_worker(
                 )
                 .await
                 {
-                    Ok(Some(chunk_ids)) => {
-                        log::info!("Uploaded {:} chunks", chunk_ids.len());
-
-                        let _ = create_event_query(
-                            Event::from_details(
-                                payload.dataset_id,
-                                models::EventType::ChunksUploaded { chunk_ids },
-                            ),
-                            clickhouse_client.clone(),
-                        )
-                        .await
-                        .map_err(|err| {
-                            log::error!("Failed to create event: {:?}", err);
-                        });
-
-                        let _ = redis::cmd("LREM")
-                            .arg("processing")
-                            .arg(1)
-                            .arg(serialized_message)
-                            .query_async::<redis::aio::MultiplexedConnection, usize>(
-                                &mut *redis_connection,
-                            )
-                            .await;
-                    }
-                    Ok(None) => {
+                    Ok(_) => {
                         log::info!("Put chunks into PG bulk queue");
 
                         let _ = redis::cmd("LREM")
@@ -366,7 +339,7 @@ pub async fn bulk_upload_chunks(
     redis_connection: &mut bb8_redis::bb8::PooledConnection<'_, bb8_redis::RedisConnectionManager>,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
-) -> Result<Option<Vec<uuid::Uuid>>, ServiceError> {
+) -> Result<(), ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker bulk_upload_chunk",
         "ingestion worker bulk_upload_chunk",
@@ -470,12 +443,11 @@ pub async fn bulk_upload_chunks(
         .collect();
 
     if raw_vectors_being_used || split_average_being_used || upsert_by_tracking_id_being_used {
-        let mut chunk_ids = vec![];
         // Split average or Collisions
         for (message, ingestion_data) in
             izip!(payload.ingestion_messages, ingestion_data).into_iter()
         {
-            let upload_chunk_result = upload_chunk(
+            let _ = upload_chunk(
                 message,
                 ingestion_data,
                 web_pool.clone(),
@@ -483,20 +455,11 @@ pub async fn bulk_upload_chunks(
                 reqwest_client.clone(),
             )
             .await;
-
-            if let Ok(chunk_uuid) = upload_chunk_result {
-                if let Some(chunk_uuid) = chunk_uuid {
-                    chunk_ids.push(chunk_uuid);
-                }
-            }
         }
 
         transaction.finish();
 
-        if chunk_ids.is_empty() {
-            return Ok(None);
-        }
-        return Ok(Some(chunk_ids));
+        return Ok(());
     }
 
     precompute_transaction.finish();
@@ -646,77 +609,42 @@ pub async fn bulk_upload_chunks(
         .filter_map(|point| point.ok())
         .collect();
 
-    if std::env::var("BULK_PG_QUEUE").unwrap_or("false".to_string()) == "true" {
-        let insert_tx = transaction.start_child(
-            "calling_BULK_create_new_qdrant_points_query",
-            "calling_BULK_create_new_qdrant_points_query",
-        );
+    let insert_tx = transaction.start_child(
+        "calling_BULK_create_new_qdrant_points_query",
+        "calling_BULK_create_new_qdrant_points_query",
+    );
 
-        let create_point_result =
-            bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
+    let create_point_result =
+        bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
 
-        insert_tx.finish();
+    insert_tx.finish();
 
-        if let Err(err) = create_point_result {
-            return Err(err);
-        }
-
-        let message: Vec<PGInsertQueueMessage> = ingestion_data
-            .into_iter()
-            .map(|data| PGInsertQueueMessage {
-                chunk_metadatas: data,
-                dataset_id: payload.dataset_id,
-                dataset_config: dataset_config.clone(),
-                attempt_number: 0,
-            })
-            .collect();
-
-        let serialized_messages = message
-            .into_iter()
-            .map(|message| serde_json::to_string(&message).unwrap())
-            .collect::<Vec<String>>();
-
-        let _ = redis::cmd("LPUSH")
-            .arg("bulk_pg_queue")
-            .arg(serialized_messages)
-            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_connection)
-            .await;
-
-        Ok(None)
-    } else {
-        let inserted_chunk_metadatas =
-            bulk_insert_chunk_metadata_query(ingestion_data, payload.dataset_id, web_pool.clone())
-                .await?;
-
-        if inserted_chunk_metadatas.is_empty() {
-            // All collisions
-            return Ok(None);
-        }
-
-        let inserted_chunk_metadata_ids: Vec<uuid::Uuid> = inserted_chunk_metadatas
-            .iter()
-            .map(|data| data.chunk_metadata.id)
-            .collect();
-
-        let insert_tx = transaction.start_child(
-            "calling_BULK_create_new_qdrant_points_query",
-            "calling_BULK_create_new_qdrant_points_query",
-        );
-
-        let create_point_result =
-            bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
-
-        insert_tx.finish();
-
-        if let Err(err) = create_point_result {
-            bulk_revert_insert_chunk_metadata_query(inserted_chunk_metadata_ids, web_pool.clone())
-                .await?;
-
-            return Err(err);
-        }
-
-        Ok(Some(inserted_chunk_metadata_ids))
+    if let Err(err) = create_point_result {
+        return Err(err);
     }
+
+    let message: Vec<PGInsertQueueMessage> = ingestion_data
+        .into_iter()
+        .map(|data| PGInsertQueueMessage {
+            chunk_metadatas: data,
+            dataset_id: payload.dataset_id,
+            dataset_config: dataset_config.clone(),
+            attempt_number: 0,
+        })
+        .collect();
+
+    let serialized_messages = message
+        .into_iter()
+        .map(|message| serde_json::to_string(&message).unwrap())
+        .collect::<Vec<String>>();
+
+    let _ = redis::cmd("LPUSH")
+        .arg("bulk_pg_queue")
+        .arg(serialized_messages)
+        .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_connection)
+        .await;
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(payload, web_pool))]
@@ -726,7 +654,7 @@ async fn upload_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     redis_connection: &mut bb8_redis::bb8::PooledConnection<'_, bb8_redis::RedisConnectionManager>,
     reqwest_client: reqwest::Client,
-) -> Result<Option<uuid::Uuid>, ServiceError> {
+) -> Result<(), ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker upload_chunk",
         "ingestion worker upload_chunk",
@@ -910,77 +838,39 @@ async fn upload_chunk(
         vector_payload,
         qdrant_payload,
     );
+
     let insert_tx = transaction.start_child(
-        "calling_bulk_create_new_qdrant_points_query",
-        "calling_bulk_create_new_qdrant_points_query",
+        "calling_BULK_create_new_qdrant_points_query",
+        "calling_BULK_create_new_qdrant_points_query",
     );
 
-    if std::env::var("BULK_PG_QUEUE").unwrap_or("false".to_string()) == "true" {
-        let insert_tx = transaction.start_child(
-            "calling_BULK_create_new_qdrant_points_query",
-            "calling_BULK_create_new_qdrant_points_query",
-        );
+    let create_point_result =
+        bulk_upsert_qdrant_points_query(vec![point], dataset_config.clone()).await;
 
-        let create_point_result =
-            bulk_upsert_qdrant_points_query(vec![point], dataset_config.clone()).await;
+    insert_tx.finish();
 
-        insert_tx.finish();
-
-        if let Err(err) = create_point_result {
-            return Err(err);
-        }
-
-        ingestion_data.chunk_metadata.qdrant_point_id = qdrant_point_id;
-
-        let message = PGInsertQueueMessage {
-            chunk_metadatas: ingestion_data,
-            dataset_id: payload.dataset_id,
-            dataset_config,
-            attempt_number: 0,
-        };
-
-        let _ = redis::cmd("LPUSH")
-            .arg("bulk_pg_queue")
-            .arg(serde_json::to_string(&message).unwrap())
-            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_connection)
-            .await;
-
-        transaction.finish();
-
-        Ok(None)
-    } else {
-        let inserted_chunk = insert_chunk_metadata_query(
-            chunk_metadata.clone(),
-            payload.chunk.group_ids.clone(),
-            payload.dataset_id,
-            payload.upsert_by_tracking_id,
-            web_pool.clone(),
-        )
-        .await?;
-
-        insert_tx.finish();
-
-        let insert_tx = transaction.start_child(
-            "calling_BULK_create_new_qdrant_points_query",
-            "calling_BULK_create_new_qdrant_points_query",
-        );
-
-        let create_point_result: Result<(), ServiceError> =
-            bulk_upsert_qdrant_points_query(vec![point], dataset_config.clone()).await;
-
-        insert_tx.finish();
-
-        if let Err(err) = create_point_result {
-            bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone())
-                .await?;
-
-            return Err(err);
-        }
-
-        transaction.finish();
-
-        Ok(Some(inserted_chunk.id))
+    if let Err(err) = create_point_result {
+        return Err(err);
     }
+
+    ingestion_data.chunk_metadata.qdrant_point_id = qdrant_point_id;
+
+    let message = PGInsertQueueMessage {
+        chunk_metadatas: ingestion_data,
+        dataset_id: payload.dataset_id,
+        dataset_config,
+        attempt_number: 0,
+    };
+
+    let _ = redis::cmd("LPUSH")
+        .arg("bulk_pg_queue")
+        .arg(serde_json::to_string(&message).unwrap())
+        .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_connection)
+        .await;
+
+    transaction.finish();
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(web_pool))]
