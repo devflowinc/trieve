@@ -73,9 +73,9 @@ export const DatasetSelectBox = () => {
             <Show when={isOpen()}>
               <PopoverPanel
                 unmount={false}
-                class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border bg-white p-1 dark:bg-neutral-800"
+                class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border bg-white dark:bg-neutral-800"
               >
-                <Menu class="mx-1 space-y-0.5">
+                <Menu class="mx-0.5 max-h-[70vh] space-y-0.5 overflow-y-auto overflow-x-hidden p-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
                   <input
                     placeholder="Search datasets..."
                     class="mb-2 flex w-full items-center justify-between rounded bg-neutral-300 p-1 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
@@ -85,7 +85,7 @@ export const DatasetSelectBox = () => {
                     value={datasetSearchQuery()}
                   />
 
-                  <For each={datasetSearchResults()}>
+                  <For each={datasetSearchResults().slice(0, 500)}>
                     {(datasetItem) => {
                       return (
                         <MenuItem

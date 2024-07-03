@@ -12,7 +12,7 @@ export const DatasetSelectionList = (props: DatasetSelectionListProps) => {
   const userContext = useContext(UserContext);
   const $currentDataset = userContext.currentDataset;
   return (
-    <For each={props.datasets}>
+    <For each={props.datasets.slice(0, 500)}>
       {(datasetItem) => {
         return (
           <MenuItem
