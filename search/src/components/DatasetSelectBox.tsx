@@ -1,5 +1,14 @@
 import { FaSolidCheck } from "solid-icons/fa";
-import { Show, For, createMemo, useContext, Switch, Match } from "solid-js";
+import {
+  Show,
+  For,
+  createMemo,
+  useContext,
+  Switch,
+  Match,
+  createSignal,
+  createEffect,
+} from "solid-js";
 import {
   Menu,
   MenuItem,
@@ -9,15 +18,35 @@ import {
 } from "solid-headless";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
+import { DatasetAndUsageDTO } from "../../utils/apiTypes";
+import createFuzzySearch from "@nozbe/microfuzz";
 
 export const DatasetSelectBox = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
 
   const $datasetsAndUsages = datasetAndUserContext.datasetsAndUsages;
   const $currentDataset = datasetAndUserContext.currentDataset;
 
   const datasetList = createMemo(() => $datasetsAndUsages?.());
-  console.log(datasetList());
+  const [datasetSearchResults, setDatasetSearchResults] = createSignal<
+    DatasetAndUsageDTO[]
+  >([]);
+  createEffect(() => {
+    const datasetListOrEmpty = datasetList() ?? [];
+    if (datasetSearchQuery() === "") {
+      setDatasetSearchResults(datasetListOrEmpty);
+    } else {
+      const fuzzy = createFuzzySearch(datasetListOrEmpty, {
+        getText: (item: DatasetAndUsageDTO) => {
+          return [item.dataset.name];
+        },
+      });
+      const results = fuzzy(datasetSearchQuery() ?? "");
+      setDatasetSearchResults(results.map((result) => result.item));
+    }
+  });
 
   return (
     <Show when={$datasetsAndUsages?.().length != 0}>
@@ -47,7 +76,16 @@ export const DatasetSelectBox = () => {
                 class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border bg-white p-1 dark:bg-neutral-800"
               >
                 <Menu class="mx-1 space-y-0.5">
-                  <For each={datasetList()}>
+                  <input
+                    placeholder="Search datasets..."
+                    class="mb-2 flex w-full items-center justify-between rounded bg-neutral-300 p-1 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
+                    onInput={(e) => {
+                      setDatasetSearchQuery(e.target.value);
+                    }}
+                    value={datasetSearchQuery()}
+                  />
+
+                  <For each={datasetSearchResults()}>
                     {(datasetItem) => {
                       return (
                         <MenuItem
