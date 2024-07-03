@@ -1,48 +1,48 @@
-import { FaSolidCheck } from "solid-icons/fa";
 import {
   Show,
-  For,
   useContext,
   createSignal,
-  createEffect,
   Switch,
   Match,
+  createMemo,
+  onMount,
 } from "solid-js";
-import {
-  Menu,
-  MenuItem,
-  Popover,
-  PopoverButton,
-  PopoverPanel,
-} from "terracotta";
+import { Menu, Popover, PopoverButton, PopoverPanel } from "terracotta";
 import { UserContext } from "../contexts/UserContext";
 import { DatasetAndUsageDTO } from "../../utils/apiTypes";
 import createFuzzySearch from "@nozbe/microfuzz";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
+import { DatasetSelectionList } from "./DatasetSelectionList";
 
 export const DatasetSelectBox = () => {
   const userContext = useContext(UserContext);
   const $datasetsAndUsages = userContext.datasetsAndUsages;
   const $currentDataset = userContext.currentDataset;
-
   const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
+  let inputRef: HTMLInputElement | undefined;
 
-  const [datasetSearchResults, setDatasetSearchResults] = createSignal<
-    DatasetAndUsageDTO[]
-  >([]);
-  createEffect(() => {
+  const searchResults = createMemo(() => {
     const datasetListOrEmpty = userContext.datasetsAndUsages?.() ?? [];
     if (datasetSearchQuery() === "") {
-      setDatasetSearchResults(datasetListOrEmpty);
-    } else {
-      const fuzzy = createFuzzySearch(datasetListOrEmpty, {
-        getText: (item: DatasetAndUsageDTO) => {
-          return [item.dataset.name];
-        },
-      });
-      const results = fuzzy(datasetSearchQuery() ?? "");
-      setDatasetSearchResults(results.map((result) => result.item));
+      return datasetListOrEmpty;
     }
+    const fuzzy = createFuzzySearch(datasetListOrEmpty, {
+      getText: (item: DatasetAndUsageDTO) => {
+        return [item.dataset.name, item.dataset.id];
+      },
+    });
+    const results = fuzzy(datasetSearchQuery());
+    return results.map((res) => res.item);
+  });
+
+  const focusInput = () => {
+    if (inputRef) {
+      inputRef.focus();
+    }
+  };
+
+  onMount(() => {
+    focusInput();
   });
 
   return (
@@ -74,50 +74,30 @@ export const DatasetSelectBox = () => {
               >
                 <Menu class="mx-1 space-y-0.5">
                   <input
+                    ref={inputRef}
                     placeholder="Search datasets..."
                     class="mb-2 flex w-full items-center justify-between rounded bg-neutral-300 p-1 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
                     onInput={(e) => {
                       setDatasetSearchQuery(e.target.value);
                     }}
+                    onFocusOut={(e) => {
+                      if (
+                        !e.relatedTarget ||
+                        !(e.relatedTarget instanceof Node) ||
+                        !e.currentTarget.contains(e.relatedTarget)
+                      ) {
+                        focusInput();
+                      }
+                    }}
                     value={datasetSearchQuery()}
                   />
-
-                  <For each={datasetSearchResults()}>
-                    {(datasetItem) => {
-                      return (
-                        <MenuItem
-                          as="button"
-                          classList={{
-                            "flex w-full items-center justify-between rounded p-1 focus:text-black focus:outline-none dark:hover:text-white dark:focus:text-white hover:bg-neutral-300 hover:dark:bg-neutral-700":
-                              true,
-                            "bg-neutral-300 dark:bg-neutral-700":
-                              datasetItem.dataset.id ===
-                              $currentDataset?.()?.dataset.id,
-                          }}
-                          onClick={(e: Event) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            userContext.setCurrentDataset(datasetItem);
-                            setState(false);
-                          }}
-                        >
-                          <div class="break-all px-1 text-left text-sm">
-                            {datasetItem.dataset.name}
-                          </div>
-                          <Show
-                            when={
-                              datasetItem.dataset.id ==
-                              $currentDataset?.()?.dataset.id
-                            }
-                          >
-                            <span>
-                              <FaSolidCheck class="text-sm" />
-                            </span>
-                          </Show>
-                        </MenuItem>
-                      );
+                  <DatasetSelectionList
+                    onSelect={() => {
+                      setState(false);
+                      setDatasetSearchQuery("");
                     }}
-                  </For>
+                    datasets={searchResults()}
+                  />
                 </Menu>
               </PopoverPanel>
             </Show>
@@ -127,3 +107,4 @@ export const DatasetSelectBox = () => {
     </Show>
   );
 };
+
