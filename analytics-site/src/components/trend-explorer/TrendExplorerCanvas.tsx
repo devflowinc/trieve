@@ -105,6 +105,7 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
         centeredRandom(3) + 400,
         Math.max(1.2 * topic.density, 30),
         {
+          id: topic.density,
           label: topic.topic,
         },
       );
@@ -175,7 +176,22 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        const label = circle.label.substring(0, 10) + "..."; // Truncate long labels
+        const density =
+          props.topics.find((t) => t.id === (circle.id as unknown as string))
+            ?.density || 0;
+
+        let label = circle.label; // Truncate long labels
+        if (density < 50) {
+          ctx.font = "10px Arial";
+          label = label.substring(0, 10) + "...";
+        }
+        if (density < 80) {
+          // Replace spaces with newlines
+          label = label.replace(/ /g, "\n");
+        }
+        if (density > 80) {
+          ctx.font = "14px Arial";
+        }
         ctx.fillText(label, circle.position.x, circle.position.y);
       });
     });
