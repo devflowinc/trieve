@@ -241,7 +241,7 @@ impl From<GeoTypes> for f64 {
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, ToSchema, AsExpression)]
 #[diesel(sql_type = Jsonb)]
 pub struct GeoInfoWithBias {
-    pub info: GeoInfo,
+    pub location: GeoInfo,
     pub bias: f64,
 }
 
