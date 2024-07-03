@@ -28,7 +28,6 @@ const getColorFromDensity = (density: number) => {
     .lighten(density * 0.082) // Mix with white
     .toRgbString(); // Convert to RGB string
 
-  console.log(color);
   return color;
 };
 
@@ -116,7 +115,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       circle.render.lineWidth = 1;
       circle.timeScale = 0.2;
       circle.friction = 0.9999;
-      circle.density = 0.9999;
 
       return circle;
     });
@@ -168,6 +166,7 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       }
     });
 
+    // eslint-disable-next-line solid/reactivity
     Events.on(render, "afterRender", function () {
       const ctx = render.context;
       circles.forEach((circle) => {

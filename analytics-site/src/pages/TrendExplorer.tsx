@@ -4,6 +4,7 @@ import { getQueriesForTopic, getTrendsBubbles } from "../api/trends";
 import { createMemo, createSignal, For, Show, useContext } from "solid-js";
 import { TrendExplorerCanvas } from "../components/trend-explorer/TrendExplorerCanvas";
 import { SearchQueryEvent } from "shared/types";
+import { FullScreenModal } from "shared/ui";
 
 export const TrendExplorer = () => {
   const dataset = useContext(DatasetContext);
@@ -72,10 +73,16 @@ interface QueryCardProps {
   searchEvent: SearchQueryEvent;
 }
 const QueryCard = (props: QueryCardProps) => {
+  const [open, setOpen] = createSignal(false);
   return (
-    <div class="bg-white p-3">
-      <div>{props.searchEvent.query}</div>
-      <div>Score: {props.searchEvent.top_score}</div>
-    </div>
+    <>
+      <div onClick={() => setOpen(true)} class="bg-white p-3">
+        <div>{props.searchEvent.query}</div>
+        <div>Score: {props.searchEvent.top_score}</div>
+      </div>
+      <FullScreenModal show={open} setShow={setOpen}>
+        <div>Testin</div>
+      </FullScreenModal>
+    </>
   );
 };
