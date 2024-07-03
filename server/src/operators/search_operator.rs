@@ -4,6 +4,7 @@ use super::chunk_operator::{
     get_slim_chunks_from_point_ids_query,
 };
 use super::group_operator::{
+    get_files_from_groups, get_group_and_file_from_group_query,
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
 use super::model_operator::{create_embedding, cross_encoder, get_sparse_vector};
@@ -859,6 +860,7 @@ pub struct FullTextDocIds {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
     "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "file_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "metadata": [
         {
             "metadata": [
@@ -885,6 +887,7 @@ pub struct GroupScoreChunk {
     pub group_tracking_id: Option<String>,
     pub group_name: Option<String>,
     pub metadata: Vec<ScoreChunkDTO>,
+    pub file_id: Option<uuid::Uuid>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -923,9 +926,11 @@ pub async fn retrieve_chunks_for_groups(
             .iter()
             .map(|group| group.group_id)
             .collect(),
-        pool,
+        pool.clone(),
     )
     .await?;
+
+    let groups_and_files = get_files_from_groups(groups, pool.clone()).await?;
 
     let group_chunks: Vec<GroupScoreChunk> = search_over_groups_query_result
         .search_results
@@ -1015,12 +1020,13 @@ pub async fn retrieve_chunks_for_groups(
                 .sorted_by(|a, b| b.score.partial_cmp(&a.score).unwrap())
                 .collect_vec();
 
-            let group_data = groups.iter().find(|group| group.id == group_search_result.group_id);
+            let group_data = groups_and_files.iter().find(|group| group.id == group_search_result.group_id);
             let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
             let group_name = group_data.map(|group| group.name.clone());
 
             GroupScoreChunk {
                 group_id: group_search_result.group_id,
+                file_id: group_data.and_then(|group| group.file_id.clone()),
                 group_name,
                 group_tracking_id,
                 metadata: score_chunks,
@@ -1064,9 +1070,11 @@ pub async fn get_metadata_from_groups(
             .iter()
             .map(|group| group.group_id)
             .collect(),
-        pool,
+        pool.clone(),
     )
     .await?;
+
+    let groups_and_files = get_files_from_groups(groups, pool.clone()).await?;
 
     let group_chunks: Vec<GroupScoreChunk> = search_over_groups_query_result
         .search_results
@@ -1119,7 +1127,7 @@ pub async fn get_metadata_from_groups(
                 })
                 .collect_vec();
 
-            let group_data = groups.iter().find(|group| group.id == group_search_result.group_id);
+            let group_data = groups_and_files.iter().find(|group| group.id == group_search_result.group_id);
             let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
             let group_name = group_data.map(|group| group.name.clone());
 
@@ -1128,6 +1136,7 @@ pub async fn get_metadata_from_groups(
                 group_name,
                 group_tracking_id,
                 metadata: score_chunk,
+                file_id: group_data.and_then(|grp| grp.file_id.clone()),
             }
         })
         .collect_vec();
@@ -1764,9 +1773,11 @@ pub async fn search_semantic_groups(
         data.location_bias,
     );
 
+    let group_with_file = get_group_and_file_from_group_query(group, pool.clone()).await?;
+
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
-        group,
+        group: group_with_file,
         total_pages: result_chunks.total_chunk_pages,
     })
 }
@@ -1817,9 +1828,11 @@ pub async fn search_full_text_groups(
         data.location_bias,
     );
 
+    let group_with_file = get_group_and_file_from_group_query(group, pool.clone()).await?;
+
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
-        group,
+        group: group_with_file,
         total_pages: result_chunks.total_chunk_pages,
     })
 }
@@ -1954,9 +1967,11 @@ pub async fn search_hybrid_groups(
         }
     };
 
+    let group_with_file = get_group_and_file_from_group_query(group, pool.clone()).await?;
+
     Ok(SearchWithinGroupResults {
-        bookmarks: reranked_chunks.score_chunks,
-        group,
+        bookmarks: result_chunks.score_chunks,
+        group: group_with_file,
         total_pages: result_chunks.total_chunk_pages,
     })
 }
