@@ -36,8 +36,13 @@ import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { useNavigate } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
-import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
+import {
+  FaSolidChevronDown,
+  FaSolidChevronUp,
+  FaSolidDownload,
+} from "solid-icons/fa";
 import { useSearch } from "../hooks/useSearch";
+import { downloadFile } from "../utils/downloadFile";
 
 export interface GroupPageProps {
   groupID: string;
@@ -259,6 +264,13 @@ export const GroupPage = (props: GroupPageProps) => {
     });
   };
 
+  const handleDownloadFile = (group: ChunkGroupDTO | null) => {
+    const datasetId = $dataset?.()?.dataset.id;
+    if (group && group.file_id && datasetId) {
+      void downloadFile(group.file_id, datasetId);
+    }
+  };
+
   const fetchBookmarks = () => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
@@ -423,6 +435,17 @@ export const GroupPage = (props: GroupPageProps) => {
             <Show
               when={chunkGroups().some((group) => group.id == groupInfo()?.id)}
             >
+              <Show when={groupInfo()?.file_id}>
+                <button
+                  title="Download uploaded file"
+                  class="h-fit text-neutral-400 dark:text-neutral-300"
+                  onClick={() => {
+                    handleDownloadFile(groupInfo());
+                  }}
+                >
+                  <FaSolidDownload />
+                </button>
+              </Show>
               <button
                 classList={{
                   "h-fit text-red-700 dark:text-red-400": true,

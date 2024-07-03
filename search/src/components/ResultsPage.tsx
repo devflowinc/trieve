@@ -27,10 +27,15 @@ import { AiOutlineRobot } from "solid-icons/ai";
 import { ChatPopup } from "./ChatPopup";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
-import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
+import {
+  FaSolidChevronDown,
+  FaSolidChevronUp,
+  FaSolidDownload,
+} from "solid-icons/fa";
 import { Filters } from "./FilterModal";
 import { createToast } from "./ShowToasts";
 import { SearchStore } from "../hooks/useSearch";
+import { downloadFile } from "../utils/downloadFile";
 
 export interface ResultsPageProps {
   search: SearchStore;
@@ -87,6 +92,13 @@ const ResultsPage = (props: ResultsPageProps) => {
         });
       }
     });
+  };
+
+  const handleDownloadFile = (file_id?: string) => {
+    const datasetId = $dataset?.()?.dataset.id;
+    if (file_id && datasetId) {
+      void downloadFile(file_id, datasetId);
+    }
   };
 
   createEffect(() => {
@@ -458,15 +470,30 @@ const ResultsPage = (props: ResultsPageProps) => {
                       <Show when={!groupExpanded()}>
                         <FaSolidChevronDown />
                       </Show>
-                      <div>
+                      <div class="w-full">
                         <Show when={group.group_name}>
-                          <div class="flex space-x-2">
-                            <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                              Name:{" "}
-                            </span>
-                            <span class="line-clamp-1 break-all">
-                              {group.group_name}
-                            </span>
+                          <div class="flex w-full flex-row justify-between">
+                            <div class="flex space-x-2">
+                              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                Name:{" "}
+                              </span>
+                              <span class="line-clamp-1 break-all">
+                                {group.group_name}
+                              </span>
+                            </div>
+                            <Show when={group.file_id}>
+                              <div class="flex space-x-2">
+                                <button
+                                  title="Download uploaded file"
+                                  class="h-fit text-neutral-400 dark:text-neutral-300"
+                                  onClick={() =>
+                                    handleDownloadFile(group.file_id)
+                                  }
+                                >
+                                  <FaSolidDownload />
+                                </button>
+                              </div>
+                            </Show>
                           </div>
                         </Show>
                         <Show when={group.group_tracking_id}>
