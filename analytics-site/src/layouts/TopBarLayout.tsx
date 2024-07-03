@@ -78,7 +78,7 @@ export const TopBarLayout: ParentComponent = (props) => {
   };
 
   return (
-    <div class="flex min-h-screen flex-col">
+    <div class="flex min-h-screen flex-col bg-neutral-100">
       <Navbar
         datasetOptions={datasetsQuery.data || []}
         selectedDataset={selectedDataset()}
