@@ -54,7 +54,7 @@ pub struct DistancePhrase {
     /// The phrase to boost in the fulltext document frequency index
     pub phrase: String,
     /// Amount to multiplicatevly increase the frequency of the tokens in the phrase by
-    pub distance_factor: f64,
+    pub distance_factor: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]

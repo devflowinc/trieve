@@ -93,8 +93,25 @@ pub async fn create_embedding(
         message.clone()
     };
 
+    let mut messages = vec![clipped_message.clone()];
+
+    if distance_phrase.is_some() {
+        let clipped_boost = if distance_phrase.as_ref().unwrap().phrase.len() > 7000 {
+            distance_phrase
+                .as_ref()
+                .unwrap()
+                .phrase
+                .chars()
+                .take(20000)
+                .collect()
+        } else {
+            distance_phrase.as_ref().unwrap().phrase.clone()
+        };
+        messages.push(clipped_boost);
+    }
+
     let input = match embed_type {
-        "doc" => EmbeddingInput::StringArray(vec![clipped_message]),
+        "doc" => EmbeddingInput::StringArray(messages),
         "query" => EmbeddingInput::String(
             format!(
                 "{}{}",
@@ -102,7 +119,7 @@ pub async fn create_embedding(
             )
             .to_string(),
         ),
-        _ => EmbeddingInput::StringArray(vec![clipped_message]),
+        _ => EmbeddingInput::StringArray(messages),
     };
 
     let parameters = EmbeddingParameters {
@@ -153,78 +170,15 @@ pub async fn create_embedding(
     }
 
     if distance_phrase.is_some() {
-        let clipped_boost = if distance_phrase.as_ref().unwrap().phrase.len() > 7000 {
-            distance_phrase
-                .as_ref()
-                .unwrap()
-                .phrase
-                .chars()
-                .take(20000)
-                .collect()
-        } else {
-            distance_phrase.as_ref().unwrap().phrase.clone()
-        };
-
-        let boost_embeddings_resp = ureq::post(&format!(
-            "{}/embeddings?api-version=2023-05-15",
-            embedding_base_url
-        ))
-        .set("Authorization", &format!("Bearer {}", &embedding_api_key))
-        .set("api-key", &embedding_api_key)
-        .set("Content-Type", "application/json")
-        .send_json(EmbeddingParameters {
-            model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
-            input: EmbeddingInput::StringArray(vec![clipped_boost]),
-        })
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!(
-                "Could not get embeddings from server: {:?}, {:?}",
-                e,
-                e.to_string()
-            ))
-        })?;
-
-        let boost_embeddings: EmbeddingResponse =
-            format_response(boost_embeddings_resp.into_string().unwrap()).map_err(|e| {
-                log::error!("Failed to format response from embeddings server {:?}", e);
-                ServiceError::InternalServerError(
-                    "Failed to format response from embeddings server".to_owned(),
-                )
-            })?;
-
-        let boost_vectors: Vec<Vec<f32>> = boost_embeddings
-        .data
-        .into_iter()
-        .map(|x| match x.embedding {
-            EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
-            EmbeddingOutput::Base64(_) => {
-                log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
-                vec![]
-            }
-        })
-        .collect();
-
-        if boost_vectors.iter().any(|x| x.is_empty()) {
-            return Err(ServiceError::InternalServerError(
-            "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
-        ));
-        }
-
         let distance_factor = distance_phrase.unwrap().distance_factor;
+        let boost_vector = vectors.pop().unwrap();
+        let embedding_vector = vectors.pop().unwrap();
 
-        vectors = vectors
+        return Ok(embedding_vector
             .iter()
-            .zip(boost_vectors)
-            .map(|(vector, boost_vec)| {
-                vector
-                    .iter()
-                    .zip(boost_vec)
-                    .map(|(vec_elem, boost_vec_elem)| {
-                        vec_elem + distance_factor as f32 * boost_vec_elem
-                    })
-                    .collect()
-            })
-            .collect();
+            .zip(boost_vector)
+            .map(|(vec_elem, boost_vec_elem)| vec_elem + distance_factor * boost_vec_elem)
+            .collect());
     }
 
     transaction.finish();
@@ -308,10 +262,6 @@ pub async fn create_embeddings(
     dataset_config: ServerDatasetConfiguration,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<f32>>, ServiceError> {
-    let messages = content_and_boosts
-        .iter()
-        .map(|(x, _)| x.clone())
-        .collect::<Vec<String>>();
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -363,112 +313,31 @@ pub async fn create_embeddings(
             embedding_api_key.to_string()
         };
 
-    let thirty_message_groups = messages.chunks(30);
-
-    let filtered_boosts_with_index = content_and_boosts
-        .into_iter()
-        .enumerate()
-        .filter_map(|(i, (_, y))| y.map(|boost_phrase| (i, boost_phrase)))
-        .collect::<Vec<(usize, DistancePhrase)>>();
-
-    let filtered_boosts_with_index_groups = filtered_boosts_with_index.chunks(30);
-
-    let vec_boost_future: Vec<_> =
-        filtered_boosts_with_index_groups
-            .enumerate()
-            .map(|(i, thirty_boosts)| {
-                let clipped_boosts = thirty_boosts
-                    .iter()
-                    .map(|(_, boost)| {
-                        if boost.phrase.len() > 7000 {
-                            boost.phrase.chars().take(20000).collect()
-                        } else {
-                            boost.phrase.clone()
-                        }
-                    })
-                    .collect::<Vec<String>>();
-                let input = match embed_type {
-                    "doc" => EmbeddingInput::StringArray(clipped_boosts),
-                    "query" => EmbeddingInput::String(
-                        format!(
-                            "{}{}",
-                            dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_boosts[0]
-                        )
-                        .to_string(),
-                    ),
-                    _ => EmbeddingInput::StringArray(clipped_boosts),
-                };
-
-                let parameters = EmbeddingParameters {
-                    model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
-                    input,
-                };
-                let cur_client = reqwest_client.clone();
-                let url = embedding_base_url.clone();
-                let embedding_api_key = embedding_api_key.clone();
-                let vectors_resp = async move {
-                    let embeddings_resp = cur_client
-                        .post(&format!("{}/embeddings?api-version=2023-05-15", url))
-                        .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
-                        .header("api-key", &embedding_api_key.clone())
-                        .header("Content-Type", "application/json")
-                        .json(&parameters)
-                        .send()
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Failed to send message to embedding server".to_string())
-                        })?
-                        .text()
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Failed to get text from embeddings".to_string())
-                        })?;
-
-                let embeddings: EmbeddingResponse = format_response(embeddings_resp)
-                    .map_err(|e| {
-                        log::error!("Failed to format response from embeddings server {:?}", e);
-                        ServiceError::InternalServerError(
-                            "Failed to format response from embeddings server".to_owned(),
-                        )
-                    })?;
-
-                let vectors: Vec<Vec<f32>> = embeddings
-                .data
-                .into_iter()
-                .map(|x| match x.embedding {
-                    EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
-                    EmbeddingOutput::Base64(_) => {
-                        log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
-                        vec![]
-                    }
-                })
-                .collect();
-
-                if vectors.iter().any(|x| x.is_empty()) {
-                    return Err(ServiceError::InternalServerError(
-                        "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
-                    ));
-                }
-
-                let index_vector_boosts: Vec<(usize, f64, Vec<f32>)> = thirty_boosts
-                    .iter()
-                    .zip(vectors)
-                    .map(|((og_index, y), vector)| {
-                        (*og_index, y.distance_factor, vector)
-                    })
-                    .collect();
-
-                Ok((i, index_vector_boosts))
-            };
-                vectors_resp
-            })
-            .collect();
+    let thirty_message_groups = content_and_boosts.chunks(30);
 
     let vec_futures: Vec<_> = thirty_message_groups
         .enumerate()
-        .map(|(i, messages)| {
+        .map(|(i, combined_messages)| {
+            let messages = combined_messages
+                .iter()
+                .map(|(x, _)| x)
+                .cloned()
+                .collect::<Vec<String>>();
+
+            let boost_phrase_and_index = combined_messages
+                .iter()
+                .enumerate()
+                .filter_map(|(i, (_, y))| y.clone().map(|phrase| (i, phrase)))
+                .collect::<Vec<(usize, DistancePhrase)>>();
+
+            let boost_phrases = combined_messages
+                .iter()
+                .filter_map(|(_, y)| y.clone().map(|x| x.phrase.clone()))
+                .collect::<Vec<String>>();
+
             let clipped_messages = messages
                 .iter()
+                .chain(boost_phrases.iter())
                 .map(|message| {
                     if message.len() > 7000 {
                         message.chars().take(20000).collect()
@@ -526,7 +395,7 @@ pub async fn create_embeddings(
                         )
                     })?;
 
-                let vectors: Vec<Vec<f32>> = embeddings
+            let mut vectors: Vec<Vec<f32>> = embeddings
                 .data
                 .into_iter()
                 .map(|x| match x.embedding {
@@ -543,6 +412,25 @@ pub async fn create_embeddings(
                         "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
                     ));
                 }
+
+            if !boost_phrase_and_index.is_empty() {
+                let boost_vectors = vectors
+                    .split_off(messages.len())
+                    .iter()
+                    .map(|x| x.clone())
+                    .collect::<Vec<Vec<f32>>>();
+
+                let mut vectors_sorted = vectors.clone();
+                for ((og_index, phrase), boost_vector) in boost_phrase_and_index.iter().zip(boost_vectors) {
+                    vectors_sorted[*og_index] = vectors_sorted[*og_index]
+                        .iter()
+                        .zip(boost_vector)
+                        .map(|(vector_elem, boost_vec_elem)| vector_elem + phrase.distance_factor * boost_vec_elem)
+                        .collect();
+                }
+
+                return Ok((i, vectors_sorted));
+            }
 
                 Ok((i, vectors))
             };
@@ -565,23 +453,6 @@ pub async fn create_embeddings(
         )?;
 
         vectors_sorted.extend(vectors_i.clone());
-    }
-    let all_boost_vectors: Vec<(usize, Vec<(usize, f64, Vec<f32>)>)> =
-        futures::future::join_all(vec_boost_future)
-            .await
-            .into_iter()
-            .collect::<Result<Vec<(usize, Vec<(usize, f64, Vec<f32>)>)>, ServiceError>>()?;
-
-    for (_, boost_vectors) in all_boost_vectors {
-        for (og_index, boost_amt, boost_vector) in boost_vectors {
-            vectors_sorted[og_index] = vectors_sorted[og_index]
-                .iter()
-                .zip(boost_vector)
-                .map(|(vector_elem, boost_vec_elem)| {
-                    vector_elem + boost_amt as f32 * boost_vec_elem
-                })
-                .collect();
-        }
     }
 
     transaction.finish();
