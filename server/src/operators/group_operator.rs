@@ -12,6 +12,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::prelude::*;
+use diesel::result::OptionalExtension;
 use diesel::{
     dsl::sql,
     sql_types::{Int8, Text},
@@ -42,6 +43,62 @@ pub async fn get_group_from_tracking_id_query(
         .map_err(|_| ServiceError::NotFound("Group with tracking_id not found".to_string()))?;
 
     Ok(group)
+}
+
+pub async fn get_group_and_file_from_group_query(
+    group: ChunkGroup,
+    pool: web::Data<Pool>,
+) -> Result<ChunkGroupAndFile, ServiceError> {
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let file_id = groups_from_files_columns::groups_from_files
+        .filter(groups_from_files_columns::group_id.eq(group.id))
+        .select(groups_from_files_columns::file_id)
+        .first::<uuid::Uuid>(&mut conn)
+        .await
+        .optional()
+        .map_err(|_| ServiceError::NotFound("Failed to get file it".to_string()))?;
+
+    Ok(ChunkGroupAndFile::from_group(group, file_id))
+}
+
+pub async fn get_files_from_groups(
+    groups: Vec<ChunkGroup>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ChunkGroupAndFile>, ServiceError> {
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let group_ids = groups
+        .iter()
+        .map(|group| group.id)
+        .collect::<Vec<uuid::Uuid>>();
+
+    let file_ids: Vec<(uuid::Uuid, uuid::Uuid)> = groups_from_files_columns::groups_from_files
+        .filter(groups_from_files_columns::group_id.eq_any(group_ids))
+        .select((
+            groups_from_files_columns::group_id,
+            groups_from_files_columns::file_id,
+        ))
+        .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Failed to get file it".to_string()))?;
+
+    Ok(groups
+        .iter()
+        .map(|group| {
+            ChunkGroupAndFile::from_group(
+                group.clone(),
+                file_ids
+                    .iter()
+                    .find(|(_, group_id)| *group_id == group.id)
+                    .map(|(file_id, _)| file_id.clone()),
+            )
+        })
+        .collect())
 }
 
 #[tracing::instrument(skip(pool))]
