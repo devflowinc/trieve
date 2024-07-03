@@ -108,6 +108,7 @@ export interface ServerEnvsConfiguration {
   USE_MESSAGE_TO_QUERY_PROMPT: boolean;
   INDEXED_ONLY: boolean;
   LOCKED: boolean;
+  SYSTEM_PROMPT: string | null;
 }
 
 export interface DefaultError {
