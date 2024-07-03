@@ -1185,6 +1185,20 @@ impl ChunkGroupAndFile {
             updated_at: group.updated_at,
         }
     }
+
+    pub fn to_group(&self) -> ChunkGroup {
+        ChunkGroup {
+            id: self.id.clone(),
+            dataset_id: self.dataset_id.clone(),
+            name: self.name.clone(),
+            description: self.description.clone(),
+            tracking_id: self.tracking_id.clone(),
+            tag_set: self.tag_set.clone(),
+            metadata: self.metadata.clone(),
+            created_at: self.created_at.clone(),
+            updated_at: self.updated_at.clone(),
+        }
+    }
 }
 
 #[derive(
