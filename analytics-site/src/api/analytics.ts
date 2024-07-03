@@ -79,13 +79,17 @@ export const getLowConfidenceQueries = async (
   filters: AnalyticsParams,
   datasetId: string,
   page: number,
+  threshold?: number,
 ): Promise<SearchQueryEvent[]> => {
   const response = await fetch(
     `${apiHost}/analytics/${datasetId}/query/low_confidence`,
     {
       credentials: "include",
       method: "POST",
-      body: JSON.stringify(transformParams(filters, page)),
+      body: JSON.stringify({
+        ...transformParams(filters, page),
+        threshold,
+      }),
       headers: {
         "TR-Dataset": datasetId,
         "Content-Type": "application/json",
