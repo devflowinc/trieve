@@ -262,7 +262,7 @@ export const CreateNewDocChunkForm = () => {
           <div class="flex gap-x-2">
             <input
               type="text"
-              placeholder="optional - space separated terms to boost in search results"
+              placeholder="optional - terms to boost in search results"
               value={boostPhrase() ?? ""}
               onInput={(e) => setBoostPhrase(e.target.value)}
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
@@ -289,7 +289,7 @@ export const CreateNewDocChunkForm = () => {
           <div class="flex gap-x-2">
             <input
               type="text"
-              placeholder="optional - space separated terms to boost in search results"
+              placeholder="optional - terms to boost in search results"
               value={distanceBoostPhrase() ?? ""}
               onInput={(e) => setDistanceBoostPhrase(e.target.value)}
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
