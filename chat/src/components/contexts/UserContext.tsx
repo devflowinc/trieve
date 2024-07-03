@@ -149,10 +149,27 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
               setDatasetsAndUsages(data);
 
               const datasetId = getQueryParam("dataset");
-              if (datasetId) {
-                const dataset = data.find((d) => d.dataset.id === datasetId);
-                if (dataset) {
-                  setCurrentDataset(dataset);
+              const storedDataset = localStorage.getItem("currentDataset");
+
+              if (datasetId !== null) {
+                const foundParamsDataset = data.find(
+                  (d) => d.dataset.id === datasetId,
+                );
+                if (foundParamsDataset) {
+                  setCurrentDataset(foundParamsDataset);
+                } else {
+                  setCurrentDataset(data[0]);
+                }
+              } else if (storedDataset !== null) {
+                const storedDatasetJson = JSON.parse(
+                  storedDataset,
+                ) as DatasetAndUsageDTO;
+                if (
+                  data.find(
+                    (d) => d.dataset.id === storedDatasetJson.dataset.id,
+                  )
+                ) {
+                  setCurrentDataset(storedDatasetJson);
                 } else {
                   setCurrentDataset(data[0]);
                 }
@@ -170,6 +187,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
 
   createEffect(() => {
     const dataset = currentDataset();
+
     if (dataset) {
       setQueryParam("dataset", dataset.dataset.id);
       localStorage.setItem("currentDataset", JSON.stringify(dataset));
@@ -178,6 +196,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
 
   createEffect(() => {
     const selectedOrg = selectedOrganization();
+
     if (selectedOrg) {
       setQueryParam("organization", selectedOrg.id);
       localStorage.setItem("currentOrganization", JSON.stringify(selectedOrg));
