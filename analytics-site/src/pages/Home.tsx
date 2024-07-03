@@ -16,7 +16,7 @@ export const Home = () => {
       search_method: "fulltext",
       search_type: "search",
     },
-    granularity: "minute",
+    granularity: "second",
     page: 1,
   });
 
