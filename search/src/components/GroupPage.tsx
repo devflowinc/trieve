@@ -63,6 +63,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO | null>(null);
+  const [deleteGroupChunks, setDeleteGroupChunks] = createSignal(false);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [error, setError] = createSignal("");
@@ -209,11 +210,17 @@ export const GroupPage = (props: GroupPageProps) => {
       fetchChunkGroups();
 
       setOnGroupDelete(() => {
+        const deleteChunksOfGroup = deleteGroupChunks();
         return () => {
+          let reqPath = `chunk_group/${group_id}`;
+          if (deleteChunksOfGroup) {
+            reqPath += "?delete_chunks=true";
+          }
+
           setDeleting(true);
           if (group_id === null) return;
 
-          void fetch(`${apiHost}/chunk_group/${group_id}`, {
+          void fetch(`${apiHost}/${reqPath}`, {
             method: "DELETE",
             credentials: "include",
             headers: {
@@ -225,9 +232,6 @@ export const GroupPage = (props: GroupPageProps) => {
             setDeleting(false);
             if (response.ok) {
               navigate(`/`);
-            }
-            if (response.status == 403) {
-              setDeleting(false);
             }
           });
         };
@@ -820,6 +824,9 @@ export const GroupPage = (props: GroupPageProps) => {
         showConfirmModal={showConfirmGroupDeleteModal}
         setShowConfirmModal={setShowConfirmGroupmDeleteModal}
         onConfirm={onGroupDelete}
+        checkMessage="Delete chunks within the group"
+        checked={deleteGroupChunks}
+        setChecked={setDeleteGroupChunks}
         message="Are you sure you want to delete this group?"
       />
     </>

@@ -5,7 +5,7 @@ import { GroupUserPageView } from "../../components/OrgGroupPageView";
 import { ConfirmModal } from "../../components/Atoms/ConfirmModal";
 
 export const OrgGroups = () => {
-  // Define your component logic here
+  const [deleteGroupChunks, setDeleteGroupChunks] = createSignal(false);
   const [showConfirmGroupDeleteModal, setShowConfirmGroupDeleteModal] =
     createSignal(false);
   const [onGroupDelete, setOnGroupDelete] = createSignal(() => {});
@@ -16,12 +16,16 @@ export const OrgGroups = () => {
         <GroupUserPageView
           setOnDelete={setOnGroupDelete}
           setShowConfirmModal={setShowConfirmGroupDeleteModal}
+          deleteGroupChunks={deleteGroupChunks}
         />
         <ConfirmModal
           showConfirmModal={showConfirmGroupDeleteModal}
           setShowConfirmModal={setShowConfirmGroupDeleteModal}
           onConfirm={onGroupDelete}
-          message={"Are you sure you want to delete this group?"}
+          checkMessage="Delete chunks within the group"
+          checked={deleteGroupChunks}
+          setChecked={setDeleteGroupChunks}
+          message="Are you sure you want to delete this group?"
         />
       </div>
       <div class="flex-1" />

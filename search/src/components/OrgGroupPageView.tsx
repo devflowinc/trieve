@@ -1,6 +1,7 @@
 import { FiTrash } from "solid-icons/fi";
 import { isChunkGroupPageDTO, type ChunkGroupDTO } from "../../utils/apiTypes";
 import {
+  Accessor,
   For,
   Setter,
   Show,
@@ -18,6 +19,7 @@ import { FaSolidDownload } from "solid-icons/fa";
 export interface GroupUserPageViewProps {
   setOnDelete: Setter<() => void>;
   setShowConfirmModal: Setter<boolean>;
+  deleteGroupChunks: Accessor<boolean>;
 }
 
 export const GroupUserPageView = (props: GroupUserPageViewProps) => {
@@ -66,10 +68,16 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
+    let reqPath = `chunk_group/${group.id}`;
+    const deleteChunksOfGroup = props.deleteGroupChunks();
+    if (deleteChunksOfGroup) {
+      reqPath += "?delete_chunks=true";
+    }
+
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/chunk_group/${group.id}`, {
+        void fetch(`${apiHost}/${reqPath}`, {
           method: "DELETE",
           credentials: "include",
           headers: {
