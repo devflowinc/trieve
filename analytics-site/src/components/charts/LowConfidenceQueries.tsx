@@ -94,7 +94,12 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   return (
     <ChartCard class="px-4" width={4}>
       <div class="flex items-start justify-between gap-2">
-        <div class="text-lg">Low Confidence Queries</div>
+        <div>
+          <div class="text-lg">Low Confidence Queries</div>
+          <div class="text-sm text-neutral-600">
+            Searches with lowest top scores
+          </div>
+        </div>
         <input
           class="mt-1 border-neutral-800 px-2 text-end text-sm outline-none ring-0 ring-0 active:border-b-2"
           type="text"
