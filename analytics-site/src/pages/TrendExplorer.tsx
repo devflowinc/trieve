@@ -1,7 +1,7 @@
 import { createQuery } from "@tanstack/solid-query";
 import { DatasetContext } from "../layouts/TopBarLayout";
 import { getQueriesForTopic, getTrendsBubbles } from "../api/trends";
-import { createSignal, For, Show, useContext } from "solid-js";
+import { createMemo, createSignal, For, Show, useContext } from "solid-js";
 import { TrendExplorerCanvas } from "../components/trend-explorer/TrendExplorerCanvas";
 import { SearchQueryEvent } from "shared/types";
 
@@ -33,11 +33,25 @@ export const TrendExplorer = () => {
     },
   }));
 
+  const selectedTopic = createMemo(() => {
+    return trendsQuery.data?.find((topic) => topic.id === selectedTopicId());
+  });
+
   return (
     <div class="grid grow grid-cols-[300px_1fr]">
-      <div class="border-r border-r-neutral-400 bg-neutral-200 p-2">
+      <div class="border-r border-r-neutral-300 bg-neutral-200 p-4">
+        <Show when={selectedTopic()?.topic}>
+          {(topicName) => <div>Top Queries For {topicName()}</div>}
+        </Show>
         <div class="flex flex-col gap-2">
-          <For each={selectedTopicQuery?.data}>
+          <For
+            fallback={
+              <div class="pt-4 text-center opacity-40">
+                Select a topic to analyze
+              </div>
+            }
+            each={selectedTopicQuery?.data}
+          >
             {(query) => <QueryCard searchEvent={query} />}
           </For>
         </div>
