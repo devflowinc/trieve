@@ -8,7 +8,9 @@ use trieve_server::data::models::{self, ChunkData, Event, PGInsertQueueMessage};
 use trieve_server::errors::ServiceError;
 use trieve_server::operators::chunk_operator::bulk_insert_chunk_metadata_query;
 use trieve_server::operators::event_operator::create_event_query;
-use trieve_server::operators::qdrant_operator::delete_points_from_qdrant;
+use trieve_server::operators::qdrant_operator::{
+    delete_points_from_qdrant, get_collection_name_from_config,
+};
 use trieve_server::{establish_connection, get_env};
 
 fn main() {
@@ -268,14 +270,15 @@ async fn pg_insert_worker(
                     })
                     .collect::<Vec<uuid::Uuid>>();
 
-                let _ = delete_points_from_qdrant(
-                    qdrant_point_ids,
-                    messages.first().unwrap().dataset_config.clone(),
-                )
-                .await
-                .map_err(|err| {
-                    log::error!("Failed to delete points from qdrant: {:?}", err);
-                });
+                let collection_name = get_collection_name_from_config(
+                    &messages.first().unwrap().dataset_config.clone(),
+                );
+
+                let _ = delete_points_from_qdrant(qdrant_point_ids, collection_name)
+                    .await
+                    .map_err(|err| {
+                        log::error!("Failed to delete points from qdrant: {:?}", err);
+                    });
 
                 log::error!("Failed to upload bulk pg chunk: {:?}", err);
             }

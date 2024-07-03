@@ -16,10 +16,10 @@ use qdrant_client::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
         quantization_config::Quantization, BinaryQuantization, CountPoints, CreateCollection,
         Distance, FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
-        QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy,
+        QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy, ScrollPoints,
         SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints, SparseIndexConfig,
         SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector,
-        VectorParams, VectorParamsMap, VectorsConfig,
+        VectorParams, VectorParamsMap, VectorsConfig, WithPayloadSelector, WithVectorsSelector,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -757,7 +757,8 @@ pub async fn search_over_groups_query(
                     vector_name: Some(vector_name.to_string()),
                     limit: (limit * page as u32),
                     score_threshold,
-                    with_payload: None,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
                     group_size: if group_size == 0 { 1 } else { group_size },
@@ -782,7 +783,8 @@ pub async fn search_over_groups_query(
                     vector_name: Some(vector_name.to_string()),
                     limit: (limit * page as u32),
                     score_threshold,
-                    with_payload: None,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
                     group_size: if group_size == 0 { 1 } else { group_size },
@@ -875,7 +877,8 @@ pub async fn search_qdrant_query(
                     limit,
                     score_threshold: query.score_threshold,
                     offset: Some((page - 1) * limit),
-                    with_payload: None,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
                     filter: Some(query.filter.clone()),
                     timeout: Some(60),
                     params: None,
@@ -904,7 +907,8 @@ pub async fn search_qdrant_query(
                     limit,
                     score_threshold: query.score_threshold,
                     offset: Some((page - 1) * limit),
-                    with_payload: None,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
                     filter: Some(query.filter.clone()),
                     timeout: Some(60),
                     params: Some(SearchParams {
@@ -1088,7 +1092,8 @@ pub async fn recommend_qdrant_query(
         negative: negative_point_ids.clone(),
         filter: Some(filter),
         limit,
-        with_payload: None,
+        with_payload: Some(WithPayloadSelector::from(false)),
+        with_vectors: Some(WithVectorsSelector::from(false)),
         params: Some(SearchParams {
             exact: Some(false),
             indexed_only: Some(config.INDEXED_ONLY),
@@ -1097,7 +1102,6 @@ pub async fn recommend_qdrant_query(
         score_threshold: None,
         offset: None,
         using: Some(vector_name.to_string()),
-        with_vectors: None,
         lookup_from: None,
         read_consistency: None,
         positive_vectors: vec![],
@@ -1218,7 +1222,8 @@ pub async fn recommend_qdrant_groups_query(
         negative: negative_point_ids.clone(),
         filter: Some(filters),
         limit: limit.try_into().unwrap_or(10),
-        with_payload: None,
+        with_payload: Some(WithPayloadSelector::from(false)),
+        with_vectors: Some(WithVectorsSelector::from(false)),
         params: Some(SearchParams {
             exact: Some(false),
             indexed_only: Some(config.INDEXED_ONLY),
@@ -1226,7 +1231,6 @@ pub async fn recommend_qdrant_groups_query(
         }),
         score_threshold: None,
         using: Some(vector_name.to_string()),
-        with_vectors: None,
         lookup_from: None,
         read_consistency: None,
         positive_vectors: vec![],
@@ -1363,12 +1367,14 @@ pub async fn point_ids_exists_in_qdrant(
     Ok(data.result.len() == point_ids.len())
 }
 
+pub fn get_collection_name_from_config(config: &ServerDatasetConfiguration) -> String {
+    format!("{}_vectors", config.EMBEDDING_SIZE)
+}
+
 pub async fn delete_points_from_qdrant(
     point_ids: Vec<uuid::Uuid>,
-    config: ServerDatasetConfiguration,
+    qdrant_collection: String,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
-
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
         Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
@@ -1386,4 +1392,81 @@ pub async fn delete_points_from_qdrant(
         })?;
 
     Ok(())
+}
+
+pub async fn get_qdrant_collections() -> Result<Vec<String>, ServiceError> {
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+
+    let qdrant_collections = qdrant_client.list_collections().await.map_err(|err| {
+        log::info!("Failed to list collections from qdrant {:?}", err);
+        ServiceError::BadRequest("Failed to list collections from qdrant".to_string())
+    })?;
+
+    let collection_names = qdrant_collections
+        .collections
+        .iter()
+        .map(|collection| collection.name.clone())
+        .collect();
+
+    Ok(collection_names)
+}
+
+pub async fn scroll_qdrant_collection_ids(
+    collection_name: String,
+    offset_id: Option<String>,
+    limit: Option<u32>,
+) -> Result<(Vec<uuid::Uuid>, Option<String>), ServiceError> {
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+
+    let scroll_points_params = ScrollPoints {
+        collection_name,
+        limit,
+        offset: offset_id.map(|id| id.into()),
+        filter: None,
+        with_payload: Some(WithPayloadSelector::from(false)),
+        with_vectors: Some(WithVectorsSelector::from(false)),
+        read_consistency: None,
+        shard_key_selector: None,
+        order_by: None,
+    };
+
+    let qdrant_point_ids = qdrant_client
+        .scroll(&scroll_points_params)
+        .await
+        .map_err(|err| {
+            log::info!("Failed to scroll points from qdrant {:?}", err);
+            ServiceError::BadRequest("Failed to scroll points from qdrant".to_string())
+        })?;
+
+    let point_ids = qdrant_point_ids
+        .result
+        .iter()
+        .filter_map(|point| {
+            let point_id = match point.id.clone()?.point_id_options? {
+                PointIdOptions::Uuid(id) => uuid::Uuid::parse_str(&id).ok()?,
+                PointIdOptions::Num(_) => {
+                    return None;
+                }
+            };
+
+            Some(point_id)
+        })
+        .collect::<Vec<uuid::Uuid>>();
+
+    let offset = qdrant_point_ids
+        .next_page_offset
+        .map(|id| match id.point_id_options {
+            Some(PointIdOptions::Uuid(id)) => id,
+            _ => "".to_string(),
+        });
+
+    Ok((point_ids, offset))
 }

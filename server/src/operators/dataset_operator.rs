@@ -249,7 +249,6 @@ pub async fn clear_dataset_by_dataset_id_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn delete_chunks_in_dataset(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -344,7 +343,7 @@ pub async fn delete_chunks_in_dataset(
             log::error!("Failed to create event: {:?}", err);
         });
 
-        log::info!("Deleted {} chunks from {}", chunk_ids.len(), id);
+        println!("Deleted {} chunks from {}", chunk_ids.len(), id);
 
         // Move to the next batch
         last_offset_id = *chunk_ids.last().unwrap();
@@ -374,6 +373,10 @@ pub async fn delete_dataset_by_id_query(
                 log::error!("Could not delete dataset: {}", err);
                 ServiceError::BadRequest("Could not delete dataset".to_string())
             })?;
+
+    if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()) != "true" {
+        return Ok(dataset);
+    }
 
     clickhouse_client
         .query("DELETE FROM default.dataset_events WHERE dataset_id = ?")
