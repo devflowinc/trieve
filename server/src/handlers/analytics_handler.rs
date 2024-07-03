@@ -355,7 +355,7 @@ pub struct GetLowConfidenceQueriesRequest {
     path = "/analytics/{dataset_id}/query/low_confidence",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = GetHeadQueriesRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
+    request_body(content = GetLowConfidenceQueriesRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "Low Confidence Queries for the dataset", body = Vec<SearchQueryEvent>),
 
