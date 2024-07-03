@@ -300,6 +300,7 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::GetDatasetsPagination,
             handlers::analytics_handler::GetDatasetMetricsRequest,
             handlers::analytics_handler::GetHeadQueriesRequest,
+            handlers::analytics_handler::GetLowConfidenceQueriesRequest,
             handlers::analytics_handler::GetAllQueriesRequest,
             handlers::analytics_handler::GetRPSGraphRequest,
             handlers::analytics_handler::RAGUsageResponse,
