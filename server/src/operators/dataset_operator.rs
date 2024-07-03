@@ -271,26 +271,27 @@ pub async fn delete_chunks_in_dataset(
 
     loop {
         // Fetch a batch of chunk IDs
-        let chunk_and_qdrant_ids = chunk_metadata_columns::chunk_metadata
-            .filter(chunk_metadata_columns::dataset_id.eq(id))
-            .filter(chunk_metadata_columns::id.gt(last_offset_id))
-            .select((
-                chunk_metadata_columns::id,
-                chunk_metadata_columns::qdrant_point_id,
-            ))
-            .order(chunk_metadata_columns::id)
-            .limit(
-                option_env!("DELETE_CHUNK_BATCH_SIZE")
-                    .unwrap_or("5000")
-                    .parse::<i64>()
-                    .unwrap_or(5000),
-            )
-            .load::<(uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
-            .await
-            .map_err(|err| {
-                log::error!("Could not fetch chunk IDs: {}", err);
-                ServiceError::BadRequest("Could not fetch chunk IDs".to_string())
-            })?;
+        let chunk_and_qdrant_ids: Vec<(uuid::Uuid, uuid::Uuid)> =
+            chunk_metadata_columns::chunk_metadata
+                .filter(chunk_metadata_columns::dataset_id.eq(id))
+                .filter(chunk_metadata_columns::id.gt(last_offset_id))
+                .select((
+                    chunk_metadata_columns::id,
+                    chunk_metadata_columns::qdrant_point_id,
+                ))
+                .order(chunk_metadata_columns::id)
+                .limit(
+                    option_env!("DELETE_CHUNK_BATCH_SIZE")
+                        .unwrap_or("5000")
+                        .parse::<i64>()
+                        .unwrap_or(5000),
+                )
+                .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
+                .await
+                .map_err(|err| {
+                    log::error!("Could not fetch chunk IDs: {}", err);
+                    ServiceError::BadRequest("Could not fetch chunk IDs".to_string())
+                })?;
 
         let chunk_ids = chunk_and_qdrant_ids
             .iter()
@@ -298,7 +299,7 @@ pub async fn delete_chunks_in_dataset(
             .collect::<Vec<uuid::Uuid>>();
         let qdrant_point_ids = chunk_and_qdrant_ids
             .iter()
-            .filter_map(|(_, qdrant_id)| Some((*qdrant_id)?.to_string()))
+            .map(|(_, qdrant_id)| qdrant_id.clone().to_string())
             .collect::<Vec<String>>();
 
         if chunk_ids.is_empty() {

@@ -604,9 +604,7 @@ pub async fn add_chunk_to_group(
     let qdrant_point_id =
         create_chunk_bookmark_query(pool, ChunkGroupBookmark::from_details(group_id, id)).await?;
 
-    if let Some(qdrant_point_id) = qdrant_point_id {
-        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
-    }
+    add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -667,9 +665,7 @@ pub async fn add_chunk_to_group_by_tracking_id(
     )
     .await?;
 
-    if let Some(qdrant_point_id) = qdrant_point_id {
-        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
-    }
+    add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -879,9 +875,7 @@ pub async fn remove_chunk_from_group(
 
     let qdrant_point_id = delete_chunk_from_group_query(chunk_id, group_id, pool).await?;
 
-    if let Some(qdrant_point_id) = qdrant_point_id {
-        remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
-    }
+    remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

@@ -125,17 +125,6 @@ pub async fn upload_file_handler(
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
-    let document_upload_feature = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    )
-    .DOCUMENT_UPLOAD_FEATURE;
-
-    if !document_upload_feature {
-        return Err(
-            ServiceError::BadRequest("Document upload feature is disabled".to_string()).into(),
-        );
-    }
-
     let mut redis_conn = redis_pool
         .get()
         .await
@@ -265,15 +254,6 @@ pub async fn get_file_handler(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let download_enabled =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
-            .DOCUMENT_DOWNLOAD_FEATURE;
-    if !download_enabled {
-        return Err(
-            ServiceError::BadRequest("Document download feature is disabled".to_string()).into(),
-        );
-    }
-
     let file = get_file_query(file_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(file))

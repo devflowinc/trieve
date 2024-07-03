@@ -411,8 +411,7 @@ pub async fn create_new_qdrant_point_query(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(updated_vector, web_pool))]
 pub async fn update_qdrant_point_query(
-    metadata: Option<ChunkMetadata>,
-    point_id: uuid::Uuid,
+    metadata: ChunkMetadata,
     updated_vector: Option<Vec<f32>>,
     group_ids: Option<Vec<uuid::Uuid>>,
     dataset_id: uuid::Uuid,
@@ -420,7 +419,7 @@ pub async fn update_qdrant_point_query(
     config: ServerDatasetConfiguration,
     web_pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
-    let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
+    let qdrant_point_id: Vec<PointId> = vec![metadata.qdrant_point_id.to_string().clone().into()];
 
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
@@ -445,7 +444,7 @@ pub async fn update_qdrant_point_query(
 
     let current_point = current_point_vec.first();
 
-    let payload = if let Some(metadata) = metadata.clone() {
+    let payload = {
         let group_ids = if let Some(group_ids) = group_ids.clone() {
             group_ids
         } else if let Some(current_point) = current_point {
@@ -475,15 +474,11 @@ pub async fn update_qdrant_point_query(
                 .collect();
 
         QdrantPayload::new(
-            metadata,
+            metadata.clone(),
             group_ids.into(),
             Some(dataset_id),
             Some(chunk_tags),
         )
-    } else if let Some(current_point) = current_point {
-        QdrantPayload::from(current_point.clone())
-    } else {
-        return Err(ServiceError::BadRequest("No metadata points found".into()).into());
     };
 
     let points_selector = qdrant_point_id.into();
@@ -505,7 +500,11 @@ pub async fn update_qdrant_point_query(
             ("sparse_vectors".to_string(), Vector::from(splade_vector)),
         ]);
 
-        let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload.into());
+        let point = PointStruct::new(
+            metadata.qdrant_point_id.clone().to_string(),
+            vector_payload,
+            payload.into(),
+        );
 
         qdrant_client
             .upsert_points(qdrant_collection, None, vec![point], None)

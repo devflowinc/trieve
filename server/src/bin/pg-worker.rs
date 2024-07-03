@@ -261,13 +261,7 @@ async fn pg_insert_worker(
             Err(err) => {
                 let qdrant_point_ids = messages
                     .iter()
-                    .map(|message| {
-                        message
-                            .chunk_metadatas
-                            .chunk_metadata
-                            .qdrant_point_id
-                            .unwrap_or_default()
-                    })
+                    .map(|message| message.chunk_metadatas.chunk_metadata.qdrant_point_id)
                     .collect::<Vec<uuid::Uuid>>();
 
                 let collection_name = get_collection_name_from_config(

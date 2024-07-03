@@ -319,7 +319,7 @@ impl Default for GeoInfo {
 pub struct ChunkMetadata {
     pub id: uuid::Uuid,
     pub link: Option<String>,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub chunk_html: Option<String>,
@@ -339,7 +339,7 @@ pub struct ChunkMetadata {
 pub struct ChunkMetadataTable {
     pub id: uuid::Uuid,
     pub link: Option<String>,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub chunk_html: Option<String>,
@@ -380,7 +380,7 @@ impl ChunkMetadata {
         chunk_html: &Option<String>,
         link: &Option<String>,
         tag_set: &Option<Vec<Option<String>>>,
-        qdrant_point_id: Option<uuid::Uuid>,
+        qdrant_point_id: uuid::Uuid,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
@@ -463,7 +463,7 @@ impl ChunkMetadata {
         chunk_html: Option<String>,
         link: &Option<String>,
         tag_set: &Option<Vec<Option<String>>>,
-        qdrant_point_id: Option<uuid::Uuid>,
+        qdrant_point_id: uuid::Uuid,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
@@ -568,29 +568,7 @@ pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
     pub dataset_config: ServerDatasetConfiguration,
     pub dataset_id: uuid::Uuid,
-    pub qdrant_point_id: Option<uuid::Uuid>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, Clone)]
-#[diesel(table_name = chunk_collisions)]
-pub struct ChunkCollision {
-    pub id: uuid::Uuid,
-    pub chunk_id: uuid::Uuid,
-    pub collision_qdrant_id: Option<uuid::Uuid>,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl ChunkCollision {
-    pub fn from_details<T: Into<uuid::Uuid>>(chunk_id: T, collision_id: T) -> Self {
-        ChunkCollision {
-            id: uuid::Uuid::new_v4(),
-            chunk_id: chunk_id.into(),
-            collision_qdrant_id: Some(collision_id.into()),
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-        }
-    }
+    pub qdrant_point_id: uuid::Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -613,7 +591,7 @@ impl ChunkCollision {
 pub struct ChunkMetadataWithScore {
     pub id: uuid::Uuid,
     pub link: Option<String>,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
@@ -758,7 +736,7 @@ impl ChunkMetadataTypes {
 pub struct SlimChunkMetadataWithScore {
     pub id: uuid::Uuid,
     pub link: Option<String>,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
@@ -804,7 +782,7 @@ impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
 pub struct ChunkMetadataStringTagSet {
     pub id: uuid::Uuid,
     pub link: Option<String>,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub chunk_html: Option<String>,
@@ -871,7 +849,7 @@ impl From<ContentChunkMetadata> for ChunkMetadataStringTagSet {
 pub struct SlimChunkMetadataTable {
     pub id: uuid::Uuid,
     pub link: Option<String>,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub metadata: Option<serde_json::Value>,
@@ -901,7 +879,7 @@ pub struct SlimChunkMetadataTable {
 pub struct SlimChunkMetadata {
     pub id: uuid::Uuid,
     pub link: Option<String>,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
@@ -1019,7 +997,7 @@ impl From<ContentChunkMetadata> for SlimChunkMetadata {
 }))]
 pub struct ContentChunkMetadata {
     pub id: uuid::Uuid,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub qdrant_point_id: uuid::Uuid,
     pub chunk_html: Option<String>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -1627,7 +1605,6 @@ impl DatasetAndUsage {
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
     "N_RETRIEVALS_TO_INCLUDE": 5,
     "DUPLICATE_DISTANCE_THRESHOLD": 1.1,
-    "COLLISIONS_ENABLED": false,
     "EMBEDDING_SIZE": 1536,
     "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
     "FULLTEXT_ENABLED": true,
@@ -1642,8 +1619,6 @@ impl DatasetAndUsage {
 }))]
 #[allow(non_snake_case)]
 pub struct ServerDatasetConfiguration {
-    pub DOCUMENT_UPLOAD_FEATURE: bool,
-    pub DOCUMENT_DOWNLOAD_FEATURE: bool,
     pub LLM_BASE_URL: String,
     pub EMBEDDING_BASE_URL: String,
     pub EMBEDDING_MODEL_NAME: String,
@@ -1651,8 +1626,6 @@ pub struct ServerDatasetConfiguration {
     pub MESSAGE_TO_QUERY_PROMPT: String,
     pub RAG_PROMPT: String,
     pub N_RETRIEVALS_TO_INCLUDE: usize,
-    pub DUPLICATE_DISTANCE_THRESHOLD: f64,
-    pub COLLISIONS_ENABLED: bool,
     pub EMBEDDING_SIZE: usize,
     pub LLM_DEFAULT_MODEL: String,
     pub FULLTEXT_ENABLED: bool,
@@ -1675,16 +1648,6 @@ impl ServerDatasetConfiguration {
             .unwrap_or(default_config.as_object().unwrap());
 
         ServerDatasetConfiguration {
-            DOCUMENT_UPLOAD_FEATURE: configuration
-                .get("DOCUMENT_UPLOAD_FEATURE")
-                .unwrap_or(&json!(true))
-                .as_bool()
-                .unwrap_or(true),
-            DOCUMENT_DOWNLOAD_FEATURE: configuration
-                .get("DOCUMENT_DOWNLOAD_FEATURE")
-                .unwrap_or(&json!(true))
-                .as_bool()
-                .unwrap_or(true),
             LLM_BASE_URL: configuration
                 .get("LLM_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
@@ -1737,11 +1700,6 @@ impl ServerDatasetConfiguration {
                 .as_u64()
                 .map(|u| u as usize)
                 .unwrap_or(5),
-            DUPLICATE_DISTANCE_THRESHOLD: configuration
-                .get("DUPLICATE_DISTANCE_THRESHOLD")
-                .unwrap_or(&json!(1.1))
-                .as_f64()
-                .unwrap_or(1.1),
             EMBEDDING_SIZE: configuration
                 .get("EMBEDDING_SIZE")
                 .unwrap_or(&json!(1536))
@@ -1783,11 +1741,6 @@ impl ServerDatasetConfiguration {
                     }
                 })
                 .unwrap_or("gpt-3.5-turbo-1106".to_string()),
-            COLLISIONS_ENABLED: configuration
-                .get("COLLISIONS_ENABLED")
-                .unwrap_or(&json!(false))
-                .as_bool()
-                .unwrap_or(false),
             FULLTEXT_ENABLED: configuration
                 .get("FULLTEXT_ENABLED")
                 .unwrap_or(&json!(true))
