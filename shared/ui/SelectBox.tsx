@@ -35,7 +35,7 @@ export const Select = <T,>(props: SelectProps<T>) => {
         <div class="relative w-full">
           <ListboxOptions
             unmount={false}
-            class="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white text-base outline outline-1 outline-gray-300 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+            class="absolute z-40 shadow mt-1 max-h-60 w-full overflow-auto rounded-md bg-white text-base outline outline-1 outline-gray-300 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
           >
             <For each={props.options}>
               {(option): JSX.Element => (

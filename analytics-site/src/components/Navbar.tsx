@@ -67,7 +67,7 @@ export const Navbar = (props: NavbarProps) => {
                 role="link"
                 classList={{
                   "cursor-pointer": true,
-                  "text-purple-800 underline": pathname() === link.href,
+                  "text-purple-900 underline": pathname() === link.href,
                   "text-black": pathname() !== link.href,
                 }}
                 onClick={() => {
