@@ -38,6 +38,7 @@ export const Navbar = (props: NavbarProps) => {
           alt="Logo"
         />
         <Select
+          class="min-w-[150px]"
           display={(org) => org.name}
           onSelected={(e) => {
             console.log(e);
@@ -49,6 +50,7 @@ export const Navbar = (props: NavbarProps) => {
         <Show when={props.datasetOptions.length > 0 && props.selectedDataset}>
           {(selected) => (
             <Select
+              class="min-w-[220px]"
               display={(dataset) => dataset.dataset.name}
               onSelected={(e) => {
                 props.setSelectedDataset(e);
