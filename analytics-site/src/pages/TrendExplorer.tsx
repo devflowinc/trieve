@@ -38,10 +38,10 @@ export const TrendExplorer = () => {
   });
 
   return (
-    <div class="grid grow grid-cols-[300px_1fr]">
+    <div class="grid grow grid-cols-[340px_1fr]">
       <div class="border-r border-r-neutral-300 bg-neutral-200 p-4">
         <Show when={selectedTopic()?.topic}>
-          {(topicName) => <div>Top Queries For {topicName()}</div>}
+          {(topicName) => <div>Top Queries For "{topicName()}"</div>}
         </Show>
         <div class="flex flex-col gap-2">
           <For
