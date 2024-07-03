@@ -15,7 +15,7 @@ import {
   isUserDTO,
 } from "../../../utils/apiTypes";
 import { createToast } from "../ShowToasts";
-import { useSearchParams } from "@solidjs/router";
+import { RouteSectionProps, useSearchParams } from "@solidjs/router";
 
 export interface DatasetAndUserStoreContextProps {
   children: JSX.Element;
@@ -54,9 +54,7 @@ export const DatasetAndUserContext: Context<DatasetAndUserStore> =
     logout: () => {},
   });
 
-export const DatasetAndUserContextWrapper = (
-  props: DatasetAndUserStoreContextProps,
-) => {
+export const DatasetAndUserContextWrapper = (props: RouteSectionProps) => {
   const apiHost: string = import.meta.env.VITE_API_HOST as string;
 
   const [searchParams, setSearchParams] = useSearchParams();
