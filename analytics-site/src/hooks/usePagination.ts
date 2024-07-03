@@ -22,12 +22,17 @@ export const usePagination = () => {
     return maxPage === null || page() < maxPage;
   });
 
+  const resetMaxPageDiscovered = () => {
+    setMaxPageDiscovered(null);
+  };
+
   return {
     page,
     nextPage,
     prevPage,
     canGoNext,
     setMaxPageDiscovered,
+    resetMaxPageDiscovered,
     maxPageDiscovered,
   };
 };
