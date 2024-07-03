@@ -1378,7 +1378,7 @@ pub async fn delete_points_from_qdrant(
     let points: Vec<PointId> = point_ids.iter().map(|x| x.to_string().into()).collect();
 
     qdrant_client
-        .delete_points(qdrant_collection, None, &points.into(), None)
+        .delete_points_blocking(qdrant_collection, None, &points.into(), None)
         .await
         .map_err(|err| {
             log::info!("Failed to delete points from qdrant {:?}", err);
