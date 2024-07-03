@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@corvu/resizable": "^0.2.2",
+    "@nozbe/microfuzz": "^1.0.0",
     "@sentry/browser": "^7.110.0",
     "@solid-aria/focus": "^0.1.4",
     "@solid-aria/switch": "^0.1.2",
