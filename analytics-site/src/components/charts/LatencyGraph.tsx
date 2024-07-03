@@ -52,18 +52,23 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
           labels: [],
           datasets: [
             {
+              borderColor: "purple",
+              pointBackgroundColor: "purple",
+              backgroundColor: "rgba(128, 0, 128, 0.1)", // Light purple background
+              borderWidth: 1,
               label: "Time",
               data: [],
-              borderWidth: 1,
             },
           ],
         },
         options: {
+          color: "purple",
           plugins: {
             legend: { display: false },
           },
           scales: {
             y: {
+              grid: { color: "rgba(128, 0, 128, 0.1)" }, // Light purple grid
               title: {
                 text: "Latency (ms)",
                 display: true,
