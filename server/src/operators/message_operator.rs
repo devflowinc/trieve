@@ -470,15 +470,18 @@ pub async fn stream_response(
         })
         .collect();
 
-        if dataset_config.SYSTEM_PROMPT.is_some() {
-                open_ai_messages.insert(0, ChatMessage{
+    if dataset_config.SYSTEM_PROMPT.is_some() {
+        open_ai_messages.insert(
+            0,
+            ChatMessage {
                 role: Role::System,
                 content: ChatMessageContent::Text(dataset_config.SYSTEM_PROMPT.clone().unwrap()),
                 tool_calls: None,
                 name: None,
                 tool_call_id: None,
-            })
-        }
+            },
+        )
+    }
 
     let parameters = ChatCompletionParameters {
         model: chosen_model,
