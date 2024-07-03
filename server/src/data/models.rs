@@ -4,6 +4,8 @@ use std::io::Write;
 
 use crate::errors::ServiceError;
 use crate::get_env;
+use crate::operators::chunk_operator::get_metadata_from_ids_query;
+use crate::operators::clickhouse_operator::CHSlimResponse;
 use crate::operators::parse_operator::convert_html_to_text;
 
 use super::schema::*;
@@ -2900,9 +2902,25 @@ pub struct SearchQueryEvent {
     pub request_params: String,
     pub latency: f32,
     pub top_score: f32,
-    pub results: Vec<String>,
+    pub results: Vec<ChunkMetadataStringTagSet>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
+}
+
+impl Default for SearchQueryEvent {
+    fn default() -> Self {
+        SearchQueryEvent {
+            id: uuid::Uuid::new_v4(),
+            search_type: "search".to_string(),
+            query: "".to_string(),
+            request_params: "".to_string(),
+            latency: 0.0,
+            top_score: 0.0,
+            results: vec![],
+            dataset_id: uuid::Uuid::new_v4(),
+            created_at: chrono::Utc::now().to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema, Clone)]
@@ -2921,18 +2939,33 @@ pub struct SearchQueryEventClickhouse {
     pub created_at: OffsetDateTime,
 }
 
-impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
-    fn from(event: SearchQueryEventClickhouse) -> Self {
+impl SearchQueryEventClickhouse {
+    pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> SearchQueryEvent {
+        let chunk_results = self
+            .results
+            .into_iter()
+            .map(|r| serde_json::from_str::<CHSlimResponse>(&r).unwrap().id)
+            .collect::<Vec<uuid::Uuid>>();
+
+        let chunks = get_metadata_from_ids_query(chunk_results.clone(), self.dataset_id, pool)
+            .await
+            .unwrap_or(vec![]);
+
+        let chunk_string_tag_sets = chunks
+            .into_iter()
+            .map(ChunkMetadataStringTagSet::from)
+            .collect::<Vec<ChunkMetadataStringTagSet>>();
+
         SearchQueryEvent {
-            id: uuid::Uuid::from_bytes(*event.id.as_bytes()),
-            search_type: event.search_type,
-            query: event.query,
-            request_params: event.request_params,
-            latency: event.latency,
-            top_score: event.top_score,
-            results: event.results,
-            dataset_id: uuid::Uuid::from_bytes(*event.dataset_id.as_bytes()),
-            created_at: event.created_at.to_string(),
+            id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
+            search_type: self.search_type,
+            query: self.query,
+            request_params: self.request_params,
+            latency: self.latency,
+            top_score: self.top_score,
+            results: chunk_string_tag_sets,
+            dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+            created_at: self.created_at.to_string(),
         }
     }
 }
@@ -2943,21 +2976,36 @@ pub struct RagQueryEvent {
     pub rag_type: String,
     pub user_message: String,
     pub search_id: uuid::Uuid,
-    pub results: Vec<uuid::Uuid>,
+    pub results: Vec<ChunkMetadataStringTagSet>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
 }
 
-impl From<RagQueryEventClickhouse> for RagQueryEvent {
-    fn from(event: RagQueryEventClickhouse) -> Self {
+impl RagQueryEventClickhouse {
+    pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> RagQueryEvent {
+        let chunk_ids = self
+            .results
+            .into_iter()
+            .map(|r| r.parse::<uuid::Uuid>().unwrap_or_default())
+            .collect::<Vec<uuid::Uuid>>();
+
+        let chunks = get_metadata_from_ids_query(chunk_ids, self.dataset_id, pool)
+            .await
+            .unwrap_or(vec![]);
+
+        let chunk_string_tag_sets = chunks
+            .into_iter()
+            .map(ChunkMetadataStringTagSet::from)
+            .collect::<Vec<ChunkMetadataStringTagSet>>();
+
         RagQueryEvent {
-            id: uuid::Uuid::from_bytes(*event.id.as_bytes()),
-            rag_type: event.rag_type,
-            user_message: event.user_message,
-            search_id: uuid::Uuid::from_bytes(*event.search_id.as_bytes()),
-            results: event.results,
-            dataset_id: uuid::Uuid::from_bytes(*event.dataset_id.as_bytes()),
-            created_at: event.created_at.to_string(),
+            id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
+            rag_type: self.rag_type,
+            user_message: self.user_message,
+            search_id: uuid::Uuid::from_bytes(*self.search_id.as_bytes()),
+            results: chunk_string_tag_sets,
+            dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+            created_at: self.created_at.to_string(),
         }
     }
 }
@@ -2970,7 +3018,7 @@ pub struct RagQueryEventClickhouse {
     pub user_message: String,
     #[serde(with = "clickhouse::serde::uuid")]
     pub search_id: uuid::Uuid,
-    pub results: Vec<uuid::Uuid>,
+    pub results: Vec<String>,
     pub llm_response: String,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
@@ -3050,13 +3098,13 @@ pub enum SearchMethod {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct AnalyticsFilter {
+pub struct SearchAnalyticsFilter {
     pub date_range: Option<DateRange>,
     pub search_method: Option<SearchMethod>,
     pub search_type: Option<SearchType>,
 }
 
-impl AnalyticsFilter {
+impl SearchAnalyticsFilter {
     pub fn add_to_query(&self, mut query_string: String) -> String {
         if let Some(date_range) = &self.date_range {
             if let Some(gt) = &date_range.gt {
@@ -3081,6 +3129,47 @@ impl AnalyticsFilter {
                 " AND JSONExtractString(request_params, 'search_type') = '{}'",
                 search_method
             ));
+        }
+
+        query_string
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display)]
+#[serde(rename_all = "snake_case")]
+#[serde(untagged)]
+pub enum RagTypes {
+    #[display(fmt = "chosen_chunks")]
+    ChosenChunks,
+    #[display(fmt = "all_chunks")]
+    AllChunks,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RAGAnalyticsFilter {
+    pub date_range: Option<DateRange>,
+    pub rag_type: Option<RagTypes>,
+}
+
+impl RAGAnalyticsFilter {
+    pub fn add_to_query(&self, mut query_string: String) -> String {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(rag_type) = &self.rag_type {
+            query_string.push_str(&format!(" AND rag_type = '{}'", rag_type));
         }
 
         query_string

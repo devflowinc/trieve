@@ -569,7 +569,11 @@ pub async fn stream_response(
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
             search_id: clickhouse_search_event.id,
-            results: chunk_ids,
+            results: chunk_ids
+                .clone()
+                .into_iter()
+                .map(|s| s.to_string())
+                .collect(),
             user_message: query.clone(),
             rag_type: "all_chunks".to_string(),
             llm_response: completion.clone(),

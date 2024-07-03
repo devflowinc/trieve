@@ -303,7 +303,7 @@ impl Modify for SecurityAddon {
             data::models::SearchQueryEvent,
             data::models::SearchClusterTopics,
             data::models::SearchLatencyGraph,
-            data::models::AnalyticsFilter,
+            data::models::SearchAnalyticsFilter,
             data::models::SearchMethod,
             data::models::SearchType,
             data::models::ApiKeyRespBody,
@@ -992,6 +992,14 @@ pub fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/{dataset_id}/query/{search_id}")
                                 .route(web::get().to(handlers::analytics_handler::get_query)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/rag")
+                                .route(web::post().to(handlers::analytics_handler::get_rag_queries)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/rag/usage")
+                                .route(web::get().to(handlers::analytics_handler::get_rag_usage)),
                             )
                             .service(
                                 web::resource("/{dataset_id}/{cluster_id}/{page}")

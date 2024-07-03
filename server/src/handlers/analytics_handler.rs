@@ -1,12 +1,14 @@
 use actix_web::{web, HttpResponse};
+use futures::future::join_all;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{
     data::models::{
-        AnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, DatasetAndOrgWithSubAndPlan,
-        HeadQueries, SearchClusterTopics, SearchLatencyGraph, SearchLatencyGraphClickhouse,
-        SearchQueryEvent, SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse,
+        ClusterTopicsClickhouse, DatasetAnalytics, DatasetAndOrgWithSubAndPlan, HeadQueries, Pool,
+        RAGAnalyticsFilter, RagQueryEvent, RagQueryEventClickhouse, SearchAnalyticsFilter,
+        SearchClusterTopics, SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueryEvent,
+        SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse,
     },
     errors::ServiceError,
 };
@@ -100,6 +102,7 @@ pub async fn get_queries_for_topic(
     data: web::Path<GetTopicQueries>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = data.dataset_id;
@@ -122,10 +125,12 @@ pub async fn get_queries_for_topic(
             ServiceError::InternalServerError("Error fetching queries".to_string())
         })?;
 
-    let queries: Vec<SearchQueryEvent> = clickhouse_queries
-        .into_iter()
-        .map(|q| q.into())
-        .collect::<Vec<_>>();
+    let queries: Vec<SearchQueryEvent> = join_all(
+        clickhouse_queries
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
 
     Ok(HttpResponse::Ok().json(queries))
 }
@@ -162,6 +167,7 @@ pub async fn get_query(
     data: web::Path<GetQueryRequest>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = data.dataset_id;
@@ -183,14 +189,14 @@ pub async fn get_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let query: SearchQueryEvent = clickhouse_query.into();
+    let query: SearchQueryEvent = clickhouse_query.from_clickhouse(pool.clone()).await;
 
     Ok(HttpResponse::Ok().json(query))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct GetDatasetMetricsRequest {
-    pub filter: Option<AnalyticsFilter>,
+    pub filter: Option<SearchAnalyticsFilter>,
 }
 
 /// Get Search Metrics
@@ -259,7 +265,7 @@ pub async fn get_search_metrics(
 
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
 pub struct GetHeadQueriesRequest {
-    pub filter: Option<AnalyticsFilter>,
+    pub filter: Option<SearchAnalyticsFilter>,
     pub page: Option<u32>,
 }
 
@@ -361,6 +367,7 @@ pub async fn get_low_confidence_queries(
     data: web::Json<GetHeadQueriesRequest>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     if dataset_org_plan_sub.dataset.id != *dataset_id {
@@ -400,17 +407,19 @@ pub async fn get_low_confidence_queries(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<SearchQueryEvent> = clickhouse_query
-        .into_iter()
-        .map(|q| q.into())
-        .collect::<Vec<_>>();
+    let queries: Vec<SearchQueryEvent> = join_all(
+        clickhouse_query
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
 
     Ok(HttpResponse::Ok().json(queries))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct GetAllQueriesRequest {
-    pub filter: Option<AnalyticsFilter>,
+    pub filter: Option<SearchAnalyticsFilter>,
     pub page: Option<u32>,
     pub sort_by: Option<String>,
     pub sort_order: Option<String>,
@@ -443,6 +452,7 @@ pub async fn get_all_queries(
     data: web::Json<GetAllQueriesRequest>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     if dataset_org_plan_sub.dataset.id != *dataset_id {
@@ -484,17 +494,19 @@ pub async fn get_all_queries(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<SearchQueryEvent> = clickhouse_query
-        .into_iter()
-        .map(|q| q.into())
-        .collect::<Vec<_>>();
+    let queries: Vec<SearchQueryEvent> = join_all(
+        clickhouse_query
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
 
     Ok(HttpResponse::Ok().json(queries))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct GetRPSGraphRequest {
-    pub filter: Option<AnalyticsFilter>,
+    pub filter: Option<SearchAnalyticsFilter>,
     pub granularity: Option<String>,
 }
 
@@ -686,4 +698,138 @@ pub async fn get_latency_graph(
         .collect::<Vec<_>>();
 
     Ok(HttpResponse::Ok().json(query))
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct GetRagQueriesRequest {
+    pub filter: Option<RAGAnalyticsFilter>,
+    pub page: Option<u32>,
+    pub sort_by: Option<String>,
+    pub sort_order: Option<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/analytics/{dataset_id}/rag",
+    context_path = "/api",
+    tag = "analytics",
+    request_body(content = GetRPSGraphRequest, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    responses(
+        (status = 200, description = "RAG queries for the dataset", body = Vec<SearchLatencyGraph>),
+
+        (status = 400, description = "Service error relating to getting RAG queries", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get RAG queries for."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_rag_queries(
+    dataset_id: web::Path<uuid::Uuid>,
+    data: web::Json<GetRagQueriesRequest>,
+    _user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    if dataset_org_plan_sub.dataset.id != *dataset_id {
+        return Err(ServiceError::BadRequest(
+            "Dataset header does not match provided dataset ID".to_string(),
+        ));
+    }
+
+    let mut query_string = String::from(
+        "SELECT 
+            ?fields
+        FROM 
+            default.rag_queries
+        WHERE dataset_id = ?",
+    );
+
+    if let Some(filter) = &data.filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(&format!(
+        "
+        ORDER BY 
+        {} {}
+        LIMIT 10
+        OFFSET ?",
+        data.sort_by.clone().unwrap_or("created_at".to_string()),
+        data.sort_order.clone().unwrap_or("DESC".to_string())
+    ));
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id.into_inner())
+        .bind((data.page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<RagQueryEventClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let queries: Vec<RagQueryEvent> = join_all(
+        clickhouse_query
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
+
+    Ok(HttpResponse::Ok().json(queries))
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RAGUsageResponse {
+    pub total_queries: i32,
+}
+
+#[utoipa::path(
+    get,
+    path = "/analytics/{dataset_id}/rag/usage",
+    context_path = "/api",
+    tag = "analytics",
+    responses(
+        (status = 200, description = "RAG usage for the dataset", body = RAGUsageResponse),
+
+        (status = 400, description = "Service error relating to getting RAG usage", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get RAG usage for."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_rag_usage(
+    dataset_id: web::Path<uuid::Uuid>,
+    _user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    if dataset_org_plan_sub.dataset.id != *dataset_id {
+        return Err(ServiceError::BadRequest(
+            "Dataset header does not match provided dataset ID".to_string(),
+        ));
+    }
+
+    let clickhouse_query = clickhouse_client
+        .query("SELECT count(*) FROM rag_queries WHERE dataset_id = ?")
+        .bind(dataset_id.into_inner())
+        .fetch_one::<i32>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    Ok(HttpResponse::Ok().json(RAGUsageResponse {
+        total_queries: clickhouse_query,
+    }))
 }
