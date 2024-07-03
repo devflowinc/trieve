@@ -12,6 +12,7 @@
   },
   "description": "The admin client for Trieve Search (https://search.trieve.ai)",
   "dependencies": {
+    "@nozbe/microfuzz": "^1.0.0",
     "@sentry/browser": "^7.110.0",
     "@solidjs/router": "^0.13.1",
     "sanitize-html": "^2.11.0",
