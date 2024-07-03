@@ -114,7 +114,7 @@ pub struct ChunkReqPayload {
     pub convert_html_to_text: Option<bool>,
     /// Boost is useful for when you want to boost certain phrases in the fulltext search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
     pub boost_phrase: Option<BoostPhrase>,
-    /// Distance phrase is useful for when you want to boost certain phrases in the fulltext search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
+    /// Distance phrase is useful for when you want to boost certain phrases in the semantic search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
     pub distance_phrase: Option<DistancePhrase>,
 }
 
