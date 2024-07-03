@@ -54,6 +54,9 @@ export const RpsGraph = (props: RpsGraphProps) => {
             {
               label: "Requests",
               data: [],
+              borderColor: "purple",
+              pointBackgroundColor: "purple",
+              backgroundColor: "rgba(128, 0, 128, 0.1)", // Light purple background
               borderWidth: 1,
             },
           ],
@@ -64,6 +67,7 @@ export const RpsGraph = (props: RpsGraphProps) => {
           },
           scales: {
             y: {
+              grid: { color: "rgba(128, 0, 128, 0.1)" }, // Light purple grid
               title: {
                 text: "Rps",
                 display: true,
