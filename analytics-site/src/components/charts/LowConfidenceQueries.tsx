@@ -13,6 +13,8 @@ import { getLowConfidenceQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
+import { FullScreenModal } from "shared/ui";
+import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 
 interface LowConfidenceQueriesProps {
   filters: AnalyticsParams;
@@ -101,7 +103,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
           </div>
         </div>
         <input
-          class="mt-1 border-neutral-800 px-2 text-end text-sm outline-none ring-0 ring-0 active:border-b-2"
+          class="mt-1 border-neutral-800 px-2 text-end text-sm outline-none ring-0 active:border-b-2"
           type="text"
           placeholder="Enter threshold.."
           value={thresholdText()}
@@ -136,10 +138,21 @@ interface QueryCardProps {
   query: SearchQueryEvent;
 }
 const QueryCard = (props: QueryCardProps) => {
+  const [open, setOpen] = createSignal(false);
   return (
-    <div class="flex justify-between">
-      <div class="truncate">{props.query.query}</div>
-      <div class="truncate">{props.query.top_score.toFixed(5)}</div>
-    </div>
+    <>
+      <div
+        onClick={() => {
+          setOpen(true);
+        }}
+        class="flex cursor-pointer justify-between"
+      >
+        <div class="truncate">{props.query.query}</div>
+        <div class="truncate">{props.query.top_score.toFixed(5)}</div>
+      </div>
+      <FullScreenModal title={props.query.query} show={open} setShow={setOpen}>
+        <SearchQueryEventModal searchEvent={props.query} />
+      </FullScreenModal>
+    </>
   );
 };

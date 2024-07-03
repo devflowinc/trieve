@@ -68,7 +68,7 @@ export const getHeadQueries = async (
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
+    throw new Error(`Failed to fetch head queries: ${response.statusText}`);
   }
 
   const data = (await response.json()) as unknown as HeadQuery[];
@@ -98,9 +98,35 @@ export const getLowConfidenceQueries = async (
   );
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch low confidence queries: ${response.statusText}`,
+    );
   }
 
   const data = (await response.json()) as unknown as SearchQueryEvent[];
+  return data;
+};
+
+export const getSearchQuery = async (
+  datasetId: string,
+  searchId: string,
+): Promise<SearchQueryEvent> => {
+  const response = await fetch(
+    `${apiHost}/analytics/${datasetId}/query/${searchId}`,
+    {
+      credentials: "include",
+      method: "GET",
+      headers: {
+        "TR-Dataset": datasetId,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch search event: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as unknown as SearchQueryEvent;
   return data;
 };
