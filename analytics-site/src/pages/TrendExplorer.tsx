@@ -41,8 +41,8 @@ export const TrendExplorer = () => {
   });
 
   return (
-    <div class="grid grow grid-cols-[380px_1fr] items-start">
-      <div class="m-4  rounded-lg border border-neutral-300 bg-neutral-200 p-4">
+    <div class="relative grow items-start">
+      <div class="absolute left-[20px] top-[20px] w-[380px] overflow-scroll rounded-lg border border-neutral-300 bg-neutral-200 p-4">
         <Show when={selectedTopic()?.topic}>
           {(topicName) => (
             <div class="pb-2 text-lg">
