@@ -19,8 +19,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -72,8 +72,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -120,8 +120,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -169,8 +169,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -217,8 +217,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -265,8 +265,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
