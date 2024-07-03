@@ -1,4 +1,7 @@
 import { createEffect, createSignal, on, onMount } from "solid-js";
+import { colord, extend } from "colord";
+import mixPlugin from "colord/plugins/mix";
+extend([mixPlugin]);
 import {
   Composite,
   Engine,
@@ -19,10 +22,14 @@ interface TrendExplorerCanvasProps {
   onSelectTopic: (topicId: string) => void;
 }
 
-// Get a shade of gray
 const getColorFromDensity = (density: number) => {
-  const color = Math.floor(255 - 70 * density);
-  return `rgb(${color}, ${color}, ${color})`;
+  // Mix white with a deep purple color
+  const color = colord("#914fc2") // Deep purple
+    .lighten(density * 0.082) // Mix with white
+    .toRgbString(); // Convert to RGB string
+
+  console.log(color);
+  return color;
 };
 
 const centeredRandom = (factor: number) => {

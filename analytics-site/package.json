@@ -18,6 +18,7 @@
     "@types/matter-js": "^0.19.6",
     "add": "^2.0.6",
     "chart.js": "^4.4.3",
+    "colord": "^2.9.3",
     "date-fns": "^3.6.0",
     "matter-js": "^0.20.0",
     "shared": "*",
