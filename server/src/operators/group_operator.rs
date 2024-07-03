@@ -12,7 +12,6 @@ use crate::{
 };
 use actix_web::web;
 use diesel::prelude::*;
-use diesel::result::OptionalExtension;
 use diesel::{
     dsl::sql,
     sql_types::{Int8, Text},
@@ -30,75 +29,28 @@ pub async fn get_group_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, ServiceError> {
+) -> Result<ChunkGroupAndFile, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let group = chunk_group_columns::chunk_group
+    let (group, file_id): (ChunkGroup, Option<uuid::Uuid>) = chunk_group_columns::chunk_group
+        .left_join(
+            groups_from_files_columns::groups_from_files
+                .on(chunk_group_columns::id.eq(groups_from_files_columns::group_id)),
+        )
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
         .filter(chunk_group_columns::tracking_id.eq(tracking_id))
-        .first::<ChunkGroup>(&mut conn)
+        .select((
+            ChunkGroup::as_select(),
+            groups_from_files_columns::file_id.nullable(),
+        ))
+        .first::<(ChunkGroup, Option<uuid::Uuid>)>(&mut conn)
         .await
         .map_err(|_| ServiceError::NotFound("Group with tracking_id not found".to_string()))?;
 
-    Ok(group)
-}
-
-pub async fn get_group_and_file_from_group_query(
-    group: ChunkGroup,
-    pool: web::Data<Pool>,
-) -> Result<ChunkGroupAndFile, ServiceError> {
-    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
-
-    let mut conn = pool.get().await.unwrap();
-
-    let file_id = groups_from_files_columns::groups_from_files
-        .filter(groups_from_files_columns::group_id.eq(group.id))
-        .select(groups_from_files_columns::file_id)
-        .first::<uuid::Uuid>(&mut conn)
-        .await
-        .optional()
-        .map_err(|_| ServiceError::NotFound("Failed to get file it".to_string()))?;
-
     Ok(ChunkGroupAndFile::from_group(group, file_id))
-}
-
-pub async fn get_files_from_groups(
-    groups: Vec<ChunkGroup>,
-    pool: web::Data<Pool>,
-) -> Result<Vec<ChunkGroupAndFile>, ServiceError> {
-    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
-
-    let mut conn = pool.get().await.unwrap();
-
-    let group_ids = groups
-        .iter()
-        .map(|group| group.id)
-        .collect::<Vec<uuid::Uuid>>();
-
-    let file_ids: Vec<(uuid::Uuid, uuid::Uuid)> = groups_from_files_columns::groups_from_files
-        .filter(groups_from_files_columns::group_id.eq_any(group_ids))
-        .select((
-            groups_from_files_columns::group_id,
-            groups_from_files_columns::file_id,
-        ))
-        .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::NotFound("Failed to get file it".to_string()))?;
-
-    Ok(groups
-        .iter()
-        .map(|group| {
-            ChunkGroupAndFile::from_group(
-                group.clone(),
-                file_ids
-                    .iter()
-                    .find(|(_, group_id)| *group_id == group.id)
-                    .map(|(file_id, _)| file_id.clone()),
-            )
-        })
-        .collect())
 }
 
 #[tracing::instrument(skip(pool))]
@@ -266,19 +218,27 @@ pub async fn get_group_by_id_query(
     group_id: uuid::Uuid,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, ServiceError> {
+) -> Result<ChunkGroupAndFile, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let group = chunk_group
+    let (group, file_id): (ChunkGroup, Option<uuid::Uuid>) = chunk_group
+        .left_join(
+            groups_from_files_columns::groups_from_files
+                .on(id.eq(groups_from_files_columns::group_id)),
+        )
         .filter(dataset_id.eq(dataset_uuid))
         .filter(id.eq(group_id))
-        .first::<ChunkGroup>(&mut conn)
+        .select((
+            ChunkGroup::as_select(),
+            groups_from_files_columns::file_id.nullable(),
+        ))
+        .first::<(ChunkGroup, Option<uuid::Uuid>)>(&mut conn)
         .await
         .map_err(|_| ServiceError::NotFound(format!("Group with id not found {:?}", group_id)))?;
-
-    Ok(group)
+    Ok(ChunkGroupAndFile::from_group(group, file_id))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -428,7 +388,7 @@ pub async fn create_chunk_bookmark_query(
 }
 pub struct GroupsBookmarkQueryResult {
     pub metadata: Vec<ChunkMetadata>,
-    pub group: ChunkGroup,
+    pub group: ChunkGroupAndFile,
     pub total_pages: i64,
 }
 #[tracing::instrument(skip(pool))]
@@ -442,6 +402,7 @@ pub async fn get_bookmarks_for_group_query(
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let page = if page == 0 { 1 } else { page };
     let limit = limit.unwrap_or(10);
@@ -458,8 +419,8 @@ pub async fn get_bookmarks_for_group_query(
         UnifiedId::TrieveUuid(id) => id,
     };
 
-    // let (chunk_metadata, tag_seet, chunk_count, chunk_group) :
-    let pairs: Vec<(uuid::Uuid, i64, ChunkGroup)> =
+    // let (chunk_metadata, tag_seet, chunk_count, chunk_group, file_id) :
+    let pairs: Vec<(uuid::Uuid, i64, ChunkGroup, Option<uuid::Uuid>)> =
         chunk_metadata_columns::chunk_metadata
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
@@ -468,45 +429,51 @@ pub async fn get_bookmarks_for_group_query(
                 chunk_group_columns::chunk_group
                     .on(chunk_group_columns::id.eq(chunk_group_bookmarks_columns::group_id)),
             )
+            .left_join(
+                groups_from_files_columns::groups_from_files
+                    .on(chunk_group_columns::id.eq(groups_from_files_columns::group_id)),
+            )
             .filter(
                 chunk_group_bookmarks_columns::group_id
                     .eq(group_uuid)
                     .and(chunk_group_columns::dataset_id.eq(dataset_uuid))
-                    .and(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
+                    .and(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
+                    .and(groups_from_files_columns::group_id.eq(group_uuid)),
             )
             .select((
                 chunk_metadata_columns::qdrant_point_id,
                 sql::<Int8>("count(*) OVER() AS full_count"),
                 ChunkGroup::as_select(),
+                groups_from_files_columns::file_id.nullable(),
             ))
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
-            .load::<(uuid::Uuid, i64, ChunkGroup)>(&mut conn)
+            .load::<(uuid::Uuid, i64, ChunkGroup, Option<uuid::Uuid>)>(&mut conn)
             .await
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
     let point_ids = pairs
         .iter()
-        .map(|(point_id, _, _)| *point_id)
+        .map(|(point_id, _, _, _)| *point_id)
         .collect::<Vec<uuid::Uuid>>();
 
     let chunk_metadata = get_chunk_metadatas_from_point_ids(point_ids, pool).await?;
 
-    let (chunk_count, chunk_group) = pairs
+    let (chunk_count, chunk_group, file_id) = pairs
         .get(0)
-        .map(|(_, chunk_count, chunk_group)| (*chunk_count, chunk_group.clone()))
-        .unwrap_or((0, ChunkGroup::default()));
+        .map(|(_, chunk_count, chunk_group, file_id)| (*chunk_count, chunk_group.clone(), *file_id))
+        .unwrap_or((0, ChunkGroup::default(), None));
 
     Ok(GroupsBookmarkQueryResult {
         metadata: chunk_metadata,
-        group: chunk_group,
+        group: ChunkGroupAndFile::from_group(chunk_group, file_id),
         total_pages: (chunk_count as f64 / 10.0).ceil() as i64,
     })
 }
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct BookmarkGroupResult {
     pub chunk_uuid: uuid::Uuid,
-    pub slim_groups: Vec<ChunkGroup>,
+    pub slim_groups: Vec<ChunkGroupAndFile>,
 }
 
 #[tracing::instrument(skip(pool))]
@@ -517,29 +484,38 @@ pub async fn get_groups_for_bookmark_query(
 ) -> Result<Vec<BookmarkGroupResult>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let groups: Vec<(ChunkGroup, uuid::Uuid)> = chunk_group_columns::chunk_group
-        .left_join(
-            chunk_group_bookmarks_columns::chunk_group_bookmarks
-                .on(chunk_group_columns::id.eq(chunk_group_bookmarks_columns::group_id)),
-        )
-        .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
-        .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids))
-        .select((
-            (ChunkGroup::as_select()),
-            chunk_group_bookmarks_columns::chunk_metadata_id.nullable(),
-        ))
-        .load::<(ChunkGroup, Option<uuid::Uuid>)>(&mut conn)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Error getting groups for chunks".to_string()))?
-        .into_iter()
-        .map(|(chunk_group, chunk_id)| match chunk_id {
-            Some(chunk_id) => (chunk_group, chunk_id),
-            None => (chunk_group, uuid::Uuid::default()),
-        })
-        .collect();
+    let groups: Vec<(ChunkGroup, uuid::Uuid, Option<uuid::Uuid>)> =
+        chunk_group_columns::chunk_group
+            .left_join(
+                chunk_group_bookmarks_columns::chunk_group_bookmarks
+                    .on(chunk_group_columns::id.eq(chunk_group_bookmarks_columns::group_id)),
+            )
+            .left_join(
+                groups_from_files_columns::groups_from_files
+                    .on(chunk_group_columns::id.eq(groups_from_files_columns::group_id)),
+            )
+            .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+            .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids))
+            .select((
+                (ChunkGroup::as_select()),
+                chunk_group_bookmarks_columns::chunk_metadata_id.nullable(),
+                groups_from_files_columns::file_id.nullable(),
+            ))
+            .load::<(ChunkGroup, Option<uuid::Uuid>, Option<uuid::Uuid>)>(&mut conn)
+            .await
+            .map_err(|_err| {
+                ServiceError::BadRequest("Error getting groups for chunks".to_string())
+            })?
+            .into_iter()
+            .map(|(chunk_group, chunk_id, file_id)| match chunk_id {
+                Some(chunk_id) => (chunk_group, chunk_id, file_id),
+                None => (chunk_group, uuid::Uuid::default(), file_id),
+            })
+            .collect();
 
     let bookmark_groups: Vec<BookmarkGroupResult> =
         groups.into_iter().fold(Vec::new(), |mut acc, item| {
@@ -550,12 +526,14 @@ pub async fn get_groups_for_bookmark_query(
             //check if chunk in output already
             if let Some(output_item) = acc.iter_mut().find(|x| x.chunk_uuid == item.1) {
                 //if it is, add group to it
-                output_item.slim_groups.push(item.0);
+                output_item
+                    .slim_groups
+                    .push(ChunkGroupAndFile::from_group(item.0, item.2));
             } else {
                 //if not make new output item
                 acc.push(BookmarkGroupResult {
                     chunk_uuid: item.1,
-                    slim_groups: vec![item.0],
+                    slim_groups: vec![ChunkGroupAndFile::from_group(item.0, item.2)],
                 });
             }
             acc
@@ -682,16 +660,31 @@ pub async fn get_point_ids_from_unified_group_ids(
 pub async fn get_groups_from_group_ids_query(
     group_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkGroup>, ServiceError> {
+) -> Result<Vec<ChunkGroupAndFile>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    chunk_group_columns::chunk_group
-        .filter(chunk_group_columns::id.eq_any(&group_ids))
-        .load::<ChunkGroup>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to fetch group".to_string()))
+    let chunk_groups_and_files: Vec<(ChunkGroup, Option<uuid::Uuid>)> =
+        chunk_group_columns::chunk_group
+            .left_join(
+                groups_from_files_columns::groups_from_files
+                    .on(chunk_group_columns::id.eq(groups_from_files_columns::group_id)),
+            )
+            .filter(chunk_group_columns::id.eq_any(&group_ids))
+            .select((
+                ChunkGroup::as_select(),
+                groups_from_files_columns::file_id.nullable(),
+            ))
+            .load::<(ChunkGroup, Option<uuid::Uuid>)>(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to fetch group".to_string()))?;
+
+    Ok(chunk_groups_and_files
+        .iter()
+        .map(|(group, file_id)| ChunkGroupAndFile::from_group(group.clone(), file_id.clone()))
+        .collect())
 }
 
 #[tracing::instrument(skip(pool))]
