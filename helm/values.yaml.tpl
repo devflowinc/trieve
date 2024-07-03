@@ -15,6 +15,8 @@ containers:
     tag: latest
   ingest:
     tag: latest
+  bulk_ingest:
+    tag: latest
   file_worker:
     tag: latest
   delete_worker:
