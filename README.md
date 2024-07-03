@@ -144,7 +144,7 @@ cat .env.chat .env.search .env.server .env.docker-compose > .env
 
 ./convenience.sh -l
 # or 
-COMPOSE_PROFILE=dev docker compose up 
+COMPOSE_PROFILE=dev docker-compose up 
 ```
 
 ### Start services for local dev
