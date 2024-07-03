@@ -456,6 +456,9 @@ pub async fn update_dataset_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
+    let config =
+        ServerDatasetConfiguration::from_json(server_configuration.clone());
+
     let new_dataset: Dataset = diesel::update(
         datasets_columns::datasets
             .filter(datasets_columns::id.eq(id))

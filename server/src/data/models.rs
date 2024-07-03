@@ -1664,6 +1664,7 @@ pub struct ServerDatasetConfiguration {
     pub STOP_TOKENS: Option<Vec<String>>,
     pub INDEXED_ONLY: bool,
     pub LOCKED: bool,
+    pub SYSTEM_PROMPT: Option<String>,
 }
 
 impl ServerDatasetConfiguration {
@@ -1844,6 +1845,16 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(&json!(false))
                 .as_bool()
                 .unwrap_or(false),
+            SYSTEM_PROMPT: configuration
+                .get("SYSTEM_PROMPT")
+                .and_then(|v| v.as_str())
+                .map(|s|
+                    if s.is_empty() {
+                        "".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                )
         }
     }
 }
