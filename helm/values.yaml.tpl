@@ -12,7 +12,7 @@ containers:
   mc:
     tag: latest
   server:
-    tag: no-ocr
+    tag: latest
   ingest:
     tag: latest
   file_worker:
