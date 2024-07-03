@@ -96,7 +96,7 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       const circle = Bodies.circle(
         centeredRandom(3),
         centeredRandom(3),
-        1 * topic.density,
+        Math.max(1.2 * topic.density, 30),
       );
       // @ts-expect-error just debugging
       circle.id = topic.id;
