@@ -1170,6 +1170,23 @@ pub struct ChunkGroupAndFile {
     pub updated_at: chrono::NaiveDateTime,
 }
 
+impl ChunkGroupAndFile {
+    pub fn from_group(group: ChunkGroup, file_id: Option<uuid::Uuid>) -> Self {
+        Self {
+            id: group.id,
+            dataset_id: group.dataset_id,
+            name: group.name,
+            description: group.description,
+            tracking_id: group.tracking_id,
+            tag_set: group.tag_set,
+            metadata: group.metadata,
+            file_id,
+            created_at: group.created_at,
+            updated_at: group.updated_at,
+        }
+    }
+}
+
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
