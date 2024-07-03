@@ -7,6 +7,9 @@ import {
   Accessor,
   createSignal,
   createEffect,
+  Switch,
+  Match,
+  onCleanup,
 } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { FiTrash } from "solid-icons/fi";
@@ -44,8 +47,14 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
     });
 
   createEffect(() => {
+    const finishedLoading = hasLoaded();
+    if (!finishedLoading) {
+      return;
+    }
+
     const api_host = import.meta.env.VITE_API_HOST as unknown as string;
     const newUsage: Record<string, { chunk_count: number }> = {};
+    const abortController = new AbortController();
 
     const fetchUsage = (datasetId: string) => {
       return new Promise((resolve, reject) => {
@@ -92,6 +101,10 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
     };
 
     fetchInitialUsage();
+
+    onCleanup(() => {
+      abortController.abort("Cleanup fetch");
+    });
   });
 
   createEffect(() => {
@@ -205,13 +218,25 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       <div class="flex items-center">
         <div class="flex w-full items-end justify-between pt-2">
           <div>
-            <h1 class="text-base font-semibold leading-6">Datasets</h1>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base font-semibold leading-6">Datasets</h1>
+              <Show when={!hasLoaded()}>
+                <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
+              </Show>
+            </div>
             <Show
               fallback={
                 maxDatasets() > 0 ? (
-                  <p class="text-sm text-red-700">
-                    No datasets match your search query.
-                  </p>
+                  hasLoaded() ? (
+                    <p class="text-sm text-red-700">
+                      No datasets match your search query.
+                    </p>
+                  ) : (
+                    <p class="text-sm text-blue-700">
+                      Loading datasets... Please wait and try again when
+                      finished.
+                    </p>
+                  )
                 ) : (
                   <p class="text-sm text-neutral-700">
                     This organization does not have any datasets.
@@ -247,14 +272,24 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           </div>
         </div>
       </div>
-      <Show when={maxDatasets() === 0 && page() === 0 && hasLoaded}>
-        <button
-          onClick={() => props.setOpenNewDatasetModal(true)}
-          class="relative block w-full rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2"
-        >
-          <TbDatabasePlus class="mx-auto h-12 w-12 text-magenta" />
-          <span class="mt-2 block font-semibold">Create A New Dataset</span>
-        </button>
+      <Show when={maxDatasets() === 0 && page() === 0}>
+        <Switch>
+          <Match when={hasLoaded()}>
+            <button
+              onClick={() => props.setOpenNewDatasetModal(true)}
+              class="relative block w-full rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2"
+            >
+              <TbDatabasePlus class="mx-auto h-12 w-12 text-magenta" />
+              <span class="mt-2 block font-semibold">Create A New Dataset</span>
+            </button>
+          </Match>
+          <Match when={!hasLoaded()}>
+            <div class="flex flex-col items-center justify-center gap-2">
+              <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
+              <p class="animate-pulse">Loading datasets...</p>
+            </div>
+          </Match>
+        </Switch>
       </Show>
       <Show when={maxDatasets() > 0}>
         <div class="mt-8">

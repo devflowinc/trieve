@@ -70,9 +70,9 @@ export const DatasetSelectBox = () => {
             <Show when={isOpen()}>
               <PopoverPanel
                 unmount={false}
-                class="absolute bottom-5 left-0 z-10 mt-2 h-fit w-[180px] rounded-md border bg-white p-1 dark:bg-neutral-800"
+                class="absolute bottom-5 left-0 z-10 mt-2 h-fit w-[180px] rounded-md border bg-white dark:bg-neutral-800"
               >
-                <Menu class="mx-1 space-y-0.5">
+                <Menu class="mx-0.5 max-h-[70vh] space-y-0.5 overflow-y-auto overflow-x-hidden p-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
                   <input
                     ref={inputRef}
                     placeholder="Search datasets..."
@@ -107,4 +107,3 @@ export const DatasetSelectBox = () => {
     </Show>
   );
 };
-
