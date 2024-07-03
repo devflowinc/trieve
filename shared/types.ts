@@ -86,8 +86,6 @@ export interface DatasetAndUsage {
 }
 
 export interface ServerEnvsConfiguration {
-  DOCUMENT_UPLOAD_FEATURE: boolean;
-  DOCUMENT_DOWNLOAD_FEATURE: boolean;
   LLM_BASE_URL: string;
   LLM_DEFAULT_MODEL: string;
   EMBEDDING_BASE_URL: string;
@@ -95,9 +93,7 @@ export interface ServerEnvsConfiguration {
   MESSAGE_TO_QUERY_PROMPT: string;
   RAG_PROMPT: string;
   N_RETRIEVALS_TO_INCLUDE: number;
-  DUPLICATE_DISTANCE_THRESHOLD: number;
   EMBEDDING_SIZE: number;
-  COLLISIONS_ENABLED: boolean;
   FULLTEXT_ENABLED: boolean;
   QDRANT_COLLECTION_NAME: string | null;
   EMBEDDING_QUERY_PREFIX: string;

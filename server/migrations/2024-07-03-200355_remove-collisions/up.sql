@@ -1,6 +1,5 @@
 -- Your SQL goes here
-UPDATE chunk_metadata
-SET qdrant_point_id = gen_random_uuid() -- Or any default value that makes sense
+DELETE FROM chunk_metadata
 WHERE qdrant_point_id IS NULL;
 
 -- Then, alter the table to make the column not nullable

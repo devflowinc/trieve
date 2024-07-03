@@ -27,10 +27,6 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   RAG_PROMPT: "",
   EMBEDDING_SIZE: 768,
   N_RETRIEVALS_TO_INCLUDE: 8,
-  DUPLICATE_DISTANCE_THRESHOLD: 1.1,
-  DOCUMENT_UPLOAD_FEATURE: true,
-  DOCUMENT_DOWNLOAD_FEATURE: true,
-  COLLISIONS_ENABLED: false,
   FULLTEXT_ENABLED: true,
   QDRANT_COLLECTION_NAME: null,
   EMBEDDING_QUERY_PREFIX: "Search for: ",
@@ -467,29 +463,6 @@ export const ServerSettingsForm = () => {
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
               <input
                 type="checkbox"
-                name="documentUploadFeature"
-                id="documentUploadFeature"
-                checked={serverConfig().DOCUMENT_UPLOAD_FEATURE}
-                onInput={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      DOCUMENT_UPLOAD_FEATURE: e.currentTarget.checked,
-                    };
-                  })
-                }
-              />
-              <label
-                for="documentUploadFeature"
-                class="block text-sm font-medium"
-              >
-                Document upload feature
-              </label>
-            </div>
-
-            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
-              <input
-                type="checkbox"
                 name="lockDataset"
                 id="lockDataset"
                 checked={serverConfig().LOCKED}
@@ -507,28 +480,6 @@ export const ServerSettingsForm = () => {
               </label>
             </div>
 
-            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
-              <input
-                type="checkbox"
-                name="documentDownloadFeature"
-                id="documentDownloadFeature"
-                checked={serverConfig().DOCUMENT_DOWNLOAD_FEATURE}
-                onInput={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      DOCUMENT_DOWNLOAD_FEATURE: e.currentTarget.checked,
-                    };
-                  })
-                }
-              />
-              <label
-                for="documentDownloadFeature"
-                class="block text-sm font-medium leading-6"
-              >
-                Document download feature
-              </label>
-            </div>
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
               <input
                 type="checkbox"
