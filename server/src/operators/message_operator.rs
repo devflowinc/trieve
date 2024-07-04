@@ -504,6 +504,16 @@ pub async fn stream_response(
         seed: None,
     };
 
+    if !chunk_metadatas_stringified.is_empty() {
+        chunk_metadatas_stringified =
+            if create_message_req_payload.completion_first.unwrap_or(false) {
+                format!("||{}", chunk_metadatas_stringified.replace("||", ""))
+            } else {
+                format!("{}||", chunk_metadatas_stringified.replace("||", ""))
+            };
+        chunk_metadatas_stringified1.clone_from(&chunk_metadatas_stringified);
+    }
+
     if !create_message_req_payload.stream_response.unwrap_or(true) {
         let assistant_completion =
             client
@@ -564,23 +574,13 @@ pub async fn stream_response(
         )
         .await;
 
-        let _ = create_message_query(new_message, &pool).await;
+        create_message_query(new_message, &pool).await?;
 
         return Ok(HttpResponse::Ok().json(completion_content));
     }
 
     let (s, r) = unbounded::<String>();
     let stream = client.chat().create_stream(parameters).await.unwrap();
-
-    if !chunk_metadatas_stringified.is_empty() {
-        chunk_metadatas_stringified =
-            if create_message_req_payload.completion_first.unwrap_or(false) {
-                format!("||{}", chunk_metadatas_stringified.replace("||", ""))
-            } else {
-                format!("{}||", chunk_metadatas_stringified.replace("||", ""))
-            };
-        chunk_metadatas_stringified1.clone_from(&chunk_metadatas_stringified);
-    }
 
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
