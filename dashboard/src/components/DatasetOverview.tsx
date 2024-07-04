@@ -19,11 +19,11 @@ import {
   AiFillCaretLeft,
   AiFillCaretRight,
   AiOutlineClear,
+  AiOutlineComment,
+  AiOutlineSearch,
 } from "solid-icons/ai";
 import { formatDate } from "../formatters";
 import { TbReload } from "solid-icons/tb";
-import { FiSearch } from "solid-icons/fi";
-import { BsChatRightText } from "solid-icons/bs";
 import { createToast } from "./ShowToasts";
 import { DefaultError, Organization } from "shared/types";
 
@@ -317,6 +317,12 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                   </th>
                   <th
                     scope="col"
+                    class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
+                  >
+                    Tools
+                  </th>
+                  <th
+                    scope="col"
                     class="px-3 py-3.5 text-left text-sm font-semibold"
                   >
                     Chunk Count
@@ -349,10 +355,19 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           );
                         }}
                       >
-                        <span>
-                          <div class="inline-flex items-center">
-                            {datasetAndUsage.dataset.name}
-                          </div>
+                        <div class="inline-flex items-center">
+                          {datasetAndUsage.dataset.name}
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium"
+                        onClick={() => {
+                          navigate(
+                            `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
+                          );
+                        }}
+                      >
+                        <div class="flex items-center gap-4">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -363,9 +378,10 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                                 )}`,
                               );
                             }}
-                            class="ml-2 hover:text-fuchsia-500"
+                            class="hover:text-fuchsia-500"
+                            title="Open search playground for this dataset"
                           >
-                            <FiSearch />
+                            <AiOutlineSearch class="h-5 w-5" />
                           </button>
                           <button
                             onClick={(e) => {
@@ -377,11 +393,12 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                                 )}`,
                               );
                             }}
-                            class="ml-2 hover:text-fuchsia-500"
+                            class="hover:text-fuchsia-500"
+                            title="Open RAG playground for this dataset"
                           >
-                            <BsChatRightText />{" "}
+                            <AiOutlineComment class="h-5 w-5" />{" "}
                           </button>
-                        </span>
+                        </div>
                       </td>
                       <td
                         class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600"
