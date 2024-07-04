@@ -574,7 +574,7 @@ pub async fn stream_response(
         )
         .await;
 
-        let _ = create_message_query(new_message, &pool).await;
+        create_message_query(new_message, &pool).await?;
 
         return Ok(HttpResponse::Ok().json(completion_content));
     }
