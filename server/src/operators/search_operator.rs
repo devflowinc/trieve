@@ -1629,38 +1629,7 @@ pub async fn search_hybrid_chunks(
     timer.add("fetched metadata from postgres");
 
     let mut reranked_chunks = {
-        let mut reranked_chunks = if result_chunks.score_chunks.len() > 20 {
-            let split_results = result_chunks
-                .score_chunks
-                .chunks(20)
-                .map(|chunk| chunk.to_vec())
-                .collect::<Vec<Vec<ScoreChunkDTO>>>();
-
-            let cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                split_results
-                    .get(0)
-                    .expect("Split results must exist")
-                    .to_vec(),
-                config,
-            )
-            .await?;
-
-            let score_chunks = rerank_chunks(
-                cross_encoder_results,
-                data.recency_bias,
-                data.tag_weights,
-                data.use_weights,
-                data.location_bias,
-            );
-
-            score_chunks
-                .iter()
-                .chain(split_results.get(1).unwrap().iter())
-                .cloned()
-                .collect::<Vec<ScoreChunkDTO>>()
-        } else {
+        let mut reranked_chunks = {
             let cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
