@@ -10,12 +10,12 @@ import {
   onCleanup,
 } from "solid-js";
 import { ChunkMetadataWithVotes } from "../../utils/apiTypes";
-import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
-import sanitizeHtml from "sanitize-html";
+import ScoreChunk from "../ScoreChunk";
 import Resizable from "@corvu/resizable";
 import { SolidMarkdown } from "solid-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import rehypeSanitize from "rehype-sanitize";
 
 export interface AfMessageProps {
   normalChat: boolean;
@@ -209,47 +209,48 @@ export const AfMessage = (props: AfMessageProps) => {
                 when={!editing()}
               >
                 <SolidMarkdown
-                  remarkPlugins={[remarkGfm]}
+                  remarkPlugins={[remarkBreaks, remarkGfm]}
+                  rehypePlugins={[rehypeSanitize]}
                   class={"select-none space-y-2"}
                   components={{
                     h1: (props) => {
                       return (
-                        <h1 class="mb-4 bg-white text-4xl font-bold dark:text-white">
+                        <h1 class="mb-4 text-4xl font-bold dark:bg-neutral-700 dark:text-white">
                           {props.children}
                         </h1>
                       );
                     },
                     h2: (props) => {
                       return (
-                        <h2 class="mb-3 bg-white text-3xl font-semibold dark:text-white">
+                        <h2 class="mb-3 text-3xl font-semibold dark:text-white">
                           {props.children}
                         </h2>
                       );
                     },
                     h3: (props) => {
                       return (
-                        <h3 class="mb-2 bg-white text-2xl font-medium dark:text-white">
+                        <h3 class="mb-2 text-2xl font-medium dark:text-white">
                           {props.children}
                         </h3>
                       );
                     },
                     h4: (props) => {
                       return (
-                        <h4 class="mb-2 bg-white text-xl font-medium dark:text-white">
+                        <h4 class="mb-2 text-xl font-medium dark:text-white">
                           {props.children}
                         </h4>
                       );
                     },
                     h5: (props) => {
                       return (
-                        <h5 class="mb-1 bg-white text-lg font-medium dark:text-white">
+                        <h5 class="mb-1 text-lg font-medium dark:text-white">
                           {props.children}
                         </h5>
                       );
                     },
                     h6: (props) => {
                       return (
-                        <h6 class="mb-1 bg-white text-base font-medium dark:text-white">
+                        <h6 class="mb-1 text-base font-medium dark:text-white">
                           {props.children}
                         </h6>
                       );
@@ -261,11 +262,78 @@ export const AfMessage = (props: AfMessageProps) => {
                         </code>
                       );
                     },
+                    a: (props) => {
+                      return (
+                        <a class="underline" href={props.href}>
+                          {props.children}
+                        </a>
+                      );
+                    },
+                    blockquote: (props) => {
+                      return (
+                        <blockquote class="my-4 border-l-4 border-gray-300 bg-gray-100 py-2 pl-4 italic text-gray-700">
+                          {props.children}
+                        </blockquote>
+                      );
+                    },
+                    ul: (props) => {
+                      return (
+                        <ul class="my-4 list-outside list-disc space-y-2 pl-5">
+                          {props.children}
+                        </ul>
+                      );
+                    },
+                    ol: (props) => {
+                      return (
+                        <ol class="my-4 list-outside list-decimal space-y-2 pl-5">
+                          {props.children}
+                        </ol>
+                      );
+                    },
+                    img: (props) => {
+                      return (
+                        <img
+                          src={props.src}
+                          alt={props.alt}
+                          class="my-4 h-auto max-w-full rounded-lg shadow-md"
+                        />
+                      );
+                    },
+                    table: (props) => (
+                      <table class="my-4 min-w-full border-collapse">
+                        {props.children}
+                      </table>
+                    ),
+
+                    thead: (props) => (
+                      <thead class="bg-gray-100">{props.children}</thead>
+                    ),
+
+                    tbody: (props) => (
+                      <tbody class="bg-white">{props.children}</tbody>
+                    ),
+
+                    tr: (props) => (
+                      <tr class="border-b border-gray-200 hover:bg-gray-50">
+                        {props.children}
+                      </tr>
+                    ),
+
+                    th: (props) => (
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        {props.children}
+                      </th>
+                    ),
+
+                    td: (props) => (
+                      <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                        {props.children}
+                      </td>
+                    ),
                   }}
-                  children={sanitizeHtml(
-                    editedContent() || displayMessage().content.trimStart(),
-                    sanitzerOptions,
-                  )}
+                  children={
+                    editedContent() || displayMessage().content.trimStart()
+                  }
                 />
               </Show>
               <Show when={!displayMessage().content}>
