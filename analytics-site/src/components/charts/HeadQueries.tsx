@@ -16,10 +16,18 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   const pages = usePagination();
   const queryClient = useQueryClient();
 
-  createEffect(() => {
-    // Preload the next page
-    const filters = props.filters;
+  createEffect((prevDatasetId) => {
     const datasetId = dataset().dataset.id;
+    if (prevDatasetId !== datasetId) {
+      void queryClient.invalidateQueries();
+    }
+
+    return datasetId;
+  }, dataset().dataset.id);
+
+  createEffect(() => {
+    const datasetId = dataset().dataset.id;
+    const filters = props.filters;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: ["head-queries", { filters, page: curPage + 1 }],

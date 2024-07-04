@@ -16,6 +16,9 @@ import {
 import { SearchClusterTopics } from "shared/types";
 import { createStore, unwrap } from "solid-js/store";
 import Matter from "matter-js";
+import { UserAuthContextProvider } from "../../contexts/UserAuthContext";
+import { TrendExplorer } from "../../pages/TrendExplorer";
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 
 interface TrendExplorerCanvasProps {
   topics: SearchClusterTopics[];
@@ -85,7 +88,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
   );
 
   createEffect(() => {
-    console.log("updating");
     const sizes = unwrap(containerSize);
     const render = Render.create({
       canvas: canvasElement(),
@@ -208,7 +210,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
     Runner.run(runner, engine);
 
     return () => {
-      console.log("cleaning up");
       response();
       Render.stop(render);
       Runner.stop(runner);
@@ -224,5 +225,19 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       }}
       ref={setCanvasElement}
     />
+  );
+};
+
+export const TrendExplorerRoute = () => {
+  const queryClient = new QueryClient();
+
+  return (
+    <>
+      <QueryClientProvider client={queryClient}>
+        <UserAuthContextProvider>
+          <TrendExplorer />
+        </UserAuthContextProvider>
+      </QueryClientProvider>
+    </>
   );
 };

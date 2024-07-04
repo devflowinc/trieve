@@ -248,6 +248,16 @@ services:
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
 
+  analytics:
+    image: analytics
+    container_name: analytics
+    networks:
+      - app-network
+    ports:
+      - 5176:80
+    environment:
+      - VITE_API_HOST=${VITE_API_HOST}
+
   dashboard:
     image: trieve/dashboard
     container_name: dashboard

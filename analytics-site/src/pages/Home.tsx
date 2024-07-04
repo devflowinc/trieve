@@ -7,6 +7,8 @@ import { RpsGraph } from "../components/charts/RpsGraph";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries";
 import { RagQueries } from "../components/charts/RagQueries";
+import { UserAuthContextProvider } from "../contexts/UserAuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 
 export const Home = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
@@ -32,5 +34,19 @@ export const Home = () => {
         <RagQueries />
       </div>
     </div>
+  );
+};
+
+export const HomeRoute = () => {
+  const queryClient = new QueryClient();
+
+  return (
+    <>
+      <QueryClientProvider client={queryClient}>
+        <UserAuthContextProvider>
+          <Home />
+        </UserAuthContextProvider>
+      </QueryClientProvider>
+    </>
   );
 };
