@@ -171,6 +171,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::get_recommended_chunks,
         handlers::chunk_handler::update_chunk_by_tracking_id,
         handlers::chunk_handler::search_chunks,
+        handlers::chunk_handler::count_chunks,
         handlers::chunk_handler::generate_off_chunks,
         handlers::chunk_handler::get_chunk_by_tracking_id,
         handlers::chunk_handler::get_chunks_by_tracking_ids,
@@ -260,6 +261,8 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::SearchChunkQueryResponseBody,
             handlers::chunk_handler::GenerateChunksRequest,
             handlers::chunk_handler::SearchChunksReqPayload,
+            handlers::chunk_handler::CountChunksReqPayload,
+            handlers::chunk_handler::CountChunkQueryResponseBody,
             handlers::chunk_handler::AutocompleteReqPayload,
             handlers::group_handler::SearchWithinGroupData,
             handlers::group_handler::SearchOverGroupsData,
@@ -722,6 +725,10 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/search")
                                         .route(web::post().to(handlers::chunk_handler::search_chunks)),
+                                )
+                                .service(
+                                    web::resource("/count")
+                                        .route(web::post().to(handlers::chunk_handler::count_chunks)),
                                 )
                                 .service(web::resource("/suggestions").route(
                                     web::post().to(
