@@ -17,6 +17,7 @@ use actix_web::{
     web, Error, FromRequest, HttpMessage, HttpRequest,
 };
 use futures_util::future::LocalBoxFuture;
+use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use redis::AsyncCommands;
 use sentry::Transaction;
 use std::{
@@ -24,8 +25,39 @@ use std::{
     rc::Rc,
 };
 
+use serde::{Deserialize, Serialize};
+use reqwest::Client;
+
 pub struct AuthenticationMiddleware<S> {
     service: Rc<S>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct KeycloakClaims {
+    sub: String,
+    preferred_username: String,
+    email: Option<String>,
+    realm_access: Option<RealmAccess>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RealmAccess {
+    roles: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct KeycloakKeys {
+    keys: Vec<KeycloakKey>,
+}
+
+#[derive(Debug, Deserialize)]
+struct KeycloakKey {
+    kid: String,
+    kty: String,
+    alg: String,
+    use_: String,
+    n: String,
+    e: String,
 }
 
 impl<S, B> Service<ServiceRequest> for AuthenticationMiddleware<S>
@@ -239,6 +271,60 @@ fn get_api_key_from_headers(headers: &HeaderMap) -> Option<String> {
 
     None
 }
+
+
+async fn auth_with_keycloak(req: &HttpRequest) -> Result<Option<LoggedUser>, ServiceError> {
+    if let Some(token) = get_bearer_token_from_headers(req.headers()) {
+        //TODO: Need to obtain the KEYCLOAK_URL and KEYCLOAK_CLIENT_ID
+        let keycloak_url = std::env::var("KEYCLOAK_URL").expect("KEYCLOAK_URL must be set");
+        let client_id = std::env::var("KEYCLOAK_CLIENT_ID").expect("KEYCLOAK_CLIENT_ID must be set");
+
+        // Fetch Keycloak public keys
+        let keycloak_keys_url = format!("{}/auth/realms/{}/protocol/openid-connect/certs", keycloak_url, client_id);
+        let client = Client::new();
+        let res = client.get(&keycloak_keys_url).send().await.map_err(|_| ServiceError::Unauthorized)?;
+
+        let keycloak_keys: KeycloakKeys = res.json().await.map_err(|_| ServiceError::Unauthorized)?;
+
+        // Decode the token
+        let header = decode_header(&token).map_err(|_| ServiceError::Unauthorized)?;
+        let kid = header.kid.ok_or(ServiceError::Unauthorized)?;
+        let key = keycloak_keys.keys.into_iter().find(|k| k.kid == kid).ok_or(ServiceError::Unauthorized)?;
+
+        let decoding_key = DecodingKey::from_rsa_components(&key.n, &key.e).map_err(|_| ServiceError::Unauthorized)?;
+        let token_data = decode::<KeycloakClaims>(&token, &decoding_key, &Validation::new(Algorithm::RS256)).map_err(|_| ServiceError::Unauthorized)?;
+
+        // Verify roles and create LoggedUser
+        let claims = token_data.claims;
+        let user = LoggedUser {
+            id: claims.sub,
+            username: claims.preferred_username,
+            email: claims.email,
+            roles: claims.realm_access.map_or(vec![], |ra| ra.roles),
+        };
+
+        return Ok(Some(user));
+    }
+
+    Ok(None)
+}
+
+fn get_bearer_token_from_headers(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("Authorization")
+        .and_then(|header_value| header_value.to_str().ok())
+        .and_then(|header_value| {
+            if header_value.starts_with("Bearer ") {
+                Some(header_value.trim_start_matches("Bearer ").to_string())
+            } else {
+                None
+            }
+        })
+}
+
+//TODO: Storing Tokens as Cookies
+
+//TODO: Token Refresh and Expiry Handling(Though it might be implicitly handled by the JWT library, but it’s good to confirm)
 
 fn get_dataset_id_from_headers(headers: &HeaderMap) -> Option<String> {
     if let Some(dataset_id_header) = headers.get("TR-Dataset") {
