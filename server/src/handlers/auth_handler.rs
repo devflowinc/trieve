@@ -277,7 +277,7 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 
 #[derive(Deserialize, Debug, ToSchema, IntoParams)]
 #[schema(
-    example = json!({"organization_id": "00000000-0000-0000-0000-000000000000", "redirect_uri": "https://api.trieve.ai", "inv_code": "00000000-0000-0000-0000-000000000000"}),
+    example = json!({"organization_id": "0000000-0000-0000-0000-0000000000", "redirect_uri": "https://api.trieve.ai", "inv_code": "0000000-0000-0000-0000-0000000000"}),
 )]
 pub struct AuthQuery {
     /// ID of organization to authenticate into
@@ -582,4 +582,33 @@ pub async fn login_cli() -> Result<HttpResponse, ServiceError> {
         ServiceError::InternalServerError(format!("Could not read login page {}", e))
     })?;
     Ok(HttpResponse::Ok().content_type("text/html").body(html_page))
+}
+
+#[utoipa::path(
+    get,
+    path = "/auth/sso",
+    context_path = "/api",
+    tag = "Auth",
+    responses(
+        (status = 302, description = "Redirect to SSO login page"),
+        (status = 400, description = "Bad request", body = ErrorResponseBody),
+    ),
+)]
+#[tracing::instrument(skip(req, oidc_client))]
+pub async fn sso_login(
+    req: HttpRequest,
+    oidc_client: web::Data<CoreClient>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let (auth_url, csrf_token, nonce) = oidc_client
+        .authorize_url(
+            CoreAuthenticationFlow::AuthorizationCode,
+            CsrfToken::new_random,
+            Nonce::new_random,
+        )
+        .add_scope(Scope::new("openid".to_string()))
+        .add_scope(Scope::new("email".to_string()))
+        .add_scope(Scope::new("profile".to_string()))
+        .url();
+
+    Ok(HttpResponse::Found().header("Location", auth_url.to_string()).finish())
 }

@@ -50,12 +50,16 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     })
       .then((res) => {
         if (res.status === 401) {
-          window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/dashboard/foo`;
+          // Redirect to SSO login
+          window.location.href = `${apiHost}/auth/sso`;
+          return;
         }
         return res.json();
       })
       .then((data) => {
-        setUser(data);
+        if (data) {
+          setUser(data);
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -119,3 +123,4 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     </UserContext.Provider>
   );
 };
+

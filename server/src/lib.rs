@@ -424,6 +424,189 @@ pub fn main() -> std::io::Result<()> {
     log::info!("Running migrations");
     run_migrations(database_url);
 
+    let oidc_client = build_oidc_client();
+
+    let app = App::new()
+        .app_data(web::Data::new(oidc_client))
+        .wrap(
+            Cors::default()
+                .allow_any_origin()
+                .allow_any_method()
+                .allow_any_header()
+                .supports_credentials(),
+        )
+        .wrap(
+            SessionMiddleware::new(
+                RedisSessionStore::new(redis_url.to_string()),
+                PersistentSession::default(),
+            )
+            .cookie_secure(false),
+        )
+        .wrap(IdentityMiddleware::default())
+        .wrap(Logger::default())
+        .wrap(
+            Redoc::with_url("/redoc")
+                .description("Trieve API Documentation")
+                .add_swagger("/api-docs/openapi.json")
+                .build(),
+        )
+        .wrap(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json",))
+        .service(
+            web::resource("/auth/sso")
+                .route(web::get().to(handlers::auth_handler::sso_login)),
+        )
+        .service(
+            web::resource("/auth/login")
+                .route(web::get().to(handlers::auth_handler::login)),
+        )
+        .service(
+            web::resource("/auth/logout")
+                .route(web::get().to(handlers::auth_handler::logout)),
+        )
+        .service(
+            web::resource("/auth/me")
+                .route(web::get().to(handlers::auth_handler::get_me)),
+        )
+        .service(
+            web::resource("/auth/callback")
+                .route(web::get().to(handlers::auth_handler::callback)),
+        )
+        .service(
+            web::resource("/auth/health")
+                .route(web::get().to(handlers::auth_handler::health_check)),
+        )
+        .service(
+            web::resource("/topic")
+                .route(web::post().to(handlers::topic_handler::create_topic))
+                .route(web::delete().to(handlers::topic_handler::delete_topic))
+                .route(web::put().to(handlers::topic_handler::update_topic))
+                .route(web::get().to(handlers::topic_handler::get_all_topics_for_owner_id)),
+        )
+        .service(
+            web::resource("/message")
+                .route(web::post().to(handlers::message_handler::create_message))
+                .route(web::get().to(handlers::message_handler::get_all_topic_messages))
+                .route(web::put().to(handlers::message_handler::edit_message))
+                .route(web::post().to(handlers::message_handler::regenerate_message))
+                .route(web::post().to(handlers::message_handler::get_suggested_queries)),
+        )
+        .service(
+            web::resource("/chunk")
+                .route(web::post().to(handlers::chunk_handler::create_chunk))
+                .route(web::put().to(handlers::chunk_handler::update_chunk))
+                .route(web::delete().to(handlers::chunk_handler::delete_chunk))
+                .route(web::get().to(handlers::chunk_handler::get_recommended_chunks))
+                .route(web::put().to(handlers::chunk_handler::update_chunk_by_tracking_id))
+                .route(web::post().to(handlers::chunk_handler::search_chunks))
+                .route(web::post().to(handlers::chunk_handler::generate_off_chunks))
+                .route(web::get().to(handlers::chunk_handler::get_chunk_by_tracking_id))
+                .route(web::post().to(handlers::chunk_handler::get_chunks_by_tracking_ids))
+                .route(web::delete().to(handlers::chunk_handler::delete_chunk_by_tracking_id))
+                .route(web::get().to(handlers::chunk_handler::get_chunk_by_id))
+                .route(web::post().to(handlers::chunk_handler::autocomplete))
+                .route(web::post().to(handlers::chunk_handler::get_chunks_by_ids)),
+        )
+        .service(
+            web::resource("/user")
+                .route(web::put().to(handlers::user_handler::update_user))
+                .route(web::post().to(handlers::user_handler::set_user_api_key))
+                .route(web::delete().to(handlers::user_handler::delete_user_api_key)),
+        )
+        .service(
+            web::resource("/group")
+                .route(web::post().to(handlers::group_handler::search_over_groups))
+                .route(web::get().to(handlers::group_handler::get_recommended_groups))
+                .route(web::get().to(handlers::group_handler::get_groups_for_dataset))
+                .route(web::post().to(handlers::group_handler::create_chunk_group))
+                .route(web::delete().to(handlers::group_handler::delete_chunk_group))
+                .route(web::put().to(handlers::group_handler::update_chunk_group))
+                .route(web::post().to(handlers::group_handler::add_chunk_to_group))
+                .route(web::get().to(handlers::group_handler::get_chunk_group))
+                .route(web::delete().to(handlers::group_handler::remove_chunk_from_group))
+                .route(web::get().to(handlers::group_handler::get_chunks_in_group))
+                .route(web::get().to(handlers::group_handler::get_groups_chunk_is_in))
+                .route(web::get().to(handlers::group_handler::get_group_by_tracking_id))
+                .route(web::delete().to(handlers::group_handler::delete_group_by_tracking_id))
+                .route(web::put().to(handlers::group_handler::update_group_by_tracking_id))
+                .route(web::post().to(handlers::group_handler::add_chunk_to_group_by_tracking_id))
+                .route(web::get().to(handlers::group_handler::get_chunks_in_group_by_tracking_id))
+                .route(web::post().to(handlers::group_handler::search_within_group)),
+        )
+        .service(
+            web::resource("/file")
+                .route(web::get().to(handlers::file_handler::get_dataset_files_handler))
+                .route(web::post().to(handlers::file_handler::upload_file_handler))
+                .route(web::get().to(handlers::file_handler::get_file_handler))
+                .route(web::delete().to(handlers::file_handler::delete_file_handler)),
+        )
+        .service(
+            web::resource("/event")
+                .route(web::get().to(handlers::event_handler::get_events)),
+        )
+        .service(
+            web::resource("/organization")
+                .route(web::post().to(handlers::organization_handler::create_organization))
+                .route(web::get().to(handlers::organization_handler::get_organization))
+                .route(web::put().to(handlers::organization_handler::update_organization))
+                .route(web::delete().to(handlers::organization_handler::delete_organization))
+                .route(web::get().to(handlers::organization_handler::get_organization_usage))
+                .route(web::get().to(handlers::organization_handler::get_organization_users)),
+        )
+        .service(
+            web::resource("/dataset")
+                .route(web::post().to(handlers::dataset_handler::create_dataset))
+                .route(web::put().to(handlers::dataset_handler::update_dataset))
+                .route(web::delete().to(handlers::dataset_handler::delete_dataset))
+                .route(web::delete().to(handlers::dataset_handler::delete_dataset_by_tracking_id))
+                .route(web::get().to(handlers::dataset_handler::get_dataset))
+                .route(web::get().to(handlers::dataset_handler::get_usage_by_dataset_id))
+                .route(web::get().to(handlers::dataset_handler::get_datasets_from_organization))
+                .route(web::delete().to(handlers::dataset_handler::clear_dataset)),
+        )
+        .service(
+            web::resource("/stripe")
+                .route(web::get().to(handlers::stripe_handler::direct_to_payment_link))
+                .route(web::delete().to(handlers::stripe_handler::cancel_subscription))
+                .route(web::put().to(handlers::stripe_handler::update_subscription_plan))
+                .route(web::get().to(handlers::stripe_handler::get_all_plans)),
+        )
+        .service(
+            web::resource("/analytics")
+                .route(web::get().to(handlers::analytics_handler::get_overall_topics))
+                .route(web::get().to(handlers::analytics_handler::get_queries_for_topic))
+                .route(web::get().to(handlers::analytics_handler::get_query))
+                .route(web::get().to(handlers::analytics_handler::get_search_metrics))
+                .route(web::get().to(handlers::analytics_handler::get_head_queries))
+                .route(web::get().to(handlers::analytics_handler::get_low_confidence_queries))
+                .route(web::get().to(handlers::analytics_handler::get_all_queries))
+                .route(web::get().to(handlers::analytics_handler::get_rps_graph))
+                .route(web::get().to(handlers::analytics_handler::get_latency_graph))
+                .route(web::get().to(handlers::analytics_handler::get_rag_queries))
+                .route(web::get().to(handlers::analytics_handler::get_rag_usage)),
+        )
+        .service(
+            web::resource("/metrics")
+                .route(web::get().to(handlers::metrics_handler::get_metrics)),
+        )
+        .service(
+            web::resource("/api-docs/openapi.json")
+                .route(web::get().to(|| async { HttpResponse::Ok().json(ApiDoc::openapi()) })),
+        )
+        .default_service(web::route().to(|| async { HttpResponse::NotFound().finish() }));
+
+    let server = HttpServer::new(|| {
+        app.clone()
+            .wrap(custom_json_error_handler)
+            .app_data(web::Data::new(Metrics::default()))
+    })
+    .bind(("0.0.0", 8090))?
+    .run();
+
+    log::info!("Started server on port 8090");
+    server.await
+}
+    run_migrations(database_url);
+
     actix_web::rt::System::new().block_on(async move {
         // create db connection pool
         let mut config = ManagerConfig::default();
@@ -478,7 +661,7 @@ pub fn main() -> std::io::Result<()> {
             .unwrap_or(vec![384,512,768,1024,1536,3072]);
 
         let json_cfg = web::JsonConfig::default()
-            .limit(134200000)
+            .limit(13420000)
             .error_handler(custom_json_error_handler);
 
         if std::env::var("CREATE_QDRANT_COLLECTIONS").unwrap_or("true".to_string()) != "false" {
@@ -528,7 +711,7 @@ pub fn main() -> std::io::Result<()> {
         HttpServer::new(move || {
             App::new()
                 .wrap(Cors::permissive())
-                .app_data(PayloadConfig::new(134200000))
+                .app_data(PayloadConfig::new(13420000))
                 .app_data(json_cfg.clone())
                 .app_data(
                     web::PathConfig::default()
@@ -850,6 +1033,10 @@ pub fn main() -> std::io::Result<()> {
 
                         )
                         .service(
+                            web::resource("/auth/sso")
+                                .route(web::get().to(handlers::auth_handler::sso_login)),
+                        )
+                        .service(
                             web::scope("/file")
                                 .service(
                                     web::resource("").route(
@@ -958,7 +1145,7 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/plans")
                                         .route(web::get().to(handlers::stripe_handler::get_all_plans)),
-                                ),
+                                )
                         )
                         .service(
                             web::scope("/analytics")
