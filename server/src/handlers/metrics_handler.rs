@@ -137,7 +137,8 @@ fn check_x_api_access(req: &actix_web::HttpRequest) -> bool {
         }
 
         if let Some(api_key) = auth_api_key {
-            return api_key.to_str().unwrap_or_default() == admin_key.as_str();
+            return format!("Bearer: {}", api_key.to_str().unwrap_or_default()).as_str()
+                == admin_key.as_str();
         }
     }
 

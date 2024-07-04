@@ -58,7 +58,7 @@ fn main() {
         tracing_subscriber::Registry::default()
             .with(sentry::integrations::tracing::layer())
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
+                tracing_subscriber::fmt::layer().without_time().with_filter(
                     EnvFilter::from_default_env()
                         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
                 ),
@@ -70,7 +70,7 @@ fn main() {
     } else {
         tracing_subscriber::Registry::default()
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
+                tracing_subscriber::fmt::layer().without_time().with_filter(
                     EnvFilter::from_default_env()
                         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
                 ),
