@@ -13,6 +13,9 @@ import { ChunkMetadataWithVotes } from "../../utils/apiTypes";
 import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
 import sanitizeHtml from "sanitize-html";
 import Resizable from "@corvu/resizable";
+import { SolidMarkdown } from "solid-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 
 export interface AfMessageProps {
   normalChat: boolean;
@@ -205,10 +208,61 @@ export const AfMessage = (props: AfMessageProps) => {
                 }
                 when={!editing()}
               >
-                <div
-                  class="text-black dark:text-neutral-50"
-                  // eslint-disable-next-line solid/no-innerhtml
-                  innerHTML={sanitizeHtml(
+                <SolidMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  class={"select-none space-y-2"}
+                  components={{
+                    h1: (props) => {
+                      return (
+                        <h1 class="mb-4 bg-white text-4xl font-bold dark:text-white">
+                          {props.children}
+                        </h1>
+                      );
+                    },
+                    h2: (props) => {
+                      return (
+                        <h2 class="mb-3 bg-white text-3xl font-semibold dark:text-white">
+                          {props.children}
+                        </h2>
+                      );
+                    },
+                    h3: (props) => {
+                      return (
+                        <h3 class="mb-2 bg-white text-2xl font-medium dark:text-white">
+                          {props.children}
+                        </h3>
+                      );
+                    },
+                    h4: (props) => {
+                      return (
+                        <h4 class="mb-2 bg-white text-xl font-medium dark:text-white">
+                          {props.children}
+                        </h4>
+                      );
+                    },
+                    h5: (props) => {
+                      return (
+                        <h5 class="mb-1 bg-white text-lg font-medium dark:text-white">
+                          {props.children}
+                        </h5>
+                      );
+                    },
+                    h6: (props) => {
+                      return (
+                        <h6 class="mb-1 bg-white text-base font-medium dark:text-white">
+                          {props.children}
+                        </h6>
+                      );
+                    },
+                    code: (props) => {
+                      return (
+                        <code class="rounded-sm bg-neutral-200 p-1">
+                          {props.children}
+                        </code>
+                      );
+                    },
+                  }}
+                  children={sanitizeHtml(
                     editedContent() || displayMessage().content.trimStart(),
                     sanitzerOptions,
                   )}
@@ -254,9 +308,6 @@ export const AfMessage = (props: AfMessageProps) => {
           <Resizable.Panel
             minSize={0.1}
             ref={setRightColumnRef}
-            // style={{
-            //   height: height(),
-            // }}
             class="relative shrink flex-col space-y-3 self-start overflow-scroll overflow-x-hidden overflow-y-scroll scrollbar-track-neutral-200 scrollbar-w-2.5 dark:scrollbar-track-zinc-700"
           >
             <div>
