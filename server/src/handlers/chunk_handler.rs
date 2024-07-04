@@ -17,8 +17,9 @@ use crate::operators::clickhouse_operator::{
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
-    autocomplete_fulltext_chunks, autocomplete_semantic_chunks, search_full_text_chunks,
-    search_hybrid_chunks, search_semantic_chunks,
+    autocomplete_fulltext_chunks, autocomplete_semantic_chunks, count_full_text_chunks,
+    count_hybrid_chunks, count_semantic_chunks, search_full_text_chunks, search_hybrid_chunks,
+    search_semantic_chunks,
 };
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -1429,6 +1430,127 @@ pub async fn get_chunk_by_id(
     } else {
         Err(ServiceError::NotFound("Chunk not found".to_string()))
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[schema(example = json!({
+    "search_type": "semantic",
+    "query": "Some search query",
+    "filters": {
+        "should": [
+            {
+                "field": "metadata.key1",
+                "match": ["value1", "value2"],
+            }
+        ],
+        "must": [
+            {
+                "field": "num_value",
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ],
+        "must_not": [
+            {
+                "field": "metadata.key3",
+                "match": ["value5", "value6"],
+            }
+        ]
+    },
+    "score_threshold": 0.5
+}))]
+pub struct CountChunksReqPayload {
+    pub search_type: String,
+    pub query: String,
+    pub filters: Option<ChunkFilter>,
+    pub score_threshold: Option<f32>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+pub struct CountChunkQueryResponseBody {
+    pub count: u32,
+}
+
+/// Count chunks
+///
+/// Count chunks
+#[utoipa::path(
+    get,
+    path = "/chunk/count",
+    context_path = "/api",
+    tag = "Chunk",
+    responses(
+        (status = 200, description = "Number of chunks satisfying the query", body = CountChunkQueryResponseBody),
+        (status = 404, description = "Failed to count chunks", body = ErrorResponseBody)
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn count_chunks(
+    data: web::Json<CountChunksReqPayload>,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+    let parsed_query = parse_query(data.query.clone());
+    let result_chunks = match data.search_type.as_str() {
+        "fulltext" | "full-text" | "full_text" | "full text" => {
+            if !server_dataset_config.FULLTEXT_ENABLED {
+                return Err(ServiceError::BadRequest(
+                    "Fulltext search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
+
+            count_full_text_chunks(
+                data.clone(),
+                parsed_query,
+                pool,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
+            )
+            .await?
+        }
+        "hybrid" => {
+            count_hybrid_chunks(
+                data.clone(),
+                parsed_query,
+                pool,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
+            )
+            .await?
+        }
+        "semantic" => {
+            count_semantic_chunks(
+                data.clone(),
+                parsed_query,
+                pool,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
+            )
+            .await?
+        }
+        _ => {
+            return Err(ServiceError::BadRequest(
+                "Invalid search type. Must be one of 'semantic', 'fulltext', or 'hybrid'".into(),
+            )
+            .into())
+        }
+    };
+    Ok(HttpResponse::Ok().json(result_chunks))
 }
 
 /// Get Chunk By Tracking Id
