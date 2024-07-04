@@ -1,12 +1,17 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   AnalyticsParams,
   HeadQuery,
   LatencyDatapoint,
+  RagQueryEvent,
+  RAGUsageResponse,
   RpsDatapoint,
   SearchQueryEvent,
 } from "shared/types";
 import { apiHost } from "../utils/apiHost";
-import { transformParams } from "../utils/formatDate";
+import { transformAnalyticsParams } from "../utils/formatDate";
 
 export const getLatency = async (
   filters: AnalyticsParams,
@@ -15,7 +20,7 @@ export const getLatency = async (
   const response = await fetch(`${apiHost}/analytics/${datasetId}/latency`, {
     credentials: "include",
     method: "POST",
-    body: JSON.stringify(transformParams(filters)),
+    body: JSON.stringify(transformAnalyticsParams(filters)),
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -37,7 +42,7 @@ export const getRps = async (
   const response = await fetch(`${apiHost}/analytics/${datasetId}/rps`, {
     credentials: "include",
     method: "POST",
-    body: JSON.stringify(transformParams(filters)),
+    body: JSON.stringify(transformAnalyticsParams(filters)),
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -60,7 +65,7 @@ export const getHeadQueries = async (
   const response = await fetch(`${apiHost}/analytics/${datasetId}/query/head`, {
     credentials: "include",
     method: "POST",
-    body: JSON.stringify(transformParams(filters, page)),
+    body: JSON.stringify(transformAnalyticsParams(filters, page)),
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -72,6 +77,52 @@ export const getHeadQueries = async (
   }
 
   const data = (await response.json()) as unknown as HeadQuery[];
+  return data;
+};
+
+export const getRAGQueries = async (
+  datasetId: string,
+  page: number,
+): Promise<RagQueryEvent[]> => {
+  const payload = {
+    page,
+  };
+
+  const response = await fetch(`${apiHost}/analytics/${datasetId}/rag`, {
+    credentials: "include",
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch head queries: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as unknown as RagQueryEvent[];
+  return data;
+};
+
+export const getRAGUsage = async (
+  datasetId: string,
+): Promise<RAGUsageResponse> => {
+  const response = await fetch(`${apiHost}/analytics/${datasetId}/rag/usage`, {
+    credentials: "include",
+    method: "GET",
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch head queries: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as unknown as RAGUsageResponse;
   return data;
 };
 
@@ -87,7 +138,7 @@ export const getLowConfidenceQueries = async (
       credentials: "include",
       method: "POST",
       body: JSON.stringify({
-        ...transformParams(filters, page),
+        ...transformAnalyticsParams(filters, page),
         threshold,
       }),
       headers: {

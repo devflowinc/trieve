@@ -1,4 +1,4 @@
-import { AnalyticsParams } from "shared/types";
+import { AnalyticsParams, DateRangeFilter } from "shared/types";
 
 export const formatdateforapi = (date: Date) => {
   return date
@@ -14,27 +14,25 @@ export const formatdateforapi = (date: Date) => {
     .replace(",", "");
 };
 
-export const transformParams = (params: AnalyticsParams, page?: number) => {
+export const transformAnalyticsParams = (
+  params: AnalyticsParams,
+  page?: number,
+) => {
   return {
     ...params,
     filter: {
       ...params.filter,
-      date_range: {
-        ...params.filter.date_range,
-        gt: params.filter.date_range.gt
-          ? formatdateforapi(params.filter.date_range.gt)
-          : undefined,
-        lt: params.filter.date_range.lt
-          ? formatdateforapi(params.filter.date_range.lt)
-          : undefined,
-        gte: params.filter.date_range.gte
-          ? formatdateforapi(params.filter.date_range.gte)
-          : undefined,
-        lte: params.filter.date_range.lte
-          ? formatdateforapi(params.filter.date_range.lte)
-          : undefined,
-      },
+      date_range: transformDateParams(params.filter.date_range),
     },
     page: page,
+  };
+};
+
+export const transformDateParams = (params: DateRangeFilter) => {
+  return {
+    gt: params.gt ? formatdateforapi(params.gt) : undefined,
+    lt: params.lt ? formatdateforapi(params.lt) : undefined,
+    gte: params.gte ? formatdateforapi(params.gte) : undefined,
+    lte: params.lte ? formatdateforapi(params.lte) : undefined,
   };
 };
