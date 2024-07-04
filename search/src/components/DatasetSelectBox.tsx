@@ -33,6 +33,7 @@ export const DatasetSelectBox = () => {
   const [datasetSearchResults, setDatasetSearchResults] = createSignal<
     DatasetAndUsageDTO[]
   >([]);
+
   createEffect(() => {
     const datasetListOrEmpty = datasetList() ?? [];
     if (datasetSearchQuery() === "") {
@@ -76,14 +77,16 @@ export const DatasetSelectBox = () => {
                 class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border bg-white dark:bg-neutral-800"
               >
                 <Menu class="mx-0.5 max-h-[70vh] space-y-0.5 overflow-y-auto overflow-x-hidden p-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
-                  <input
-                    placeholder="Search datasets..."
-                    class="mb-2 flex w-full items-center justify-between rounded bg-neutral-300 p-1 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
-                    onInput={(e) => {
-                      setDatasetSearchQuery(e.target.value);
-                    }}
-                    value={datasetSearchQuery()}
-                  />
+                  <Show when={$datasetsAndUsages?.().length ?? 0 > 5}>
+                    <input
+                      placeholder="Search datasets..."
+                      class="mb-2 flex w-full items-center justify-between rounded bg-neutral-300 p-1 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
+                      onInput={(e) => {
+                        setDatasetSearchQuery(e.target.value);
+                      }}
+                      value={datasetSearchQuery()}
+                    />
+                  </Show>
 
                   <For each={datasetSearchResults().slice(0, 500)}>
                     {(datasetItem) => {

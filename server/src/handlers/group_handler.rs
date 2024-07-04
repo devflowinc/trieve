@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadata,
+        ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataStringTagSet,
         DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool, RedisPool, ScoreChunkDTO,
         SearchQueryEventClickhouse, ServerDatasetConfiguration, UnifiedId,
     },
@@ -35,13 +35,13 @@ pub async fn dataset_owns_group(
     unified_group_id: UnifiedId,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, ServiceError> {
+) -> Result<ChunkGroupAndFileId, ServiceError> {
     let group = match unified_group_id {
         UnifiedId::TrieveUuid(group_id) => {
-            get_group_by_id_query(group_id, dataset_id, pool).await?
+            get_group_by_id_query(group_id, dataset_id, pool.clone()).await?
         }
         UnifiedId::TrackingId(tracking_id) => {
-            get_group_from_tracking_id_query(tracking_id, dataset_id, pool).await?
+            get_group_from_tracking_id_query(tracking_id, dataset_id, pool.clone()).await?
         }
     };
 
@@ -123,7 +123,7 @@ pub async fn create_chunk_group(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GroupData {
-    pub groups: Vec<ChunkGroupAndFile>,
+    pub groups: Vec<ChunkGroupAndFileId>,
     pub total_pages: i32,
 }
 
@@ -186,7 +186,7 @@ pub struct GetGroupByTrackingIDData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroupAndFileId),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
@@ -209,7 +209,7 @@ pub async fn get_group_by_tracking_id(
     let group = get_group_from_tracking_id_query(
         data.tracking_id.clone(),
         dataset_org_plan_sub.dataset.id,
-        pool,
+        pool.clone(),
     )
     .await?;
 
@@ -232,7 +232,7 @@ pub struct GetGroupData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroupAndFileId),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
@@ -252,8 +252,12 @@ pub async fn get_chunk_group(
     _user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let group =
-        get_group_by_id_query(group_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
+    let group = get_group_by_id_query(
+        group_id.into_inner(),
+        dataset_org_plan_sub.dataset.id,
+        pool.clone(),
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(group))
 }
@@ -512,6 +516,7 @@ pub async fn update_chunk_group(
             pool.clone(),
         )
         .await?
+        .to_group()
     } else if let Some(tracking_id) = data.tracking_id.clone() {
         dataset_owns_group(
             UnifiedId::TrackingId(tracking_id),
@@ -519,6 +524,7 @@ pub async fn update_chunk_group(
             pool.clone(),
         )
         .await?
+        .to_group()
     } else {
         return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
     };
@@ -604,9 +610,7 @@ pub async fn add_chunk_to_group(
     let qdrant_point_id =
         create_chunk_bookmark_query(pool, ChunkGroupBookmark::from_details(group_id, id)).await?;
 
-    if let Some(qdrant_point_id) = qdrant_point_id {
-        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
-    }
+    add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -667,24 +671,23 @@ pub async fn add_chunk_to_group_by_tracking_id(
     )
     .await?;
 
-    if let Some(qdrant_point_id) = qdrant_point_id {
-        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
-    }
+    add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct BookmarkData {
-    pub chunks: Vec<ChunkMetadata>,
-    pub group: ChunkGroup,
-    pub total_pages: i64,
+    pub chunks: Vec<ChunkMetadataStringTagSet>,
+    pub group: ChunkGroupAndFileId,
+    pub total_pages: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetAllBookmarksData {
     pub group_id: uuid::Uuid,
     pub page: Option<u64>,
+    pub limit: Option<u64>,
 }
 
 /// Get Chunks in Group
@@ -717,14 +720,15 @@ pub async fn get_chunks_in_group(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = group_data.page.unwrap_or(1);
+    let limit = group_data.limit.unwrap_or(10);
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let bookmarks = get_bookmarks_for_group_query(
         UnifiedId::TrieveUuid(group_data.group_id),
         page,
-        None,
+        Some(limit),
         dataset_id,
-        pool,
+        pool.clone(),
     )
     .await?;
 
@@ -779,7 +783,7 @@ pub async fn get_chunks_in_group_by_tracking_id(
             page,
             None,
             dataset_id,
-            pool,
+            pool.clone(),
         )
         .await?
     };
@@ -879,9 +883,7 @@ pub async fn remove_chunk_from_group(
 
     let qdrant_point_id = delete_chunk_from_group_query(chunk_id, group_id, pool).await?;
 
-    if let Some(qdrant_point_id) = qdrant_point_id {
-        remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
-    }
+    remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -1173,7 +1175,7 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchWithinGroupResults {
     pub bookmarks: Vec<ScoreChunkDTO>,
-    pub group: ChunkGroup,
+    pub group: ChunkGroupAndFileId,
     pub total_pages: i64,
 }
 

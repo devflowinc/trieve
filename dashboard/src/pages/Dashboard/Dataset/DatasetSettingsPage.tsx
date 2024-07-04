@@ -27,10 +27,6 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   RAG_PROMPT: "",
   EMBEDDING_SIZE: 768,
   N_RETRIEVALS_TO_INCLUDE: 8,
-  DUPLICATE_DISTANCE_THRESHOLD: 1.1,
-  DOCUMENT_UPLOAD_FEATURE: true,
-  DOCUMENT_DOWNLOAD_FEATURE: true,
-  COLLISIONS_ENABLED: false,
   FULLTEXT_ENABLED: true,
   QDRANT_COLLECTION_NAME: null,
   EMBEDDING_QUERY_PREFIX: "Search for: ",
@@ -41,6 +37,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   STOP_TOKENS: null,
   INDEXED_ONLY: false,
   LOCKED: false,
+  SYSTEM_PROMPT: null,
 };
 
 export const ServerSettingsForm = () => {
@@ -309,6 +306,30 @@ export const ServerSettingsForm = () => {
 
             <div class="col-span-4 sm:col-span-2">
               <label
+                for="messageToQueryPrompt"
+                class="block text-sm font-medium leading-6"
+              >
+                System Prompt
+              </label>
+              <textarea
+                value={serverConfig().SYSTEM_PROMPT ?? ""}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      SYSTEM_PROMPT: e.currentTarget.value,
+                    };
+                  })
+                }
+                rows="4"
+                name="messageToQueryPrompt"
+                id="messageToQueryPrompt"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
                 for="ragPrompt"
                 class="block text-sm font-medium leading-6"
               >
@@ -442,29 +463,6 @@ export const ServerSettingsForm = () => {
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
               <input
                 type="checkbox"
-                name="documentUploadFeature"
-                id="documentUploadFeature"
-                checked={serverConfig().DOCUMENT_UPLOAD_FEATURE}
-                onInput={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      DOCUMENT_UPLOAD_FEATURE: e.currentTarget.checked,
-                    };
-                  })
-                }
-              />
-              <label
-                for="documentUploadFeature"
-                class="block text-sm font-medium"
-              >
-                Document upload feature
-              </label>
-            </div>
-
-            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
-              <input
-                type="checkbox"
                 name="lockDataset"
                 id="lockDataset"
                 checked={serverConfig().LOCKED}
@@ -482,28 +480,6 @@ export const ServerSettingsForm = () => {
               </label>
             </div>
 
-            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
-              <input
-                type="checkbox"
-                name="documentDownloadFeature"
-                id="documentDownloadFeature"
-                checked={serverConfig().DOCUMENT_DOWNLOAD_FEATURE}
-                onInput={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      DOCUMENT_DOWNLOAD_FEATURE: e.currentTarget.checked,
-                    };
-                  })
-                }
-              />
-              <label
-                for="documentDownloadFeature"
-                class="block text-sm font-medium leading-6"
-              >
-                Document download feature
-              </label>
-            </div>
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
               <input
                 type="checkbox"

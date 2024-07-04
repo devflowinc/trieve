@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { createQuery } from "@tanstack/solid-query";
 import { ChartCard } from "./ChartCard";
 import { AnalyticsParams } from "shared/types";
@@ -7,19 +8,22 @@ import { getLatency } from "../../api/analytics";
 import { Chart } from "chart.js";
 import { format } from "date-fns";
 
-function parseCustomDateString(dateString: string) {
+export const parseCustomDateString = (dateString: string) => {
   const [datePart, timePart] = dateString.split(" ");
-  const [year, month, day] = datePart.split("-");
-  const [hour, minute, second] = timePart.split(":");
+  let [year, month, day] = datePart.split("-");
+  let [hour, minute, second] = timePart.split(":");
+  let [wholeSec] = second.split(".");
 
-  // Parse the fractional seconds and offset
-  const [wholeSec] = second.split(".");
+  month = month.padStart(2, "0");
+  day = day.padStart(2, "0");
+  hour = hour.padStart(2, "0");
+  minute = minute.padStart(2, "0");
+  wholeSec = wholeSec.padStart(2, "0");
 
-  // Construct an ISO 8601 compliant string
   const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}`;
 
   return new Date(isoString);
-}
+};
 
 interface LatencyGraphProps {
   filters: AnalyticsParams;
@@ -52,9 +56,12 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
           labels: [],
           datasets: [
             {
+              borderColor: "purple",
+              pointBackgroundColor: "purple",
+              backgroundColor: "rgba(128, 0, 128, 0.1)", // Light purple background
+              borderWidth: 1,
               label: "Time",
               data: [],
-              borderWidth: 1,
             },
           ],
         },
@@ -64,6 +71,7 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
           },
           scales: {
             y: {
+              grid: { color: "rgba(128, 0, 128, 0.1)" }, // Light purple grid
               title: {
                 text: "Latency (ms)",
                 display: true,

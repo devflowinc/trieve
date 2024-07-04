@@ -1,6 +1,5 @@
 import { Navbar } from "../components/Atoms/Navbar";
 import type { JSX } from "solid-js";
-import { DatasetAndUserContextWrapper } from "../components/Contexts/DatasetAndUserContext";
 import ShowToast from "../components/ShowToasts";
 
 export const SearchLayout = (props: { children: JSX.Element }) => {
@@ -37,12 +36,12 @@ export const SearchLayout = (props: { children: JSX.Element }) => {
   }
 
   return (
-    <DatasetAndUserContextWrapper>
+    <>
       <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
         <Navbar />
         {props.children}
       </div>
       <ShowToast />
-    </DatasetAndUserContextWrapper>
+    </>
   );
 };

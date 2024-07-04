@@ -290,19 +290,17 @@ pub async fn stream_response(
     let use_message_to_query_prompt = dataset_config.USE_MESSAGE_TO_QUERY_PROMPT;
     if create_message_req_payload.search_query.is_none() && use_message_to_query_prompt {
         let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
+        let gen_inference_msgs = vec![ChatMessage {
+            role: Role::User,
+            content: ChatMessageContent::Text(format!("{}\n{}", message_to_query_prompt, query)),
+            tool_calls: None,
+            name: None,
+            tool_call_id: None,
+        }];
 
         let gen_inference_parameters = ChatCompletionParameters {
             model: chosen_model.clone(),
-            messages: vec![ChatMessage {
-                role: Role::User,
-                content: ChatMessageContent::Text(format!(
-                    "{}\n{}",
-                    message_to_query_prompt, query
-                )),
-                tool_calls: None,
-                name: None,
-                tool_call_id: None,
-            }],
+            messages: gen_inference_msgs,
             stream: Some(false),
             temperature: dataset_config.TEMPERATURE.map(|temp| temp as f32),
             frequency_penalty: Some(dataset_config.FREQUENCY_PENALTY.unwrap_or(0.8) as f32),
@@ -453,7 +451,7 @@ pub async fn stream_response(
     ));
 
     // replace the last message with the last message with evidence
-    let open_ai_messages = openai_messages
+    let mut open_ai_messages: Vec<ChatMessage> = openai_messages
         .clone()
         .into_iter()
         .enumerate()
@@ -471,6 +469,19 @@ pub async fn stream_response(
             }
         })
         .collect();
+
+    if dataset_config.SYSTEM_PROMPT.is_some() {
+        open_ai_messages.insert(
+            0,
+            ChatMessage {
+                role: Role::System,
+                content: ChatMessageContent::Text(dataset_config.SYSTEM_PROMPT.clone().unwrap()),
+                tool_calls: None,
+                name: None,
+                tool_call_id: None,
+            },
+        )
+    }
 
     let parameters = ChatCompletionParameters {
         model: chosen_model,

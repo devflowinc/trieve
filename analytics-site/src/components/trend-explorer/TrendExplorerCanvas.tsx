@@ -1,4 +1,7 @@
 import { createEffect, createSignal, on, onMount } from "solid-js";
+import { colord, extend } from "colord";
+import mixPlugin from "colord/plugins/mix";
+extend([mixPlugin]);
 import {
   Composite,
   Engine,
@@ -11,7 +14,7 @@ import {
   MouseConstraint,
 } from "matter-js";
 import { SearchClusterTopics } from "shared/types";
-import { createStore } from "solid-js/store";
+import { createStore, unwrap } from "solid-js/store";
 import Matter from "matter-js";
 
 interface TrendExplorerCanvasProps {
@@ -19,10 +22,13 @@ interface TrendExplorerCanvasProps {
   onSelectTopic: (topicId: string) => void;
 }
 
-// Get a shade of gray
 const getColorFromDensity = (density: number) => {
-  const color = Math.floor(255 - 70 * density);
-  return `rgb(${color}, ${color}, ${color})`;
+  // Mix white with a deep purple color
+  const color = colord("#914fc2") // Deep purple
+    .lighten(density * 0.082) // Mix with white
+    .toRgbString(); // Convert to RGB string
+
+  return color;
 };
 
 const centeredRandom = (factor: number) => {
@@ -34,8 +40,8 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
   const [render, setRender] = createSignal<Render | null>(null);
 
   const [containerSize, setContainerSize] = createStore({
-    width: 700,
-    height: 800,
+    width: window.innerWidth,
+    height: window.innerHeight - 58,
   });
 
   // Subscribe with resize observer
@@ -72,7 +78,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
         if (localRender === null) {
           return;
         }
-        // Update the canvas size
         localRender.canvas.width = containerSize.width;
         localRender.canvas.height = containerSize.height;
       },
@@ -81,22 +86,27 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
 
   createEffect(() => {
     console.log("updating");
+    const sizes = unwrap(containerSize);
     const render = Render.create({
       canvas: canvasElement(),
       engine: engine,
       options: {
         background: "#f5f5f5",
-        height: 800,
-        width: 700,
+        height: sizes.height,
+        width: sizes.width,
         wireframes: false,
       },
     });
 
     const circles = props.topics.map((topic) => {
       const circle = Bodies.circle(
-        centeredRandom(3),
-        centeredRandom(3),
-        1 * topic.density,
+        centeredRandom(3) + 850,
+        centeredRandom(3) + 500,
+        Math.max(1.3 * topic.density, 30),
+        {
+          id: topic.density,
+          label: topic.topic,
+        },
       );
       // @ts-expect-error just debugging
       circle.id = topic.id;
@@ -105,9 +115,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       circle.render.lineWidth = 1;
       circle.timeScale = 0.2;
       circle.friction = 0.9999;
-      circle.density = 0.9999;
-
-      // Add a click handler to the circle
 
       return circle;
     });
@@ -115,12 +122,21 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
     Composite.add(engine.world, [...circles]);
 
     const response = Events.on(runner, "beforeTick", () => {
-      // Pull the circles towards the center
+      // Pull the circles towards the point (400, 400)
       circles.forEach((circle) => {
         const x = circle.position.x;
         const y = circle.position.y;
-        const fx = -0.0005 * x * 0.5;
-        const fy = -0.0005 * y * 0.5;
+        const targetX = 850;
+        const targetY = 500;
+
+        // Calculate the difference between current position and target
+        const dx = targetX - x;
+        const dy = targetY - y;
+
+        // Apply force proportional to the distance from the target point
+        const forceMagnitude = 0.00025; // Adjust this value to control the strength of attraction
+        const fx = dx * forceMagnitude;
+        const fy = dy * forceMagnitude;
 
         Body.applyForce(circle, { x: x, y: y }, { x: fx, y: fy });
       });
@@ -150,6 +166,35 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       }
     });
 
+    // eslint-disable-next-line solid/reactivity
+    Events.on(render, "afterRender", function () {
+      const ctx = render.context;
+      circles.forEach((circle) => {
+        ctx.font = "12px Arial";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const density =
+          props.topics.find((t) => t.id === (circle.id as unknown as string))
+            ?.density || 0;
+
+        let label = circle.label; // Truncate long labels
+        if (density < 50) {
+          ctx.font = "10px Arial";
+          label = label.substring(0, 10) + "...";
+        }
+        if (density < 80) {
+          // Replace spaces with newlines
+          label = label.replace(/ /g, "\n");
+        }
+        if (density > 80) {
+          ctx.font = "14px Arial";
+        }
+        ctx.fillText(label, circle.position.x, circle.position.y);
+      });
+    });
+
     Composite.add(engine.world, mouseConstraint);
 
     // Ensure the mouse captures events even when outside the canvas
@@ -157,12 +202,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
 
     // center the camera on (0, 0)
     setRender(render);
-
-    // console
-    Render.lookAt(render, {
-      min: { x: -containerSize.width / 2, y: -containerSize.height / 2 },
-      max: { x: containerSize.width / 2, y: containerSize.height / 2 },
-    });
 
     Render.run(render);
 
@@ -182,7 +221,6 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       style={{
         width: "100%",
         height: "100%",
-        "max-height": "80vh",
       }}
       ref={setCanvasElement}
     />

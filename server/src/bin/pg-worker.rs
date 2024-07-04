@@ -29,7 +29,7 @@ fn main() {
         tracing_subscriber::Registry::default()
             .with(sentry::integrations::tracing::layer())
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
+                tracing_subscriber::fmt::layer().without_time().with_filter(
                     EnvFilter::from_default_env()
                         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
                 ),
@@ -41,7 +41,7 @@ fn main() {
     } else {
         tracing_subscriber::Registry::default()
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
+                tracing_subscriber::fmt::layer().without_time().with_filter(
                     EnvFilter::from_default_env()
                         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
                 ),
@@ -167,6 +167,10 @@ async fn pg_insert_worker(
         opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
     let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
+    let bulk_batch_size: usize = std::env::var("PG_BULK_BATCHSIZE")
+        .unwrap_or("1000".to_string())
+        .parse()
+        .unwrap_or(1000);
 
     loop {
         if should_terminate.load(Ordering::Relaxed) {
@@ -178,7 +182,7 @@ async fn pg_insert_worker(
 
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("rpop")
             .arg("bulk_pg_queue")
-            .arg(1000)
+            .arg(bulk_batch_size)
             .query_async(&mut *redis_connection)
             .await;
 
@@ -261,13 +265,7 @@ async fn pg_insert_worker(
             Err(err) => {
                 let qdrant_point_ids = messages
                     .iter()
-                    .map(|message| {
-                        message
-                            .chunk_metadatas
-                            .chunk_metadata
-                            .qdrant_point_id
-                            .unwrap_or_default()
-                    })
+                    .map(|message| message.chunk_metadatas.chunk_metadata.qdrant_point_id)
                     .collect::<Vec<uuid::Uuid>>();
 
                 let collection_name = get_collection_name_from_config(

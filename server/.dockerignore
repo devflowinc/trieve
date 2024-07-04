@@ -1,7 +1,6 @@
 target
 .env
-Dockerfile.no-ocr
-Dockerfile.ocr
+Dockerfile.server
 Dockerfile
 tmp
 images

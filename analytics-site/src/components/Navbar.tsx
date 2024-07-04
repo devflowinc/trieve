@@ -4,7 +4,7 @@ import { UserContext } from "../contexts/UserAuthContext";
 import { DatasetAndUsage } from "shared/types";
 import { usePathname } from "../hooks/usePathname";
 import { useBetterNav } from "../utils/useBetterNav";
-
+import { Select } from "shared/ui";
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
   selectedDataset: DatasetAndUsage | null;
@@ -29,45 +29,39 @@ export const Navbar = (props: NavbarProps) => {
   const navigate = useBetterNav();
 
   return (
-    <div class="flex justify-between border border-b-neutral-400 bg-neutral-50 p-4">
-      <div class="flex gap-3">
-        <select
-          onChange={(e) => {
-            console.log(e.target.value);
-            orgContext.selectOrg(e.currentTarget.value);
+    <div class="flex justify-between border border-b-neutral-300 bg-neutral-50 p-2 px-4 pr-8">
+      <div class="flex items-center gap-3">
+        <img
+          class="h-12 w-12 cursor-pointer"
+          src="https://cdn.trieve.ai/trieve-logo.png"
+          alt="Logo"
+        />
+        <Select
+          class="min-w-[150px]"
+          display={(org) => org.name}
+          onSelected={(e) => {
+            console.log(e);
+            orgContext.selectOrg(e.id);
           }}
-          value={orgContext.selectedOrg().id}
-        >
-          {
-            <For each={userContext?.user().orgs}>
-              {(org) => <option value={org.id}>{org.name}</option>}
-            </For>
-          }
-        </select>
-
-        <Show when={props.datasetOptions.length > 0}>
-          <select
-            onChange={(e) => {
-              const dataset = props.datasetOptions.find(
-                (dataset) => dataset.dataset.id === e.currentTarget.value,
-              );
-              if (dataset) {
-                props.setSelectedDataset(dataset);
-              }
-            }}
-            value={props.selectedDataset?.dataset.id}
-          >
-            <For each={props.datasetOptions}>
-              {(dataset) => (
-                <option value={dataset.dataset.id}>
-                  {dataset.dataset.name}
-                </option>
-              )}
-            </For>
-          </select>
+          options={userContext?.user().orgs || []}
+          selected={orgContext.selectedOrg()}
+        />
+        <Show when={props.datasetOptions.length > 0 && props.selectedDataset}>
+          {(selected) => (
+            <Select
+              class="min-w-[220px]"
+              options={props.datasetOptions}
+              display={(dataset) => dataset.dataset.name}
+              onSelected={(e) => {
+                props.setSelectedDataset(e);
+              }}
+              selected={selected()}
+              id="dataset-select"
+            />
+          )}
         </Show>
       </div>
-      <div class="flex gap-4">
+      <div class="flex items-center gap-4">
         <For each={navbarRoutes}>
           {(link) => {
             return (
@@ -75,7 +69,7 @@ export const Navbar = (props: NavbarProps) => {
                 role="link"
                 classList={{
                   "cursor-pointer": true,
-                  "text-purple-800 underline": pathname() === link.href,
+                  "text-purple-900 underline": pathname() === link.href,
                   "text-black": pathname() !== link.href,
                 }}
                 onClick={() => {

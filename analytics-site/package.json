@@ -12,12 +12,14 @@
     "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
   },
   "dependencies": {
+    "@nozbe/microfuzz": "^1.0.0",
     "@solidjs/router": "^0.13.6",
     "@tanstack/solid-query": "^5.48.0",
     "@tanstack/solid-query-devtools": "^5.48.0",
     "@types/matter-js": "^0.19.6",
     "add": "^2.0.6",
     "chart.js": "^4.4.3",
+    "colord": "^2.9.3",
     "date-fns": "^3.6.0",
     "matter-js": "^0.20.0",
     "shared": "*",

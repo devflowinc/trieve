@@ -520,6 +520,7 @@ export interface GroupScoreChunkDTO {
   group_name: string;
   group_tracking_id: string;
   metadata: ScoreChunkDTO[];
+  file_id?: string;
 }
 
 export interface SearchOverGropsResponseBody {

@@ -19,6 +19,8 @@ import {
   AiFillCaretLeft,
   AiFillCaretRight,
   AiOutlineClear,
+  AiOutlineComment,
+  AiOutlineSearch,
 } from "solid-icons/ai";
 import { formatDate } from "../formatters";
 import { TbReload } from "solid-icons/tb";
@@ -213,6 +215,16 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       });
   };
 
+  const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
+  const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
+
+  const orgDatasetParams = (datasetId: string) => {
+    const orgId = props.selectedOrganization()?.id;
+    return orgId && datasetId
+      ? `/?organization=${orgId}&dataset=${datasetId}`
+      : "";
+  };
+
   return (
     <>
       <div class="flex items-center">
@@ -305,6 +317,12 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                   </th>
                   <th
                     scope="col"
+                    class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
+                  >
+                    Tools
+                  </th>
+                  <th
+                    scope="col"
                     class="px-3 py-3.5 text-left text-sm font-semibold"
                   >
                     Chunk Count
@@ -337,7 +355,50 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           );
                         }}
                       >
-                        {datasetAndUsage.dataset.name}
+                        <div class="inline-flex items-center">
+                          {datasetAndUsage.dataset.name}
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium"
+                        onClick={() => {
+                          navigate(
+                            `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
+                          );
+                        }}
+                      >
+                        <div class="flex items-center gap-4">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              window.open(
+                                `${searchUiURL}${orgDatasetParams(
+                                  datasetAndUsage.dataset.id,
+                                )}`,
+                              );
+                            }}
+                            class="hover:text-fuchsia-500"
+                            title="Open search playground for this dataset"
+                          >
+                            <AiOutlineSearch class="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              window.open(
+                                `${chatUiURL}${orgDatasetParams(
+                                  datasetAndUsage.dataset.id,
+                                )}`,
+                              );
+                            }}
+                            class="hover:text-fuchsia-500"
+                            title="Open RAG playground for this dataset"
+                          >
+                            <AiOutlineComment class="h-5 w-5" />{" "}
+                          </button>
+                        </div>
                       </td>
                       <td
                         class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600"

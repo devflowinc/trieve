@@ -13,6 +13,8 @@ import { getLowConfidenceQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
+import { FullScreenModal } from "shared/ui";
+import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 
 interface LowConfidenceQueriesProps {
   filters: AnalyticsParams;
@@ -37,7 +39,6 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
     on(
       () => [props.filters, dataset().dataset.id, thresholdText()],
       () => {
-        console.log("resetting max page");
         pages.resetMaxPageDiscovered();
       },
     ),
@@ -92,11 +93,16 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   }));
 
   return (
-    <ChartCard class="px-4" width={3}>
-      <div>
-        <div class="text-lg">Low Confidence Queries</div>
+    <ChartCard class="px-4" width={5}>
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <div class="text-lg">Low Confidence Queries</div>
+          <div class="text-sm text-neutral-600">
+            Searches with lowest top scores
+          </div>
+        </div>
         <input
-          class="w-full px-2"
+          class="mt-1 border-neutral-800 px-2 text-end text-sm outline-none ring-0 active:border-b-2"
           type="text"
           placeholder="Enter threshold.."
           value={thresholdText()}
@@ -121,7 +127,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
         )}
       </Show>
       <div class="flex justify-end">
-        <PaginationButtons size={24} pages={pages} />
+        <PaginationButtons size={18} pages={pages} />
       </div>
     </ChartCard>
   );
@@ -131,10 +137,21 @@ interface QueryCardProps {
   query: SearchQueryEvent;
 }
 const QueryCard = (props: QueryCardProps) => {
+  const [open, setOpen] = createSignal(false);
   return (
-    <div class="flex justify-between">
-      <div class="truncate">{props.query.query}</div>
-      <div class="truncate">{props.query.top_score.toFixed(5)}</div>
-    </div>
+    <>
+      <div
+        onClick={() => {
+          setOpen(true);
+        }}
+        class="flex cursor-pointer justify-between"
+      >
+        <div class="truncate">{props.query.query}</div>
+        <div class="truncate">{props.query.top_score.toFixed(5)}</div>
+      </div>
+      <FullScreenModal title={props.query.query} show={open} setShow={setOpen}>
+        <SearchQueryEventModal searchEvent={props.query} />
+      </FullScreenModal>
+    </>
   );
 };

@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::data::models::{
-    ChunkCollision, ChunkData, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags,
-    ChunkMetadataTypes, ContentChunkMetadata, Dataset, DatasetTags, IngestSpecificChunkMetadata,
+    ChunkData, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes,
+    ContentChunkMetadata, Dataset, DatasetTags, IngestSpecificChunkMetadata,
     ServerDatasetConfiguration, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::get_env;
@@ -11,7 +11,6 @@ use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload
 use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
-use crate::operators::model_operator::create_embedding;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
@@ -27,7 +26,7 @@ use diesel::sql_types;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use itertools::Itertools;
-use qdrant_client::qdrant::{PointId, PointVectors};
+use qdrant_client::qdrant::PointId;
 use simsearch::{SearchOptions, SimSearch};
 
 #[tracing::instrument(skip(pool))]
@@ -101,12 +100,9 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             )
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .select(chunk_metadata_columns::qdrant_point_id)
-            .load::<Option<uuid::Uuid>>(&mut conn)
+            .load::<uuid::Uuid>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
-            .into_iter()
-            .flatten()
-            .collect(),
+            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
         UnifiedId::TrackingId(_) => chunk_metadata_columns::chunk_metadata
             .filter(
                 chunk_metadata_columns::tracking_id.eq_any(
@@ -118,12 +114,9 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             )
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .select(chunk_metadata_columns::qdrant_point_id)
-            .load::<Option<uuid::Uuid>>(&mut conn)
+            .load::<uuid::Uuid>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
-            .into_iter()
-            .flatten()
-            .collect(),
+            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
     };
 
     Ok(qdrant_point_ids)
@@ -137,10 +130,8 @@ pub struct ChunkMetadataWithQdrantId {
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
-    get_collisions: bool,
     pool: web::Data<Pool>,
-) -> Result<(Vec<ChunkMetadataTypes>, Vec<ChunkMetadataTypes>), ServiceError> {
-    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+) -> Result<Vec<ChunkMetadataTypes>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
@@ -171,24 +162,6 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
     // Fetch the chunk metadatas for root chunks
     let chunk_metadatas = {
         let mut conn = pool.get().await.unwrap();
-        // If collisions get removed this can be one query
-        let chunk_qdrant_pointid_pair: Vec<(uuid::Uuid, Option<uuid::Uuid>)> =
-            chunk_metadata_columns::chunk_metadata
-                .left_outer_join(
-                    chunk_collisions_columns::chunk_collisions
-                        .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-                )
-                .select((
-                    (chunk_metadata_columns::id),
-                    (chunk_collisions_columns::collision_qdrant_id).nullable(),
-                ))
-                .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-                .load::<(uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Failed to load collision metadata".to_string())
-                })?;
-
         // Get tagset and chunk metadatatable
 
         let chunk_metadata_pair: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
@@ -221,112 +194,15 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
         chunk_metadata_pair
             .into_iter()
             .map(|(chunk_table, tag_set)| {
-                let qdrant_point_id = chunk_qdrant_pointid_pair
-                    .iter()
-                    .find(|(chunk_id, _)| *chunk_id == chunk_table.id)
-                    .and_then(|(_, qdrant_point_id)| *qdrant_point_id);
-
-                ChunkMetadata::from_table_and_tag_set(
-                    ChunkMetadataTable {
-                        qdrant_point_id: chunk_table.qdrant_point_id.or(qdrant_point_id),
-                        ..chunk_table
-                    },
-                    tag_set.unwrap_or(vec![]),
-                )
-                .into()
+                ChunkMetadata::from_table_and_tag_set(chunk_table, tag_set.unwrap_or(vec![])).into()
             })
             .collect::<Vec<ChunkMetadataTypes>>()
     };
 
     chunk_search_span.finish();
-
-    let collision_search_span = transaction.start_child(
-        "Fetching matching points from qdrant",
-        "Fetching matching points from qdrant",
-    );
-
-    if get_collisions {
-        // Fetch the collided chunks
-        let collided_chunks = {
-            let mut conn = pool.get().await.unwrap();
-
-            let chunk_qdrant_point_id_pair: Vec<(uuid::Uuid, uuid::Uuid)> =
-                chunk_collisions_columns::chunk_collisions
-                    .inner_join(
-                        chunk_metadata_columns::chunk_metadata
-                            .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-                    )
-                    .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(&point_ids))
-                    .select((
-                        chunk_metadata_columns::id,
-                        chunk_collisions_columns::collision_qdrant_id.assume_not_null(),
-                    ))
-                    .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
-                    .await
-                    .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
-
-            let chunk_metadata_pair: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
-                chunk_metadata_columns::chunk_metadata
-                    .left_join(
-                        chunk_metadata_tags_columns::chunk_metadata_tags
-                            .on(chunk_metadata_tags_columns::chunk_metadata_id
-                                .eq(chunk_metadata_columns::id)),
-                    )
-                    .left_join(
-                        dataset_tags_columns::dataset_tags
-                            .on(dataset_tags_columns::id.eq(chunk_metadata_tags_columns::tag_id)),
-                    )
-                    .select((
-                        ChunkMetadataTable::as_select(),
-                        sql::<sql_types::Array<sql_types::Text>>(
-                            "array_remove(array_agg(dataset_tags.tag), null)",
-                        )
-                        .nullable(),
-                    ))
-                    .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-                    .group_by(chunk_metadata_columns::id)
-                    .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
-                    .await
-                    .map_err(|_| {
-                        ServiceError::BadRequest(
-                            "Failed to load tagset and metadata with collisions".to_string(),
-                        )
-                    })?;
-
-            chunk_metadata_pair
-                .into_iter()
-                .filter_map(|(chunk_table, tag_set)| {
-                    let qdrant_point_id = chunk_qdrant_point_id_pair
-                        .iter()
-                        .find(|(chunk_id, _)| *chunk_id == chunk_table.id)?
-                        .1;
-
-                    Some(
-                        ChunkMetadata::from_table_and_tag_set(
-                            ChunkMetadataTable {
-                                qdrant_point_id: chunk_table
-                                    .qdrant_point_id
-                                    .or(Some(qdrant_point_id)),
-                                ..chunk_table
-                            },
-                            tag_set.unwrap_or(vec![]),
-                        )
-                        .into(),
-                    )
-                })
-                .collect::<Vec<ChunkMetadataTypes>>()
-        };
-
-        collision_search_span.finish();
-        transaction.finish();
-        // Return the chunk metadata and the collided chunks
-        Ok((chunk_metadatas, collided_chunks))
-    } else {
-        collision_search_span.finish();
-        transaction.finish();
-        // Return only the chunk metadata
-        Ok((chunk_metadatas, vec![]))
-    }
+    transaction.finish();
+    // Return only the chunk metadata
+    Ok(chunk_metadatas)
 }
 
 #[tracing::instrument(skip(pool))]
@@ -1056,155 +932,6 @@ pub async fn bulk_revert_insert_chunk_metadata_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn insert_duplicate_chunk_metadata_query(
-    chunk_data: ChunkMetadata,
-    duplicate_chunk: uuid::Uuid,
-    group_ids: Option<Vec<uuid::Uuid>>,
-    pool: web::Data<Pool>,
-) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_collisions::dsl::*;
-    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
-    use crate::data::schema::chunk_metadata::dsl::*;
-    use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
-    use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
-
-    let mut conn = pool.get().await.unwrap();
-
-    let inserted_chunk = conn
-        .transaction::<_, diesel::result::Error, _>(|conn| {
-            async {
-                let chunk_table: ChunkMetadataTable = chunk_data.clone().into();
-
-                let inserted_chunk = diesel::insert_into(chunk_metadata)
-                    .values(&(chunk_table))
-                    .get_result::<ChunkMetadataTable>(conn)
-                    .await?;
-
-                //insert duplicate into chunk_collisions
-                diesel::insert_into(chunk_collisions)
-                    .values(&ChunkCollision::from_details(
-                        chunk_data.id,
-                        duplicate_chunk,
-                    ))
-                    .execute(conn)
-                    .await?;
-
-                Ok(inserted_chunk)
-            }
-            .scope_boxed()
-        })
-        .await
-        .map_err(|e| {
-            log::error!("Failed to insert duplicate chunk metadata: {:?}", e);
-            sentry::capture_message(
-                &format!("Failed to insert duplicate chunk metadata: {:?}", e),
-                sentry::Level::Error,
-            );
-
-            ServiceError::BadRequest("Failed to insert duplicate chunk metadata".to_string())
-        })?;
-
-    if let Some(group_ids) = group_ids {
-        diesel::insert_into(chunk_group_bookmarks_columns::chunk_group_bookmarks)
-            .values(
-                &group_ids
-                    .into_iter()
-                    .map(|group_id| ChunkGroupBookmark::from_details(group_id, inserted_chunk.id))
-                    .collect::<Vec<ChunkGroupBookmark>>(),
-            )
-            .execute(&mut conn)
-            .await
-            .map_err(|e| {
-                log::error!(
-                    "Failed to insert duplicate chunk_metadata into groups {:?}",
-                    e
-                );
-                sentry::capture_message(
-                    &format!(
-                        "Failed to insert duplicate chunk_metadata into groups {:?}",
-                        e
-                    ),
-                    sentry::Level::Error,
-                );
-
-                ServiceError::BadRequest(
-                    "Failed to insert duplicate chunk_metadata into groups".to_string(),
-                )
-            })?;
-    }
-
-    if let Some(tag_set) = chunk_data.tag_set.clone() {
-        let dataset_uuid = chunk_data.dataset_id;
-        let dataset_tags_to_add = tag_set
-            .into_iter()
-            .filter_map(|maybe_tag| {
-                maybe_tag.map(|tag| DatasetTags {
-                    id: uuid::Uuid::new_v4(),
-                    dataset_id: dataset_uuid,
-                    tag,
-                })
-            })
-            .collect_vec();
-
-        diesel::insert_into(dataset_tags_columns::dataset_tags)
-            .values(&dataset_tags_to_add)
-            .on_conflict_do_nothing()
-            .get_results::<DatasetTags>(&mut conn)
-            .await
-            .map_err(|e| {
-                log::error!("Failed to create dataset tag {:}", e);
-                ServiceError::BadRequest("Failed to create dataset tag".to_string())
-            })?;
-
-        // Get the proper dataset_tags to add chunk_metadata_tags
-
-        let tag_names = dataset_tags_to_add
-            .clone()
-            .into_iter()
-            .map(|tag| tag.tag)
-            .collect_vec();
-
-        let dataset_tags_existing =
-            get_dataset_tags_id_from_names(pool, dataset_uuid, tag_names).await?;
-
-        let mut needed_dataset_tags = dataset_tags_to_add.clone();
-        // Remove all conflicts
-        needed_dataset_tags.retain(|dataset_tag| {
-            // If it isn't found aka None, then it is not a conflicting one
-            !dataset_tags_existing
-                .iter()
-                .any(|predicate_tag| predicate_tag.tag == dataset_tag.tag)
-        });
-
-        // Add Back preexisting ones
-        needed_dataset_tags.extend(dataset_tags_existing);
-
-        let mut chunk_metadata_tags: Vec<ChunkMetadataTags> = vec![];
-        for tag_dataset in needed_dataset_tags {
-            chunk_metadata_tags.push(ChunkMetadataTags {
-                id: uuid::Uuid::new_v4(),
-                chunk_metadata_id: chunk_data.id,
-                tag_id: tag_dataset.id,
-            });
-        }
-
-        diesel::insert_into(chunk_metadata_tags_columns::chunk_metadata_tags)
-            .values(&chunk_metadata_tags)
-            .on_conflict_do_nothing()
-            .execute(&mut conn)
-            .await
-            .map_err(|e| {
-                log::error!("Failed to create chunk metadata tags {:}", e);
-                ServiceError::BadRequest(
-                    "Failed to create chunk metadata tags (duplicate chunk)".to_string(),
-                )
-            })?;
-    }
-
-    Ok(())
-}
-
-#[tracing::instrument(skip(pool))]
 pub async fn update_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     group_ids: Option<Vec<uuid::Uuid>>,
@@ -1369,11 +1096,6 @@ pub async fn update_chunk_metadata_query(
     }
 }
 
-pub enum TransactionResult {
-    ChunkCollisionDetected(ChunkMetadata),
-    ChunkCollisionNotDetected,
-}
-
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_metadata_query(
     chunk_uuid: Vec<uuid::Uuid>,
@@ -1389,7 +1111,6 @@ pub async fn delete_chunk_metadata_query(
         ));
     }
 
-    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     let mut conn = pool.get().await.unwrap();
@@ -1404,127 +1125,6 @@ pub async fn delete_chunk_metadata_query(
                     .execute(conn)
                     .await?;
 
-                    let deleted_chunk_collision_count = diesel::delete(
-                        chunk_collisions_columns::chunk_collisions
-                            .filter(chunk_collisions_columns::chunk_id.eq_any(chunk_uuid.clone())),
-                    )
-                    .execute(conn)
-                    .await?;
-
-                    if deleted_chunk_collision_count > 0 {
-                        // there cannot be collisions for a collision, just delete the chunk_metadata without issue
-                        diesel::delete(
-                            chunk_metadata_columns::chunk_metadata
-                                .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
-                                .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
-                        )
-                        .execute(conn)
-                        .await?;
-
-                        return Ok(TransactionResult::ChunkCollisionNotDetected);
-                    }
-
-                    let chunk_collisions: Vec<(ChunkCollision, ChunkMetadataTable)> =
-                        chunk_collisions_columns::chunk_collisions
-                            .inner_join(
-                                chunk_metadata_columns::chunk_metadata
-                                    .on(chunk_metadata_columns::qdrant_point_id
-                                        .eq(chunk_collisions_columns::collision_qdrant_id)),
-                            )
-                            .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
-                            .filter(chunk_metadata_columns::dataset_id.eq(dataset.id))
-                            .select((ChunkCollision::as_select(), ChunkMetadataTable::as_select()))
-                            .order_by(chunk_collisions_columns::created_at.asc())
-                            .load::<(ChunkCollision, ChunkMetadataTable)>(conn)
-                            .await?;
-
-                    if !chunk_collisions.is_empty() {
-                        // get the first collision as the latest collision
-                        let latest_collision = match chunk_collisions.get(0) {
-                            Some(x) => x.0.clone(),
-                            None => chunk_collisions[0].0.clone(),
-                        };
-
-                        let mut latest_collision_metadata = match chunk_collisions.get(0) {
-                            Some(x) => x.1.clone(),
-                            None => chunk_collisions[0].1.clone(),
-                        };
-
-                        // update all collisions except latest_collision to point to a qdrant_id of None
-                        diesel::update(
-                            chunk_collisions_columns::chunk_collisions.filter(
-                                chunk_collisions_columns::id.eq_any(
-                                    chunk_collisions
-                                        .iter()
-                                        .filter(|x| x.0.id != latest_collision.id)
-                                        .map(|x| x.0.id)
-                                        .collect::<Vec<uuid::Uuid>>(),
-                                ),
-                            ),
-                        )
-                        .set(
-                            chunk_collisions_columns::collision_qdrant_id
-                                .eq::<Option<uuid::Uuid>>(None),
-                        )
-                        .execute(conn)
-                        .await?;
-
-                        // delete latest_collision from chunk_collisions
-                        diesel::delete(
-                            chunk_collisions_columns::chunk_collisions
-                                .filter(chunk_collisions_columns::id.eq(latest_collision.id)),
-                        )
-                        .execute(conn)
-                        .await?;
-
-                        // delete the original chunk_metadata
-                        diesel::delete(
-                            chunk_metadata_columns::chunk_metadata
-                                .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
-                                .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
-                        )
-                        .execute(conn)
-                        .await?;
-
-                        // set the chunk_metadata of latest_collision to have the qdrant_point_id of the original chunk_metadata
-                        diesel::update(
-                            chunk_metadata_columns::chunk_metadata
-                                .filter(chunk_metadata_columns::id.eq(latest_collision.chunk_id))
-                                .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
-                        )
-                        .set((chunk_metadata_columns::qdrant_point_id
-                            .eq(latest_collision.collision_qdrant_id),))
-                        .execute(conn)
-                        .await?;
-
-                        // set the collision_qdrant_id of all other collisions to be the same as they were to begin with
-                        diesel::update(
-                            chunk_collisions_columns::chunk_collisions.filter(
-                                chunk_collisions_columns::id.eq_any(
-                                    chunk_collisions
-                                        .iter()
-                                        .skip(1)
-                                        .map(|x| x.0.id)
-                                        .collect::<Vec<uuid::Uuid>>(),
-                                ),
-                            ),
-                        )
-                        .set((chunk_collisions_columns::collision_qdrant_id
-                            .eq(latest_collision.collision_qdrant_id),))
-                        .execute(conn)
-                        .await?;
-
-                        latest_collision_metadata.qdrant_point_id =
-                            latest_collision.collision_qdrant_id;
-
-                        return Ok(TransactionResult::ChunkCollisionDetected(
-                            ChunkMetadata::from_table_and_tag_set_option_string(
-                                latest_collision_metadata,
-                                None,
-                            ),
-                        ));
-                    }
-
                     // if there were no collisions, just delete the chunk_metadata without issue
                     diesel::delete(
                         chunk_metadata_columns::chunk_metadata
@@ -1534,7 +1134,7 @@ pub async fn delete_chunk_metadata_query(
                     .execute(conn)
                     .await?;
 
-                    Ok(TransactionResult::ChunkCollisionNotDetected)
+                    Ok(())
                 }
             }
             .scope_boxed()
@@ -1551,76 +1151,24 @@ pub async fn delete_chunk_metadata_query(
 
     let point_ids = chunk_metadata
         .iter()
-        .filter_map(|x| x.qdrant_point_id.clone())
+        .map(|x| x.qdrant_point_id.clone())
         .map(|x| x.to_string().into())
         .collect::<Vec<PointId>>();
 
     match transaction_result {
-        Ok(result) => match result {
-            TransactionResult::ChunkCollisionNotDetected => {
-                let _ = qdrant_client
-                    .delete_points_blocking(qdrant_collection, None, &point_ids.into(), None)
-                    .await
-                    .map_err(|_e| {
-                        Err::<(), ServiceError>(ServiceError::BadRequest(
-                            "Failed to delete chunk from qdrant".to_string(),
-                        ))
-                    });
-            }
-            TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
-                let collision_content = convert_html_to_text(
-                    &(latest_collision_metadata
-                        .chunk_html
-                        .clone()
-                        .unwrap_or_default()),
-                );
-
-                let new_embedding_vector = create_embedding(
-                    collision_content,
-                    None,
-                    "doc",
-                    ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
-                )
-                .await
-                .map_err(|_e| {
-                    ServiceError::BadRequest(
-                        "Failed to create embedding for collision content".to_string(),
-                    )
-                })?
-                .clone();
-
-                let _ = qdrant_client
-                    .update_vectors_blocking(
-                        qdrant_collection,
-                        None,
-                        &[PointVectors {
-                            id: Some(<String as Into<PointId>>::into(
-                                latest_collision_metadata
-                                    .qdrant_point_id
-                                    .unwrap_or_default()
-                                    .to_string(),
-                            )),
-                            vectors: Some(new_embedding_vector.into()),
-                        }],
-                        None,
-                    )
-                    .await
-                    .map_err(|_e| {
-                        Err::<(), ServiceError>(ServiceError::BadRequest(
-                            "Failed to update chunk in qdrant".to_string(),
-                        ))
-                    });
-            }
-        },
-
+        Ok(()) => qdrant_client
+            .delete_points_blocking(qdrant_collection, None, &point_ids.into(), None)
+            .await
+            .map_err(|_e| {
+                ServiceError::BadRequest("Failed to delete chunk from qdrant".to_string())
+            })
+            .map(|_| ()),
         Err(_) => {
             return Err(ServiceError::BadRequest(
                 "Failed to delete chunk data".to_string(),
             ))
         }
-    };
-
-    Ok(())
+    }
 }
 
 #[tracing::instrument(skip(pool))]
@@ -1628,40 +1176,19 @@ pub async fn get_qdrant_id_from_chunk_id_query(
     chunk_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<uuid::Uuid, ServiceError> {
-    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_point_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
-        chunk_metadata_columns::chunk_metadata
-            .left_outer_join(
-                chunk_collisions_columns::chunk_collisions
-                    .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-            )
-            .select((
-                chunk_metadata_columns::qdrant_point_id,
-                chunk_collisions_columns::collision_qdrant_id.nullable(),
-            ))
-            .filter(chunk_metadata_columns::id.eq(chunk_id))
-            .load(&mut conn)
-            .await
-            .map_err(|_err| {
-                ServiceError::BadRequest(
-                    "Failed to get qdrant_point_id and collision_qdrant_id".to_string(),
-                )
-            })?;
+    let qdrant_point_ids: Vec<uuid::Uuid> = chunk_metadata_columns::chunk_metadata
+        .select(chunk_metadata_columns::qdrant_point_id)
+        .filter(chunk_metadata_columns::id.eq(chunk_id))
+        .load(&mut conn)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed to get qdrant_point_id".to_string()))?;
 
     match qdrant_point_ids.get(0) {
-        Some(x) => match x.0 {
-            Some(y) => Ok(y),
-            None => match x.1 {
-                Some(y) => Ok(y),
-                None => Err(ServiceError::BadRequest(
-                    "Both qdrant_point_id and collision_qdrant_id are None".to_string(),
-                )),
-            },
-        },
+        Some(x) => Ok(*x),
         None => Err(ServiceError::BadRequest(
             "Failed to get qdrant_point_id for chunk_id".to_string(),
         )),
@@ -1677,7 +1204,7 @@ pub async fn get_qdrant_ids_from_chunk_ids_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_point_ids: Vec<Option<uuid::Uuid>> = match chunk_ids.get(0) {
+    let qdrant_point_ids: Vec<uuid::Uuid> = match chunk_ids.get(0) {
         Some(UnifiedId::TrieveUuid(_)) => chunk_metadata_columns::chunk_metadata
             .select(chunk_metadata_columns::qdrant_point_id)
             .filter(
@@ -1719,7 +1246,7 @@ pub async fn get_qdrant_ids_from_chunk_ids_query(
         }
     };
 
-    Ok(qdrant_point_ids.into_iter().flatten().collect())
+    Ok(qdrant_point_ids)
 }
 
 pub fn get_slice_from_vec_string(vec: Vec<String>, index: usize) -> Result<String, ServiceError> {
@@ -1925,7 +1452,7 @@ pub async fn get_row_count_for_organization_id_query(
         .await
         .map_err(|_| {
             log::error!("Failed to get chunk count for organization");
-            ServiceError::BadRequest("Failed to get chunk count for dataset".to_string())
+            ServiceError::BadRequest("Failed to get chunk count for organization".to_string())
         })?;
 
     Ok(chunk_metadata_count as usize)
@@ -1974,7 +1501,7 @@ pub async fn create_chunk_metadata(
             &chunk.chunk_html.clone(),
             &chunk.link,
             &chunk_tag_set,
-            Some(uuid::Uuid::new_v4()),
+            uuid::Uuid::new_v4(),
             chunk.metadata.clone(),
             chunk_tracking_id,
             timestamp,
@@ -1986,7 +1513,6 @@ pub async fn create_chunk_metadata(
         );
         chunk_metadatas.push(chunk_metadata.clone());
 
-        // check if a group_id is not in existent_group_ids and return an error if it is not
         if let Some(group_ids) = chunk.group_ids.clone() {
             let existent_group_ids = check_group_ids_exist_query(
                 chunk.group_ids.clone().unwrap_or_default(),
@@ -2063,20 +1589,12 @@ pub async fn get_pg_point_ids_from_qdrant_point_ids(
 
     let mut conn = pool.get().await.unwrap();
 
-    let chunk_ids: Vec<Option<uuid::Uuid>> = chunk_metadata_columns::chunk_metadata
+    let chunk_ids: Vec<uuid::Uuid> = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::qdrant_point_id.eq_any(qdrant_point_ids))
         .select(chunk_metadata_columns::qdrant_point_id)
         .load(&mut conn)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get chunk ids".to_string()))?;
-
-    let chunk_ids = chunk_ids
-        .iter()
-        .filter_map(|option_id| match option_id {
-            Some(id) => Some(id.clone()),
-            None => None,
-        })
-        .collect();
 
     Ok(chunk_ids)
 }

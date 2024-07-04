@@ -1,3 +1,24 @@
+export interface ChunkMetadataStringTagSet {
+  id: string;
+  chunk_html?: string;
+  link: string | null;
+  qdrant_point_id: string;
+  created_at: string;
+  updated_at: string;
+  tag_set: string | null;
+  tracking_id: string | null;
+  time_stamp: string | null;
+  metadata: Record<string, never> | null;
+  dataset_id: string;
+  weight: number;
+  location: {
+    lat: number;
+    lon: number;
+  } | null;
+  num_value: number | null;
+  image_urls: string[] | null;
+}
+
 export interface SlimUser {
   id: string;
   name?: string;
@@ -86,8 +107,6 @@ export interface DatasetAndUsage {
 }
 
 export interface ServerEnvsConfiguration {
-  DOCUMENT_UPLOAD_FEATURE: boolean;
-  DOCUMENT_DOWNLOAD_FEATURE: boolean;
   LLM_BASE_URL: string;
   LLM_DEFAULT_MODEL: string;
   EMBEDDING_BASE_URL: string;
@@ -95,9 +114,7 @@ export interface ServerEnvsConfiguration {
   MESSAGE_TO_QUERY_PROMPT: string;
   RAG_PROMPT: string;
   N_RETRIEVALS_TO_INCLUDE: number;
-  DUPLICATE_DISTANCE_THRESHOLD: number;
   EMBEDDING_SIZE: number;
-  COLLISIONS_ENABLED: boolean;
   FULLTEXT_ENABLED: boolean;
   QDRANT_COLLECTION_NAME: string | null;
   EMBEDDING_QUERY_PREFIX: string;
@@ -108,6 +125,7 @@ export interface ServerEnvsConfiguration {
   USE_MESSAGE_TO_QUERY_PROMPT: boolean;
   INDEXED_ONLY: boolean;
   LOCKED: boolean;
+  SYSTEM_PROMPT: string | null;
 }
 
 export interface DefaultError {
@@ -383,13 +401,15 @@ export interface SearchClusterTopics {
   created_at: string;
 }
 
+export interface DateRangeFilter {
+  gt?: Date;
+  lt?: Date;
+  gte?: Date;
+  lte?: Date;
+}
+
 export interface AnalyticsFilter {
-  date_range: {
-    gt?: Date;
-    lt?: Date;
-    gte?: Date;
-    lte?: Date;
-  };
+  date_range: DateRangeFilter;
   search_method: "fulltext" | "hybrid" | "semantic";
   search_type:
     | "search"
@@ -429,4 +449,22 @@ export interface SearchQueryEvent {
 export interface HeadQuery {
   query: string;
   count: number;
+}
+
+export interface RAGAnalyticsFilter {
+  rag_type: "chosen_chunks" | "all_chunks";
+}
+
+export interface RagQueryEvent {
+  id: string;
+  rag_type: string;
+  user_message: string;
+  search_id: string;
+  results: ChunkMetadataStringTagSet[];
+  dataset_id: string;
+  created_at: string;
+}
+
+export interface RAGUsageResponse {
+  total_queries: number;
 }

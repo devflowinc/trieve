@@ -12,7 +12,7 @@ use super::qdrant_operator::{
     VectorType,
 };
 use crate::data::models::{
-    convert_to_date_time, ChunkGroup, ChunkMetadata, ChunkMetadataTypes, ConditionType,
+    convert_to_date_time, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes, ConditionType,
     ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunkDTO,
     ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
@@ -473,12 +473,9 @@ pub async fn get_metadata_filter_condition(
     }
 
     let qdrant_point_ids: Vec<uuid::Uuid> = query
-        .load::<Option<uuid::Uuid>>(&mut conn)
+        .load::<uuid::Uuid>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
-        .into_iter()
-        .flatten()
-        .collect();
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let matching_point_ids: Vec<PointId> = qdrant_point_ids
         .iter()
@@ -607,12 +604,9 @@ pub async fn get_group_metadata_filter_condition(
     }
 
     let qdrant_point_ids: Vec<uuid::Uuid> = query
-        .load::<Option<uuid::Uuid>>(&mut conn)
+        .load::<uuid::Uuid>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
-        .into_iter()
-        .flatten()
-        .collect();
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let matching_point_ids: Vec<PointId> = qdrant_point_ids
         .iter()
@@ -701,12 +695,9 @@ pub async fn get_group_tag_set_filter_condition(
     }
 
     let qdrant_point_ids: Vec<uuid::Uuid> = query
-        .load::<Option<uuid::Uuid>>(&mut conn)
+        .load::<uuid::Uuid>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
-        .into_iter()
-        .flatten()
-        .collect();
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let matching_point_ids: Vec<PointId> = qdrant_point_ids
         .iter()
@@ -859,77 +850,6 @@ pub async fn global_unfiltered_top_match_query(
     Ok(top_search_result)
 }
 
-#[tracing::instrument(skip(pool))]
-pub async fn get_metadata_query(
-    chunk_metadata: Vec<ChunkMetadata>,
-    pool: web::Data<Pool>,
-) -> Result<Vec<ChunkMetadata>, ServiceError> {
-    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
-    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    use diesel::prelude::*;
-    use diesel_async::RunQueryDsl;
-
-    let mut conn = pool.get().await.expect("DB connection");
-
-    let chunk_collisions = chunk_metadata_columns::chunk_metadata
-        .filter(
-            chunk_metadata_columns::id.eq_any(
-                chunk_metadata
-                    .iter()
-                    .map(|chunk| chunk.id)
-                    .collect::<Vec<uuid::Uuid>>()
-                    .as_slice(),
-            ),
-        )
-        .left_outer_join(
-            chunk_collisions_columns::chunk_collisions
-                .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-        )
-        .select((
-            chunk_metadata_columns::id,
-            chunk_collisions_columns::collision_qdrant_id.nullable(),
-        ))
-        .load::<(uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
-
-    let chunk_metadata_with_file_id: Vec<ChunkMetadata> = chunk_metadata
-        .into_iter()
-        .map(|chunk_metadata| {
-            let qdrant_point_id = match chunk_metadata.qdrant_point_id {
-                Some(id) => id,
-                None => {
-                    chunk_collisions
-                                    .iter()
-                                    .find(|collision| collision.0 == chunk_metadata.id) // Match chunk id
-                                    .expect("Qdrant point id does not exist for root chunk or collision")
-                                    .1
-                                    .expect("Collision Qdrant point id must exist if there is no root qdrant point id")
-                },
-            };
-
-            ChunkMetadata {
-                id: chunk_metadata.id,
-                link: chunk_metadata.link,
-                tag_set: chunk_metadata.tag_set,
-                qdrant_point_id: Some(qdrant_point_id),
-                created_at: chunk_metadata.created_at,
-                updated_at: chunk_metadata.updated_at,
-                chunk_html: chunk_metadata.chunk_html,
-                metadata: chunk_metadata.metadata,
-                tracking_id: chunk_metadata.tracking_id,
-                time_stamp: chunk_metadata.time_stamp,
-                location: chunk_metadata.location,
-                dataset_id: chunk_metadata.dataset_id,
-                weight: chunk_metadata.weight,
-                image_urls: chunk_metadata.image_urls,
-                num_value: chunk_metadata.num_value,
-            }
-        })
-        .collect();
-    Ok(chunk_metadata_with_file_id)
-}
-
 #[derive(Debug, Serialize, Deserialize, Queryable)]
 pub struct FullTextDocIds {
     pub doc_ids: Option<uuid::Uuid>,
@@ -939,6 +859,7 @@ pub struct FullTextDocIds {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
     "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "file_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "metadata": [
         {
             "metadata": [
@@ -965,6 +886,7 @@ pub struct GroupScoreChunk {
     pub group_tracking_id: Option<String>,
     pub group_name: Option<String>,
     pub metadata: Vec<ScoreChunkDTO>,
+    pub file_id: Option<uuid::Uuid>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -986,20 +908,14 @@ pub async fn retrieve_chunks_for_groups(
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
 
-    let (metadata_chunks, collided_chunks) = match data.slim_chunks.unwrap_or(false)
-        && data.search_type != "hybrid"
-    {
+    let metadata_chunks = match data.slim_chunks.unwrap_or(false) && data.search_type != "hybrid" {
         true => {
             let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
-            (slim_chunks, vec![])
+            slim_chunks
         }
         _ => {
-            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
-                point_ids,
-                data.get_collisions.unwrap_or(false),
-                pool.clone(),
-            )
-            .await?
+            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
+                .await?
         }
     };
 
@@ -1009,7 +925,7 @@ pub async fn retrieve_chunks_for_groups(
             .iter()
             .map(|group| group.group_id)
             .collect(),
-        pool,
+        pool.clone(),
     )
     .await?;
 
@@ -1023,7 +939,7 @@ pub async fn retrieve_chunks_for_groups(
                 .map(|search_result| {
                     let mut chunk: ChunkMetadataTypes =
                         match metadata_chunks.iter().find(|metadata_chunk| {
-                            metadata_chunk.metadata().qdrant_point_id.unwrap_or_default() == search_result.point_id
+                            metadata_chunk.metadata().qdrant_point_id == search_result.point_id
                         }) {
                             Some(metadata_chunk) => metadata_chunk.clone(),
                             None => {
@@ -1038,7 +954,7 @@ pub async fn retrieve_chunks_for_groups(
 
                                 ChunkMetadata {
                                     id: uuid::Uuid::default(),
-                                    qdrant_point_id: Some(uuid::Uuid::default()),
+                                    qdrant_point_id: uuid::Uuid::default(),
                                     created_at: chrono::Utc::now().naive_local(),
                                     updated_at: chrono::Utc::now().naive_local(),
                                     chunk_html: Some("".to_string()),
@@ -1091,16 +1007,9 @@ pub async fn retrieve_chunks_for_groups(
                         }
                     }
 
-                    let mut collided_chunks: Vec<ChunkMetadataTypes> = collided_chunks
-                        .clone()
-                        .into_iter()
-                        .filter(|chunk| chunk.metadata().qdrant_point_id == Some(search_result.point_id))
-                        .collect();
-
-                    collided_chunks.insert(0, chunk);
 
                     ScoreChunkDTO {
-                        metadata: collided_chunks,
+                        metadata: vec![chunk],
                         highlights,
                         score: search_result.score.into(),
                     }
@@ -1114,6 +1023,7 @@ pub async fn retrieve_chunks_for_groups(
 
             GroupScoreChunk {
                 group_id: group_search_result.group_id,
+                file_id: group_data.and_then(|group| group.file_id.clone()),
                 group_name,
                 group_tracking_id,
                 metadata: score_chunks,
@@ -1140,18 +1050,14 @@ pub async fn get_metadata_from_groups(
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
 
-    let (chunk_metadatas, collided_chunks) = match slim_chunks {
+    let chunk_metadatas = match slim_chunks {
         Some(true) => {
             let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
-            (slim_chunks, vec![])
+            slim_chunks
         }
         _ => {
-            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
-                point_ids,
-                get_collisions.unwrap_or(false),
-                pool.clone(),
-            )
-            .await?
+            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
+                .await?
         }
     };
 
@@ -1161,7 +1067,7 @@ pub async fn get_metadata_from_groups(
             .iter()
             .map(|group| group.group_id)
             .collect(),
-        pool,
+        pool.clone(),
     )
     .await?;
 
@@ -1175,7 +1081,7 @@ pub async fn get_metadata_from_groups(
                 .map(|search_result| {
                     let chunk: ChunkMetadataTypes =
                         match chunk_metadatas.iter().find(|metadata_chunk| {
-                            metadata_chunk.metadata().qdrant_point_id.unwrap_or_default() == search_result.point_id
+                            metadata_chunk.metadata().qdrant_point_id == search_result.point_id
                         }) {
                             Some(metadata_chunk) => metadata_chunk.clone(),
                             None => {
@@ -1190,7 +1096,7 @@ pub async fn get_metadata_from_groups(
 
                                 ChunkMetadata {
                                     id: uuid::Uuid::default(),
-                                    qdrant_point_id: Some(uuid::Uuid::default()),
+                                    qdrant_point_id: uuid::Uuid::default(),
                                     created_at: chrono::Utc::now().naive_local(),
                                     updated_at: chrono::Utc::now().naive_local(),
                                     chunk_html: Some("".to_string()),
@@ -1208,16 +1114,8 @@ pub async fn get_metadata_from_groups(
                             },
                         };
 
-                    let mut collided_chunks: Vec<ChunkMetadataTypes> = collided_chunks
-                        .clone()
-                        .into_iter()
-                        .filter(|chunk| chunk.metadata().qdrant_point_id == Some(search_result.point_id))
-                        .collect();
-
-                    collided_chunks.insert(0, chunk);
-
                     ScoreChunkDTO {
-                        metadata: collided_chunks,
+                        metadata: vec![chunk],
                         highlights: None,
                         score: search_result.score.into(),
                     }
@@ -1233,6 +1131,7 @@ pub async fn get_metadata_from_groups(
                 group_name,
                 group_tracking_id,
                 metadata: score_chunk,
+                file_id: group_data.and_then(|grp| grp.file_id.clone()),
             }
         })
         .collect_vec();
@@ -1271,21 +1170,15 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_chunks, collided_chunks) = if data.slim_chunks.unwrap_or(false)
-        && data.search_type != "hybrid"
-    {
+    let metadata_chunks = if data.slim_chunks.unwrap_or(false) && data.search_type != "hybrid" {
         let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
-        (slim_chunks, vec![])
+        slim_chunks
     } else if data.content_only.unwrap_or(false) {
         let content_only = get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?;
-        (content_only, vec![])
+        content_only
     } else {
-        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
-            point_ids,
-            data.get_collisions.unwrap_or(false),
-            pool.clone(),
-        )
-        .await?
+        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
+            .await?
     };
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
@@ -1294,11 +1187,7 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|search_result| {
             let mut chunk: ChunkMetadataTypes =
                 match metadata_chunks.iter().find(|metadata_chunk| {
-                    metadata_chunk
-                        .metadata()
-                        .qdrant_point_id
-                        .unwrap_or_default()
-                        == search_result.point_id
+                    metadata_chunk.metadata().qdrant_point_id == search_result.point_id
                 }) {
                     Some(metadata_chunk) => metadata_chunk.clone(),
                     None => {
@@ -1316,7 +1205,7 @@ pub async fn retrieve_chunks_from_point_ids(
 
                         ChunkMetadata {
                             id: uuid::Uuid::default(),
-                            qdrant_point_id: Some(uuid::Uuid::default()),
+                            qdrant_point_id: uuid::Uuid::default(),
                             created_at: chrono::Utc::now().naive_local(),
                             updated_at: chrono::Utc::now().naive_local(),
                             chunk_html: Some("".to_string()),
@@ -1370,16 +1259,8 @@ pub async fn retrieve_chunks_from_point_ids(
                 }
             }
 
-            let mut collided_chunks: Vec<ChunkMetadataTypes> = collided_chunks
-                .clone()
-                .into_iter()
-                .filter(|chunk| chunk.metadata().qdrant_point_id == Some(search_result.point_id))
-                .collect();
-
-            collided_chunks.insert(0, chunk);
-
             ScoreChunkDTO {
-                metadata: collided_chunks,
+                metadata: vec![chunk],
                 highlights,
                 score: search_result.score.into(),
             }
@@ -1748,38 +1629,7 @@ pub async fn search_hybrid_chunks(
     timer.add("fetched metadata from postgres");
 
     let mut reranked_chunks = {
-        let mut reranked_chunks = if result_chunks.score_chunks.len() > 20 {
-            let split_results = result_chunks
-                .score_chunks
-                .chunks(20)
-                .map(|chunk| chunk.to_vec())
-                .collect::<Vec<Vec<ScoreChunkDTO>>>();
-
-            let cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                split_results
-                    .get(0)
-                    .expect("Split results must exist")
-                    .to_vec(),
-                config,
-            )
-            .await?;
-
-            let score_chunks = rerank_chunks(
-                cross_encoder_results,
-                data.recency_bias,
-                data.tag_weights,
-                data.use_weights,
-                data.location_bias,
-            );
-
-            score_chunks
-                .iter()
-                .chain(split_results.get(1).unwrap().iter())
-                .cloned()
-                .collect::<Vec<ScoreChunkDTO>>()
-        } else {
+        let mut reranked_chunks = {
             let cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
@@ -1844,7 +1694,7 @@ pub async fn search_hybrid_chunks(
 pub async fn search_semantic_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroup,
+    group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1889,7 +1739,7 @@ pub async fn search_semantic_groups(
 
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
-        group,
+        group: group,
         total_pages: result_chunks.total_chunk_pages,
     })
 }
@@ -1899,7 +1749,7 @@ pub async fn search_semantic_groups(
 pub async fn search_full_text_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroup,
+    group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
@@ -1952,7 +1802,7 @@ pub async fn search_full_text_groups(
 pub async fn search_hybrid_groups(
     data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
-    group: ChunkGroup,
+    group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: &ServerDatasetConfiguration,

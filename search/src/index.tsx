@@ -12,6 +12,7 @@ import { ViewChunk } from "./pages/chunk/ViewChunk";
 import { ViewGroup } from "./pages/group/ViewGroup";
 import { OrgGroups } from "./pages/group/OrgGroups";
 import { OrgFiles } from "./pages/file/OrgFiles";
+import { DatasetAndUserContextWrapper } from "./components/Contexts/DatasetAndUserContext";
 
 const NotFoundRedirect = () => {
   window.location.href = "/";
@@ -40,7 +41,7 @@ const root = document.getElementById("root");
 
 render(
   () => (
-    <Router>
+    <Router root={DatasetAndUserContextWrapper}>
       <Route path="/" component={Home} />
       <Route path="/upload" component={Upload} />
       <Route path="/create" component={CreateChunk} />

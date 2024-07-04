@@ -13,9 +13,6 @@ use crate::{
         organization_operator::get_file_size_sum_org,
     },
 };
-use actix_files::NamedFile;
-#[cfg(feature = "ocr")]
-use actix_web::http::header::ContentDisposition;
 use actix_web::{web, HttpResponse};
 use base64::{
     alphabet,
@@ -124,17 +121,6 @@ pub async fn upload_file_handler(
     let tx_ctx = sentry::TransactionContext::new("upload_file_handler", "upload_file");
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
-
-    let document_upload_feature = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    )
-    .DOCUMENT_UPLOAD_FEATURE;
-
-    if !document_upload_feature {
-        return Err(
-            ServiceError::BadRequest("Document upload feature is disabled".to_string()).into(),
-        );
-    }
 
     let mut redis_conn = redis_pool
         .get()
@@ -265,15 +251,6 @@ pub async fn get_file_handler(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let download_enabled =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
-            .DOCUMENT_DOWNLOAD_FEATURE;
-    if !download_enabled {
-        return Err(
-            ServiceError::BadRequest("Document download feature is disabled".to_string()).into(),
-        );
-    }
-
     let file = get_file_query(file_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(file))
@@ -430,111 +407,4 @@ pub async fn get_signed_url(
         })?;
 
     Ok(HttpResponse::Ok().json(GetImageResponse { signed_url }))
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct GetPdfFromRangeData {
-    pub organization_id: String,
-    pub file_start: u32,
-    pub file_end: u32,
-    pub prefix: String,
-    pub file_name: String,
-    pub ocr: Option<bool>,
-}
-
-#[allow(unused_variables)]
-#[tracing::instrument]
-pub async fn get_pdf_from_range(
-    path_data: web::Path<GetPdfFromRangeData>,
-    _user: LoggedUser,
-) -> Result<NamedFile, actix_web::Error> {
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "ocr")] {
-
-    let validated_prefix = validate_file_name(path_data.prefix.clone())?;
-
-    let mut wand = MagickWand::new();
-    let bucket = get_aws_bucket()?;
-
-    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
-    let s3_path = match unlimited.as_str() {
-        "true" => "images".to_string(),
-        "false" => path_data.organization_id.clone(),
-        _ => path_data.organization_id.clone(),
-    };
-
-    for i in path_data.file_start..=path_data.file_end {
-        let file = bucket
-            .get_object(format!("{}/{}{}.png", s3_path, validated_prefix, i).as_str())
-            .await
-            .map_err(|e| {
-                log::error!("Error getting image file: {}", e);
-                ServiceError::BadRequest(e.to_string())
-            })?;
-
-        wand.read_image_blob(file.as_slice()).map_err(|e| {
-            ServiceError::BadRequest(format!("Could not read image to wand: {}", e))
-        })?;
-    }
-
-    let mut pdf_file_name = path_data.file_name.clone();
-    if !pdf_file_name.ends_with(".pdf") {
-        pdf_file_name.push_str(".pdf");
-    }
-
-    wand.set_filename(pdf_file_name.as_str())
-        .map_err(|e| ServiceError::BadRequest(format!("Could not set filename for wand: {}", e)))?;
-
-    let file_path = format!("./tmp/{}-{}", uuid::Uuid::new_v4(), pdf_file_name);
-
-    wand.write_images(file_path.as_str(), true).map_err(|e| {
-        ServiceError::BadRequest(format!("Could not write images to pdf with wand: {}", e))
-    })?;
-
-    if path_data.ocr.unwrap_or(false) {
-        Python::with_gil(|sys| -> Result<(), actix_web::Error> {
-            let ocrmypdf = sys.import("ocrmypdf").map_err(|e| {
-                ServiceError::BadRequest(format!("Could not import ocrmypdf module: {}", e))
-            })?;
-
-            let kwargs = PyDict::new(sys);
-            kwargs.set_item("deskew", true).map_err(|e| {
-                ServiceError::BadRequest(format!(
-                    "Could not set deskew argument for ocrmypdf: {}",
-                    e
-                ))
-            })?;
-
-            ocrmypdf
-                .call_method("ocr", (file_path.clone(), file_path.clone()), Some(kwargs))
-                .map_err(|e| {
-                    ServiceError::BadRequest(format!(
-                        "Could not call ocr method for ocrmypdf: {}",
-                        e
-                    ))
-                })?;
-
-            Ok(())
-        })?;
-    }
-
-    let mut response_file = NamedFile::open(file_path.clone())?;
-    let parameters = NamedFile::open(file_path.clone())?
-        .content_disposition()
-        .parameters
-        .clone();
-
-    std::fs::remove_file(file_path)
-        .map_err(|e| ServiceError::BadRequest(format!("Could not remove temporary file: {}", e)))?;
-
-    response_file = response_file.set_content_disposition(ContentDisposition {
-        disposition: actix_web::http::header::DispositionType::Inline,
-        parameters,
-    });
-
-    Ok(response_file)
-    } else {
-       Err(ServiceError::BadRequest("OCR feature not enabled".to_string()).into())
-    }
-    }
 }

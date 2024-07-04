@@ -17,7 +17,11 @@ import { createToast } from "../../../components/ShowToasts";
 import { Dataset, DatasetUsageCount, DefaultError } from "shared/types";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { FaRegularClipboard } from "solid-icons/fa";
-import { AiOutlineInfoCircle } from "solid-icons/ai";
+import {
+  AiOutlineComment,
+  AiOutlineInfoCircle,
+  AiOutlineSearch,
+} from "solid-icons/ai";
 import { TbReload } from "solid-icons/tb";
 import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import { BsMagic } from "solid-icons/bs";
@@ -29,6 +33,9 @@ const SAMPLE_DATASET_SIZE = 921;
 
 export const DatasetStart = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
+  const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
+
   const location = useLocation();
   const userContext = useContext(UserContext);
   const datasetContext = useContext(DatasetContext);
@@ -211,6 +218,13 @@ export const DatasetStart = () => {
     });
   });
 
+  const orgDatasetParams = (datasetId: string) => {
+    const orgId = userContext.selectedOrganizationId?.();
+    return orgId && datasetId
+      ? `/?organization=${orgId}&dataset=${datasetId}`
+      : "";
+  };
+
   return (
     <div class="h-full">
       <main class="mx-auto">
@@ -219,12 +233,42 @@ export const DatasetStart = () => {
             class="flex-col space-y-4 border bg-white px-4 py-6 shadow sm:rounded-md sm:p-6 lg:col-span-2"
             aria-labelledby="organization-details-name"
           >
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center gap-4">
               <h2 id="user-details-name" class="text-lg font-medium leading-6">
                 Get Started
               </h2>
+              <div class="flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    window.open(
+                      `${searchUiURL}${orgDatasetParams(
+                        curDataset()?.id ?? "",
+                      )}`,
+                    );
+                  }}
+                  class="hover:text-fuchsia-500"
+                  title="Open search playground for this dataset"
+                >
+                  <AiOutlineSearch class="h-5 w-5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    window.open(
+                      `${chatUiURL}${orgDatasetParams(curDataset()?.id ?? "")}`,
+                    );
+                  }}
+                  class="hover:text-fuchsia-500"
+                  title="Open RAG playground for this dataset"
+                >
+                  <AiOutlineComment class="h-5 w-5" />
+                </button>
+              </div>
               <a
-                class="flex items-center space-x-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm"
+                class="flex items-center space-x-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm hover:border-fuchsia-500 hover:text-fuchsia-500"
                 href="https://docs.trieve.ai"
                 target="_blank"
               >

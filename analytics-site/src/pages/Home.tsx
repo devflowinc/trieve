@@ -6,6 +6,7 @@ import { LatencyGraph } from "../components/charts/LatencyGraph";
 import { RpsGraph } from "../components/charts/RpsGraph";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries";
+import { RagQueries } from "../components/charts/RagQueries";
 
 export const Home = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
@@ -13,21 +14,22 @@ export const Home = () => {
       date_range: {
         gt: subDays(new Date(), 7),
       },
-      search_method: "fulltext",
+      search_method: "hybrid",
       search_type: "search",
     },
-    granularity: "minute",
+    granularity: "second",
     page: 1,
   });
 
   return (
-    <div class="grow bg-neutral-200">
+    <div class="grow bg-neutral-200/60 p-4 pt-2">
       <FilterBar filters={analyticsFilters} setFilters={setAnalyticsFilters} />
-      <div class="grid grid-cols-10 items-start gap-2 p-2">
+      <div class="grid grid-cols-10 items-start gap-2 p-2 pt-3">
         <LatencyGraph filters={analyticsFilters} />
         <RpsGraph filters={analyticsFilters} />
         <HeadQueries filters={analyticsFilters} />
         <LowConfidenceQueries filters={analyticsFilters} />
+        <RagQueries />
       </div>
     </div>
   );

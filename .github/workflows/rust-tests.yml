@@ -41,6 +41,31 @@ jobs:
           key: ${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.labels }}-rust-${{ matrix.rust }}-
+  clippy_check_bulk_ingestion:
+    runs-on: blacksmith-8vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v1
+      - name: Caching Rust Dep
+        uses: useblacksmith/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: rustup component add clippy
+      - uses: clechasseur/rs-clippy-check@v3
+        with:
+          args: --features runtime-env --bin bulk-ingestion-worker --manifest-path server/Cargo.toml
+      - uses: useblacksmith/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.labels }}-rust-${{ matrix.rust }}-
   clippy_check_grupdate_worker:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:

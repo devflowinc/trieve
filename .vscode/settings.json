@@ -5,8 +5,10 @@
   "files.associations": {
     "chat/**/*.{html,js,jsx,md,mdx,ts,tsx,vue}": "./chat/.eslintrc.json",
     "search/**/*.{html,js,jsx,md,mdx,ts,tsx,vue}": "./search/.eslintrc.json",
+    "analytics-site/**/*.{html,js,jsx,md,mdx,ts,tsx,vue}": "./analytics-site/.eslintrc.json",
     "chat/**/*": "./chat/tsconfig.json",
-    "search/**/*": "./search/tsconfig.json"
+    "search/**/*": "./search/tsconfig.json",
+    "analytics-site/**/*": "./analytics-site/tsconfig.json"
   },
   "rust-analyzer.linkedProjects": ["./server/Cargo.toml"],
   "rust-analyzer.showUnlinkedFileNotification": false,
@@ -17,6 +19,6 @@
     "./chat",
     "./dashboard",
     "./search",
-    "./analytics"
+    "./analytics-site",
   ]
 }

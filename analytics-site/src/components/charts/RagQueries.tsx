@@ -1,30 +1,24 @@
-import { AnalyticsParams, HeadQuery } from "shared/types";
+import { RagQueryEvent } from "shared/types";
 import { ChartCard } from "./ChartCard";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, For, Show, useContext } from "solid-js";
-import { getHeadQueries } from "../../api/analytics";
+import { getRAGQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
 
-interface HeadQueriesProps {
-  filters: AnalyticsParams;
-}
-
-export const HeadQueries = (props: HeadQueriesProps) => {
+export const RagQueries = () => {
   const dataset = useContext(DatasetContext);
   const pages = usePagination();
   const queryClient = useQueryClient();
 
   createEffect(() => {
-    // Preload the next page
-    const filters = props.filters;
     const datasetId = dataset().dataset.id;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
-      queryKey: ["head-queries", { filters, page: curPage + 1 }],
+      queryKey: ["RAG-queries", { page: curPage + 1 }],
       queryFn: async () => {
-        const results = await getHeadQueries(filters, datasetId, curPage + 1);
+        const results = await getRAGQueries(datasetId, curPage + 1);
         if (results.length === 0) {
           pages.setMaxPageDiscovered(curPage);
         }
@@ -34,16 +28,18 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   });
 
   const headQueriesQuery = createQuery(() => ({
-    queryKey: ["head-queries", { filters: props.filters, page: pages.page() }],
+    queryKey: ["head-queries", { page: pages.page() }],
     queryFn: () => {
-      return getHeadQueries(props.filters, dataset().dataset.id, pages.page());
+      return getRAGQueries(dataset().dataset.id, pages.page());
     },
   }));
 
   return (
     <ChartCard class="px-4" width={5}>
-      <div class="text-lg">Head Queries</div>
-      <div class="text-sm text-neutral-600">The most popular searches.</div>
+      <div class="text-lg">RAG Queries</div>
+      <div class="text-sm text-neutral-600">
+        All RAG messages (topic/message and generate_from_chunk).
+      </div>
       <Show
         fallback={<div class="py-8">Loading...</div>}
         when={headQueriesQuery.data}
@@ -51,8 +47,8 @@ export const HeadQueries = (props: HeadQueriesProps) => {
         {(data) => (
           <div class="py-2">
             <For each={data()}>
-              {(query) => {
-                return <QueryCard query={query} />;
+              {(rag_query_event) => {
+                return <RagQueryEventCard rag_query_event={rag_query_event} />;
               }}
             </For>
           </div>
@@ -66,13 +62,13 @@ export const HeadQueries = (props: HeadQueriesProps) => {
 };
 
 interface QueryCardProps {
-  query: HeadQuery;
+  rag_query_event: RagQueryEvent;
 }
-const QueryCard = (props: QueryCardProps) => {
+const RagQueryEventCard = (props: QueryCardProps) => {
   return (
     <div class="flex justify-between">
-      <div class="truncate">{props.query.query}</div>
-      <div>{props.query.count}</div>
+      <div class="truncate">{props.rag_query_event.user_message}</div>
+      <div>{props.rag_query_event.rag_type}</div>
     </div>
   );
 };

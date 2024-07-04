@@ -114,7 +114,7 @@ services:
     container_name: server
     build:
       context: ./server/
-      dockerfile: Dockerfile.no-ocr
+      dockerfile: Dockerfile.server
     depends_on:
       tika:
         condition: service_healthy

@@ -1422,12 +1422,7 @@ pub async fn get_chunk_by_id(
     let chunk_string_tag_set = ChunkMetadataStringTagSet::from(chunk);
 
     let point_id = chunk_string_tag_set.qdrant_point_id;
-    let pointid_exists = if let Some(point_id) = point_id {
-        point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?
-    } else {
-        // This is a collision, assume collisions always exist in qdrant
-        true
-    };
+    let pointid_exists = point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?;
 
     if pointid_exists {
         Ok(HttpResponse::Ok().json(chunk_string_tag_set))
@@ -1478,12 +1473,7 @@ pub async fn get_chunk_by_tracking_id(
 
     let point_id = chunk_tag_set_string.qdrant_point_id;
 
-    let pointid_exists = if let Some(point_id) = point_id {
-        point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?
-    } else {
-        // This is a collision, assume collisions always exist in qdrant
-        true
-    };
+    let pointid_exists = point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?;
 
     if pointid_exists {
         Ok(HttpResponse::Ok().json(chunk_tag_set_string))
@@ -1542,7 +1532,7 @@ pub async fn get_chunks_by_ids(
 
     let point_ids = chunk_string_tag_sets
         .iter()
-        .filter_map(|x| x.qdrant_point_id)
+        .map(|x| x.qdrant_point_id)
         .collect();
 
     let pointids_exists = point_ids_exists_in_qdrant(point_ids, dataset_configuration).await?;
@@ -1605,7 +1595,7 @@ pub async fn get_chunks_by_tracking_ids(
 
     let point_ids = chunk_string_tag_sets
         .iter()
-        .filter_map(|x| x.qdrant_point_id)
+        .map(|x| x.qdrant_point_id)
         .collect();
 
     let pointids_exists = point_ids_exists_in_qdrant(point_ids, dataset_configuration).await?;
@@ -1837,8 +1827,7 @@ pub async fn get_recommended_chunks(
             let score = recommended_qdrant_results
                 .iter()
                 .find(|recommend_qdrant_result| {
-                    recommend_qdrant_result.point_id
-                        == chunk_metadata.qdrant_point_id.unwrap_or_default()
+                    recommend_qdrant_result.point_id == chunk_metadata.qdrant_point_id
                 })
                 .map(|recommend_qdrant_result| recommend_qdrant_result.score)
                 .unwrap_or(0.0);

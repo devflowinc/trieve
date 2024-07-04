@@ -1,3 +1,4 @@
+// ONLY USED FOR THE LANGUAGE SERVER
 const defaultTheme = require("tailwindcss/defaultTheme");
 
 /* eslint-disable @typescript-eslint/no-unsafe-call */

@@ -1,8 +1,4 @@
-use actix_web::{web, HttpResponse};
-use futures::future::join_all;
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-
+use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         ClusterTopicsClickhouse, DatasetAnalytics, DatasetAndOrgWithSubAndPlan, HeadQueries, Pool,
@@ -12,10 +8,12 @@ use crate::{
     },
     errors::ServiceError,
 };
+use actix_web::{web, HttpResponse};
+use futures::future::join_all;
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-use super::auth_handler::AdminOnly;
-
-/// Get Cluster Topics for a Dataset
+/// Get Cluster Topics
 ///
 /// This route allows you to view the top 15 topics for a dataset based on the clustering of the queries in the dataset.
 #[utoipa::path(
@@ -68,10 +66,13 @@ pub async fn get_overall_topics(
     Ok(HttpResponse::Ok().json(topics))
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetTopicQueries {
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct GetTopicQueriesReqPathParams {
+    /// The dataset id to get queries for
     pub dataset_id: uuid::Uuid,
+    /// The id of the cluster to get queries for
     pub cluster_id: uuid::Uuid,
+    /// Page number to fetch; defaults to 1
     pub page: i32,
 }
 
@@ -99,7 +100,7 @@ pub struct GetTopicQueries {
     )
 )]
 pub async fn get_queries_for_topic(
-    data: web::Path<GetTopicQueries>,
+    data: web::Path<GetTopicQueriesReqPathParams>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
@@ -136,8 +137,10 @@ pub async fn get_queries_for_topic(
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
-pub struct GetQueryRequest {
+pub struct GetQueryReqPathParams {
+    /// The dataset id to get queries for
     pub dataset_id: uuid::Uuid,
+    /// The id of the search
     pub search_id: uuid::Uuid,
 }
 
@@ -164,7 +167,7 @@ pub struct GetQueryRequest {
     )
 )]
 pub async fn get_query(
-    data: web::Path<GetQueryRequest>,
+    data: web::Path<GetQueryReqPathParams>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
@@ -195,7 +198,8 @@ pub async fn get_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct GetDatasetMetricsRequest {
+pub struct GetDatasetMetricsReqPayload {
+    /// Filter to apply when fetching the analytics
     pub filter: Option<SearchAnalyticsFilter>,
 }
 
@@ -207,7 +211,7 @@ pub struct GetDatasetMetricsRequest {
     path = "/analytics/{dataset_id}/metrics",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = GetDatasetMetricsRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
+    request_body(content = GetDatasetMetricsReqPayload, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "Metrics for the dataset", body = DatasetAnalytics),
 
@@ -223,7 +227,7 @@ pub struct GetDatasetMetricsRequest {
 )]
 pub async fn get_search_metrics(
     dataset_id: web::Path<uuid::Uuid>,
-    data: web::Json<GetDatasetMetricsRequest>,
+    data: web::Json<GetDatasetMetricsReqPayload>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -264,8 +268,10 @@ pub async fn get_search_metrics(
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
-pub struct GetHeadQueriesRequest {
+pub struct GetHeadQueriesReqPayload {
+    /// Filter to apply when fetching the head queries
     pub filter: Option<SearchAnalyticsFilter>,
+    /// Page number to fetch; defaults to 1
     pub page: Option<u32>,
 }
 
@@ -277,7 +283,7 @@ pub struct GetHeadQueriesRequest {
     path = "/analytics/{dataset_id}/query/head",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = GetHeadQueriesRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
+    request_body(content = GetHeadQueriesReqPayload, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "Head Queries for the dataset", body = Vec<HeadQueries>),
 
@@ -293,7 +299,7 @@ pub struct GetHeadQueriesRequest {
 )]
 pub async fn get_head_queries(
     dataset_id: web::Path<uuid::Uuid>,
-    data: web::Json<GetHeadQueriesRequest>,
+    data: web::Json<GetHeadQueriesReqPayload>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -341,9 +347,12 @@ pub async fn get_head_queries(
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
-pub struct GetLowConfidenceQueriesRequest {
+pub struct GetLowConfidenceQueriesReqPayload {
+    /// Filter to apply when fetching the low confidence queries
     pub filter: Option<SearchAnalyticsFilter>,
+    /// Page number to fetch; defaults to 1
     pub page: Option<u32>,
+    /// Threshold which the top score must be below; by default, no threshold is applied
     pub threshold: Option<f32>,
 }
 
@@ -355,10 +364,9 @@ pub struct GetLowConfidenceQueriesRequest {
     path = "/analytics/{dataset_id}/query/low_confidence",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = GetLowConfidenceQueriesRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
+    request_body(content = GetLowConfidenceQueriesReqPayload, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "Low Confidence Queries for the dataset", body = Vec<SearchQueryEvent>),
-
         (status = 400, description = "Service error relating to getting low confidence queries", body = ErrorResponseBody),
     ),
     params(
@@ -371,7 +379,7 @@ pub struct GetLowConfidenceQueriesRequest {
 )]
 pub async fn get_low_confidence_queries(
     dataset_id: web::Path<uuid::Uuid>,
-    data: web::Json<GetLowConfidenceQueriesRequest>,
+    data: web::Json<GetLowConfidenceQueriesReqPayload>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
@@ -437,10 +445,14 @@ pub async fn get_low_confidence_queries(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct GetAllQueriesRequest {
+pub struct GetAllQueriesReqPayload {
+    /// Filter to apply when fetching the queries
     pub filter: Option<SearchAnalyticsFilter>,
+    /// Page number to fetch
     pub page: Option<u32>,
+    /// Field to sort by; defaults to created_at
     pub sort_by: Option<String>,
+    /// Sort order; defaults to DESC
     pub sort_order: Option<String>,
 }
 
@@ -452,7 +464,7 @@ pub struct GetAllQueriesRequest {
     path = "/analytics/{dataset_id}/queries",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = GetAllQueriesRequest, description = "JSON request payload to filter the queries", content_type = "application/json"),
+    request_body(content = GetAllQueriesReqPayload, description = "JSON request payload to filter the queries", content_type = "application/json"),
     responses(
         (status = 200, description = "Queries for the dataset", body = Vec<SearchQueryEvent>),
 
@@ -468,7 +480,7 @@ pub struct GetAllQueriesRequest {
 )]
 pub async fn get_all_queries(
     dataset_id: web::Path<uuid::Uuid>,
-    data: web::Json<GetAllQueriesRequest>,
+    data: web::Json<GetAllQueriesReqPayload>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
@@ -524,7 +536,7 @@ pub async fn get_all_queries(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct GetRPSGraphRequest {
+pub struct GetRPSGraphReqPayload {
     pub filter: Option<SearchAnalyticsFilter>,
     pub granularity: Option<String>,
 }
@@ -537,7 +549,7 @@ pub struct GetRPSGraphRequest {
     path = "/analytics/{dataset_id}/rps",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = GetRPSGraphRequest, description = "JSON request payload to filter the analytics", content_type = "application/json"),
+    request_body(content = GetRPSGraphReqPayload, description = "JSON request payload to filter the analytics", content_type = "application/json"),
     responses(
         (status = 200, description = "RPS graph for the dataset", body = Vec<SearchRPSGraph>),
 
@@ -553,7 +565,7 @@ pub struct GetRPSGraphRequest {
 )]
 pub async fn get_rps_graph(
     dataset_id: web::Path<uuid::Uuid>,
-    data: web::Json<GetRPSGraphRequest>,
+    data: web::Json<GetRPSGraphReqPayload>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -632,7 +644,7 @@ pub async fn get_rps_graph(
     path = "/analytics/{dataset_id}/latency",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = GetRPSGraphRequest, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    request_body(content = GetRPSGraphReqPayload, description = "JSON request payload to filter the graph", content_type = "application/json"),
     responses(
         (status = 200, description = "latency graph for the dataset", body = Vec<SearchLatencyGraph>),
 
@@ -648,7 +660,7 @@ pub async fn get_rps_graph(
 )]
 pub async fn get_latency_graph(
     dataset_id: web::Path<uuid::Uuid>,
-    data: web::Json<GetRPSGraphRequest>,
+    data: web::Json<GetRPSGraphReqPayload>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -720,22 +732,28 @@ pub async fn get_latency_graph(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct GetRagQueriesRequest {
+pub struct GetRagQueriesReqPayload {
+    /// Filter to apply when fetching the RAG queries
     pub filter: Option<RAGAnalyticsFilter>,
+    /// Page number to fetch; defaults to 1
     pub page: Option<u32>,
+    /// Field to sort by; defaults to created_at
     pub sort_by: Option<String>,
+    /// Sort order; defaults to DESC
     pub sort_order: Option<String>,
 }
 
+/// Get RAG Queries
+///
+/// This route allows you to get the RAG queries for a dataset.
 #[utoipa::path(
     post,
     path = "/analytics/{dataset_id}/rag",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = GetRPSGraphRequest, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    request_body(content = GetRagQueriesReqPayload, description = "JSON request payload to filter the graph", content_type = "application/json"),
     responses(
-        (status = 200, description = "RAG queries for the dataset", body = Vec<GetRagQueriesRequest>),
-
+        (status = 200, description = "RAG queries for the dataset", body = Vec<RagQueryEvent>),
         (status = 400, description = "Service error relating to getting RAG queries", body = ErrorResponseBody),
     ),
     params(
@@ -748,7 +766,7 @@ pub struct GetRagQueriesRequest {
 )]
 pub async fn get_rag_queries(
     dataset_id: web::Path<uuid::Uuid>,
-    data: web::Json<GetRagQueriesRequest>,
+    data: web::Json<GetRagQueriesReqPayload>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
@@ -808,6 +826,9 @@ pub struct RAGUsageResponse {
     pub total_queries: i32,
 }
 
+/// Get RAG Usage
+///
+/// Get the total number of RAG queries for a dataset
 #[utoipa::path(
     get,
     path = "/analytics/{dataset_id}/rag/usage",

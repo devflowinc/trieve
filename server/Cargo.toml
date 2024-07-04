@@ -22,6 +22,10 @@ name = "ingestion-worker"
 path = "src/bin/ingestion-worker.rs"
 
 [[bin]]
+name = "bulk-ingestion-worker"
+path = "src/bin/bulk-ingestion-worker.rs"
+
+[[bin]]
 name = "file-worker"
 path = "src/bin/file-worker.rs"
 
@@ -109,11 +113,6 @@ utoipa = { version = "4.2", features = [
     "debug",
 ] }
 utoipa-redoc = { version = "4.0", features = ["actix-web"] }
-magick_rust = { version = "0.21", optional = true }
-pyo3 = { version = "0.21.1", features = [
-    "full",
-    "auto-initialize",
-], optional = true }
 openidconnect = { version = "3.4.0", features = [
     "reqwest",
 ], default-features = false }
@@ -154,4 +153,3 @@ dotenvy = "0.15.7"
 [features]
 default = []
 runtime-env = []
-ocr = ["dep:pyo3", "dep:magick_rust"]
