@@ -6,16 +6,16 @@ import { subDays, subHours } from "date-fns";
 import { createSignal } from "solid-js";
 
 const ALL_SEARCH_METHODS: AnalyticsFilter["search_method"][] = [
-  "fulltext",
   "hybrid",
+  "fulltext",
   "semantic",
 ];
 
 const ALL_SEARCH_TYPES: AnalyticsFilter["search_type"][] = [
   "search",
+  "autocomplete",
   "search_over_groups",
   "search_within_groups",
-  "autocomplete",
 ];
 
 interface FilterBarProps {
@@ -65,7 +65,7 @@ export const FilterBar = (props: FilterBarProps) => {
       <div class="flex items-center gap-2">
         <div>
           <Select
-            label=<div class="text-sm text-neutral-600">Search Type</div>
+            label={<div class="text-sm text-neutral-600">Search Type</div>}
             class="min-w-[200px] !bg-white"
             display={(s) => toTitleCase(s)}
             selected={props.filters.filter.search_method}
@@ -81,7 +81,7 @@ export const FilterBar = (props: FilterBarProps) => {
 
         <div>
           <Select
-            label=<div class="text-sm text-neutral-600">Search Method</div>
+            label={<div class="text-sm text-neutral-600">Search Method</div>}
             class="min-w-[180px] !bg-white"
             display={(s) => toTitleCase(s)}
             selected={props.filters.filter.search_type}
@@ -99,7 +99,7 @@ export const FilterBar = (props: FilterBarProps) => {
       <div class="flex gap-2">
         <div>
           <Select
-            label=<div class="text-sm text-neutral-600">Date Range</div>
+            label={<div class="text-sm text-neutral-600">Date Range</div>}
             class="min-w-[80px] !bg-white"
             display={(s) => s.label}
             selected={dateSelection()}
@@ -117,7 +117,7 @@ export const FilterBar = (props: FilterBarProps) => {
         </div>
         <div>
           <Select
-            label=<div class="text-sm text-neutral-600">Granularity</div>
+            label={<div class="text-sm text-neutral-600">Granularity</div>}
             display={(s) => toTitleCase(s as string)}
             selected={props.filters.granularity}
             onSelected={(e) => {

@@ -6,20 +6,7 @@ import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getRps } from "../../api/analytics";
 import { Chart } from "chart.js";
 import { format } from "date-fns";
-
-export function parseCustomDateString(dateString: string) {
-  const [datePart, timePart] = dateString.split(" ");
-  const [year, month, day] = datePart.split("-");
-  const [hour, minute, second] = timePart.split(":");
-
-  // Parse the fractional seconds and offset
-  const [wholeSec] = second.split(".");
-
-  // Construct an ISO 8601 compliant string
-  const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}`;
-
-  return new Date(isoString);
-}
+import { parseCustomDateString } from "./LatencyGraph";
 
 interface RpsGraphProps {
   filters: AnalyticsParams;

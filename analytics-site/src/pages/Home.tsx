@@ -13,7 +13,7 @@ export const Home = () => {
       date_range: {
         gt: subDays(new Date(), 7),
       },
-      search_method: "fulltext",
+      search_method: "hybrid",
       search_type: "search",
     },
     granularity: "second",
