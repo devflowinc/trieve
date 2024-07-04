@@ -6,7 +6,7 @@ import { TrendExplorerCanvas } from "../components/trend-explorer/TrendExplorerC
 import { SearchQueryEvent } from "shared/types";
 import { FullScreenModal } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
-import { parseCustomDateString } from "../components/charts/RpsGraph";
+import { parseCustomDateString } from "../components/charts/LatencyGraph";
 
 export const TrendExplorer = () => {
   const dataset = useContext(DatasetContext);

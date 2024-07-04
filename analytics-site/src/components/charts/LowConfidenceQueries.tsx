@@ -39,7 +39,6 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
     on(
       () => [props.filters, dataset().dataset.id, thresholdText()],
       () => {
-        console.log("resetting max page");
         pages.resetMaxPageDiscovered();
       },
     ),
@@ -94,7 +93,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   }));
 
   return (
-    <ChartCard class="px-4" width={4}>
+    <ChartCard class="px-4" width={5}>
       <div class="flex items-start justify-between gap-2">
         <div>
           <div class="text-lg">Low Confidence Queries</div>

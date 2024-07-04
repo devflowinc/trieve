@@ -73,24 +73,28 @@ export const DatasetSelectBox = () => {
                 class="absolute bottom-5 left-0 z-10 mt-2 h-fit w-[180px] rounded-md border bg-white dark:bg-neutral-800"
               >
                 <Menu class="mx-0.5 max-h-[70vh] space-y-0.5 overflow-y-auto overflow-x-hidden p-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
-                  <input
-                    ref={inputRef}
-                    placeholder="Search datasets..."
-                    class="mb-2 flex w-full items-center justify-between rounded bg-neutral-300 p-1 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
-                    onInput={(e) => {
-                      setDatasetSearchQuery(e.target.value);
-                    }}
-                    onFocusOut={(e) => {
-                      if (
-                        !e.relatedTarget ||
-                        !(e.relatedTarget instanceof Node) ||
-                        !e.currentTarget.contains(e.relatedTarget)
-                      ) {
-                        focusInput();
-                      }
-                    }}
-                    value={datasetSearchQuery()}
-                  />
+                  <Show
+                    when={userContext.datasetsAndUsages?.().length ?? 0 > 5}
+                  >
+                    <input
+                      ref={inputRef}
+                      placeholder="Search datasets..."
+                      class="mb-2 flex w-full items-center justify-between rounded bg-neutral-300 p-1 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
+                      onInput={(e) => {
+                        setDatasetSearchQuery(e.target.value);
+                      }}
+                      onFocusOut={(e) => {
+                        if (
+                          !e.relatedTarget ||
+                          !(e.relatedTarget instanceof Node) ||
+                          !e.currentTarget.contains(e.relatedTarget)
+                        ) {
+                          focusInput();
+                        }
+                      }}
+                      value={datasetSearchQuery()}
+                    />
+                  </Show>
                   <DatasetSelectionList
                     onSelect={() => {
                       setState(false);

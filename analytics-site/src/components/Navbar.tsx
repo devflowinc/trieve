@@ -5,7 +5,6 @@ import { DatasetAndUsage } from "shared/types";
 import { usePathname } from "../hooks/usePathname";
 import { useBetterNav } from "../utils/useBetterNav";
 import { Select } from "shared/ui";
-
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
   selectedDataset: DatasetAndUsage | null;
@@ -51,12 +50,13 @@ export const Navbar = (props: NavbarProps) => {
           {(selected) => (
             <Select
               class="min-w-[220px]"
+              options={props.datasetOptions}
               display={(dataset) => dataset.dataset.name}
               onSelected={(e) => {
                 props.setSelectedDataset(e);
               }}
-              options={props.datasetOptions}
               selected={selected()}
+              id="dataset-select"
             />
           )}
         </Show>
