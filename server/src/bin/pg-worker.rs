@@ -167,6 +167,7 @@ async fn pg_insert_worker(
         opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
     let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
+    let bulk_batch_size = get_env!("PG_BULK_BATCHSIZE", "PG_BULK_BATCHSIZE must be set");
 
     loop {
         if should_terminate.load(Ordering::Relaxed) {
@@ -178,7 +179,7 @@ async fn pg_insert_worker(
 
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("rpop")
             .arg("bulk_pg_queue")
-            .arg(1000)
+            .arg(bulk_batch_size)
             .query_async(&mut *redis_connection)
             .await;
 

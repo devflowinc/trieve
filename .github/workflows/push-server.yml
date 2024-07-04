@@ -147,17 +147,17 @@ jobs:
             images: |
               trieve/ingest
             tags: |
-              type=raw,latest
-              type=sha
+              type=raw,bulk
+              type=sha,prefix=sha-bulk-
 
         - name: Build and push Docker image
           uses: docker/build-push-action@v5
           with:
             platforms: ${{ matrix.platform }}
-            cache-from: type=registry,ref=trieve/buildcache:ingest-${{matrix.runner}}
-            cache-to: type=registry,ref=trieve/buildcache:ingest-${{matrix.runner}},mode=max
+            cache-from: type=registry,ref=trieve/buildcache:bulk-ingest-${{matrix.runner}}
+            cache-to: type=registry,ref=trieve/buildcache:bulk-ingest-${{matrix.runner}},mode=max
             context: server/
-            file: ./server/Dockerfile.bulk-ingestion-worker
+            file: ./server/Dockerfile.bulk-ingest-worker
             push: true
             tags: ${{ steps.meta.outputs.tags }}
             labels: ${{ steps.meta.outputs.labels }}
