@@ -93,8 +93,6 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
           setUser(data);
           setOrganizations(data.orgs);
           const orgId = getQueryParam("organization");
-          console.log(orgId);
-          console.log(data.orgs);
           if (orgId) {
             const organization = data.orgs.find((org) => org.id === orgId);
             if (organization) {
