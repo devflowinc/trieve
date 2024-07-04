@@ -24,9 +24,10 @@ export const Sidebar = () => {
   const orgDatasetParams = createMemo(() => {
     const orgId = userContext.selectedOrganizationId?.();
     const datasetId = datasetContext.dataset?.()?.id;
-    return orgId && datasetId
-      ? `?organization=${orgId}&dataset=${datasetId}`
-      : "";
+    let params = "";
+    if (orgId) params += `?organization=${orgId}`;
+    if (orgId && datasetId) params += `&dataset=${datasetId}`;
+    return params;
   });
 
   return (
