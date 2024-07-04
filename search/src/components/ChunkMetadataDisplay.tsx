@@ -184,7 +184,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   </span>
                 </div>
               </Show>
-              <Show when={props.chunk.tag_set}>
+              <Show when={props.chunk.tag_set && props.chunk.tag_set != ""}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Tag Set:{" "}

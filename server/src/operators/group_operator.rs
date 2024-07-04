@@ -1,3 +1,4 @@
+use crate::data::models::ChunkMetadataStringTagSet;
 use crate::{data::models::ChunkGroupBookmark, errors::ServiceError};
 use crate::{
     data::models::{
@@ -385,7 +386,7 @@ pub async fn create_chunk_bookmark_query(
     Ok(qdrant_point_id)
 }
 pub struct GroupsBookmarkQueryResult {
-    pub metadata: Vec<ChunkMetadata>,
+    pub metadata: Vec<ChunkMetadataStringTagSet>,
     pub group: ChunkGroupAndFileId,
     pub total_pages: u64,
 }
@@ -429,12 +430,16 @@ pub async fn get_bookmarks_for_group_query(
     let chunk_metadata_point_ids = chunk_metadata_point_ids?;
     let chunk_metadatas =
         get_chunk_metadatas_from_point_ids(chunk_metadata_point_ids, pool.clone()).await?;
+    let chunk_metadata_string_tag_sets = chunk_metadatas
+        .iter()
+        .map(|chunk_metadata| ChunkMetadataStringTagSet::from(chunk_metadata.clone()))
+        .collect();
 
     let chunk_count = chunk_count_result?;
     let chunk_group = chunk_group_result?;
 
     Ok(GroupsBookmarkQueryResult {
-        metadata: chunk_metadatas,
+        metadata: chunk_metadata_string_tag_sets,
         group: chunk_group,
         total_pages: (chunk_count as f64 / 10.0).ceil() as u64,
     })
