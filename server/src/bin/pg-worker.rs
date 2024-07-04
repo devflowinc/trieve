@@ -29,7 +29,7 @@ fn main() {
         tracing_subscriber::Registry::default()
             .with(sentry::integrations::tracing::layer())
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
+                tracing_subscriber::fmt::layer().without_time().with_filter(
                     EnvFilter::from_default_env()
                         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
                 ),
@@ -41,7 +41,7 @@ fn main() {
     } else {
         tracing_subscriber::Registry::default()
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
+                tracing_subscriber::fmt::layer().without_time().with_filter(
                     EnvFilter::from_default_env()
                         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
                 ),
@@ -167,7 +167,10 @@ async fn pg_insert_worker(
         opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
     let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
-    let bulk_batch_size = get_env!("PG_BULK_BATCHSIZE", "PG_BULK_BATCHSIZE must be set");
+    let bulk_batch_size: usize = std::env::var("PG_BULK_BATCHSIZE")
+        .unwrap_or("1000".to_string())
+        .parse()
+        .unwrap_or(1000);
 
     loop {
         if should_terminate.load(Ordering::Relaxed) {

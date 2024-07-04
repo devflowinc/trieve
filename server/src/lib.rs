@@ -395,32 +395,23 @@ pub fn main() -> std::io::Result<()> {
         tracing_subscriber::Registry::default()
             .with(sentry::integrations::tracing::layer())
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
+                tracing_subscriber::fmt::layer().without_time().with_filter(
                     EnvFilter::from_default_env()
                         .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
                 ),
             )
             .init();
 
-        std::env::set_var("RUST_BACKTRACE", "1");
+        // std::env::set_var("RUST_BACKTRACE", "1");
         log::info!("Sentry monitoring enabled");
         Some(guard)
     } else {
-        // if sentry is not enabled, get RUST_LOG from the environment variable (.env file)
-        let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "INFO".to_string());
-        let level_filter = match rust_log.to_uppercase().as_str() {
-            "ERROR" => tracing_subscriber::filter::LevelFilter::ERROR,
-            "WARN" => tracing_subscriber::filter::LevelFilter::WARN,
-            "INFO" => tracing_subscriber::filter::LevelFilter::INFO,
-            "DEBUG" => tracing_subscriber::filter::LevelFilter::DEBUG,
-            "TRACE" => tracing_subscriber::filter::LevelFilter::TRACE,
-            _ => tracing_subscriber::filter::LevelFilter::INFO,
-        };
-
         tracing_subscriber::Registry::default()
             .with(
-                tracing_subscriber::fmt::layer()
-                    .with_filter(EnvFilter::from_default_env().add_directive(level_filter.into())),
+                tracing_subscriber::fmt::layer().without_time().with_filter(
+                    EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
             )
             .init();
 
@@ -534,7 +525,6 @@ pub fn main() -> std::io::Result<()> {
             std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create metrics {:?}", e))
         })?;
 
-
         HttpServer::new(move || {
             App::new()
                 .wrap(Cors::permissive())
@@ -579,7 +569,13 @@ pub fn main() -> std::io::Result<()> {
                     .cookie_path("/".to_owned())
                     .build(),
                 )
-                .wrap(Logger::default())
+                .wrap(
+                    // Set up logger, but avoid logging hot status endpoints
+                    Logger::default()
+                    .exclude("/")
+                    .exclude("/api/health")
+                    .exclude("/metrics")
+                )
                 .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}")
