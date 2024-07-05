@@ -11,8 +11,8 @@
       "default": "./tailwind-preset.cjs"
     },
     "./prettier": {
-      "default": "./prettier.config.cjs",
-      "require": "./prettier.config.cjs"
+      "default": "./prettier.config.mjs",
+      "import": "./prettier.config.mjs"
     }
   },
   "dependencies": {
