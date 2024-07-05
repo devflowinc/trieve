@@ -1263,6 +1263,12 @@ pub async fn search_within_group(
             .await?
         }
         _ => {
+            if !server_dataset_config.SEMANTIC_ENABLED {
+                return Err(ServiceError::BadRequest(
+                    "Semantic search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
             search_semantic_groups(
                 data.clone(),
                 parsed_query,
@@ -1405,6 +1411,12 @@ pub async fn search_over_groups(
             .await?
         }
         _ => {
+            if !server_dataset_config.SEMANTIC_ENABLED {
+                return Err(ServiceError::BadRequest(
+                    "Semantic search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
             semantic_search_over_groups(
                 data.clone(),
                 parsed_query,

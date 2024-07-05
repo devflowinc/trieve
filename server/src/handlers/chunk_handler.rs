@@ -1093,6 +1093,12 @@ pub async fn search_chunks(
             .await?
         }
         "semantic" => {
+            if !server_dataset_config.SEMANTIC_ENABLED {
+                return Err(ServiceError::BadRequest(
+                    "Semantic search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
             search_semantic_chunks(
                 data.clone(),
                 parsed_query,
@@ -1325,6 +1331,12 @@ pub async fn autocomplete(
             .await?
         }
         "semantic" => {
+            if !server_dataset_config.SEMANTIC_ENABLED {
+                return Err(ServiceError::BadRequest(
+                    "Semantic search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
             autocomplete_semantic_chunks(
                 data.clone(),
                 parsed_query,
@@ -1519,6 +1531,12 @@ pub async fn count_chunks(
             .await?
         }
         "semantic" => {
+            if !server_dataset_config.SEMANTIC_ENABLED {
+                return Err(ServiceError::BadRequest(
+                    "Semantic search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
             count_semantic_chunks(
                 search_req_data.clone(),
                 parsed_query,
