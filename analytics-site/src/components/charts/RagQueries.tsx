@@ -45,13 +45,23 @@ export const RagQueries = () => {
         when={headQueriesQuery.data}
       >
         {(data) => (
-          <div class="py-2">
-            <For each={data()}>
-              {(rag_query_event) => {
-                return <RagQueryEventCard rag_query_event={rag_query_event} />;
-              }}
-            </For>
-          </div>
+          <table class="w-full py-2">
+            <thead>
+              <tr>
+                <th class="text-left font-semibold">Message</th>
+                <th class="text-right font-semibold">RAG Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={data()}>
+                {(rag_query_event) => {
+                  return (
+                    <RagQueryEventCard rag_query_event={rag_query_event} />
+                  );
+                }}
+              </For>
+            </tbody>
+          </table>
         )}
       </Show>
       <div class="flex justify-end">
@@ -66,9 +76,9 @@ interface QueryCardProps {
 }
 const RagQueryEventCard = (props: QueryCardProps) => {
   return (
-    <div class="flex justify-between">
-      <div class="truncate">{props.rag_query_event.user_message}</div>
-      <div>{props.rag_query_event.rag_type}</div>
-    </div>
+    <tr>
+      <td class="truncate">{props.rag_query_event.user_message}</td>
+      <td class="text-right">{props.rag_query_event.rag_type}</td>
+    </tr>
   );
 };

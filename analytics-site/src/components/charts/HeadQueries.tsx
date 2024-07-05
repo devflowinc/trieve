@@ -49,16 +49,24 @@ export const HeadQueries = (props: HeadQueriesProps) => {
         when={headQueriesQuery.data}
       >
         {(data) => (
-          <div class="py-2">
-            <For each={data()}>
-              {(query) => {
-                return <QueryCard query={query} />;
-              }}
-            </For>
-          </div>
+          <table class="mt-2 w-full py-2">
+            <thead>
+              <tr>
+                <th class="text-left font-semibold">Query</th>
+                <th class="text-right font-semibold">Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={data()}>
+                {(query) => {
+                  return <QueryCard query={query} />;
+                }}
+              </For>
+            </tbody>
+          </table>
         )}
       </Show>
-      <div class="flex justify-end">
+      <div class="flex justify-end pt-2">
         <PaginationButtons size={18} pages={pages} />
       </div>
     </ChartCard>
@@ -70,9 +78,9 @@ interface QueryCardProps {
 }
 const QueryCard = (props: QueryCardProps) => {
   return (
-    <div class="flex justify-between">
-      <div class="truncate">{props.query.query}</div>
-      <div>{props.query.count}</div>
-    </div>
+    <tr>
+      <td class="truncate">{props.query.query}</td>
+      <td class="text-right">{props.query.count}</td>
+    </tr>
   );
 };

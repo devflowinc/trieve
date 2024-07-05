@@ -114,19 +114,27 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
         when={lowConfidenceQueriesQuery.data}
       >
         {(data) => (
-          <div class="py-2">
-            <For
-              fallback={<div class="pt-4 text-center">No data found</div>}
-              each={data()}
-            >
-              {(query) => {
-                return <QueryCard query={query} />;
-              }}
-            </For>
-          </div>
+          <table class="mt-2 w-full py-2">
+            <thead>
+              <tr>
+                <th class="text-left font-semibold">Query</th>
+                <th class="text-right font-semibold">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For
+                fallback={<div class="pt-4 text-center">No data found</div>}
+                each={data()}
+              >
+                {(query) => {
+                  return <QueryCard query={query} />;
+                }}
+              </For>
+            </tbody>
+          </table>
         )}
       </Show>
-      <div class="flex justify-end">
+      <div class="flex justify-end pt-2">
         <PaginationButtons size={18} pages={pages} />
       </div>
     </ChartCard>
@@ -140,15 +148,15 @@ const QueryCard = (props: QueryCardProps) => {
   const [open, setOpen] = createSignal(false);
   return (
     <>
-      <div
+      <tr
         onClick={() => {
           setOpen(true);
         }}
-        class="flex cursor-pointer justify-between"
+        class="cursor-pointer"
       >
-        <div class="truncate">{props.query.query}</div>
-        <div class="truncate">{props.query.top_score.toFixed(5)}</div>
-      </div>
+        <td class="truncate">{props.query.query}</td>
+        <td class="truncate text-right">{props.query.top_score.toFixed(5)}</td>
+      </tr>
       <FullScreenModal title={props.query.query} show={open} setShow={setOpen}>
         <SearchQueryEventModal searchEvent={props.query} />
       </FullScreenModal>
