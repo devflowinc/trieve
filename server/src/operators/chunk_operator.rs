@@ -23,6 +23,7 @@ use dateparser::DateTimeUtc;
 use diesel::dsl::{not, sql};
 use diesel::prelude::*;
 use diesel::sql_types;
+use diesel::upsert::excluded;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use itertools::Itertools;
@@ -519,6 +520,7 @@ pub async fn bulk_insert_chunk_metadata_query(
     // ChunkMetadata, group_ids, upsert_by_tracking_id
     mut insertion_data: Vec<ChunkData>,
     dataset_uuid: uuid::Uuid,
+    upsert_by_tracking_id: bool,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkData>, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
@@ -536,20 +538,53 @@ pub async fn bulk_insert_chunk_metadata_query(
         .map(|data| data.chunk_metadata.clone().into())
         .collect();
 
-    let inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
-        .values(&chunk_metadata_to_insert)
-        .on_conflict_do_nothing()
-        .get_results::<ChunkMetadataTable>(&mut conn)
-        .await
-        .map_err(|e| {
-            sentry::capture_message(
-                &format!("Failed to insert chunk_metadata: {:?}", e),
-                sentry::Level::Error,
-            );
-            log::error!("Failed to insert chunk_metadata: {:?}", e);
+    let inserted_chunks = if upsert_by_tracking_id {
+        diesel::insert_into(chunk_metadata_columns::chunk_metadata)
+            .values(&chunk_metadata_to_insert)
+            .on_conflict((
+                chunk_metadata_columns::tracking_id,
+                chunk_metadata_columns::dataset_id,
+            ))
+            .do_update()
+            .set((
+                chunk_metadata_columns::link.eq(excluded(chunk_metadata_columns::link)),
+                chunk_metadata_columns::chunk_html.eq(excluded(chunk_metadata_columns::chunk_html)),
+                chunk_metadata_columns::metadata.eq(excluded(chunk_metadata_columns::metadata)),
+                chunk_metadata_columns::tracking_id
+                    .eq(excluded(chunk_metadata_columns::tracking_id)),
+                chunk_metadata_columns::time_stamp.eq(excluded(chunk_metadata_columns::time_stamp)),
+                chunk_metadata_columns::weight.eq(excluded(chunk_metadata_columns::weight)),
+                chunk_metadata_columns::location.eq(excluded(chunk_metadata_columns::location)),
+                chunk_metadata_columns::image_urls.eq(excluded(chunk_metadata_columns::image_urls)),
+                chunk_metadata_columns::num_value.eq(excluded(chunk_metadata_columns::num_value)),
+            ))
+            .get_results::<ChunkMetadataTable>(&mut conn)
+            .await
+            .map_err(|e| {
+                sentry::capture_message(
+                    &format!("Failed to insert chunk_metadata: {:?}", e),
+                    sentry::Level::Error,
+                );
+                log::error!("Failed to insert chunk_metadata: {:?}", e);
 
-            ServiceError::BadRequest("Failed to insert chunk_metadata".to_string())
-        })?;
+                ServiceError::BadRequest("Failed to insert chunk_metadata".to_string())
+            })?
+    } else {
+        diesel::insert_into(chunk_metadata_columns::chunk_metadata)
+            .values(&chunk_metadata_to_insert)
+            .on_conflict_do_nothing()
+            .get_results::<ChunkMetadataTable>(&mut conn)
+            .await
+            .map_err(|e| {
+                sentry::capture_message(
+                    &format!("Failed to insert chunk_metadata: {:?}", e),
+                    sentry::Level::Error,
+                );
+                log::error!("Failed to insert chunk_metadata: {:?}", e);
+
+                ServiceError::BadRequest("Failed to insert chunk_metadata".to_string())
+            })?
+    };
 
     // mutates in place
     insertion_data.retain(|data| {

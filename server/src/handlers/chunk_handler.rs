@@ -326,6 +326,18 @@ pub async fn create_chunk(
         .into());
     }
 
+    let upsert_by_tracking_id_being_used = chunks
+        .iter()
+        .any(|message| message.upsert_by_tracking_id.is_some_and(|message| message));
+
+    let upsert_by_tracking_id_used_for_all = chunks
+        .iter()
+        .all(|message| message.upsert_by_tracking_id.is_some_and(|message| message));
+
+    if upsert_by_tracking_id_being_used && !upsert_by_tracking_id_used_for_all {
+        return Err(ServiceError::BadRequest("If upsert by tracking id is being used in a single chunk, it must be set all chunks in the batch".to_string()).into());
+    }
+
     let server_dataset_configuration = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );

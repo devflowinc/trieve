@@ -442,7 +442,7 @@ pub async fn bulk_upload_chunks(
         })
         .collect();
 
-    if split_average_being_used || upsert_by_tracking_id_being_used {
+    if split_average_being_used {
         let mut chunk_ids = vec![];
         // Split average or Collisions
         for (message, ingestion_data) in
@@ -475,6 +475,7 @@ pub async fn bulk_upload_chunks(
     let inserted_chunk_metadatas = bulk_insert_chunk_metadata_query(
         ingestion_data.clone(),
         payload.dataset_id,
+        upsert_by_tracking_id_being_used,
         web_pool.clone(),
     )
     .await?;
