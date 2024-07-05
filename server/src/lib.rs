@@ -83,7 +83,10 @@ pub fn establish_connection(
 }
 
 use utoipa::{
-    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    openapi::{
+        path::{Parameter, ParameterIn},
+        security::{ApiKey, ApiKeyValue, SecurityScheme},
+    },
     Modify, OpenApi,
 };
 
@@ -123,6 +126,26 @@ impl Modify for SecurityAddon {
             "X-API-KEY",
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("X-API-KEY"))),
         );
+    }
+}
+
+struct APIVersionAddon;
+
+impl Modify for APIVersionAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        for (_, path_item) in openapi.paths.paths.iter_mut() {
+            let mut version_header_param = Parameter::new("X-API-Version".to_string());
+            version_header_param.description = Some("Version for api".to_string());
+            version_header_param.parameter_in = ParameterIn::Header;
+            path_item.parameters = path_item.parameters.clone().map_or(
+                Some(vec![version_header_param.clone()]),
+                |params| {
+                    let mut params = params.clone();
+                    params.insert(0, version_header_param);
+                    Some(params)
+                },
+            );
+        }
     }
 }
 
@@ -545,8 +568,8 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(clickhouse_client.clone()))
                 .app_data(web::Data::new(metrics.clone()))
                 .wrap(sentry_actix::Sentry::new())
-                .wrap(middleware::api_version::ApiVersionCheckFactory)
                 .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
+                .wrap(middleware::api_version::ApiVersionCheckFactory)
                 .wrap(
                     IdentityMiddleware::builder()
                         .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
