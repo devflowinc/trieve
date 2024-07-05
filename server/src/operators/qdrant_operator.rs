@@ -863,7 +863,7 @@ pub async fn search_qdrant_query(
     )
     .await?;
 
-    let data: Vec<SearchPoints> = queries
+    let search_point_req_payloads: Vec<SearchPoints> = queries
         .into_iter()
         .map(|query| match query.vector {
             VectorType::Sparse(vector) => {
@@ -923,14 +923,14 @@ pub async fn search_qdrant_query(
 
     let batch_points = SearchBatchPoints {
         collection_name: qdrant_collection.to_string(),
-        search_points: data.clone(),
+        search_points: search_point_req_payloads.clone(),
         timeout: Some(60),
         ..Default::default()
     };
 
     let search_response_future = qdrant_client.search_batch_points(&batch_points);
 
-    let count_query = data
+    let count_query = search_point_req_payloads
         .iter()
         .map(|query| CountPoints {
             collection_name: qdrant_collection.to_string(),
@@ -1487,7 +1487,7 @@ pub async fn count_qdrant_query(
     )
     .await?;
 
-    let data: Vec<SearchPoints> = queries
+    let search_point_req_payloads: Vec<SearchPoints> = queries
         .into_iter()
         .map(|query| match query.vector {
             VectorType::Sparse(vector) => {
@@ -1543,39 +1543,29 @@ pub async fn count_qdrant_query(
         })
         .collect::<Result<Vec<SearchPoints>, ServiceError>>()?;
 
-    let count_query = data
-        .iter()
-        .map(|query| CountPoints {
-            collection_name: qdrant_collection.to_string(),
-            filter: query.filter.clone(),
-            exact: Some(true),
-            read_consistency: None,
-            shard_key_selector: None,
-        })
-        .collect::<Vec<_>>();
+    let batch_points = SearchBatchPoints {
+        collection_name: qdrant_collection.to_string(),
+        search_points: search_point_req_payloads.clone(),
+        timeout: Some(60),
+        ..Default::default()
+    };
 
-    let point_count_futures = count_query
-        .iter()
-        .map(|query| async {
-            Ok(qdrant_client
-                .count(query)
-                .await
-                .map_err(|e| {
-                    log::error!("Failed to count points on Qdrant {:?}", e);
-                    ServiceError::BadRequest("Failed to count points on Qdrant".to_string())
-                })?
-                .result
-                .map(|count| count.count)
-                .unwrap_or(0))
-        })
-        .collect::<Vec<_>>();
-
-    let point_count = futures::future::join_all(point_count_futures)
+    let search_batch_response = qdrant_client
+        .search_batch_points(&batch_points)
         .await
+        .map_err(|e| {
+            log::error!("Failed to search points on Qdrant to get count {:?}", e);
+            ServiceError::BadRequest("Failed to search points on Qdrant to get count".to_string())
+        })?;
+
+    let max_count = search_batch_response
+        .result
+        .iter()
+        .map(|batch_result| batch_result.result.len() as u64)
+        .collect::<Vec<u64>>()
         .into_iter()
-        .map(|count: Result<u64, ServiceError>| count.unwrap_or(0))
-        .min()
+        .max()
         .unwrap_or(0);
 
-    Ok(point_count)
+    Ok(max_count)
 }

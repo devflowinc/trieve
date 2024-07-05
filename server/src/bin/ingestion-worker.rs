@@ -367,15 +367,6 @@ pub async fn bulk_upload_chunks(
         .iter()
         .any(|message| message.chunk.split_avg.unwrap_or(false));
 
-    // Being blocked out because it adds complications with
-    // Duplicates being filtered out and trying to relate
-    // them back to the original messages, especially dangerous
-    // since chunk_id/tracking_id might change if there is some duplicate update logic
-    let raw_vectors_being_used = payload
-        .ingestion_messages
-        .iter()
-        .any(|message| message.chunk.chunk_vector.is_some());
-
     let upsert_by_tracking_id_being_used = payload
         .ingestion_messages
         .iter()
@@ -451,7 +442,7 @@ pub async fn bulk_upload_chunks(
         })
         .collect();
 
-    if raw_vectors_being_used || split_average_being_used || upsert_by_tracking_id_being_used {
+    if split_average_being_used || upsert_by_tracking_id_being_used {
         let mut chunk_ids = vec![];
         // Split average or Collisions
         for (message, ingestion_data) in
@@ -757,48 +748,41 @@ async fn upload_chunk(
         num_value: payload.chunk.num_value,
     };
 
-    let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
-        embedding_vector
-    } else {
-        match payload.chunk.split_avg.unwrap_or(false) {
-            true => {
-                let chunks = coarse_doc_chunker(content.clone(), None, false, 20);
+    let embedding_vector = match payload.chunk.split_avg.unwrap_or(false) {
+        true => {
+            let chunks = coarse_doc_chunker(content.clone(), None, false, 20);
 
-                let embeddings = create_embeddings(
-                    chunks
-                        .iter()
-                        .map(|chunk| (chunk.clone(), payload.chunk.distance_phrase.clone()))
-                        .collect(),
-                    "doc",
-                    dataset_config.clone(),
-                    reqwest_client.clone(),
-                )
-                .await?;
+            let embeddings = create_embeddings(
+                chunks
+                    .iter()
+                    .map(|chunk| (chunk.clone(), payload.chunk.distance_phrase.clone()))
+                    .collect(),
+                "doc",
+                dataset_config.clone(),
+                reqwest_client.clone(),
+            )
+            .await?;
 
-                average_embeddings(embeddings)?
-            }
-            false => {
-                let embedding_vectors = create_embeddings(
-                    vec![(content.clone(), payload.chunk.distance_phrase.clone())],
-                    "doc",
-                    dataset_config.clone(),
-                    reqwest_client.clone(),
-                )
-                .await
-                .map_err(|err| {
-                    ServiceError::InternalServerError(format!(
-                        "Failed to create embedding: {:?}",
-                        err
-                    ))
-                })?;
+            average_embeddings(embeddings)?
+        }
+        false => {
+            let embedding_vectors = create_embeddings(
+                vec![(content.clone(), payload.chunk.distance_phrase.clone())],
+                "doc",
+                dataset_config.clone(),
+                reqwest_client.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::InternalServerError(format!("Failed to create embedding: {:?}", err))
+            })?;
 
-                embedding_vectors
-                    .first()
-                    .ok_or(ServiceError::InternalServerError(
-                        "Failed to get first embedding".into(),
-                    ))?
-                    .clone()
-            }
+            embedding_vectors
+                .first()
+                .ok_or(ServiceError::InternalServerError(
+                    "Failed to get first embedding".into(),
+                ))?
+                .clone()
         }
     };
 
