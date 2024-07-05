@@ -482,17 +482,19 @@ const ResultsPage = (props: ResultsPageProps) => {
                               </span>
                             </div>
                             <Show when={group.file_id}>
-                              <div class="flex space-x-2">
-                                <button
-                                  title="Download uploaded file"
-                                  class="h-fit text-neutral-400 dark:text-neutral-300"
-                                  onClick={() =>
-                                    handleDownloadFile(group.file_id)
-                                  }
-                                >
-                                  <FaSolidDownload />
-                                </button>
-                              </div>
+                              {(fileId) => (
+                                <div class="flex space-x-2">
+                                  <button
+                                    title="Download uploaded file"
+                                    class="h-fit text-neutral-400 dark:text-neutral-300"
+                                    onClick={() =>
+                                      handleDownloadFile(fileId() as string)
+                                    }
+                                  >
+                                    <FaSolidDownload />
+                                  </button>
+                                </div>
+                              )}
                             </Show>
                           </div>
                         </Show>
