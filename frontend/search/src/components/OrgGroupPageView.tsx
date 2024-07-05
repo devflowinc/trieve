@@ -1,5 +1,5 @@
 import { FiTrash } from "solid-icons/fi";
-import { isChunkGroupPageDTO, type ChunkGroupDTO } from "../../utils/apiTypes";
+import { isChunkGroupPageDTO, type ChunkGroupDTO } from "../utils/apiTypes";
 import {
   For,
   Setter,

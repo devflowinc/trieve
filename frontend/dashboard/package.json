@@ -24,6 +24,7 @@
     "vite-plugin-runtime-env": "^0.1.1"
   },
   "devDependencies": {
+    "config": "*",
     "@tailwindcss/typography": "^0.5.10",
     "@types/papaparse": "^5.3.14",
     "@typescript-eslint/eslint-plugin": "^6.14.0",

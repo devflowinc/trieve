@@ -20,7 +20,7 @@ import {
   ChunkMetadata,
   indirectHasOwnProperty,
   type ChunkGroupDTO,
-} from "../../utils/apiTypes";
+} from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";

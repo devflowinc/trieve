@@ -1,4 +1,4 @@
-import { ChunkFile } from "../../utils/apiTypes";
+import { ChunkFile } from "../utils/apiTypes";
 
 const apiHost = import.meta.env.VITE_API_HOST as string;
 

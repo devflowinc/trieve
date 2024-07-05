@@ -14,7 +14,7 @@ import {
   ChunkMetadata,
   ScoreChunkDTO,
   ChunkMetadataWithScore,
-} from "../../utils/apiTypes";
+} from "../utils/apiTypes";
 import ScoreChunk from "./ScoreChunk";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { ConfirmModal } from "./Atoms/ConfirmModal";

@@ -13,7 +13,7 @@ import {
   UserDTO,
   isDatasetAndUsageDTO,
   isUserDTO,
-} from "../../../utils/apiTypes";
+} from "../../utils/apiTypes";
 import { createToast } from "../ShowToasts";
 import { RouteSectionProps, useSearchParams } from "@solidjs/router";
 

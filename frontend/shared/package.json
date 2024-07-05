@@ -29,6 +29,7 @@
     "solid-icons": "^1.1.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "config": "*"
   }
 }

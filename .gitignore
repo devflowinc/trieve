@@ -5,6 +5,7 @@ tantivy-recovery/target
 tmp
 node_modules
 *.log
+*.tsbuildinfo
 story_html
 Fictions.csv
 # Byte-compiled / optimized / DLL files

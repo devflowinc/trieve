@@ -18,7 +18,7 @@ import {
 } from "solid-headless";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
-import { DatasetAndUsageDTO } from "../../utils/apiTypes";
+import { DatasetAndUsageDTO } from "../utils/apiTypes";
 import createFuzzySearch from "@nozbe/microfuzz";
 
 export const DatasetSelectBox = () => {
