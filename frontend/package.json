@@ -7,7 +7,7 @@
     "search",
     "dashboard",
     "chat",
-    "analytics-site",
+    "analytics",
     "shared"
   ],
   "scripts": {
