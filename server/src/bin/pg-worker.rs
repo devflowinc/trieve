@@ -62,7 +62,7 @@ fn main() {
     );
 
     let pool = diesel_async::pooled_connection::deadpool::Pool::builder(mgr)
-        .max_size(10)
+        .max_size(3)
         .build()
         .expect("Failed to create diesel_async pool");
 
