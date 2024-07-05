@@ -225,11 +225,11 @@
     "@corvu/utils" "~0.3.1"
 
 "@corvu/utils@~0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@corvu/utils/-/utils-0.3.1.tgz#b9f5e3057c538d20cee5ff7d5d4d915810362bbc"
-  integrity sha512-M8ztDGmVuYsoF9+WHvhz+UtVtvqPeJa9KgwM3JETp770lMmpL8TG3ThAZIpHAl8OjUjDaLvMkd/f6FuyA/n50A==
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@corvu/utils/-/utils-0.3.2.tgz#89ad8755505ff13d30498ba595e91f5f12bfc565"
+  integrity sha512-ZWlyWEE8qV9+CB9OAyo2bTrZGXQN9ZeM+JfYv89zoR+lRACKTDuoOZEdiyL8Uc7U5dUSH1uTqKhTTnaHWb+wZA==
   dependencies:
-    "@floating-ui/dom" "^1.6.5"
+    "@floating-ui/dom" "^1.6.7"
 
 "@esbuild/aix-ppc64@0.21.5":
   version "0.21.5"
@@ -385,7 +385,7 @@
   dependencies:
     "@floating-ui/utils" "^0.2.4"
 
-"@floating-ui/dom@^1.6.5":
+"@floating-ui/dom@^1.6.7":
   version "1.6.7"
   resolved "https://registry.yarnpkg.com/@floating-ui/dom/-/dom-1.6.7.tgz#85d22f731fcc5b209db504478fb1df5116a83015"
   integrity sha512-wmVfPG5o2xnKDU4jx/m4w5qva9FWHcnZ8BvzEe90D/RpwsJaTAVYPEPdQ8sbr/N8zZTAHlZUTQdqg8ZUbzHmng==
@@ -786,29 +786,29 @@
     lodash.merge "^4.6.2"
     postcss-selector-parser "6.0.10"
 
-"@tanstack/query-core@5.49.1":
-  version "5.49.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.49.1.tgz#09167842123eddaf47465376f3c835cf59b9f1e9"
-  integrity sha512-JnC9ndmD1KKS01Rt/ovRUB1tmwO7zkyXAyIxN9mznuJrcNtOrkmOnQqdJF2ib9oHzc2VxHomnEG7xyfo54Npkw==
+"@tanstack/query-core@5.50.1":
+  version "5.50.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.50.1.tgz#b3f93e34cc9cdc46891a1a07a42a0ed2d0a77578"
+  integrity sha512-lpfhKPrJlyV2DSVcQb/HuozH3Av3kws4ge22agx+lNGpFkS4vLZ7St0l3GLwlAD+bqB+qXGex3JdRKUNtMviEQ==
 
-"@tanstack/query-devtools@5.49.1":
-  version "5.49.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.49.1.tgz#4b51341cab67cc77f4a606d719cedf4fa2ecc6ea"
-  integrity sha512-9mBtuq76fp+OE780ImoNG109bM7lucZ9MLPLzAkQ2OMx+X6s3BfVATySTxm1Mrtui3qJIFo05ZI4zv9A44+GAg==
+"@tanstack/query-devtools@5.50.1":
+  version "5.50.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.50.1.tgz#1a0b87605925e138a612284aae2e2a69c4291af6"
+  integrity sha512-MQ5JK3yRwBP1SRuwoJVPGZP4cMLXCQ0t+6blDbcAVGEoqrEuvbgTdwlN729AKBR0hidOWPFR9n5YpI2Y8bBZOQ==
 
 "@tanstack/solid-query-devtools@^5.48.0":
-  version "5.49.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/solid-query-devtools/-/solid-query-devtools-5.49.1.tgz#30df09445763692d0d9188adb47a6c5e56f5dead"
-  integrity sha512-HeZL0bg/KbtPl6cpA7ErjyeUF1Q1bHLb20HCN+UJgzz0mShHfZRB0jjf28sf/9Cr0pSc4N/Q3qWQFtpCckzpZg==
+  version "5.50.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/solid-query-devtools/-/solid-query-devtools-5.50.1.tgz#456ba66379987afad30df9ddccf6615dec8cb1dd"
+  integrity sha512-JXlsZu0Mkib/SgrYLF1YZisG+R/BkfgxeyldhedTSVoCN6g9vyxA0Bzk+Yv+1v0Lqfuy3CxuZpXHD4nnZv5F1A==
   dependencies:
-    "@tanstack/query-devtools" "5.49.1"
+    "@tanstack/query-devtools" "5.50.1"
 
 "@tanstack/solid-query@^5.48.0":
-  version "5.49.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/solid-query/-/solid-query-5.49.1.tgz#f33a60ab9a7f9c238926764efdc76a4b46bbb4e5"
-  integrity sha512-bEOphgQ2ohBBauxQmBUnmYFJe4rqOFX/AmtHgypeF7cbYH9F05TVn8zbXmpZnvyV2ASU0BDbxCrztRdg2JpKaA==
+  version "5.50.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/solid-query/-/solid-query-5.50.1.tgz#d5985e6306504eb07f4461fb355c520e5ffeb182"
+  integrity sha512-ZTcTz8IHC/60KXC6DirhymvRqip7WfZd5+xZnxJlv/rU73gqybJ3YOTpxr38/k74w6yZtVwI52qRt9MeNIM9iw==
   dependencies:
-    "@tanstack/query-core" "5.49.1"
+    "@tanstack/query-core" "5.50.1"
     solid-js "^1.8.17"
 
 "@types/babel__core@^7.20.4":
@@ -1669,9 +1669,9 @@ eastasianwidth@^0.2.0:
   integrity sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==
 
 electron-to-chromium@^1.4.796:
-  version "1.4.816"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.816.tgz#3624649d1e7fde5cdbadf59d31a524245d8ee85f"
-  integrity sha512-EKH5X5oqC6hLmiS7/vYtZHZFTNdhsYG5NVPRN6Yn0kQHNBlT59+xSM8HBy66P5fxWpKgZbPqb+diC64ng295Jw==
+  version "1.4.817"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.817.tgz#da9808e35212408cf4052b51679786fcb54fec39"
+  integrity sha512-3znu+lZMIbTe8ZOs360OMJvVroVF2NpNI8T5jfLnDetVvj0uNmIucZzQVYMSJfsu9f47Ssox1Gt46PR+R+1JUg==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
@@ -1953,6 +1953,8 @@ eslint-utils@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/eslint-utils/-/eslint-utils-3.0.0.tgz#8aebaface7345bb33559db0a1f13a1d2d48c3672"
   integrity sha512-uuQC43IGctw68pJA1RgbQS8/NP7rch6Cwd4j3ZBtgo4/8Flj4eGE7ZYSZRN3iq5pVUv6GPdW5Z1RFleo84uLDA==
+  dependencies:
+    eslint-visitor-keys "^2.0.0"
 
 eslint-visitor-keys@^1.1.0:
   version "1.3.0"
