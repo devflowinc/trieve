@@ -9,10 +9,18 @@
     },
     "./tailwind": {
       "default": "./tailwind-preset.cjs"
+    },
+    "./prettier": {
+      "default": "./prettier.config.cjs",
+      "require": "./prettier.config.cjs"
     }
   },
   "dependencies": {
     "tailwind-gradient-mask-image": "^1.2.0",
     "tailwind-scrollbar": "^3.1.0"
+  },
+  "devDependencies": {
+    "prettier": "3.1.1",
+    "prettier-plugin-tailwindcss": "^0.6.3"
   }
 }
