@@ -158,6 +158,34 @@ export const getLowConfidenceQueries = async (
   return data;
 };
 
+export const getNoResultQueries = async (
+  filters: AnalyticsParams,
+  datasetId: string,
+  page: number,
+): Promise<SearchQueryEvent[]> => {
+  const response = await fetch(
+    `${apiHost}/analytics/${datasetId}/query/no_results`,
+    {
+      credentials: "include",
+      method: "POST",
+      body: JSON.stringify(transformAnalyticsParams(filters, page)),
+      headers: {
+        "TR-Dataset": datasetId,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch no result queries: ${response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as unknown as SearchQueryEvent[];
+  return data;
+};
+
 export const getSearchQuery = async (
   datasetId: string,
   searchId: string,

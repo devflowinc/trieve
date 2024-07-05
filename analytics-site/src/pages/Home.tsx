@@ -7,6 +7,7 @@ import { RpsGraph } from "../components/charts/RpsGraph";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries";
 import { RagQueries } from "../components/charts/RagQueries";
+import { NoResultQueries } from "../components/charts/NoResultQueries";
 
 export const Home = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
@@ -30,6 +31,7 @@ export const Home = () => {
         <HeadQueries filters={analyticsFilters} />
         <LowConfidenceQueries filters={analyticsFilters} />
         <RagQueries />
+        <NoResultQueries filters={analyticsFilters} />
       </div>
     </div>
   );
