@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "prettier": "config/prettier",
   "scripts": {
     "dev": "vite --port 5176",
     "build": "tsc && vite build",
