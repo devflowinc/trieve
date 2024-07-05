@@ -444,6 +444,91 @@ pub async fn get_low_confidence_queries(
     Ok(HttpResponse::Ok().json(queries))
 }
 
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
+pub struct GetNoResultQueriesReqPayload {
+    /// Filter to apply when fetching the head queries
+    pub filter: Option<SearchAnalyticsFilter>,
+    /// Page number to fetch; defaults to 1
+    pub page: Option<u32>,
+}
+
+/// Get No Result Queries
+///
+/// This route allows you to get the queries that had zero results.
+#[utoipa::path(
+    post,
+    path = "/analytics/{dataset_id}/query/no_results",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = GetNoResultQueriesReqPayload, description = "JSON request payload to filter the analytics", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Queries for the dataset that had zero results", body = Vec<SearchQueryEvent>),
+        (status = 400, description = "Service error relating to getting no result queries", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get no result queries for."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_no_result_queries(
+    dataset_id: web::Path<uuid::Uuid>,
+    data: web::Json<GetNoResultQueriesReqPayload>,
+    _user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    if dataset_org_plan_sub.dataset.id != *dataset_id {
+        return Err(ServiceError::BadRequest(
+            "Dataset header does not match provided dataset ID".to_string(),
+        ));
+    }
+
+    let mut query_string = String::from(
+        "SELECT 
+            ?fields
+        FROM 
+            default.search_queries
+        WHERE dataset_id = ?
+        AND top_score = 0",
+    );
+
+    if let Some(filter) = &data.filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        ORDER BY 
+            created_at DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id.into_inner())
+        .bind((data.page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<SearchQueryEventClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let queries: Vec<SearchQueryEvent> = join_all(
+        clickhouse_query
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
+
+    Ok(HttpResponse::Ok().json(queries))
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct GetAllQueriesReqPayload {
     /// Filter to apply when fetching the queries

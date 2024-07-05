@@ -228,6 +228,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_search_metrics,
         handlers::analytics_handler::get_head_queries,
         handlers::analytics_handler::get_low_confidence_queries,
+        handlers::analytics_handler::get_no_result_queries,
         handlers::analytics_handler::get_all_queries,
         handlers::analytics_handler::get_rps_graph,
         handlers::analytics_handler::get_latency_graph,
@@ -305,6 +306,7 @@ impl Modify for SecurityAddon {
             handlers::analytics_handler::GetDatasetMetricsReqPayload,
             handlers::analytics_handler::GetHeadQueriesReqPayload,
             handlers::analytics_handler::GetLowConfidenceQueriesReqPayload,
+            handlers::analytics_handler::GetNoResultQueriesReqPayload,
             handlers::analytics_handler::GetAllQueriesReqPayload,
             handlers::analytics_handler::GetRPSGraphReqPayload,
             handlers::analytics_handler::RAGUsageResponse,
@@ -996,6 +998,10 @@ pub fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/{dataset_id}/query/low_confidence")
                                 .route(web::post().to(handlers::analytics_handler::get_low_confidence_queries)),
+                            )
+                            .service(
+                                web::resource("/{dataset_id}/query/no_results")
+                                .route(web::post().to(handlers::analytics_handler::get_no_result_queries)),
                             )
                             .service(
                                 web::resource("/{dataset_id}/query/{search_id}")
