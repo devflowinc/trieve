@@ -116,6 +116,7 @@ export interface ServerEnvsConfiguration {
   N_RETRIEVALS_TO_INCLUDE: number;
   EMBEDDING_SIZE: number;
   FULLTEXT_ENABLED: boolean;
+  SEMANTIC_ENABLED: boolean;
   QDRANT_COLLECTION_NAME: string | null;
   EMBEDDING_QUERY_PREFIX: string;
   TEMPERATURE: number | null;

@@ -28,6 +28,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   EMBEDDING_SIZE: 768,
   N_RETRIEVALS_TO_INCLUDE: 8,
   FULLTEXT_ENABLED: true,
+  SEMANTIC_ENABLED: true,
   QDRANT_COLLECTION_NAME: null,
   EMBEDDING_QUERY_PREFIX: "Search for: ",
   USE_MESSAGE_TO_QUERY_PROMPT: false,
@@ -442,12 +443,12 @@ export const ServerSettingsForm = () => {
                 type="checkbox"
                 name="fullTextEnabled"
                 id="fullTextEnabled"
-                checked={serverConfig().FULLTEXT_ENABLED}
+                checked={serverConfig().SEMANTIC_ENABLED}
                 onInput={(e) =>
                   setServerConfig((prev) => {
                     return {
                       ...prev,
-                      FULLTEXT_ENABLED: e.currentTarget.checked,
+                      SEMANTIC_ENABLED: e.currentTarget.checked,
                     };
                   })
                 }
@@ -456,7 +457,7 @@ export const ServerSettingsForm = () => {
                 for="fullTextEnabled"
                 class="block text-sm font-medium leading-6"
               >
-                Fulltext Enabled
+                Semantic Enabled
               </label>
             </div>
 
@@ -477,6 +478,29 @@ export const ServerSettingsForm = () => {
               />
               <label for="lockDataset" class="block text-sm font-medium">
                 Lock dataset
+              </label>
+            </div>
+
+            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
+              <input
+                type="checkbox"
+                name="fullTextEnabled"
+                id="fullTextEnabled"
+                checked={serverConfig().FULLTEXT_ENABLED}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      FULLTEXT_ENABLED: e.currentTarget.checked,
+                    };
+                  })
+                }
+              />
+              <label
+                for="fullTextEnabled"
+                class="block text-sm font-medium leading-6"
+              >
+                Fulltext Enabled
               </label>
             </div>
 
