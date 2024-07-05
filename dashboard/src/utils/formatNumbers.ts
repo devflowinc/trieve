@@ -1,9 +1,8 @@
-export function formatNumberWithCommas(num: number) {
+export const formatNumberWithCommas = (num: number) => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
+};
 
-export function formatStorage(mb: number) {
-  console.log(mb);
+export const formatStorage = (mb: number) => {
   if (mb < 1000) {
     return `${formatNumberWithCommas(mb)} mb`;
   } else if (mb < 1000000) {
@@ -13,4 +12,4 @@ export function formatStorage(mb: number) {
     const tb = mb / (1024 * 1024);
     return `${formatNumberWithCommas(tb)} tb`;
   }
-}
+};
