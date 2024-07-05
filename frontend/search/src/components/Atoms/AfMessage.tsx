@@ -5,7 +5,7 @@
 import { BiSolidUserRectangle } from "solid-icons/bi";
 import { AiFillRobot } from "solid-icons/ai";
 import { Accessor, For, Show, createEffect, createSignal } from "solid-js";
-import type { ScoreChunkDTO } from "../../../utils/apiTypes";
+import type { ScoreChunkDTO } from "../../utils/apiTypes";
 import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
 import sanitizeHtml from "sanitize-html";
 

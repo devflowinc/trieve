@@ -1,6 +1,6 @@
 import type { Setter } from "solid-js";
 import { Show, createSignal } from "solid-js";
-import { type ChunkGroupDTO, type ChunkMetadata } from "../../utils/apiTypes";
+import { type ChunkGroupDTO, type ChunkMetadata } from "../utils/apiTypes";
 import type { ScoreChunkProps } from "./ScoreChunk";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
 import ScoreChunk from "./ScoreChunk";

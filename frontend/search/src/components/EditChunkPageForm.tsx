@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { JSX, Show, createEffect, createSignal, useContext } from "solid-js";
-import { ChunkMetadata, isActixChunkUpdateError } from "../../utils/apiTypes";
+import { ChunkMetadata, isActixChunkUpdateError } from "../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import {
   BiRegularLogIn,

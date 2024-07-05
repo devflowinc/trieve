@@ -22,7 +22,7 @@ import {
   ChunkMetadata,
   ChunkBookmarksDTO,
   GroupScoreChunkDTO,
-} from "../../utils/apiTypes";
+} from "../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";

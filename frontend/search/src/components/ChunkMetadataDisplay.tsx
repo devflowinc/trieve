@@ -15,7 +15,7 @@ import {
   type ChunkBookmarksDTO,
   type ChunkGroupDTO,
   ChunkMetadata,
-} from "../../utils/apiTypes";
+} from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
 import { VsFileSymlinkFile } from "solid-icons/vs";

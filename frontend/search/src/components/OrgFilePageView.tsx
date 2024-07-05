@@ -1,5 +1,5 @@
 import { FiTrash } from "solid-icons/fi";
-import { ChunkFile, FileAndGroupId } from "../../utils/apiTypes";
+import { ChunkFile, FileAndGroupId } from "../utils/apiTypes";
 import {
   For,
   Match,

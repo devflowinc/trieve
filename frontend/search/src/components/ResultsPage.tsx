@@ -17,7 +17,7 @@ import {
   type ScoreChunkDTO,
   ChunkBookmarksDTO,
   GroupScoreChunkDTO,
-} from "../../utils/apiTypes";
+} from "../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { PaginationController } from "./Atoms/PaginationController";
 import { ConfirmModal } from "./Atoms/ConfirmModal";

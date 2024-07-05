@@ -1,0 +1,18 @@
+{
+  "name": "config",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "exports": {
+    "./tsconfig": {
+      "default": "./tsconfig.json"
+    },
+    "./tailwind": {
+      "default": "./tailwind-preset.cjs"
+    }
+  },
+  "dependencies": {
+    "tailwind-gradient-mask-image": "^1.2.0",
+    "tailwind-scrollbar": "^3.1.0"
+  }
+}

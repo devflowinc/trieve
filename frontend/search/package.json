@@ -22,6 +22,7 @@
     "solid-js": "^1.4.3"
   },
   "devDependencies": {
+    "config": "*",
     "@tailwindcss/forms": "^0.5.3",
     "@types/sanitize-html": "^2.9.5",
     "@typescript-eslint/eslint-plugin": "^7.14.1",

@@ -19,7 +19,7 @@ import {
   type ChunkBookmarksDTO,
   type ChunkGroupDTO,
   type ChunkMetadata,
-} from "../../utils/apiTypes";
+} from "../utils/apiTypes";
 import InputRowsForm from "./Atoms/InputRowsForm";
 import { VsBookmark } from "solid-icons/vs";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";

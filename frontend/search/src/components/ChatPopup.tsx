@@ -17,7 +17,7 @@ import {
   type Message,
   messageRoleFromIndex,
   ScoreChunkDTO,
-} from "../../utils/apiTypes";
+} from "../utils/apiTypes";
 import { AfMessage } from "./Atoms/AfMessage";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 

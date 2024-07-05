@@ -1,6 +1,6 @@
 import { createResource, useContext } from "solid-js";
 import { DatasetAndUserContext } from "../components/Contexts/DatasetAndUserContext";
-import { DatasetDTO } from "../../utils/apiTypes";
+import { DatasetDTO } from "../utils/apiTypes";
 
 const apiHost = import.meta.env.VITE_API_HOST as string;
 
