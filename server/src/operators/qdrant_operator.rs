@@ -863,7 +863,7 @@ pub async fn search_qdrant_query(
     )
     .await?;
 
-    let data: Vec<SearchPoints> = queries
+    let search_point_req_payloads: Vec<SearchPoints> = queries
         .into_iter()
         .map(|query| match query.vector {
             VectorType::Sparse(vector) => {
@@ -923,14 +923,14 @@ pub async fn search_qdrant_query(
 
     let batch_points = SearchBatchPoints {
         collection_name: qdrant_collection.to_string(),
-        search_points: data.clone(),
+        search_points: search_point_req_payloads.clone(),
         timeout: Some(60),
         ..Default::default()
     };
 
     let search_response_future = qdrant_client.search_batch_points(&batch_points);
 
-    let count_query = data
+    let count_query = search_point_req_payloads
         .iter()
         .map(|query| CountPoints {
             collection_name: qdrant_collection.to_string(),
@@ -1468,4 +1468,104 @@ pub async fn scroll_qdrant_collection_ids(
         });
 
     Ok((point_ids, offset))
+}
+
+pub async fn count_qdrant_query(
+    limit: u64,
+    queries: Vec<QdrantSearchQuery>,
+    config: ServerDatasetConfiguration,
+) -> Result<u64, ServiceError> {
+    if limit == 0 {
+        return Ok(0);
+    }
+
+    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+
+    let search_point_req_payloads: Vec<SearchPoints> = queries
+        .into_iter()
+        .map(|query| match query.vector {
+            VectorType::Sparse(vector) => {
+                let sparse_vector: Vector = vector.into();
+                Ok(SearchPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: sparse_vector.data,
+                    sparse_indices: sparse_vector.indices,
+                    vector_name: Some("sparse_vectors".to_string()),
+                    limit,
+                    score_threshold: query.score_threshold,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    filter: Some(query.filter.clone()),
+                    timeout: Some(60),
+                    params: None,
+                    ..Default::default()
+                })
+            }
+            VectorType::Dense(embedding_vector) => {
+                let vector_name = match embedding_vector.len() {
+                    384 => "384_vectors",
+                    512 => "512_vectors",
+                    768 => "768_vectors",
+                    1024 => "1024_vectors",
+                    3072 => "3072_vectors",
+                    1536 => "1536_vectors",
+                    _ => {
+                        return Err(ServiceError::BadRequest(
+                            "Invalid embedding vector size".to_string(),
+                        ))
+                    }
+                };
+
+                Ok(SearchPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: embedding_vector,
+                    vector_name: Some(vector_name.to_string()),
+                    limit,
+                    score_threshold: query.score_threshold,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    filter: Some(query.filter.clone()),
+                    timeout: Some(60),
+                    params: Some(SearchParams {
+                        exact: Some(false),
+                        indexed_only: Some(config.INDEXED_ONLY),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            }
+        })
+        .collect::<Result<Vec<SearchPoints>, ServiceError>>()?;
+
+    let batch_points = SearchBatchPoints {
+        collection_name: qdrant_collection.to_string(),
+        search_points: search_point_req_payloads.clone(),
+        timeout: Some(60),
+        ..Default::default()
+    };
+
+    let search_batch_response = qdrant_client
+        .search_batch_points(&batch_points)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to search points on Qdrant to get count {:?}", e);
+            ServiceError::BadRequest("Failed to search points on Qdrant to get count".to_string())
+        })?;
+
+    let max_count = search_batch_response
+        .result
+        .iter()
+        .map(|batch_result| batch_result.result.len() as u64)
+        .collect::<Vec<u64>>()
+        .into_iter()
+        .max()
+        .unwrap_or(0);
+
+    Ok(max_count)
 }

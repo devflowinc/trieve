@@ -92,13 +92,14 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
         if (isUserDTO(data)) {
           setUser(data);
           setOrganizations(data.orgs);
-
           const orgId = getQueryParam("organization");
           if (orgId) {
             const organization = data.orgs.find((org) => org.id === orgId);
             if (organization) {
               setSelectedOrganization(organization);
             }
+          } else {
+            setSelectedOrganization(data.orgs[0]);
           }
         }
       })
@@ -110,17 +111,6 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
         });
       });
   };
-
-  createEffect(() => {
-    let organization = selectedOrganization();
-    if (!organization) {
-      const user_orgs = user()?.orgs;
-      if (user_orgs && user_orgs.length > 0) {
-        organization = user_orgs[0];
-        setSelectedOrganization(organization);
-      }
-    }
-  });
 
   createEffect(() => {
     const api_host: string = import.meta.env.VITE_API_HOST as string;

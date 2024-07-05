@@ -8,8 +8,8 @@ use super::group_operator::{
 };
 use super::model_operator::{create_embedding, cross_encoder, get_sparse_vector};
 use super::qdrant_operator::{
-    get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery,
-    VectorType,
+    count_qdrant_query, get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults,
+    QdrantSearchQuery, VectorType,
 };
 use crate::data::models::{
     convert_to_date_time, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes, ConditionType,
@@ -18,8 +18,8 @@ use crate::data::models::{
 };
 use crate::get_env;
 use crate::handlers::chunk_handler::{
-    AutocompleteReqPayload, ChunkFilter, ParsedQuery, SearchChunkQueryResponseBody,
-    SearchChunksReqPayload,
+    AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
+    ParsedQuery, SearchChunkQueryResponseBody, SearchChunksReqPayload,
 };
 use crate::handlers::group_handler::{
     SearchOverGroupsData, SearchWithinGroupData, SearchWithinGroupResults,
@@ -2464,4 +2464,95 @@ pub async fn autocomplete_fulltext_chunks(
     transaction.finish();
 
     Ok(result_chunks)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn count_semantic_chunks(
+    data: CountChunksReqPayload,
+    parsed_query: ParsedQuery,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+    config: &ServerDatasetConfiguration,
+) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let embedding_vector =
+        create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?;
+    let qdrant_query = RetrievePointQuery {
+        vector: VectorType::Dense(embedding_vector),
+        score_threshold: data.score_threshold,
+        filter: data.filters.clone(),
+    }
+    .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
+    .await?;
+
+    let count = count_qdrant_query(100000, vec![qdrant_query], config.clone()).await? as u32;
+
+    Ok(CountChunkQueryResponseBody { count })
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn count_full_text_chunks(
+    data: CountChunksReqPayload,
+    parsed_query: ParsedQuery,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+    config: &ServerDatasetConfiguration,
+) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
+    let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    let qdrant_query = RetrievePointQuery {
+        vector: VectorType::Sparse(sparse_vector),
+        score_threshold: data.score_threshold,
+        filter: data.filters.clone(),
+    }
+    .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
+    .await?;
+
+    let count = count_qdrant_query(100000, vec![qdrant_query], config.clone()).await? as u32;
+
+    Ok(CountChunkQueryResponseBody { count })
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn count_hybrid_chunks(
+    data: CountChunksReqPayload,
+    parsed_query: ParsedQuery,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+    config: &ServerDatasetConfiguration,
+) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+
+    let dense_vector_future =
+        create_embedding(data.query.clone(), None, "query", dataset_config.clone());
+
+    let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), "query");
+
+    let (dense_vector, sparse_vector) =
+        futures::try_join!(dense_vector_future, sparse_vector_future)?;
+
+    let qdrant_queries = vec![
+        RetrievePointQuery {
+            vector: VectorType::Dense(dense_vector),
+            score_threshold: None,
+            filter: data.filters.clone(),
+        }
+        .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
+        .await?,
+        RetrievePointQuery {
+            vector: VectorType::Sparse(sparse_vector),
+            score_threshold: None,
+            filter: data.filters.clone(),
+        }
+        .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
+        .await?,
+    ];
+
+    let count = count_qdrant_query(100000, qdrant_queries, config.clone()).await? as u32;
+
+    Ok(CountChunkQueryResponseBody { count })
 }

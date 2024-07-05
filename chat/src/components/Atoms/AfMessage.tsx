@@ -1,4 +1,13 @@
-import { BiRegularEdit, BiSolidUserRectangle } from "solid-icons/bi";
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import {
+  BiRegularClipboard,
+  BiRegularEdit,
+  BiSolidCheckSquare,
+  BiSolidUserRectangle,
+} from "solid-icons/bi";
 import { AiFillRobot } from "solid-icons/ai";
 import {
   Accessor,
@@ -8,11 +17,16 @@ import {
   createMemo,
   createSignal,
   onCleanup,
+  Switch,
+  Match,
 } from "solid-js";
 import { ChunkMetadataWithVotes } from "../../utils/apiTypes";
-import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
-import sanitizeHtml from "sanitize-html";
+import ScoreChunk from "../ScoreChunk";
 import Resizable from "@corvu/resizable";
+import { SolidMarkdown } from "solid-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import rehypeSanitize from "rehype-sanitize";
 
 export interface AfMessageProps {
   normalChat: boolean;
@@ -32,7 +46,7 @@ export const AfMessage = (props: AfMessageProps) => {
   >([]);
   const [metadata, setMetadata] = createSignal<ChunkMetadataWithVotes[]>([]);
 
-  const [sizes, setSizes] = createSignal([50, 50]);
+  const [sizes, setSizes] = createSignal([0.5, 0.5]);
 
   // Used to syncrhonize the response height with the citations height
   // CSS is not enough
@@ -71,6 +85,9 @@ export const AfMessage = (props: AfMessageProps) => {
     const height = Math.max(leftColumn?.clientHeight || 0, 500);
     if (rightColumn) {
       rightColumn.style.maxHeight = `${height}px`;
+      if (leftColumn) {
+        leftColumn.style.minHeight = `${height}px`;
+      }
     }
   };
 
@@ -131,9 +148,11 @@ export const AfMessage = (props: AfMessageProps) => {
         }
       }
     }
+
     chunkNumList.sort((a, b) => a - b);
-    for (const num of chunkNumList) {
-      const chunk = chunkMetadatas()[num - 1];
+
+    const chunksReceived = chunkMetadatas();
+    for (const chunk of chunksReceived) {
       if (!metadata().includes(chunk)) {
         // the linter does not understand that the chunk can sometimes be undefined or null
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -155,9 +174,10 @@ export const AfMessage = (props: AfMessageProps) => {
         }}
       >
         <Resizable.Panel
+          minSize={0.1}
           ref={setLeftColumnRef}
           classList={{
-            "dark:text-white self-start group grow shadow-sm rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
+            "dark:text-white self-start group grow shadow-sm w-full h-full rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
               true,
             "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
               props.role === "assistant",
@@ -166,7 +186,7 @@ export const AfMessage = (props: AfMessageProps) => {
             "md:mr-16": props.role === "assistant" && metadata().length <= 0,
           }}
         >
-          <div class="flex items-center gap-4 self-start text-black dark:text-neutral-100 md:flex-row">
+          <div class="flex w-full items-center gap-4 self-start text-black dark:text-neutral-100 md:flex-row">
             <div class="mt-1 self-start">
               {props.role === "user" ? (
                 <BiSolidUserRectangle class="fill-current" />
@@ -183,35 +203,213 @@ export const AfMessage = (props: AfMessageProps) => {
             >
               <Show
                 fallback={
-                  <textarea
-                    id="new-message-content-textarea"
-                    class="w-full whitespace-pre-wrap rounded border border-neutral-300 bg-neutral-200/80 p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
-                    placeholder="Write a question or prompt for the assistant..."
-                    value={editingMessageContent()}
-                    onInput={(e) => resizeTextarea(e.target)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") {
-                        setEditing(false);
-                      }
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        props.onEdit(editingMessageContent());
-                        setEditedContent(editingMessageContent());
-                        setEditing(false);
-                      }
-                    }}
-                    rows="1"
-                  />
+                  <div class="flex w-full flex-col items-start gap-y-2">
+                    <textarea
+                      id="new-message-content-textarea"
+                      class="min-h-[200px] w-full min-w-[300px] whitespace-pre-wrap rounded border border-neutral-300 bg-neutral-200/80 p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 md:min-w-[500px]"
+                      placeholder="Write a question or prompt for the assistant..."
+                      value={editingMessageContent()}
+                      onInput={(e) => resizeTextarea(e.target)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") {
+                          setEditing(false);
+                        }
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          props.onEdit(editingMessageContent());
+                          setEditedContent(editingMessageContent());
+                          setEditing(false);
+                        }
+                      }}
+                      rows="1"
+                    />
+                    <div class="flex w-full justify-end gap-2">
+                      <button
+                        class="rounded bg-red-500 px-2 py-1 text-neutral-600 hover:bg-red-600 dark:bg-red-600 dark:text-neutral-400 dark:hover:bg-red-700"
+                        onClick={() => setEditing(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        class="rounded bg-green-500 px-2 py-1 text-neutral-600 hover:bg-green-600 dark:text-neutral-400"
+                        onClick={() => {
+                          props.onEdit(editingMessageContent());
+                          setEditedContent(editingMessageContent());
+                          setEditing(false);
+                        }}
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
                 }
                 when={!editing()}
               >
-                <div
-                  class="text-black dark:text-neutral-50"
-                  // eslint-disable-next-line solid/no-innerhtml
-                  innerHTML={sanitizeHtml(
-                    editedContent() || displayMessage().content.trimStart(),
-                    sanitzerOptions,
-                  )}
+                <SolidMarkdown
+                  remarkPlugins={[remarkBreaks, remarkGfm]}
+                  rehypePlugins={[rehypeSanitize]}
+                  class="w-full select-none space-y-2"
+                  components={{
+                    h1: (props) => {
+                      return (
+                        <h1 class="mb-4 text-4xl font-bold dark:bg-neutral-700 dark:text-white">
+                          {props.children}
+                        </h1>
+                      );
+                    },
+                    h2: (props) => {
+                      return (
+                        <h2 class="mb-3 text-3xl font-semibold dark:text-white">
+                          {props.children}
+                        </h2>
+                      );
+                    },
+                    h3: (props) => {
+                      return (
+                        <h3 class="mb-2 text-2xl font-medium dark:text-white">
+                          {props.children}
+                        </h3>
+                      );
+                    },
+                    h4: (props) => {
+                      return (
+                        <h4 class="mb-2 text-xl font-medium dark:text-white">
+                          {props.children}
+                        </h4>
+                      );
+                    },
+                    h5: (props) => {
+                      return (
+                        <h5 class="mb-1 text-lg font-medium dark:text-white">
+                          {props.children}
+                        </h5>
+                      );
+                    },
+                    h6: (props) => {
+                      return (
+                        <h6 class="mb-1 text-base font-medium dark:text-white">
+                          {props.children}
+                        </h6>
+                      );
+                    },
+                    code: (props) => {
+                      const [codeBlock, setCodeBlock] = createSignal();
+                      const [isCopied, setIsCopied] = createSignal(false);
+
+                      createEffect(() => {
+                        if (isCopied()) {
+                          const timeout = setTimeout(() => {
+                            setIsCopied(false);
+                          }, 800);
+                          return () => {
+                            clearTimeout(timeout);
+                          };
+                        }
+                      });
+
+                      return (
+                        <div class="relative w-full rounded-lg bg-gray-100 px-4 py-2 dark:bg-neutral-700">
+                          <button
+                            class="absolute right-2 top-2 p-1 text-xs hover:text-fuchsia-500 dark:text-white dark:hover:text-fuchsia-500"
+                            onClick={() => {
+                              const code = (codeBlock() as any).innerText;
+
+                              navigator.clipboard.writeText(code).then(
+                                () => {
+                                  setIsCopied(true);
+                                },
+                                (err) => {
+                                  console.error("failed to copy", err);
+                                },
+                              );
+                            }}
+                          >
+                            <Switch>
+                              <Match when={isCopied()}>
+                                <BiSolidCheckSquare class="h-5 w-5 text-green-500" />
+                              </Match>
+                              <Match when={!isCopied()}>
+                                <BiRegularClipboard class="h-5 w-5" />
+                              </Match>
+                            </Switch>
+                          </button>
+
+                          <code ref={setCodeBlock}>{props.children}</code>
+                        </div>
+                      );
+                    },
+                    a: (props) => {
+                      return (
+                        <a class="underline" href={props.href}>
+                          {props.children}
+                        </a>
+                      );
+                    },
+                    blockquote: (props) => {
+                      return (
+                        <blockquote class="my-4 border-l-4 border-gray-300 bg-gray-100 p-2 py-2 pl-4 italic text-gray-700 dark:bg-neutral-700 dark:text-white">
+                          {props.children}
+                        </blockquote>
+                      );
+                    },
+                    ul: (props) => {
+                      return (
+                        <ul class="my-4 list-outside list-disc space-y-2 pl-5">
+                          {props.children}
+                        </ul>
+                      );
+                    },
+                    ol: (props) => {
+                      return (
+                        <ol class="my-4 list-outside list-decimal space-y-2 pl-5">
+                          {props.children}
+                        </ol>
+                      );
+                    },
+                    img: (props) => {
+                      return (
+                        <img
+                          src={props.src}
+                          alt={props.alt}
+                          class="my-4 h-auto max-w-full rounded-lg shadow-md"
+                        />
+                      );
+                    },
+                    table: (props) => (
+                      <table class="my-4 border-collapse">
+                        {props.children}
+                      </table>
+                    ),
+
+                    thead: (props) => (
+                      <thead class="bg-gray-100">{props.children}</thead>
+                    ),
+
+                    tbody: (props) => (
+                      <tbody class="bg-white">{props.children}</tbody>
+                    ),
+
+                    tr: (props) => (
+                      <tr class="border-b border-gray-200 hover:bg-gray-50">
+                        {props.children}
+                      </tr>
+                    ),
+
+                    th: (props) => (
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        {props.children}
+                      </th>
+                    ),
+
+                    td: (props) => (
+                      <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                        {props.children}
+                      </td>
+                    ),
+                  }}
+                  children={
+                    editedContent() || displayMessage().content.trimStart()
+                  }
                 />
               </Show>
               <Show when={!displayMessage().content}>
@@ -234,7 +432,6 @@ export const AfMessage = (props: AfMessageProps) => {
             </button>
           </Show>
         </Resizable.Panel>
-        <div class="block h-10 lg:hidden" />
         <Show
           when={
             props.role === "assistant" &&
@@ -245,19 +442,14 @@ export const AfMessage = (props: AfMessageProps) => {
         >
           <Resizable.Handle
             aria-label="Resize response and sources"
-            classList={{
-              "ml-2 hover:bg-neutral-300 w-2 rounded transition-colors": true,
-            }}
+            class="ml-2 mr-1 w-1 rounded bg-neutral-400 transition-colors hover:bg-fuchsia-300 focus:outline-none active:bg-fuchsia-300 dark:bg-neutral-600 dark:hover:bg-fuchsia-300 dark:active:bg-fuchsia-300"
           />
         </Show>
         <Show when={metadata() && metadata().length > 0}>
           <Resizable.Panel
             minSize={0.1}
             ref={setRightColumnRef}
-            // style={{
-            //   height: height(),
-            // }}
-            class="relative shrink flex-col space-y-3 self-start overflow-scroll overflow-x-hidden overflow-y-scroll scrollbar-track-neutral-200 scrollbar-w-2.5 dark:scrollbar-track-zinc-700"
+            class="relative shrink flex-col space-y-3 self-start overflow-scroll overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600"
           >
             <div>
               <For each={chunkMetadatas()}>

@@ -1,9 +1,9 @@
-use crate::data::models::ChunkMetadataStringTagSet;
-use crate::{data::models::ChunkGroupBookmark, errors::ServiceError};
+use crate::errors::ServiceError;
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTable, Dataset, FileGroup,
-        Pool, QdrantPayload, RedisPool, ServerDatasetConfiguration, UnifiedId,
+        ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataStringTagSet,
+        ChunkMetadataTable, Dataset, FileGroup, Pool, QdrantPayload, RedisPool,
+        ServerDatasetConfiguration, UnifiedId,
     },
     get_env,
     operators::{

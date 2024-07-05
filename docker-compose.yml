@@ -225,10 +225,27 @@ services:
         condition: service_healthy
     env_file: .env
 
+  dashboard:
+    image: trieve/dashboard
+    container_name: dashboard
+    build: 
+      context: .
+      dockerfile: ./dashboard/Dockerfile
+    networks:
+      - app-network
+    ports:
+      - 5173:80
+    environment:
+      - VITE_API_HOST=${VITE_API_HOST}
+      - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
+      - VITE_CHAT_UI_URL=${VITE_CHAT_UI_URL}
+
   chat:
     image: trieve/chat
     container_name: chat
-    build: ./chat/
+    build:
+      context: .
+      dockerfile: ./chat/Dockerfile
     networks:
       - app-network
     ports:
@@ -240,26 +257,28 @@ services:
   search:
     image: trieve/search
     container_name: search
-    build: ./search/
+    build: 
+      context: .
+      dockerfile: /search/
     networks:
       - app-network
     ports:
       - 5174:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
-
-  dashboard:
-    image: trieve/dashboard
-    container_name: dashboard
-    build: ./dashboard/
+    
+  analytics-site:
+    image: trieve/analytics-site
+    container_name: analytics-site
+    build: 
+      context: .
+      dockerfile: ./analytics-site/Dockerfile
     networks:
       - app-network
     ports:
-      - 5173:80
+      - 5176:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
-      - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
-      - VITE_CHAT_UI_URL=${VITE_CHAT_UI_URL}
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7

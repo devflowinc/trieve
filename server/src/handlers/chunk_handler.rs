@@ -14,11 +14,13 @@ use crate::operators::chunk_operator::*;
 use crate::operators::clickhouse_operator::{
     get_latency_from_header, send_to_clickhouse, ClickHouseEvent,
 };
+use crate::operators::dataset_operator::get_dataset_usage_query;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
-    autocomplete_fulltext_chunks, autocomplete_semantic_chunks, search_full_text_chunks,
-    search_hybrid_chunks, search_semantic_chunks,
+    autocomplete_fulltext_chunks, autocomplete_semantic_chunks, count_full_text_chunks,
+    count_hybrid_chunks, count_semantic_chunks, search_full_text_chunks, search_hybrid_chunks,
+    search_semantic_chunks,
 };
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -63,9 +65,7 @@ pub struct DistancePhrase {
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
     "metadata": {"key1": "value1", "key2": "value2"},
-    "chunk_vector": [0.1, 0.2, 0.3],
     "tracking_id": "tracking_id",
-    "upsert_by_tracking_id": true,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
     "time_stamp": "2021-01-01T00:00:00",
@@ -74,10 +74,8 @@ pub struct DistancePhrase {
         "lon": 151
     },
     "image_urls": ["https://example.com/red", "https://example.com/blue"],
-    "weight": 0.5,
-    "split_avg": false,
-    "convert_html_to_text": false,
-    "boost_phrase": {"phrase": "HTML", "boost": 5.0}
+    "boost_phrase": {"phrase": "foo", "boost_factor": 5.0},
+    "distance_phrase": {"phrase": "flagship", "distance_factor": 0.5}
 }))]
 pub struct ChunkReqPayload {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
@@ -90,8 +88,6 @@ pub struct ChunkReqPayload {
     pub num_value: Option<f64>,
     /// Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub metadata: Option<serde_json::Value>,
-    /// Chunk_vector is a vector of floats which can be used instead of generating a new embedding. This is useful for when you are using a pre-embedded dataset. If this is not provided, the innerText of the chunk_html will be used to create the embedding.
-    pub chunk_vector: Option<Vec<f32>>,
     /// Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
     pub tracking_id: Option<String>,
     /// Upsert when a chunk with the same tracking_id exists. By default this is false, and the request will fail if a chunk with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.
@@ -139,7 +135,6 @@ pub enum ReturnQueuedChunk {
         "link": "https://example.com",
         "tag_set": ["tag1", "tag2"],
         "metadata": {"key1": "value1", "key2": "value2"},
-        "chunk_vector": [0.1, 0.2, 0.3],
         "tracking_id": "tracking_id",
         "time_stamp": "2021-01-01T00:00:00",
         "weight": 0.5
@@ -161,7 +156,6 @@ pub struct SingleQueuedChunkResponse {
         "tag_set": ["tag1", "tag2"],
         "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
         "metadata": {"key1": "value1", "key2": "value2"},
-        "chunk_vector": [0.1, 0.2, 0.3],
         "tracking_id": "tracking_id",
         "time_stamp": "2021-01-01T00:00:00",
         "weight": 0.5
@@ -172,7 +166,6 @@ pub struct SingleQueuedChunkResponse {
         "tag_set": ["tag1", "tag2"],
         "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
         "metadata": {"key1": "value1", "key2": "value2"},
-        "chunk_vector": [0.1, 0.2, 0.3],
         "tracking_id": "tracking_id",
         "time_stamp": "2021-01-01T00:00:00",
         "weight": 0.5
@@ -209,7 +202,6 @@ pub struct BulkUploadIngestionMessage {
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
     "metadata": {"key1": "value1", "key2": "value2"},
-    "chunk_vector": [0.1, 0.2, 0.3],
     "tracking_id": "tracking_id",
     "upsert_by_tracking_id": true,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
@@ -231,7 +223,6 @@ pub struct CreateSingleChunkReqPayload(pub ChunkReqPayload);
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
     "metadata": {"key1": "value1", "key2": "value2"},
-    "chunk_vector": [0.1, 0.2, 0.3],
     "tracking_id": "tracking_id",
     "upsert_by_tracking_id": true,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
@@ -242,15 +233,11 @@ pub struct CreateSingleChunkReqPayload(pub ChunkReqPayload);
         "lat": -34,
         "lon": 151
     },
-    "weight": 0.5,
-    "split_avg": false,
-    "convert_html_to_text": false,
 }, {
     "chunk_html": "<p>Some more HTML content</p>",
     "link": "https://explain.com",
     "tag_set": ["tag3", "tag4"],
     "metadata": {"key1": "value1", "key2": "value2"},
-    "chunk_vector": [0.1, 0.2, 0.3],
     "tracking_id": "tracking_id",
     "upsert_by_tracking_id": true,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
@@ -262,8 +249,6 @@ pub struct CreateSingleChunkReqPayload(pub ChunkReqPayload);
         "lon": 151
     },
     "weight": 0.5,
-    "split_avg": false,
-    "convert_html_to_text": false,
 }]
 ))]
 pub struct CreateBatchChunkReqPayload(pub Vec<ChunkReqPayload>);
@@ -311,29 +296,34 @@ pub async fn create_chunk(
     };
 
     let mut timer = Timer::new();
-    let chunk_count = get_row_count_for_organization_id_query(
-        dataset_org_plan_sub.organization.organization.id,
-        pool.clone(),
-    )
-    .await?;
-    timer.add("get dataset count");
+
+    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
+    if unlimited == "false" {
+        let chunk_count = get_row_count_for_organization_id_query(
+            dataset_org_plan_sub.organization.organization.id,
+            pool.clone(),
+        )
+        .await?;
+
+        if chunk_count + chunks.len()
+            > dataset_org_plan_sub
+                .organization
+                .plan
+                .unwrap_or_default()
+                .chunk_count as usize
+        {
+            return Ok(HttpResponse::UpgradeRequired()
+                .json(json!({"message": "Must upgrade your plan to add more chunks"})));
+        }
+
+        timer.add("get dataset count");
+    }
 
     if chunks.len() > 120 {
         return Err(ServiceError::BadRequest(
             "Too many chunks provided in bulk. The limit is 120 chunks per bulk upload".to_string(),
         )
         .into());
-    }
-
-    if chunk_count + chunks.len()
-        > dataset_org_plan_sub
-            .organization
-            .plan
-            .unwrap_or_default()
-            .chunk_count as usize
-    {
-        return Ok(HttpResponse::UpgradeRequired()
-            .json(json!({"message": "Must upgrade your plan to add more chunks"})));
     }
 
     let server_dataset_configuration = ServerDatasetConfiguration::from_json(
@@ -1429,6 +1419,123 @@ pub async fn get_chunk_by_id(
     } else {
         Err(ServiceError::NotFound("Chunk not found".to_string()))
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[schema(example = json!({
+    "search_type": "semantic",
+    "query": "Some search query",
+    "score_threshold": 0.5
+}))]
+pub struct CountChunksReqPayload {
+    /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid" it will pull in the count for both semantic and full-text searches and return the larger of the two. "semantic" will pull in the count for the nearest cosine distant vectors. "fulltext" will pull in the count for full-text results based on SPLADE.
+    pub search_type: String,
+    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
+    pub query: String,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. Will restrict the count to only chunks with a score above the threshold.
+    pub score_threshold: Option<f32>,
+    /// Set limit to restrict the maximum number of chunks to count. This is useful for when you want to reduce the latency of the count operation. By default the limit will be the number of chunks in the dataset.
+    pub limit: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+pub struct CountChunkQueryResponseBody {
+    pub count: u32,
+}
+
+/// Count chunks above threshold
+///
+/// This route can be used to determine the number of chunks that match a given search criteria including filters and score threshold. It may be high latency for large datasets. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+#[utoipa::path(
+    get,
+    path = "/chunk/count",
+    context_path = "/api",
+    tag = "Chunk",
+    responses(
+        (status = 200, description = "Number of chunks satisfying the query", body = CountChunkQueryResponseBody),
+        (status = 404, description = "Failed to count chunks", body = ErrorResponseBody)
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn count_chunks(
+    data: web::Json<CountChunksReqPayload>,
+    _user: AdminOnly,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+    let parsed_query = parse_query(data.query.clone());
+
+    let limit = match data.limit {
+        Some(limit) => limit,
+        None => {
+            let dataset_usage =
+                get_dataset_usage_query(dataset_org_plan_sub.dataset.id, pool.clone()).await?;
+            dataset_usage.chunk_count as u64
+        }
+    };
+
+    let search_req_data = CountChunksReqPayload {
+        limit: Some(limit),
+        ..data.clone()
+    };
+
+    let result_chunks = match data.search_type.as_str() {
+        "fulltext" | "full-text" | "full_text" | "full text" => {
+            if !server_dataset_config.FULLTEXT_ENABLED {
+                return Err(ServiceError::BadRequest(
+                    "Fulltext search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
+
+            count_full_text_chunks(
+                search_req_data.clone(),
+                parsed_query,
+                pool,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
+            )
+            .await?
+        }
+        "hybrid" => {
+            count_hybrid_chunks(
+                search_req_data.clone(),
+                parsed_query,
+                pool,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
+            )
+            .await?
+        }
+        "semantic" => {
+            count_semantic_chunks(
+                search_req_data.clone(),
+                parsed_query,
+                pool,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
+            )
+            .await?
+        }
+        _ => {
+            return Err(ServiceError::BadRequest(
+                "Invalid search type. Must be one of 'semantic', 'fulltext', or 'hybrid'".into(),
+            )
+            .into())
+        }
+    };
+    Ok(HttpResponse::Ok().json(result_chunks))
 }
 
 /// Get Chunk By Tracking Id

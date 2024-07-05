@@ -182,7 +182,6 @@ pub async fn create_file_chunks(
                 .map(|tracking_id| format!("{}|{}", tracking_id, i)),
             upsert_by_tracking_id: None,
             time_stamp: upload_file_data.time_stamp.clone(),
-            chunk_vector: None,
             weight: None,
             split_avg: None,
             convert_html_to_text: None,

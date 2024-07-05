@@ -2,25 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-mark > div > * {
+#scoreChunk mark > div > * {
   background-color: #fffebd;
   color: #000;
   font-weight: bolder;
   width: fit-content;
 }
 
-mark > p {
+#scoreChunk mark > p {
   background-color: #fffebd;
   color: #000;
   font-weight: bolder;
   width: fit-content;
 }
 
-mark {
+#scoreChunk mark {
   background-color: #fffebd;
 }
 
-b > mark > h1, h2, h3, h4, h5, h6 {
+#scoreChunk b > mark > h1,
+#scoreChunk b > mark > h2,
+#scoreChunk b > mark > h3,
+#scoreChunk b > mark > h4,
+#scoreChunk b > mark > h5,
+#scoreChunk b > mark > h6 {
   background-color: #fffebd;
   color: #000;
   font-weight: bolder;
