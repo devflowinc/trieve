@@ -7,8 +7,8 @@ concurrency:
 on:
   pull_request:
     paths:
-      - "analytics/**"
-      - "shared/**"
+      - "frontend/analytics/**"
+      - "frontend/shared/**"
 
 jobs:
   build-test:
