@@ -7,8 +7,8 @@ concurrency:
 on:
   pull_request:
     paths:
-      - "dashboard/**"
-      - "shared/**"
+      - "frontend/dashboard/**"
+      - "frontend/shared/**"
 jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204
