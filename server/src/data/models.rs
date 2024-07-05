@@ -1639,6 +1639,7 @@ impl DatasetAndUsage {
     "EMBEDDING_SIZE": 1536,
     "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
     "FULLTEXT_ENABLED": true,
+    "SEMANTIC_ENABLED": true,
     "EMBEDDING_QUERY_PREFIX": "Search for",
     "USE_MESSAGE_TO_QUERY_PROMPT": false,
     "FREQUENCY_PENALTY": 0.0,
@@ -1660,6 +1661,7 @@ pub struct ServerDatasetConfiguration {
     pub EMBEDDING_SIZE: usize,
     pub LLM_DEFAULT_MODEL: String,
     pub FULLTEXT_ENABLED: bool,
+    pub SEMANTIC_ENABLED: bool,
     pub EMBEDDING_QUERY_PREFIX: String,
     pub USE_MESSAGE_TO_QUERY_PROMPT: bool,
     pub FREQUENCY_PENALTY: Option<f64>,
@@ -1774,6 +1776,11 @@ impl ServerDatasetConfiguration {
                 .unwrap_or("gpt-3.5-turbo-1106".to_string()),
             FULLTEXT_ENABLED: configuration
                 .get("FULLTEXT_ENABLED")
+                .unwrap_or(&json!(true))
+                .as_bool()
+                .unwrap_or(true),
+            SEMANTIC_ENABLED: configuration
+                .get("SEMANTIC_ENABLED")
                 .unwrap_or(&json!(true))
                 .as_bool()
                 .unwrap_or(true),
