@@ -56,20 +56,20 @@ pub async fn get_group_ids_from_tracking_ids_query(
     tracking_ids: Vec<String>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<uuid::Uuid>, ServiceError> {
+) -> Result<Vec<(uuid::Uuid, Option<String>)>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let group_ids = chunk_group_columns::chunk_group
+    let group_id_tracking_ids = chunk_group_columns::chunk_group
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
         .filter(chunk_group_columns::tracking_id.eq_any(tracking_ids))
-        .select(chunk_group_columns::id)
-        .load::<uuid::Uuid>(&mut conn)
+        .select((chunk_group_columns::id, chunk_group_columns::tracking_id))
+        .load::<(uuid::Uuid, Option<String>)>(&mut conn)
         .await
         .map_err(|_err| ServiceError::BadRequest("Groups not found".to_string()))?;
 
-    Ok(group_ids)
+    Ok(group_id_tracking_ids)
 }
 
 #[tracing::instrument(skip(pool))]

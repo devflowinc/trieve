@@ -1531,16 +1531,38 @@ pub async fn create_chunk_metadata(
             }
         }
 
-        let group_ids_from_group_tracking_ids = if let Some(group_tracking_ids) =
-            chunk.group_tracking_ids.clone()
-        {
-            get_group_ids_from_tracking_ids_query(group_tracking_ids, dataset_uuid, pool.clone())
-                .await
-                .ok()
-                .unwrap_or(vec![])
-        } else {
-            vec![]
-        };
+        let group_ids_from_group_tracking_ids =
+            if let Some(group_tracking_ids) = chunk.group_tracking_ids.clone() {
+                let group_id_tracking_ids = get_group_ids_from_tracking_ids_query(
+                    group_tracking_ids.clone(),
+                    dataset_uuid,
+                    pool.clone(),
+                )
+                .await?;
+
+                let group_ids = group_id_tracking_ids
+                    .clone()
+                    .into_iter()
+                    .map(|(group_id, _)| group_id)
+                    .collect::<Vec<uuid::Uuid>>();
+                let found_group_tracking_ids = group_id_tracking_ids
+                    .into_iter()
+                    .filter_map(|(_, group_tracking_id)| group_tracking_id)
+                    .collect::<Vec<String>>();
+
+                for group_tracking_id in group_tracking_ids {
+                    if !found_group_tracking_ids.contains(&group_tracking_id) {
+                        return Err(ServiceError::BadRequest(format!(
+                            "Group with tracking id {} does not exist",
+                            group_tracking_id
+                        )));
+                    }
+                }
+
+                group_ids
+            } else {
+                vec![]
+            };
 
         let initial_group_ids = chunk.group_ids.clone().unwrap_or_default();
         let mut chunk_only_group_ids = chunk.clone();
