@@ -3265,15 +3265,6 @@ impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-pub struct PGInsertQueueMessage {
-    pub chunk_metadatas: ChunkData,
-    pub upsert_by_tracking_id: bool,
-    pub dataset_id: uuid::Uuid,
-    pub dataset_config: ServerDatasetConfiguration,
-    pub attempt_number: u32,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ChunkData {
     pub chunk_metadata: ChunkMetadata,

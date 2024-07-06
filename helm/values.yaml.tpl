@@ -21,8 +21,6 @@ containers:
     tag: latest
   delete_worker:
     tag: latest
-  pg_worker:
-    tag: latest
   search:
     tag: latest
   chat:
