@@ -56,7 +56,7 @@ async fn main() -> Result<(), ServiceError> {
                 .cloned()
                 .collect::<Vec<uuid::Uuid>>();
 
-            if qdrant_point_ids_not_in_pg.len() > 0 {
+            if !qdrant_point_ids_not_in_pg.is_empty() {
                 println!(
                     "len of qdrant_point_ids_not_in_pg: {:?}",
                     qdrant_point_ids_not_in_pg.len()

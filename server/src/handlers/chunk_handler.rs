@@ -380,7 +380,7 @@ pub async fn create_chunk(
     timer.add("got redis connection");
 
     let mut pos_in_queue = 0;
-    if non_upsert_chunk_metadatas.len() > 0 {
+    if !non_upsert_chunk_metadatas.is_empty() {
         let serialized_message: String = serde_json::to_string(&non_upsert_chunk_ingestion_message)
             .map_err(|_| {
                 ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
@@ -393,7 +393,7 @@ pub async fn create_chunk(
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     }
-    if upsert_chunk_metadatas.len() > 0 {
+    if !upsert_chunk_metadatas.is_empty() {
         let serialized_message: String = serde_json::to_string(&upsert_chunk_ingestion_message)
             .map_err(|_| {
                 ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())

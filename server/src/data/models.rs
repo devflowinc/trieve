@@ -1188,15 +1188,15 @@ impl ChunkGroupAndFileId {
 
     pub fn to_group(&self) -> ChunkGroup {
         ChunkGroup {
-            id: self.id.clone(),
-            dataset_id: self.dataset_id.clone(),
+            id: self.id,
+            dataset_id: self.dataset_id,
             name: self.name.clone(),
             description: self.description.clone(),
             tracking_id: self.tracking_id.clone(),
             tag_set: self.tag_set.clone(),
             metadata: self.metadata.clone(),
-            created_at: self.created_at.clone(),
-            updated_at: self.updated_at.clone(),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
         }
     }
 }
@@ -3268,6 +3268,7 @@ impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct PGInsertQueueMessage {
     pub chunk_metadatas: ChunkData,
+    pub upsert_by_tracking_id: bool,
     pub dataset_id: uuid::Uuid,
     pub dataset_config: ServerDatasetConfiguration,
     pub attempt_number: u32,

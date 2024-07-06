@@ -83,7 +83,7 @@ impl Metrics {
     }
 
     pub async fn update_queue_gauges(
-        self: &Self,
+        &self,
         redis_pool: actix_web::web::Data<RedisPool>,
     ) -> Result<(), ServiceError> {
         let mut redis_conn = redis_pool

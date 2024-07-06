@@ -341,7 +341,7 @@ pub async fn send_to_clickhouse(
                     .bind(event.id)
                     .bind(&event.rag_type)
                     .bind(&event.user_message)
-                    .bind(&event.search_id)
+                    .bind(event.search_id)
                     .bind(&event.results)
                     .bind(&event.llm_response)
                     .bind(event.dataset_id)

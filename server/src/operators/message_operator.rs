@@ -407,15 +407,17 @@ pub async fn stream_response(
     let chunk_ids = result_chunks
         .score_chunks
         .iter()
-        .filter_map(|x| {
-            x.metadata
+        .filter_map(|score_chunk_dto| {
+            score_chunk_dto
+                .metadata
                 .clone()
                 .into_iter()
-                .find_map(|metadata| match metadata {
-                    ChunkMetadataTypes::ID(metadata) => Some(metadata.id),
-                    ChunkMetadataTypes::Metadata(metadata) => Some(metadata.id),
-                    ChunkMetadataTypes::Content(metadata) => Some(metadata.id),
+                .map(|metadata| match metadata {
+                    ChunkMetadataTypes::ID(chunk_metadata) => chunk_metadata.id,
+                    ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.id,
+                    ChunkMetadataTypes::Content(chunk_metadata) => chunk_metadata.id,
                 })
+                .next()
         })
         .collect::<Vec<uuid::Uuid>>();
 
