@@ -22,20 +22,12 @@ name = "ingestion-worker"
 path = "src/bin/ingestion-worker.rs"
 
 [[bin]]
-name = "bulk-ingestion-worker"
-path = "src/bin/bulk-ingestion-worker.rs"
-
-[[bin]]
 name = "file-worker"
 path = "src/bin/file-worker.rs"
 
 [[bin]]
 name = "grupdate-worker"
 path = "src/bin/grupdate-worker.rs"
-
-[[bin]]
-name = "pg-worker"
-path = "src/bin/pg-worker.rs"
 
 [[bin]]
 name = "redoc_ci"
