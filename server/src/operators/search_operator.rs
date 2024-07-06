@@ -909,10 +909,7 @@ pub async fn retrieve_chunks_for_groups(
         .collect_vec();
 
     let metadata_chunks = match data.slim_chunks.unwrap_or(false) && data.search_type != "hybrid" {
-        true => {
-            
-            get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
-        }
+        true => get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?,
         _ => {
             get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
                 .await?
@@ -1051,10 +1048,7 @@ pub async fn get_metadata_from_groups(
         .collect_vec();
 
     let chunk_metadatas = match slim_chunks {
-        Some(true) => {
-            
-            get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
-        }
+        Some(true) => get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?,
         _ => {
             get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
                 .await?
@@ -1171,10 +1165,8 @@ pub async fn retrieve_chunks_from_point_ids(
         .collect::<Vec<_>>();
 
     let metadata_chunks = if data.slim_chunks.unwrap_or(false) && data.search_type != "hybrid" {
-        
         get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
     } else if data.content_only.unwrap_or(false) {
-        
         get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?
     } else {
         get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
