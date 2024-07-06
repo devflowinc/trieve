@@ -79,7 +79,7 @@ async fn convert_group_tracking_ids_to_group_ids(
             get_group_ids_from_tracking_ids_query(matches, dataset_id, pool.clone())
                 .await?
                 .iter()
-                .map(|ids| MatchCondition::Text(ids.to_string()))
+                .map(|(id, _)| MatchCondition::Text(id.to_string()))
                 .collect();
 
         Ok(FieldCondition {
