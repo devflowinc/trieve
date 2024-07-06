@@ -8,6 +8,7 @@ import { DatasetContext } from "../contexts/DatasetContext";
 
 export const Sidebar = () => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
+  const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
   const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
   const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
 
@@ -83,6 +84,16 @@ export const Sidebar = () => {
                   class="flex items-center"
                 >
                   <span>RAG playground</span>{" "}
+                  <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
+                </a>
+              </div>
+              <div class="flex items-center text-neutral-800 hover:text-fuchsia-800">
+                <a
+                  href={`${analyticsUiURL}${orgDatasetParams()}`}
+                  target="_blank"
+                  class="flex items-center"
+                >
+                  Analytics playground{" "}
                   <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
                 </a>
               </div>

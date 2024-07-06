@@ -30,3 +30,5 @@ spec:
             value: {{ .Values.config.vite.searchUiUrl }}
           - name: VITE_CHAT_UI_URL
             value: {{ .Values.config.vite.chatUiUrl }}
+          - name: VITE_ANALYTICS_UI_URL
+            value: {{ .Values.config.vite.analyticsUiUrl }}

@@ -18,6 +18,7 @@ import { Dataset, DatasetUsageCount, DefaultError } from "shared/types";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { FaRegularClipboard } from "solid-icons/fa";
 import {
+  AiOutlineBarChart,
   AiOutlineComment,
   AiOutlineInfoCircle,
   AiOutlineSearch,
@@ -33,6 +34,7 @@ const SAMPLE_DATASET_SIZE = 921;
 
 export const DatasetStart = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
   const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
   const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
 
@@ -265,6 +267,21 @@ export const DatasetStart = () => {
                   title="Open RAG playground for this dataset"
                 >
                   <AiOutlineComment class="h-5 w-5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    window.open(
+                      `${analyticsUiURL}${orgDatasetParams(
+                        curDataset()?.id ?? "",
+                      )}`,
+                    );
+                  }}
+                  class="hover:text-fuchsia-500"
+                  title="Open analytics for this dataset"
+                >
+                  <AiOutlineBarChart class="h-5 w-5" />
                 </button>
               </div>
               <a
