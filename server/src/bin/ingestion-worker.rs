@@ -523,18 +523,20 @@ pub async fn bulk_upload_chunks(
             {
                 Ok(vectors) => Ok(vectors),
                 Err(err) => {
-                    bulk_revert_insert_chunk_metadata_query(
-                        inserted_chunk_metadata_ids.clone(),
-                        web_pool.clone(),
-                    )
-                    .await?;
+                    if !upsert_by_tracking_id_being_used {
+                        bulk_revert_insert_chunk_metadata_query(
+                            inserted_chunk_metadata_ids.clone(),
+                            web_pool.clone(),
+                        )
+                        .await?;
+                    }
                     Err(ServiceError::InternalServerError(format!(
                         "Failed to create embeddings: {:?}",
                         err
                     )))
                 }
             }?;
-            vectors.into_iter().map(|vec| Some(vec)).collect()
+            vectors.into_iter().map(Some).collect()
         }
         false => vec![None; content_and_boosts.len()],
     };
@@ -560,11 +562,13 @@ pub async fn bulk_upload_chunks(
         {
             Ok(vectors) => Ok(vectors),
             Err(err) => {
-                bulk_revert_insert_chunk_metadata_query(
-                    inserted_chunk_metadata_ids.clone(),
-                    web_pool.clone(),
-                )
-                .await?;
+                if !upsert_by_tracking_id_being_used {
+                    bulk_revert_insert_chunk_metadata_query(
+                        inserted_chunk_metadata_ids.clone(),
+                        web_pool.clone(),
+                    )
+                    .await?;
+                }
                 Err(err)
             }
         }
@@ -578,12 +582,71 @@ pub async fn bulk_upload_chunks(
 
     embedding_transaction.finish();
 
-    let qdrant_points = get_qdrant_points(
-        &ingestion_data,
-        embedding_vectors,
-        splade_vectors,
-        web_pool.clone(),
-    )
+    let qdrant_points = tokio_stream::iter(izip!(
+        ingestion_data.clone(),
+        embedding_vectors.iter(),
+        splade_vectors.iter(),
+    ))
+    .then(|(chunk_data, embedding_vector, splade_vector)| async {
+        let qdrant_point_id = chunk_data.chunk_metadata.qdrant_point_id;
+
+        let chunk_tags: Option<Vec<Option<String>>> =
+            if let Some(ref group_ids) = chunk_data.group_ids {
+                Some(
+                    get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
+                        .await?
+                        .iter()
+                        .filter_map(|group| group.tag_set.clone())
+                        .flatten()
+                        .dedup()
+                        .collect(),
+                )
+            } else {
+                None
+            };
+
+        let payload = QdrantPayload::new(
+            chunk_data.chunk_metadata,
+            chunk_data.group_ids,
+            None,
+            chunk_tags,
+        )
+        .into();
+
+        let mut vector_payload = HashMap::from([(
+            "sparse_vectors".to_string(),
+            Vector::from(splade_vector.clone()),
+        )]);
+
+        if embedding_vector.is_some() {
+            let vector = embedding_vector.clone().unwrap();
+            let vector_name = match vector.len() {
+                384 => "384_vectors",
+                512 => "512_vectors",
+                768 => "768_vectors",
+                1024 => "1024_vectors",
+                3072 => "3072_vectors",
+                1536 => "1536_vectors",
+                _ => {
+                    return Err(ServiceError::BadRequest(
+                        "Invalid embedding vector size".into(),
+                    ))
+                }
+            };
+            vector_payload.insert(
+                vector_name.to_string().clone(),
+                Vector::from(vector.clone()),
+            );
+        }
+
+        // If qdrant_point_id does not exist, does not get written to qdrant
+        Ok(PointStruct::new(
+            qdrant_point_id.to_string(),
+            vector_payload,
+            payload,
+        ))
+    })
+    .collect::<Vec<Result<PointStruct, ServiceError>>>()
     .await;
 
     if qdrant_points.iter().any(|point| point.is_err()) {
@@ -608,8 +671,10 @@ pub async fn bulk_upload_chunks(
     insert_tx.finish();
 
     if let Err(err) = create_point_result {
-        bulk_revert_insert_chunk_metadata_query(inserted_chunk_metadata_ids, web_pool.clone())
-            .await?;
+        if !upsert_by_tracking_id_being_used {
+            bulk_revert_insert_chunk_metadata_query(inserted_chunk_metadata_ids, web_pool.clone())
+                .await?;
+        }
 
         return Err(err);
     }
@@ -787,7 +852,7 @@ async fn upload_chunk(
                 None
             };
 
-        let payload =
+        let qdrant_payload =
             QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None, chunk_tags).into();
 
         let vector_name = match &embedding_vector {
@@ -817,7 +882,11 @@ async fn upload_chunk(
             );
         }
 
-        let point = PointStruct::new(qdrant_point_id.clone().to_string(), vector_payload, payload);
+        let point = PointStruct::new(
+            qdrant_point_id.clone().to_string(),
+            vector_payload,
+            qdrant_payload,
+        );
         let insert_tx = transaction.start_child(
             "calling_bulk_create_new_qdrant_points_query",
             "calling_bulk_create_new_qdrant_points_query",
@@ -826,8 +895,10 @@ async fn upload_chunk(
         if let Err(e) = bulk_upsert_qdrant_points_query(vec![point], dataset_config).await {
             log::error!("Failed to create qdrant point: {:?}", e);
 
-            bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone())
-                .await?;
+            if payload.upsert_by_tracking_id {
+                bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone())
+                    .await?;
+            }
 
             return Err(e);
         };
@@ -1026,78 +1097,4 @@ pub async fn readd_error_to_queue(
     }
 
     Ok(())
-}
-
-async fn get_qdrant_points(
-    ingestion_data: &Vec<ChunkData>,
-    embedding_vectors: Vec<Option<Vec<f32>>>,
-    splade_vectors: Vec<Vec<(u32, f32)>>,
-    web_pool: actix_web::web::Data<models::Pool>,
-) -> Vec<Result<PointStruct, ServiceError>> {
-    tokio_stream::iter(izip!(
-        ingestion_data.clone(),
-        embedding_vectors.iter(),
-        splade_vectors.iter(),
-    ))
-    .then(|(chunk_data, embedding_vector, splade_vector)| async {
-        let qdrant_point_id = chunk_data.chunk_metadata.qdrant_point_id;
-
-        let chunk_tags: Option<Vec<Option<String>>> =
-            if let Some(ref group_ids) = chunk_data.group_ids {
-                Some(
-                    get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
-                        .await?
-                        .iter()
-                        .filter_map(|group| group.tag_set.clone())
-                        .flatten()
-                        .dedup()
-                        .collect(),
-                )
-            } else {
-                None
-            };
-
-        let payload = QdrantPayload::new(
-            chunk_data.chunk_metadata,
-            chunk_data.group_ids,
-            None,
-            chunk_tags,
-        )
-        .into();
-
-        let mut vector_payload = HashMap::from([(
-            "sparse_vectors".to_string(),
-            Vector::from(splade_vector.clone()),
-        )]);
-
-        if embedding_vector.is_some() {
-            let vector = embedding_vector.clone().unwrap();
-            let vector_name = match vector.len() {
-                384 => "384_vectors",
-                512 => "512_vectors",
-                768 => "768_vectors",
-                1024 => "1024_vectors",
-                3072 => "3072_vectors",
-                1536 => "1536_vectors",
-                _ => {
-                    return Err(ServiceError::BadRequest(
-                        "Invalid embedding vector size".into(),
-                    ))
-                }
-            };
-            vector_payload.insert(
-                vector_name.to_string().clone(),
-                Vector::from(vector.clone()),
-            );
-        }
-
-        // If qdrant_point_id does not exist, does not get written to qdrant
-        Ok(PointStruct::new(
-            qdrant_point_id.to_string(),
-            vector_payload,
-            payload,
-        ))
-    })
-    .collect::<Vec<Result<PointStruct, ServiceError>>>()
-    .await
 }
