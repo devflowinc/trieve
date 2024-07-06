@@ -239,6 +239,7 @@ services:
       - VITE_API_HOST=${VITE_API_HOST}
       - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
       - VITE_CHAT_UI_URL=${VITE_CHAT_UI_URL}
+      - VITE_ANALYTICS_UI_URL=${VITE_ANALYTICS_UI_URL}
 
   chat:
     image: trieve/chat

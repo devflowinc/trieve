@@ -126,6 +126,7 @@ KEYCLOAK_HOST="auth.yourdomain.com"
 VITE_API_HOST=https://api.yourdomain.com/api
 VITE_SEARCH_UI_URL=https://search.yourdomain.com
 VITE_CHAT_UI_URL=https://chat.yourdomain.com
+VITE_ANALYTICS_UI_URL=https://analytics.yourdomain.com
 VITE_DASHBOARD_URL=https://dashboard.yourdomain.com
 
 OIDC_AUTH_REDIRECT_URL="https://auth.yourdomain.com/realms/trieve/protocol/openid-connect/auth"
