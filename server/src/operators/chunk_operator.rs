@@ -538,7 +538,7 @@ pub async fn bulk_insert_chunk_metadata_query(
         .collect();
 
     let inserted_chunks = if upsert_by_tracking_id {
-        diesel::insert_into(chunk_metadata_columns::chunk_metadata)
+        let temp_inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
             .values(&chunk_metadata_to_insert)
             .on_conflict((
                 chunk_metadata_columns::tracking_id,
@@ -555,40 +555,68 @@ pub async fn bulk_insert_chunk_metadata_query(
                 chunk_metadata_columns::image_urls.eq(excluded(chunk_metadata_columns::image_urls)),
                 chunk_metadata_columns::num_value.eq(excluded(chunk_metadata_columns::num_value)),
             ))
+            .returning(ChunkMetadataTable::as_select())
             .get_results::<ChunkMetadataTable>(&mut conn)
             .await
             .map_err(|e| {
-                sentry::capture_message(
-                    &format!("Failed to insert chunk_metadata: {:?}", e),
-                    sentry::Level::Error,
-                );
-                log::error!("Failed to insert chunk_metadata: {:?}", e);
+                log::error!("Failed to upsert chunk_metadata: {:?}", e);
 
-                ServiceError::BadRequest("Failed to insert chunk_metadata".to_string())
-            })?
+                ServiceError::BadRequest("Failed to upsert chunk_metadata".to_string())
+            })?;
+
+        insertion_data.retain(|chunk_data| {
+            temp_inserted_chunks.iter().any(|inserted_chunk| {
+                inserted_chunk.id == chunk_data.chunk_metadata.id
+                    || inserted_chunk.tracking_id == chunk_data.chunk_metadata.tracking_id
+            })
+        });
+
+        temp_inserted_chunks
     } else {
-        diesel::insert_into(chunk_metadata_columns::chunk_metadata)
+        let temp_inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
             .values(&chunk_metadata_to_insert)
             .on_conflict_do_nothing()
             .get_results::<ChunkMetadataTable>(&mut conn)
             .await
             .map_err(|e| {
-                sentry::capture_message(
-                    &format!("Failed to insert chunk_metadata: {:?}", e),
-                    sentry::Level::Error,
-                );
                 log::error!("Failed to insert chunk_metadata: {:?}", e);
 
                 ServiceError::BadRequest("Failed to insert chunk_metadata".to_string())
-            })?
+            })?;
+
+        insertion_data.retain(|chunk_data| {
+            temp_inserted_chunks
+                .iter()
+                .any(|inserted_chunk| inserted_chunk.id == chunk_data.chunk_metadata.id)
+        });
+
+        temp_inserted_chunks
     };
 
-    // mutates in place
-    insertion_data.retain(|data| {
-        inserted_chunks
-            .iter()
-            .any(|inserted_chunk| inserted_chunk.id == data.chunk_metadata.id)
-    });
+    let insertion_data = insertion_data
+        .into_iter()
+        .map(|chunk_data| {
+            let chunk_metadata_table = inserted_chunks
+                .iter()
+                .find(|inserted_chunk| {
+                    inserted_chunk.tracking_id == chunk_data.chunk_metadata.tracking_id
+                        || inserted_chunk.id == chunk_data.chunk_metadata.id
+                })
+                .expect("Will always be present due to previous retain")
+                .clone();
+            let mut chunk_metadata = chunk_data.chunk_metadata.clone();
+            chunk_metadata.id = chunk_metadata_table.id;
+
+            ChunkData {
+                chunk_metadata,
+                content: chunk_data.content,
+                group_ids: chunk_data.group_ids,
+                upsert_by_tracking_id: chunk_data.upsert_by_tracking_id,
+                boost_phrase: chunk_data.boost_phrase,
+                distance_phrase: chunk_data.distance_phrase,
+            }
+        })
+        .collect::<Vec<ChunkData>>();
 
     let chunk_group_bookmarks_to_insert: Vec<ChunkGroupBookmark> = insertion_data
         .clone()
@@ -609,6 +637,7 @@ pub async fn bulk_insert_chunk_metadata_query(
 
     diesel::insert_into(chunk_group_bookmarks_columns::chunk_group_bookmarks)
         .values(chunk_group_bookmarks_to_insert)
+        .on_conflict_do_nothing()
         .execute(&mut conn)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to insert chunk into groups".to_string()))?;
