@@ -910,8 +910,8 @@ pub async fn retrieve_chunks_for_groups(
 
     let metadata_chunks = match data.slim_chunks.unwrap_or(false) && data.search_type != "hybrid" {
         true => {
-            let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
-            slim_chunks
+            
+            get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
         }
         _ => {
             get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
@@ -1023,7 +1023,7 @@ pub async fn retrieve_chunks_for_groups(
 
             GroupScoreChunk {
                 group_id: group_search_result.group_id,
-                file_id: group_data.and_then(|group| group.file_id.clone()),
+                file_id: group_data.and_then(|group| group.file_id),
                 group_name,
                 group_tracking_id,
                 metadata: score_chunks,
@@ -1052,8 +1052,8 @@ pub async fn get_metadata_from_groups(
 
     let chunk_metadatas = match slim_chunks {
         Some(true) => {
-            let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
-            slim_chunks
+            
+            get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
         }
         _ => {
             get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
@@ -1131,7 +1131,7 @@ pub async fn get_metadata_from_groups(
                 group_name,
                 group_tracking_id,
                 metadata: score_chunk,
-                file_id: group_data.and_then(|grp| grp.file_id.clone()),
+                file_id: group_data.and_then(|grp| grp.file_id),
             }
         })
         .collect_vec();
@@ -1171,11 +1171,11 @@ pub async fn retrieve_chunks_from_point_ids(
         .collect::<Vec<_>>();
 
     let metadata_chunks = if data.slim_chunks.unwrap_or(false) && data.search_type != "hybrid" {
-        let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
-        slim_chunks
+        
+        get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
     } else if data.content_only.unwrap_or(false) {
-        let content_only = get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?;
-        content_only
+        
+        get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?
     } else {
         get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
             .await?
@@ -1374,8 +1374,8 @@ pub fn rerank_chunks(
                     / (max_distance.unwrap_or(1.0) - min_distance.unwrap_or(0.0));
                 let normalized_chunk_score = (chunk.score - min_score.unwrap_or(0.0))
                     / (max_score.unwrap_or(1.0) - min_score.unwrap_or(0.0));
-                chunk.score = (normalized_chunk_score * (1.0 - location_bias) as f64)
-                    + (location_bias * (1.0 - normalized_distance)) as f64;
+                chunk.score = (normalized_chunk_score * (1.0 - location_bias))
+                    + (location_bias * (1.0 - normalized_distance));
                 chunk.clone()
             })
             .collect::<Vec<ScoreChunkDTO>>();
@@ -1739,7 +1739,7 @@ pub async fn search_semantic_groups(
 
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
-        group: group,
+        group,
         total_pages: result_chunks.total_chunk_pages,
     })
 }

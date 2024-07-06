@@ -657,7 +657,7 @@ pub async fn get_groups_from_group_ids_query(
 
     Ok(chunk_groups_and_files
         .iter()
-        .map(|(group, file_id)| ChunkGroupAndFileId::from_group(group.clone(), file_id.clone()))
+        .map(|(group, file_id)| ChunkGroupAndFileId::from_group(group.clone(), *file_id))
         .collect())
 }
 

@@ -415,10 +415,7 @@ pub async fn create_embeddings(
 
             if !boost_phrase_and_index.is_empty() {
                 let boost_vectors = vectors
-                    .split_off(messages.len())
-                    .iter()
-                    .map(|x| x.clone())
-                    .collect::<Vec<Vec<f32>>>();
+                    .split_off(messages.len()).to_vec();
 
                 let mut vectors_sorted = vectors.clone();
                 for ((og_index, phrase), boost_vector) in boost_phrase_and_index.iter().zip(boost_vectors) {

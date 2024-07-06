@@ -412,7 +412,7 @@ pub async fn bulk_upload_chunks(
             let chunk_metadata = ChunkMetadata {
                 id: message.ingest_specific_chunk_metadata.id,
                 link: message.chunk.link.clone(),
-                qdrant_point_id: qdrant_point_id,
+                qdrant_point_id,
                 created_at: chrono::Utc::now().naive_local(),
                 updated_at: chrono::Utc::now().naive_local(),
                 chunk_html: message.chunk.chunk_html.clone(),
@@ -445,9 +445,7 @@ pub async fn bulk_upload_chunks(
     if split_average_being_used {
         let mut chunk_ids = vec![];
         // Split average or Collisions
-        for (message, ingestion_data) in
-            izip!(payload.ingestion_messages, ingestion_data).into_iter()
-        {
+        for (message, ingestion_data) in izip!(payload.ingestion_messages, ingestion_data) {
             let upload_chunk_result = upload_chunk(
                 message,
                 ingestion_data,
@@ -679,7 +677,7 @@ async fn upload_chunk(
     let chunk_metadata = ChunkMetadata {
         id: payload.ingest_specific_chunk_metadata.id,
         link: payload.chunk.link.clone(),
-        qdrant_point_id: qdrant_point_id,
+        qdrant_point_id,
         created_at: chrono::Utc::now().naive_local(),
         updated_at: chrono::Utc::now().naive_local(),
         chunk_html: payload.chunk.chunk_html.clone(),

@@ -298,20 +298,34 @@ async fn upload_bulk_pg_chunk(
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
-    let mut chunk_data_map: HashMap<uuid::Uuid, Vec<ChunkData>> = HashMap::new();
+    let mut chunk_data_map: HashMap<String, Vec<ChunkData>> = HashMap::new();
 
     for payload in payload {
         chunk_data_map
-            .entry(payload.dataset_id)
-            .or_insert_with(Vec::new)
+            .entry(format!(
+                "{:?}|{:?}",
+                payload.dataset_id, payload.upsert_by_tracking_id
+            ))
+            .or_default()
             .push(payload.chunk_metadatas.clone());
     }
 
     let mut dataset_chunk_ids: HashMap<uuid::Uuid, Vec<uuid::Uuid>> = HashMap::new();
-    for (dataset_id, chunk_data) in chunk_data_map.iter() {
+    for (dataset_id_upsert, chunk_data) in chunk_data_map.iter() {
+        let dataset_id_upsert: Vec<&str> = dataset_id_upsert.split('|').collect();
+        let dataset_id = uuid::Uuid::parse_str(dataset_id_upsert[0]).map_err(|err| {
+            log::error!("Failed to parse dataset id: {:?}", err);
+            ServiceError::BadRequest("Failed to parse dataset id".to_string())
+        })?;
+        let upsert_by_tracking_id: bool = dataset_id_upsert[1].parse().map_err(|err| {
+            log::error!("Failed to parse upsert_by_tracking_id: {:?}", err);
+            ServiceError::BadRequest("Failed to parse upsert_by_tracking_id".to_string())
+        })?;
+
         match bulk_insert_chunk_metadata_query(
             chunk_data.clone(),
-            dataset_id.clone(),
+            dataset_id,
+            upsert_by_tracking_id,
             web_pool.clone(),
         )
         .await
@@ -321,7 +335,7 @@ async fn upload_bulk_pg_chunk(
                     .iter()
                     .map(|chunk| chunk.chunk_metadata.id)
                     .collect::<Vec<uuid::Uuid>>();
-                dataset_chunk_ids.insert(dataset_id.clone(), ids);
+                dataset_chunk_ids.insert(dataset_id, ids);
             }
             Err(err) => {
                 log::error!("Failed to insert chunk metadata: {:?}", err);
@@ -329,6 +343,7 @@ async fn upload_bulk_pg_chunk(
             }
         }
     }
+
     Ok(dataset_chunk_ids)
 }
 
@@ -360,7 +375,7 @@ pub async fn readd_error_to_queue(
                     payload.dataset_id,
                     models::EventType::BulkChunkUploadFailed {
                         chunk_ids: vec![chunk_id],
-                        error: format!("Failed to upload chunks to postgres"),
+                        error: "Failed to upload chunks to postgres".to_string(),
                     },
                 ),
                 clickhouse_client.clone(),

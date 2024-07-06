@@ -1183,7 +1183,7 @@ pub async fn delete_chunk_metadata_query(
 
     let point_ids = chunk_metadata
         .iter()
-        .map(|x| x.qdrant_point_id.clone())
+        .map(|x| x.qdrant_point_id)
         .map(|x| x.to_string().into())
         .collect::<Vec<PointId>>();
 

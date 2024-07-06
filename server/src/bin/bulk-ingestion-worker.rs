@@ -433,10 +433,8 @@ pub async fn bulk_upload_chunks(
         })
         .collect();
 
-    if split_average_being_used || upsert_by_tracking_id_being_used {
-        for (message, ingestion_data) in
-            izip!(payload.ingestion_messages, ingestion_data).into_iter()
-        {
+    if split_average_being_used {
+        for (message, ingestion_data) in izip!(payload.ingestion_messages, ingestion_data) {
             let _ = upload_chunk(
                 message,
                 ingestion_data,
@@ -552,19 +550,15 @@ pub async fn bulk_upload_chunks(
         "calling_BULK_create_new_qdrant_points_query",
     );
 
-    let create_point_result =
-        bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
+    bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await?;
 
     insert_tx.finish();
-
-    if let Err(err) = create_point_result {
-        return Err(err);
-    }
 
     let message: Vec<PGInsertQueueMessage> = ingestion_data
         .into_iter()
         .map(|data| PGInsertQueueMessage {
             chunk_metadatas: data,
+            upsert_by_tracking_id: upsert_by_tracking_id_being_used,
             dataset_id: payload.dataset_id,
             dataset_config: dataset_config.clone(),
             attempt_number: 0,
@@ -791,19 +785,15 @@ async fn upload_chunk(
         "calling_BULK_create_new_qdrant_points_query",
     );
 
-    let create_point_result =
-        bulk_upsert_qdrant_points_query(vec![point], dataset_config.clone()).await;
+    bulk_upsert_qdrant_points_query(vec![point], dataset_config.clone()).await?;
 
     insert_tx.finish();
-
-    if let Err(err) = create_point_result {
-        return Err(err);
-    }
 
     ingestion_data.chunk_metadata.qdrant_point_id = qdrant_point_id;
 
     let message = PGInsertQueueMessage {
         chunk_metadatas: ingestion_data,
+        upsert_by_tracking_id: false,
         dataset_id: payload.dataset_id,
         dataset_config,
         attempt_number: 0,
