@@ -330,6 +330,48 @@ pub async fn create_chunk(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
+    let non_upsert_chunks = chunks
+        .iter()
+        .filter_map(|chunk| {
+            if !chunk.upsert_by_tracking_id.unwrap_or(false) {
+                Some(chunk.clone())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<ChunkReqPayload>>();
+    let upsert_chunks = chunks
+        .iter()
+        .filter_map(|chunk| {
+            if chunk.upsert_by_tracking_id.unwrap_or(false) {
+                Some(chunk.clone())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<ChunkReqPayload>>();
+
+    let (non_upsert_chunk_ingestion_message, non_upsert_chunk_metadatas) = create_chunk_metadata(
+        non_upsert_chunks,
+        dataset_org_plan_sub.dataset.id,
+        server_dataset_configuration.clone(),
+        pool.clone(),
+    )
+    .await?;
+    let (upsert_chunk_ingestion_message, upsert_chunk_metadatas) = create_chunk_metadata(
+        upsert_chunks,
+        dataset_org_plan_sub.dataset.id,
+        server_dataset_configuration.clone(),
+        pool.clone(),
+    )
+    .await?;
+
+    let chunk_metadatas = non_upsert_chunk_metadatas
+        .clone()
+        .into_iter()
+        .chain(upsert_chunk_metadatas.clone().into_iter())
+        .collect::<Vec<ChunkMetadata>>();
+
     let mut redis_conn = redis_pool
         .get()
         .await
@@ -337,24 +379,33 @@ pub async fn create_chunk(
 
     timer.add("got redis connection");
 
-    let (ingestion_message, chunk_metadatas) = create_chunk_metadata(
-        chunks,
-        dataset_org_plan_sub.dataset.id,
-        server_dataset_configuration,
-        pool,
-    )
-    .await?;
+    let mut pos_in_queue = 0;
+    if non_upsert_chunk_metadatas.len() > 0 {
+        let serialized_message: String = serde_json::to_string(&non_upsert_chunk_ingestion_message)
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+            })?;
 
-    let serialized_message: String = serde_json::to_string(&ingestion_message).map_err(|_| {
-        ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
-    })?;
+        pos_in_queue = redis::cmd("lpush")
+            .arg("ingestion")
+            .arg(&serialized_message)
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    }
+    if upsert_chunk_metadatas.len() > 0 {
+        let serialized_message: String = serde_json::to_string(&upsert_chunk_ingestion_message)
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+            })?;
 
-    let pos_in_queue = redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(&serialized_message)
-        .query_async(&mut *redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        pos_in_queue = redis::cmd("lpush")
+            .arg("ingestion")
+            .arg(&serialized_message)
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    }
 
     let response = match create_chunk_data.into_inner() {
         CreateChunkReqPayloadEnum::Single(_) => ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
