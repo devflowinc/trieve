@@ -9,6 +9,8 @@ on:
     paths:
       - "frontend/search/**"
       - "frontend/shared/**"
+      - "frontend/config/**"
+
 jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204
