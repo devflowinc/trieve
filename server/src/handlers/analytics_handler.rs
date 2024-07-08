@@ -506,16 +506,24 @@ pub async fn get_query_counts(
     let mut query_string = String::from(
         "SELECT 
             search_type,
+            JSONExtractString(request_params, 'search_type') as search_method,
             COUNT(*) as search_count
         FROM 
             search_queries
-        WHERE dataset_id = ?
+        WHERE dataset_id = ?",
+    );
+
+    if let Some(filter) = &data.filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
         GROUP BY 
-            search_type
+            search_type, search_method
         ORDER BY 
             search_count DESC",
     );
-    println!("query_string: \n{:?}\n", query_string);
 
     let result_counts = clickhouse_client
         .query(query_string.as_str())
