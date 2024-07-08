@@ -583,7 +583,7 @@ pub async fn bulk_upload_chunks(
     embedding_transaction.finish();
 
     let qdrant_points = tokio_stream::iter(izip!(
-        ingestion_data.clone(),
+        inserted_chunk_metadatas.clone(),
         embedding_vectors.iter(),
         splade_vectors.iter(),
     ))
