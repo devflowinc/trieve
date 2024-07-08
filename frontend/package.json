@@ -14,7 +14,8 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "lint:CI": "turbo lint:CI"
   },
   "repository": "git@github.com:devflowinc/trieve.git",
   "author": "Drew Harris <harrisd@smu.edu>",

@@ -30,7 +30,7 @@ jobs:
         run: yarn --frozen-lockfile
       - name: Running lint
         working-directory: frontend
-        run: yarn lint --filter analytics
+        run: yarn lint:CI --filter analytics
       - name: Annotate Code Linting Results
         uses: ataylorme/eslint-annotate-action@1.0.4
         if: always()
