@@ -1089,6 +1089,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1823,6 +1824,7 @@ pub struct RecommendChunksRequest {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
