@@ -16,9 +16,9 @@
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
   "eslint.workingDirectories": [
-    "./chat",
-    "./dashboard",
-    "./search",
-    "./analytics-site",
+    "./frontend/chat",
+    "./frontend/dashboard",
+    "./frontend/search",
+    "./frontend/analytics-site"
   ]
 }
