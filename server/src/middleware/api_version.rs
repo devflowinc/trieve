@@ -10,7 +10,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::{data::models::DatasetAndOrgWithSubAndPlan, errors::ServiceError};
+use crate::data::models::DatasetAndOrgWithSubAndPlan;
 
 #[derive(Clone)]
 pub enum APIVersion {
@@ -80,6 +80,8 @@ where
     forward_ready!(service);
 
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
+        let path = req.path();
+        println!("{path}");
         let srv = self.service.clone();
         Box::pin(async move {
             let version = {
