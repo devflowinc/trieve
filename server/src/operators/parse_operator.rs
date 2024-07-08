@@ -42,7 +42,7 @@ pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
             new_chunks.push(new_chunk);
 
             amt_to_take = cmp::min(amt_to_take, chunk.chars().count());
-            chunk.drain(0..amt_to_take as usize);
+            chunk.drain(0..amt_to_take);
             total_length -= amt_to_remove as f32;
         }
     }
@@ -91,7 +91,7 @@ pub fn coarse_doc_chunker(
         while remainder > 0.0 {
             let group_size = cmp::min(
                 target_splits_per_chunk
-                    + cmp::min(remainder as usize, remainder_per_group as usize) as usize,
+                    + cmp::min(remainder as usize, remainder_per_group as usize),
                 splits.len(),
             );
             let group = splits
