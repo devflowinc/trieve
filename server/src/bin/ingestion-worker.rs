@@ -1034,6 +1034,18 @@ pub async fn readd_error_to_queue(
             ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
         })?;
 
+        let mut redis_conn = redis_pool
+            .get()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        let _ = redis::cmd("LREM")
+            .arg("processing")
+            .arg(1)
+            .arg(old_payload_message.clone())
+            .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+            .await;
+
         payload.attempt_number += 1;
 
         if payload.attempt_number == 10 {

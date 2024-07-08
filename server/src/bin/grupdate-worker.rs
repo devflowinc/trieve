@@ -279,6 +279,18 @@ pub async fn readd_group_error_to_queue(
 
     payload.attempt_number += 1;
 
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let _ = redis::cmd("LREM")
+        .arg("group_update_processing")
+        .arg(1)
+        .arg(old_payload_message.clone())
+        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+        .await;
+
     if payload.attempt_number == 3 {
         log::error!("Failed to update group 3 times quitting {:?}", error);
         let _ = create_event_query(
