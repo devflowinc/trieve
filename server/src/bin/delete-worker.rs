@@ -351,6 +351,18 @@ pub async fn readd_error_to_queue(
 
     payload.attempt_number += 1;
 
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let _ = redis::cmd("LREM")
+        .arg("delete_dataset_processing")
+        .arg(1)
+        .arg(old_payload_message.clone())
+        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+        .await;
+
     if payload.attempt_number == 3 {
         log::error!("Failed to insert data 3 times quitting {:?}", error);
 
