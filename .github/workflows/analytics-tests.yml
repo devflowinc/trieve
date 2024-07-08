@@ -9,6 +9,7 @@ on:
     paths:
       - "frontend/analytics/**"
       - "frontend/shared/**"
+      - "frontend/config/**"
 
 jobs:
   build-test:
