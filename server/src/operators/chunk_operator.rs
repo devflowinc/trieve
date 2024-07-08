@@ -531,11 +531,20 @@ pub async fn bulk_insert_chunk_metadata_query(
         .await
         .expect("Failed to get connection to db");
 
-    let chunk_metadatas_to_insert: Vec<ChunkMetadataTable> = insertion_data
-        .clone()
+    let (chunks_with_tracking_id, chunks_without_tracking_id): (Vec<ChunkData>, Vec<ChunkData>) =
+        insertion_data
+            .clone()
+            .into_iter()
+            .partition(|data| data.chunk_metadata.tracking_id.is_some());
+    let chunks_with_tracking_id: Vec<ChunkMetadataTable> = chunks_with_tracking_id
         .iter()
         .map(|data| data.chunk_metadata.clone().into())
         .unique_by(|chunk: &ChunkMetadataTable| (chunk.tracking_id.clone(), chunk.dataset_id))
+        .collect();
+    let chunk_metadatas_to_insert: Vec<ChunkMetadataTable> = chunks_without_tracking_id
+        .iter()
+        .map(|data| data.chunk_metadata.clone().into())
+        .chain(chunks_with_tracking_id.into_iter())
         .collect();
 
     let inserted_chunks = if upsert_by_tracking_id {
