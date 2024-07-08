@@ -296,7 +296,7 @@ services:
       - KC_DB_PASSWORD=password
       - KC_HEALTH_ENABLED=true
       - KC_PROXY=${KEYCLOAK_PROXY-none}
-      - KC_HOSTNAME=${KEYCLOAK_BASE_URL}
+      - KC_HOSTNAME=${KEYCLOAK_HOST}
     healthcheck:
       test:
         [
