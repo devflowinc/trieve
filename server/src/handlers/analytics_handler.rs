@@ -344,7 +344,7 @@ pub async fn get_head_queries(
     }
 
     query_string.push_str(
-        " GROUP BY 
+        "GROUP BY 
             query
         ORDER BY 
             count DESC
@@ -478,8 +478,6 @@ pub struct SearchTypeCount {
 pub struct GetQueryCountReqPayload {
     /// Filter to apply when fetching the head queries
     pub filter: Option<SearchAnalyticsFilter>,
-    /// Page number to fetch; defaults to 1
-    pub page: Option<u32>,
 }
 
 /// Get Query Counts
@@ -528,21 +526,11 @@ pub async fn get_query_counts(
         ORDER BY 
             search_count DESC",
     );
-
-    if let Some(filter) = &data.filter {
-        query_string = filter.add_to_query(query_string);
-    }
-
-    query_string.push_str(
-        "
-        LIMIT 10
-        OFFSET ?",
-    );
+    println!("query_string: \n{:?}\n", query_string);
 
     let result_counts = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id.into_inner())
-        .bind((data.page.unwrap_or(1) - 1) * 10)
         .fetch_all::<SearchTypeCount>()
         .await
         .map_err(|e| {
