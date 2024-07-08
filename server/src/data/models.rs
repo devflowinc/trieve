@@ -5,7 +5,7 @@ use std::io::Write;
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_ids_query;
-use crate::operators::clickhouse_operator::CHSlimResponse;
+use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
 use crate::operators::parse_operator::convert_html_to_text;
 
 use super::schema::*;
@@ -13,7 +13,7 @@ use crate::handlers::chunk_handler::{BoostPhrase, DistancePhrase};
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
-    get_metadata_filter_condition,
+    get_metadata_filter_condition, GroupScoreChunk,
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
@@ -332,6 +332,28 @@ pub struct ChunkMetadata {
     pub image_urls: Option<Vec<Option<String>>>,
     pub tag_set: Option<Vec<Option<String>>>,
     pub num_value: Option<f64>,
+}
+
+impl Default for ChunkMetadata {
+    fn default() -> Self {
+        ChunkMetadata {
+            id: uuid::Uuid::new_v4(),
+            link: None,
+            qdrant_point_id: uuid::Uuid::new_v4(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+            chunk_html: None,
+            metadata: None,
+            tracking_id: None,
+            time_stamp: None,
+            dataset_id: uuid::Uuid::new_v4(),
+            weight: 0.0,
+            location: None,
+            image_urls: None,
+            tag_set: None,
+            num_value: None,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
@@ -2931,7 +2953,7 @@ pub struct SearchQueryEvent {
     pub request_params: String,
     pub latency: f32,
     pub top_score: f32,
-    pub results: Vec<ChunkMetadataStringTagSet>,
+    pub results: Vec<SearchResultType>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
 }
@@ -2968,33 +2990,113 @@ pub struct SearchQueryEventClickhouse {
     pub created_at: OffsetDateTime,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum SearchResultType {
+    Search(ScoreChunkDTO),
+    GroupSearch(GroupScoreChunk),
+}
+
 impl SearchQueryEventClickhouse {
     pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> SearchQueryEvent {
-        let chunk_results = self
+        if let Ok(chunk_results) = self
             .results
-            .into_iter()
-            .map(|r| serde_json::from_str::<CHSlimResponse>(&r).unwrap().id)
-            .collect::<Vec<uuid::Uuid>>();
+            .iter()
+            .map(|r| serde_json::from_str::<CHSlimResponse>(r))
+            .collect::<Result<Vec<CHSlimResponse>, _>>()
+        {
+            let chunk_ids = chunk_results
+                .iter()
+                .map(|r| r.id)
+                .collect::<Vec<uuid::Uuid>>();
 
-        let chunks = get_metadata_from_ids_query(chunk_results.clone(), self.dataset_id, pool)
-            .await
-            .unwrap_or(vec![]);
+            let chunks = get_metadata_from_ids_query(chunk_ids.clone(), self.dataset_id, pool)
+                .await
+                .unwrap_or(vec![]);
 
-        let chunk_string_tag_sets = chunks
-            .into_iter()
-            .map(ChunkMetadataStringTagSet::from)
-            .collect::<Vec<ChunkMetadataStringTagSet>>();
+            let results = chunk_results
+                .iter()
+                .map(|r| {
+                    let default = ChunkMetadata::default();
+                    let chunk = chunks.iter().find(|c| c.id == r.id).unwrap_or(&default);
+                    SearchResultType::Search(ScoreChunkDTO {
+                        score: r.score,
+                        highlights: None,
+                        metadata: vec![ChunkMetadataTypes::Metadata(chunk.clone().into())],
+                    })
+                })
+                .collect::<Vec<SearchResultType>>();
 
-        SearchQueryEvent {
-            id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
-            search_type: self.search_type,
-            query: self.query,
-            request_params: self.request_params,
-            latency: self.latency,
-            top_score: self.top_score,
-            results: chunk_string_tag_sets,
-            dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
-            created_at: self.created_at.to_string(),
+            SearchQueryEvent {
+                id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
+                search_type: self.search_type,
+                query: self.query,
+                request_params: self.request_params,
+                latency: self.latency,
+                top_score: self.top_score,
+                results,
+                dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+                created_at: self.created_at.to_string(),
+            }
+        } else if let Ok(group_results) = self
+            .results
+            .iter()
+            .map(|r| serde_json::from_str::<CHSlimResponseGroup>(r))
+            .collect::<Result<Vec<CHSlimResponseGroup>, _>>()
+        {
+            let chunk_ids = group_results
+                .iter()
+                .flat_map(|groups| {
+                    groups
+                        .chunks
+                        .iter()
+                        .map(|r| r.id)
+                        .collect::<Vec<uuid::Uuid>>()
+                })
+                .collect::<Vec<uuid::Uuid>>();
+
+            let chunks = get_metadata_from_ids_query(chunk_ids.clone(), self.dataset_id, pool)
+                .await
+                .unwrap_or(vec![]);
+
+            let results = group_results
+                .iter()
+                .map(|group| {
+                    let group_chunks = group
+                        .chunks
+                        .iter()
+                        .map(|r| {
+                            let default = ChunkMetadata::default();
+                            let chunk = chunks.iter().find(|c| c.id == r.id).unwrap_or(&default);
+                            ScoreChunkDTO {
+                                score: r.score,
+                                highlights: None,
+                                metadata: vec![ChunkMetadataTypes::Metadata(chunk.clone().into())],
+                            }
+                        })
+                        .collect::<Vec<ScoreChunkDTO>>();
+
+                    SearchResultType::GroupSearch(GroupScoreChunk {
+                        group_id: group.group_id,
+                        metadata: group_chunks,
+                        ..Default::default()
+                    })
+                })
+                .collect::<Vec<SearchResultType>>();
+
+            SearchQueryEvent {
+                id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
+                search_type: self.search_type,
+                query: self.query,
+                request_params: self.request_params,
+                latency: self.latency,
+                top_score: self.top_score,
+                results,
+                dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+                created_at: self.created_at.to_string(),
+            }
+        } else {
+            SearchQueryEvent::default()
         }
     }
 }
@@ -3079,6 +3181,24 @@ impl From<ClusterTopicsClickhouse> for SearchClusterTopics {
             created_at: cluster_topic.created_at.to_string(),
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+pub struct RecommendationEventClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub recommendation_type: String,
+    pub positive_ids: Vec<String>,
+    pub negative_ids: Vec<String>,
+    pub positive_tracking_ids: Vec<String>,
+    pub negative_tracking_ids: Vec<String>,
+    pub request_params: String,
+    pub results: Vec<String>,
+    pub top_score: f32,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

@@ -848,7 +848,7 @@ pub struct FullTextDocIds {
     pub total_count: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[schema(example = json!({
     "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "file_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",

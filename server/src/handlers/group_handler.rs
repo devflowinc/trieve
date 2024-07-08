@@ -5,8 +5,9 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataStringTagSet,
-        DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool, RedisPool, ScoreChunkDTO,
-        SearchQueryEventClickhouse, ServerDatasetConfiguration, UnifiedId,
+        DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool, RecommendationEventClickhouse,
+        RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse, ServerDatasetConfiguration,
+        UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -940,10 +941,11 @@ pub struct RecommendGroupChunksRequest {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn get_recommended_groups(
     data: web::Json<RecommendGroupChunksRequest>,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -968,7 +970,7 @@ pub async fn get_recommended_groups(
 
     let mut positive_qdrant_ids = vec![];
 
-    if let Some(positive_group_ids) = positive_group_ids {
+    if let Some(positive_group_ids) = positive_group_ids.clone() {
         positive_qdrant_ids.extend(
             get_point_ids_from_unified_group_ids(
                 positive_group_ids
@@ -988,7 +990,7 @@ pub async fn get_recommended_groups(
         );
     }
 
-    if let Some(positive_tracking_ids) = positive_tracking_ids {
+    if let Some(positive_tracking_ids) = positive_tracking_ids.clone() {
         positive_qdrant_ids.extend(
             get_point_ids_from_unified_group_ids(
                 positive_tracking_ids
@@ -1010,7 +1012,7 @@ pub async fn get_recommended_groups(
 
     let mut negative_qdrant_ids = vec![];
 
-    if let Some(negative_group_ids) = negative_group_ids {
+    if let Some(negative_group_ids) = negative_group_ids.clone() {
         negative_qdrant_ids.extend(
             get_point_ids_from_unified_group_ids(
                 negative_group_ids
@@ -1030,7 +1032,7 @@ pub async fn get_recommended_groups(
         );
     }
 
-    if let Some(negative_tracking_ids) = negative_tracking_ids {
+    if let Some(negative_tracking_ids) = negative_tracking_ids.clone() {
         negative_qdrant_ids.extend(
             get_point_ids_from_unified_group_ids(
                 negative_tracking_ids
@@ -1095,6 +1097,42 @@ pub async fn get_recommended_groups(
         .collect::<Vec<GroupScoreChunk>>();
 
     timer.add("fetched metadata from ids");
+
+    let clickhouse_event = RecommendationEventClickhouse {
+        id: uuid::Uuid::new_v4(),
+        recommendation_type: String::from("group"),
+        positive_ids: positive_group_ids
+            .unwrap_or_default()
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect(),
+        negative_ids: negative_group_ids
+            .unwrap_or_default()
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect(),
+        positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
+        negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        top_score: recommended_chunk_metadatas
+            .first()
+            .map(|x| x.metadata.first().map(|x| x.score).unwrap_or(0.0))
+            .unwrap_or(0.0) as f32,
+        results: recommended_chunk_metadatas
+            .iter()
+            .map(|x| x.clone().into_response_payload())
+            .collect(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    let _ = send_to_clickhouse(
+        ClickHouseEvent::RecommendationEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await;
+
+    timer.add("sent to clickhouse");
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
