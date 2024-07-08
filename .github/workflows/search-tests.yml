@@ -8,27 +8,31 @@ on:
   pull_request:
     paths:
       - "frontend/search/**"
-
+      - "frontend/shared/**"
 jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: yarn --cwd search
+        working-directory: frontend
+        run: yarn --frozen-lockfile
       - name: Running lint
-        run: yarn --cwd search build
+        working-directory: frontend
+        run: yarn build --filter search
   eslint:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: yarn --cwd search
+        working-directory: frontend
+        run: yarn --frozen-lockfile
       - name: Running lint
-        run: yarn --cwd search lint:CI
+        working-directory: frontend
+        run: yarn lint --filter search
       - name: Annotate Code Linting Results
         uses: ataylorme/eslint-annotate-action@1.0.4
         if: always()
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          report-json: "./search/eslint_report.json"
+          report-json: "./frontend/search/eslint_report.json"

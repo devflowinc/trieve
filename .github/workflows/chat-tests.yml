@@ -15,20 +15,24 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: yarn --cwd chat
+        working-directory: frontend
+        run: yarn --frozen-lockfile
       - name: Running lint
-        run: yarn --cwd chat build
+        working-directory: frontend
+        run: yarn build --filter chat
   eslint:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: yarn --cwd chat
+        working-directory: frontend
+        run: yarn --frozen-lockfile
       - name: Running lint
-        run: yarn --cwd chat lint:CI
+        working-directory: frontend
+        run: yarn lint --filter chat
       - name: Annotate Code Linting Results
         uses: ataylorme/eslint-annotate-action@1.0.4
         if: always()
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          report-json: "./chat/eslint_report.json"
+          report-json: "./frontend/chat/eslint_report.json"
