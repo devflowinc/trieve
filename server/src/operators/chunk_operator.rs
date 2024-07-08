@@ -608,9 +608,13 @@ pub async fn bulk_insert_chunk_metadata_query(
         .map(|chunk_data| {
             let chunk_metadata_table = inserted_chunks
                 .iter()
-                .find(|inserted_chunk| {
-                    inserted_chunk.tracking_id == chunk_data.chunk_metadata.tracking_id
-                        || inserted_chunk.id == chunk_data.chunk_metadata.id
+                .find(|inserted_chunk: &&ChunkMetadataTable| {
+                    inserted_chunk.id == chunk_data.chunk_metadata.id
+                        || (inserted_chunk
+                            .tracking_id
+                            .as_ref()
+                            .is_some_and(|tracking_id| !tracking_id.is_empty())
+                            && inserted_chunk.tracking_id == chunk_data.chunk_metadata.tracking_id)
                 })
                 .expect("Will always be present due to previous retain")
                 .clone();
