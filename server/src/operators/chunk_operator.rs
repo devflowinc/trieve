@@ -531,15 +531,16 @@ pub async fn bulk_insert_chunk_metadata_query(
         .await
         .expect("Failed to get connection to db");
 
-    let chunk_metadata_to_insert: Vec<ChunkMetadataTable> = insertion_data
+    let chunk_metadatas_to_insert: Vec<ChunkMetadataTable> = insertion_data
         .clone()
         .iter()
         .map(|data| data.chunk_metadata.clone().into())
+        .unique_by(|chunk: &ChunkMetadataTable| (chunk.tracking_id.clone(), chunk.dataset_id))
         .collect();
 
     let inserted_chunks = if upsert_by_tracking_id {
         let temp_inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
-            .values(&chunk_metadata_to_insert)
+            .values(&chunk_metadatas_to_insert)
             .on_conflict((
                 chunk_metadata_columns::tracking_id,
                 chunk_metadata_columns::dataset_id,
@@ -574,7 +575,7 @@ pub async fn bulk_insert_chunk_metadata_query(
         temp_inserted_chunks
     } else {
         let temp_inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
-            .values(&chunk_metadata_to_insert)
+            .values(&chunk_metadatas_to_insert)
             .on_conflict_do_nothing()
             .get_results::<ChunkMetadataTable>(&mut conn)
             .await
