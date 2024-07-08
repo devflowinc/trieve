@@ -55,7 +55,7 @@ jobs:
           # platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=trieve/buildcache:chat
           cache-to: type=registry,ref=trieve/buildcache:chat,mode=max
-          file: ./chat/Dockerfile
+          file: frontend/chat/Dockerfile
           context: ./frontend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -97,7 +97,7 @@ jobs:
           # platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=trieve/buildcache:search
           cache-to: type=registry,ref=trieve/buildcache:search,mode=max
-          file: ./search/Dockerfile
+          file: frontend/search/Dockerfile
           context: ./frontend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -139,7 +139,7 @@ jobs:
           # platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=trieve/buildcache:dashboard
           cache-to: type=registry,ref=trieve/buildcache:dashboard,mode=max
-          file: ./dashboard/Dockerfile
+          file: frontend/dashboard/Dockerfile
           context: ./frontend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -179,7 +179,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           # platforms: linux/amd64,linux/arm64
-          file: ./analytics/Dockerfile
+          file: frontend/analytics/Dockerfile
           context: ./frontend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
