@@ -76,3 +76,5 @@ terraform.rc
 
 embedding-server/data/*
 .turbo
+*/dist/**
+*/.vite
