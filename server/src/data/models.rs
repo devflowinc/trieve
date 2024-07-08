@@ -3275,7 +3275,6 @@ pub struct ChunkData {
     pub distance_phrase: Option<DistancePhrase>,
 }
 
-
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
 #[schema(example = json!({
     "search_type": "search",
@@ -3283,5 +3282,6 @@ pub struct ChunkData {
 }))]
 pub struct SearchTypeCount {
     pub search_type: String,
+    pub search_method: String,
     pub search_count: i64,
 }
