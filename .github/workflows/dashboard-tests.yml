@@ -7,33 +7,33 @@ concurrency:
 on:
   pull_request:
     paths:
-      - "frontend/dashboard/**"
-      - "frontend/shared/**"
-      - "frontend/config/**"
+      - "frontends/dashboard/**"
+      - "frontends/shared/**"
+      - "frontends/config/**"
 jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        working-directory: frontend
+        working-directory: frontends
         run: yarn --frozen-lockfile
       - name: Running lint
-        working-directory: frontend
+        working-directory: frontends
         run: yarn build --filter dashboard
   eslint:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        working-directory: frontend
+        working-directory: frontends
         run: yarn --frozen-lockfile
       - name: Running lint
-        working-directory: frontend
+        working-directory: frontends
         run: yarn lint:CI --filter dashboard
       - name: Annotate Code Linting Results
         uses: ataylorme/eslint-annotate-action@1.0.4
         if: always()
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          report-json: "./frontend/dashboard/eslint_report.json"
+          report-json: "./frontends/dashboard/eslint_report.json"
