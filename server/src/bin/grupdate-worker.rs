@@ -252,7 +252,7 @@ async fn grupdate_worker(
                     err
                 );
 
-                let _ = read_group_error_to_queue(
+                let _ = readd_group_error_to_queue(
                     group_update_msg,
                     err,
                     redis_pool.clone(),
@@ -267,7 +267,7 @@ async fn grupdate_worker(
 }
 
 #[tracing::instrument(skip(redis_pool, web_clickhouse_client))]
-pub async fn read_group_error_to_queue(
+pub async fn readd_group_error_to_queue(
     mut payload: GroupUpdateMessage,
     error: ServiceError,
     redis_pool: actix_web::web::Data<models::RedisPool>,
@@ -296,6 +296,19 @@ pub async fn read_group_error_to_queue(
             log::error!("Failed to create event {:?}", err);
             err
         });
+
+        let mut redis_conn = redis_pool
+            .get()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        redis::cmd("lpush")
+            .arg("dead_letters")
+            .arg(old_payload_message)
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
         return Err(ServiceError::InternalServerError(format!(
             "Failed to update grouped chunks 3 times {:?}",
             error
@@ -316,13 +329,6 @@ pub async fn read_group_error_to_queue(
         error,
         payload.attempt_number
     );
-
-    let _ = redis::cmd("LREM")
-        .arg("group_update_processing")
-        .arg(1)
-        .arg(old_payload_message)
-        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
-        .await;
 
     redis::cmd("lpush")
         .arg("group_update_queue")

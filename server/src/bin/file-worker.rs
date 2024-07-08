@@ -364,6 +364,19 @@ pub async fn readd_error_to_queue(
 
     if payload.attempt_number == 3 {
         log::error!("Failed to insert data 3 times quitting {:?}", error);
+
+        let mut redis_conn = redis_pool
+            .get()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        redis::cmd("lpush")
+            .arg("dead_letters")
+            .arg(old_payload_message)
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
         return Err(ServiceError::InternalServerError(format!(
             "Failed to create new qdrant point: {:?}",
             error
@@ -384,13 +397,6 @@ pub async fn readd_error_to_queue(
         error,
         payload.attempt_number
     );
-
-    let _ = redis::cmd("LREM")
-        .arg("file_processing")
-        .arg(1)
-        .arg(old_payload_message)
-        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
-        .await;
 
     redis::cmd("lpush")
         .arg("file_ingestion")
