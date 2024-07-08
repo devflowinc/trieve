@@ -1512,7 +1512,7 @@ pub struct CountChunkQueryResponseBody {
 ///
 /// This route can be used to determine the number of chunks that match a given search criteria including filters and score threshold. It may be high latency for large datasets. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
-    get,
+    post,
     path = "/chunk/count",
     context_path = "/api",
     tag = "Chunk",
