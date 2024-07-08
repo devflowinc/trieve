@@ -248,7 +248,7 @@ export const AfMessage = (props: AfMessageProps) => {
                 <SolidMarkdown
                   remarkPlugins={[remarkBreaks, remarkGfm]}
                   rehypePlugins={[rehypeSanitize]}
-                  class="w-full select-none space-y-2"
+                  class="w-full space-y-2"
                   components={{
                     h1: (props) => {
                       return (
