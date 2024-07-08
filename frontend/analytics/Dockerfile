@@ -7,13 +7,13 @@ COPY package*.json ./
 COPY . .
 
 RUN yarn install
-RUN yarn run build --filter analytics-site
+RUN yarn run build --filter analytics
 
 FROM nginx:1.25.4-alpine-slim
 
 WORKDIR /usr/share/nginx/html
 
-COPY --from=build /app/analytics-site/dist /usr/share/nginx/html
+COPY --from=build /app/analytics/dist /usr/share/nginx/html
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
