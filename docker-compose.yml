@@ -229,7 +229,7 @@ services:
     image: trieve/dashboard
     container_name: dashboard
     build: 
-      context: .
+      context: ./frontends
       dockerfile: ./dashboard/Dockerfile
     networks:
       - app-network
@@ -245,7 +245,7 @@ services:
     image: trieve/chat
     container_name: chat
     build:
-      context: .
+      context: ./frontends
       dockerfile: ./chat/Dockerfile
     networks:
       - app-network
@@ -259,7 +259,7 @@ services:
     image: trieve/search
     container_name: search
     build: 
-      context: .
+      context: ./frontends
       dockerfile: /search/
     networks:
       - app-network
@@ -272,8 +272,8 @@ services:
     image: trieve/analytics-site
     container_name: analytics-site
     build: 
-      context: .
-      dockerfile: ./analytics-site/Dockerfile
+      context: ./frontends
+      dockerfile: ./analytics/Dockerfile
     networks:
       - app-network
     ports:
