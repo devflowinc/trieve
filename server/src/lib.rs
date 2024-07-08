@@ -135,6 +135,10 @@ impl Modify for APIVersionAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         for (_, path_item) in openapi.paths.paths.iter_mut() {
             let mut version_header_param = Parameter::new("X-API-Version".to_string());
+            version_header_param.schema =
+                Some(utoipa::openapi::RefOr::T(utoipa::openapi::Schema::Object(
+                    utoipa::openapi::Object::with_type(utoipa::openapi::schema::SchemaType::String),
+                )));
             version_header_param.description = Some("Version for api".to_string());
             version_header_param.parameter_in = ParameterIn::Header;
             path_item.parameters = path_item.parameters.clone().map_or(
@@ -171,7 +175,7 @@ impl Modify for APIVersionAddon {
         (url = "http://localhost:8090",
         description = "Local development server"),
     ),
-    modifiers(&SecurityAddon),
+    modifiers(&SecurityAddon, &APIVersionAddon),
     paths(
         handlers::invitation_handler::post_invitation,
         handlers::auth_handler::login,
