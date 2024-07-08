@@ -214,7 +214,7 @@ export const AfMessage = (props: AfMessageProps) => {
                         if (e.key === "Escape") {
                           setEditing(false);
                         }
-                        if (e.key === "Enter") {
+                        if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
                           props.onEdit(editingMessageContent());
                           setEditedContent(editingMessageContent());
