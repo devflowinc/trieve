@@ -604,8 +604,23 @@ pub async fn bulk_insert_chunk_metadata_query(
                 })
                 .expect("Will always be present due to previous retain")
                 .clone();
-            let mut chunk_metadata = chunk_data.chunk_metadata.clone();
-            chunk_metadata.id = chunk_metadata_table.id;
+
+            let tag_set = chunk_data
+                .chunk_metadata
+                .tag_set
+                .clone()
+                .unwrap_or(vec![])
+                .iter()
+                .filter_map(|maybe_tag| {
+                    if let Some(tag) = maybe_tag {
+                        Some(tag.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect_vec();
+            let chunk_metadata =
+                ChunkMetadata::from_table_and_tag_set(chunk_metadata_table, tag_set);
 
             ChunkData {
                 chunk_metadata,
