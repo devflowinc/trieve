@@ -83,10 +83,7 @@ pub fn establish_connection(
 }
 
 use utoipa::{
-    openapi::{
-        path::{Parameter, ParameterIn},
-        security::{ApiKey, ApiKeyValue, SecurityScheme},
-    },
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
     Modify, OpenApi,
 };
 

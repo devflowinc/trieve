@@ -2479,7 +2479,7 @@ pub async fn count_semantic_chunks(
     .await?;
 
     let count = count_qdrant_query(
-        data.limit.unwrap_or(100000 as u64),
+        data.limit.unwrap_or(100000_u64),
         vec![qdrant_query],
         config.clone(),
     )
@@ -2509,7 +2509,7 @@ pub async fn count_full_text_chunks(
     .await?;
 
     let count = count_qdrant_query(
-        data.limit.unwrap_or(100000 as u64),
+        data.limit.unwrap_or(100000_u64),
         vec![qdrant_query],
         config.clone(),
     )
@@ -2555,7 +2555,7 @@ pub async fn count_hybrid_chunks(
     ];
 
     let count = count_qdrant_query(
-        data.limit.unwrap_or(100000 as u64),
+        data.limit.unwrap_or(100000_u64),
         qdrant_queries,
         config.clone(),
     )
