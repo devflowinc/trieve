@@ -10,12 +10,12 @@ on:
     branches:
       - 'main'
     paths:
-    - 'frontend/dashboard/**'
-    - 'frontend/search/**'
-    - 'frontend/chat/**'
-    - 'frontend/analytics-site/**'
-    - 'frontend/shared/**'
-    - 'frontend/config/**'
+    - 'frontends/dashboard/**'
+    - 'frontends/search/**'
+    - 'frontends/chat/**'
+    - 'frontends/analytics-site/**'
+    - 'frontends/shared/**'
+    - 'frontends/config/**'
     - '.github/workflows/**'
 
 jobs:
