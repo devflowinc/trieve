@@ -1030,7 +1030,7 @@ pub async fn readd_error_to_queue(
     }
 
     if let IngestionMessage::BulkUpload(mut payload) = message {
-        let old_paylaod_message = serde_json::to_string(&payload).map_err(|_| {
+        let old_payload_message = serde_json::to_string(&payload).map_err(|_| {
             ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
         })?;
 
@@ -1060,6 +1060,18 @@ pub async fn readd_error_to_queue(
                 log::error!("Failed to create event: {:?}", err);
             });
 
+            let mut redis_conn = redis_pool
+                .get()
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+            redis::cmd("lpush")
+                .arg("dead_letters")
+                .arg(old_payload_message)
+                .query_async(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
             return Err(ServiceError::InternalServerError(format!(
                 "Failed to create new qdrant point: {:?}",
                 error
@@ -1080,13 +1092,6 @@ pub async fn readd_error_to_queue(
             error,
             payload.attempt_number
         );
-
-        let _ = redis::cmd("LREM")
-            .arg("processing")
-            .arg(1)
-            .arg(old_paylaod_message)
-            .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
-            .await;
 
         redis::cmd("lpush")
             .arg("ingestion")
