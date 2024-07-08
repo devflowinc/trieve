@@ -4,12 +4,11 @@ use crate::{
         ClusterTopicsClickhouse, DatasetAnalytics, DatasetAndOrgWithSubAndPlan, HeadQueries, Pool,
         RAGAnalyticsFilter, RagQueryEvent, RagQueryEventClickhouse, SearchAnalyticsFilter,
         SearchClusterTopics, SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueryEvent,
-        SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse,
+        SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse, SearchTypeCount,
     },
     errors::ServiceError,
 };
 use actix_web::{web, HttpResponse};
-use clickhouse::Row;
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -462,16 +461,6 @@ pub async fn get_low_confidence_queries(
     .await;
 
     Ok(HttpResponse::Ok().json(queries))
-}
-
-#[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
-#[schema(example = json!({
-    "search_type": "search",
-    "search_count": 8,
-}))]
-pub struct SearchTypeCount {
-    pub search_type: String,
-    pub search_count: i32,
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
