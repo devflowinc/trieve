@@ -114,8 +114,27 @@ pub async fn get_queries_for_topic(
         ));
     }
 
+    let query_string = String::from(
+        "
+        SELECT DISTINCT ON (search_queries.request_params, search_queries.query) ?fields 
+        FROM search_queries 
+        JOIN search_cluster_memberships ON search_queries.id = search_cluster_memberships.search_id 
+        WHERE search_cluster_memberships.cluster_id = ? 
+            AND search_queries.dataset_id = ? 
+        GROUP BY
+            ?fields,
+            search_cluster_memberships.distance_to_centroid
+        ORDER BY
+            search_queries.request_params,
+            search_queries.query,
+            search_cluster_memberships.distance_to_centroid ASC
+        LIMIT 15 
+        OFFSET ?
+    ",
+    );
+
     let clickhouse_queries = clickhouse_client
-        .query("SELECT ?fields FROM search_queries JOIN search_cluster_memberships ON search_queries.id = search_cluster_memberships.search_id WHERE search_cluster_memberships.cluster_id = ? AND search_queries.dataset_id = ? ORDER BY search_cluster_memberships.distance_to_centroid ASC LIMIT 15 OFFSET ?")
+        .query(query_string.as_str())
         .bind(cluster_id)
         .bind(dataset_id)
         .bind((data.page - 1) * 15)
