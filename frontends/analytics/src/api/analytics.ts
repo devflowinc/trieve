@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   AnalyticsParams,
   HeadQuery,
@@ -9,6 +6,7 @@ import {
   RAGUsageResponse,
   RpsDatapoint,
   SearchQueryEvent,
+  SearchTypeCount,
 } from "shared/types";
 import { apiHost } from "../utils/apiHost";
 import { transformAnalyticsParams } from "../utils/formatDate";
@@ -183,6 +181,33 @@ export const getNoResultQueries = async (
   }
 
   const data = (await response.json()) as unknown as SearchQueryEvent[];
+  return data;
+};
+
+export const getQueryCounts = async (
+  filters: AnalyticsParams,
+  datasetId: string,
+): Promise<SearchTypeCount[]> => {
+  const response = await fetch(
+    `${apiHost}/analytics/${datasetId}/query/counts`,
+    {
+      credentials: "include",
+      method: "POST",
+      body: JSON.stringify(transformAnalyticsParams(filters)),
+      headers: {
+        "TR-Dataset": datasetId,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch no result queries: ${response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as unknown as SearchTypeCount[];
   return data;
 };
 
