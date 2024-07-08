@@ -9,6 +9,7 @@ use crate::{
     errors::ServiceError,
 };
 use actix_web::{web, HttpResponse};
+use clickhouse::Row;
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -461,6 +462,95 @@ pub async fn get_low_confidence_queries(
     .await;
 
     Ok(HttpResponse::Ok().json(queries))
+}
+
+#[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
+#[schema(example = json!({
+    "search_type": "search",
+    "search_count": 8,
+}))]
+pub struct SearchTypeCount {
+    pub search_type: String,
+    pub search_count: i32,
+}
+
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
+pub struct GetQueryCountReqPayload {
+    /// Filter to apply when fetching the head queries
+    pub filter: Option<SearchAnalyticsFilter>,
+    /// Page number to fetch; defaults to 1
+    pub page: Option<u32>,
+}
+
+/// Get Query Counts
+///
+/// This route allows you to get the total count of queries separated by search type.
+#[utoipa::path(
+    post,
+    path = "/analytics/{dataset_id}/query/counts",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = GetQueryCountReqPayload, description = "JSON request payload to filter the analytics", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Count of Queries grouped by type for the dataset", body = Vec<SearchTypeCount>),
+        (status = 400, description = "Service error relating to query counts", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the dataset you want to get low confidence queries for."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_query_counts(
+    dataset_id: web::Path<uuid::Uuid>,
+    data: web::Json<GetLowConfidenceQueriesReqPayload>,
+    _user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    if dataset_org_plan_sub.dataset.id != *dataset_id {
+        return Err(ServiceError::BadRequest(
+            "Dataset header does not match provided dataset ID".to_string(),
+        ));
+    }
+
+    let mut query_string = String::from(
+        "SELECT 
+            search_type,
+            COUNT(*) as search_count
+        FROM 
+            search_queries
+        WHERE dataset_id = ?
+        GROUP BY 
+            search_type
+        ORDER BY 
+            search_count DESC",
+    );
+
+    if let Some(filter) = &data.filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let result_counts = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id.into_inner())
+        .bind((data.page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<SearchTypeCount>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    Ok(HttpResponse::Ok().json(result_counts))
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
