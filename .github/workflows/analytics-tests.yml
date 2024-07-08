@@ -16,20 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: yarn --cwd analytics-site
+        working-directory: frontend
+        run: yarn --frozen-lockfile
       - name: Running lint
-        run: yarn --cwd analytics-site build
+        working-directory: frontend
+        run: yarn build --filter analytics
   eslint:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: yarn --cwd analytics-site
+        working-directory: frontend
+        run: yarn --frozen-lockfile
       - name: Running lint
-        run: yarn --cwd analytics-site lint:CI
+        working-directory: frontend
+        run: yarn lint --filter analytics
       - name: Annotate Code Linting Results
         uses: ataylorme/eslint-annotate-action@1.0.4
         if: always()
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          report-json: "./analytics-site/eslint_report.json"
+          report-json: "./frontend/analytics/eslint_report.json"
