@@ -4,8 +4,9 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, GeoInfoWithBias,
-    IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RedisPool, ScoreChunkDTO,
-    SearchQueryEventClickhouse, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
+    IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RecommendationEventClickhouse,
+    RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse, ServerDatasetConfiguration,
+    SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -1786,7 +1787,7 @@ pub async fn get_chunks_by_tracking_ids(
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct RecommendChunksRequest {
     /// The ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
     pub positive_chunk_ids: Option<Vec<uuid::Uuid>>,
@@ -1830,11 +1831,12 @@ pub struct RecommendChunksRequest {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn get_recommended_chunks(
     data: web::Json<RecommendChunksRequest>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
+    clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_chunk_ids = data.positive_chunk_ids.clone();
@@ -1860,7 +1862,7 @@ pub async fn get_recommended_chunks(
 
     timer.add("start extending tracking_ids and chunk_ids to qdrant_point_ids");
 
-    if let Some(positive_chunk_ids) = positive_chunk_ids {
+    if let Some(positive_chunk_ids) = positive_chunk_ids.clone() {
         positive_qdrant_ids.extend(
             get_point_ids_from_unified_chunk_ids(
                 positive_chunk_ids
@@ -1880,7 +1882,7 @@ pub async fn get_recommended_chunks(
         )
     }
 
-    if let Some(positive_chunk_tracking_ids) = positive_tracking_ids {
+    if let Some(positive_chunk_tracking_ids) = positive_tracking_ids.clone() {
         positive_qdrant_ids.extend(
             get_point_ids_from_unified_chunk_ids(
                 positive_chunk_tracking_ids
@@ -1902,7 +1904,7 @@ pub async fn get_recommended_chunks(
 
     let mut negative_qdrant_ids = vec![];
 
-    if let Some(negative_chunk_ids) = negative_chunk_ids {
+    if let Some(negative_chunk_ids) = negative_chunk_ids.clone() {
         negative_qdrant_ids.extend(
             get_point_ids_from_unified_chunk_ids(
                 negative_chunk_ids
@@ -1922,7 +1924,7 @@ pub async fn get_recommended_chunks(
         )
     }
 
-    if let Some(negative_chunk_tracking_ids) = negative_tracking_ids {
+    if let Some(negative_chunk_tracking_ids) = negative_tracking_ids.clone() {
         negative_qdrant_ids.extend(
             get_point_ids_from_unified_chunk_ids(
                 negative_chunk_tracking_ids
@@ -2024,6 +2026,41 @@ pub async fn get_recommended_chunks(
         .collect::<Vec<ChunkMetadataWithScore>>();
 
     timer.add("fetched metadata from point_ids");
+
+    let clickhouse_event = RecommendationEventClickhouse {
+        id: uuid::Uuid::new_v4(),
+        recommendation_type: String::from("chunk"),
+        positive_ids: positive_chunk_ids
+            .unwrap_or_default()
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect(),
+        negative_ids: negative_chunk_ids
+            .unwrap_or_default()
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect(),
+        positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
+        negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
+        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        top_score: recommended_chunk_metadatas_with_score
+            .first()
+            .map(|x| x.score)
+            .unwrap_or(0.0),
+        results: recommended_chunk_metadatas_with_score
+            .iter()
+            .map(|x| x.clone().into_response_payload())
+            .collect(),
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        created_at: time::OffsetDateTime::now_utc(),
+    };
+
+    let _ = send_to_clickhouse(
+        ClickHouseEvent::RecommendationEvent(clickhouse_event),
+        &clickhouse_client,
+    )
+    .await;
+    timer.add("send_to_clickhouse");
 
     if data.slim_chunks.unwrap_or(false) {
         let res = recommended_chunk_metadatas_with_score
