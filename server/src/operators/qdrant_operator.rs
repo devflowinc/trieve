@@ -722,7 +722,8 @@ pub async fn search_over_groups_query(
     group_size: u32,
     vector: VectorType,
     config: ServerDatasetConfiguration,
-) -> Result<Vec<GroupSearchResults>, ServiceError> {
+    get_total_pages: bool,
+) -> Result<(Vec<GroupSearchResults>, u64), ServiceError> {
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
@@ -748,63 +749,71 @@ pub async fn search_over_groups_query(
         },
     };
 
-    let qdrant_search_results = match vector {
-        VectorType::Dense(embedding_vector) => {
-            qdrant_client
-                .search_groups(&SearchPointGroups {
-                    collection_name: qdrant_collection.to_string(),
-                    vector: embedding_vector,
-                    vector_name: Some(vector_name.to_string()),
-                    limit: (limit * page as u32),
-                    score_threshold,
-                    with_payload: Some(WithPayloadSelector::from(false)),
-                    with_vectors: Some(WithVectorsSelector::from(false)),
-                    filter: Some(filter),
-                    group_by: "group_ids".to_string(),
-                    group_size: if group_size == 0 { 1 } else { group_size },
-                    timeout: Some(60),
-                    params: Some(SearchParams {
-                        exact: Some(false),
-                        indexed_only: Some(config.INDEXED_ONLY),
-                        ..Default::default()
-                    }),
+    let search_point_groups = match vector {
+        VectorType::Dense(ref embedding_vector) => SearchPointGroups {
+            collection_name: qdrant_collection.to_string(),
+            vector: embedding_vector.clone(),
+            vector_name: Some(vector_name.to_string()),
+            limit: (limit * page as u32),
+            score_threshold,
+            with_payload: Some(WithPayloadSelector::from(false)),
+            with_vectors: Some(WithVectorsSelector::from(false)),
+            filter: Some(filter.clone()),
+            group_by: "group_ids".to_string(),
+            group_size: if group_size == 0 { 1 } else { group_size },
+            timeout: Some(60),
+            params: Some(SearchParams {
+                exact: Some(false),
+                indexed_only: Some(config.INDEXED_ONLY),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+        VectorType::Sparse(ref sparse_vector) => {
+            let sparse_vector: Vector = sparse_vector.clone().into();
+            SearchPointGroups {
+                collection_name: qdrant_collection.to_string(),
+                vector: sparse_vector.data,
+                sparse_indices: sparse_vector.indices,
+                vector_name: Some(vector_name.to_string()),
+                limit: (limit * page as u32),
+                score_threshold,
+                with_payload: Some(WithPayloadSelector::from(false)),
+                with_vectors: Some(WithVectorsSelector::from(false)),
+                filter: Some(filter.clone()),
+                group_by: "group_ids".to_string(),
+                group_size: if group_size == 0 { 1 } else { group_size },
+                timeout: Some(60),
+                params: Some(SearchParams {
+                    exact: Some(false),
+                    indexed_only: Some(config.INDEXED_ONLY),
                     ..Default::default()
-                })
-                .await
+                }),
+                ..Default::default()
+            }
         }
+    };
 
-        VectorType::Sparse(sparse_vector) => {
-            let sparse_vector: Vector = sparse_vector.into();
-            qdrant_client
-                .search_groups(&SearchPointGroups {
-                    collection_name: qdrant_collection.to_string(),
-                    vector: sparse_vector.data,
-                    sparse_indices: sparse_vector.indices,
-                    vector_name: Some(vector_name.to_string()),
-                    limit: (limit * page as u32),
-                    score_threshold,
-                    with_payload: Some(WithPayloadSelector::from(false)),
-                    with_vectors: Some(WithVectorsSelector::from(false)),
-                    filter: Some(filter),
-                    group_by: "group_ids".to_string(),
-                    group_size: if group_size == 0 { 1 } else { group_size },
-                    timeout: Some(60),
-                    params: Some(SearchParams {
-                        exact: Some(false),
-                        indexed_only: Some(config.INDEXED_ONLY),
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                })
-                .await
-        }
-    }
-    .map_err(|e| {
-        log::error!("Failed to search points on Qdrant {:?}", e);
-        ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
-    })?;
+    let point_id_futures = qdrant_client.search_groups(&search_point_groups);
+
+    let qdrant_query = QdrantSearchQuery {
+        filter,
+        score_threshold,
+        vector,
+    };
+
+    let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
+
+    let count_future = count_qdrant_query(count_limit, vec![qdrant_query], config.clone());
+
+    let (qdrant_search_results, count) =
+        futures::future::join(point_id_futures, count_future).await;
 
     let point_ids: Vec<GroupSearchResults> = qdrant_search_results
+        .map_err(|e| {
+            log::error!("Failed to search points on Qdrant {:?}", e);
+            ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
+        })?
         .result
         .unwrap()
         .groups
@@ -841,7 +850,7 @@ pub async fn search_over_groups_query(
         .skip((page - 1) as usize * limit as usize)
         .collect();
 
-    Ok(point_ids)
+    Ok((point_ids, count?))
 }
 
 #[tracing::instrument]
