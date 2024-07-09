@@ -282,7 +282,8 @@ Install Stripe CLI.
 
 1. `stripe login`
 2. `stripe listen --forward-to localhost:8090/api/stripe/webhook`
-3. `stripe plans create --amount=1200 --currency=usd --interval=month --product=prod_PCHehsNBCcVN9i`
+3. `stripe products create --name trieve --default-price-data.unit-amount 1200 --default-price-data.currency usd`
+4. `stripe plans create --amount=1200 --currency=usd --interval=month --product={id from response of step 3}`
 
 ## SelfHosting / Deploy to AWS
 
