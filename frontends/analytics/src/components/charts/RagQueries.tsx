@@ -35,35 +35,37 @@ export const RagQueries = () => {
   }));
 
   return (
-    <ChartCard class="px-4" width={5}>
-      <div class="text-lg">RAG Queries</div>
-      <div class="text-sm text-neutral-600">
-        All RAG messages (topic/message and generate_from_chunk).
+    <ChartCard class="flex flex-col justify-between px-4" width={5}>
+      <div>
+        <div class="text-lg">RAG Queries</div>
+        <div class="text-sm text-neutral-600">
+          All RAG messages (topic/message and generate_from_chunk).
+        </div>
+        <Show
+          fallback={<div class="py-8">Loading...</div>}
+          when={headQueriesQuery.data}
+        >
+          {(data) => (
+            <table class="w-full py-2">
+              <thead>
+                <tr>
+                  <th class="text-left font-semibold">Message</th>
+                  <th class="text-right font-semibold">RAG Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                <For each={data()}>
+                  {(rag_query_event) => {
+                    return (
+                      <RagQueryEventCard rag_query_event={rag_query_event} />
+                    );
+                  }}
+                </For>
+              </tbody>
+            </table>
+          )}
+        </Show>
       </div>
-      <Show
-        fallback={<div class="py-8">Loading...</div>}
-        when={headQueriesQuery.data}
-      >
-        {(data) => (
-          <table class="w-full py-2">
-            <thead>
-              <tr>
-                <th class="text-left font-semibold">Message</th>
-                <th class="text-right font-semibold">RAG Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              <For each={data()}>
-                {(rag_query_event) => {
-                  return (
-                    <RagQueryEventCard rag_query_event={rag_query_event} />
-                  );
-                }}
-              </For>
-            </tbody>
-          </table>
-        )}
-      </Show>
       <div class="flex justify-end">
         <PaginationButtons size={18} pages={pages} />
       </div>

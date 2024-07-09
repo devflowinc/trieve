@@ -454,6 +454,7 @@ export interface HeadQuery {
 
 export interface SearchTypeCount {
   search_type: AnalyticsFilter["search_type"];
+  search_method: AnalyticsFilter["search_method"];
   search_count: number;
 }
 
