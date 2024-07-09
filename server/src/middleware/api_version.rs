@@ -1,7 +1,8 @@
+use crate::{data::models::DatasetAndOrgWithSubAndPlan, errors::ServiceError};
 use actix_http::header::{HeaderName, HeaderValue};
 use actix_web::{
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpMessage,
+    dev::{forward_ready, Payload, Service, ServiceRequest, ServiceResponse, Transform},
+    Error, FromRequest, HttpMessage, HttpRequest,
 };
 use chrono::NaiveDate;
 use futures_util::future::LocalBoxFuture;
@@ -10,12 +11,24 @@ use std::{
     rc::Rc,
 };
 
-use crate::data::models::DatasetAndOrgWithSubAndPlan;
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum APIVersion {
     One,
     Two,
+}
+
+impl FromRequest for APIVersion {
+    type Error = Error;
+    type Future = Ready<Result<APIVersion, Error>>;
+
+    #[inline]
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        ready(
+            req.extensions().get::<APIVersion>().cloned().ok_or(
+                ServiceError::InternalServerError("API version not found".to_string()).into(),
+            ),
+        )
+    }
 }
 
 impl APIVersion {
@@ -80,8 +93,6 @@ where
     forward_ready!(service);
 
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
-        let path = req.path();
-        println!("{path}");
         let srv = self.service.clone();
         Box::pin(async move {
             let version = {

@@ -9,6 +9,7 @@ use crate::data::models::{
 };
 use crate::errors::ServiceError;
 use crate::get_env;
+use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::clickhouse_operator::{
@@ -1102,7 +1103,10 @@ pub async fn search_chunks(
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    api_version: APIVersion,
 ) -> Result<HttpResponse, actix_web::Error> {
+    println!("API Version: {:?}", api_version);
+
     let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
