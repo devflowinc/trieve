@@ -4,7 +4,6 @@ use crate::{
     get_env,
 };
 use actix_web::web;
-use chrono::Timelike;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use serde_json::json;
@@ -384,13 +383,12 @@ pub async fn create_invoice_query(
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     let stripe_client = get_stripe_client();
-    let invoice =
-        stripe::Invoice::retrieve(&stripe_client, &invoice_id, &[])
-            .await
-            .map_err(|e| {
-                println!("Failed to retrieve invoice: {:?}", e);
-                return ServiceError::BadRequest("Failed to get invoice".to_string());
-            })?;
+    let invoice = stripe::Invoice::retrieve(&stripe_client, &invoice_id, &[])
+        .await
+        .map_err(|e| {
+            println!("Failed to retrieve invoice: {:?}", e);
+            return ServiceError::BadRequest("Failed to get invoice".to_string());
+        })?;
     let created_at = chrono::NaiveDateTime::from_timestamp(invoice.created.unwrap_or(0), 0);
     let total = invoice.total.unwrap_or(0);
     let status = invoice
