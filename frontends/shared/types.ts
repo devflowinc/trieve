@@ -420,6 +420,7 @@ export interface AnalyticsFilter {
   search_type:
     | "search"
     | "autocomplete"
+    | "rag"
     | "search_over_groups"
     | "search_within_groups";
 }

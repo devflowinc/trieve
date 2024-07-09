@@ -8,7 +8,6 @@ import { HeadQueries } from "../components/charts/HeadQueries";
 import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries";
 import { RagQueries } from "../components/charts/RagQueries";
 import { NoResultQueries } from "../components/charts/NoResultQueries";
-import { QueryCounts } from "../components/charts/QueryCounts";
 
 export const SearchAnalyticsPage = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
@@ -27,7 +26,6 @@ export const SearchAnalyticsPage = () => {
     <div class="min-h-screen bg-neutral-200/60 p-4 pt-2">
       <FilterBar filters={analyticsFilters} setFilters={setAnalyticsFilters} />
       <div class="grid grid-cols-10 items-stretch gap-2 p-2 pt-3">
-        <QueryCounts filters={analyticsFilters} />
         <LatencyGraph filters={analyticsFilters} />
         <RpsGraph filters={analyticsFilters} />
         <HeadQueries filters={analyticsFilters} />

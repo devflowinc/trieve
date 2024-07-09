@@ -1,6 +1,6 @@
 import { AnalyticsParams, DateRangeFilter } from "shared/types";
 
-export const formatdateforapi = (date: Date) => {
+export const formatDateForApi = (date: Date) => {
   return date
     .toLocaleString("en-CA", {
       year: "numeric",
@@ -26,9 +26,9 @@ export const transformAnalyticsParams = (params: AnalyticsParams) => {
 
 export const transformDateParams = (params: DateRangeFilter) => {
   return {
-    gt: params.gt ? formatdateforapi(params.gt) : undefined,
-    lt: params.lt ? formatdateforapi(params.lt) : undefined,
-    gte: params.gte ? formatdateforapi(params.gte) : undefined,
-    lte: params.lte ? formatdateforapi(params.lte) : undefined,
+    gt: params.gt ? formatDateForApi(params.gt) : undefined,
+    lt: params.lt ? formatDateForApi(params.lt) : undefined,
+    gte: params.gte ? formatDateForApi(params.gte) : undefined,
+    lte: params.lte ? formatDateForApi(params.lte) : undefined,
   };
 };
