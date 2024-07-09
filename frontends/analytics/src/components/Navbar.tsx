@@ -17,6 +17,10 @@ const navbarRoutes = [
     label: "Analytics",
   },
   {
+    href: "/queries",
+    label: "All Queries",
+  },
+  {
     href: "/trends",
     label: "Trend Explorer",
   },

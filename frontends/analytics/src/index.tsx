@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { TrendExplorer } from "./pages/TrendExplorer";
 import { Chart, registerables } from "chart.js";
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
+import { QueryTablePage } from "./pages/QueryTablePage";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/trends",
         component: TrendExplorer,
+      },
+      {
+        path: "/queries",
+        component: QueryTablePage,
       },
     ],
   },
