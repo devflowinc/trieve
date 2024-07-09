@@ -5,9 +5,10 @@ import { DatasetAndUsage } from "shared/types";
 import { usePathname } from "../hooks/usePathname";
 import { useBetterNav } from "../utils/useBetterNav";
 import { Select } from "shared/ui";
-import { AiOutlineUser } from "solid-icons/ai";
+import { AiOutlineLineChart, AiOutlineUser } from "solid-icons/ai";
 import { apiHost } from "../utils/apiHost";
 import { IoLogOutOutline } from "solid-icons/io";
+import { FaSolidMagnifyingGlass } from "solid-icons/fa";
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
   selectedDataset: DatasetAndUsage | null;
@@ -18,10 +19,12 @@ const navbarRoutes = [
   {
     href: "/",
     label: "Analytics",
+    icon: AiOutlineLineChart,
   },
   {
     href: "/trends",
     label: "Trend Explorer",
+    icon: FaSolidMagnifyingGlass,
   },
 ];
 
@@ -49,41 +52,50 @@ export const Sidebar = (props: NavbarProps) => {
   };
 
   return (
-    <div class="relative flex min-h-screen flex-col justify-start border border-r-neutral-300 bg-neutral-100 p-2 px-4 pr-8">
-      <div class="items-center gap-3">
+    <div class="relative flex min-h-screen flex-col justify-start border border-r-neutral-300 bg-neutral-100 p-4">
+      <div class="flex items-center gap-1">
         <img
           class="h-12 w-12 cursor-pointer"
           src="https://cdn.trieve.ai/trieve-logo.png"
           alt="Logo"
         />
-        <div class="h-4" />
+        <div>
+          <div class="text-2xl font-semibold leading-none">Trieve</div>
+          <div class="pl-1 text-sm leading-tight text-neutral-600">
+            Analytics
+          </div>
+        </div>
+      </div>
+      <div class="border-neutral-20 h-4 border-b" />
+      <div>
         <Select
-          label={<div class="text-sm opacity-60">Organization</div>}
-          class="min-w-[150px]"
+          label={<div class="pt-2 text-sm opacity-60">Organization</div>}
+          class="min-w-[220px]"
+          options={userContext?.user().orgs || []}
           display={(org) => org.name}
           onSelected={(e) => {
-            console.log(e);
             orgContext.selectOrg(e.id);
           }}
-          options={userContext?.user().orgs || []}
           selected={orgContext.selectedOrg()}
+          id="dataset-select"
         />
-        <Show when={props.datasetOptions.length > 0 && props.selectedDataset}>
-          {(selected) => (
-            <Select
-              label={<div class="text-sm opacity-60">Dataset</div>}
-              class="min-w-[220px]"
-              options={props.datasetOptions}
-              display={(dataset) => dataset.dataset.name}
-              onSelected={(e) => {
-                props.setSelectedDataset(e);
-              }}
-              selected={selected()}
-              id="dataset-select"
-            />
-          )}
-        </Show>
       </div>
+      <Show when={props.datasetOptions.length > 0 && props.selectedDataset}>
+        {(selected) => (
+          <Select
+            label={<div class="pt-2 text-sm opacity-60">Dataset</div>}
+            class="min-w-[220px]"
+            options={props.datasetOptions}
+            display={(dataset) => dataset.dataset.name}
+            onSelected={(e) => {
+              props.setSelectedDataset(e);
+            }}
+            selected={selected()}
+            id="dataset-select"
+          />
+        )}
+      </Show>
+      <div class="border-neutral-20 h-4 border-b" />
       <div class="items-center gap-4 pt-4">
         <For each={navbarRoutes}>
           {(link) => {
@@ -91,7 +103,7 @@ export const Sidebar = (props: NavbarProps) => {
               <div
                 role="link"
                 classList={{
-                  "cursor-pointer": true,
+                  "cursor-pointer flex items-center gap-2": true,
                   "text-purple-900 underline": pathname() === link.href,
                   "text-black": pathname() !== link.href,
                 }}
@@ -99,13 +111,14 @@ export const Sidebar = (props: NavbarProps) => {
                   navigate(link.href);
                 }}
               >
+                {link.icon({})}
                 {link.label}
               </div>
             );
           }}
         </For>
       </div>
-      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start justify-self-end border-t bg-neutral-200/50 px-4 py-4">
+      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start justify-self-end border-t border-t-neutral-300 bg-neutral-200/50 px-4 py-4">
         <div class="flex items-center gap-2">
           <p>{userContext?.user().email}</p>
           <AiOutlineUser class="h-4 w-4" />
