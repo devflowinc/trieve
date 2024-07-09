@@ -31,8 +31,25 @@ export const Sidebar = (props: NavbarProps) => {
   const pathname = usePathname();
   const navigate = useBetterNav();
 
+  const logOut = () => {
+    void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
+      method: "DELETE",
+      credentials: "include",
+    }).then((res) => {
+      res
+        .json()
+        .then((res) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          window.location.href = res.logout_url;
+        })
+        .catch(() => {
+          console.log("error");
+        });
+    });
+  };
+
   return (
-    <div class="relative flex min-h-screen flex-col justify-start border border-r-neutral-300 bg-neutral-50 p-2 px-4 pr-8">
+    <div class="relative flex min-h-screen flex-col justify-start border border-r-neutral-300 bg-neutral-100 p-2 px-4 pr-8">
       <div class="items-center gap-3">
         <img
           class="h-12 w-12 cursor-pointer"
@@ -88,29 +105,14 @@ export const Sidebar = (props: NavbarProps) => {
           }}
         </For>
       </div>
-      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start justify-self-end border-t px-4 py-4">
+      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start justify-self-end border-t bg-neutral-200/50 px-4 py-4">
         <div class="flex items-center gap-2">
           <p>{userContext?.user().email}</p>
           <AiOutlineUser class="h-4 w-4" />
         </div>
         <button
           class="flex items-center gap-2 hover:text-fuchsia-800"
-          onClick={() => {
-            void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
-              method: "DELETE",
-              credentials: "include",
-            }).then((res) => {
-              res
-                .json()
-                .then((res) => {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-                  window.location.href = res.logout_url;
-                })
-                .catch(() => {
-                  console.log("error");
-                });
-            });
-          }}
+          onClick={logOut}
         >
           Log Out <IoLogOutOutline class="inline-block h-4 w-4" />
         </button>
