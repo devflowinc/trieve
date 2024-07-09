@@ -14,7 +14,7 @@ import { createQuery } from "@tanstack/solid-query";
 import { apiHost } from "../utils/apiHost";
 import { redirect, useSearchParams } from "@solidjs/router";
 import { DatasetAndUsage } from "shared/types";
-import { Navbar } from "../components/Navbar";
+import { Sidebar } from "../components/Sidebar";
 import { NoDatasetsErrorPage } from "../pages/errors/NoDatasetsErrorPage";
 
 type DatasetContextType = Accessor<DatasetAndUsage>;
@@ -78,28 +78,30 @@ export const TopBarLayout: ParentComponent = (props) => {
   };
 
   return (
-    <div class="flex min-h-screen flex-col bg-neutral-100">
-      <Navbar
+    <div class="grid min-h-screen grid-cols-[300px_1fr] bg-neutral-100">
+      <Sidebar
         datasetOptions={datasetsQuery.data || []}
         selectedDataset={selectedDataset()}
         setSelectedDataset={proxySetSelectedDataset}
       />
-      <Show
-        when={
-          datasetsQuery.status === "success" &&
-          datasetsQuery.data?.length === 0 &&
-          datasetsQuery.isFetchedAfterMount
-        }
-      >
-        <NoDatasetsErrorPage orgId={org.selectedOrg().id} />
-      </Show>
-      <Show when={selectedDataset()}>
-        <DatasetContext.Provider
-          value={selectedDataset as Accessor<DatasetAndUsage>}
+      <div>
+        <Show
+          when={
+            datasetsQuery.status === "success" &&
+            datasetsQuery.data?.length === 0 &&
+            datasetsQuery.isFetchedAfterMount
+          }
         >
-          {props.children}
-        </DatasetContext.Provider>
-      </Show>
+          <NoDatasetsErrorPage orgId={org.selectedOrg().id} />
+        </Show>
+        <Show when={selectedDataset()}>
+          <DatasetContext.Provider
+            value={selectedDataset as Accessor<DatasetAndUsage>}
+          >
+            {props.children}
+          </DatasetContext.Provider>
+        </Show>
+      </div>
     </div>
   );
 };
