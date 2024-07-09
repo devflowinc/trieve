@@ -19,6 +19,9 @@ import { useNavigate } from "@solidjs/router";
 
 export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
+
+  const navigate = useNavigate();
+
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $dataset = datasetAndUserContext.currentDataset;
@@ -67,8 +70,6 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const [groupIds, setGroupIds] = createSignal<string[]>();
 
   const [editorHtmlContent, setEditorHtmlContent] = createSignal("");
-
-  const navigate = useNavigate();
 
   createEffect(() => {
     const currentDatasetId = $dataset?.()?.dataset.id;
