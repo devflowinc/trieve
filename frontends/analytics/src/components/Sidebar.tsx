@@ -24,7 +24,7 @@ const navbarRoutes = [
   },
   {
     href: "/analytics",
-    label: "Analytics",
+    label: "Search Analytics",
     icon: AiOutlineLineChart,
   },
   {

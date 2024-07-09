@@ -4,12 +4,13 @@ import { render } from "solid-js/web";
 
 import "./index.css";
 import { RouteDefinition, Router } from "@solidjs/router";
-import { Home } from "./pages/Home";
+import { SearchAnalyticsPage } from "./pages/SearchAnalyticsPage";
 import { UserAuthContextProvider } from "./contexts/UserAuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { TrendExplorer } from "./pages/TrendExplorer";
 import { Chart, registerables } from "chart.js";
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
+import { OverviewPage } from "./pages/OverviewPage";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +23,11 @@ const routes: RouteDefinition[] = [
     children: [
       {
         path: "/",
-        component: Home,
+        component: OverviewPage,
+      },
+      {
+        path: "/analytics",
+        component: SearchAnalyticsPage,
       },
       {
         path: "/trends",
