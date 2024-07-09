@@ -15,6 +15,7 @@ import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
 import { FullScreenModal } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
+import { IoOpenOutline } from "solid-icons/io";
 
 interface LowConfidenceQueriesProps {
   filters: AnalyticsParams;
@@ -157,7 +158,7 @@ const QueryCard = (props: QueryCardProps) => {
         <td class="truncate">{props.query.query}</td>
         <td class="truncate text-right">{props.query.top_score.toFixed(5)}</td>
       </tr>
-      <FullScreenModal title={props.query.query} show={open} setShow={setOpen}>
+      <FullScreenModal title={props.query.query} show={open} setShow={setOpen} icon={<IoOpenOutline />}>
         <SearchQueryEventModal searchEvent={props.query} />
       </FullScreenModal>
     </>
