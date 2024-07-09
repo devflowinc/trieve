@@ -699,13 +699,13 @@ pub struct GroupSearchResults {
     pub hits: Vec<SearchResult>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum VectorType {
     Sparse(Vec<(u32, f32)>),
     Dense(Vec<f32>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct QdrantSearchQuery {
     pub filter: Filter,
     pub score_threshold: Option<f32>,
@@ -863,6 +863,12 @@ pub async fn search_qdrant_query(
     )
     .await?;
 
+    let count = if !get_total_pages {
+        0_u64
+    } else {
+        count_qdrant_query(100000_u64, queries.clone(), config.clone()).await?
+    };
+
     let search_point_req_payloads: Vec<SearchPoints> = queries
         .into_iter()
         .map(|query| match query.vector {
@@ -928,48 +934,13 @@ pub async fn search_qdrant_query(
         ..Default::default()
     };
 
-    let search_response_future = qdrant_client.search_batch_points(&batch_points);
-
-    let count_query = search_point_req_payloads
-        .iter()
-        .map(|query| CountPoints {
-            collection_name: qdrant_collection.to_string(),
-            filter: query.filter.clone(),
-            exact: Some(true),
-            read_consistency: None,
-            shard_key_selector: None,
-        })
-        .collect::<Vec<_>>();
-
-    let point_count_futures = count_query
-        .iter()
-        .map(|query| async {
-            if !get_total_pages {
-                return Ok(0);
-            }
-
-            Ok(qdrant_client
-                .count(query)
-                .await
-                .map_err(|e| {
-                    log::error!("Failed to count points on Qdrant {:?}", e);
-                    ServiceError::BadRequest("Failed to count points on Qdrant".to_string())
-                })?
-                .result
-                .map(|count| count.count)
-                .unwrap_or(0))
-        })
-        .collect::<Vec<_>>();
-
-    let (search_batch_response, point_count_response) = futures::join!(
-        search_response_future,
-        futures::future::join_all(point_count_futures)
-    );
-
-    let search_batch_response = search_batch_response.map_err(|e| {
-        log::error!("Failed to search points on Qdrant {:?}", e);
-        ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
-    })?;
+    let search_batch_response = qdrant_client
+        .search_batch_points(&batch_points)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to search points on Qdrant {:?}", e);
+            ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
+        })?;
 
     let batch_lengths = search_batch_response
         .result
@@ -998,13 +969,7 @@ pub async fn search_qdrant_query(
         .unique_by(|point| point.point_id)
         .collect();
 
-    let point_count = point_count_response
-        .into_iter()
-        .map(|count: Result<u64, ServiceError>| count.unwrap_or(0))
-        .min()
-        .unwrap_or(0);
-
-    Ok((search_results, point_count, batch_lengths))
+    Ok((search_results, count, batch_lengths))
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1296,41 +1261,6 @@ pub async fn recommend_qdrant_groups_query(
         .collect();
 
     Ok(group_recommendation_results)
-}
-
-#[tracing::instrument]
-pub async fn get_point_count_qdrant_query(
-    filters: Filter,
-    config: &ServerDatasetConfiguration,
-    get_total_pages: bool,
-) -> Result<u64, ServiceError> {
-    if !get_total_pages {
-        return Ok(0);
-    };
-
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
-
-    let qdrant_client = get_qdrant_connection(
-        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
-        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
-    )
-    .await?;
-
-    let data = qdrant_client
-        .count(&CountPoints {
-            collection_name: qdrant_collection,
-            filter: Some(filters),
-            exact: Some(true),
-            read_consistency: None,
-            shard_key_selector: None,
-        })
-        .await
-        .map_err(|err| {
-            log::info!("Failed to count points from qdrant: {:?}", err);
-            ServiceError::BadRequest("Failed to count points from qdrant".to_string())
-        })?;
-
-    Ok(data.result.expect("Failed to get result from qdrant").count)
 }
 
 #[tracing::instrument]
