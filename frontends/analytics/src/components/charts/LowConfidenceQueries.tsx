@@ -1,9 +1,12 @@
-import { AnalyticsParams, AnalyticsFilter, SearchQueryEvent } from "shared/types";
+import {
+  AnalyticsParams,
+  AnalyticsFilter,
+  SearchQueryEvent,
+} from "shared/types";
 import { ChartCard } from "./ChartCard";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import {
   createEffect,
-  createMemo,
   createSignal,
   For,
   on,
@@ -131,7 +134,9 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
                 each={data()}
               >
                 {(query) => {
-                  return <QueryCard query={query} filters={props.filters.filter}/>;
+                  return (
+                    <QueryCard query={query} filters={props.filters.filter} />
+                  );
                 }}
               </For>
             </tbody>
@@ -145,25 +150,26 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   );
 };
 
-interface QueryCardProps {
+export interface QueryCardProps {
   query: SearchQueryEvent;
-  filters: AnalyticsFilter;
+  filters?: AnalyticsFilter;
 }
-const QueryCard = (props: QueryCardProps) => {
+export const QueryCard = (props: QueryCardProps) => {
   const [open, setOpen] = createSignal(false);
-  
+
   const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 
   const dataset = useContext(DatasetContext);
   const organization = useContext(OrgContext);
 
-  const openSearchPlayground = (query:String) => {
+  const openSearchPlayground = (query: string) => {
     const orgId = organization.selectedOrg()?.id;
     const datasetId = dataset()?.dataset?.id;
     let params = orgId ? `?organization=${orgId}` : "";
     if (datasetId) params += `&dataset=${datasetId}`;
     if (query) params += `&query=${query}`;
-    if (props.filters.search_method) params += `&searchType=${props.filters.search_method}`;
+    if (props.filters?.search_method)
+      params += `&searchType=${props.filters.search_method}`;
     return params;
   };
 
@@ -178,20 +184,20 @@ const QueryCard = (props: QueryCardProps) => {
         <td class="truncate">{props.query.query}</td>
         <td class="truncate text-right">{props.query.top_score.toFixed(5)}</td>
       </tr>
-      <FullScreenModal title={props.query.query} show={open} setShow={setOpen} icon = {
-        <button
-        type="button"
-        class="hover:text-fuchsia-500"
-        onClick={
-          (e) => {
-            e.preventDefault();
-            window.open(`${searchUiURL}${openSearchPlayground(props.query.query)}`, '_blank');
-          }
+      <FullScreenModal
+        title={props.query.query}
+        show={open}
+        setShow={setOpen}
+        icon={
+          <a
+            type="button"
+            class="hover:text-fuchsia-500"
+            href={`${searchUiURL}${openSearchPlayground(props.query.query)}`}
+            target="_blank"
+          >
+            <IoOpenOutline />
+          </a>
         }
-        >
-          <IoOpenOutline/>
-        </button>
-      }
       >
         <SearchQueryEventModal searchEvent={props.query} />
       </FullScreenModal>
