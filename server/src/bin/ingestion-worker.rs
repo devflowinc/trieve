@@ -610,8 +610,7 @@ pub async fn bulk_upload_chunks(
             chunk_data.group_ids,
             None,
             chunk_tags,
-        )
-        .into();
+        );
 
         let mut vector_payload = HashMap::from([(
             "sparse_vectors".to_string(),
@@ -853,7 +852,7 @@ async fn upload_chunk(
             };
 
         let qdrant_payload =
-            QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None, chunk_tags).into();
+            QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None, chunk_tags);
 
         let vector_name = match &embedding_vector {
             Some(embedding_vector) => match embedding_vector.len() {

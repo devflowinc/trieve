@@ -3279,17 +3279,19 @@ dependencies = [
 
 [[package]]
 name = "qdrant-client"
-version = "1.9.0"
+version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f99a77fdc9b1ef9ce9ab9edcdd3e56e6977475faf633598f1a37066c87be4b7"
+checksum = "eb7527de5e2ea7a239d3bc1da8b2d6db5652322daa1cbf4b3a55ad670f3891ed"
 dependencies = [
  "anyhow",
+ "derive_builder",
  "futures-util",
  "prost",
  "prost-types",
  "reqwest 0.12.5",
  "serde",
  "serde_json",
+ "thiserror",
  "tonic",
 ]
 

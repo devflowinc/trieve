@@ -75,6 +75,7 @@ pub async fn create_new_qdrant_collection_query(
                             on_disk: Some(false),
                             ..Default::default()
                         }),
+                        modifier: None,
                     },
                 );
 
@@ -366,7 +367,7 @@ pub async fn create_new_qdrant_point_query(
         None
     };
 
-    let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags).into();
+    let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags);
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let vector_name = match embedding_vector.len() {
@@ -503,7 +504,7 @@ pub async fn update_qdrant_point_query(
         let point = PointStruct::new(
             metadata.qdrant_point_id.clone().to_string(),
             vector_payload,
-            payload.into(),
+            payload,
         );
 
         qdrant_client
