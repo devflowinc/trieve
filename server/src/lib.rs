@@ -545,8 +545,8 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(clickhouse_client.clone()))
                 .app_data(web::Data::new(metrics.clone()))
                 .wrap(sentry_actix::Sentry::new())
-                .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(middleware::api_version::ApiVersionCheckFactory)
+                .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
                     IdentityMiddleware::builder()
                         .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
