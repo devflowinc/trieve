@@ -92,7 +92,7 @@ where
 
     forward_ready!(service);
 
-    fn call(&self, mut req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         let srv = self.service.clone();
         Box::pin(async move {
             let version = {
@@ -116,15 +116,20 @@ where
                 }
             };
 
-            if let Some(version) = version {
-                req.headers_mut().insert(
-                    HeaderName::from_static("X-API-Version"),
-                    HeaderValue::from_str(version.to_header_str()).expect("A valid header string"),
-                );
+            if let Some(version) = version.clone() {
                 req.extensions_mut().insert(version);
             }
 
-            srv.call(req).await
+            let mut res = srv.call(req).await?;
+
+            if let Some(version) = version.clone() {
+                res.headers_mut().insert(
+                    HeaderName::from_static("x-api-version"),
+                    HeaderValue::from_str(version.to_header_str()).expect("A valid header string"),
+                );
+            }
+
+            Ok(res)
         })
     }
 }
