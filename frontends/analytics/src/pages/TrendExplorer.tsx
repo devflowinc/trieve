@@ -1,11 +1,11 @@
 import { createQuery } from "@tanstack/solid-query";
 import { DatasetContext } from "../layouts/TopBarLayout";
 import { getQueriesForTopic, getTrendsBubbles } from "../api/trends";
-import { createMemo, createSignal, For, Show, useContext } from "solid-js";
+import { createSignal, For, Show, useContext } from "solid-js";
 import { SearchClusterTopics, SearchQueryEvent } from "shared/types";
 import { toTitleCase } from "../utils/titleCase";
 import { parseCustomDateString } from "../components/charts/LatencyGraph";
-import { QueryCard } from "../components/charts/LowConfidenceQueries";
+import { FullScreenModal } from "shared/ui";
 
 export const TrendExplorer = () => {
   const dataset = useContext(DatasetContext);
@@ -16,28 +16,6 @@ export const TrendExplorer = () => {
       return getTrendsBubbles(dataset().dataset.id);
     },
   }));
-
-  const [selectedTopicId, setSelectedTopicId] = createSignal<string | null>(
-    null,
-  );
-
-  const selectedTopicQuery = createQuery(() => ({
-    queryKey: ["selected-topic", selectedTopicId()],
-    queryFn: async () => {
-      const selectedTopic = selectedTopicId();
-      if (selectedTopic === null) {
-        return [];
-      }
-      return getQueriesForTopic(dataset().dataset.id, selectedTopic);
-    },
-    enabled() {
-      return selectedTopicId() !== null;
-    },
-  }));
-
-  const selectedTopic = createMemo(() => {
-    return trendsQuery.data?.find((topic) => topic.id === selectedTopicId());
-  });
 
   return (
     <div class="p-8">
@@ -59,7 +37,12 @@ export const TrendExplorer = () => {
               }
               each={trendsQuery.data}
             >
-              {(topic) => <TopicRow topic={topic} />}
+              {(topic) => (
+                <TopicRow
+                  datasetId={dataset().dataset.id || ""}
+                  topic={topic}
+                />
+              )}
             </For>
           </tbody>
         </table>
@@ -70,15 +53,36 @@ export const TrendExplorer = () => {
 
 interface TopicRowProps {
   topic: SearchClusterTopics;
+  datasetId: string;
 }
 
 const TopicRow = (props: TopicRowProps) => {
+  const [open, setOpen] = createSignal(false);
+
+  const selectedTopicQuery = createQuery(() => ({
+    queryKey: ["selected-topic", props.topic.id],
+    queryFn: async () => {
+      return getQueriesForTopic(props.datasetId, props.topic.id);
+    },
+    enabled: open(),
+  }));
+
   return (
-    <tr class="border-b border-neutral-200">
-      <td class="p-2">{props.topic.topic}</td>
-      <td class="p-2 text-right">{props.topic.density}</td>
-      <td class="p-2 text-right">{props.topic.avg_score}</td>
-    </tr>
+    <>
+      <tr onClick={() => setOpen(true)} class="border-b border-neutral-200">
+        <td class="p-2">{props.topic.topic}</td>
+        <td class="p-2 text-right">{props.topic.density}</td>
+        <td class="p-2 text-right">{props.topic.avg_score}</td>
+      </tr>
+      <FullScreenModal setShow={setOpen} show={open}>
+        <div>Searches</div>
+        <Show when={selectedTopicQuery.data}>
+          {(searches) => (
+            <For each={searches()}>{(search) => <div>{search.query}</div>}</For>
+          )}
+        </Show>
+      </FullScreenModal>
+    </>
   );
 };
 
