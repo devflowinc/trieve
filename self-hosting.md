@@ -121,7 +121,8 @@ A api.yourdomain.com your-server-ip
 Most values can be left as default, the ones you do need to edit are
 
 ```
-KEYCLOAK_HOST="auth.yourdomain.com"
+KC_HOSTNAME="auth.yourdomain.com"
+KC_PROXY=edge
 
 VITE_API_HOST=https://api.yourdomain.com/api
 VITE_SEARCH_UI_URL=https://search.yourdomain.com

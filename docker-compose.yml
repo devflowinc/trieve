@@ -295,8 +295,8 @@ services:
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=password
       - KC_HEALTH_ENABLED=true
-      - KC_PROXY=${KEYCLOAK_PROXY-none}
-      - KC_HOSTNAME=${KEYCLOAK_HOST}
+      - KC_PROXY=${KC_PROXY}
+      - KC_HOSTNAME=${KC_HOSTNAME}
     healthcheck:
       test:
         [
