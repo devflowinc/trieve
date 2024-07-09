@@ -1,7 +1,9 @@
+import { QueryCounts } from "../components/charts/QueryCounts";
+
 export const OverviewPage = () => {
   return (
-    <div>
-      <div>Overview page</div>
+    <div class="p-8">
+      <QueryCounts />
     </div>
   );
 };

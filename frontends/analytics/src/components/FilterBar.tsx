@@ -23,7 +23,7 @@ interface FilterBarProps {
   setFilters: SetStoreFunction<AnalyticsParams>;
 }
 
-const timeFrameOptions: AnalyticsParams["granularity"][] = [
+export const timeFrameOptions: AnalyticsParams["granularity"][] = [
   "day",
   "week",
   "month",
@@ -32,12 +32,12 @@ const timeFrameOptions: AnalyticsParams["granularity"][] = [
   "second",
 ];
 
-type DateRangeOption = {
+export type DateRangeOption = {
   date: Date;
   label: string;
 };
 
-const dateRanges: DateRangeOption[] = [
+export const dateRanges: DateRangeOption[] = [
   {
     label: "Past Hour",
     date: subHours(new Date(), 1),

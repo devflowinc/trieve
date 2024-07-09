@@ -41,13 +41,13 @@ export const TrendExplorer = () => {
 
   return (
     <div class="p-8">
-      <div class="mx-auto max-w-xl bg-white">
-        <table class="debug mt-2 w-full">
+      <div class="mx-auto max-w-xl rounded-md border border-neutral-200 bg-white">
+        <table class="mt-2 w-full">
           <thead>
             <tr>
-              <th class="text-left font-semibold">Topic</th>
-              <th class="text-right font-semibold">Density</th>
-              <th class="text-right font-semibold">Average Score</th>
+              <th class="p-2 text-left font-semibold">Topic</th>
+              <th class="p-2 text-right font-semibold">Density</th>
+              <th class="p-2 text-right font-semibold">Average Score</th>
             </tr>
           </thead>
           <tbody>
@@ -75,17 +75,9 @@ interface TopicRowProps {
 const TopicRow = (props: TopicRowProps) => {
   return (
     <tr class="border-b border-neutral-200">
-      <td class="py-2">
-        <div class="flex items-center gap-2">
-          <div class="text-neutral-900">{props.topic.topic}</div>
-        </div>
-      </td>
-      <td class="py-2 text-right">
-        <div class="text-neutral-900">{props.topic.density}</div>
-      </td>
-      <td class="py-2 text-right">
-        <div class="text-neutral-900">{props.topic.avg_score}</div>
-      </td>
+      <td class="p-2">{props.topic.topic}</td>
+      <td class="p-2 text-right">{props.topic.density}</td>
+      <td class="p-2 text-right">{props.topic.avg_score}</td>
     </tr>
   );
 };

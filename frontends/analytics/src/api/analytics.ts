@@ -212,7 +212,7 @@ export const getNoResultQueries = async (
 };
 
 export const getQueryCounts = async (
-  filters: AnalyticsParams,
+  gt_date: string,
   datasetId: string,
 ): Promise<SearchTypeCount[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
