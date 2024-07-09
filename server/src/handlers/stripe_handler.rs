@@ -1,16 +1,12 @@
 use crate::{
-    data::models::Pool,
+    data::models::{DatasetAndOrgWithSubAndPlan, Pool},
     errors::ServiceError,
     get_env,
     middleware::auth_middleware::verify_owner,
     operators::{
-        organization_operator::get_org_from_id_query,
+        organization_operator::{get_org_from_id_query, get_org_from_subscription_id_query},
         stripe_operator::{
-            cancel_stripe_subscription, create_stripe_payment_link, create_stripe_plan_query,
-            create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query,
-            get_option_subscription_by_organization_id_query, get_plan_by_id_query,
-            get_subscription_by_id_query, set_stripe_subscription_current_period_end,
-            update_stripe_subscription, update_stripe_subscription_plan_query,
+            cancel_stripe_subscription, create_invoice_query, create_stripe_payment_link, create_stripe_plan_query, create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query, get_invoices_for_org_query, get_option_subscription_by_organization_id_query, get_plan_by_id_query, get_subscription_by_id_query, set_stripe_subscription_current_period_end, update_stripe_subscription, update_stripe_subscription_plan_query
         },
     },
 };
@@ -51,6 +47,7 @@ pub async fn webhook(
                 if let EventObject::CheckoutSession(checkout_session) = event.data.object {
                     let optional_subscription_pool = pool.clone();
                     let subscription_stripe_id = checkout_session
+                        .clone()
                         .subscription
                         .ok_or(ServiceError::BadRequest(
                             "Checkout session must have a subscription".to_string(),
@@ -58,7 +55,8 @@ pub async fn webhook(
                         .id()
                         .to_string();
 
-                    let metadata = checkout_session.metadata.ok_or(ServiceError::BadRequest(
+
+                    let metadata = checkout_session.clone().metadata.ok_or(ServiceError::BadRequest(
                         "Checkout session must have metadata".to_string(),
                     ))?;
                     let plan_id = metadata
@@ -105,9 +103,16 @@ pub async fn webhook(
                         subscription_stripe_id,
                         plan_id,
                         organization_id,
-                        pool,
+                        pool.clone(),
                     )
                     .await?;
+
+
+                    let invoice = checkout_session.clone().invoice;
+                    if invoice.is_some() {
+                        let invoice_id = invoice.unwrap().id();
+                        create_invoice_query(organization_id, invoice_id, pool).await?;
+                    }
                 }
             }
             EventType::PlanCreated => {
@@ -316,4 +321,28 @@ pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_
         .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(stripe_plans))
+}
+
+/// Get All Invoices
+///
+/// Get a list of all invoices
+#[utoipa::path(
+    get,
+    path = "/stripe/invoices/{organization_id}",
+    context_path = "/api",
+    tag = "Stripe",
+    responses (
+        (status = 200, description ="List of all invoices", body = Vec<StripeInvoice>),
+        (status = 400, description = "Service error relating to getting all invoices", body = ErrorResponseBody),
+    ),
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn get_all_invoices(
+    pool: web::Data<Pool>,
+    user: OwnerOnly,
+    path_data: web::Path<uuid::Uuid>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let org_id = path_data.into_inner();
+    let invoices = get_invoices_for_org_query(org_id, pool).await?;
+    Ok(HttpResponse::Ok().json(invoices))
 }
