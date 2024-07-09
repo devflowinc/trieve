@@ -222,6 +222,7 @@ impl Modify for SecurityAddon {
         handlers::stripe_handler::cancel_subscription,
         handlers::stripe_handler::update_subscription_plan,
         handlers::stripe_handler::get_all_plans,
+        handlers::stripe_handler::get_all_invoices,
         handlers::analytics_handler::get_overall_topics,
         handlers::analytics_handler::get_queries_for_topic,
         handlers::analytics_handler::get_query,
@@ -971,6 +972,10 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/plans")
                                         .route(web::get().to(handlers::stripe_handler::get_all_plans)),
+                                )
+                                .service(
+                                    web::resource("/invoices/{organization_id}")
+                                        .route(web::get().to(handlers::stripe_handler::get_all_invoices)),
                                 ),
                         )
                         .service(
