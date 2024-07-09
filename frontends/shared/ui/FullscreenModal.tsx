@@ -8,7 +8,7 @@ import {
   Transition,
   TransitionChild,
 } from "terracotta";
-
+import { IoOpenOutline } from 'solid-icons/io';
 interface FullScreenModalProps {
   children: JSX.Element;
   show: Accessor<boolean>;
@@ -55,12 +55,15 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
             <DialogPanel class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left border border-neutral-100 align-middle transition-all transform bg-white shadow-xl rounded">
               <Show when={props.title}>
                 {(title) => (
-                  <DialogTitle
-                    as="h3"
-                    class="text-lg font-medium leading-6 text-neutral-900"
-                  >
-                    {title()}
-                  </DialogTitle>
+                  <div class="flex items-center justify-between">
+                    <DialogTitle
+                      as="h3"
+                      class="text-lg font-medium leading-6 text-neutral-900"
+                    >
+                      {title()}
+                    </DialogTitle>
+                    <IoOpenOutline class="ml-2" />
+                </div>
                 )}
               </Show>
               {props.children}
