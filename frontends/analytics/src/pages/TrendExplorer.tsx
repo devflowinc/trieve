@@ -4,9 +4,9 @@ import { getQueriesForTopic, getTrendsBubbles } from "../api/trends";
 import { createMemo, createSignal, For, Show, useContext } from "solid-js";
 import { TrendExplorerCanvas } from "../components/trend-explorer/TrendExplorerCanvas";
 import { SearchQueryEvent } from "shared/types";
-import { FullScreenModal } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { parseCustomDateString } from "../components/charts/LatencyGraph";
+import { QueryCard } from "../components/charts/LowConfidenceQueries";
 
 export const TrendExplorer = () => {
   const dataset = useContext(DatasetContext);
@@ -42,7 +42,7 @@ export const TrendExplorer = () => {
 
   return (
     <div class="relative grow items-start">
-      <div class="absolute left-[20px] top-[20px] w-[380px] overflow-scroll rounded-lg border border-neutral-300 bg-neutral-200 p-4">
+      <div class="absolute left-[20px] top-[20px] w-[380px] overflow-auto rounded-lg border border-neutral-300 bg-neutral-200 p-2">
         <Show when={selectedTopic()?.topic}>
           {(topicName) => (
             <div class="pb-2 text-lg">
@@ -51,16 +51,26 @@ export const TrendExplorer = () => {
           )}
         </Show>
         <div class="flex flex-col gap-1">
-          <For
-            fallback={
-              <div class="py-4 text-center opacity-40">
-                Select a topic to view searches for.
-              </div>
-            }
-            each={selectedTopicQuery?.data}
-          >
-            {(query) => <QueryCard searchEvent={query} />}
-          </For>
+          <table class="mt-2 w-full py-2">
+            <thead>
+              <tr>
+                <th class="text-left font-semibold">Query</th>
+                <th class="text-right font-semibold">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For
+                fallback={
+                  <div class="py-4 text-center opacity-40">
+                    Select a topic to view searches for.
+                  </div>
+                }
+                each={selectedTopicQuery?.data}
+              >
+                {(query) => <QueryCard query={query} />}
+              </For>
+            </tbody>
+          </table>
         </div>
       </div>
       <Show when={trendsQuery?.data}>
@@ -72,30 +82,6 @@ export const TrendExplorer = () => {
         )}
       </Show>
     </div>
-  );
-};
-
-interface QueryCardProps {
-  searchEvent: SearchQueryEvent;
-}
-const QueryCard = (props: QueryCardProps) => {
-  const [open, setOpen] = createSignal(false);
-  return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        class="font-sm rounded border border-neutral-300 bg-neutral-100 p-2 text-left"
-      >
-        <div>{props.searchEvent.query}</div>
-      </button>
-      <FullScreenModal
-        title={props.searchEvent.query}
-        show={open}
-        setShow={setOpen}
-      >
-        <SearchQueryEventModal searchEvent={props.searchEvent} />
-      </FullScreenModal>
-    </>
   );
 };
 
