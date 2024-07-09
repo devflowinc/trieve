@@ -10,7 +10,7 @@ import { RagQueries } from "../components/charts/RagQueries";
 import { NoResultQueries } from "../components/charts/NoResultQueries";
 import { QueryCounts } from "../components/charts/QueryCounts";
 
-export const Home = () => {
+export const SearchAnalyticsPage = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
     filter: {
       date_range: {
