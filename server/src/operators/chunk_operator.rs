@@ -72,7 +72,7 @@ pub async fn get_chunk_metadatas_from_point_ids(
     let chunk_metadatas = chunk_metadata_pairs
         .into_iter()
         .map(|(table, tag_set)| {
-            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![]))
+            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or_default())
         })
         .collect();
 
@@ -623,15 +623,9 @@ pub async fn bulk_insert_chunk_metadata_query(
                 .chunk_metadata
                 .tag_set
                 .clone()
-                .unwrap_or(vec![])
+                .unwrap_or_default()
                 .iter()
-                .filter_map(|maybe_tag| {
-                    if let Some(tag) = maybe_tag {
-                        Some(tag.clone())
-                    } else {
-                        None
-                    }
-                })
+                .filter_map(|maybe_tag| maybe_tag.clone())
                 .collect_vec();
             let chunk_metadata =
                 ChunkMetadata::from_table_and_tag_set(chunk_metadata_table, tag_set);
