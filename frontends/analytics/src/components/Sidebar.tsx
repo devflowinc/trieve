@@ -37,6 +37,7 @@ export const Sidebar = (props: NavbarProps) => {
           alt="Logo"
         />
         <Select
+          label={<div class="text-sm opacity-60">Organization</div>}
           class="min-w-[150px]"
           display={(org) => org.name}
           onSelected={(e) => {
@@ -49,6 +50,7 @@ export const Sidebar = (props: NavbarProps) => {
         <Show when={props.datasetOptions.length > 0 && props.selectedDataset}>
           {(selected) => (
             <Select
+              label={<div class="text-sm opacity-60">Dataset</div>}
               class="min-w-[220px]"
               options={props.datasetOptions}
               display={(dataset) => dataset.dataset.name}
