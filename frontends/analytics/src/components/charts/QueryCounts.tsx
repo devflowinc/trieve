@@ -1,14 +1,13 @@
-import { AnalyticsParams, SearchTypeCount } from "shared/types";
-import { For, Show, useContext } from "solid-js";
+import { SearchTypeCount } from "shared/types";
+import { createSignal, For, Show, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { createQuery } from "@tanstack/solid-query";
 import { getQueryCounts } from "../../api/analytics";
 import { ChartCard } from "./ChartCard";
 import { toTitleCase } from "../../utils/titleCase";
-
-interface QueryCountsProps {
-  filters: AnalyticsParams;
-}
+import { Select } from "shared/ui";
+import { DateRangeOption, dateRanges } from "../FilterBar";
+import { formatDateForApi } from "../../utils/formatDate";
 
 const displaySearchType = (type: SearchTypeCount["search_type"]) => {
   switch (type) {
@@ -20,26 +19,49 @@ const displaySearchType = (type: SearchTypeCount["search_type"]) => {
       return "Search Over Groups";
     case "search_within_groups":
       return "Search Within Groups";
+    case "rag":
+      return "RAG";
+    default:
+      return type;
   }
 };
 
-export const QueryCounts = (props: QueryCountsProps) => {
+export const QueryCounts = () => {
   const dataset = useContext(DatasetContext);
+  const [dateSelection, setDateSelection] = createSignal<DateRangeOption>(
+    dateRanges[3],
+  );
 
   const headQueriesQuery = createQuery(() => ({
-    queryKey: ["queryCounts", { filters: props.filters }],
+    queryKey: ["queryCounts", { gt_date: dateSelection().date }],
     queryFn: () => {
-      return getQueryCounts(props.filters, dataset().dataset.id);
+      return getQueryCounts(
+        formatDateForApi(dateSelection().date),
+        dataset().dataset.id,
+      );
     },
   }));
 
   return (
     <ChartCard class="flex flex-col justify-between px-4" width={10}>
       <div>
-        <div class="flex items-baseline justify-start gap-4">
-          <div class="text-lg">Total Searches</div>
-          <div class="text-sm text-neutral-600">
-            Total Count of Queries by Type
+        <div class="flex items-baseline justify-between gap-4">
+          <div>
+            <div class="text-lg leading-none">Total Searches</div>
+            <div class="text-sm text-neutral-600">
+              Total Count of Queries by Type
+            </div>
+          </div>
+          <div>
+            <Select
+              class="min-w-[80px] !bg-white"
+              display={(s) => s.label}
+              selected={dateSelection()}
+              onSelected={(e) => {
+                setDateSelection(e);
+              }}
+              options={dateRanges}
+            />
           </div>
         </div>
         <Show
@@ -53,7 +75,9 @@ export const QueryCounts = (props: QueryCountsProps) => {
                   return (
                     <div class="text-center">
                       <div>{displaySearchType(search.search_type)}</div>
-                      <div>{toTitleCase(search.search_method)}</div>
+                      <div class="opacity-50">
+                        {toTitleCase(search.search_method)}
+                      </div>
                       <div class="text-lg font-semibold">
                         {search.search_count}
                       </div>

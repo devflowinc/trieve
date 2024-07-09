@@ -7,9 +7,8 @@ import { useBetterNav } from "../utils/useBetterNav";
 import { Select } from "shared/ui";
 import { AiOutlineLineChart, AiOutlineUser } from "solid-icons/ai";
 import { apiHost } from "../utils/apiHost";
-import { IoLogOutOutline } from "solid-icons/io";
-import { FaSolidMagnifyingGlass } from "solid-icons/fa";
-import { HiOutlineNewspaper } from "solid-icons/hi";
+import { IoChatboxOutline, IoLogOutOutline } from "solid-icons/io";
+import { HiOutlineMagnifyingGlass, HiOutlineNewspaper } from "solid-icons/hi";
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
   selectedDataset: DatasetAndUsage | null;
@@ -28,9 +27,14 @@ const navbarRoutes = [
     icon: AiOutlineLineChart,
   },
   {
+    href: "/rag",
+    label: "RAG Analytics",
+    icon: IoChatboxOutline,
+  },
+  {
     href: "/trends",
     label: "Trend Explorer",
-    icon: FaSolidMagnifyingGlass,
+    icon: HiOutlineMagnifyingGlass,
   },
 ];
 

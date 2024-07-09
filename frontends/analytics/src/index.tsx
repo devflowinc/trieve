@@ -11,6 +11,7 @@ import { TrendExplorer } from "./pages/TrendExplorer";
 import { Chart, registerables } from "chart.js";
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 import { OverviewPage } from "./pages/OverviewPage";
+import { RagAnalyticsPage } from "./pages/RagAnalyticsPage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/analytics",
         component: SearchAnalyticsPage,
+      },
+      {
+        path: "/rag",
+        component: RagAnalyticsPage,
       },
       {
         path: "/trends",
