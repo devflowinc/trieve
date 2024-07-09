@@ -395,3 +395,12 @@ export const isInvitation = (data: unknown): data is Invitation => {
 
   return true;
 };
+
+export interface StripeInvoice {
+  created_at: string;
+  hosted_invoice_url: string;
+  id: string;
+  org_id: string;
+  status: string;
+  total: number;
+}
