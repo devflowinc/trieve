@@ -9,6 +9,7 @@ import { AiOutlineLineChart, AiOutlineUser } from "solid-icons/ai";
 import { apiHost } from "../utils/apiHost";
 import { IoLogOutOutline } from "solid-icons/io";
 import { FaSolidMagnifyingGlass } from "solid-icons/fa";
+import { HiOutlineNewspaper } from "solid-icons/hi";
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
   selectedDataset: DatasetAndUsage | null;
@@ -18,6 +19,11 @@ interface NavbarProps {
 const navbarRoutes = [
   {
     href: "/",
+    label: "Overview",
+    icon: HiOutlineNewspaper,
+  },
+  {
+    href: "/analytics",
     label: "Analytics",
     icon: AiOutlineLineChart,
   },
@@ -96,7 +102,7 @@ export const Sidebar = (props: NavbarProps) => {
         )}
       </Show>
       <div class="border-neutral-20 h-4 border-b" />
-      <div class="items-center gap-4 pt-4">
+      <div class="flex flex-col gap-4 px-2 pt-4">
         <For each={navbarRoutes}>
           {(link) => {
             return (
@@ -111,7 +117,7 @@ export const Sidebar = (props: NavbarProps) => {
                   navigate(link.href);
                 }}
               >
-                {link.icon({})}
+                {link.icon({ size: "18px" })}
                 {link.label}
               </div>
             );
