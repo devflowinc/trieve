@@ -14,8 +14,8 @@ use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
-        quantization_config::Quantization, BinaryQuantization, CountPoints, CreateCollection,
-        Distance, FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
+        quantization_config::Quantization, BinaryQuantization, CreateCollection, Distance,
+        FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
         QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy, ScrollPoints,
         SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints, SparseIndexConfig,
         SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector,
@@ -71,6 +71,7 @@ pub async fn create_new_qdrant_collection_query(
                 sparse_vector_config.insert(
                     "sparse_vectors".to_string(),
                     SparseVectorParams {
+                        modifier: None,
                         index: Some(SparseIndexConfig {
                             on_disk: Some(false),
                             ..Default::default()
@@ -366,7 +367,7 @@ pub async fn create_new_qdrant_point_query(
         None
     };
 
-    let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags).into();
+    let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags);
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let vector_name = match embedding_vector.len() {
@@ -503,7 +504,7 @@ pub async fn update_qdrant_point_query(
         let point = PointStruct::new(
             metadata.qdrant_point_id.clone().to_string(),
             vector_payload,
-            payload.into(),
+            payload,
         );
 
         qdrant_client
@@ -863,11 +864,9 @@ pub async fn search_qdrant_query(
     )
     .await?;
 
-    let count = if !get_total_pages {
-        0_u64
-    } else {
-        count_qdrant_query(100000_u64, queries.clone(), config.clone()).await?
-    };
+    let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
+
+    let count_future = count_qdrant_query(count_limit, queries.clone(), config.clone());
 
     let search_point_req_payloads: Vec<SearchPoints> = queries
         .into_iter()
@@ -934,13 +933,15 @@ pub async fn search_qdrant_query(
         ..Default::default()
     };
 
-    let search_batch_response = qdrant_client
-        .search_batch_points(&batch_points)
-        .await
-        .map_err(|e| {
-            log::error!("Failed to search points on Qdrant {:?}", e);
-            ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
-        })?;
+    let search_batch_future = qdrant_client.search_batch_points(&batch_points);
+
+    let (count, search_batch_response) =
+        futures::future::join(count_future, search_batch_future).await;
+
+    let search_batch_response = search_batch_response.map_err(|e| {
+        log::error!("Failed to search points on Qdrant {:?}", e);
+        ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
+    })?;
 
     let batch_lengths = search_batch_response
         .result
@@ -969,7 +970,7 @@ pub async fn search_qdrant_query(
         .unique_by(|point| point.point_id)
         .collect();
 
-    Ok((search_results, count, batch_lengths))
+    Ok((search_results, count?, batch_lengths))
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

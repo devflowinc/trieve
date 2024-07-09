@@ -747,7 +747,7 @@ pub async fn retrieve_group_qdrant_points_query(
     )
     .await?;
 
-    let point_ids = search_over_groups_query(
+    let point_id_futures = search_over_groups_query(
         page,
         filter.clone(),
         limit,
@@ -755,8 +755,7 @@ pub async fn retrieve_group_qdrant_points_query(
         group_size,
         vector.clone(),
         config.clone(),
-    )
-    .await?;
+    );
 
     let qdrant_query = RetrievePointQuery {
         vector,
@@ -766,16 +765,16 @@ pub async fn retrieve_group_qdrant_points_query(
     .into_qdrant_query(parsed_query, dataset_id, None, pool.clone())
     .await?;
 
-    let count = if !get_total_pages {
-        0_u64
-    } else {
-        count_qdrant_query(100000_u64, vec![qdrant_query], config.clone()).await?
-    };
+    let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
 
-    let pages = (count as f64 / limit as f64).ceil() as i64;
+    let count_future = count_qdrant_query(count_limit, vec![qdrant_query], config.clone());
+
+    let (point_ids, count) = futures::future::join(point_id_futures, count_future).await;
+
+    let pages = (count? as f64 / limit as f64).ceil() as i64;
 
     Ok(SearchOverGroupsQueryResult {
-        search_results: point_ids,
+        search_results: point_ids?,
         total_chunk_pages: pages,
     })
 }
