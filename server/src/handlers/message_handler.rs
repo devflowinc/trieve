@@ -706,6 +706,7 @@ pub async fn get_suggested_queries(
     };
 
     let client = Client {
+        project: None,
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
         base_url,
@@ -722,7 +723,8 @@ pub async fn get_suggested_queries(
         .choices
         .first()
         .unwrap_or(&ChatCompletionChoice {
-            index: None,
+            logprobs: None,
+            index: 0,
             message: ChatMessage {
                 role: Role::User,
                 content: ChatMessageContent::Text("".to_string()),

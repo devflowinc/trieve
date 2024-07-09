@@ -263,6 +263,7 @@ pub async fn stream_response(
     };
 
     let client = Client {
+        project: None,
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
         base_url,
@@ -703,6 +704,7 @@ pub async fn get_topic_string(
 
     let client = Client {
         api_key: llm_api_key,
+        project: None,
         http_client: reqwest::Client::new(),
         base_url,
         organization: None,
