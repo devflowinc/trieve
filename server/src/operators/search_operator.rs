@@ -8,8 +8,7 @@ use super::group_operator::{
 };
 use super::model_operator::{create_embedding, cross_encoder, get_sparse_vector};
 use super::qdrant_operator::{
-    count_qdrant_query, get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults,
-    QdrantSearchQuery, VectorType,
+    count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
 };
 use crate::data::models::{
     convert_to_date_time, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes, ConditionType,
@@ -740,37 +739,43 @@ pub async fn retrieve_group_qdrant_points_query(
     let page = if page == 0 { 1 } else { page };
 
     let filter = assemble_qdrant_filter(
-        filters,
-        parsed_query.quote_words,
-        parsed_query.negated_words,
+        filters.clone(),
+        parsed_query.clone().quote_words,
+        parsed_query.clone().negated_words.clone(),
         dataset_id,
-        pool,
+        pool.clone(),
     )
     .await?;
 
-    let point_id_future = search_over_groups_query(
+    let point_ids = search_over_groups_query(
         page,
         filter.clone(),
         limit,
         score_threshold,
         group_size,
-        vector,
+        vector.clone(),
         config.clone(),
-    );
+    )
+    .await?;
 
-    let count_future = get_point_count_qdrant_query(filter, config, get_total_pages);
+    let qdrant_query = RetrievePointQuery {
+        vector,
+        score_threshold,
+        filter: filters,
+    }
+    .into_qdrant_query(parsed_query, dataset_id, None, pool.clone())
+    .await?;
 
-    let (point_ids, count) = futures::join!(point_id_future, count_future);
+    let count = if !get_total_pages {
+        0_u64
+    } else {
+        count_qdrant_query(100000_u64, vec![qdrant_query], config.clone()).await?
+    };
 
-    let pages = (count.map_err(|e| {
-        log::error!("Failed to get point count from Qdrant {:?}", e);
-        ServiceError::BadRequest("Failed to get point count from Qdrant".to_string())
-    })? as f64
-        / limit as f64)
-        .ceil() as i64;
+    let pages = (count as f64 / limit as f64).ceil() as i64;
 
     Ok(SearchOverGroupsQueryResult {
-        search_results: point_ids?,
+        search_results: point_ids,
         total_chunk_pages: pages,
     })
 }
