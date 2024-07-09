@@ -1,4 +1,4 @@
-import { AnalyticsParams } from "shared/types";
+import { AnalyticsParams, SearchTypeCount } from "shared/types";
 import { For, Show, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { createQuery } from "@tanstack/solid-query";
@@ -8,6 +8,19 @@ import { ChartCard } from "./ChartCard";
 interface QueryCountsProps {
   filters: AnalyticsParams;
 }
+
+const displaySearchType = (type: SearchTypeCount["search_type"]) => {
+  switch (type) {
+    case "search":
+      return "Search";
+    case "autocomplete":
+      return "Autocomplete";
+    case "search_over_groups":
+      return "Search Over Groups";
+    case "search_within_groups":
+      return "Search Within Groups";
+  }
+};
 
 export const QueryCounts = (props: QueryCountsProps) => {
   const dataset = useContext(DatasetContext);
@@ -20,22 +33,36 @@ export const QueryCounts = (props: QueryCountsProps) => {
   }));
 
   return (
-    <ChartCard title="Total Searches" width={5}>
-      <Show
-        fallback={<div class="px-7">No Data</div>}
-        when={headQueriesQuery.data}
-      >
-        {(data) => (
-          <For each={data()} fallback={<div class="py-8">No data</div>}>
-            {(queryCount) => (
-              <div class="flex justify-between py-2">
-                <div>{queryCount.search_type}</div>
-                <div>{queryCount.search_count}</div>
-              </div>
-            )}
-          </For>
-        )}
-      </Show>
+    <ChartCard class="flex flex-col justify-between px-4" width={10}>
+      <div>
+        <div class="flex items-baseline justify-start gap-4">
+          <div class="text-lg">Total Searches</div>
+          <div class="text-sm text-neutral-600">
+            Total Count of Queries by Type
+          </div>
+        </div>
+        <Show
+          fallback={<div class="py-8">Loading...</div>}
+          when={headQueriesQuery.data}
+        >
+          {(data) => (
+            <div class="flex justify-around gap-2 py-2">
+              <For each={data()}>
+                {(search) => {
+                  return (
+                    <div class="text-center">
+                      <div>{displaySearchType(search.search_type)}</div>
+                      <div class="text-lg font-semibold">
+                        {search.search_count}
+                      </div>
+                    </div>
+                  );
+                }}
+              </For>
+            </div>
+          )}
+        </Show>
+      </div>
     </ChartCard>
   );
 };
