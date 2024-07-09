@@ -35,6 +35,25 @@ const centeredRandom = (factor: number) => {
   return Math.random() * factor - factor / 2;
 };
 
+const createCircleAdjustment = (topics: SearchClusterTopics[]) => {
+  // Find the lowest density
+  const min = topics.reduce((acc, topic) => {
+    return Math.min(acc, topic.density);
+  }, Infinity);
+
+  const max = topics.reduce((acc, topic) => {
+    return Math.max(acc, topic.density);
+  }, -Infinity);
+
+  return (density: number) => {
+    if (min === max) {
+      return 75;
+    }
+    const normalized = (density - min) / (max - min);
+    return 30 + normalized * 90;
+  };
+};
+
 export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
   const [render, setRender] = createSignal<Render | null>(null);
@@ -98,11 +117,12 @@ export const TrendExplorerCanvas = (props: TrendExplorerCanvasProps) => {
       },
     });
 
+    const adjustment = createCircleAdjustment(props.topics);
     const circles = props.topics.map((topic) => {
       const circle = Bodies.circle(
         centeredRandom(3) + 850,
         centeredRandom(3) + 500,
-        Math.max(1.3 * topic.density, 30),
+        adjustment(topic.density),
         {
           id: topic.density,
           label: topic.topic,
