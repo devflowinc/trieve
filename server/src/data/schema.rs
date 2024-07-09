@@ -187,6 +187,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    stripe_invoices (id) {
+        id -> Uuid,
+        org_id -> Uuid,
+        total -> Int4,
+        created_at -> Timestamp,
+        status -> Text,
+        hosted_invoice_url -> Text,
+    }
+}
+
+diesel::table! {
     stripe_plans (id) {
         id -> Uuid,
         stripe_id -> Text,
@@ -279,6 +290,7 @@ diesel::joinable!(groups_from_files -> files (file_id));
 diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(organization_usage_counts -> organizations (org_id));
+diesel::joinable!(stripe_invoices -> organizations (org_id));
 diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
 diesel::joinable!(topics -> datasets (dataset_id));
@@ -303,6 +315,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     messages,
     organization_usage_counts,
     organizations,
+    stripe_invoices,
     stripe_plans,
     stripe_subscriptions,
     topics,

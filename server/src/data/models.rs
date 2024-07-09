@@ -3285,3 +3285,33 @@ pub struct SearchTypeCount {
     pub search_method: String,
     pub search_count: i64,
 }
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone)]
+#[diesel(table_name = stripe_invoices)]
+pub struct StripeInvoice {
+    pub id: uuid::Uuid,
+    pub org_id: uuid::Uuid,
+    pub total: i32,
+    pub created_at: chrono::NaiveDateTime,
+    pub status: String,
+    pub hosted_invoice_url: String,
+}
+
+impl StripeInvoice {
+    pub fn from_details(
+        org_id: uuid::Uuid,
+        total: i64,
+        created_at: chrono::NaiveDateTime,
+        status: String,
+        url: String,
+    ) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4(),
+            org_id,
+            total: total as i32,
+            created_at,
+            status,
+            hosted_invoice_url: url,
+        }
+    }
+}
