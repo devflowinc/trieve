@@ -344,7 +344,7 @@ pub async fn delete_chunks_in_dataset(
             log::error!("Failed to create event: {:?}", err);
         });
 
-        println!("Deleted {} chunks from {}", chunk_ids.len(), id);
+        log::info!("Deleted {} chunks from {}", chunk_ids.len(), id);
 
         // Move to the next batch
         last_offset_id = *chunk_ids.last().unwrap();
@@ -353,7 +353,7 @@ pub async fn delete_chunks_in_dataset(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip_all)]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
