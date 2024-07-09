@@ -9,7 +9,7 @@ use trieve_server::{
         },
     },
 };
-
+#[allow(clippy::print_stdout)]
 #[tokio::main]
 async fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();

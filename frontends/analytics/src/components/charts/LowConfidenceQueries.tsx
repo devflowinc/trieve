@@ -1,4 +1,8 @@
-import { AnalyticsParams, SearchQueryEvent } from "shared/types";
+import {
+  AnalyticsParams,
+  AnalyticsFilter,
+  SearchQueryEvent,
+} from "shared/types";
 import { ChartCard } from "./ChartCard";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import {
@@ -15,6 +19,8 @@ import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
 import { FullScreenModal } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
+import { IoOpenOutline } from "solid-icons/io";
+import { OrgContext } from "../../contexts/OrgContext";
 
 interface LowConfidenceQueriesProps {
   filters: AnalyticsParams;
@@ -30,6 +36,7 @@ const parseThreshold = (text: string): number | undefined => {
 
 export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   const dataset = useContext(DatasetContext);
+
   const pages = usePagination();
   const queryClient = useQueryClient();
 
@@ -127,7 +134,9 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
                 each={data()}
               >
                 {(query) => {
-                  return <QueryCard query={query} />;
+                  return (
+                    <QueryCard query={query} filters={props.filters.filter} />
+                  );
                 }}
               </For>
             </tbody>
@@ -141,11 +150,29 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   );
 };
 
-interface QueryCardProps {
+export interface QueryCardProps {
   query: SearchQueryEvent;
+  filters?: AnalyticsFilter;
 }
-const QueryCard = (props: QueryCardProps) => {
+export const QueryCard = (props: QueryCardProps) => {
   const [open, setOpen] = createSignal(false);
+
+  const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
+
+  const dataset = useContext(DatasetContext);
+  const organization = useContext(OrgContext);
+
+  const openSearchPlayground = (query: string) => {
+    const orgId = organization.selectedOrg()?.id;
+    const datasetId = dataset()?.dataset?.id;
+    let params = orgId ? `?organization=${orgId}` : "";
+    if (datasetId) params += `&dataset=${datasetId}`;
+    if (query) params += `&query=${query}`;
+    if (props.filters?.search_method)
+      params += `&searchType=${props.filters.search_method}`;
+    return params;
+  };
+
   return (
     <>
       <tr
@@ -157,7 +184,21 @@ const QueryCard = (props: QueryCardProps) => {
         <td class="truncate">{props.query.query}</td>
         <td class="truncate text-right">{props.query.top_score.toFixed(5)}</td>
       </tr>
-      <FullScreenModal title={props.query.query} show={open} setShow={setOpen}>
+      <FullScreenModal
+        title={props.query.query}
+        show={open}
+        setShow={setOpen}
+        icon={
+          <a
+            type="button"
+            class="hover:text-fuchsia-500"
+            href={`${searchUiURL}${openSearchPlayground(props.query.query)}`}
+            target="_blank"
+          >
+            <IoOpenOutline />
+          </a>
+        }
+      >
         <SearchQueryEventModal searchEvent={props.query} />
       </FullScreenModal>
     </>

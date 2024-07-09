@@ -280,6 +280,7 @@ services:
       - 5176:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
+      - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7

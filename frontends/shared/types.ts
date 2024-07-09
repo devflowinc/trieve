@@ -148,7 +148,7 @@ export interface SetUserApiKeyResponse {
 }
 
 export const isComboboxValues = (
-  values: unknown
+  values: unknown,
 ): values is ComboboxSection[] => {
   if (!Array.isArray(values)) {
     return false;
@@ -450,6 +450,12 @@ export interface SearchQueryEvent {
 export interface HeadQuery {
   query: string;
   count: number;
+}
+
+export interface SearchTypeCount {
+  search_type: AnalyticsFilter["search_type"];
+  search_method: AnalyticsFilter["search_method"];
+  search_count: number;
 }
 
 export interface RAGAnalyticsFilter {
