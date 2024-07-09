@@ -29,6 +29,13 @@ export const OrgTabs = () => {
         Billing
       </A>
       <A
+        href={`/dashboard/${userContext.selectedOrganizationId?.()}/invoices`}
+        activeClass="border-b-2 -mb-[1px] border-magenta-500"
+        class="hover:text-fuchsia-800"
+      >
+        Invoices
+      </A>
+      <A
         href={`/dashboard/${userContext.selectedOrganizationId?.()}/api-keys`}
         activeClass="border-b-2 -mb-[1px] border-magenta-500"
         class="hover:text-fuchsia-800"

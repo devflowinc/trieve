@@ -212,15 +212,9 @@ export const PlansTable = (props: PlansTableProps) => {
                 <p class="font-semibold text-yellow-800">Notice</p>
                 <p class="text-sm">
                   This organization will lose the{" "}
-                  <span
-                    class="font-semibold
-  "
-                  >
-                    {currentPlan()?.name}
-                  </span>{" "}
-                  plan benefits on{" "}
-                  {new Date(end_date_str()).toLocaleDateString()} and be
-                  downgraded to the Free plan.
+                  <span class="font-semibold">{currentPlan()?.name}</span> plan
+                  benefits on {new Date(end_date_str()).toLocaleDateString()}{" "}
+                  and be downgraded to the Free plan.
                 </p>
               </div>
             </div>
