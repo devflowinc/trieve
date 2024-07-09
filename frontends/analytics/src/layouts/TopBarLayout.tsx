@@ -78,7 +78,7 @@ export const TopBarLayout: ParentComponent = (props) => {
   };
 
   return (
-    <div class="grid min-h-screen grid-cols-[300px_1fr] bg-neutral-100">
+    <div class="grid min-h-screen grid-cols-[300px_1fr] items-start bg-neutral-100">
       <Sidebar
         datasetOptions={datasetsQuery.data || []}
         selectedDataset={selectedDataset()}
