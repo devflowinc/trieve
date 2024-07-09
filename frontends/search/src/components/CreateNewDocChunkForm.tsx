@@ -10,9 +10,13 @@ import { CreateChunkDTO, isActixApiDefaultError } from "../utils/apiTypes";
 import { Tooltip } from "./Atoms/Tooltip";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { TinyEditor } from "./TinyEditor";
+import { useNavigate } from "@solidjs/router";
 
 export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
+
+  const navigate = useNavigate();
+
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $dataset = datasetAndUserContext.currentDataset;
@@ -133,7 +137,7 @@ export const CreateNewDocChunkForm = () => {
           setIsSubmitting(false);
         }
 
-        window.location.href = `/chunk/${chunkReturnData.chunk_metadata.id}`;
+        navigate(`/chunk/${chunkReturnData.chunk_metadata.id}`);
         return;
       });
     });
@@ -354,7 +358,7 @@ export const CreateNewDocChunkForm = () => {
                 }`}
               >
                 Login/Register
-                <BiRegularLogIn class="h-6 w-6  fill-current" />
+                <BiRegularLogIn class="h-6 w-6 fill-current" />
               </a>
             </div>
           </div>

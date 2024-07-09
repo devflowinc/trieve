@@ -15,9 +15,13 @@ import type { SingleChunkPageProps } from "./SingleChunkPage";
 import { Tooltip } from "./Atoms/Tooltip";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { TinyEditor } from "./TinyEditor";
+import { useNavigate } from "@solidjs/router";
 
 export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
+
+  const navigate = useNavigate();
+
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $dataset = datasetAndUserContext.currentDataset;
@@ -174,7 +178,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       body: JSON.stringify(requestBody),
     }).then((response) => {
       if (response.ok) {
-        window.location.href = `/chunk/${curChunkId ?? ""}`;
+        navigate(`/chunk/${curChunkId ?? ""}`);
         return;
       }
 
