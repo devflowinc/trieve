@@ -22,15 +22,15 @@ const navbarRoutes = [
   },
 ];
 
-export const Navbar = (props: NavbarProps) => {
+export const Sidebar = (props: NavbarProps) => {
   const userContext = useContext(UserContext);
   const orgContext = useContext(OrgContext);
   const pathname = usePathname();
   const navigate = useBetterNav();
 
   return (
-    <div class="flex justify-between border border-b-neutral-300 bg-neutral-50 p-2 px-4 pr-8">
-      <div class="flex items-center gap-3">
+    <div class="justify-between border border-r-neutral-300 bg-neutral-50 p-2 px-4 pr-8">
+      <div class="items-center gap-3">
         <img
           class="h-12 w-12 cursor-pointer"
           src="https://cdn.trieve.ai/trieve-logo.png"
@@ -61,7 +61,7 @@ export const Navbar = (props: NavbarProps) => {
           )}
         </Show>
       </div>
-      <div class="flex items-center gap-4">
+      <div class="items-center gap-4">
         <For each={navbarRoutes}>
           {(link) => {
             return (

@@ -24,7 +24,7 @@ export const Home = () => {
   });
 
   return (
-    <div class="grow bg-neutral-200/60 p-4 pt-2">
+    <div class="min-h-screen bg-neutral-200/60 p-4 pt-2">
       <FilterBar filters={analyticsFilters} setFilters={setAnalyticsFilters} />
       <div class="grid grid-cols-10 items-stretch gap-2 p-2 pt-3">
         <QueryCounts filters={analyticsFilters} />
