@@ -4,6 +4,7 @@ import { DatasetContext } from "../../layouts/TopBarLayout";
 import { createQuery } from "@tanstack/solid-query";
 import { getQueryCounts } from "../../api/analytics";
 import { ChartCard } from "./ChartCard";
+import { toTitleCase } from "../../utils/titleCase";
 
 interface QueryCountsProps {
   filters: AnalyticsParams;
@@ -52,6 +53,7 @@ export const QueryCounts = (props: QueryCountsProps) => {
                   return (
                     <div class="text-center">
                       <div>{displaySearchType(search.search_type)}</div>
+                      <div>{toTitleCase(search.search_method)}</div>
                       <div class="text-lg font-semibold">
                         {search.search_count}
                       </div>
