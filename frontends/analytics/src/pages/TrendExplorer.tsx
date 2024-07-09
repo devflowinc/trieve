@@ -2,8 +2,7 @@ import { createQuery } from "@tanstack/solid-query";
 import { DatasetContext } from "../layouts/TopBarLayout";
 import { getQueriesForTopic, getTrendsBubbles } from "../api/trends";
 import { createMemo, createSignal, For, Show, useContext } from "solid-js";
-import { TrendExplorerCanvas } from "../components/trend-explorer/TrendExplorerCanvas";
-import { SearchQueryEvent } from "shared/types";
+import { SearchClusterTopics, SearchQueryEvent } from "shared/types";
 import { toTitleCase } from "../utils/titleCase";
 import { parseCustomDateString } from "../components/charts/LatencyGraph";
 import { QueryCard } from "../components/charts/LowConfidenceQueries";
@@ -41,47 +40,53 @@ export const TrendExplorer = () => {
   });
 
   return (
-    <div class="relative grow items-start">
-      <div class="absolute left-[20px] top-[20px] w-[380px] overflow-auto rounded-lg border border-neutral-300 bg-neutral-200 p-2">
-        <Show when={selectedTopic()?.topic}>
-          {(topicName) => (
-            <div class="pb-2 text-lg">
-              Top Queries Regarding "{topicName()}"
-            </div>
-          )}
-        </Show>
-        <div class="flex flex-col gap-1">
-          <table class="mt-2 w-full py-2">
-            <thead>
-              <tr>
-                <th class="text-left font-semibold">Query</th>
-                <th class="text-right font-semibold">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <For
-                fallback={
-                  <div class="py-4 text-center opacity-40">
-                    Select a topic to view searches for.
-                  </div>
-                }
-                each={selectedTopicQuery?.data}
-              >
-                {(query) => <QueryCard query={query} />}
-              </For>
-            </tbody>
-          </table>
-        </div>
+    <div class="p-8">
+      <div class="mx-auto max-w-xl bg-white">
+        <table class="debug mt-2 w-full">
+          <thead>
+            <tr>
+              <th class="text-left font-semibold">Topic</th>
+              <th class="text-right font-semibold">Density</th>
+              <th class="text-right font-semibold">Average Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <For
+              fallback={
+                <div class="py-4 text-center opacity-40">
+                  Select a topic to view searches for.
+                </div>
+              }
+              each={trendsQuery.data}
+            >
+              {(topic) => <TopicRow topic={topic} />}
+            </For>
+          </tbody>
+        </table>
       </div>
-      <Show when={trendsQuery?.data}>
-        {(trends) => (
-          <TrendExplorerCanvas
-            onSelectTopic={(topic) => setSelectedTopicId(topic)}
-            topics={trends()}
-          />
-        )}
-      </Show>
     </div>
+  );
+};
+
+interface TopicRowProps {
+  topic: SearchClusterTopics;
+}
+
+const TopicRow = (props: TopicRowProps) => {
+  return (
+    <tr class="border-b border-neutral-200">
+      <td class="py-2">
+        <div class="flex items-center gap-2">
+          <div class="text-neutral-900">{props.topic.topic}</div>
+        </div>
+      </td>
+      <td class="py-2 text-right">
+        <div class="text-neutral-900">{props.topic.density}</div>
+      </td>
+      <td class="py-2 text-right">
+        <div class="text-neutral-900">{props.topic.avg_score}</div>
+      </td>
+    </tr>
   );
 };
 
