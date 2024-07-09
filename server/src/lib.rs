@@ -347,6 +347,7 @@ impl Modify for SecurityAddon {
             data::models::DatasetDTO,
             data::models::DatasetUsageCount,
             data::models::StripePlan,
+            data::models::StripeInvoice,
             data::models::SlimChunkMetadata,
             data::models::RangeCondition,
             data::models::LocationBoundingBox,

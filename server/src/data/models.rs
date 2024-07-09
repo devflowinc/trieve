@@ -3286,7 +3286,7 @@ pub struct SearchTypeCount {
     pub search_count: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = stripe_invoices)]
 pub struct StripeInvoice {
     pub id: uuid::Uuid,
