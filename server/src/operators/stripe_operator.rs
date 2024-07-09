@@ -1,9 +1,10 @@
 use crate::{
-    data::models::{Pool, StripePlan, StripeSubscription},
+    data::models::{Pool, StripeInvoice, StripePlan, StripeSubscription},
     errors::ServiceError,
     get_env,
 };
 use actix_web::web;
+use chrono::Timelike;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use serde_json::json;
@@ -374,4 +375,64 @@ pub async fn update_stripe_subscription(
     })?;
 
     Ok(())
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn create_invoice_query(
+    org_id: uuid::Uuid,
+    invoice_id: stripe::InvoiceId,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    let stripe_client = get_stripe_client();
+    let invoice =
+        stripe::Invoice::retrieve(&stripe_client, &invoice_id, &[])
+            .await
+            .map_err(|e| {
+                println!("Failed to retrieve invoice: {:?}", e);
+                return ServiceError::BadRequest("Failed to get invoice".to_string());
+            })?;
+    let created_at = chrono::NaiveDateTime::from_timestamp(invoice.created.unwrap_or(0), 0);
+    let total = invoice.total.unwrap_or(0);
+    let status = invoice
+        .status
+        .unwrap_or(stripe::InvoiceStatus::Draft)
+        .to_string();
+    let url = invoice.hosted_invoice_url.unwrap_or("".to_string());
+    let stripe_invoice = StripeInvoice::from_details(org_id, total, created_at, status, url);
+
+    use crate::data::schema::stripe_invoices::dsl as stripe_invoices_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    diesel::insert_into(stripe_invoices_columns::stripe_invoices)
+        .values(stripe_invoice)
+        .execute(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to create invoice".to_string()))?;
+
+    Ok(())
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_invoices_for_org_query(
+    org_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<StripeInvoice>, ServiceError> {
+    use crate::data::schema::stripe_invoices::dsl as stripe_invoices_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let invoices = stripe_invoices_columns::stripe_invoices
+        .filter(stripe_invoices_columns::org_id.eq(org_id))
+        .load::<StripeInvoice>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get stripe invoices".to_string()))?;
+
+    Ok(invoices)
 }
