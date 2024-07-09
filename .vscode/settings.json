@@ -2,14 +2,6 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
-  "files.associations": {
-    "chat/**/*.{html,js,jsx,md,mdx,ts,tsx,vue}": "./chat/.eslintrc.json",
-    "search/**/*.{html,js,jsx,md,mdx,ts,tsx,vue}": "./search/.eslintrc.json",
-    "analytics-site/**/*.{html,js,jsx,md,mdx,ts,tsx,vue}": "./analytics-site/.eslintrc.json",
-    "chat/**/*": "./chat/tsconfig.json",
-    "search/**/*": "./search/tsconfig.json",
-    "analytics-site/**/*": "./analytics-site/tsconfig.json"
-  },
   "rust-analyzer.linkedProjects": ["./server/Cargo.toml"],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "rust-analyzer.server.path": "~/.cargo/bin/rust-analyzer",
@@ -19,6 +11,6 @@
     "./frontends/chat",
     "./frontends/dashboard",
     "./frontends/search",
-    "./frontends/analytics-site"
+    "./frontends/analytics"
   ]
 }
