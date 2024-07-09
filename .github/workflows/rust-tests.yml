@@ -31,7 +31,7 @@ jobs:
       - run: rustup component add clippy
       - uses: clechasseur/rs-clippy-check@v3
         with:
-          args: --features runtime-env --bin ingestion-worker --manifest-path server/Cargo.toml
+          args: --features runtime-env --bin ingestion-worker --manifest-path server/Cargo.toml -D clippy::print_stdout
       - uses: useblacksmith/cache@v5
         with:
           path: |
@@ -57,7 +57,7 @@ jobs:
       - run: rustup component add clippy
       - uses: clechasseur/rs-clippy-check@v3
         with:
-          args: --features runtime-env --bin grupdate-worker --manifest-path server/Cargo.toml
+          args: --features runtime-env --bin grupdate-worker --manifest-path server/Cargo.toml -D clippy::print_stdout
       - uses: useblacksmith/cache@v5
         with:
           path: |
@@ -83,7 +83,7 @@ jobs:
       - run: rustup component add clippy
       - uses: clechasseur/rs-clippy-check@v3
         with:
-          args: --features runtime-env --bin file-worker --manifest-path server/Cargo.toml
+          args: --features runtime-env --bin file-worker --manifest-path server/Cargo.toml -D clippy::print_stdout
       - uses: useblacksmith/cache@v5
         with:
           path: |
@@ -109,7 +109,7 @@ jobs:
       - run: rustup component add clippy
       - uses: clechasseur/rs-clippy-check@v3
         with:
-          args: --features runtime-env --manifest-path server/Cargo.toml
+          args: --features runtime-env --manifest-path server/Cargo.toml -D clippy::print_stdout
       - uses: useblacksmith/cache@v5
         with:
           path: |
