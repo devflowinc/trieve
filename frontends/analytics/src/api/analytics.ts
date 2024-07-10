@@ -28,7 +28,8 @@ export const getLatency = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      latency_graph: transformAnalyticsParams(filters),
+      ...transformAnalyticsParams(filters),
+      type: "latency_graph",
     }),
     headers: {
       "TR-Dataset": datasetId,
@@ -54,7 +55,8 @@ export const getRps = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      rps_graph: transformAnalyticsParams(filters),
+      ...transformAnalyticsParams(filters),
+      type: "rps_graph",
     }),
     headers: {
       "TR-Dataset": datasetId,
@@ -82,6 +84,7 @@ export const getHeadQueries = async (
       head_queries: {
         ...transformAnalyticsParams(filters),
         page,
+        type: "head_queries",
       },
     }),
     headers: {
@@ -110,7 +113,8 @@ export const getRAGQueries = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      rag_queries: payload,
+      ...payload,
+      type: "rag_queries",
     }),
     headers: {
       "TR-Dataset": datasetId,
@@ -137,7 +141,7 @@ export const getRAGUsage = async (
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      rag_usage: {},
+      type: "rag_usage",
     }),
   });
 
@@ -159,11 +163,10 @@ export const getLowConfidenceQueries = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      low_confidence_queries: {
-        ...transformAnalyticsParams(filters),
-        page,
-        threshold,
-      },
+      ...transformAnalyticsParams(filters),
+      page,
+      threshold,
+      type: "low_confidence_queries",
     }),
     headers: {
       "TR-Dataset": datasetId,
@@ -190,10 +193,9 @@ export const getNoResultQueries = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      no_result_queries: {
-        ...transformAnalyticsParams(filters),
-        page,
-      },
+      ...transformAnalyticsParams(filters),
+      page,
+      type: "no_result_queries",
     }),
     headers: {
       "TR-Dataset": datasetId,
@@ -219,7 +221,8 @@ export const getQueryCounts = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      count_queries: transformAnalyticsParams(filters),
+      ...transformAnalyticsParams(filters),
+      type: "count_queries",
     }),
     headers: {
       "TR-Dataset": datasetId,
@@ -249,9 +252,8 @@ export const getSearchQuery = async (
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      query_details: {
-        search_id: searchId,
-      },
+      search_id: searchId,
+      type: "search_query",
     }),
   });
 

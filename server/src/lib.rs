@@ -994,7 +994,7 @@ pub fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/search/clusters")
-                                .route(web::get().to(handlers::analytics_handler::get_cluster_analytics)),
+                                .route(web::post().to(handlers::analytics_handler::get_cluster_analytics)),
                             )
                             .service(
                                 web::resource("/rag")

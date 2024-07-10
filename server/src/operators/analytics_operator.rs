@@ -26,8 +26,9 @@ pub async fn get_clusters_query(
     filters: Option<ClusterAnalyticsFilter>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchClusterResponse, ServiceError> {
-    let mut query_string =
-        String::from("SELECT ?fields FROM clusters WHERE dataset_id = ? ORDER BY density DESC");
+    let mut query_string = String::from(
+        "SELECT ?fields FROM cluster_topics WHERE dataset_id = ? ORDER BY density DESC",
+    );
 
     if let Some(filters) = filters {
         query_string = filters.add_to_query(query_string);
@@ -70,13 +71,8 @@ pub async fn get_queries_for_cluster_query(
         JOIN search_cluster_memberships ON search_queries.id = search_cluster_memberships.search_id 
         WHERE search_cluster_memberships.cluster_id = ? 
             AND search_queries.dataset_id = ? 
-        GROUP BY
-            ?fields,
-            search_cluster_memberships.distance_to_centroid
         ORDER BY
-            search_queries.request_params,
-            search_queries.query,
-            search_cluster_memberships.distance_to_centroid ASC
+            search_cluster_memberships.distance_to_centroid DESC
         LIMIT 15 
         OFFSET ?
     ",

@@ -12,12 +12,16 @@ import { apiHost } from "../utils/apiHost";
 export const getTrendsBubbles = async (
   datasetId: string,
 ): Promise<SearchClusterTopics[]> => {
-  const response = await fetch(`${apiHost}/analytics/${datasetId}/topics`, {
+  const response = await fetch(`${apiHost}/analytics/search/clusters`, {
     credentials: "include",
+    method: "POST",
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
     },
+    body: JSON.stringify({
+      type: "cluster_topics",
+    }),
   });
 
   if (!response.ok) {
@@ -32,16 +36,18 @@ export const getQueriesForTopic = async (
   datasetId: string,
   clusterId: string,
 ): Promise<SearchQueryEvent[]> => {
-  const response = await fetch(
-    `${apiHost}/analytics/${datasetId}/${clusterId}/1`,
-    {
-      credentials: "include",
-      headers: {
-        "TR-Dataset": datasetId,
-        "Content-Type": "application/json",
-      },
+  const response = await fetch(`${apiHost}/analytics/search/clusters`, {
+    credentials: "include",
+    method: "POST",
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      type: "cluster_queries",
+      cluster_id: clusterId,
+    }),
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
