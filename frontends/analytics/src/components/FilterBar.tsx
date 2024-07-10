@@ -1,17 +1,17 @@
-import { AnalyticsFilter, AnalyticsParams } from "shared/types";
+import { AnalyticsParams, RequiredAnalyticsFilter } from "shared/types";
 import { SetStoreFunction } from "solid-js/store";
 import { Select } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
 import { createSignal } from "solid-js";
 
-const ALL_SEARCH_METHODS: AnalyticsFilter["search_method"][] = [
+const ALL_SEARCH_METHODS: RequiredAnalyticsFilter["search_method"][] = [
   "hybrid",
   "fulltext",
   "semantic",
 ];
 
-const ALL_SEARCH_TYPES: AnalyticsFilter["search_type"][] = [
+const ALL_SEARCH_TYPES: RequiredAnalyticsFilter["search_type"][] = [
   "search",
   "autocomplete",
   "search_over_groups",

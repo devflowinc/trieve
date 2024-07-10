@@ -26,7 +26,7 @@ export const parseCustomDateString = (dateString: string) => {
 };
 
 interface LatencyGraphProps {
-  filters: AnalyticsParams;
+  params: AnalyticsParams;
 }
 export const LatencyGraph = (props: LatencyGraphProps) => {
   const dataset = useContext(DatasetContext);
@@ -35,10 +35,14 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
   const latencyQuery = createQuery(() => ({
     queryKey: [
       "latency",
-      { filters: props.filters, dataset: dataset().dataset.id },
+      { params: props.params, dataset: dataset().dataset.id },
     ],
     queryFn: async () => {
-      return await getLatency(props.filters, dataset().dataset.id);
+      return await getLatency(
+        props.params.filter,
+        props.params.granularity,
+        dataset().dataset.id,
+      );
     },
   }));
 

@@ -9,19 +9,20 @@ import { format } from "date-fns";
 import { parseCustomDateString } from "./LatencyGraph";
 
 interface RpsGraphProps {
-  filters: AnalyticsParams;
+  params: AnalyticsParams;
 }
 export const RpsGraph = (props: RpsGraphProps) => {
   const dataset = useContext(DatasetContext);
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
   let chartInstance: Chart | null = null;
   const rpsQuery = createQuery(() => ({
-    queryKey: [
-      "rps",
-      { filters: props.filters, dataset: dataset().dataset.id },
-    ],
+    queryKey: ["rps", { params: props.params, dataset: dataset().dataset.id }],
     queryFn: async () => {
-      return await getRps(props.filters, dataset().dataset.id);
+      return await getRps(
+        props.params.filter,
+        props.params.granularity,
+        dataset().dataset.id,
+      );
     },
   }));
 

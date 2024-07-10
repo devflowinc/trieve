@@ -23,7 +23,7 @@ import { IoOpenOutline } from "solid-icons/io";
 import { OrgContext } from "../../contexts/OrgContext";
 
 interface LowConfidenceQueriesProps {
-  filters: AnalyticsParams;
+  params: AnalyticsParams;
 }
 
 const parseThreshold = (text: string): number | undefined => {
@@ -44,7 +44,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
 
   createEffect(
     on(
-      () => [props.filters, dataset().dataset.id, thresholdText()],
+      () => [props.params, dataset().dataset.id, thresholdText()],
       () => {
         pages.resetMaxPageDiscovered();
       },
@@ -53,21 +53,21 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
 
   createEffect(() => {
     // Preload the next page
-    const filters = props.filters;
+    const params = props.params;
     const datasetId = dataset().dataset.id;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: [
         "low-confidence-queries",
         {
-          filters,
+          params: params,
           page: curPage + 1,
           threshold: parseThreshold(thresholdText()) || 0,
         },
       ],
       queryFn: async () => {
         const results = await getLowConfidenceQueries(
-          filters,
+          params.filter,
           datasetId,
           curPage + 1,
           parseThreshold(thresholdText()),
@@ -84,14 +84,14 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
     queryKey: [
       "low-confidence-queries",
       {
-        filters: props.filters,
+        params: props.params,
         page: pages.page(),
         threshold: parseThreshold(thresholdText()) || 0,
       },
     ],
     queryFn: () => {
       return getLowConfidenceQueries(
-        props.filters,
+        props.params.filter,
         dataset().dataset.id,
         pages.page(),
         parseThreshold(thresholdText()),
@@ -135,7 +135,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
               >
                 {(query) => {
                   return (
-                    <QueryCard query={query} filters={props.filters.filter} />
+                    <QueryCard query={query} filters={props.params.filter} />
                   );
                 }}
               </For>

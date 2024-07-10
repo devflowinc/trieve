@@ -8,7 +8,7 @@ import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
 
 interface HeadQueriesProps {
-  filters: AnalyticsParams;
+  params: AnalyticsParams;
 }
 
 export const HeadQueries = (props: HeadQueriesProps) => {
@@ -27,13 +27,17 @@ export const HeadQueries = (props: HeadQueriesProps) => {
 
   createEffect(() => {
     // Preload the next page
-    const filters = props.filters;
+    const params = props.params;
     const datasetId = dataset().dataset.id;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
-      queryKey: ["head-queries", { filters, page: curPage + 1 }],
+      queryKey: ["head-queries", { filter: params.filter, page: curPage + 1 }],
       queryFn: async () => {
-        const results = await getHeadQueries(filters, datasetId, curPage + 1);
+        const results = await getHeadQueries(
+          params.filter,
+          datasetId,
+          curPage + 1,
+        );
         if (results.length === 0) {
           pages.setMaxPageDiscovered(curPage);
         }
@@ -43,9 +47,13 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   });
 
   const headQueriesQuery = createQuery(() => ({
-    queryKey: ["head-queries", { filters: props.filters, page: pages.page() }],
+    queryKey: ["head-queries", { filters: props.params, page: pages.page() }],
     queryFn: () => {
-      return getHeadQueries(props.filters, dataset().dataset.id, pages.page());
+      return getHeadQueries(
+        props.params.filter,
+        dataset().dataset.id,
+        pages.page(),
+      );
     },
   }));
 

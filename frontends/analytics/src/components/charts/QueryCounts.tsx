@@ -75,9 +75,11 @@ export const QueryCounts = () => {
                   return (
                     <div class="text-center">
                       <div>{displaySearchType(search.search_type)}</div>
-                      <div class="opacity-50">
-                        {toTitleCase(search.search_method)}
-                      </div>
+                      <Show when={search.search_method}>
+                        {(method) => (
+                          <div class="opacity-50">{toTitleCase(method())}</div>
+                        )}
+                      </Show>
                       <div class="text-lg font-semibold">
                         {search.search_count}
                       </div>
