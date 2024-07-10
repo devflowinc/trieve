@@ -4,7 +4,7 @@ use crate::{
     get_env,
     middleware::auth_middleware::verify_owner,
     operators::{
-        organization_operator::get_org_from_id_query,
+        organization_operator::{get_org_from_id_query, get_org_id_from_subscription_id_query},
         stripe_operator::{
             cancel_stripe_subscription, create_invoice_query, create_stripe_payment_link,
             create_stripe_plan_query, create_stripe_subscription_query,
@@ -17,7 +17,7 @@ use crate::{
 };
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
-use stripe::{EventObject, EventType, Webhook};
+use stripe::{EventObject, EventType, Object, Webhook};
 
 use super::auth_handler::OwnerOnly;
 
@@ -150,6 +150,25 @@ pub async fn webhook(
                         pool,
                     )
                     .await?;
+                }
+            }
+            EventType::InvoicePaid => {
+                if let EventObject::Invoice(invoice) = event.data.object {
+                    let subscription_stripe_id = invoice
+                        .clone()
+                        .subscription
+                        .ok_or(ServiceError::BadRequest(
+                            "Failed to get subscription from invoice".to_string(),
+                        ))?
+                        .id();
+
+                    let org_id = get_org_id_from_subscription_id_query(
+                        subscription_stripe_id.to_string(),
+                        pool.clone(),
+                    )
+                    .await?;
+
+                    create_invoice_query(org_id, invoice.id(), pool.clone()).await?;
                 }
             }
             _ => {}

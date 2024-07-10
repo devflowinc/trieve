@@ -154,7 +154,7 @@ export const PlansTable = (props: PlansTableProps) => {
   };
 
   return (
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-8">
       <div class="grid w-full grid-cols-3 place-content-center gap-x-2 rounded border bg-white px-5 py-3 text-sm shadow-sm">
         <div class="space-y-1">
           <p class="text-lg font-semibold uppercase text-magenta-500">
