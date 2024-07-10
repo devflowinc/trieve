@@ -276,14 +276,15 @@ make install
 
 `diesel::debug_query(&query).to_string();`
 
-## Listen to Stripe events for billing
+## Local Setup for Testing Stripe Features
 
 Install Stripe CLI.
 
 1. `stripe login`
 2. `stripe listen --forward-to localhost:8090/api/stripe/webhook`
-3. `stripe products create --name trieve --default-price-data.unit-amount 1200 --default-price-data.currency usd`
-4. `stripe plans create --amount=1200 --currency=usd --interval=month --product={id from response of step 3}`
+3. set the `STRIPE_WEBHOOK_SECRET` in the `server/.env` to the resulting webhook signing secret
+4. `stripe products create --name trieve --default-price-data.unit-amount 1200 --default-price-data.currency usd`
+5. `stripe plans create --amount=1200 --currency=usd --interval=month --product={id from response of step 3}`
 
 ## SelfHosting / Deploy to AWS
 

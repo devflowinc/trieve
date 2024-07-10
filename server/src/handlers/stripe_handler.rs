@@ -167,8 +167,7 @@ pub struct GetDirectPaymentLinkData {
 
 /// Checkout
 ///
-/// Get a direct link to the stripe checkout page for the plan and organization
-
+/// Get a 303 SeeOther redirect link to the stripe checkout page for the plan and organization
 #[utoipa::path(
     get,
     path = "/stripe/payment_link/{plan_id}/{organization_id}",

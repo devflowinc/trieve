@@ -51,7 +51,7 @@ actix-web = { version = "4.3" }
 actix-cors = { version = "0.7" }
 
 
-async-stripe = { version = "0.37.0", features = [
+async-stripe = { version = "0.37.1", features = [
     "runtime-tokio-hyper",
     "checkout",
     "webhook-events",
