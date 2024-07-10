@@ -1,5 +1,4 @@
 import { AnalyticsParams, SearchQueryEvent } from "shared/types";
-import { ChartCard } from "./ChartCard";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import {
   createEffect,
@@ -79,7 +78,7 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
   }));
 
   return (
-    <ChartCard class="flex flex-col justify-between px-4" width={5}>
+    <>
       <div>
         <div class="gap-2">
           <div class="text-lg">No Result Queries</div>
@@ -113,7 +112,7 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
       <div class="flex justify-end pt-2">
         <PaginationButtons size={18} pages={pages} />
       </div>
-    </ChartCard>
+    </>
   );
 };
 

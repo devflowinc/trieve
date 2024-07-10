@@ -58,7 +58,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   }));
 
   return (
-    <ChartCard class="px-4" width={5}>
+    <>
       <div class="text-lg">Head Queries</div>
       <div class="text-sm text-neutral-600">The most popular searches.</div>
       <Show
@@ -86,7 +86,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
       <div class="flex justify-end pt-2">
         <PaginationButtons size={18} pages={pages} />
       </div>
-    </ChartCard>
+    </>
   );
 };
 
