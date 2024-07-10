@@ -1,7 +1,5 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
-use std::io::Write;
-
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::analytics_operator::{
@@ -11,6 +9,7 @@ use crate::operators::analytics_operator::{
 use crate::operators::chunk_operator::get_metadata_from_ids_query;
 use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
 use crate::operators::parse_operator::convert_html_to_text;
+use std::io::Write;
 
 use super::schema::*;
 use crate::handlers::chunk_handler::{BoostPhrase, DistancePhrase};
@@ -1444,8 +1443,8 @@ impl From<ClickhouseEvent> for Event {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Display)]
-#[serde(untagged)]
+#[derive(Debug, Serialize, Deserialize, Clone, Display, ToSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum EventType {
     #[display(fmt = "file_uploaded")]
     FileUploaded {
@@ -3366,17 +3365,12 @@ pub struct SearchClusterMembership {
     pub cluster_topic: uuid::Uuid,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchType {
-    #[display(fmt = "search")]
-    Search,
-    #[display(fmt = "autocomplete")]
-    Autocomplete,
-    #[display(fmt = "search_over_groups")]
-    SearchOverGroups,
-    #[display(fmt = "search_within_groups")]
-    SearchWithinGroups,
+    Hybrid,
+    FullText,
+    Semantic,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
@@ -3834,4 +3828,45 @@ pub enum RecommendationAnalyticsResponse {
     LowConfidenceRecommendations(RecommendationsEventResponse),
     #[schema(title = "RecommendationQueries")]
     RecommendationQueries(RecommendationsEventResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum RecommendationStrategy {
+    AverageVector,
+    BestScore,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum RecommendType {
+    Semantic,
+    FullText,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum EventTypeRequest {
+    #[display(fmt = "file_uploaded")]
+    FileUploaded,
+    #[display(fmt = "file_upload_failed")]
+    FileUploadFailed,
+    #[display(fmt = "chunks_uploaded")]
+    ChunksUploaded,
+    #[display(fmt = "chunk_action_failed")]
+    ChunkActionFailed,
+    #[display(fmt = "chunk_updated")]
+    ChunkUpdated,
+    #[display(fmt = "bulk_chunks_deleted")]
+    BulkChunksDeleted,
+    #[display(fmt = "dataset_delete_failed")]
+    DatasetDeleteFailed,
+    #[display(fmt = "qdrant_index_failed")]
+    QdrantUploadFailed,
+    #[display(fmt = "bulk_chunk_upload_failed")]
+    BulkChunkUploadFailed,
+    #[display(fmt = "group_chunks_updated")]
+    GroupChunksUpdated,
+    #[display(fmt = "group_chunks_action_failed")]
+    GroupChunksActionFailed,
 }
