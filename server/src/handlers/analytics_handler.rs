@@ -9,44 +9,6 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 
-/// Get a Query
-///
-/// This route allows you to view the details of a specific query.
-#[utoipa::path(
-    get,
-    path = "/analytics/{dataset_id}/query/{search_id}",
-    context_path = "/api",
-    tag = "Analytics",
-    responses(
-        (status = 200, description = "The query that has been requested", body = SearchQueryEvent),
-
-        (status = 400, description = "Service error relating to getting clusters", body = ErrorResponseBody),
-    ),
-    params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-    ),
-    security(
-        ("ApiKey" = ["admin"]),
-    )
-)]
-pub async fn get_query(
-    query_id: web::Path<uuid::Uuid>,
-    _user: AdminOnly,
-    clickhouse_client: web::Data<clickhouse::Client>,
-    pool: web::Data<Pool>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, ServiceError> {
-    let query = get_search_query(
-        dataset_org_plan_sub.dataset.id,
-        query_id.into_inner(),
-        pool.clone(),
-        clickhouse_client.get_ref(),
-    )
-    .await?;
-
-    Ok(HttpResponse::Ok().json(query))
-}
-
 /// Get Cluster Analytics
 ///
 /// This route allows you to view the cluster analytics for a dataset.
@@ -101,6 +63,7 @@ pub async fn get_cluster_analytics(
     Ok(HttpResponse::Ok().json(response))
 }
 
+/// Get Search Analytics
 ///
 /// This route allows you to view the search analytics for a dataset.
 #[utoipa::path(
@@ -225,6 +188,27 @@ pub async fn get_search_analytics(
             .await?;
 
             SearchAnalyticsResponse::SearchQueries(search_queries)
+        }
+        SearchAnalytics::QueryDetails { search_id } => {
+            let query = get_search_query(
+                dataset_org_plan_sub.dataset.id,
+                search_id,
+                pool.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            SearchAnalyticsResponse::QueryDetails(query)
+        }
+        SearchAnalytics::CountQueries { filter } => {
+            let count_queries = get_query_counts_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            SearchAnalyticsResponse::CountQueries(count_queries)
         }
     };
 

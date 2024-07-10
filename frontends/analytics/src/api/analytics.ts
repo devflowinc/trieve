@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   AnalyticsParams,
   HeadQuery,
@@ -7,6 +10,12 @@ import {
   RpsDatapoint,
   SearchQueryEvent,
   SearchTypeCount,
+  LatencyGraphResponse,
+  HeadQueryResponse,
+  RagQueryResponse,
+  SearchQueryResponse,
+  QueryCountResponse,
+  RPSGraphResponse,
 } from "shared/types";
 import { apiHost } from "../utils/apiHost";
 import { transformAnalyticsParams } from "../utils/formatDate";
@@ -15,10 +24,12 @@ export const getLatency = async (
   filters: AnalyticsParams,
   datasetId: string,
 ): Promise<LatencyDatapoint[]> => {
-  const response = await fetch(`${apiHost}/analytics/${datasetId}/latency`, {
+  const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
-    body: JSON.stringify(transformAnalyticsParams(filters)),
+    body: JSON.stringify({
+      latency_graph: transformAnalyticsParams(filters),
+    }),
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -29,18 +40,22 @@ export const getLatency = async (
     throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as unknown as LatencyDatapoint[];
-  return data;
+  const data: LatencyGraphResponse =
+    (await response.json()) as unknown as LatencyGraphResponse;
+
+  return data.latency_points;
 };
 
 export const getRps = async (
   filters: AnalyticsParams,
   datasetId: string,
 ): Promise<RpsDatapoint[]> => {
-  const response = await fetch(`${apiHost}/analytics/${datasetId}/rps`, {
+  const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
-    body: JSON.stringify(transformAnalyticsParams(filters)),
+    body: JSON.stringify({
+      rps_graph: transformAnalyticsParams(filters),
+    }),
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -51,8 +66,8 @@ export const getRps = async (
     throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as unknown as RpsDatapoint[];
-  return data;
+  const data = (await response.json()) as unknown as RPSGraphResponse;
+  return data.rps_points;
 };
 
 export const getHeadQueries = async (
@@ -60,10 +75,15 @@ export const getHeadQueries = async (
   datasetId: string,
   page: number,
 ): Promise<HeadQuery[]> => {
-  const response = await fetch(`${apiHost}/analytics/${datasetId}/query/head`, {
+  const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
-    body: JSON.stringify(transformAnalyticsParams(filters, page)),
+    body: JSON.stringify({
+      head_queries: {
+        ...transformAnalyticsParams(filters),
+        page,
+      },
+    }),
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -74,8 +94,8 @@ export const getHeadQueries = async (
     throw new Error(`Failed to fetch head queries: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as unknown as HeadQuery[];
-  return data;
+  const data = (await response.json()) as unknown as HeadQueryResponse;
+  return data.queries;
 };
 
 export const getRAGQueries = async (
@@ -86,10 +106,12 @@ export const getRAGQueries = async (
     page,
   };
 
-  const response = await fetch(`${apiHost}/analytics/${datasetId}/rag`, {
+  const response = await fetch(`${apiHost}/analytics/rag`, {
     credentials: "include",
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      rag_queries: payload,
+    }),
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -100,20 +122,23 @@ export const getRAGQueries = async (
     throw new Error(`Failed to fetch head queries: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as unknown as RagQueryEvent[];
-  return data;
+  const data = (await response.json()) as unknown as RagQueryResponse;
+  return data.queries;
 };
 
 export const getRAGUsage = async (
   datasetId: string,
 ): Promise<RAGUsageResponse> => {
-  const response = await fetch(`${apiHost}/analytics/${datasetId}/rag/usage`, {
+  const response = await fetch(`${apiHost}/analytics/rag`, {
     credentials: "include",
-    method: "GET",
+    method: "POST",
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
     },
+    body: JSON.stringify({
+      rag_usage: {},
+    }),
   });
 
   if (!response.ok) {
@@ -130,21 +155,21 @@ export const getLowConfidenceQueries = async (
   page: number,
   threshold?: number,
 ): Promise<SearchQueryEvent[]> => {
-  const response = await fetch(
-    `${apiHost}/analytics/${datasetId}/query/low_confidence`,
-    {
-      credentials: "include",
-      method: "POST",
-      body: JSON.stringify({
-        ...transformAnalyticsParams(filters, page),
+  const response = await fetch(`${apiHost}/analytics/search`, {
+    credentials: "include",
+    method: "POST",
+    body: JSON.stringify({
+      low_confidence_queries: {
+        ...transformAnalyticsParams(filters),
+        page,
         threshold,
-      }),
-      headers: {
-        "TR-Dataset": datasetId,
-        "Content-Type": "application/json",
       },
+    }),
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
     },
-  );
+  });
 
   if (!response.ok) {
     throw new Error(
@@ -152,8 +177,8 @@ export const getLowConfidenceQueries = async (
     );
   }
 
-  const data = (await response.json()) as unknown as SearchQueryEvent[];
-  return data;
+  const data = (await response.json()) as unknown as SearchQueryResponse;
+  return data.queries;
 };
 
 export const getNoResultQueries = async (
@@ -161,18 +186,20 @@ export const getNoResultQueries = async (
   datasetId: string,
   page: number,
 ): Promise<SearchQueryEvent[]> => {
-  const response = await fetch(
-    `${apiHost}/analytics/${datasetId}/query/no_results`,
-    {
-      credentials: "include",
-      method: "POST",
-      body: JSON.stringify(transformAnalyticsParams(filters, page)),
-      headers: {
-        "TR-Dataset": datasetId,
-        "Content-Type": "application/json",
+  const response = await fetch(`${apiHost}/analytics/search`, {
+    credentials: "include",
+    method: "POST",
+    body: JSON.stringify({
+      no_result_queries: {
+        ...transformAnalyticsParams(filters),
+        page,
       },
+    }),
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
     },
-  );
+  });
 
   if (!response.ok) {
     throw new Error(
@@ -180,26 +207,25 @@ export const getNoResultQueries = async (
     );
   }
 
-  const data = (await response.json()) as unknown as SearchQueryEvent[];
-  return data;
+  const data = (await response.json()) as unknown as SearchQueryResponse;
+  return data.queries;
 };
 
 export const getQueryCounts = async (
   filters: AnalyticsParams,
   datasetId: string,
 ): Promise<SearchTypeCount[]> => {
-  const response = await fetch(
-    `${apiHost}/analytics/${datasetId}/query/counts`,
-    {
-      credentials: "include",
-      method: "POST",
-      body: JSON.stringify(transformAnalyticsParams(filters)),
-      headers: {
-        "TR-Dataset": datasetId,
-        "Content-Type": "application/json",
-      },
+  const response = await fetch(`${apiHost}/analytics/search`, {
+    credentials: "include",
+    method: "POST",
+    body: JSON.stringify({
+      count_queries: transformAnalyticsParams(filters),
+    }),
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
     },
-  );
+  });
 
   if (!response.ok) {
     throw new Error(
@@ -207,25 +233,27 @@ export const getQueryCounts = async (
     );
   }
 
-  const data = (await response.json()) as unknown as SearchTypeCount[];
-  return data;
+  const data = (await response.json()) as unknown as QueryCountResponse;
+  return data.total_queries;
 };
 
 export const getSearchQuery = async (
   datasetId: string,
   searchId: string,
 ): Promise<SearchQueryEvent> => {
-  const response = await fetch(
-    `${apiHost}/analytics/${datasetId}/query/${searchId}`,
-    {
-      credentials: "include",
-      method: "GET",
-      headers: {
-        "TR-Dataset": datasetId,
-        "Content-Type": "application/json",
-      },
+  const response = await fetch(`${apiHost}/analytics/search`, {
+    credentials: "include",
+    method: "POST",
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      query_details: {
+        search_id: searchId,
+      },
+    }),
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch search event: ${response.statusText}`);

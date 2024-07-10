@@ -14,17 +14,13 @@ export const formatdateforapi = (date: Date) => {
     .replace(",", "");
 };
 
-export const transformAnalyticsParams = (
-  params: AnalyticsParams,
-  page?: number,
-) => {
+export const transformAnalyticsParams = (params: AnalyticsParams) => {
   return {
     ...params,
     filter: {
       ...params.filter,
       date_range: transformDateParams(params.filter.date_range),
     },
-    page: page,
   };
 };
 

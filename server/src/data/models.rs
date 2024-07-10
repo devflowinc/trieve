@@ -5,8 +5,8 @@ use std::io::Write;
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::analytics_operator::{
-    HeadQueryResponse, LatencyGraphResponse, RPSGraphResponse, RagQueryResponse,
-    SearchClusterResponse, SearchQueryResponse,
+    HeadQueryResponse, LatencyGraphResponse, QueryCountResponse, RPSGraphResponse,
+    RagQueryResponse, SearchClusterResponse, SearchQueryResponse,
 };
 use crate::operators::chunk_operator::get_metadata_from_ids_query;
 use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
@@ -3462,6 +3462,8 @@ impl StripeInvoice {
             hosted_invoice_url: url,
         }
     }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum Granularity {
@@ -3536,6 +3538,12 @@ pub enum SearchAnalytics {
         sort_by: Option<SortBy>,
         sort_order: Option<SortOrder>,
     },
+    #[schema(title = "CountQueries")]
+    CountQueries {
+        filter: Option<SearchAnalyticsFilter>,
+    },
+    #[schema(title = "QueryDetails")]
+    QueryDetails { search_id: uuid::Uuid },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -3588,6 +3596,8 @@ pub enum SearchAnalyticsResponse {
     LowConfidenceQueries(SearchQueryResponse),
     NoResultQueries(SearchQueryResponse),
     SearchQueries(SearchQueryResponse),
+    CountQueries(QueryCountResponse),
+    QueryDetails(SearchQueryEvent),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
