@@ -39,7 +39,7 @@ service:
       checksEnabled: false
 
 ingress:
-  enabled: true
+  enabled: false
   ingressClassName: ""
   additionalLabels: {}
   annotations: {}
@@ -84,11 +84,11 @@ podLabels: {}
 
 resources:
   limits:
-    cpu: 29440m
-    memory: 200Gi
+    cpu: 240m
+    memory: 2Gi
   requests:
-    cpu: 29440m
-    memory: 200Gi
+    cpu: 240m
+    memory: 2Gi
 
 containerSecurityContext:
   runAsNonRoot: true
@@ -108,10 +108,11 @@ updateVolumeFsOwnership: true
 
 nodeSelector: {}
 
-tolerations: 
-- key: "qdrant-node"
-  operator: "Exists"
-  effect: "NoSchedule"
+# Mostly needed for production development
+tolerations: {}
+# - key: "qdrant-node"
+#   operator: "Exists"
+#   effect: "NoSchedule"
 
 
 affinity: {}

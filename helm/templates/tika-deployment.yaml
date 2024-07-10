@@ -20,6 +20,6 @@ spec:
     spec:
       containers:
       - name: tika
-        image: {{ printf "%s%s:%s" (ternary "apache/" "localhost:5000/" (ne .Values.environment "local")) "tika" .Values.containers.tika.tag }}
+        image: {{ printf "%s%s:%s" "apache/" "tika" .Values.containers.tika.tag }}
         ports:
           - containerPort: 9998

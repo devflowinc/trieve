@@ -1,6 +1,6 @@
 #!/bin/bash
 
-prefix=${PREFIX:-localhost:5000/}
+prefix=${PREFIX:-localhost:5001/}
 startpath=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 source $startpath/parse_yaml.sh

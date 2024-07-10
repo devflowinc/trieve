@@ -15,11 +15,13 @@ containers:
     tag: latest
   ingest:
     tag: latest
-  bulk_ingest:
-    tag: latest
   file_worker:
     tag: latest
   delete_worker:
+    tag: latest
+  group_worker:
+    tag: latest
+  sync_qdrant:
     tag: latest
   search:
     tag: latest
@@ -27,7 +29,10 @@ containers:
     tag: latest
   dashboard:
     tag: latest
-
+  analytics:
+    tag: latest
+  clustering_cron:
+    tag: latest
 postgres:
   useSubchart: true
   dbURI: postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432 # Only used if useSubchart is false
@@ -57,6 +62,12 @@ config:
       - 1024
       - 1536
       - 3072
+  analytics:
+    enabled: true
+    clickhouseDB: default
+    clickhouseUser: default
+    clickhousePassword: cywtKFfCdRYq7H
+    clickhouseUrl: http://chi-trieve-clickhouse-cluster1-0-0.clickhouse.svc.cluster.local:8123
   trieve:
     unlimited: true
     cookieSecure: false
@@ -71,6 +82,7 @@ config:
     salt: $SALT
     secretKey: $SECRET_KEY
     adminApiKey: $ADMIN_API_KEY 
+    anthropicAPIKey: sk-ant-***************************************
   oidc:
     clientSecret: $OIDC_CLIENT_SECRET
     clientId: trieve
