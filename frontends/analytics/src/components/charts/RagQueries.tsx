@@ -35,7 +35,7 @@ export const RagQueries = () => {
   }));
 
   return (
-    <ChartCard class="flex flex-col justify-between px-4" width={5}>
+    <>
       <div>
         <div class="text-lg">RAG Queries</div>
         <div class="text-sm text-neutral-600">
@@ -69,7 +69,7 @@ export const RagQueries = () => {
       <div class="flex justify-end">
         <PaginationButtons size={18} pages={pages} />
       </div>
-    </ChartCard>
+    </>
   );
 };
 

@@ -3,7 +3,6 @@ import {
   AnalyticsFilter,
   SearchQueryEvent,
 } from "shared/types";
-import { ChartCard } from "./ChartCard";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import {
   createEffect,
@@ -100,7 +99,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   }));
 
   return (
-    <ChartCard class="px-4" width={5}>
+    <>
       <div class="flex items-start justify-between gap-2">
         <div>
           <div class="text-lg">Low Confidence Queries</div>
@@ -146,7 +145,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
       <div class="flex justify-end pt-2">
         <PaginationButtons size={18} pages={pages} />
       </div>
-    </ChartCard>
+    </>
   );
 };
 

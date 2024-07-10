@@ -4,6 +4,7 @@ interface ChartCardProps extends JSX.HTMLAttributes<HTMLDivElement> {
   title?: string;
   width: number;
   children: JSX.Element;
+  controller?: JSX.Element;
 }
 
 export const ChartCard = (props: ChartCardProps) => {
@@ -16,9 +17,12 @@ export const ChartCard = (props: ChartCardProps) => {
       }}
       class={`shadow-xs rounded-lg border border-neutral-300 bg-white p-2 ${classStuff.class}`}
     >
-      <Show when={props.title}>
-        {(title) => <div class="mb-2 ml-2 text-lg">{title()}</div>}
-      </Show>
+      <div class="flex justify-between">
+        <Show when={props.title}>
+          {(title) => <div class="mb-2 ml-2 text-lg">{title()}</div>}
+        </Show>
+        <Show when={props.controller}>{(controller) => controller()}</Show>
+      </div>
       {props.children}
     </div>
   );
