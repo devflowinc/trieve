@@ -201,10 +201,10 @@ pub async fn get_search_analytics(
 
             SearchAnalyticsResponse::QueryDetails(query)
         }
-        SearchAnalytics::CountQueries { filter } => {
+        SearchAnalytics::CountQueries { gt_date } => {
             let count_queries = get_query_counts_query(
                 dataset_org_plan_sub.dataset.id,
-                filter,
+                gt_date,
                 clickhouse_client.get_ref(),
             )
             .await?;
