@@ -9,7 +9,7 @@ use crate::{
         HeadQueries, Pool, RAGAnalyticsFilter, RAGUsageResponse, RagQueryEvent,
         RagQueryEventClickhouse, SearchAnalyticsFilter, SearchClusterTopics, SearchLatencyGraph,
         SearchLatencyGraphClickhouse, SearchQueryEvent, SearchQueryEventClickhouse, SearchRPSGraph,
-        SearchRPSGraphClickhouse, SortBy, SortOrder,
+        SearchRPSGraphClickhouse, SearchTypeCount, SortBy, SortOrder,
     },
     errors::ServiceError,
 };
@@ -367,6 +367,53 @@ pub async fn get_all_queries_query(
     .await;
 
     Ok(SearchQueryResponse { queries })
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct QueryCountResponse {
+    pub total_queries: Vec<SearchTypeCount>,
+}
+
+pub async fn get_query_counts_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<SearchAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<QueryCountResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            search_type,
+            JSONExtractString(request_params, 'search_type') as search_method,
+            COUNT(*) as search_count
+        FROM 
+            search_queries
+        WHERE dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            search_type, search_method
+        ORDER BY 
+            search_count DESC",
+    );
+
+    let result_counts = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<SearchTypeCount>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    Ok(QueryCountResponse {
+        total_queries: result_counts,
+    })
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

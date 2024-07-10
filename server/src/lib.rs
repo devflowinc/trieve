@@ -224,7 +224,6 @@ impl Modify for SecurityAddon {
         handlers::stripe_handler::get_all_plans,
         handlers::stripe_handler::get_all_invoices,
         handlers::analytics_handler::get_cluster_analytics,
-        handlers::analytics_handler::get_query,
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
         handlers::metrics_handler::get_metrics,
@@ -988,10 +987,6 @@ pub fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/search/clusters")
                                 .route(web::get().to(handlers::analytics_handler::get_cluster_analytics)),
-                            )
-                            .service(
-                                web::resource("/search/{query_id}")
-                                .route(web::get().to(handlers::analytics_handler::get_query)),
                             )
                             .service(
                                 web::resource("/rag")

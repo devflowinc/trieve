@@ -148,7 +148,7 @@ export interface SetUserApiKeyResponse {
 }
 
 export const isComboboxValues = (
-  values: unknown,
+  values: unknown
 ): values is ComboboxSection[] => {
   if (!Array.isArray(values)) {
     return false;
@@ -474,4 +474,32 @@ export interface RagQueryEvent {
 
 export interface RAGUsageResponse {
   total_queries: number;
+}
+
+export interface QueryCountResponse {
+  total_queries: SearchTypeCount[];
+}
+
+export interface HeadQueryResponse {
+  queries: HeadQuery[];
+}
+
+export interface SearchQueryResponse {
+  queries: SearchQueryEvent[];
+}
+
+export interface SearchClusterResponse {
+  clusters: SearchClusterTopics[];
+}
+
+export interface RPSGraphResponse {
+  rps_points: RpsDatapoint[];
+}
+
+export interface LatencyGraphResponse {
+  latency_points: LatencyDatapoint[];
+}
+
+export interface RagQueryResponse {
+  queries: RagQueryEvent[];
 }

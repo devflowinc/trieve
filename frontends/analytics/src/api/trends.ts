@@ -1,4 +1,12 @@
-import { SearchClusterTopics, SearchQueryEvent } from "shared/types";
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import {
+  SearchClusterResponse,
+  SearchClusterTopics,
+  SearchQueryEvent,
+  SearchQueryResponse,
+} from "shared/types";
 import { apiHost } from "../utils/apiHost";
 
 export const getTrendsBubbles = async (
@@ -16,8 +24,8 @@ export const getTrendsBubbles = async (
     throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as unknown as SearchClusterTopics[];
-  return data;
+  const data = (await response.json()) as unknown as SearchClusterResponse;
+  return data.clusters;
 };
 
 export const getQueriesForTopic = async (
@@ -39,6 +47,6 @@ export const getQueriesForTopic = async (
     throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as unknown as SearchQueryEvent[];
-  return data;
+  const data = (await response.json()) as unknown as SearchQueryResponse;
+  return data.queries;
 };
