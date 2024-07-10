@@ -1,5 +1,4 @@
 import { RagQueryEvent } from "shared/types";
-import { ChartCard } from "./ChartCard";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, For, Show, useContext } from "solid-js";
 import { getRAGQueries } from "../../api/analytics";
