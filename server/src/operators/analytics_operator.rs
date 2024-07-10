@@ -26,13 +26,13 @@ pub async fn get_clusters_query(
     filters: Option<ClusterAnalyticsFilter>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchClusterResponse, ServiceError> {
-    let mut query_string = String::from(
-        "SELECT ?fields FROM cluster_topics WHERE dataset_id = ? ORDER BY density DESC",
-    );
+    let mut query_string = String::from("SELECT ?fields FROM cluster_topics WHERE dataset_id = ?");
 
     if let Some(filters) = filters {
         query_string = filters.add_to_query(query_string);
     }
+
+    query_string.push_str(" ORDER BY density DESC LIMIT 10");
 
     let clickhouse_topics = clickhouse_client
         .query(query_string.as_str())
