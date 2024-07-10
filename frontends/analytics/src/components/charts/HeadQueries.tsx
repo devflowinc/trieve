@@ -1,5 +1,4 @@
-import { AnalyticsParams, HeadQuery } from "shared/types";
-import { ChartCard } from "./ChartCard";
+import { AnalyticsFilter, HeadQuery } from "shared/types";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, For, Show, useContext } from "solid-js";
 import { getHeadQueries } from "../../api/analytics";
@@ -8,7 +7,7 @@ import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
 
 interface HeadQueriesProps {
-  params: AnalyticsParams;
+  params: { filter: AnalyticsFilter };
 }
 
 export const HeadQueries = (props: HeadQueriesProps) => {
@@ -59,8 +58,19 @@ export const HeadQueries = (props: HeadQueriesProps) => {
 
   return (
     <>
-      <div class="text-lg">Head Queries</div>
-      <div class="text-sm text-neutral-600">The most popular searches.</div>
+      <Show
+        when={
+          headQueriesQuery.status === "success" &&
+          headQueriesQuery.data.length === 0
+        }
+      >
+        <div class="py-4 text-center">
+          <div class="text-lg">No queries found</div>
+          <div class="text-sm text-neutral-600">
+            There are no queries to display.
+          </div>
+        </div>
+      </Show>
       <Show
         fallback={<div class="py-8">Loading...</div>}
         when={headQueriesQuery.data}
@@ -68,10 +78,12 @@ export const HeadQueries = (props: HeadQueriesProps) => {
         {(data) => (
           <table class="mt-2 w-full py-2">
             <thead>
-              <tr>
-                <th class="text-left font-semibold">Query</th>
-                <th class="text-right font-semibold">Count</th>
-              </tr>
+              <Show when={data.length > 0}>
+                <tr>
+                  <th class="text-left font-semibold">Query</th>
+                  <th class="text-right font-semibold">Count</th>
+                </tr>
+              </Show>
             </thead>
             <tbody>
               <For each={data()}>
