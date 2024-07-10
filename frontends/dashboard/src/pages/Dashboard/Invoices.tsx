@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   createEffect,
   createMemo,
@@ -89,7 +90,7 @@ export const Invoices = () => {
                   scope="col"
                   class="px-3 py-3.5 text-left text-sm font-semibold"
                 >
-                  Link
+                  View Stripe Invoice
                 </th>
                 <th scope="col" class="px-3 py-3.5" />
               </tr>
@@ -99,18 +100,22 @@ export const Invoices = () => {
                 {(invoice) => {
                   return (
                     <tr>
-                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6">
-                        {formatDate(new Date(invoice.created_at))}
+                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
+                        {formatDate(new Date(invoice.created_at as string))}
                       </td>
-                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6">
+                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
                         {invoice.status}
                       </td>
-                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6">
+                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
                         {usdFormatter.format(invoice.total / 100)}
                       </td>
-                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6">
-                        <a href={invoice.hosted_invoice_url}>
-                          <TbFileInvoice size={15} />
+                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
+                        <a
+                          href={invoice.hosted_invoice_url as string}
+                          target="_blank"
+                          class="hover:text-fuchsia-500"
+                        >
+                          <TbFileInvoice class="h-6 w-6" />
                         </a>
                       </td>
                     </tr>
