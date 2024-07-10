@@ -6,7 +6,7 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::analytics_operator::{
     HeadQueryResponse, LatencyGraphResponse, QueryCountResponse, RPSGraphResponse,
-    RagQueryResponse, SearchClusterResponse, SearchQueryResponse,
+    RagQueryResponse, RecommendationsEventResponse, SearchClusterResponse, SearchQueryResponse,
 };
 use crate::operators::chunk_operator::get_metadata_from_ids_query;
 use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
@@ -3205,6 +3205,147 @@ pub struct RecommendationEventClickhouse {
     pub created_at: OffsetDateTime,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Default)]
+pub struct RecommendationEvent {
+    pub id: uuid::Uuid,
+    pub recommendation_type: String,
+    pub positive_ids: Vec<uuid::Uuid>,
+    pub negative_ids: Vec<uuid::Uuid>,
+    pub positive_tracking_ids: Vec<String>,
+    pub negative_tracking_ids: Vec<String>,
+    pub request_params: String,
+    pub results: Vec<SearchResultType>,
+    pub top_score: f32,
+    pub dataset_id: uuid::Uuid,
+    pub created_at: String,
+}
+
+impl RecommendationEventClickhouse {
+    pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> RecommendationEvent {
+        if let Ok(chunk_results) = self
+            .results
+            .iter()
+            .map(|r| serde_json::from_str::<CHSlimResponse>(r))
+            .collect::<Result<Vec<CHSlimResponse>, _>>()
+        {
+            let chunk_ids = chunk_results
+                .iter()
+                .map(|r| r.id)
+                .collect::<Vec<uuid::Uuid>>();
+
+            let chunks = get_metadata_from_ids_query(chunk_ids.clone(), self.dataset_id, pool)
+                .await
+                .unwrap_or(vec![]);
+
+            let results = chunk_results
+                .iter()
+                .map(|r| {
+                    let default = ChunkMetadata::default();
+                    let chunk = chunks.iter().find(|c| c.id == r.id).unwrap_or(&default);
+                    SearchResultType::Search(ScoreChunkDTO {
+                        score: r.score,
+                        highlights: None,
+                        metadata: vec![ChunkMetadataTypes::Metadata(chunk.clone().into())],
+                    })
+                })
+                .collect::<Vec<SearchResultType>>();
+
+            RecommendationEvent {
+                id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
+                recommendation_type: self.recommendation_type,
+                positive_ids: self
+                    .positive_ids
+                    .iter()
+                    .map(|id| uuid::Uuid::parse_str(id).unwrap())
+                    .collect(),
+                negative_ids: self
+                    .negative_ids
+                    .iter()
+                    .map(|id| uuid::Uuid::parse_str(id).unwrap())
+                    .collect(),
+
+                positive_tracking_ids: self.positive_tracking_ids.clone(),
+                negative_tracking_ids: self.negative_tracking_ids.clone(),
+                request_params: self.request_params,
+                results,
+                top_score: self.top_score,
+                dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+                created_at: self.created_at.to_string(),
+            }
+        } else if let Ok(group_results) = self
+            .results
+            .iter()
+            .map(|r| serde_json::from_str::<CHSlimResponseGroup>(r))
+            .collect::<Result<Vec<CHSlimResponseGroup>, _>>()
+        {
+            let chunk_ids = group_results
+                .iter()
+                .flat_map(|groups| {
+                    groups
+                        .chunks
+                        .iter()
+                        .map(|r| r.id)
+                        .collect::<Vec<uuid::Uuid>>()
+                })
+                .collect::<Vec<uuid::Uuid>>();
+
+            let chunks = get_metadata_from_ids_query(chunk_ids.clone(), self.dataset_id, pool)
+                .await
+                .unwrap_or(vec![]);
+
+            let results = group_results
+                .iter()
+                .map(|group| {
+                    let group_chunks = group
+                        .chunks
+                        .iter()
+                        .map(|r| {
+                            let default = ChunkMetadata::default();
+                            let chunk = chunks.iter().find(|c| c.id == r.id).unwrap_or(&default);
+                            ScoreChunkDTO {
+                                score: r.score,
+                                highlights: None,
+                                metadata: vec![ChunkMetadataTypes::Metadata(chunk.clone().into())],
+                            }
+                        })
+                        .collect::<Vec<ScoreChunkDTO>>();
+
+                    SearchResultType::GroupSearch(GroupScoreChunk {
+                        group_id: group.group_id,
+                        metadata: group_chunks,
+                        ..Default::default()
+                    })
+                })
+                .collect::<Vec<SearchResultType>>();
+
+            RecommendationEvent {
+                id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
+                recommendation_type: self.recommendation_type,
+                positive_ids: self
+                    .positive_ids
+                    .iter()
+                    .map(|id| uuid::Uuid::parse_str(id).unwrap())
+                    .collect(),
+                negative_ids: self
+                    .negative_ids
+                    .iter()
+                    .map(|id| uuid::Uuid::parse_str(id).unwrap())
+                    .collect(),
+
+                positive_tracking_ids: self.positive_tracking_ids.clone(),
+                negative_tracking_ids: self.negative_tracking_ids.clone(),
+                request_params: self.request_params,
+                results,
+                top_score: self.top_score,
+                dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+                created_at: self.created_at.to_string(),
+            }
+        } else {
+            RecommendationEvent::default()
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SearchClusterTopics {
     pub id: uuid::Uuid,
@@ -3347,6 +3488,48 @@ impl ClusterAnalyticsFilter {
             if let Some(lte) = &date_range.lte {
                 query_string.push_str(&format!(" AND created_at <= '{}'", lte));
             }
+        }
+
+        query_string
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display)]
+pub enum RecommendationType {
+    #[display(fmt = "chunk")]
+    Chunk,
+    #[display(fmt = "group")]
+    Group,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct RecommendationAnalyticsFilter {
+    pub date_range: Option<DateRange>,
+    pub recommendation_type: Option<RecommendationType>,
+}
+
+impl RecommendationAnalyticsFilter {
+    pub fn add_to_query(&self, mut query_string: String) -> String {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(recommendation_type) = &self.recommendation_type {
+            query_string.push_str(&format!(
+                " AND recommendation_type = '{}'",
+                recommendation_type
+            ));
         }
 
         query_string
@@ -3498,6 +3681,7 @@ pub enum SortOrder {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum SearchAnalytics {
     #[schema(title = "LatencyGraph")]
@@ -3547,6 +3731,7 @@ pub enum SearchAnalytics {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum RAGAnalytics {
     #[schema(title = "RAGQueries")]
@@ -3562,9 +3747,21 @@ pub enum RAGAnalytics {
     RAGUsage { filter: Option<RAGAnalyticsFilter> },
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
 pub enum RecommendationAnalytics {
-    LowConfidenceRecommendations {},
-    Recommendations {},
+    LowConfidenceRecommendations {
+        filter: Option<RecommendationAnalyticsFilter>,
+        page: Option<u32>,
+        threshold: Option<f32>,
+    },
+    RecommendationQueries {
+        filter: Option<RecommendationAnalyticsFilter>,
+        page: Option<u32>,
+        sort_by: Option<SortBy>,
+        sort_order: Option<SortOrder>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -3612,4 +3809,11 @@ pub enum RAGAnalyticsResponse {
 pub enum ClusterAnalyticsResponse {
     ClusterTopics(SearchClusterResponse),
     ClusterQueries(SearchQueryResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum RecommendationAnalyticsResponse {
+    LowConfidenceRecommendations(RecommendationsEventResponse),
+    RecommendationQueries(RecommendationsEventResponse),
 }
