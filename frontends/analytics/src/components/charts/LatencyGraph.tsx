@@ -1,7 +1,6 @@
 /* eslint-disable prefer-const */
 import { createQuery } from "@tanstack/solid-query";
-import { ChartCard } from "./ChartCard";
-import { AnalyticsParams } from "shared/types";
+import { AnalyticsFilter, AnalyticsParams } from "shared/types";
 import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getLatency } from "../../api/analytics";
@@ -26,8 +25,12 @@ export const parseCustomDateString = (dateString: string) => {
 };
 
 interface LatencyGraphProps {
-  params: AnalyticsParams;
+  params: {
+    filter: AnalyticsFilter;
+    granularity: AnalyticsParams["granularity"];
+  };
 }
+
 export const LatencyGraph = (props: LatencyGraphProps) => {
   const dataset = useContext(DatasetContext);
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
@@ -113,9 +116,5 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
     }
   });
 
-  return (
-    <ChartCard title="Search Latency" width={5}>
-      <canvas ref={setCanvasElement} class="h-full w-full" />
-    </ChartCard>
-  );
+  return <canvas ref={setCanvasElement} class="h-full w-full" />;
 };

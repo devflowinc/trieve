@@ -1,6 +1,5 @@
 import { createQuery } from "@tanstack/solid-query";
-import { ChartCard } from "./ChartCard";
-import { AnalyticsParams } from "shared/types";
+import { AnalyticsFilter, AnalyticsParams } from "shared/types";
 import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getRps } from "../../api/analytics";
@@ -9,7 +8,10 @@ import { format } from "date-fns";
 import { parseCustomDateString } from "./LatencyGraph";
 
 interface RpsGraphProps {
-  params: AnalyticsParams;
+  params: {
+    filter: AnalyticsFilter;
+    granularity: AnalyticsParams["granularity"];
+  };
 }
 export const RpsGraph = (props: RpsGraphProps) => {
   const dataset = useContext(DatasetContext);
@@ -93,9 +95,5 @@ export const RpsGraph = (props: RpsGraphProps) => {
     }
   });
 
-  return (
-    <ChartCard title="Requests/Second" width={5}>
-      <canvas ref={setCanvasElement} class="h-full w-full" />
-    </ChartCard>
-  );
+  return <canvas ref={setCanvasElement} class="h-full w-full" />;
 };
