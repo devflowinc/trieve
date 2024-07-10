@@ -401,7 +401,7 @@ const MainLayout = (props: LayoutProps) => {
                     <input
                       type="number"
                       id="page_size"
-                      class="w-12 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      class="w-12 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
                       value={pageSize() ?? ""}
                       onChange={(e) => {
                         setPageSize(parseInt(e.target.value));
@@ -413,7 +413,7 @@ const MainLayout = (props: LayoutProps) => {
                     <input
                       type="text"
                       id="search_query"
-                      class="w-3/4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      class="w-3/4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
                       value={searchQuery() ?? ""}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
@@ -425,7 +425,7 @@ const MainLayout = (props: LayoutProps) => {
                     <input
                       type="text"
                       id="search_query"
-                      class="w-12 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      class="w-12 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
                       step={"any"}
                       value={minScore() ?? ""}
                       onChange={(e) => {
