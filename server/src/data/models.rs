@@ -3751,11 +3751,13 @@ pub enum RAGAnalytics {
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum RecommendationAnalytics {
+    #[schema(title = "LowConfidenceRecommendations")]
     LowConfidenceRecommendations {
         filter: Option<RecommendationAnalyticsFilter>,
         page: Option<u32>,
         threshold: Option<f32>,
     },
+    #[schema(title = "RecommendationQueries")]
     RecommendationQueries {
         filter: Option<RecommendationAnalyticsFilter>,
         page: Option<u32>,
@@ -3787,34 +3789,49 @@ pub struct RAGUsageResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum SearchAnalyticsResponse {
+    #[schema(title = "LatencyGraph")]
     LatencyGraph(LatencyGraphResponse),
+    #[schema(title = "RPSGraph")]
     RPSGraph(RPSGraphResponse),
+    #[schema(title = "SearchMetrics")]
     SearchMetrics(DatasetAnalytics),
+    #[schema(title = "HeadQueries")]
     HeadQueries(HeadQueryResponse),
+    #[schema(title = "LowConfidenceQueries")]
     LowConfidenceQueries(SearchQueryResponse),
+    #[schema(title = "NoResultQueries")]
     NoResultQueries(SearchQueryResponse),
+    #[schema(title = "SearchQueries")]
     SearchQueries(SearchQueryResponse),
+    #[schema(title = "CountQueries")]
     CountQueries(QueryCountResponse),
+    #[schema(title = "QueryDetails")]
     QueryDetails(SearchQueryEvent),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum RAGAnalyticsResponse {
+    #[schema(title = "RAGQueries")]
     RAGQueries(RagQueryResponse),
+    #[schema(title = "RAGUsage")]
     RAGUsage(RAGUsageResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum ClusterAnalyticsResponse {
+    #[schema(title = "ClusterTopics")]
     ClusterTopics(SearchClusterResponse),
+    #[schema(title = "ClusterQueries")]
     ClusterQueries(SearchQueryResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendationAnalyticsResponse {
+    #[schema(title = "LowConfidenceRecommendations")]
     LowConfidenceRecommendations(RecommendationsEventResponse),
+    #[schema(title = "RecommendationQueries")]
     RecommendationQueries(RecommendationsEventResponse),
 }
