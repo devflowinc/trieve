@@ -5,7 +5,7 @@ use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, GeoInfoWithBias,
     IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RecommendationEventClickhouse,
-    RedisPool, ScoreChunkDTO, SearchQueryEventClickhouse, SearchType, ServerDatasetConfiguration,
+    RedisPool, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, ServerDatasetConfiguration,
     SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
@@ -961,7 +961,7 @@ pub struct ChunkFilter {
 }))]
 pub struct SearchChunksReqPayload {
     /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid", it will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: SearchType,
+    pub search_type: SearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
     /// Page of chunks to fetch. Page is 1-indexed.
@@ -1005,7 +1005,7 @@ pub struct SearchChunksReqPayload {
 impl Default for SearchChunksReqPayload {
     fn default() -> Self {
         SearchChunksReqPayload {
-            search_type: SearchType::Hybrid,
+            search_type: SearchMethod::Hybrid,
             query: "".to_string(),
             page: Some(1),
             get_total_pages: None,
@@ -1116,7 +1116,7 @@ pub async fn search_chunks(
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type {
-        SearchType::FullText => {
+        SearchMethod::FullText => {
             if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
@@ -1134,7 +1134,7 @@ pub async fn search_chunks(
             )
             .await?
         }
-        SearchType::Hybrid => {
+        SearchMethod::Hybrid => {
             search_hybrid_chunks(
                 data.clone(),
                 parsed_query,
@@ -1145,7 +1145,7 @@ pub async fn search_chunks(
             )
             .await?
         }
-        SearchType::Semantic => {
+        SearchMethod::Semantic => {
             if !server_dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),
@@ -1249,7 +1249,7 @@ pub async fn search_chunks(
 }))]
 pub struct AutocompleteReqPayload {
     /// Can be either "semantic", or "fulltext". "semantic" will pull in one page_size of the nearest cosine distant vectors. "fulltext" will pull in one page_size of full-text results based on SPLADE.
-    pub search_type: SearchType,
+    pub search_type: SearchMethod,
     /// If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.
     pub extend_results: Option<bool>,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
@@ -1359,7 +1359,7 @@ pub async fn autocomplete(
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type {
-        SearchType::FullText => {
+        SearchMethod::FullText => {
             if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
@@ -1377,7 +1377,7 @@ pub async fn autocomplete(
             )
             .await?
         }
-        SearchType::Semantic => {
+        SearchMethod::Semantic => {
             if !server_dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),
@@ -1488,7 +1488,7 @@ pub async fn get_chunk_by_id(
 }))]
 pub struct CountChunksReqPayload {
     /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid" it will pull in the count for both semantic and full-text searches and return the larger of the two. "semantic" will pull in the count for the nearest cosine distant vectors. "fulltext" will pull in the count for full-text results based on SPLADE.
-    pub search_type: SearchType,
+    pub search_type: SearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
@@ -1550,7 +1550,7 @@ pub async fn count_chunks(
     };
 
     let result_chunks = match data.search_type {
-        SearchType::FullText => {
+        SearchMethod::FullText => {
             if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
@@ -1567,7 +1567,7 @@ pub async fn count_chunks(
             )
             .await?
         }
-        SearchType::Hybrid => {
+        SearchMethod::Hybrid => {
             count_hybrid_chunks(
                 search_req_data.clone(),
                 parsed_query,
@@ -1577,7 +1577,7 @@ pub async fn count_chunks(
             )
             .await?
         }
-        SearchType::Semantic => {
+        SearchMethod::Semantic => {
             if !server_dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),

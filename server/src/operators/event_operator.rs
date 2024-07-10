@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{ClickhouseEvent, Event},
+    data::models::{ClickhouseEvent, Event, EventTypeRequest},
     errors::ServiceError,
 };
 use actix_web::web;
@@ -42,7 +42,7 @@ pub async fn get_events_query(
     dataset_id: uuid::Uuid,
     page: i64,
     page_size: i64,
-    event_types: Vec<String>,
+    event_types: Vec<EventTypeRequest>,
     clickhouse_client: web::Data<clickhouse::Client>,
 ) -> Result<EventReturn, ServiceError> {
     let query = format!(

@@ -1444,7 +1444,7 @@ impl From<ClickhouseEvent> for Event {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Display, ToSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(untagged)]
 pub enum EventType {
     #[display(fmt = "file_uploaded")]
     FileUploaded {
@@ -1481,18 +1481,19 @@ pub enum EventType {
 }
 
 impl EventType {
-    pub fn get_all_event_types() -> Vec<String> {
+    pub fn get_all_event_types() -> Vec<EventTypeRequest> {
         vec![
-            "file_uploaded".to_string(),
-            "file_upload_failed".to_string(),
-            "chunks_uploaded".to_string(),
-            "chunk_updated".to_string(),
-            "bulk_chunks_deleted".to_string(),
-            "dataset_delete_failed".to_string(),
-            "qdrant_index_failed".to_string(),
-            "group_chunks_updated".to_string(),
-            "group_chunks_action_failed".to_string(),
-            "bulk_chunk_upload_failed".to_string(),
+            EventTypeRequest::FileUploaded,
+            EventTypeRequest::FileUploadFailed,
+            EventTypeRequest::ChunksUploaded,
+            EventTypeRequest::ChunkActionFailed,
+            EventTypeRequest::ChunkUpdated,
+            EventTypeRequest::BulkChunksDeleted,
+            EventTypeRequest::DatasetDeleteFailed,
+            EventTypeRequest::QdrantUploadFailed,
+            EventTypeRequest::BulkChunkUploadFailed,
+            EventTypeRequest::GroupChunksUpdated,
+            EventTypeRequest::GroupChunksActionFailed,
         ]
     }
 }
@@ -3368,14 +3369,20 @@ pub struct SearchClusterMembership {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchType {
-    Hybrid,
-    FullText,
-    Semantic,
+    #[display(fmt = "search")]
+    Search,
+    #[display(fmt = "autocomplete")]
+    Autocomplete,
+    #[display(fmt = "search_over_groups")]
+    SearchOverGroups,
+    #[display(fmt = "search_within_groups")]
+    SearchWithinGroups,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum SearchMethod {
+    #[serde(rename = "full_text", alias = "fulltext")]
     #[display(fmt = "fulltext")]
     FullText,
     #[display(fmt = "semantic")]
