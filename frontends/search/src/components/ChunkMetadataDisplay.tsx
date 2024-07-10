@@ -135,13 +135,23 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                 </button>
               </Show>
               <Show when={props.signedInUserId == props.viewingUserId}>
-                <a title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
+                <a
+                  title="Edit"
+                  href={`/chunk/edit/${props.chunk.id}?dataset=${
+                    $currentDataset?.()?.dataset.id ?? ""
+                  }`}
+                >
                   <FiEdit class="h-5 w-5" />
                 </a>
               </Show>
               <Tooltip
                 body={
-                  <a title="Open" href={`/chunk/${props.chunk.id}`}>
+                  <a
+                    title="Open"
+                    href={`/chunk/${props.chunk.id}?dataset=${
+                      $currentDataset?.()?.dataset.id ?? ""
+                    }`}
+                  >
                     <VsFileSymlinkFile class="h-5 w-5 fill-current" />
                   </a>
                 }
