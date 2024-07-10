@@ -3,7 +3,6 @@ import { createSignal, For, Show, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { createQuery } from "@tanstack/solid-query";
 import { getQueryCounts } from "../../api/analytics";
-import { ChartCard } from "./ChartCard";
 import { toTitleCase } from "../../utils/titleCase";
 import { Select } from "shared/ui";
 import { DateRangeOption, dateRanges } from "../FilterBar";
