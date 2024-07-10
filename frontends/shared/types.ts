@@ -148,7 +148,7 @@ export interface SetUserApiKeyResponse {
 }
 
 export const isComboboxValues = (
-  values: unknown
+  values: unknown,
 ): values is ComboboxSection[] => {
   if (!Array.isArray(values)) {
     return false;
@@ -411,8 +411,8 @@ export interface DateRangeFilter {
 
 export interface AnalyticsFilter {
   date_range: DateRangeFilter;
-  search_method: "fulltext" | "hybrid" | "semantic";
-  search_type:
+  search_method?: "fulltext" | "hybrid" | "semantic";
+  search_type?:
     | "search"
     | "autocomplete"
     | "rag"
@@ -420,10 +420,16 @@ export interface AnalyticsFilter {
     | "search_within_groups";
 }
 
+export interface RequiredAnalyticsFilter {
+  date_range: DateRangeFilter;
+  search_method: NonNullable<AnalyticsFilter["search_method"]>;
+  search_type: NonNullable<AnalyticsFilter["search_type"]>;
+}
+
+// The search analytics params bar conforms to this
 export interface AnalyticsParams {
-  filter: AnalyticsFilter;
+  filter: RequiredAnalyticsFilter;
   granularity: "day" | "week" | "hour" | "month" | "minute" | "second";
-  page: number;
 }
 
 export interface LatencyDatapoint {

@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   AnalyticsParams,
   HeadQuery,
@@ -16,19 +13,22 @@ import {
   SearchQueryResponse,
   QueryCountResponse,
   RPSGraphResponse,
+  AnalyticsFilter,
 } from "shared/types";
 import { apiHost } from "../utils/apiHost";
-import { transformAnalyticsParams } from "../utils/formatDate";
+import { transformAnalyticsFilter } from "../utils/formatDate";
 
 export const getLatency = async (
-  filters: AnalyticsParams,
+  filters: AnalyticsFilter,
+  granularity: AnalyticsParams["granularity"],
   datasetId: string,
 ): Promise<LatencyDatapoint[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      ...transformAnalyticsParams(filters),
+      filter: transformAnalyticsFilter(filters),
+      granularity: granularity,
       type: "latency_graph",
     }),
     headers: {
@@ -48,14 +48,16 @@ export const getLatency = async (
 };
 
 export const getRps = async (
-  filters: AnalyticsParams,
+  filters: AnalyticsFilter,
+  granularity: AnalyticsParams["granularity"],
   datasetId: string,
 ): Promise<RpsDatapoint[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      ...transformAnalyticsParams(filters),
+      filter: transformAnalyticsFilter(filters),
+      granularity,
       type: "rps_graph",
     }),
     headers: {
@@ -73,7 +75,7 @@ export const getRps = async (
 };
 
 export const getHeadQueries = async (
-  filters: AnalyticsParams,
+  filters: AnalyticsFilter,
   datasetId: string,
   page: number,
 ): Promise<HeadQuery[]> => {
@@ -81,7 +83,7 @@ export const getHeadQueries = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      ...transformAnalyticsParams(filters),
+      filter: transformAnalyticsFilter(filters),
       page,
       type: "head_queries",
     }),
@@ -132,7 +134,6 @@ export const getRAGUsage = async (
   datasetId: string,
 ): Promise<RAGUsageResponse> => {
   const response = await fetch(`${apiHost}/analytics/rag`, {
-    credentials: "include",
     method: "POST",
     headers: {
       "TR-Dataset": datasetId,
@@ -152,16 +153,15 @@ export const getRAGUsage = async (
 };
 
 export const getLowConfidenceQueries = async (
-  filters: AnalyticsParams,
+  filters: AnalyticsFilter,
   datasetId: string,
   page: number,
   threshold?: number,
 ): Promise<SearchQueryEvent[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
-    credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      ...transformAnalyticsParams(filters),
+      filter: transformAnalyticsFilter(filters),
       page,
       threshold,
       type: "low_confidence_queries",
@@ -183,7 +183,7 @@ export const getLowConfidenceQueries = async (
 };
 
 export const getNoResultQueries = async (
-  filters: AnalyticsParams,
+  filters: AnalyticsFilter,
   datasetId: string,
   page: number,
 ): Promise<SearchQueryEvent[]> => {
@@ -191,7 +191,7 @@ export const getNoResultQueries = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      ...transformAnalyticsParams(filters),
+      filter: transformAnalyticsFilter(filters),
       page,
       type: "no_result_queries",
     }),
