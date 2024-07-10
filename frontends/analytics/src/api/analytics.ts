@@ -219,7 +219,7 @@ export const getQueryCounts = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      ...transformAnalyticsParams(filters),
+      gt_date,
       type: "count_queries",
     }),
     headers: {
