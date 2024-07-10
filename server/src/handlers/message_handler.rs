@@ -94,6 +94,8 @@ pub struct CreateMessageReqPayload {
     pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    pub score_threshold: Option<f32>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
     pub completion_first: Option<bool>,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
@@ -281,6 +283,8 @@ pub struct RegenerateMessageReqPayload {
     pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    pub score_threshold: Option<f32>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
     pub completion_first: Option<bool>,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
@@ -319,6 +323,8 @@ pub struct EditMessageReqPayload {
     pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    pub score_threshold: Option<f32>,
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
     pub completion_first: Option<bool>,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
@@ -347,6 +353,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             search_query: data.search_query,
             page_size: data.page_size,
             filters: data.filters,
+            score_threshold: data.score_threshold,
             completion_first: data.completion_first,
             stream_response: data.stream_response,
             temperature: data.temperature,
@@ -370,6 +377,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             search_query: data.search_query,
             page_size: data.page_size,
             filters: data.filters,
+            score_threshold: data.score_threshold,
             completion_first: data.completion_first,
             stream_response: data.stream_response,
             temperature: data.temperature,

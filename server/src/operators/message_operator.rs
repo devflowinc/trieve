@@ -344,6 +344,7 @@ pub async fn stream_response(
             .search_type
             .unwrap_or("hybrid".to_string()),
         query: query.clone(),
+        score_threshold: create_message_req_payload.score_threshold,
         page_size: Some(
             create_message_req_payload
                 .page_size
