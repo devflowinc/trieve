@@ -225,13 +225,13 @@ export const AfMessage = (props: AfMessageProps) => {
                     />
                     <div class="flex w-full justify-end gap-2">
                       <button
-                        class="rounded bg-red-500 px-2 py-1 text-neutral-600 hover:bg-red-600 dark:bg-red-600 dark:text-neutral-400 dark:hover:bg-red-700"
+                        class="rounded bg-red-500 px-2 py-1 text-neutral-600 hover:bg-red-600 dark:bg-red-600 dark:text-white dark:hover:bg-red-700"
                         onClick={() => setEditing(false)}
                       >
                         Cancel
                       </button>
                       <button
-                        class="rounded bg-green-500 px-2 py-1 text-neutral-600 hover:bg-green-600 dark:text-neutral-400"
+                        class="rounded bg-green-500 px-2 py-1 text-neutral-600 hover:bg-green-600 dark:text-white"
                         onClick={() => {
                           props.onEdit(editingMessageContent());
                           setEditedContent(editingMessageContent());

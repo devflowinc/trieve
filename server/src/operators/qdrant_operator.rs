@@ -76,7 +76,6 @@ pub async fn create_new_qdrant_collection_query(
                             on_disk: Some(false),
                             ..Default::default()
                         }),
-                        modifier: None,
                     },
                 );
 
