@@ -7,9 +7,11 @@ use crate::{
     data::models::{
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, Granularity,
         HeadQueries, Pool, RAGAnalyticsFilter, RAGUsageResponse, RagQueryEvent,
-        RagQueryEventClickhouse, SearchAnalyticsFilter, SearchClusterTopics, SearchLatencyGraph,
-        SearchLatencyGraphClickhouse, SearchQueryEvent, SearchQueryEventClickhouse, SearchRPSGraph,
-        SearchRPSGraphClickhouse, SearchTypeCount, SortBy, SortOrder,
+        RagQueryEventClickhouse, RecommendationAnalyticsFilter, RecommendationEvent,
+        RecommendationEventClickhouse, SearchAnalyticsFilter, SearchClusterTopics,
+        SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueryEvent,
+        SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse, SearchTypeCount,
+        SortBy, SortOrder,
     },
     errors::ServiceError,
 };
@@ -647,4 +649,122 @@ pub async fn get_rag_usage_query(
         })?;
 
     Ok(clickhouse_query)
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RecommendationsEventResponse {
+    pub queries: Vec<RecommendationEvent>,
+}
+
+pub async fn get_low_confidence_recommendations_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RecommendationAnalyticsFilter>,
+    threshold: Option<f32>,
+    page: Option<u32>,
+    pool: web::Data<Pool>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RecommendationsEventResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            ?fields
+        FROM 
+            default.recommendations
+        WHERE dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    if let Some(threshold) = threshold {
+        query_string.push_str(
+            format!(
+                " 
+                AND top_score < {}
+                ",
+                threshold
+            )
+            .as_str(),
+        );
+    }
+
+    query_string.push_str(
+        "
+        ORDER BY 
+            top_score ASC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<RecommendationEventClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let queries: Vec<RecommendationEvent> = join_all(
+        clickhouse_query
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
+
+    Ok(RecommendationsEventResponse { queries })
+}
+
+pub async fn get_recommendation_queries_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RecommendationAnalyticsFilter>,
+    sort_by: Option<SortBy>,
+    sort_order: Option<SortOrder>,
+    page: Option<u32>,
+    pool: web::Data<Pool>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RecommendationsEventResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            ?fields
+        FROM 
+            default.recommendations
+        WHERE dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(&format!(
+        "
+        ORDER BY 
+        {} {}
+        LIMIT 10
+        OFFSET ?",
+        sort_by.clone().unwrap_or(SortBy::CreatedAt),
+        sort_order.clone().unwrap_or(SortOrder::Desc)
+    ));
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<RecommendationEventClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let queries: Vec<RecommendationEvent> = join_all(
+        clickhouse_query
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
+
+    Ok(RecommendationsEventResponse { queries })
 }

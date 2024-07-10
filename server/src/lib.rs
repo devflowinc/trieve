@@ -226,6 +226,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_cluster_analytics,
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
+        handlers::analytics_handler::get_recommendation_analytics,
         handlers::metrics_handler::get_metrics,
     ),
     components(
@@ -301,6 +302,8 @@ impl Modify for SecurityAddon {
             operators::analytics_operator::RagQueryResponse,
             operators::analytics_operator::SearchClusterResponse,
             operators::analytics_operator::SearchQueryResponse,
+            operators::analytics_operator::RecommendationsEventResponse,
+            operators::analytics_operator::QueryCountResponse,
             data::models::SearchQueryEvent,
             data::models::SearchTypeCount,
             data::models::SearchClusterTopics,
@@ -321,6 +324,11 @@ impl Modify for SecurityAddon {
             data::models::ClusterAnalyticsResponse,
             data::models::ClusterAnalyticsFilter,
             data::models::RAGAnalyticsResponse,
+            data::models::RecommendationAnalyticsResponse,
+            data::models::RecommendationEvent,
+            data::models::RecommendationAnalyticsFilter,
+            data::models::RecommendationAnalytics,
+            data::models::RecommendationType,
             data::models::Granularity,
             data::models::SortBy,
             data::models::SortOrder,
@@ -991,6 +999,10 @@ pub fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/rag")
                                 .route(web::post().to(handlers::analytics_handler::get_rag_analytics)),
+                            )
+                            .service(
+                                web::resource("/recommendations")
+                                .route(web::post().to(handlers::analytics_handler::get_recommendation_analytics)),
                             )
                         ),
                 )

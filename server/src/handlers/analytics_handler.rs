@@ -2,7 +2,8 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         ClusterAnalytics, ClusterAnalyticsResponse, DatasetAndOrgWithSubAndPlan, Pool,
-        RAGAnalytics, RAGAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
+        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
+        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
     },
     errors::ServiceError,
     operators::analytics_operator::*,
@@ -270,6 +271,76 @@ pub async fn get_rag_analytics(
             )
             .await?;
             RAGAnalyticsResponse::RAGQueries(rag_queries)
+        }
+    };
+
+    Ok(HttpResponse::Ok().json(response))
+}
+
+/// Get Recommendation Analytics
+///
+/// This route allows you to view the recommendation analytics for a dataset.
+#[utoipa::path(
+    post,
+    path = "/analytics/recommendation",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = RecommendationAnalytics, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The recommendation analytics for the dataset", body = RecommendationAnalyticsResponse),
+
+        (status = 400, description = "Service error relating to getting recommendation analytics", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_recommendation_analytics(
+    data: web::Json<RecommendationAnalytics>,
+    _user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let response = match data.into_inner() {
+        RecommendationAnalytics::LowConfidenceRecommendations {
+            filter,
+            page,
+            threshold,
+        } => {
+            let low_confidence_recommendations = get_low_confidence_recommendations_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                threshold,
+                page,
+                pool.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RecommendationAnalyticsResponse::LowConfidenceRecommendations(
+                low_confidence_recommendations,
+            )
+        }
+        RecommendationAnalytics::RecommendationQueries {
+            filter,
+            page,
+            sort_by,
+            sort_order,
+        } => {
+            let recommendation_queries = get_recommendation_queries_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                sort_by,
+                sort_order,
+                page,
+                pool.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RecommendationAnalyticsResponse::RecommendationQueries(recommendation_queries)
         }
     };
 
