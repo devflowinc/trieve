@@ -2,6 +2,6 @@
   "extends": "config/tsconfig",
   "include": [
     "src",
-    "ui",
+    "ui"
   ],
 }
