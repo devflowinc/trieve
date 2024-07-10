@@ -1,4 +1,4 @@
-import { AnalyticsParams, SearchQueryEvent } from "shared/types";
+import { AnalyticsFilter, SearchQueryEvent } from "shared/types";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import {
   createEffect,
@@ -16,7 +16,9 @@ import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { getNoResultQueries } from "../../api/analytics";
 
 interface NoResultQueriesProps {
-  params: AnalyticsParams;
+  params: {
+    filter: AnalyticsFilter;
+  };
 }
 
 export const NoResultQueries = (props: NoResultQueriesProps) => {

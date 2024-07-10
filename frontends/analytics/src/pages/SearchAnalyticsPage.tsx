@@ -34,7 +34,7 @@ export const SearchAnalyticsPage = () => {
           <RpsGraph params={analyticsFilters} />
         </ChartCard>
 
-        <ChartCard class="px-4" width={5}>
+        <ChartCard title="Head Queries" class="px-4" width={5}>
           <HeadQueries params={analyticsFilters} />
         </ChartCard>
 
