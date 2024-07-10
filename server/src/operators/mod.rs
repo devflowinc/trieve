@@ -1,3 +1,4 @@
+pub mod analytics_operator;
 pub mod chunk_operator;
 pub mod clickhouse_operator;
 pub mod dataset_operator;

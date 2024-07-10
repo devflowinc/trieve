@@ -98,33 +98,6 @@ def append_cluster_membership(data, kmeans):
 def insert_centroids(
     client: clickhouse_connect.driver.client.Client, data, dataset_id, topics
 ):
-    cluster_ids_to_delete_query = """
-        SELECT id
-        FROM default.cluster_topics
-        WHERE dataset_id = '{}'
-        """.format(
-        str(dataset_id[0])
-    )
-    cluster_ids_to_delete = [
-        str(row[0]) for row in client.query(cluster_ids_to_delete_query).result_rows
-    ]
-
-    delete_previous_query = """
-        DELETE FROM default.cluster_topics
-        WHERE dataset_id = '{}'
-        """.format(
-        str(dataset_id[0])
-    )
-    client.query(delete_previous_query)
-    if len(cluster_ids_to_delete) > 0:
-        delete_previous_search_cluster_memberships_query = """
-        DELETE FROM default.search_cluster_memberships
-        WHERE cluster_id IN ('{}')
-        """.format(
-            "', '".join(cluster_ids_to_delete)
-        )
-        client.query(delete_previous_search_cluster_memberships_query)
-
     topic_ids = [uuid.uuid4() for _ in range(len(topics))]
 
     client.insert(

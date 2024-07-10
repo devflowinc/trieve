@@ -4,6 +4,10 @@ use std::io::Write;
 
 use crate::errors::ServiceError;
 use crate::get_env;
+use crate::operators::analytics_operator::{
+    HeadQueryResponse, LatencyGraphResponse, RPSGraphResponse, RagQueryResponse,
+    SearchClusterResponse, SearchQueryResponse,
+};
 use crate::operators::chunk_operator::get_metadata_from_ids_query;
 use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
 use crate::operators::parse_operator::convert_html_to_text;
@@ -3221,7 +3225,7 @@ pub struct SearchClusterMembership {
     pub cluster_topic: uuid::Uuid,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Display)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchType {
     #[display(fmt = "search")]
@@ -3234,9 +3238,8 @@ pub enum SearchType {
     SearchWithinGroups,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Display)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "lowercase")]
-
 pub enum SearchMethod {
     #[display(fmt = "fulltext")]
     FullText,
@@ -3246,7 +3249,7 @@ pub enum SearchMethod {
     Hybrid,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SearchAnalyticsFilter {
     pub date_range: Option<DateRange>,
     pub search_method: Option<SearchMethod>,
@@ -3284,9 +3287,8 @@ impl SearchAnalyticsFilter {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Display)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
-#[serde(untagged)]
 pub enum RagTypes {
     #[display(fmt = "chosen_chunks")]
     ChosenChunks,
@@ -3294,7 +3296,7 @@ pub enum RagTypes {
     AllChunks,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct RAGAnalyticsFilter {
     pub date_range: Option<DateRange>,
     pub rag_type: Option<RagTypes>,
@@ -3319,6 +3321,32 @@ impl RAGAnalyticsFilter {
 
         if let Some(rag_type) = &self.rag_type {
             query_string.push_str(&format!(" AND rag_type = '{}'", rag_type));
+        }
+
+        query_string
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct ClusterAnalyticsFilter {
+    pub date_range: Option<DateRange>,
+}
+
+impl ClusterAnalyticsFilter {
+    pub fn add_to_query(&self, mut query_string: String) -> String {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
         }
 
         query_string
@@ -3434,4 +3462,144 @@ impl StripeInvoice {
             hosted_invoice_url: url,
         }
     }
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum Granularity {
+    #[display(fmt = "minute")]
+    Minute,
+    #[display(fmt = "second")]
+    Second,
+    #[display(fmt = "hour")]
+    Hour,
+    #[display(fmt = "day")]
+    Day,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum SortBy {
+    #[display(fmt = "created_at")]
+    CreatedAt,
+    #[display(fmt = "latency")]
+    Latency,
+    #[display(fmt = "top_score")]
+    TopScore,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum SortOrder {
+    #[display(fmt = "DESC")]
+    Desc,
+    #[display(fmt = "ASC")]
+    Asc,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchAnalytics {
+    #[schema(title = "LatencyGraph")]
+    LatencyGraph {
+        filter: Option<SearchAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
+    #[serde(rename = "rps_graph")]
+    #[schema(title = "RPSGraph")]
+    RPSGraph {
+        filter: Option<SearchAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
+    #[schema(title = "SearchMetrics")]
+    SearchMetrics {
+        filter: Option<SearchAnalyticsFilter>,
+    },
+    #[schema(title = "HeadQueries")]
+    HeadQueries {
+        filter: Option<SearchAnalyticsFilter>,
+        page: Option<u32>,
+    },
+    #[schema(title = "LowConfidenceQueries")]
+    LowConfidenceQueries {
+        filter: Option<SearchAnalyticsFilter>,
+        page: Option<u32>,
+        threshold: Option<f32>,
+    },
+    #[schema(title = "NoResultQueries")]
+    NoResultQueries {
+        filter: Option<SearchAnalyticsFilter>,
+        page: Option<u32>,
+    },
+    #[schema(title = "SearchQueries")]
+    SearchQueries {
+        filter: Option<SearchAnalyticsFilter>,
+        page: Option<u32>,
+        sort_by: Option<SortBy>,
+        sort_order: Option<SortOrder>,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RAGAnalytics {
+    #[schema(title = "RAGQueries")]
+    #[serde(rename = "rag_queries")]
+    RAGQueries {
+        filter: Option<RAGAnalyticsFilter>,
+        page: Option<u32>,
+        sort_by: Option<SortBy>,
+        sort_order: Option<SortOrder>,
+    },
+    #[schema(title = "RAGUsage")]
+    #[serde(rename = "rag_usage")]
+    RAGUsage { filter: Option<RAGAnalyticsFilter> },
+}
+
+pub enum RecommendationAnalytics {
+    LowConfidenceRecommendations {},
+    Recommendations {},
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ClusterAnalytics {
+    #[schema(title = "ClusterTopics")]
+    ClusterTopics {
+        filter: Option<ClusterAnalyticsFilter>,
+    },
+    #[schema(title = "ClusterQueries")]
+    ClusterQueries {
+        cluster_id: uuid::Uuid,
+        page: Option<u32>,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+pub struct RAGUsageResponse {
+    pub total_queries: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum SearchAnalyticsResponse {
+    LatencyGraph(LatencyGraphResponse),
+    RPSGraph(RPSGraphResponse),
+    SearchMetrics(DatasetAnalytics),
+    HeadQueries(HeadQueryResponse),
+    LowConfidenceQueries(SearchQueryResponse),
+    NoResultQueries(SearchQueryResponse),
+    SearchQueries(SearchQueryResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum RAGAnalyticsResponse {
+    RAGQueries(RagQueryResponse),
+    RAGUsage(RAGUsageResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum ClusterAnalyticsResponse {
+    ClusterTopics(SearchClusterResponse),
+    ClusterQueries(SearchQueryResponse),
 }

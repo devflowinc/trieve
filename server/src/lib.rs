@@ -223,19 +223,10 @@ impl Modify for SecurityAddon {
         handlers::stripe_handler::update_subscription_plan,
         handlers::stripe_handler::get_all_plans,
         handlers::stripe_handler::get_all_invoices,
-        handlers::analytics_handler::get_overall_topics,
-        handlers::analytics_handler::get_queries_for_topic,
+        handlers::analytics_handler::get_cluster_analytics,
         handlers::analytics_handler::get_query,
-        handlers::analytics_handler::get_search_metrics,
-        handlers::analytics_handler::get_head_queries,
-        handlers::analytics_handler::get_query_counts,
-        handlers::analytics_handler::get_low_confidence_queries,
-        handlers::analytics_handler::get_no_result_queries,
-        handlers::analytics_handler::get_all_queries,
-        handlers::analytics_handler::get_rps_graph,
-        handlers::analytics_handler::get_latency_graph,
-        handlers::analytics_handler::get_rag_queries,
-        handlers::analytics_handler::get_rag_usage,
+        handlers::analytics_handler::get_rag_analytics,
+        handlers::analytics_handler::get_search_analytics,
         handlers::metrics_handler::get_metrics,
     ),
     components(
@@ -305,15 +296,12 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::CreateDatasetRequest,
             handlers::dataset_handler::UpdateDatasetRequest,
             handlers::dataset_handler::GetDatasetsPagination,
-            handlers::analytics_handler::GetDatasetMetricsReqPayload,
-            handlers::analytics_handler::GetHeadQueriesReqPayload,
-            handlers::analytics_handler::GetLowConfidenceQueriesReqPayload,
-            handlers::analytics_handler::GetNoResultQueriesReqPayload,
-            handlers::analytics_handler::GetAllQueriesReqPayload,
-            handlers::analytics_handler::GetRPSGraphReqPayload,
-            handlers::analytics_handler::RAGUsageResponse,
-            handlers::analytics_handler::GetRagQueriesReqPayload,
-            handlers::analytics_handler::GetQueryCountReqPayload,
+            operators::analytics_operator::HeadQueryResponse,
+            operators::analytics_operator::LatencyGraphResponse,
+            operators::analytics_operator::RPSGraphResponse,
+            operators::analytics_operator::RagQueryResponse,
+            operators::analytics_operator::SearchClusterResponse,
+            operators::analytics_operator::SearchQueryResponse,
             data::models::SearchQueryEvent,
             data::models::SearchTypeCount,
             data::models::SearchClusterTopics,
@@ -326,6 +314,18 @@ impl Modify for SecurityAddon {
             data::models::SearchType,
             data::models::ApiKeyRespBody,
             data::models::SearchRPSGraph,
+            data::models::SearchResultType,
+            data::models::RAGUsageResponse,
+            data::models::ClusterAnalytics,
+            data::models::RAGAnalytics,
+            data::models::SearchAnalytics,
+            data::models::ClusterAnalyticsResponse,
+            data::models::ClusterAnalyticsFilter,
+            data::models::RAGAnalyticsResponse,
+            data::models::Granularity,
+            data::models::SortBy,
+            data::models::SortOrder,
+            data::models::SearchAnalyticsResponse,
             data::models::DatasetAnalytics,
             data::models::HeadQueries,
             data::models::SlimUser,
@@ -982,59 +982,21 @@ pub fn main() -> std::io::Result<()> {
                         .service(
                             web::scope("/analytics")
                             .service(
-                                web::resource("/{dataset_id}/topics")
-                                .route(web::get().to(handlers::analytics_handler::get_overall_topics)),
+                                web::resource("/search")
+                                .route(web::post().to(handlers::analytics_handler::get_search_analytics)),
                             )
                             .service(
-                                web::resource("/{dataset_id}/metrics")
-                                .route(web::post().to(handlers::analytics_handler::get_search_metrics)),
+                                web::resource("/search/clusters")
+                                .route(web::get().to(handlers::analytics_handler::get_cluster_analytics)),
                             )
                             .service(
-                                web::resource("/{dataset_id}/queries")
-                                .route(web::post().to(handlers::analytics_handler::get_all_queries)),
-                            )
-                            .service(
-                                web::resource("/{dataset_id}/rps")
-                                .route(web::post().to(handlers::analytics_handler::get_rps_graph)),
-                            )
-                            .service(
-                                web::resource("/{dataset_id}/latency")
-                                .route(web::post().to(handlers::analytics_handler::get_latency_graph)),
-                            )
-                            .service(
-                                web::resource("/{dataset_id}/query/head")
-                                .route(web::post().to(handlers::analytics_handler::get_head_queries)),
-                            )
-                            .service(
-                                web::resource("/{dataset_id}/query/counts")
-                                .route(web::post().to(handlers::analytics_handler::get_query_counts)),
-                            )
-                            .service(
-                                web::resource("/{dataset_id}/query/low_confidence")
-                                .route(web::post().to(handlers::analytics_handler::get_low_confidence_queries)),
-                            )
-                            .service(
-                                web::resource("/{dataset_id}/query/no_results")
-                                .route(web::post().to(handlers::analytics_handler::get_no_result_queries)),
-                            )
-                            .service(
-                                web::resource("/{dataset_id}/query/{search_id}")
+                                web::resource("/search/{query_id}")
                                 .route(web::get().to(handlers::analytics_handler::get_query)),
                             )
                             .service(
-                                web::resource("/{dataset_id}/rag")
-                                .route(web::post().to(handlers::analytics_handler::get_rag_queries)),
+                                web::resource("/rag")
+                                .route(web::post().to(handlers::analytics_handler::get_rag_analytics)),
                             )
-                            .service(
-                                web::resource("/{dataset_id}/rag/usage")
-                                .route(web::get().to(handlers::analytics_handler::get_rag_usage)),
-                            )
-                            .service(
-                                web::resource("/{dataset_id}/{cluster_id}/{page}")
-                                    .route(web::get().to(handlers::analytics_handler::get_queries_for_topic)),
-                            )
-
-
                         ),
                 )
         })
