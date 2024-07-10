@@ -1,4 +1,4 @@
-import { AnalyticsParams, DateRangeFilter } from "shared/types";
+import { AnalyticsFilter, DateRangeFilter } from "shared/types";
 
 export const formatDateForApi = (date: Date) => {
   return date
@@ -14,13 +14,10 @@ export const formatDateForApi = (date: Date) => {
     .replace(",", "");
 };
 
-export const transformAnalyticsParams = (params: AnalyticsParams) => {
+export const transformAnalyticsFilter = (filter: AnalyticsFilter) => {
   return {
-    ...params,
-    filter: {
-      ...params.filter,
-      date_range: transformDateParams(params.filter.date_range),
-    },
+    ...filter,
+    date_range: transformDateParams(filter.date_range),
   };
 };
 

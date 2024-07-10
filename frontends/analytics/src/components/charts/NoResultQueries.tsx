@@ -17,7 +17,7 @@ import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { getNoResultQueries } from "../../api/analytics";
 
 interface NoResultQueriesProps {
-  filters: AnalyticsParams;
+  params: AnalyticsParams;
 }
 
 export const NoResultQueries = (props: NoResultQueriesProps) => {
@@ -27,7 +27,7 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
 
   createEffect(
     on(
-      () => [props.filters, dataset().dataset.id],
+      () => [props.params, dataset().dataset.id],
       () => {
         pages.resetMaxPageDiscovered();
       },
@@ -36,20 +36,20 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
 
   createEffect(() => {
     // Preload the next page
-    const filters = props.filters;
+    const params = props.params;
     const datasetId = dataset().dataset.id;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: [
         "no-result-queries",
         {
-          filters,
+          params: params,
           page: curPage + 1,
         },
       ],
       queryFn: async () => {
         const results = await getNoResultQueries(
-          filters,
+          params.filter,
           datasetId,
           curPage + 1,
         );
@@ -65,13 +65,13 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
     queryKey: [
       "no-result-queries",
       {
-        filters: props.filters,
+        params: props.params,
         page: pages.page(),
       },
     ],
     queryFn: () => {
       return getNoResultQueries(
-        props.filters,
+        props.params.filter,
         dataset().dataset.id,
         pages.page(),
       );

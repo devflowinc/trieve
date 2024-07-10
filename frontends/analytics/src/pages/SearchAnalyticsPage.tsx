@@ -19,19 +19,18 @@ export const SearchAnalyticsPage = () => {
       search_type: "search",
     },
     granularity: "second",
-    page: 1,
   });
 
   return (
     <div class="min-h-screen bg-neutral-200/60 p-4 pt-2">
       <FilterBar filters={analyticsFilters} setFilters={setAnalyticsFilters} />
       <div class="grid grid-cols-10 items-stretch gap-2 p-2 pt-3">
-        <LatencyGraph filters={analyticsFilters} />
-        <RpsGraph filters={analyticsFilters} />
-        <HeadQueries filters={analyticsFilters} />
-        <LowConfidenceQueries filters={analyticsFilters} />
+        <LatencyGraph params={analyticsFilters} />
+        <RpsGraph params={analyticsFilters} />
+        <HeadQueries params={analyticsFilters} />
+        <LowConfidenceQueries params={analyticsFilters} />
         <RagQueries />
-        <NoResultQueries filters={analyticsFilters} />
+        <NoResultQueries params={analyticsFilters} />
       </div>
     </div>
   );
