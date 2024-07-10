@@ -3,6 +3,7 @@
 We currently offer 3 ways to self host Trieve.
 
 - [Docker Compose](#docker-compose)
+- [Kubernetes (kind/minikube)](#local-kubernetes)
 - [Kubernetes (AWS EKS)](#aws-eks)
 - [Kubernetes (GCP GKE)](#gcp-gke)
 
@@ -160,6 +161,66 @@ trieve dataset example
 
 And there you have it. Your very own trieve stack.
 Happy hacking 🚀
+
+## Local Kuberntes
+
+We reccomend using `kind`
+
+1) Create kind cluster with a local image registry
+
+```sh
+./scripts/kind-with-registry.sh
+```
+
+2) Install clickhouse operator
+
+```sh
+./helm/install-clickhouse-operator.sh
+```
+
+3) Pull docker images from dockerhub and push into kind repository.
+
+```sh
+./scripts/pull-and-push.sh
+```
+
+4) Setup `values.yaml` file
+
+```
+export SENTRY_CHAT_DSN=https://********************************@sentry.trieve.ai/6
+export ENVIRONMENT=aws
+export DOMAIN=example.com # Only used for local
+export EXTERNAL_DOMAIN=example.com
+export DASHBOARD_URL=https://dashboard.example.com
+export SALT=goodsaltisveryyummy
+export SECRET_KEY=1234512345123451234512345123451234512345123451234512345123451234512345123451234h
+export ADMIN_API_KEY=asdasdasdasdasd
+export OIDC_CLIENT_SECRET=YllmLDTy67MbsUBrUAWvQ7z9aMq0QcKx
+export ISSUER_URL=https://oidc.example.com
+export AUTH_REDIRECT_URL=https://oidc.example.com/realms/trieve/protocol/openid-connect/auth
+export REDIRECT_URL=https://oidc.example.com/realms/trieve/protocol/openid-connect/auth
+export SMTP_RELAY=smtp.gmail.com
+export SMTP_USERNAME=trieve@gmail.com
+export SMTP_PASSWORD=pass************
+export SMTP_EMAIL_ADDRESS=triever@gmail.com
+export LLM_API_KEY=sk-or-v1-**************************************************************** # Open Router API KEY
+export OPENAI_API_KEY=sk-************************************************ # OPENAI API KEY
+export OPENAI_BASE_URL=https://api.openai.com/v1
+export S3_ENDPOINT=https://<bucket>.s3.amazonaws.com
+export S3_ACCESS_KEY=ZaaZZaaZZaaZZaaZZaaZ
+export S3_SECRET_KEY=ssssssssssssssssssssTTTTTTTTTTTTTTTTTTTT
+export S3_BUCKET=trieve
+export AWS_REGION=us-east-1
+export STRIPE_API_KEY=sk_test_***************************************************************************************************
+export STRIPE_WEBHOOK_SECRET=sk_test_***************************************************************************************************
+
+helm/from-env.sh
+```
+
+5) Install the helm chart into kubernetes cluster
+
+helm install -f helm/values.yaml trieve helm/
+
 
 ## AWS EKS
 

@@ -1,37 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: server
+  name: group-worker
   labels:
-    app.kubernetes.io/name: server
+    app.kubernetes.io/name: group-worker
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: Helm
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: server
+      app.kubernetes.io/name: group-worker
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: server
+        app.kubernetes.io/name: group-worker
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/managed-by: Helm
     spec:
-      {{- if eq $.Values.environment "gcloud" }}
       serviceAccountName: cloud-postgres-service-account
-      {{- end }}
       containers:
-      - name: server
-        resources:
-          requests:
-            cpu: 1
-        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5001/" (ne .Values.environment "local")) "server" .Values.containers.server.tag }}
-        ports:
-          - containerPort: 8090
+      - name: group-worker
+        replicas: 1
+        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5001/" (ne .Values.environment "local")) "group_worker" .Values.containers.group_worker.tag }}
         env:
-          - name: SENTRY_URL
-            value: {{ .Values.config.vite.sentryChatDsn }}
           - name: ADMIN_API_KEY
             value: {{ .Values.config.trieve.adminApiKey }}
           - name: BASE_SERVER_URL
@@ -46,8 +38,6 @@ spec:
             value: {{ .Values.config.qdrant.quantizeVectors | quote }}
           - name: REPLICATION_FACTOR
             value: {{ .Values.config.qdrant.replicationFactor | quote }}
-          - name: VECTOR_SIZES
-            value: {{ join "," .Values.config.qdrant.vectorSizes | quote }}
           - name: DATABASE_URL
             value: {{ ( ternary "postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432" .Values.postgres.dbURI (eq .Values.postgres.useSubchart true)) }}
           - name: SMTP_RELAY
@@ -76,8 +66,10 @@ spec:
             value: {{ .Values.config.s3.bucket }}
           - name: COOKIE_SECURE
             value: {{ .Values.config.trieve.cookieSecure | quote }}
+          - name: QDRANT_COLLECTION
+            value: {{ .Values.config.qdrant.collection }}
           - name: TIKA_URL
-            value: tika.default.svc.cluster.local
+            value: http://tika.default.svc.cluster.local:9998
           - name: OPENAI_BASE_URL
             value: {{ .Values.config.openai.baseUrl }}
           - name: STRIPE_SECRET
@@ -100,24 +92,20 @@ spec:
             value: {{ .Values.config.trieve.sparseServerQueryOrigin }}
           - name: SPARSE_SERVER_DOC_ORIGIN
             value: {{ .Values.config.trieve.sparseServerDocOrigin }}
+          - name: SPARSE_SERVER_ORIGIN
+            value: {{ .Values.config.trieve.sparseServerOrigin }}
           - name: EMBEDDING_SERVER_ORIGIN
             value: {{ .Values.config.trieve.embeddingServerOrigin }}
           - name: EMBEDDING_SERVER_ORIGIN_BGEM3
             value: {{ .Values.config.trieve.embeddingServerOriginBGEM3 }}
-          - name: EMBEDDING_SERVER_ORIGIN_JINA_CODE
-            value: {{ .Values.config.trieve.embeddingServerOriginJinaCode }}
-          - name: JINA_CODE_API_KEY
-            value: {{ .Values.config.trieve.jinaCodeApiKey }}
           - name: RERANKER_SERVER_ORIGIN
             value: {{ .Values.config.trieve.rerankerServerOrigin }}
           - name: UNLIMITED
             value: {{ .Values.config.trieve.unlimited | quote }}
           - name: REDIS_CONNECTIONS
-            value: {{ .Values.config.redis.connections | quote }}
+            value: "2"
           - name: AWS_REGION
             value: {{ .Values.config.s3.region }}
-          - name: CREATE_QDRANT_COLLECTIONS
-            value: {{ .Values.qdrant.initCollections }}
           - name: CLICKHOUSE_URL
             value: {{ .Values.config.analytics.clickhouseUrl | quote }}
           - name: CLICKHOUSE_DB

@@ -23,11 +23,7 @@ spec:
       {{- end }}
       containers:
       - name: delete-worker
-        resources:
-          limits:
-            cpu: 0.5
-        replicas: 1
-        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (ne .Values.environment "local")) "delete_worker" .Values.containers.delete_worker.tag }}
+        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5001/" (ne .Values.environment "local")) "delete_worker" .Values.containers.delete_worker.tag }}
         env:
           - name: ADMIN_API_KEY
             value: {{ .Values.config.trieve.adminApiKey }}
@@ -111,6 +107,16 @@ spec:
             value: {{ .Values.config.redis.connections | quote }}
           - name: AWS_REGION
             value: {{ .Values.config.s3.region }}
+          - name: CLICKHOUSE_URL
+            value: {{ .Values.config.analytics.clickhouseUrl | quote }}
+          - name: CLICKHOUSE_DB
+            value: {{ .Values.config.analytics.clickhouseDB | quote }}
+          - name: CLICKHOUSE_USER
+            value: {{ .Values.config.analytics.clickhouseUser | quote }}
+          - name: CLICKHOUSE_PASSWORD
+            value: {{ .Values.config.analytics.clickhousePassword | quote }}
+          - name: USE_ANALYTICS
+            value: {{ .Values.config.analytics.enabled | quote }}
       {{- if eq $.Values.environment "gcloud" }}
       - name: cloud-sql-proxy
         # It is recommended to use the latest version of the Cloud SQL Auth Proxy

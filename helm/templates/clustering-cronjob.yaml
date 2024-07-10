@@ -14,8 +14,7 @@ spec:
               imagePullPolicy: IfNotPresent
               env:
                 - name: ANTHROPIC_API_KEY
-                  value: { { .Values.config.clustering.anthropicAPIKey } }
+                  value: {{ .Values.config.trieve.anthropicAPIKey }}
                 - name: CLICKHOUSE_DSN
-                  value: { { .Values.config.clustering.clickhouseDSN } }
-
+                  value: {{ .Values.config.trieve.clickhouseDSN }}
           restartPolicy: OnFailure

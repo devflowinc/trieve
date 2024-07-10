@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: dashboard
-        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (ne .Values.environment "local")) "dashboard" .Values.containers.dashboard.tag }}
+        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5001/" (ne .Values.environment "local")) "dashboard" .Values.containers.dashboard.tag }}
         ports:
           - containerPort: 80
         env:
