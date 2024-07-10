@@ -306,7 +306,12 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 </button>
               </Show>
               <Show when={currentUserRole() > 0}>
-                <A title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
+                <A
+                  title="Edit"
+                  href={`/chunk/edit/${
+                    props.chunk.id
+                  }?dataset=${$currentDataset?.()?.dataset.id}`}
+                >
                   <FiEdit class="h-5 w-5" />
                 </A>
               </Show>
@@ -314,7 +319,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 body={
                   <a
                     title="Open"
-                    href={`/chunk/${props.chunk.id}`}
+                    href={`/chunk/${
+                      props.chunk.id
+                    }?dataset=${$currentDataset?.()?.dataset.id}`}
                     target="_blank"
                   >
                     <VsFileSymlinkFile class="h-5 w-5 fill-current" />

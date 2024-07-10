@@ -18,23 +18,16 @@ export const Navbar = () => {
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-7xl items-center justify-between">
             <div class="flex min-w-fit items-center space-x-2">
-              <button
-                onClick={() => {
-                  window.history.replaceState(
-                    {},
-                    "",
-                    `/?dataset=${datasetAndUserContext.currentDataset?.()
-                      ?.dataset.id}`,
-                  );
-                  window.location.reload();
-                }}
+              <a
+                href={`/?dataset=${datasetAndUserContext.currentDataset?.()
+                  ?.dataset.id}`}
               >
                 <img
                   class="w-6 sm:w-12"
                   src="https://cdn.trieve.ai/trieve-logo.png"
                   alt="Logo"
                 />
-              </button>
+              </a>
               <Show when={$currentUser?.()}>
                 <div class="flex min-w-fit items-center space-x-2">
                   <OrganizationSelectBox />
