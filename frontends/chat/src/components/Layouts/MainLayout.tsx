@@ -60,6 +60,7 @@ const MainLayout = (props: LayoutProps) => {
   >(null);
   const [pageSize, setPageSize] = createSignal<number | null>(null);
   const [searchQuery, setSearchQuery] = createSignal<string | null>(null);
+  const [minScore, setMinScore] = createSignal<number | null>(null);
   const [streamingCompletion, setStreamingCompletion] =
     createSignal<boolean>(false);
   const [completionAbortController, setCompletionAbortController] =
@@ -187,6 +188,7 @@ const MainLayout = (props: LayoutProps) => {
           concat_user_messages_query: concatUserMessagesQuery(),
           page_size: pageSize(),
           search_query: searchQuery() != "" ? searchQuery() : undefined,
+          score_threshold: minScore(),
           new_message_content,
           topic_id: finalTopicId,
         }),
@@ -296,6 +298,7 @@ const MainLayout = (props: LayoutProps) => {
                         page_size: pageSize(),
                         search_query:
                           searchQuery() != "" ? searchQuery() : undefined,
+                        score_threshold: minScore(),
                         new_message_content: content,
                         message_sort_order: idx(),
                         topic_id: props.selectedTopic?.id,
@@ -414,6 +417,19 @@ const MainLayout = (props: LayoutProps) => {
                       value={searchQuery() ?? ""}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="search_query">Min Score:</label>
+                    <input
+                      type="text"
+                      id="search_query"
+                      class="w-12 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      step={"any"}
+                      value={minScore() ?? ""}
+                      onChange={(e) => {
+                        setMinScore(parseFloat(e.target.value));
                       }}
                     />
                   </div>
