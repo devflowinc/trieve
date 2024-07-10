@@ -135,6 +135,7 @@ export const getRAGUsage = async (
 ): Promise<RAGUsageResponse> => {
   const response = await fetch(`${apiHost}/analytics/rag`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "TR-Dataset": datasetId,
       "Content-Type": "application/json",
@@ -159,6 +160,7 @@ export const getLowConfidenceQueries = async (
   threshold?: number,
 ): Promise<SearchQueryEvent[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
+    credentials: "include",
     method: "POST",
     body: JSON.stringify({
       filter: transformAnalyticsFilter(filters),
