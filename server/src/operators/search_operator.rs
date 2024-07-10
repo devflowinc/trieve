@@ -12,7 +12,7 @@ use super::qdrant_operator::{
 };
 use crate::data::models::{
     convert_to_date_time, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes, ConditionType,
-    ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunkDTO,
+    ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunkDTO, SearchType,
     ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::get_env;
@@ -900,7 +900,9 @@ pub async fn retrieve_chunks_for_groups(
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
 
-    let metadata_chunks = match data.slim_chunks.unwrap_or(false) && data.search_type != "hybrid" {
+    let metadata_chunks = match data.slim_chunks.unwrap_or(false)
+        && data.search_type != SearchType::Hybrid
+    {
         true => get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?,
         _ => {
             get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
@@ -1156,14 +1158,15 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let metadata_chunks = if data.slim_chunks.unwrap_or(false) && data.search_type != "hybrid" {
-        get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
-    } else if data.content_only.unwrap_or(false) {
-        get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?
-    } else {
-        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
-            .await?
-    };
+    let metadata_chunks =
+        if data.slim_chunks.unwrap_or(false) && data.search_type != SearchType::Hybrid {
+            get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
+        } else if data.content_only.unwrap_or(false) {
+            get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?
+        } else {
+            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
+                .await?
+        };
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results

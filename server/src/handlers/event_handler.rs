@@ -1,6 +1,6 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, EventType},
+    data::models::{DatasetAndOrgWithSubAndPlan, EventType, EventTypeRequest},
     errors::ServiceError,
     operators::event_operator::get_events_query,
 };
@@ -20,7 +20,7 @@ pub struct GetEventsData {
     /// The number of items per page. Default is 10.
     pub page_size: Option<i64>,
     /// The types of events to get. Any combination of file_uploaded, chunk_uploaded, chunk_action_failed, chunk_updated, or qdrant_index_failed. Leave undefined to get all events.
-    pub event_types: Option<Vec<String>>,
+    pub event_types: Option<Vec<EventTypeRequest>>,
 }
 
 /// Get events for the dataset

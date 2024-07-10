@@ -1,6 +1,6 @@
 use crate::data::models::{
     self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, RagQueryEventClickhouse,
-    ServerDatasetConfiguration,
+    SearchType, ServerDatasetConfiguration,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -342,7 +342,7 @@ pub async fn stream_response(
     let search_chunk_data = SearchChunksReqPayload {
         search_type: create_message_req_payload
             .search_type
-            .unwrap_or("hybrid".to_string()),
+            .unwrap_or(SearchType::Hybrid),
         query: query.clone(),
         score_threshold: create_message_req_payload.score_threshold,
         page_size: Some(
