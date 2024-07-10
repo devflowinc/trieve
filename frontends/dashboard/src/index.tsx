@@ -16,7 +16,6 @@ import { UserManagement } from "./pages/Dashboard/UserManagment.tsx";
 import { ContextWrapper } from "./layouts/ContextWrapper.tsx";
 import { DatasetEvents } from "./pages/Dashboard/Dataset/DatasetEvents.tsx";
 import { ApiKeys } from "./components/ApiKeys.tsx";
-import { Invoices } from "./pages/Dashboard/Invoices.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -55,7 +54,6 @@ render(
           <Route path="/overview" component={Overview} />
           <Route path="/users" component={UserManagement} />
           <Route path="/billing" component={Billing} />
-          <Route path="/invoices" component={Invoices} />
           <Route path="/settings" component={Settings} />
           <Route path="/api-keys" component={ApiKeys} />
         </Route>

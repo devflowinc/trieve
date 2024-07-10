@@ -9,6 +9,7 @@ import { UserContext } from "../../contexts/UserContext";
 import { OrganizationAndSubAndPlan } from "shared/types";
 import { PlansTable } from "../../components/PlansTable";
 import { createToast } from "../../components/ShowToasts";
+import { InvoicesTable } from "../../components/InvoicesTable";
 
 export const Billing = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -61,8 +62,9 @@ export const Billing = () => {
   });
 
   return (
-    <div class="w-full">
+    <div class="flex w-full flex-col gap-y-12">
       <PlansTable currentOrgSubPlan={orgSubPlan()} />
+      <InvoicesTable />
     </div>
   );
 };

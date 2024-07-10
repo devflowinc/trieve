@@ -238,6 +238,37 @@ pub async fn delete_organization_query(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn get_org_id_from_subscription_id_query(
+    subscription_id: String,
+    pool: web::Data<Pool>,
+) -> Result<uuid::Uuid, ServiceError> {
+    use crate::data::schema::organizations::dsl as organizations_columns;
+    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let org = organizations_columns::organizations
+        .inner_join(
+            stripe_subscriptions_columns::stripe_subscriptions
+                .on(stripe_subscriptions_columns::organization_id.eq(organizations_columns::id)),
+        )
+        .filter(stripe_subscriptions_columns::stripe_id.eq(subscription_id))
+        .select(organizations_columns::id)
+        .first::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|_| {
+            ServiceError::NotFound(
+                "Could not find an organization with this subscription id".to_string(),
+            )
+        })?;
+
+    Ok(org)
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn get_org_from_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
