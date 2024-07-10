@@ -3,7 +3,10 @@ use super::{
     search_operator::{assemble_qdrant_filter, SearchResult},
 };
 use crate::{
-    data::models::{ChunkMetadata, Pool, QdrantPayload, ServerDatasetConfiguration},
+    data::models::{
+        ChunkMetadata, Pool, QdrantPayload, RecommendType, RecommendationStrategy,
+        ServerDatasetConfiguration,
+    },
     errors::ServiceError,
     get_env,
     handlers::chunk_handler::ChunkFilter,
@@ -1122,8 +1125,8 @@ pub async fn recommend_qdrant_query(
 pub async fn recommend_qdrant_groups_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
-    strategy: Option<String>,
-    recommend_type: Option<String>,
+    strategy: Option<RecommendationStrategy>,
+    recommend_type: Option<RecommendType>,
     filter: Option<ChunkFilter>,
     limit: u64,
     group_size: u32,
@@ -1134,8 +1137,8 @@ pub async fn recommend_qdrant_groups_query(
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let recommend_strategy = match strategy {
-        Some(strategy) => match strategy.as_str() {
-            "best_score" => Some(RecommendStrategy::BestScore.into()),
+        Some(strategy) => match strategy {
+            RecommendationStrategy::BestScore => Some(RecommendStrategy::BestScore.into()),
             _ => None,
         },
         None => None,
@@ -1152,30 +1155,10 @@ pub async fn recommend_qdrant_groups_query(
         .map(|id| id.to_string().into())
         .collect();
 
-    let vector_name = if let Some(recommend_type) = recommend_type {
-        if recommend_type == "fulltext" {
-            "sparse_vectors"
-        } else if recommend_type == "semantic" {
-            match config.EMBEDDING_SIZE {
-                384 => "384_vectors",
-                512 => "512_vectors",
-                768 => "768_vectors",
-                1024 => "1024_vectors",
-                3072 => "3072_vectors",
-                1536 => "1536_vectors",
-                _ => {
-                    return Err(ServiceError::BadRequest(
-                        "Invalid embedding vector size".to_string(),
-                    ))
-                }
-            }
-        } else {
-            return Err(ServiceError::BadRequest(
-                "Invalid recommend type".to_string(),
-            ));
-        }
-    } else {
-        match config.EMBEDDING_SIZE {
+    let recommend_type = recommend_type.unwrap_or(RecommendType::Semantic);
+
+    let vector_name = match recommend_type {
+        RecommendType::Semantic => match config.EMBEDDING_SIZE {
             384 => "384_vectors",
             512 => "512_vectors",
             768 => "768_vectors",
@@ -1187,7 +1170,8 @@ pub async fn recommend_qdrant_groups_query(
                     "Invalid embedding vector size".to_string(),
                 ))
             }
-        }
+        },
+        RecommendType::FullText => "sparse_vectors",
     };
 
     let recommend_points = RecommendPointGroups {
