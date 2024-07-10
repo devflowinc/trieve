@@ -3765,6 +3765,7 @@ pub enum RecommendationAnalytics {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum ClusterAnalytics {
     #[schema(title = "ClusterTopics")]
