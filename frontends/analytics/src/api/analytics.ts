@@ -81,11 +81,9 @@ export const getHeadQueries = async (
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      head_queries: {
-        ...transformAnalyticsParams(filters),
-        page,
-        type: "head_queries",
-      },
+      ...transformAnalyticsParams(filters),
+      page,
+      type: "head_queries",
     }),
     headers: {
       "TR-Dataset": datasetId,
