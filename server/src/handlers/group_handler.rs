@@ -7,7 +7,7 @@ use crate::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataStringTagSet,
         DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool, RecommendType,
         RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunkDTO,
-        SearchQueryEventClickhouse, SearchType, ServerDatasetConfiguration, UnifiedId,
+        SearchMethod, SearchQueryEventClickhouse, ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -1157,7 +1157,7 @@ pub struct SearchWithinGroupData {
     /// Group_tracking_id specifies the group to search within by tracking id. Results will only consist of chunks which are bookmarks within the specified group. If both group_id and group_tracking_id are provided, group_id will be used.
     pub group_tracking_id: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: SearchType,
+    pub search_type: SearchMethod,
     /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
     pub location_bias: Option<GeoInfoWithBias>,
     /// Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0.
@@ -1273,7 +1273,7 @@ pub async fn search_within_group(
     let parsed_query = parse_query(data.query.clone());
 
     let result_chunks = match data.search_type {
-        SearchType::FullText => {
+        SearchMethod::FullText => {
             if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
@@ -1291,7 +1291,7 @@ pub async fn search_within_group(
             )
             .await?
         }
-        SearchType::Hybrid => {
+        SearchMethod::Hybrid => {
             search_hybrid_groups(
                 data.clone(),
                 parsed_query,
@@ -1351,7 +1351,7 @@ pub async fn search_within_group(
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct SearchOverGroupsData {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: SearchType,
+    pub search_type: SearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
     /// Page of group results to fetch. Page is 1-indexed.
@@ -1422,7 +1422,7 @@ pub async fn search_over_groups(
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type {
-        SearchType::FullText => {
+        SearchMethod::FullText => {
             if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
@@ -1440,7 +1440,7 @@ pub async fn search_over_groups(
             )
             .await?
         }
-        SearchType::Hybrid => {
+        SearchMethod::Hybrid => {
             hybrid_search_over_groups(
                 data.clone(),
                 parsed_query,

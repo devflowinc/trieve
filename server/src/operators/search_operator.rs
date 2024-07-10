@@ -12,7 +12,7 @@ use super::qdrant_operator::{
 };
 use crate::data::models::{
     convert_to_date_time, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes, ConditionType,
-    ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunkDTO, SearchType,
+    ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunkDTO, SearchMethod,
     ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::get_env;
@@ -901,7 +901,7 @@ pub async fn retrieve_chunks_for_groups(
         .collect_vec();
 
     let metadata_chunks = match data.slim_chunks.unwrap_or(false)
-        && data.search_type != SearchType::Hybrid
+        && data.search_type != SearchMethod::Hybrid
     {
         true => get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?,
         _ => {
@@ -1159,7 +1159,7 @@ pub async fn retrieve_chunks_from_point_ids(
         .collect::<Vec<_>>();
 
     let metadata_chunks =
-        if data.slim_chunks.unwrap_or(false) && data.search_type != SearchType::Hybrid {
+        if data.slim_chunks.unwrap_or(false) && data.search_type != SearchMethod::Hybrid {
             get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
         } else if data.content_only.unwrap_or(false) {
             get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?

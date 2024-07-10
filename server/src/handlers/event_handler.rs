@@ -50,21 +50,17 @@ pub async fn get_events(
     get_events_data: web::Json<GetEventsData>,
     clickhouse_client: web::Data<clickhouse::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let event_types = match &get_events_data.event_types {
-        Some(event_types) => {
-            // if empty array, return all event types
-            if event_types.is_empty() {
+    let event_types = get_events_data
+        .event_types
+        .as_ref()
+        .map(|types| {
+            if types.is_empty() {
                 EventType::get_all_event_types()
             } else {
-                event_types
-                    .clone()
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect()
+                types.to_vec()
             }
-        }
-        None => EventType::get_all_event_types(),
-    };
+        })
+        .unwrap_or(EventType::get_all_event_types());
 
     let events = get_events_query(
         dataset_org_plan_sub.dataset.id,

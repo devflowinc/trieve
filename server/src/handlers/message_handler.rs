@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     data::models::{
-        self, ChunkMetadataTypes, DatasetAndOrgWithSubAndPlan, Pool, SearchType,
+        self, ChunkMetadataTypes, DatasetAndOrgWithSubAndPlan, Pool, SearchMethod,
         ServerDatasetConfiguration,
     },
     errors::ServiceError,
@@ -86,7 +86,7 @@ pub struct CreateMessageReqPayload {
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
-    pub search_type: Option<SearchType>,
+    pub search_type: Option<SearchMethod>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -275,7 +275,7 @@ pub struct RegenerateMessageReqPayload {
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.  
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: Option<SearchType>,
+    pub search_type: Option<SearchMethod>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -315,7 +315,7 @@ pub struct EditMessageReqPayload {
     /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
     pub highlight_delimiters: Option<Vec<String>>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: Option<SearchType>,
+    pub search_type: Option<SearchMethod>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -643,7 +643,7 @@ pub async fn get_suggested_queries(
 
     let chunk_metadatas = search_hybrid_chunks(
         SearchChunksReqPayload {
-            search_type: SearchType::Hybrid,
+            search_type: SearchMethod::Hybrid,
             query: data.query.clone(),
             page_size: Some(10),
             ..Default::default()
