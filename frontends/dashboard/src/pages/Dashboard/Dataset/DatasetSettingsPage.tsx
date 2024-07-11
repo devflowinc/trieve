@@ -39,6 +39,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   INDEXED_ONLY: false,
   LOCKED: false,
   SYSTEM_PROMPT: null,
+  MAX_LIMIT: 100000,
 };
 
 export const ServerSettingsForm = () => {
@@ -256,7 +257,6 @@ export const ServerSettingsForm = () => {
                 }
               />
             </div>
-
             <div class="col-span-4 sm:col-span-2">
               <label
                 for="messageToQueryPrompt"
@@ -409,6 +409,27 @@ export const ServerSettingsForm = () => {
                     return {
                       ...prev,
                       EMBEDDING_QUERY_PREFIX: e.currentTarget.value,
+                    };
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label for="maxLimit" class="block text-sm font-medium leading-6">
+                Max Limit
+              </label>
+              <input
+                type="number"
+                name="maxLimit"
+                id="linesBeforeShowMore"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={serverConfig().MAX_LIMIT ?? 0}
+                onChange={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      MAX_LIMIT: e.currentTarget.valueAsNumber,
                     };
                   })
                 }
@@ -609,7 +630,7 @@ export const DangerZoneForm = () => {
   return (
     <Show when={datasetContext.dataset != null}>
       <form class="rounded-md border border-red-600/20 shadow-sm shadow-red-500/30">
-        <div class="shadow sm:overflow-hidden sm:rounded-md ">
+        <div class="shadow sm:overflow-hidden sm:rounded-md">
           <div class="space-y-3 bg-white px-3 py-6 sm:p-6">
             <div>
               <h2 id="user-details-name" class="text-lg font-medium leading-6">
