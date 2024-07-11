@@ -1000,6 +1000,9 @@ pub struct SearchChunksReqPayload {
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
+    /// If true, chunks will be reranked using BAAI/bge-reranker-large. "hybrid" search does this
+    /// by default and this flag does not affect it.
+    pub use_reranker: Option<bool>,
 }
 
 impl Default for SearchChunksReqPayload {
@@ -1025,6 +1028,7 @@ impl Default for SearchChunksReqPayload {
             score_threshold: None,
             slim_chunks: None,
             content_only: None,
+            use_reranker: None,
         }
     }
 }
@@ -1284,6 +1288,9 @@ pub struct AutocompleteReqPayload {
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
+    /// If true, chunks will be reranked using BAAI/bge-reranker-large. "hybrid" search does this
+    /// by default and this flag does not affect it.
+    pub use_reranker: Option<bool>,
 }
 
 impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
@@ -1313,6 +1320,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             score_threshold: autocomplete_data.score_threshold,
             slim_chunks: autocomplete_data.slim_chunks,
             content_only: autocomplete_data.content_only,
+            use_reranker: autocomplete_data.use_reranker,
         }
     }
 }

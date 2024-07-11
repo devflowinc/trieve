@@ -1452,8 +1452,21 @@ pub async fn search_semantic_chunks(
 
     timer.add("fetched from postgres");
 
+    let rerank_chunks_input = match data.use_reranker {
+        Some(false) | None => result_chunks.score_chunks,
+        Some(true) => {
+            cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                result_chunks.score_chunks,
+                config,
+            )
+            .await?
+        }
+    };
+
     result_chunks.score_chunks = rerank_chunks(
-        result_chunks.score_chunks,
+        rerank_chunks_input,
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
@@ -1521,8 +1534,21 @@ pub async fn search_full_text_chunks(
 
     timer.add("fetched from postgres");
 
+    let rerank_chunks_input = match data.use_reranker {
+        Some(false) | None => result_chunks.score_chunks,
+        Some(true) => {
+            cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                result_chunks.score_chunks,
+                config,
+            )
+            .await?
+        }
+    };
+
     result_chunks.score_chunks = rerank_chunks(
-        result_chunks.score_chunks,
+        rerank_chunks_input,
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
@@ -1716,8 +1742,21 @@ pub async fn search_semantic_groups(
     )
     .await?;
 
+    let rerank_chunks_input = match data.use_reranker {
+        Some(false) | None => result_chunks.score_chunks,
+        Some(true) => {
+            cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                result_chunks.score_chunks,
+                config,
+            )
+            .await?
+        }
+    };
+
     result_chunks.score_chunks = rerank_chunks(
-        result_chunks.score_chunks,
+        rerank_chunks_input,
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
@@ -1769,8 +1808,21 @@ pub async fn search_full_text_groups(
     )
     .await?;
 
+    let rerank_chunks_input = match data.use_reranker {
+        Some(false) | None => result_chunks.score_chunks,
+        Some(true) => {
+            cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                result_chunks.score_chunks,
+                config,
+            )
+            .await?
+        }
+    };
+
     result_chunks.score_chunks = rerank_chunks(
-        result_chunks.score_chunks,
+        rerank_chunks_input,
         data.recency_bias,
         data.tag_weights,
         data.use_weights,
