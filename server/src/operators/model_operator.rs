@@ -4,12 +4,13 @@ use crate::{
     get_env,
     handlers::chunk_handler::{BoostPhrase, DistancePhrase},
 };
+use murmur3::murmur3_32;
 use openai_dive::v1::{
     helpers::format_response,
     resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingResponse},
 };
 use serde::{Deserialize, Serialize};
-use std::ops::IndexMut;
+use std::{collections::HashMap, io::Cursor, ops::IndexMut};
 
 use super::parse_operator::convert_html_to_text;
 
@@ -887,4 +888,69 @@ pub async fn cross_encoder(
 
     transaction.finish();
     Ok(results)
+}
+
+fn get_bm42_embedding(chunks: Vec<String>, avg_len: f32) -> Vec<Vec<(u32, f32)>> {
+    term_frequency(tokenize_batch(chunks), avg_len)
+}
+
+fn tokenize(text: String) -> Vec<String> {
+    let mut en_stem =
+        tantivy::tokenizer::TextAnalyzer::builder(tantivy::tokenizer::SimpleTokenizer::default())
+            .filter(tantivy::tokenizer::RemoveLongFilter::limit(40))
+            .filter(tantivy::tokenizer::LowerCaser)
+            .filter(tantivy::tokenizer::Stemmer::new(
+                tantivy::tokenizer::Language::English,
+            ))
+            .build();
+
+    let mut stream = en_stem.token_stream(&text);
+    let mut tokens: Vec<String> = vec![];
+    while stream.advance() {
+        tokens.push(stream.token().text.clone());
+    }
+
+    tokens
+}
+
+pub fn tokenize_batch(chunks: Vec<String>) -> Vec<Vec<String>> {
+    chunks.iter().map(|chunk| tokenize(chunk.clone())).collect()
+}
+
+pub fn term_frequency(batched_tokens: Vec<Vec<String>>, avg_len: f32) -> Vec<Vec<(u32, f32)>> {
+    // b and k are always set as standard
+    // https://www.elastic.co/blog/practical-bm25-part-3-considerations-for-picking-b-and-k1-in-elasticsearch
+    let b = 0.75;
+    let k = 1.2;
+
+    batched_tokens
+        .iter()
+        .map(|batch| {
+            // Get Full Counts
+            let mut raw_freqs = HashMap::new();
+            batch.iter().for_each(|token| {
+                match raw_freqs.get(token) {
+                    Some(val) => raw_freqs.insert(token, *val + 1f32),
+                    None => raw_freqs.insert(token, 1f32),
+                };
+            });
+
+            let mut tf_map = HashMap::new();
+
+            let doc_len = batch.len() as f32;
+
+            for token in batch.iter() {
+                let token_id =
+                    (murmur3_32(&mut Cursor::new(token), 0).unwrap() as i32).abs() as u32;
+                let num_occurences = raw_freqs[token];
+
+                let top = num_occurences * (k + 1f32);
+                let bottom = num_occurences + k * (1f32 - b + b * doc_len / avg_len);
+
+                tf_map.insert(token_id, top / bottom);
+            }
+
+            tf_map.into_iter().collect::<Vec<(u32, f32)>>()
+        })
+        .collect()
 }
