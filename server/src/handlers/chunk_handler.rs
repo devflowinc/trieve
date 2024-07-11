@@ -19,9 +19,7 @@ use crate::operators::dataset_operator::get_dataset_usage_query;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
-    autocomplete_fulltext_chunks, autocomplete_semantic_chunks, count_full_text_chunks,
-    count_hybrid_chunks, count_semantic_chunks, search_bm25_chunks, search_full_text_chunks,
-    search_hybrid_chunks, search_semantic_chunks,
+    autocomplete_fulltext_chunks, autocomplete_semantic_chunks, count_bm25_chunks, count_full_text_chunks, count_hybrid_chunks, count_semantic_chunks, search_bm25_chunks, search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks
 };
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -1178,13 +1176,6 @@ pub async fn search_chunks(
                 .into());
             }
         }
-        _ => {
-            return Err(ServiceError::BadRequest(
-                "Invalid search type. Must be one of 'semantic', 'fulltext', or 'hybrid' or 'bm25'"
-                    .into(),
-            )
-            .into())
-        }
     };
     timer.add("search_chunks");
 
@@ -1594,6 +1585,25 @@ pub async fn count_chunks(
             }
 
             count_full_text_chunks(
+                search_req_data.clone(),
+                parsed_query,
+                pool,
+                dataset_org_plan_sub.dataset.clone(),
+                &server_dataset_config,
+            )
+            .await?
+        }
+        SearchMethod::BM25 => {
+            if !server_dataset_config.BM25_ENABLED
+                && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) != "true".to_string()
+            {
+                return Err(ServiceError::BadRequest(
+                    "BM25 search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
+
+            count_bm25_chunks(
                 search_req_data.clone(),
                 parsed_query,
                 pool,
