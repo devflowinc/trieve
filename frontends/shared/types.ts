@@ -127,6 +127,7 @@ export interface ServerEnvsConfiguration {
   INDEXED_ONLY: boolean;
   LOCKED: boolean;
   SYSTEM_PROMPT: string | null;
+  MAX_LIMIT: number;
 }
 
 export interface DefaultError {
