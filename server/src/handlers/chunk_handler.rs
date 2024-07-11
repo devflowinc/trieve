@@ -1549,6 +1549,17 @@ pub async fn count_chunks(
         ..data.clone()
     };
 
+    if limit > server_dataset_config.MAX_LIMIT {
+        return Err(ServiceError::BadRequest(
+            format!(
+                "Limit of {} is greater than the maximum limit of {}. Please reduce the limit.",
+                limit, server_dataset_config.MAX_LIMIT
+            )
+            .into(),
+        )
+        .into());
+    }
+
     let result_chunks = match data.search_type {
         SearchMethod::FullText => {
             if !server_dataset_config.FULLTEXT_ENABLED {

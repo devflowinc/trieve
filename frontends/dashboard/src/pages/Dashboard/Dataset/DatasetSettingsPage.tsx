@@ -17,6 +17,7 @@ import {
 import { createToast } from "../../../components/ShowToasts";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
 import { useNavigate } from "@solidjs/router";
+import { Tooltip } from "../../../components/Tooltip";
 
 export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LLM_BASE_URL: "",
@@ -39,7 +40,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   INDEXED_ONLY: false,
   LOCKED: false,
   SYSTEM_PROMPT: null,
-  MAX_LIMIT: 100000,
+  MAX_LIMIT: 10000,
 };
 
 export const ServerSettingsForm = () => {
@@ -361,9 +362,10 @@ export const ServerSettingsForm = () => {
                 >
                   Embedding Model
                 </label>
-                <AiOutlineInfoCircle
-                  class="h-5 w-5 text-neutral-400 hover:cursor-help"
-                  title="Embedding Model is only editable on creation"
+                <Tooltip
+                  direction={"right"}
+                  body={<AiOutlineInfoCircle />}
+                  tooltipText="Embedding Model is only editable on creation"
                 />
               </div>
               <select
@@ -393,9 +395,10 @@ export const ServerSettingsForm = () => {
                 >
                   Embedding Query Prefix
                 </label>
-                <AiOutlineInfoCircle
-                  class="h-5 w-5 text-neutral-400 hover:cursor-help"
-                  title="For some embedding models, the training data includes query prefixes. The default for Jina is 'Search for: '. You can experiment with different values."
+                <Tooltip
+                  direction={"right"}
+                  body={<AiOutlineInfoCircle />}
+                  tooltipText="For some embedding models, the training data includes query prefixes. The default for Jina is 'Search for: '. You can experiment with different values."
                 />
               </div>
               <input
@@ -416,9 +419,19 @@ export const ServerSettingsForm = () => {
             </div>
 
             <div class="col-span-4 sm:col-span-2">
-              <label for="maxLimit" class="block text-sm font-medium leading-6">
-                Max Limit
-              </label>
+              <div class="flex flex-row items-center gap-2">
+                <label
+                  for="maxLimit"
+                  class="block text-sm font-medium leading-6"
+                >
+                  Max Limit
+                </label>
+                <Tooltip
+                  direction={"right"}
+                  body={<AiOutlineInfoCircle />}
+                  tooltipText="Sets the maximum limit when counting chunks above threshold, applies to search and count routes in the API to prevent DDOS attacks on the server. Counting chunks requires a full scan of the search index."
+                />
+              </div>
               <input
                 type="number"
                 name="maxLimit"
