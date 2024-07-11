@@ -79,6 +79,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
@@ -100,6 +101,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       method: "POST",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
@@ -127,6 +129,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       method: "POST",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
@@ -166,13 +169,14 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data: ChunkMetadata) => {
           setChunkMetadata(data);
-          setScoreChunk([{ metadata: [data], score: 0 }]);
+          setScoreChunk([{ chunk: data, score: 0 }]);
           setError("");
         });
       }
@@ -208,7 +212,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         showExpand={clientSideRequestFinished()}
         setChunkGroups={setChunkGroups}
         counter={"0"}
-        total={1}
         selectedIds={selectedIds}
         setSelectedIds={setSelectedIds}
       />

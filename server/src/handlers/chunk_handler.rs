@@ -5,11 +5,13 @@ use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, GeoInfoWithBias,
     IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RecommendType,
-    RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunkDTO, SearchMethod,
-    SearchQueryEventClickhouse, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
+    RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO,
+    SearchMethod, SearchQueryEventClickhouse, ServerDatasetConfiguration,
+    SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
+use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::clickhouse_operator::{
@@ -1028,10 +1030,40 @@ impl Default for SearchChunksReqPayload {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema, Debug)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
+#[schema(title = "V1")]
 pub struct SearchChunkQueryResponseBody {
     pub score_chunks: Vec<ScoreChunkDTO>,
     pub total_chunk_pages: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(title = "V2")]
+pub struct SearchResponseBody {
+    pub chunks: Vec<ScoreChunk>,
+    pub total_pages: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum SearchResponseTypes {
+    #[schema(title = "V1")]
+    V1(SearchChunkQueryResponseBody),
+    #[schema(title = "V2")]
+    V2(SearchResponseBody),
+}
+
+impl SearchChunkQueryResponseBody {
+    pub fn into_new_payload(self) -> SearchResponseBody {
+        SearchResponseBody {
+            chunks: self
+                .score_chunks
+                .into_iter()
+                .map(|chunk| chunk.to_updated_chunk_metadata())
+                .collect(),
+            total_pages: self.total_chunk_pages,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -1083,7 +1115,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
     tag = "Chunk",
     request_body(content = SearchChunksReqPayload, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkQueryResponseBody),
+        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchResponseTypes),
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
@@ -1100,6 +1132,7 @@ pub async fn search_chunks(
     _user: LoggedUser,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -1206,6 +1239,12 @@ pub async fn search_chunks(
     timer.add("send_to_clickhouse");
 
     transaction.finish();
+
+    if api_version == APIVersion::V2 {
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(result_chunks.into_new_payload()));
+    }
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
@@ -1344,12 +1383,13 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     tag = "Chunk",
     request_body(content = AutocompleteReqPayload, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkQueryResponseBody),
+        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchResponseTypes),
 
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1361,6 +1401,7 @@ pub async fn autocomplete(
     _user: LoggedUser,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -1444,6 +1485,12 @@ pub async fn autocomplete(
     timer.add("send_to_clickhouse");
 
     transaction.finish();
+
+    if api_version == APIVersion::V2 {
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(result_chunks.into_new_payload()));
+    }
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
@@ -2039,12 +2086,12 @@ pub async fn get_recommended_chunks(
             let score = recommended_qdrant_results
                 .iter()
                 .find(|recommend_qdrant_result| {
-                    recommend_qdrant_result.point_id == chunk_metadata.qdrant_point_id
+                    recommend_qdrant_result.point_id == chunk_metadata.metadata().qdrant_point_id
                 })
                 .map(|recommend_qdrant_result| recommend_qdrant_result.score)
                 .unwrap_or(0.0);
 
-            ChunkMetadataWithScore::from((chunk_metadata, score))
+            ChunkMetadataWithScore::from((chunk_metadata.metadata(), score))
         })
         .collect::<Vec<ChunkMetadataWithScore>>();
 

@@ -172,7 +172,7 @@ impl From<Message> for ChatMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-#[serde(rename = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum RoleProxy {
     System,
     User,
@@ -687,6 +687,26 @@ pub struct ScoreChunkDTO {
     pub score: f64,
 }
 
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "chunk": {
+        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "content": "Some content",
+        "link": "https://example.com",
+        "chunk_html": "<p>Some HTML content</p>",
+        "metadata": {"key1": "value1", "key2": "value2"},
+        "time_stamp": "2021-01-01T00:00:00",
+        "weight": 0.5,
+    },
+    "highlights": ["highlight is two tokens: high, light", "whereas hello is only one token: hello"],
+    "score": 0.5
+}))]
+pub struct ScoreChunk {
+    pub chunk: ChunkMetadataTypes,
+    pub highlights: Option<Vec<String>>,
+    pub score: f32,
+}
+
 impl ScoreChunkDTO {
     pub fn slim(&self) -> ScoreChunkDTO {
         let mut slim_chunk_dto = self.clone();
@@ -706,6 +726,14 @@ impl ScoreChunkDTO {
             })
             .collect();
         slim_chunk_dto
+    }
+
+    pub fn to_updated_chunk_metadata(&self) -> ScoreChunk {
+        ScoreChunk {
+            chunk: self.metadata[0].clone().into(),
+            highlights: self.highlights.clone(),
+            score: self.score as f32,
+        }
     }
 }
 

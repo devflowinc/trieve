@@ -27,7 +27,6 @@ import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { PaginationController } from "./Atoms/PaginationController";
-import { ScoreChunkArray } from "./ScoreChunkArray";
 import SearchForm from "./SearchForm";
 import ChunkMetadataDisplay from "./ChunkMetadataDisplay";
 import { Portal } from "solid-js/web";
@@ -43,6 +42,7 @@ import {
 } from "solid-icons/fa";
 import { useSearch } from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
+import ScoreChunk from "./ScoreChunk";
 
 export interface GroupPageProps {
   groupID: string;
@@ -156,6 +156,7 @@ export const GroupPage = (props: GroupPageProps) => {
           credentials: "include",
           signal: abortController.signal,
           headers: {
+            "X-API-version": "2.0",
             "TR-Dataset": currentDataset.dataset.id,
           },
         }).then((response) => {
@@ -176,6 +177,7 @@ export const GroupPage = (props: GroupPageProps) => {
         void fetch(`${apiHost}/chunk_group/search`, {
           method: "POST",
           headers: {
+            "X-API-version": "2.0",
             "Content-Type": "application/json",
             "TR-Dataset": currentDataset.dataset.id,
           },
@@ -204,7 +206,7 @@ export const GroupPage = (props: GroupPageProps) => {
               group_id = groupBookmarks.group.id;
               setGroupInfo(groupBookmarks.group);
               setTotalPages(groupBookmarks.total_pages);
-              setSearchMetadatasWithVotes(groupBookmarks.bookmarks);
+              setSearchMetadatasWithVotes(groupBookmarks.chunks);
             });
           }
           setClientSideRequestFinished(true);
@@ -227,6 +229,7 @@ export const GroupPage = (props: GroupPageProps) => {
             method: "DELETE",
             credentials: "include",
             headers: {
+              "X-API-version": "2.0",
               "Content-Type": "application/json",
               "TR-Dataset": currentDataset.dataset.id,
             },
@@ -255,6 +258,7 @@ export const GroupPage = (props: GroupPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
@@ -284,6 +288,7 @@ export const GroupPage = (props: GroupPageProps) => {
       method: "POST",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
@@ -316,6 +321,7 @@ export const GroupPage = (props: GroupPageProps) => {
       credentials: "include",
       body: JSON.stringify(body),
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
@@ -362,6 +368,7 @@ export const GroupPage = (props: GroupPageProps) => {
       method: "POST",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
@@ -561,11 +568,9 @@ export const GroupPage = (props: GroupPageProps) => {
               >
                 {(chunk) => (
                   <div class="mt-4">
-                    <ScoreChunkArray
+                    <ScoreChunk
                       totalGroupPages={totalGroupPages()}
-                      chunks={
-                        !isScoreChunkDTO(chunk) ? [chunk] : chunk.metadata
-                      }
+                      chunk={!isScoreChunkDTO(chunk) ? chunk : chunk.chunk}
                       score={isScoreChunkDTO(chunk) ? chunk.score : 0}
                       group={true}
                       chunkGroups={chunkGroups()}
@@ -669,13 +674,13 @@ export const GroupPage = (props: GroupPageProps) => {
                         </div>
                       </div>
                       <Show when={groupExpanded()}>
-                        <For each={group.metadata}>
+                        <For each={group.chunks}>
                           {(chunk) => (
                             <div class="ml-5 flex space-y-4">
-                              <ScoreChunkArray
+                              <ScoreChunk
                                 totalGroupPages={totalGroupPages()}
                                 chunkGroups={chunkGroups()}
-                                chunks={chunk.metadata}
+                                chunk={chunk.chunk}
                                 score={chunk.score}
                                 bookmarks={bookmarks()}
                                 setOnDelete={setOnDelete}
@@ -781,7 +786,7 @@ export const GroupPage = (props: GroupPageProps) => {
                   setSelectedIds(
                     searchResults
                       .flatMap((c) => {
-                        return c.metadata[0].id;
+                        return c.chunk.id;
                       })
                       .slice(0, 10),
                   );

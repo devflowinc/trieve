@@ -87,12 +87,12 @@ export interface ChunkBookmarksDTO {
 }
 
 export interface ChunksWithTotalPagesDTO {
-  score_chunks: ScoreChunkDTO[];
-  total_chunk_pages: number;
+  chunks: ScoreChunkDTO[];
+  total_pages: number;
 }
 
 export interface ScoreChunkDTO {
-  metadata: [ChunkMetadata];
+  chunk: ChunkMetadata;
   score: number;
 }
 
@@ -100,8 +100,8 @@ export const isScoreChunkDTO = (chunk: unknown): chunk is ScoreChunkDTO => {
   if (typeof chunk !== "object" || chunk === null) return false;
 
   return (
-    indirectHasOwnProperty(chunk, "metadata") &&
-    Array.isArray((chunk as ScoreChunkDTO).metadata) &&
+    indirectHasOwnProperty(chunk, "chunk") &&
+    typeof (chunk as ScoreChunkDTO).chunk == "object" &&
     indirectHasOwnProperty(chunk, "score") &&
     typeof (chunk as ScoreChunkDTO).score === "number"
   );
@@ -315,7 +315,7 @@ export interface ChunkGroupBookmarkDTO {
 }
 
 export interface ChunkGroupSearchDTO {
-  bookmarks: ScoreChunkDTO[];
+  chunks: ScoreChunkDTO[];
   group: ChunkGroupDTO;
   total_pages: number;
 }
@@ -327,7 +327,7 @@ export const isChunkGroupSearchDTO = (
 
   return (
     indirectHasOwnProperty(group, "bookmarks") &&
-    isScoreChunkDTO((group as ChunkGroupSearchDTO).bookmarks[0]) &&
+    isScoreChunkDTO((group as ChunkGroupSearchDTO).chunks[0]) &&
     indirectHasOwnProperty(group, "group") &&
     isChunkGroupDTO((group as ChunkGroupSearchDTO).group) &&
     indirectHasOwnProperty(group, "total_pages") &&
@@ -519,7 +519,7 @@ export interface GroupScoreChunkDTO {
   group_id: string;
   group_name: string;
   group_tracking_id: string;
-  metadata: ScoreChunkDTO[];
+  chunks: ScoreChunkDTO[];
   file_id?: string;
 }
 

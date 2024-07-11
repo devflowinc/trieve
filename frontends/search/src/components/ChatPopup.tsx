@@ -119,6 +119,7 @@ export const ChatPopup = (props: LayoutProps) => {
       const res = await fetch(`${api_host}/chunk/generate`, {
         method: "POST",
         headers: {
+          "X-API-version": "2.0",
           "Content-Type": "application/json",
           "TR-Dataset": currentDataset.dataset.id,
         },
@@ -170,17 +171,10 @@ export const ChatPopup = (props: LayoutProps) => {
     const selectedIds = props.selectedIds();
     let chunks = props.chunks();
     if (!chunks.length) {
-      chunks =
-        props
-          .groupChunks?.()
-          ?.flatMap((group) =>
-            group.metadata.flatMap((metadata) => metadata),
-          ) ?? [];
-
-      console.log("groups", chunks);
+      chunks = props.groupChunks?.()?.flatMap((group) => group.chunks) ?? [];
     }
 
-    return chunks.filter((chunk) => selectedIds.includes(chunk.metadata[0].id));
+    return chunks.filter((chunk) => selectedIds.includes(chunk.chunk.id));
   });
 
   return (

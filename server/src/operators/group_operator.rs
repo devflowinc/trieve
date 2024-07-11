@@ -434,7 +434,7 @@ pub async fn get_bookmarks_for_group_query(
         get_chunk_metadatas_from_point_ids(chunk_metadata_point_ids, pool.clone()).await?;
     let chunk_metadata_string_tag_sets = chunk_metadatas
         .iter()
-        .map(|chunk_metadata| ChunkMetadataStringTagSet::from(chunk_metadata.clone()))
+        .map(|chunk_metadata| chunk_metadata.metadata().into())
         .collect();
 
     let chunk_count = chunk_count_result?;

@@ -31,8 +31,6 @@ export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
       <ScoreChunk
         {...props}
         chunk={props.chunks[curChunk()]}
-        counter={(curChunk() + 1).toString()}
-        total={props.chunks.length}
         showExpand={props.showExpand}
         defaultShowMetadata={props.defaultShowMetadata}
       />

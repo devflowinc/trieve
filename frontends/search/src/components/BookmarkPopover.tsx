@@ -126,6 +126,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       {
         method: "GET",
         headers: {
+          "X-API-version": "2.0",
           "TR-Dataset": currentDataset.dataset.id,
         },
         credentials: "include",
@@ -185,6 +186,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       method: "POST",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
@@ -308,6 +310,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                       ? "POST"
                                       : "DELETE",
                                     headers: {
+                                      "X-API-version": "2.0",
                                       "Content-Type": "application/json",
                                       "TR-Dataset": currentDataset.dataset.id,
                                     },
@@ -381,6 +384,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                           void fetch(`${apiHost}/chunk_group`, {
                             method: "POST",
                             headers: {
+                              "X-API-version": "2.0",
                               "Content-Type": "application/json",
                               "TR-Dataset": currentDataset.dataset.id,
                             },

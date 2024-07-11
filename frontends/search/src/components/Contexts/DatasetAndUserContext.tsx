@@ -168,6 +168,7 @@ export const DatasetAndUserContextWrapper = (props: RouteSectionProps) => {
       method: "GET",
       credentials: "include",
       headers: {
+"X-API-version": "2.0",
         "TR-Organization": selectedOrg.id,
       },
     }).then((res) => {

@@ -47,6 +47,7 @@ export const ImageModal = (props: ImageModalProps) => {
 
       void fetch(`${apiHost}/file/get_signed_url/${fileName}.png`, {
         headers: {
+          "X-API-version": "2.0",
           "TR-Dataset": $currentDataset?.()?.dataset.id ?? "",
         },
         credentials: "include",

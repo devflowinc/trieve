@@ -45,6 +45,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
         method: "GET",
         credentials: "include",
         headers: {
+          "X-API-version": "2.0",
           "TR-Dataset": currentDataset.dataset.id,
         },
       },
@@ -73,6 +74,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
           method: "DELETE",
           credentials: "include",
           headers: {
+            "X-API-version": "2.0",
             "Content-Type": "application/json",
             "TR-Dataset": currentDataset.dataset.id,
           },
