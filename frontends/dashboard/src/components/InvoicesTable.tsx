@@ -65,7 +65,7 @@ export const InvoicesTable = () => {
 
   return (
     <Show when={orgInvoices().length > 0}>
-      <div class="flex flex-col gap-4">
+      <div class="mb-8 flex flex-col gap-4">
         <div class="space-y-2">
           <h3 class="text-lg font-semibold text-neutral-800">
             Invoices for {selectedOrganization()?.name} Organization
@@ -107,7 +107,7 @@ export const InvoicesTable = () => {
                     return (
                       <tr>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
-                          {formatDate(new Date(invoice.created_at as string))}
+                          {formatDate(new Date(invoice.created_at))}
                         </td>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
                           {invoice.status}
@@ -117,7 +117,7 @@ export const InvoicesTable = () => {
                         </td>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
                           <a
-                            href={invoice.hosted_invoice_url as string}
+                            href={invoice.hosted_invoice_url}
                             target="_blank"
                             class="hover:text-fuchsia-500"
                           >
