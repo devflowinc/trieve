@@ -266,7 +266,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
               onMouseLeave={() => setUsingPanel(false)}
               onClick={() => setState(true)}
             >
-              <Menu class=" flex w-full flex-col justify-end space-y-2 overflow-hidden rounded bg-white py-4 shadow-2xl dark:bg-shark-700">
+              <Menu class="flex w-full flex-col justify-end space-y-2 overflow-hidden rounded bg-white py-4 shadow-2xl dark:bg-shark-700">
                 <div class="mb-3 w-full px-4 text-center text-lg font-bold">
                   Manage Groups For This Chunk
                 </div>
