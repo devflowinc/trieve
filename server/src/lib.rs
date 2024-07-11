@@ -9,7 +9,6 @@ use crate::{
     handlers::auth_handler::build_oidc_client,
     handlers::metrics_handler::Metrics,
     operators::{
-        clickhouse_operator::run_clickhouse_migrations,
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
     },
 };
@@ -22,6 +21,7 @@ use actix_web::{
     web::{self, PayloadConfig},
     App, HttpServer,
 };
+use chm::tools::migrations::{run_pending_migrations, SetupArgs};
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::ManagerConfig;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -522,15 +522,25 @@ pub fn main() -> std::io::Result<()> {
         let clickhouse_client = if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()).parse().unwrap_or(false) {
             log::info!("Analytics enabled");
 
+            let args  = SetupArgs {
+                url: Some(std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string())),
+                user: Some(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string())),
+                password: Some(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("password".to_string())),
+                database: Some(std::env::var("CLICKHOUSE_DB").unwrap_or("default".to_string()))
+            };
+
             let clickhouse_client = clickhouse::Client::default()
-                .with_url(std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()))
-                .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
-                .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
-                .with_database(std::env::var("CLICKHOUSE_DB").unwrap_or("default".to_string()))
+                .with_url(args.url.as_ref().unwrap())
+                .with_user(args.user.as_ref().unwrap())
+                .with_password(args.password.as_ref().unwrap())
+                .with_database(args.database.as_ref().unwrap())
                 .with_option("async_insert", "1")
                 .with_option("wait_for_async_insert", "0");
 
-            run_clickhouse_migrations(&clickhouse_client).await;
+
+            let _ = run_pending_migrations(args.clone()).await.map_err(|err| {
+                log::error!("Failed to run clickhouse migrations: {:?}", err);
+            });
             clickhouse_client
         } else {
             log::info!("Analytics disabled");
