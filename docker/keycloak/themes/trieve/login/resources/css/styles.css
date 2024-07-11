@@ -150,6 +150,7 @@ button#kc-login {
 }
 
 hr {
+  margin-top: 30px !important;
   border-color: #e5e5e5 !important;
 }
 
@@ -160,6 +161,7 @@ hr {
 h4 {
   font-weight: 400;
   text-align: center;
+  padding-top: 10px;
 }
 
 span>a {
@@ -169,6 +171,8 @@ span>a {
 span>a:hover {
   color: #0C050E;
 }
+
+
 
 #kc-social-providers .pf-c-button.pf-m-control::after {
   border: none !important;
