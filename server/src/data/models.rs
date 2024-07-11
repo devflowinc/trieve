@@ -171,20 +171,38 @@ impl From<Message> for ChatMessage {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[serde(rename = "lowercase")]
+pub enum RoleProxy {
+    System,
+    User,
+    Assistant,
+}
+
+impl Into<Role> for RoleProxy {
+    fn into(self) -> Role {
+        match self {
+            RoleProxy::System => Role::System,
+            RoleProxy::User => Role::User,
+            RoleProxy::Assistant => Role::Assistant,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example=json!({
     "role": "user",
     "content": "Hello, world!"
 }))]
 pub struct ChatMessageProxy {
-    pub role: Role,
+    pub role: RoleProxy,
     pub content: String,
 }
 
 impl From<ChatMessageProxy> for ChatMessage {
     fn from(message: ChatMessageProxy) -> Self {
         ChatMessage {
-            role: message.role,
+            role: message.role.into(),
             content: ChatMessageContent::Text(message.content),
             tool_calls: None,
             name: None,

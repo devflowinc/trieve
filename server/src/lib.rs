@@ -317,6 +317,7 @@ impl Modify for SecurityAddon {
             data::models::ApiKeyRespBody,
             data::models::SearchRPSGraph,
             data::models::SearchResultType,
+            data::models::RoleProxy,
             data::models::RAGUsageResponse,
             data::models::ClusterAnalytics,
             data::models::RAGAnalytics,
