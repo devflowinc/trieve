@@ -15,7 +15,7 @@ export const RagQueries = () => {
     const datasetId = dataset().dataset.id;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
-      queryKey: ["RAG-queries", { page: curPage + 1 }],
+      queryKey: ["rag-queries", { page: curPage + 1 }],
       queryFn: async () => {
         const results = await getRAGQueries(datasetId, curPage + 1);
         if (results.length === 0) {
@@ -26,8 +26,8 @@ export const RagQueries = () => {
     });
   });
 
-  const headQueriesQuery = createQuery(() => ({
-    queryKey: ["head-queries", { page: pages.page() }],
+  const ragQueriesQuery = createQuery(() => ({
+    queryKey: ["rag-queries", { page: pages.page() }],
     queryFn: () => {
       return getRAGQueries(dataset().dataset.id, pages.page());
     },
@@ -42,7 +42,7 @@ export const RagQueries = () => {
         </div>
         <Show
           fallback={<div class="py-8">Loading...</div>}
-          when={headQueriesQuery.data}
+          when={ragQueriesQuery.data}
         >
           {(data) => (
             <table class="w-full py-2">
@@ -78,7 +78,9 @@ interface QueryCardProps {
 const RagQueryEventCard = (props: QueryCardProps) => {
   return (
     <tr>
-      <td class="truncate">{props.rag_query_event.user_message}</td>
+      <td class="w-full max-w-0 truncate">
+        {props.rag_query_event.user_message}
+      </td>
       <td class="text-right">{props.rag_query_event.rag_type}</td>
     </tr>
   );

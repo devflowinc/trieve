@@ -30,7 +30,7 @@ export const SearchAnalyticsPage = () => {
           <LatencyGraph params={analyticsFilters} />
         </ChartCard>
 
-        <ChartCard title="Requests/Second" width={5}>
+        <ChartCard title="Search Requests/Second" width={5}>
           <RpsGraph params={analyticsFilters} />
         </ChartCard>
 
