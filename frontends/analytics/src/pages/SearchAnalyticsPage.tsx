@@ -25,7 +25,7 @@ export const SearchAnalyticsPage = () => {
   return (
     <div class="min-h-screen bg-neutral-200/60 p-4 pt-2">
       <FilterBar filters={analyticsFilters} setFilters={setAnalyticsFilters} />
-      <div class="grid grid-cols-10 items-stretch gap-2 p-2 pt-3">
+      <div class="grid grid-cols-10 items-start gap-2 p-2 pt-3">
         <ChartCard title="Search Latency" width={5}>
           <LatencyGraph params={analyticsFilters} />
         </ChartCard>
@@ -34,7 +34,12 @@ export const SearchAnalyticsPage = () => {
           <RpsGraph params={analyticsFilters} />
         </ChartCard>
 
-        <ChartCard title="Head Queries" class="px-4" width={5}>
+        <ChartCard
+          subtitle="The most popular searches"
+          title="Head Queries"
+          class="px-4"
+          width={5}
+        >
           <HeadQueries params={analyticsFilters} />
         </ChartCard>
 
