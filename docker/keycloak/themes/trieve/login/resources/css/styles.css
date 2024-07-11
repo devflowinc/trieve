@@ -4,6 +4,10 @@
   box-sizing: border-box !important;
 }
 
+body {
+  background: #ededed;
+}
+
 :root {
   --textColor: #7c858d;
   --textOffColor: #f6f5f7;
@@ -67,6 +71,11 @@ input#password-confirm {
 
 .checkbox {
   margin: 0px;
+}
+
+.alert-error {
+  margin-bottom: 20px !important;
+  border: 1px solid #f87171;
 }
 
 /* Login Card */
