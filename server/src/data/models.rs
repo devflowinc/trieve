@@ -3429,7 +3429,8 @@ pub enum SearchMethod {
     Semantic,
     #[display(fmt = "hybrid")]
     Hybrid,
-    #[display(fmt = "bm25")]
+    #[serde(rename = "bm25", alias = "BM25")]
+    #[display(fmt = "BM25")]
     BM25,
 }
 
