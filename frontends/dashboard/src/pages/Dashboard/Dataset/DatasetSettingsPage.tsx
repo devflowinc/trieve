@@ -48,6 +48,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
 };
 
 export const ServerSettingsForm = () => {
+  const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
   const datasetContext = useContext(DatasetContext);
   const [serverConfig, setServerConfig] = createSignal<ServerEnvsConfiguration>(
     datasetContext.dataset?.()?.server_configuration ??
@@ -571,28 +572,30 @@ export const ServerSettingsForm = () => {
               </div>
             </div>
 
-            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
-              <input
-                type="checkbox"
-                name="bm25TextEnabled"
-                id="bm25TextEnabled"
-                checked={serverConfig().BM25_ENABLED}
-                onInput={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      BM25_ENABLED: e.currentTarget.checked,
-                    };
-                  })
-                }
-              />
-              <label
-                for="bm25TextEnabled"
-                class="block text-sm font-medium leading-6"
-              >
-                bm25 Enabled
-              </label>
-            </div>
+            <Show when={bm25Active == "true"}>
+              <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  name="bm25TextEnabled"
+                  id="bm25TextEnabled"
+                  checked={serverConfig().BM25_ENABLED}
+                  onInput={(e) =>
+                    setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        BM25_ENABLED: e.currentTarget.checked,
+                      };
+                    })
+                  }
+                />
+                <label
+                  for="bm25TextEnabled"
+                  class="block text-sm font-medium leading-6"
+                >
+                  bm25 Enabled
+                </label>
+              </div>
+            </Show>
 
             <Show when={serverConfig().BM25_ENABLED}>
               <div class="col-span-4 sm:col-span-2">

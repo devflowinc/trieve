@@ -580,7 +580,9 @@ pub async fn bulk_upload_chunks(
             .collect())
     }?;
 
-    let bm25_vectors = if dataset_config.BM25_ENABLED {
+    let bm25_vectors = if dataset_config.BM25_ENABLED
+        && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true".to_string()
+    {
         get_bm25_embeddings(
             content_and_boosts
                 .iter()
