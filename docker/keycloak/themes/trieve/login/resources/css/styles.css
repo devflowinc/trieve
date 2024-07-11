@@ -1,7 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400..900&display=swap');
+
+* {
+  box-sizing: border-box !important;
+}
+
 :root {
   --textColor: #7c858d;
   --textOffColor: #f6f5f7;
-  --baseColor: rgb(255 255 255);
+  --baseColor: #ededed !important;
   --baseDarkColor: #1e2b36;
   --baseLightColor: rgb(255 255 255);
   --secColor: rgb(64 64 64);
@@ -21,104 +27,122 @@
 body {
   background: var(--baseColor) !important;
   color: var(--textColor) !important;
-  font-size: 18px;
+  font-size: 14px;
+  font-family: 'Maven Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+input {
+  border-color: #d4d4d4 !important;
+}
+
+button.pf-m-control::after {
+  border-color: #d4d4d4 !important;
+  /* margin-left: 20px; */
+  border-width: 1px !important;
+  border-left-color: transparent !important;
+  border-radius: 0px 4px 4px 0px !important;
+}
+
+input#username {
+  border-radius: 4px !important;
+  box-shadow: 0 0 7px 0 rgba(0, 0, 0, 0.05);
+}
+
+input#password {
+  box-shadow: 0 0 7px 0 rgba(0, 0, 0, 0.05);
+  border-radius: 4px 0px 0px 4px !important;
+  border-right-color: transparent !important;
+  border-right: none !important;
+}
+
+#rememberMe {
+  accent-color: #a855f7 !important;
+}
+
+.checkbox {
+  margin: 0px;
 }
 
 /* Login Card */
+.login-pf-page-header {
+  color: black;
+  text-transform: capitalize;
+}
 
 .login-pf-page .card-pf {
-  border-radius: 20px;
-  background: var(--baseLightColor);
+  border-radius: 6px;
+  border-bottom-color: red !important;
+  border-color: #d4d4d4 !important;
+  border-width: 1px !important;
+  border-inline-width: 2px !important;
+  border-left: 1px solid #d4d4d4 !important;
+  border-right: 1px solid #d4d4d4 !important;
+  border-bottom: 1px solid #d4d4d4 !important;
+  padding: 32px !important;
+  box-shadow: 0 0 7px 0 rgba(0, 0, 0, 0.05);
+}
+
+.login-pf-page-header {
+  margin-bottom: 50px !important;
 }
 
 /* Card Title */
-
-.login-pf-page .login-pf-header {
-  margin-bottom: 50px;
+.card-pf {
+  max-width: 500px;
+  margin: auto;
+  background: white !important;
+  color: black !important;
 }
 
 #kc-page-title {
-  font-size: 26px;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--textColor);
+  margin-top: 0px !important;
+  margin-bottom: 20px !important;
+}
+
+
+#kc-header {
+  display: flex;
+  gap: 200px !important;
+  justify-content: center;
+  align-items: center !important;
 }
 
 #kc-header-wrapper {
-  color: var(--textColor);
+  font-weight: 400;
+  font-size: 28px;
 }
 
-/* Login Form */
-
-.login-pf-page .form-group {
-  margin-bottom: 30px;
+#kc-header-wrapper::before {
+  content: '';
+  display: inline-block;
+  width: 65px !important;
+  min-width: 65px;
+  /* Adjust to your image width */
+  height: 65px;
+  margin-right: 10px !important;
+  min-height: 65px;
+  /* Adjust to your image height */
+  background-image: url('https://cdn.trieve.ai/trieve-logo.png');
+  background-size: contain;
+  transform: translateY(25px);
+  background-repeat: no-repeat;
 }
 
-.login-pf-page .form-control {
-  border: none;
-  padding: 22px 30px;
-  font-size: 18px;
-  color: var(--textColor);
-  height: auto;
-
-  border-radius: 32px;
-  background: var(--baseColor);
+button#kc-login {
+  background-color: purple !important;
 }
 
-.login-pf-page .form-control::placeholder {
-  font-style: normal;
-  color: var(--textOffColor);
+.pf-c-button.pf-m-primary {
+  border-radius: 6px;
+  color: black;
+  background-color: #E4C1EA !important;
+  border: 1px solid #DDB2E5 !important;
 }
 
-/* Remember Me Toggle */
-
-#kc-form-options .checkbox {
-  font-size: 16px;
-  color: var(--textColor);
-  margin-bottom: 0;
+.pf-c-button.pf-m-primary:hover {
+  background-color: #DDB2E5 !important;
 }
 
-#kc-form-options label {
-  display: inline-flex;
-  align-items: center;
-  padding-left: 8px;
-}
-
-#kc-form-options .label-text {
-  margin-left: 16px;
-  margin-top: 4px;
-}
-
-/* Reset Password Link */
-
-#kc-form-reset-psw a {
-  font-size: 16px;
-  color: var(--secColor);
-  padding-right: 8px;
-}
-
-#kc-form-buttons {
-  margin-top: 50px;
-}
-
-/* Login Button */
-
-#kc-login {
-  border: none;
-  padding: 22px 30px;
-  font-size: 18px;
-  color: #f6f5f7;
-
-  border-radius: 32px;
-  background: rgb(163 62 181);
-}
-
-#kc-login:active:focus {
-  background: linear-gradient(145deg, #202e39, #253743) !important;
-  outline: none;
-}
-
-/* Register Link */
-#kc-info-wrapper {
-  background: var(--baseColor);
+hr {
+  border-color: #e5e5e5 !important;
 }
