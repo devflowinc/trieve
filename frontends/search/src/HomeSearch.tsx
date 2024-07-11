@@ -10,8 +10,8 @@ export const HomeSearch = () => {
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
       <Navbar />
-      <div class="space-y mx-auto mt-8 flex w-full max-w-7xl flex-col items-center">
-        <div class="mx-auto w-full max-w-[calc(100%-32px)] px-4 min-[360px]:max-w-[calc(100%-64px)] sm:px-8 md:px-20">
+      <div class="space-y mx-auto mt-8 flex w-full max-w-screen-2xl flex-col items-center">
+        <div class="mx-auto w-full">
           <SearchForm search={search} />
         </div>
         <ResultsPage search={search} />

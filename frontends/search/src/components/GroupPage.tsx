@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Show,
@@ -450,7 +453,6 @@ export const GroupPage = (props: GroupPageProps) => {
               onClick={() => {
                 handleDownloadFile(groupInfo());
               }}
-            >
               <FaSolidDownload />
             </button>
           </Show>
@@ -467,19 +469,6 @@ export const GroupPage = (props: GroupPageProps) => {
             <FiEdit class="h-5 w-5" />
           </button>
         </div>
-        <Show when={!editing()}>
-          <div class="flex w-full items-center justify-center">
-            <h1 class="max-w-7xl break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
-              {groupInfo()?.name}
-            </h1>
-          </div>
-          <Show when={groupInfo()?.description.length ?? (0 > 0 && !editing())}>
-            <div class="mx-auto flex max-w-7xl justify-items-center gap-x-2 text-center">
-              {groupInfo()?.description}
-            </div>
-          </Show>
-        </Show>
-
         <Show when={editing()}>
           <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
             <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
@@ -539,9 +528,9 @@ export const GroupPage = (props: GroupPageProps) => {
             </button>
           </div>
         </Show>
-        <div class="flex w-full max-w-7xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
+        <div class="flex w-full max-w-screen-2xl flex-col space-y-4 border-t border-neutral-500">
           <div class="mx-auto w-full">
-            <div class="mx-auto my-4 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+            <div class="mx-auto my-4 w-full">
               <SearchForm search={search} groupID={props.groupID} />
             </div>
           </div>
@@ -596,7 +585,7 @@ export const GroupPage = (props: GroupPageProps) => {
             />
           </div>
           <Show when={recommendedChunks().length > 0}>
-            <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+            <div class="mx-auto mt-8 w-full">
               <div class="flex w-full flex-col items-center rounded-md p-2">
                 <div class="text-xl font-semibold">Related Chunks</div>
               </div>
@@ -622,7 +611,7 @@ export const GroupPage = (props: GroupPageProps) => {
             </div>
           </Show>
           <Show when={groupRecommendedChunks().length > 0}>
-            <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+            <div class="mx-auto mt-8 w-full">
               <div class="flex w-full flex-col items-center rounded-md p-2">
                 <div class="text-xl font-semibold">Related Chunks</div>
               </div>
@@ -635,7 +624,7 @@ export const GroupPage = (props: GroupPageProps) => {
                   };
 
                   return (
-                    <div class="flex w-full max-w-7xl flex-col space-y-4">
+                    <div class="flex w-full max-w-screen-2xl flex-col space-y-4">
                       <div
                         onClick={toggle}
                         classList={{
@@ -701,7 +690,7 @@ export const GroupPage = (props: GroupPageProps) => {
             </div>
           </Show>
           <Show when={chunkMetadatas().length > 0}>
-            <div class="mx-auto mt-8 flex w-full max-w-[calc(100%-32px)] space-x-2 min-[360px]:max-w-[calc(100%-64px)]">
+            <div class="mx-auto mt-8 flex w-full space-x-2">
               <button
                 classList={{
                   "w-full rounded  bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":

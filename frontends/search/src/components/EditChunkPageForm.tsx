@@ -180,7 +180,9 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       body: JSON.stringify(requestBody),
     }).then((response) => {
       if (response.ok) {
-        navigate(`/chunk/${curChunkId ?? ""}`);
+        navigate(
+          `/chunk/${curChunkId ?? ""}?dataset=${currentDataset.dataset.id}`,
+        );
         return;
       }
 

@@ -346,7 +346,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
           </Match>
           <Match when={!loading() && groupResultChunks().length == 0}>
-            <div class="flex w-full max-w-7xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
+            <div class="flex w-full max-w-screen-2xl flex-col space-y-4 px-1">
               <For each={resultChunks()}>
                 {(chunk) => (
                   <div>
@@ -454,7 +454,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                 };
 
                 return (
-                  <div class="flex w-full max-w-7xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
+                  <div class="flex w-full max-w-screen-2xl flex-col space-y-4 px-1">
                     <div
                       onClick={toggle}
                       classList={{

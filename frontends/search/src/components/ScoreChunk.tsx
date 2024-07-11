@@ -233,7 +233,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     <>
       <Show when={!deleted()}>
         <div
-          class="mx-auto flex w-full max-w-[calc(100%-32px)] flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 min-[360px]:w-[calc(100%-64px)]"
+          class="mx-auto flex w-full flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800"
           id={
             "doc_" +
             (props.chat ? (props.order ?? "") + props.counter : props.chunk.id)

@@ -236,7 +236,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         </Portal>
       </Show>
       <div class="mt-2 flex w-full flex-col items-center justify-center">
-        <div class="flex w-full max-w-7xl flex-col justify-center px-4 sm:px-8 md:px-20">
+        <div class="flex w-full max-w-screen-2xl flex-col justify-center">
           <Show when={error().length > 0 && !fetching()}>
             <div class="flex w-full flex-col items-center rounded-md p-2">
               <div class="text-xl font-bold text-red-500">{error()}</div>
@@ -258,7 +258,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
           {getChunk()}
           <Show when={chunkMetadata()}>
             <Show when={recommendedChunks().length > 0}>
-              <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+              <div class="mx-auto mt-8 w-full">
                 <div class="flex w-full flex-col items-center rounded-md p-2">
                   <div class="text-xl font-semibold">Related Chunks</div>
                 </div>
@@ -285,7 +285,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                 </For>
               </div>
             </Show>
-            <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+            <div class="mx-auto mt-8 w-full">
               <button
                 classList={{
                   "w-full rounded  bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":

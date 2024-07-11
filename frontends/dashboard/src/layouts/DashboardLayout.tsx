@@ -90,7 +90,7 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
                   <h1 class="text-3xl font-semibold text-neutral-800">
                     You do not have access to this page
                   </h1>
-                  <p class="mt-4 max-w-7xl text-neutral-700">
+                  <p class="mt-4 max-w-screen-2xl text-neutral-700">
                     You must be an admin or owner to access this page. If you
                     believe this is an error, please contact one of your
                     organization's users with a role of admin or owner and ask
