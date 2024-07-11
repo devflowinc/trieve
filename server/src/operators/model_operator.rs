@@ -891,12 +891,12 @@ pub async fn cross_encoder(
 }
 
 pub fn get_bm25_embeddings(
-    chunks: Vec<String>,
+    chunks_and_boost: Vec<(String, Option<BoostPhrase>)>,
     avg_len: f32,
     b: f32,
     k: f32,
 ) -> Vec<Vec<(u32, f32)>> {
-    term_frequency(tokenize_batch(chunks), avg_len, b, k)
+    term_frequency(tokenize_batch(chunks_and_boost), avg_len, b, k)
 }
 
 fn tokenize(text: String) -> Vec<String> {
@@ -918,19 +918,24 @@ fn tokenize(text: String) -> Vec<String> {
     tokens
 }
 
-pub fn tokenize_batch(chunks: Vec<String>) -> Vec<Vec<String>> {
-    chunks.iter().map(|chunk| tokenize(chunk.clone())).collect()
+pub fn tokenize_batch(
+    chunks: Vec<(String, Option<BoostPhrase>)>,
+) -> Vec<(Vec<String>, Option<BoostPhrase>)> {
+    chunks
+        .into_iter()
+        .map(|(chunk, boost)| (tokenize(chunk), boost))
+        .collect()
 }
 
 pub fn term_frequency(
-    batched_tokens: Vec<Vec<String>>,
+    batched_tokens: Vec<(Vec<String>, Option<BoostPhrase>)>,
     avg_len: f32,
     b: f32,
     k: f32,
 ) -> Vec<Vec<(u32, f32)>> {
     batched_tokens
         .iter()
-        .map(|batch| {
+        .map(|(batch, boost_phrase)| {
             // Get Full Counts
             let mut raw_freqs = HashMap::new();
             batch.iter().for_each(|token| {
@@ -946,13 +951,24 @@ pub fn term_frequency(
 
             for token in batch.iter() {
                 let token_id =
-                    (murmur3_32(&mut Cursor::new(token), 0).unwrap() as i32).abs() as u32;
+                    (murmur3_32(&mut Cursor::new(token), 0).unwrap() as i32).unsigned_abs();
                 let num_occurences = raw_freqs[token];
 
                 let top = num_occurences * (k + 1f32);
                 let bottom = num_occurences + k * (1f32 - b + b * doc_len / avg_len);
 
                 tf_map.insert(token_id, top / bottom);
+            }
+
+            if let Some(boost_phrase) = boost_phrase {
+                let tokenized_phrase = tokenize(boost_phrase.phrase.clone());
+                for token in tokenized_phrase {
+                    let token_id =
+                        (murmur3_32(&mut Cursor::new(token), 0).unwrap() as i32).unsigned_abs();
+
+                    let value = tf_map[&token_id];
+                    tf_map.insert(token_id, boost_phrase.boost_factor as f32 * value);
+                }
             }
 
             tf_map.into_iter().collect::<Vec<(u32, f32)>>()

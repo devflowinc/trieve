@@ -729,6 +729,7 @@ pub struct QdrantSearchQuery {
 }
 
 #[tracing::instrument]
+#[allow(clippy::too_many_arguments)]
 pub async fn search_over_groups_query(
     page: u64,
     filter: Filter,
@@ -1149,11 +1150,8 @@ pub async fn recommend_qdrant_groups_query(
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let recommend_strategy = match strategy {
-        Some(strategy) => match strategy {
-            RecommendationStrategy::BestScore => Some(RecommendStrategy::BestScore.into()),
-            _ => None,
-        },
-        None => None,
+        Some(RecommendationStrategy::BestScore) => Some(RecommendStrategy::BestScore.into()),
+        _ => None,
     };
 
     let filters = assemble_qdrant_filter(filter, None, None, dataset_id, pool).await?;
