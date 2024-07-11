@@ -404,3 +404,7 @@ export interface StripeInvoice {
   status: string;
   total: number;
 }
+
+export interface CreateSetupCheckoutSessionResPayload {
+  url: string;
+}

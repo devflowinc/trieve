@@ -107,18 +107,6 @@ pub async fn webhook(
                                 .id()
                                 .to_string();
 
-                            let stripe_client = get_stripe_client();
-                            let subscription = stripe::Subscription::retrieve(
-                                &stripe_client,
-                                &stripe::SubscriptionId::from_str(&subscription_stripe_id)
-                                    .expect("lmao"),
-                                &[],
-                            )
-                            .await
-                            .map_err(|_| ServiceError::BadRequest("bruh".to_string()));
-
-                            println!("subscription: {:?}", subscription);
-
                             let metadata = checkout_session.clone().metadata.ok_or(
                                 ServiceError::BadRequest(
                                     "Checkout session must have metadata".to_string(),

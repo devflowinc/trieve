@@ -207,7 +207,7 @@ export const OrgDangerZoneForm = () => {
 
   return (
     <form class="rounded-md border border-red-600/20 shadow-sm shadow-red-500/30">
-      <div class="shadow sm:overflow-hidden sm:rounded-md ">
+      <div class="shadow sm:overflow-hidden sm:rounded-md">
         <div class="space-y-3 bg-white px-3 py-6 sm:p-6">
           <div>
             <h2 id="user-details-name" class="text-lg font-medium leading-6">

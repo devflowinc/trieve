@@ -293,7 +293,7 @@ export const UserManagement = () => {
                       <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
                         {fromI32ToUserRole(user.user_orgs[0].role) as string}
                       </td>
-                      <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 text-right font-medium ">
+                      <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 text-right font-medium">
                         <button
                           onClick={() => {
                             setEditingUser(user);
