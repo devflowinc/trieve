@@ -1887,9 +1887,9 @@ impl ServerDatasetConfiguration {
                 ),
             MAX_LIMIT: configuration
                 .get("MAX_LIMIT")
-                .unwrap_or(&json!(100_000))
+                .unwrap_or(&json!(10_000))
                 .as_u64()
-                .unwrap_or(100_000),
+                .unwrap_or(10_000),
         }
     }
 }
