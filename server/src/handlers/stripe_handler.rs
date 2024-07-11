@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     data::models::Pool,
     errors::ServiceError,
@@ -7,17 +9,19 @@ use crate::{
         organization_operator::{get_org_from_id_query, get_org_id_from_subscription_id_query},
         stripe_operator::{
             cancel_stripe_subscription, create_invoice_query, create_stripe_payment_link,
-            create_stripe_plan_query, create_stripe_subscription_query,
-            delete_subscription_by_id_query, get_all_plans_query, get_invoices_for_org_query,
-            get_option_subscription_by_organization_id_query, get_plan_by_id_query,
-            get_subscription_by_id_query, set_stripe_subscription_current_period_end,
-            update_stripe_subscription, update_stripe_subscription_plan_query,
+            create_stripe_plan_query, create_stripe_setup_checkout_session,
+            create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query,
+            get_invoices_for_org_query, get_option_subscription_by_organization_id_query,
+            get_plan_by_id_query, get_stripe_client, get_subscription_by_id_query,
+            set_stripe_subscription_current_period_end, update_stripe_subscription,
+            update_stripe_subscription_plan_query,
         },
     },
 };
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use stripe::{EventObject, EventType, Object, Webhook};
+use utoipa::ToSchema;
 
 use super::auth_handler::OwnerOnly;
 
@@ -59,6 +63,17 @@ pub async fn webhook(
                         ))?
                         .id()
                         .to_string();
+
+                    let stripe_client = get_stripe_client();
+                    let subscription = stripe::Subscription::retrieve(
+                        &stripe_client,
+                        &stripe::SubscriptionId::from_str(&subscription_stripe_id).expect("lmao"),
+                        &[],
+                    )
+                    .await
+                    .map_err(|_| ServiceError::BadRequest("bruh".to_string()));
+
+                    println!("subscription: {:?}", subscription);
 
                     let metadata =
                         checkout_session
@@ -373,4 +388,43 @@ pub async fn get_all_invoices(
     let org_id = path_data.into_inner();
     let invoices = get_invoices_for_org_query(org_id, pool).await?;
     Ok(HttpResponse::Ok().json(invoices))
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct CreateSetupCheckoutSessionResPayload {
+    pub url: String,
+}
+
+/// Create checkout session setup
+///
+/// Create a checkout session (setup)
+#[utoipa::path(
+    post,
+    path = "/stripe/checkout/setup/{organization_id}",
+    context_path = "/api",
+    tag = "Stripe",
+    responses (
+        (status = 200, description ="Checkout session (setup) response", body = CreateSetupCheckoutSessionResPayload),
+        (status = 400, description = "Service error relating to creating setup checkout session", body = ErrorResponseBody),
+    ),
+    params (
+        ("organization_id" = uuid::Uuid, Path, description = "The id of the organization to create setup checkout session for."),
+    ),
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn create_setup_checkout_session(
+    pool: web::Data<Pool>,
+    user: OwnerOnly,
+    path_data: web::Path<uuid::Uuid>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let org_id = path_data.into_inner();
+    let subscription_id = get_option_subscription_by_organization_id_query(org_id, pool).await?;
+    if subscription_id.is_none() {
+        return Err(
+            ServiceError::BadRequest("Failed to get subscription for org".to_string()).into(),
+        );
+    }
+    let checkout_link =
+        create_stripe_setup_checkout_session(subscription_id.unwrap().stripe_id).await?;
+    Ok(HttpResponse::Ok().json(CreateSetupCheckoutSessionResPayload { url: checkout_link }))
 }

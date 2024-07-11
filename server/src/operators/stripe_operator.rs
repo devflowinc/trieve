@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     data::models::{Pool, StripeInvoice, StripePlan, StripeSubscription},
     errors::ServiceError,
@@ -430,4 +432,38 @@ pub async fn get_invoices_for_org_query(
         .map_err(|_| ServiceError::BadRequest("Failed to get stripe invoices".to_string()))?;
 
     Ok(invoices)
+}
+
+#[tracing::instrument]
+pub async fn create_stripe_setup_checkout_session(
+    subscription_id: String,
+) -> Result<String, ServiceError> {
+    let stripe_client = get_stripe_client();
+    let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
+    let session = stripe::CheckoutSession::create(
+        &stripe_client,
+        stripe::CreateCheckoutSession {
+            mode: Some(stripe::CheckoutSessionMode::Setup),
+            setup_intent_data: Some(stripe::CreateCheckoutSessionSetupIntentData {
+                metadata: Some(HashMap::from([(
+                    "subscription_id".to_string(),
+                    subscription_id,
+                )])),
+                ..Default::default()
+            }),
+            success_url: Some(
+                format!("{}?session_id={{CHECKOUT_SESSION_ID}}", admin_dashboard_url).as_str(),
+            ),
+            cancel_url: Some(admin_dashboard_url),
+            ..Default::default()
+        },
+    )
+    .await
+    .map_err(|_| ServiceError::BadRequest("Failed to create setup checkout session".to_string()))?;
+    if session.url.is_none() {
+        return Err(ServiceError::BadRequest(
+            "Failed to get setup checkout session url".to_string(),
+        ));
+    }
+    Ok(session.url.unwrap().to_string())
 }
