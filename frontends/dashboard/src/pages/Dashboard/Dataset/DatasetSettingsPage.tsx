@@ -19,6 +19,8 @@ import { AiOutlineInfoCircle } from "solid-icons/ai";
 import { useNavigate } from "@solidjs/router";
 import { Tooltip } from "../../../components/Tooltip";
 
+const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
+
 export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LLM_BASE_URL: "",
   LLM_DEFAULT_MODEL: "",
@@ -41,7 +43,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LOCKED: false,
   SYSTEM_PROMPT: null,
   MAX_LIMIT: 10000,
-  BM25_ENABLED: true,
+  BM25_ENABLED: bm25Active == "true",
   BM25_B: 0.75,
   BM25_K: 1.2,
   BM25_AVG_LEN: 256,
