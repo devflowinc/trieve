@@ -718,7 +718,8 @@ pub struct GroupSearchResults {
 
 #[derive(Debug, Clone)]
 pub enum VectorType {
-    Sparse(Vec<(u32, f32)>),
+    SpladeSparse(Vec<(u32, f32)>),
+    BM25Sparse(Vec<(u32, f32)>),
     Dense(Vec<f32>),
 }
 
@@ -749,7 +750,8 @@ pub async fn search_over_groups_query(
     .await?;
 
     let vector_name = match vector {
-        VectorType::Sparse(_) => "sparse_vectors",
+        VectorType::SpladeSparse(_) => "sparse_vectors",
+        VectorType::BM25Sparse(_) => "bm25_vectors",
         VectorType::Dense(ref embedding_vector) => match embedding_vector.len() {
             384 => "384_vectors",
             512 => "512_vectors",
@@ -785,7 +787,7 @@ pub async fn search_over_groups_query(
             }),
             ..Default::default()
         },
-        VectorType::Sparse(ref sparse_vector) => {
+        VectorType::SpladeSparse(ref sparse_vector) | VectorType::BM25Sparse(ref sparse_vector) => {
             let sparse_vector: Vector = sparse_vector.clone().into();
             SearchPointGroups {
                 collection_name: qdrant_collection.to_string(),
@@ -896,13 +898,31 @@ pub async fn search_qdrant_query(
     let search_point_req_payloads: Vec<SearchPoints> = queries
         .into_iter()
         .map(|query| match query.vector {
-            VectorType::Sparse(vector) => {
+            VectorType::SpladeSparse(vector) => {
                 let sparse_vector: Vector = vector.into();
                 Ok(SearchPoints {
                     collection_name: qdrant_collection.to_string(),
                     vector: sparse_vector.data,
                     sparse_indices: sparse_vector.indices,
                     vector_name: Some("sparse_vectors".to_string()),
+                    limit,
+                    score_threshold: query.score_threshold,
+                    offset: Some((page - 1) * limit),
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    filter: Some(query.filter.clone()),
+                    timeout: Some(60),
+                    params: None,
+                    ..Default::default()
+                })
+            }
+            VectorType::BM25Sparse(vector) => {
+                let bm25_vector: Vector = vector.into();
+                Ok(SearchPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: bm25_vector.data,
+                    sparse_indices: bm25_vector.indices,
+                    vector_name: Some("bm25_vectors".to_string()),
                     limit,
                     score_threshold: query.score_threshold,
                     offset: Some((page - 1) * limit),
@@ -1414,13 +1434,30 @@ pub async fn count_qdrant_query(
     let search_point_req_payloads: Vec<SearchPoints> = queries
         .into_iter()
         .map(|query| match query.vector {
-            VectorType::Sparse(vector) => {
+            VectorType::SpladeSparse(vector) => {
                 let sparse_vector: Vector = vector.into();
                 Ok(SearchPoints {
                     collection_name: qdrant_collection.to_string(),
                     vector: sparse_vector.data,
                     sparse_indices: sparse_vector.indices,
                     vector_name: Some("sparse_vectors".to_string()),
+                    limit,
+                    score_threshold: query.score_threshold,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    filter: Some(query.filter.clone()),
+                    timeout: Some(60),
+                    params: None,
+                    ..Default::default()
+                })
+            }
+            VectorType::BM25Sparse(vector) => {
+                let sparse_vector: Vector = vector.into();
+                Ok(SearchPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: sparse_vector.data,
+                    sparse_indices: sparse_vector.indices,
+                    vector_name: Some("bm25_vectors".to_string()),
                     limit,
                     score_threshold: query.score_threshold,
                     with_payload: Some(WithPayloadSelector::from(false)),

@@ -3428,6 +3428,8 @@ pub enum SearchMethod {
     Semantic,
     #[display(fmt = "hybrid")]
     Hybrid,
+    #[display(fmt = "bm25")]
+    BM25
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
