@@ -139,7 +139,7 @@ impl ChunkMetadataWithScore {
 impl GroupScoreChunk {
     pub fn into_response_payload(&self) -> String {
         let resp = CHSlimResponseGroup {
-            group_id: self.group_id.clone(),
+            group_id: self.group_id,
             chunks: self
                 .metadata
                 .clone()

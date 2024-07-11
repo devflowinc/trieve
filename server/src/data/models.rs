@@ -179,9 +179,9 @@ pub enum RoleProxy {
     Assistant,
 }
 
-impl Into<Role> for RoleProxy {
-    fn into(self) -> Role {
-        match self {
+impl From<RoleProxy> for Role {
+    fn from(val: RoleProxy) -> Self {
+        match val {
             RoleProxy::System => Role::System,
             RoleProxy::User => Role::User,
             RoleProxy::Assistant => Role::Assistant,
@@ -3429,7 +3429,7 @@ pub enum SearchMethod {
     #[display(fmt = "hybrid")]
     Hybrid,
     #[display(fmt = "bm25")]
-    BM25
+    BM25,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]

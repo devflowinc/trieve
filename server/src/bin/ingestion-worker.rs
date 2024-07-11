@@ -581,12 +581,12 @@ pub async fn bulk_upload_chunks(
     }?;
 
     let bm25_vectors = if dataset_config.BM25_ENABLED
-        && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true".to_string()
+        && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true"
     {
         get_bm25_embeddings(
             content_and_boosts
                 .iter()
-                .map(|(content, _, _)| content.clone())
+                .map(|(content, boost, _)| (content.clone(), boost.clone()))
                 .collect(),
             dataset_config.BM25_AVG_LEN,
             dataset_config.BM25_B,

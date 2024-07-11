@@ -1515,7 +1515,7 @@ pub async fn search_bm25_chunks(
     timer.add("start to get bm25 vector");
 
     let sparse_vectors = get_bm25_embeddings(
-        vec![parsed_query.query.clone()],
+        vec![(parsed_query.query.clone(), None)],
         config.BM25_AVG_LEN,
         config.BM25_B,
         config.BM25_K,
@@ -2697,7 +2697,7 @@ pub async fn count_bm25_chunks(
     config: &ServerDatasetConfiguration,
 ) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
     let sparse_vectors = get_bm25_embeddings(
-        vec![parsed_query.query.clone()],
+        vec![(parsed_query.query.clone(), None)],
         config.BM25_AVG_LEN,
         config.BM25_B,
         config.BM25_K,
