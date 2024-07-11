@@ -13,8 +13,8 @@ use crate::{
             create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query,
             get_invoices_for_org_query, get_option_subscription_by_organization_id_query,
             get_plan_by_id_query, get_stripe_client, get_subscription_by_id_query,
-            set_stripe_subscription_current_period_end, update_stripe_subscription,
-            update_stripe_subscription_plan_query,
+            set_stripe_subscription_current_period_end, set_subscription_payment_method,
+            update_stripe_subscription, update_stripe_subscription_plan_query,
         },
     },
 };
@@ -54,86 +54,134 @@ pub async fn webhook(
         match event.type_ {
             EventType::CheckoutSessionCompleted => {
                 if let EventObject::CheckoutSession(checkout_session) = event.data.object {
-                    let optional_subscription_pool = pool.clone();
-                    let subscription_stripe_id = checkout_session
-                        .clone()
-                        .subscription
-                        .ok_or(ServiceError::BadRequest(
-                            "Checkout session must have a subscription".to_string(),
-                        ))?
-                        .id()
-                        .to_string();
+                    let checkout_type = checkout_session.mode;
+                    match checkout_type {
+                        stripe::CheckoutSessionMode::Setup => {
+                            let client = get_stripe_client();
+                            let setup_intent_id = checkout_session
+                                .setup_intent
+                                .ok_or(ServiceError::BadRequest(
+                                    "Setup checkout session must have setup intent id".to_string(),
+                                ))?
+                                .id();
 
-                    let stripe_client = get_stripe_client();
-                    let subscription = stripe::Subscription::retrieve(
-                        &stripe_client,
-                        &stripe::SubscriptionId::from_str(&subscription_stripe_id).expect("lmao"),
-                        &[],
-                    )
-                    .await
-                    .map_err(|_| ServiceError::BadRequest("bruh".to_string()));
+                            let setup_intent =
+                                stripe::SetupIntent::retrieve(&client, &setup_intent_id, &[])
+                                    .await
+                                    .map_err(|_| {
+                                        ServiceError::BadRequest(
+                                            "failed to get setup intent".to_string(),
+                                        )
+                                    })?;
 
-                    println!("subscription: {:?}", subscription);
+                            let metadata =
+                                setup_intent
+                                    .clone()
+                                    .metadata
+                                    .ok_or(ServiceError::BadRequest(
+                                        "Checkout session must have metadata".to_string(),
+                                    ))?;
 
-                    let metadata =
-                        checkout_session
-                            .clone()
-                            .metadata
-                            .ok_or(ServiceError::BadRequest(
-                                "Checkout session must have metadata".to_string(),
-                            ))?;
-                    let plan_id = metadata
-                        .get("plan_id")
-                        .ok_or(ServiceError::BadRequest(
-                            "Checkout session must have a plan_id metadata".to_string(),
-                        ))?
-                        .parse::<uuid::Uuid>()
-                        .map_err(|_| {
-                            ServiceError::BadRequest("plan_id metadata must be a uuid".to_string())
-                        })?;
-                    let organization_id = metadata
-                        .get("organization_id")
-                        .ok_or(ServiceError::BadRequest(
-                            "Checkout session must have an organization_id metadata".to_string(),
-                        ))?
-                        .parse::<uuid::Uuid>()
-                        .map_err(|_| {
-                            ServiceError::BadRequest(
-                                "organization_id metadata must be a uuid".to_string(),
+                            let subscription_id =
+                                metadata
+                                    .get("subscription_id")
+                                    .ok_or(ServiceError::BadRequest(
+                                        "Checkout session must have an subscription_id metadata"
+                                            .to_string(),
+                                    ))?;
+
+                            set_subscription_payment_method(
+                                setup_intent,
+                                subscription_id.to_string(),
                             )
-                        })?;
+                            .await?;
+                        }
+                        _ => {
+                            let optional_subscription_pool = pool.clone();
+                            let subscription_stripe_id = checkout_session
+                                .clone()
+                                .subscription
+                                .ok_or(ServiceError::BadRequest(
+                                    "Checkout session must have a subscription".to_string(),
+                                ))?
+                                .id()
+                                .to_string();
 
-                    let fetch_subscription_organization_id = organization_id;
+                            let stripe_client = get_stripe_client();
+                            let subscription = stripe::Subscription::retrieve(
+                                &stripe_client,
+                                &stripe::SubscriptionId::from_str(&subscription_stripe_id)
+                                    .expect("lmao"),
+                                &[],
+                            )
+                            .await
+                            .map_err(|_| ServiceError::BadRequest("bruh".to_string()));
 
-                    let optional_existing_subscription =
-                        get_option_subscription_by_organization_id_query(
-                            fetch_subscription_organization_id,
-                            optional_subscription_pool,
-                        )
-                        .await?;
+                            println!("subscription: {:?}", subscription);
 
-                    if let Some(existing_subscription) = optional_existing_subscription {
-                        let delete_subscription_pool = pool.clone();
+                            let metadata = checkout_session.clone().metadata.ok_or(
+                                ServiceError::BadRequest(
+                                    "Checkout session must have metadata".to_string(),
+                                ),
+                            )?;
 
-                        delete_subscription_by_id_query(
-                            existing_subscription.id,
-                            delete_subscription_pool,
-                        )
-                        .await?;
-                    }
+                            let plan_id = metadata
+                                .get("plan_id")
+                                .ok_or(ServiceError::BadRequest(
+                                    "Checkout session must have a plan_id metadata".to_string(),
+                                ))?
+                                .parse::<uuid::Uuid>()
+                                .map_err(|_| {
+                                    ServiceError::BadRequest(
+                                        "plan_id metadata must be a uuid".to_string(),
+                                    )
+                                })?;
+                            let organization_id = metadata
+                                .get("organization_id")
+                                .ok_or(ServiceError::BadRequest(
+                                    "Checkout session must have an organization_id metadata"
+                                        .to_string(),
+                                ))?
+                                .parse::<uuid::Uuid>()
+                                .map_err(|_| {
+                                    ServiceError::BadRequest(
+                                        "organization_id metadata must be a uuid".to_string(),
+                                    )
+                                })?;
 
-                    create_stripe_subscription_query(
-                        subscription_stripe_id,
-                        plan_id,
-                        organization_id,
-                        pool.clone(),
-                    )
-                    .await?;
+                            let fetch_subscription_organization_id = organization_id;
 
-                    let invoice = checkout_session.clone().invoice;
-                    if invoice.is_some() {
-                        let invoice_id = invoice.unwrap().id();
-                        create_invoice_query(organization_id, invoice_id, pool).await?;
+                            let optional_existing_subscription =
+                                get_option_subscription_by_organization_id_query(
+                                    fetch_subscription_organization_id,
+                                    optional_subscription_pool,
+                                )
+                                .await?;
+
+                            if let Some(existing_subscription) = optional_existing_subscription {
+                                let delete_subscription_pool = pool.clone();
+
+                                delete_subscription_by_id_query(
+                                    existing_subscription.id,
+                                    delete_subscription_pool,
+                                )
+                                .await?;
+                            }
+
+                            create_stripe_subscription_query(
+                                subscription_stripe_id,
+                                plan_id,
+                                organization_id,
+                                pool.clone(),
+                            )
+                            .await?;
+
+                            let invoice = checkout_session.clone().invoice;
+                            if invoice.is_some() {
+                                let invoice_id = invoice.unwrap().id();
+                                create_invoice_query(organization_id, invoice_id, pool).await?;
+                            }
+                        }
                     }
                 }
             }

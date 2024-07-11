@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use crate::{
     data::models::{Pool, StripeInvoice, StripePlan, StripeSubscription},
@@ -464,8 +464,7 @@ pub async fn create_stripe_setup_checkout_session(
         },
     )
     .await
-    .map_err(|e| {
-        println!("err: {:?}", e);
+    .map_err(|_| {
         return ServiceError::BadRequest("Failed to create setup checkout session".to_string());
     })?;
     if session.url.is_none() {
@@ -474,4 +473,50 @@ pub async fn create_stripe_setup_checkout_session(
         ));
     }
     Ok(session.url.unwrap().to_string())
+}
+
+pub async fn set_subscription_payment_method(
+    setup_intent: stripe::SetupIntent,
+    subscription_id: String,
+) -> Result<(), ServiceError> {
+    dbg!(setup_intent.status);
+    dbg!(setup_intent.next_action);
+    let client = get_stripe_client();
+    let subscription_id = stripe::SubscriptionId::from_str(&subscription_id.as_str())
+        .map_err(|_| ServiceError::BadRequest("Invalid subscription id".to_string()))?;
+
+    let subscription = stripe::Subscription::retrieve(&client, &subscription_id, &[])
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get subscription".to_string()))?;
+
+    let customer_id = subscription.customer.id();
+
+    let payment_method = setup_intent.payment_method.ok_or(ServiceError::BadRequest(
+        "Payment method must be present".to_string(),
+    ))?;
+
+    stripe::PaymentMethod::attach(
+        &client,
+        &payment_method.id(),
+        stripe::AttachPaymentMethod {
+            customer: customer_id,
+        },
+    )
+    .await
+    .map_err(|_| {
+        return ServiceError::BadRequest("Failed to attach payment method to customer".to_string());
+    })?;
+
+    stripe::Subscription::update(
+        &client,
+        &subscription_id,
+        stripe::UpdateSubscription {
+            default_payment_method: Some(payment_method.id().as_str()),
+            ..Default::default()
+        },
+    )
+    .await
+    .map_err(|_| ServiceError::BadRequest("Failed to update payment method".to_string()))?;
+
+    Ok(())
 }
