@@ -1829,6 +1829,7 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(true),
             BM25_ENABLED: configuration
                 .get("BM25_ENABLED")
+                .or(std::env::var("BM25_ACTIVE").ok().map(|val| json!(val)).as_ref())
                 .unwrap_or(&json!(false))
                 .as_bool()
                 .unwrap_or(false),
