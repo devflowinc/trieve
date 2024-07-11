@@ -1698,6 +1698,10 @@ pub struct ServerDatasetConfiguration {
     pub N_RETRIEVALS_TO_INCLUDE: usize,
     pub EMBEDDING_SIZE: usize,
     pub LLM_DEFAULT_MODEL: String,
+    pub BM25_ENABLED: bool,
+    pub BM25_B: f32,
+    pub BM25_K: f32,
+    pub BM25_AVG_LEN: f32,
     pub FULLTEXT_ENABLED: bool,
     pub SEMANTIC_ENABLED: bool,
     pub EMBEDDING_QUERY_PREFIX: String,
@@ -1823,6 +1827,23 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(&json!(true))
                 .as_bool()
                 .unwrap_or(true),
+            BM25_ENABLED: configuration
+                .get("BM25_ENABLED")
+                .unwrap_or(&json!(false))
+                .as_bool()
+                .unwrap_or(false),
+            BM25_B: configuration
+                .get("BM25_B")
+                .and_then(|v| v.as_f64().map(|f| f as f32))
+                .unwrap_or(0.75f32),
+            BM25_K: configuration
+                .get("BM25_K")
+                .and_then(|v| v.as_f64().map(|f| f as f32))
+                .unwrap_or(0.75f32),
+            BM25_AVG_LEN: configuration
+                .get("BM25_AVG_LEN")
+                .and_then(|v| v.as_f64().map(|f| f as f32))
+                .unwrap_or(256f32),
             EMBEDDING_QUERY_PREFIX: configuration
                 .get("EMBEDDING_QUERY_PREFIX")
                 .unwrap_or(&{

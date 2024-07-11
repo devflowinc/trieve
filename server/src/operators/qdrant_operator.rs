@@ -82,6 +82,19 @@ pub async fn create_new_qdrant_collection_query(
                     },
                 );
 
+                sparse_vector_config.insert(
+                    "bm25_vectors".to_string(),
+                    SparseVectorParams {
+                        modifier: Some(1),
+                        index: Some(SparseIndexConfig {
+                            on_disk: Some(false),
+                            ..Default::default()
+                        }),
+                    },
+                );
+
+
+
                 let quantization_config = if quantize {
                     //TODO: make this scalar
                     Some(QuantizationConfig {

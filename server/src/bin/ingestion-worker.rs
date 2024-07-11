@@ -25,7 +25,7 @@ use trieve_server::operators::chunk_operator::{
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
 use trieve_server::operators::model_operator::{
-    create_embedding, create_embeddings, get_sparse_vectors,
+    create_embedding, create_embeddings, get_bm25_embeddings, get_sparse_vectors,
 };
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
@@ -580,14 +580,29 @@ pub async fn bulk_upload_chunks(
             .collect())
     }?;
 
+    let bm25_vectors = if dataset_config.BM25_ENABLED {
+        get_bm25_embeddings(
+            content_and_boosts
+                .iter()
+                .map(|(content, _, _)| content.clone())
+                .collect(),
+            dataset_config.BM25_AVG_LEN,
+            dataset_config.BM25_B,
+            dataset_config.BM25_K,
+        ).into_iter().map(Some).collect()
+    } else {
+        vec![None; content_and_boosts.len()]
+    };
+
     embedding_transaction.finish();
 
     let qdrant_points = tokio_stream::iter(izip!(
         inserted_chunk_metadatas.clone(),
         embedding_vectors.iter(),
         splade_vectors.iter(),
+        bm25_vectors.iter()
     ))
-    .then(|(chunk_data, embedding_vector, splade_vector)| async {
+    .then(|(chunk_data, embedding_vector, splade_vector, bm25_vector)| async {
         let qdrant_point_id = chunk_data.chunk_metadata.qdrant_point_id;
 
         let chunk_tags: Option<Vec<Option<String>>> =
@@ -617,8 +632,7 @@ pub async fn bulk_upload_chunks(
             Vector::from(splade_vector.clone()),
         )]);
 
-        if embedding_vector.is_some() {
-            let vector = embedding_vector.clone().unwrap();
+        if let Some(vector) = embedding_vector.clone() {
             let vector_name = match vector.len() {
                 384 => "384_vectors",
                 512 => "512_vectors",
@@ -635,6 +649,13 @@ pub async fn bulk_upload_chunks(
             vector_payload.insert(
                 vector_name.to_string().clone(),
                 Vector::from(vector.clone()),
+            );
+        }
+
+        if let Some(bm25_vector) = bm25_vector.clone() {
+            vector_payload.insert(
+                "bm25_vectors".to_string(),
+                Vector::from(bm25_vector.clone()),
             );
         }
 

@@ -890,8 +890,13 @@ pub async fn cross_encoder(
     Ok(results)
 }
 
-fn get_bm42_embedding(chunks: Vec<String>, avg_len: f32) -> Vec<Vec<(u32, f32)>> {
-    term_frequency(tokenize_batch(chunks), avg_len)
+pub fn get_bm25_embeddings(
+    chunks: Vec<String>,
+    avg_len: f32,
+    b: f32,
+    k: f32,
+) -> Vec<Vec<(u32, f32)>> {
+    term_frequency(tokenize_batch(chunks), avg_len, b, k)
 }
 
 fn tokenize(text: String) -> Vec<String> {
@@ -917,12 +922,12 @@ pub fn tokenize_batch(chunks: Vec<String>) -> Vec<Vec<String>> {
     chunks.iter().map(|chunk| tokenize(chunk.clone())).collect()
 }
 
-pub fn term_frequency(batched_tokens: Vec<Vec<String>>, avg_len: f32) -> Vec<Vec<(u32, f32)>> {
-    // b and k are always set as standard
-    // https://www.elastic.co/blog/practical-bm25-part-3-considerations-for-picking-b-and-k1-in-elasticsearch
-    let b = 0.75;
-    let k = 1.2;
-
+pub fn term_frequency(
+    batched_tokens: Vec<Vec<String>>,
+    avg_len: f32,
+    b: f32,
+    k: f32,
+) -> Vec<Vec<(u32, f32)>> {
     batched_tokens
         .iter()
         .map(|batch| {
