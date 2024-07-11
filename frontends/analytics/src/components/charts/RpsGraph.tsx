@@ -69,6 +69,7 @@ export const RpsGraph = (props: RpsGraphProps) => {
                 text: "Timestamp",
                 display: true,
               },
+              offset: data.length === 1,
             },
           },
           animation: {

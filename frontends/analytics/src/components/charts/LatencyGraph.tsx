@@ -90,6 +90,7 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
                 text: "Timestamp",
                 display: true,
               },
+              offset: data.length === 1,
             },
           },
           animation: {
