@@ -36,7 +36,6 @@ export const Chat = () => {
 
     setIsCreatingTopic(true);
     setSelectedNewTopic(true);
-    setSelectedTopic(undefined);
 
     if (!response.ok) return [];
     const data: unknown = await response.json();
@@ -53,6 +52,17 @@ export const Chat = () => {
 
   createEffect(() => {
     void refetchTopics();
+  });
+
+  createEffect(() => {
+    if (selectedTopic()) {
+      const updatedTopic = topics().find(
+        (topic) => topic.id === selectedTopic()?.id,
+      );
+      if (updatedTopic && updatedTopic.name !== selectedTopic()?.name) {
+        setSelectedTopic(updatedTopic);
+      }
+    }
   });
 
   return (
@@ -95,6 +105,9 @@ export const Chat = () => {
           setIsCreatingTopic={setIsCreatingTopic}
           loadingNewTopic={loadingNewTopic()}
           setSelectedNewTopic={setSelectedNewTopic}
+          refetchTopics={refetchTopics}
+          setSelectedTopic={setSelectedTopic}
+          topics={topics}
         />
         <MainLayout
           setTopics={setTopics}
