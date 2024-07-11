@@ -43,20 +43,26 @@ button.pf-m-control::after {
   border-radius: 0px 4px 4px 0px !important;
 }
 
-input#username {
+input#username,
+input#lastName,
+input#email,
+input#firstName {
   border-radius: 4px !important;
   box-shadow: 0 0 7px 0 rgba(0, 0, 0, 0.05);
 }
 
-input#password {
+input#password,
+input#password-confirm {
   box-shadow: 0 0 7px 0 rgba(0, 0, 0, 0.05);
   border-radius: 4px 0px 0px 4px !important;
   border-right-color: transparent !important;
   border-right: none !important;
+  border-width: 1px !important;
 }
 
 #rememberMe {
-  accent-color: #a855f7 !important;
+  accent-color: #B557C5 !important;
+  border: 1px solid red !important;
 }
 
 .checkbox {
@@ -164,6 +170,6 @@ span>a:hover {
   color: #0C050E;
 }
 
-.pf-c-button.pf-m-control::after {
+#kc-social-providers .pf-c-button.pf-m-control::after {
   border: none !important;
 }
