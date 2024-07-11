@@ -86,6 +86,31 @@ export const PlansTable = (props: PlansTableProps) => {
     return availablePlansWithCurrent;
   });
 
+  const createStripeSetupCheckoutSession = () => {
+    if (!props.currentOrgSubPlan?.subscription) {
+      return;
+    }
+    const selectedOrgId = props.currentOrgSubPlan?.organization.id ?? "";
+    if (selectedOrgId == "") {
+      return;
+    }
+
+    const checkoutSessionAbortController = new AbortController();
+    void fetch(`${api_host}/stripe/checkout/setup/${selectedOrgId}`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "TR-Organization": selectedOrgId,
+      },
+      signal: checkoutSessionAbortController.signal,
+    }).then((res) =>
+      res.json().then((data) => {
+        window.location.href = data.url as string;
+      }),
+    );
+  };
+
   const refetchOrgSubPlan = async () => {
     const selectedOrgId = props.currentOrgSubPlan?.organization.id ?? "";
 
@@ -200,26 +225,41 @@ export const PlansTable = (props: PlansTableProps) => {
         </div>
       </div>
       <div class="space-y-2">
-        <h3 class="text-lg font-semibold text-neutral-800">
-          Change subscription plan for{" "}
-          {props.currentOrgSubPlan?.organization.name} Organization
-        </h3>
-        <Show when={currentSubscription()?.current_period_end}>
-          {(end_date_str) => (
-            <div class="flex space-x-2 bg-yellow-50 px-4 py-2">
-              <AiOutlineWarning class="block fill-current pt-1 text-yellow-500" />
-              <div>
-                <p class="font-semibold text-yellow-800">Notice</p>
-                <p class="text-sm">
-                  This organization will lose the{" "}
-                  <span class="font-semibold">{currentPlan()?.name}</span> plan
-                  benefits on {new Date(end_date_str()).toLocaleDateString()}{" "}
-                  and be downgraded to the Free plan.
-                </p>
-              </div>
-            </div>
-          )}
-        </Show>
+        <div class="flex w-full flex-row items-start justify-between">
+          <div>
+            <h3 class="text-lg font-semibold text-neutral-800">
+              Change subscription plan for{" "}
+              {props.currentOrgSubPlan?.organization.name} Organization
+            </h3>
+            <Show when={currentSubscription()?.current_period_end}>
+              {(end_date_str) => (
+                <div class="flex space-x-2 bg-yellow-50 px-4 py-2">
+                  <AiOutlineWarning class="block fill-current pt-1 text-yellow-500" />
+                  <div>
+                    <p class="font-semibold text-yellow-800">Notice</p>
+                    <p class="text-sm">
+                      This organization will lose the{" "}
+                      <span class="font-semibold">{currentPlan()?.name}</span>{" "}
+                      plan benefits on{" "}
+                      {new Date(end_date_str()).toLocaleDateString()} and be
+                      downgraded to the Free plan.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Show>
+          </div>
+          <Show when={props.currentOrgSubPlan?.subscription}>
+            <button
+              onClick={() => {
+                createStripeSetupCheckoutSession();
+              }}
+              class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
+            >
+              Update payment method
+            </button>
+          </Show>
+        </div>
         <div class="overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5">
           <table class="min-w-full divide-y divide-neutral-300">
             <thead class="bg-neutral-100">

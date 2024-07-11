@@ -1000,6 +1000,10 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/invoices/{organization_id}")
                                         .route(web::get().to(handlers::stripe_handler::get_all_invoices)),
+                                )
+                                .service(
+                                    web::resource("/checkout/setup/{organization_id}")
+                                        .route(web::post().to(handlers::stripe_handler::create_setup_checkout_session)),
                                 ),
                         )
                         .service(
