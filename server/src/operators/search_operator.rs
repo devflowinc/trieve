@@ -962,10 +962,10 @@ pub struct SearchOverGroupsResponseBody {
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum SearchOverGroupsResponseTypes {
-    #[schema(title = "V1")]
-    V1(SearchOverGroupsResults),
     #[schema(title = "V2")]
     V2(SearchOverGroupsResponseBody),
+    #[schema(title = "V1")]
+    V1(SearchOverGroupsResults),
 }
 
 #[tracing::instrument(skip(pool))]

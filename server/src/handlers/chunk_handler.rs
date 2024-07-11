@@ -1047,10 +1047,10 @@ pub struct SearchResponseBody {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(untagged)]
 pub enum SearchResponseTypes {
-    #[schema(title = "V1")]
-    V1(SearchChunkQueryResponseBody),
     #[schema(title = "V2")]
     V2(SearchResponseBody),
+    #[schema(title = "V1")]
+    V1(SearchChunkQueryResponseBody),
 }
 
 impl SearchChunkQueryResponseBody {

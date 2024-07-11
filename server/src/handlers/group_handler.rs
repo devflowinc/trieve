@@ -1229,10 +1229,10 @@ pub struct SearchWithinGroupResponseBody {
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum SearchGroupResponseTypes {
-    #[schema(title = "V1")]
-    V1(SearchWithinGroupResults),
     #[schema(title = "V2")]
     V2(SearchWithinGroupResponseBody),
+    #[schema(title = "V1")]
+    V1(SearchWithinGroupResults),
 }
 
 impl SearchWithinGroupResults {
