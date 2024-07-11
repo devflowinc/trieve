@@ -556,6 +556,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 highlightMaxNum: 3,
                                 highlightWindow: 0,
                                 group_size: 3,
+                                useReranker: false,
                               } as SearchOptions);
                             }}
                           >
@@ -652,6 +653,22 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 return {
                                   ...prev,
                                   pageSize: parseInt(e.currentTarget.value),
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Use Re-Ranker</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={tempSearchValues().useReranker}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  useReranker: e.target.checked,
                                 };
                               });
                             }}

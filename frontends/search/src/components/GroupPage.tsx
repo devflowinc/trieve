@@ -187,6 +187,7 @@ export const GroupPage = (props: GroupPageProps) => {
             highlight_max_length: search.debounced.highlightMaxLength,
             highlight_window: search.debounced.highlightWindow,
             recency_bias: search.debounced.recencyBias,
+            use_reranker: search.debounced.useReranker,
           }),
         }).then((response) => {
           if (response.ok) {

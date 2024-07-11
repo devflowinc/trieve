@@ -19,6 +19,7 @@ const initalState = {
   highlightMaxNum: 3,
   highlightWindow: 0,
   group_size: 3,
+  useReranker: false,
 };
 
 export type SearchOptions = typeof initalState;
@@ -41,6 +42,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     highlightMaxNum: state.highlightMaxNum.toString(),
     highlightWindow: state.highlightWindow.toString(),
     group_size: state.group_size?.toString(),
+    useReranker: state.useReranker.toString(),
   };
 };
 
@@ -64,6 +66,7 @@ const fromParamsToState = (
     highlightMaxNum: parseInt(params.highlightMaxNum ?? "3"),
     highlightWindow: parseInt(params.highlightWindow ?? "0"),
     group_size: parseInt(params.group_size ?? "3"),
+    useReranker: (params.useReranker ?? "false") === "true",
   };
 };
 
