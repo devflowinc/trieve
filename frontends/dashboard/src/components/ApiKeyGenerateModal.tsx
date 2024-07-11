@@ -253,7 +253,7 @@ export const ApiKeyGenerateModal = (props: {
                               <FaSolidChevronDown
                                 class={`${
                                   isOpen() ? "rotate-180 transform" : ""
-                                } h-4 w-4 `}
+                                } h-4 w-4`}
                                 title={isOpen() ? "Close" : "Open"}
                               />
                             </>

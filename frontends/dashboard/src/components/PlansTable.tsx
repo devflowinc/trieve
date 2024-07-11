@@ -13,6 +13,7 @@ import {
 } from "../formatters";
 import { AiOutlineWarning } from "solid-icons/ai";
 import { createToast } from "./ShowToasts";
+import { CreateSetupCheckoutSessionResPayload } from "../types/apiTypes";
 
 export interface PlansTableProps {
   currentOrgSubPlan: OrganizationAndSubAndPlan | null;
@@ -105,8 +106,9 @@ export const PlansTable = (props: PlansTableProps) => {
       },
       signal: checkoutSessionAbortController.signal,
     }).then((res) =>
-      res.json().then((data) => {
-        window.location.href = data.url as string;
+      res.json().then((res) => {
+        const data = res as CreateSetupCheckoutSessionResPayload;
+        window.location.href = data.url;
       }),
     );
   };
