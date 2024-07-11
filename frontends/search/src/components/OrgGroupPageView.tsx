@@ -112,7 +112,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
           No groups found for this dataset
         </div>
       </Show>
-      <div class="mx-auto w-full max-w-7xl">
+      <div class="mx-auto w-full max-w-screen-2xl">
         <div class="mx-auto w-full text-center text-2xl font-bold">
           {$dataset?.()?.dataset.name}'s Groups
         </div>

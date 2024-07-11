@@ -15,7 +15,7 @@ export const CreateChunk = () => {
           />
           <h1 class="text-center text-4xl">Create New Document Chunk</h1>
         </A>
-        <div class="w-full max-w-7xl px-4 sm:px-8 md:px-20">
+        <div class="w-full max-w-screen-2xl">
           <CreateNewDocChunkForm />
         </div>
       </div>
