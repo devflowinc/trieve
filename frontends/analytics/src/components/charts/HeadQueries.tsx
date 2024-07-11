@@ -78,7 +78,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
         {(data) => (
           <table class="mt-2 w-full py-2">
             <thead>
-              <Show when={data.length > 0}>
+              <Show when={data().length > 0}>
                 <tr>
                   <th class="text-left font-semibold">Query</th>
                   <th class="text-right font-semibold">Count</th>
