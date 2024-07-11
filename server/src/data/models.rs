@@ -1709,6 +1709,7 @@ pub struct ServerDatasetConfiguration {
     pub INDEXED_ONLY: bool,
     pub LOCKED: bool,
     pub SYSTEM_PROMPT: Option<String>,
+    pub MAX_LIMIT: u64,
 }
 
 impl ServerDatasetConfiguration {
@@ -1883,7 +1884,12 @@ impl ServerDatasetConfiguration {
                     } else {
                         s.to_string()
                     }
-                )
+                ),
+            MAX_LIMIT: configuration
+                .get("MAX_LIMIT")
+                .unwrap_or(&json!(100_000))
+                .as_u64()
+                .unwrap_or(100_000),
         }
     }
 }

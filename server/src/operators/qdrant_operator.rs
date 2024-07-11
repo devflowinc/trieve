@@ -1384,6 +1384,12 @@ pub async fn count_qdrant_query(
         return Ok(0);
     }
 
+    if limit > config.MAX_LIMIT {
+        return Err(ServiceError::BadRequest(
+            "Limit is greater than maximum, try lowering your limit".to_string(),
+        ));
+    }
+
     let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
