@@ -177,20 +177,14 @@ impl From<Message> for ChatMessage {
     "content": "Hello, world!"
 }))]
 pub struct ChatMessageProxy {
-    pub role: String,
+    pub role: Role,
     pub content: String,
 }
 
 impl From<ChatMessageProxy> for ChatMessage {
     fn from(message: ChatMessageProxy) -> Self {
-        let role = match message.role.as_str() {
-            "system" => Role::System,
-            "user" => Role::User,
-            _ => Role::Assistant,
-        };
-
         ChatMessage {
-            role,
+            role: message.role,
             content: ChatMessageContent::Text(message.content),
             tool_calls: None,
             name: None,

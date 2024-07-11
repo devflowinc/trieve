@@ -379,15 +379,13 @@ pub async fn get_signed_url(
 ) -> Result<HttpResponse, ServiceError> {
     let bucket = get_aws_bucket()?;
 
-    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
-    let s3_path = match unlimited.as_str() {
-        "true" => "files".to_string(),
-        "false" => dataset_org_plan_sub
-            .organization
-            .organization
-            .id
-            .to_string(),
-        _ => dataset_org_plan_sub
+    let unlimited = std::env::var("UNLIMITED")
+        .unwrap_or("false".to_string())
+        .parse()
+        .unwrap_or(false);
+    let s3_path = match unlimited {
+        true => "files".to_string(),
+        false => dataset_org_plan_sub
             .organization
             .organization
             .id

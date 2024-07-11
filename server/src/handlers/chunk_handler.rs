@@ -4,9 +4,9 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, GeoInfoWithBias,
-    IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RecommendationEventClickhouse,
-    RedisPool, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, ServerDatasetConfiguration,
-    SlimChunkMetadataWithScore, UnifiedId,
+    IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RecommendType,
+    RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunkDTO, SearchMethod,
+    SearchQueryEventClickhouse, ServerDatasetConfiguration, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -1786,9 +1786,9 @@ pub struct RecommendChunksRequest {
     /// The tracking_ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
     pub negative_tracking_ids: Option<Vec<String>>,
     /// Strategy to use for recommendations, either "average_vector" or "best_score". The default is "average_vector". The "average_vector" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search. The "best_score" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives.
-    pub strategy: Option<String>,
+    pub strategy: Option<RecommendationStrategy>,
     /// The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.
-    pub recommend_type: Option<String>,
+    pub recommend_type: Option<RecommendType>,
     /// Filters to apply to the chunks to be recommended. This is a JSON object which contains the filters to apply to the chunks to be recommended. The default is None.
     pub filters: Option<ChunkFilter>,
     /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
