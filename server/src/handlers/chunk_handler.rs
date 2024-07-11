@@ -1572,7 +1572,6 @@ pub async fn count_chunks(
                 "Limit of {} is greater than the maximum limit of {}. Please reduce the limit.",
                 limit, server_dataset_config.MAX_LIMIT
             )
-            .into(),
         )
         .into());
     }
