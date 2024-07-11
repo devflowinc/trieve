@@ -439,7 +439,11 @@ pub async fn create_stripe_setup_checkout_session(
     subscription_id: String,
 ) -> Result<String, ServiceError> {
     let stripe_client = get_stripe_client();
-    let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
+    let admin_dashboard_url = format!(
+        "{}/dashboard/billing",
+        get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set")
+    );
+
     let session = stripe::CheckoutSession::create(
         &stripe_client,
         stripe::CreateCheckoutSession {
@@ -451,15 +455,19 @@ pub async fn create_stripe_setup_checkout_session(
                 )])),
                 ..Default::default()
             }),
+            currency: Some(stripe::Currency::USD),
             success_url: Some(
                 format!("{}?session_id={{CHECKOUT_SESSION_ID}}", admin_dashboard_url).as_str(),
             ),
-            cancel_url: Some(admin_dashboard_url),
+            cancel_url: Some(admin_dashboard_url.as_str()),
             ..Default::default()
         },
     )
     .await
-    .map_err(|_| ServiceError::BadRequest("Failed to create setup checkout session".to_string()))?;
+    .map_err(|e| {
+        println!("err: {:?}", e);
+        return ServiceError::BadRequest("Failed to create setup checkout session".to_string());
+    })?;
     if session.url.is_none() {
         return Err(ServiceError::BadRequest(
             "Failed to get setup checkout session url".to_string(),
