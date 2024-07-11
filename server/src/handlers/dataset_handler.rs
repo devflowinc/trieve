@@ -92,14 +92,18 @@ pub async fn create_dataset(
 
     let dataset_count = get_org_dataset_count(org_id, pool.clone()).await?;
 
-    if dataset_count
-        >= organization_sub_plan
-            .plan
-            .unwrap_or(StripePlan::default())
-            .dataset_count
-    {
-        return Ok(HttpResponse::UpgradeRequired()
-            .json(json!({"message": "Your plan must be upgraded to create additional datasets"})));
+    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
+    if unlimited == "false" {
+        if dataset_count
+            >= organization_sub_plan
+                .plan
+                .unwrap_or(StripePlan::default())
+                .dataset_count
+        {
+            return Ok(HttpResponse::UpgradeRequired().json(
+                json!({"message": "Your plan must be upgraded to create additional datasets"}),
+            ));
+        }
     }
 
     let dataset = Dataset::from_details(
