@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{
     data::models::Pool,
     errors::ServiceError,
@@ -454,13 +452,19 @@ pub async fn create_setup_checkout_session(
     path_data: web::Path<uuid::Uuid>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let org_id = path_data.into_inner();
-    let subscription_id = get_option_subscription_by_organization_id_query(org_id, pool).await?;
-    if subscription_id.is_none() {
-        return Err(
-            ServiceError::BadRequest("Failed to get subscription for org".to_string()).into(),
-        );
-    }
+    let subscription_id =
+        match get_option_subscription_by_organization_id_query(org_id, pool).await? {
+            Some(sub_id) => sub_id,
+            None => {
+                return Err(ServiceError::BadRequest(
+                    "Organization does not have an active subscription".to_string(),
+                )
+                .into())
+            }
+        };
+
     let checkout_link =
-        create_stripe_setup_checkout_session(subscription_id.unwrap().stripe_id).await?;
+        create_stripe_setup_checkout_session(subscription_id.stripe_id, org_id).await?;
+
     Ok(HttpResponse::Ok().json(CreateSetupCheckoutSessionResPayload { url: checkout_link }))
 }
