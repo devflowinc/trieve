@@ -1161,19 +1161,27 @@ pub async fn search_chunks(
             .await?
         }
         SearchMethod::BM25 => {
-            search_bm25_chunks(
-                data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
-                &mut timer,
-            )
-            .await?
+            if std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true".to_string() {
+                search_bm25_chunks(
+                    data.clone(),
+                    parsed_query,
+                    pool,
+                    dataset_org_plan_sub.dataset.clone(),
+                    &server_dataset_config,
+                    &mut timer,
+                )
+                .await?
+            } else {
+                return Err(ServiceError::BadRequest(
+                    "BM25 is not enabled in this plan.".to_string(),
+                )
+                .into());
+            }
         }
         _ => {
             return Err(ServiceError::BadRequest(
-                "Invalid search type. Must be one of 'semantic', 'fulltext', or 'hybrid'".into(),
+                "Invalid search type. Must be one of 'semantic', 'fulltext', or 'hybrid' or 'bm25'"
+                    .into(),
             )
             .into())
         }
