@@ -146,3 +146,24 @@ button#kc-login {
 hr {
   border-color: #e5e5e5 !important;
 }
+
+.login-pf-signup {
+  margin-top: 20px !important;
+}
+
+h4 {
+  font-weight: 400;
+  text-align: center;
+}
+
+span>a {
+  color: #7D308B;
+}
+
+span>a:hover {
+  color: #0C050E;
+}
+
+.pf-c-button.pf-m-control::after {
+  border: none !important;
+}
