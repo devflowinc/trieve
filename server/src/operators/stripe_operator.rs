@@ -139,7 +139,7 @@ pub async fn create_stripe_payment_link(
         "line_items[0][price]": plan.stripe_id,
         "line_items[0][quantity]": 1,
         "allow_promotion_codes": true,
-        "after_completion[redirect][url]": format!("{}/dashboard/billing", admin_dashboard_url),
+        "after_completion[redirect][url]": format!("{}/dashboard/{}/billing", admin_dashboard_url, organization_id),
         "after_completion[type]": "redirect",
         "metadata[organization_id]": organization_id.to_string(),
         "metadata[plan_id]": plan.id.to_string()
@@ -437,11 +437,13 @@ pub async fn get_invoices_for_org_query(
 #[tracing::instrument]
 pub async fn create_stripe_setup_checkout_session(
     subscription_id: String,
+    organization_id: uuid::Uuid,
 ) -> Result<String, ServiceError> {
     let stripe_client = get_stripe_client();
     let admin_dashboard_url = format!(
-        "{}/dashboard/billing",
-        get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set")
+        "{}/dashboard/{}/billing",
+        get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set"),
+        organization_id
     );
 
     let session = stripe::CheckoutSession::create(
