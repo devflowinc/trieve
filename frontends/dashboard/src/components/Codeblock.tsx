@@ -14,8 +14,8 @@ export const Codeblock = (props: CodeblockProps) => {
     () => props.content,
     async (content) => {
       const highlighter = await createHighlighterCore({
-        themes: [import("shiki/themes/one-dark-pro.d.mts")],
-        langs: [import("shiki/langs/ts.d.mts")],
+        themes: [import("shiki/themes/one-dark-pro.mjs")],
+        langs: [import("shiki/langs/ts.mjs")],
         loadWasm: getWasm,
       });
       const code = highlighter.codeToHtml(content, {
