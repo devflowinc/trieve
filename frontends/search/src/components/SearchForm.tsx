@@ -29,6 +29,8 @@ const defaultFilter = {
 };
 
 const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
+  const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
+
   const datasetAndUserContext = useContext(DatasetAndUserContext);
   const [tempSearchValues, setTempSearchValues] = createSignal(
     // eslint-disable-next-line solid/reactivity
@@ -72,9 +74,8 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
     }
   }, "");
 
-  const [searchTypes, setSearchTypes] = createSignal([
+  const default_settings = [
     { name: "Hybrid", isSelected: false, route: "hybrid" },
-    { name: "bm25", isSelected: false, route: "bm25" },
     {
       name: "FullText",
       isSelected: false,
@@ -95,7 +96,13 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
       isSelected: false,
       route: "autocomplete-fulltext",
     },
-  ]);
+  ];
+
+  if (bm25Active) {
+    default_settings.push({ name: "BM25", isSelected: false, route: "BM25" });
+  }
+
+  const [searchTypes, setSearchTypes] = createSignal(default_settings);
 
   createEffect(() => {
     setSearchTypes((prev) => {
