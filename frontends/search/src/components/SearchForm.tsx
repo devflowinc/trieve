@@ -74,6 +74,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Hybrid", isSelected: false, route: "hybrid" },
+    { name: "bm25", isSelected: false, route: "bm25" },
     {
       name: "FullText",
       isSelected: false,

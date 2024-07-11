@@ -128,6 +128,10 @@ export interface ServerEnvsConfiguration {
   LOCKED: boolean;
   SYSTEM_PROMPT: string | null;
   MAX_LIMIT: number;
+  BM25_ENABLED: boolean;
+  BM25_B: number;
+  BM25_K: number;
+  BM25_AVG_LEN: number;
 }
 
 export interface DefaultError {
