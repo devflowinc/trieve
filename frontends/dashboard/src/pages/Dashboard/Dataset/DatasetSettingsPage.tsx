@@ -44,7 +44,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   BM25_ENABLED: true,
   BM25_B: 0.75,
   BM25_K: 1.2,
-  BM25_AVG_LEN: 256
+  BM25_AVG_LEN: 256,
 };
 
 export const ServerSettingsForm = () => {
@@ -571,13 +571,12 @@ export const ServerSettingsForm = () => {
               </div>
             </div>
 
-
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
               <input
                 type="checkbox"
                 name="bm25TextEnabled"
                 id="bm25TextEnabled"
-                checked={serverConfig().SEMANTIC_ENABLED}
+                checked={serverConfig().BM25_ENABLED}
                 onInput={(e) =>
                   setServerConfig((prev) => {
                     return {
@@ -595,78 +594,77 @@ export const ServerSettingsForm = () => {
               </label>
             </div>
 
-            <div class="col-span-4 sm:col-span-2">
-              <label
-                for="bm25B"
-                class="block text-sm font-medium leading-6"
-              >
-                bm25 b parameter
-              </label>
-              <input
-                type="number"
-                name="bm25B"
-                id="bm25B"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={serverConfig().BM25_B ?? 0}
-                onChange={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      BM25_B: e.currentTarget.valueAsNumber,
-                    };
-                  })
-                }
-              />
-            </div>
+            <Show when={serverConfig().BM25_ENABLED}>
+              <div class="col-span-4 sm:col-span-2">
+                <label for="bm25B" class="block text-sm font-medium leading-6">
+                  bm25 b parameter
+                </label>
+                <input
+                  type="number"
+                  name="bm25B"
+                  id="bm25B"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={serverConfig().BM25_B ?? 0}
+                  onChange={(e) =>
+                    setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        BM25_B: e.currentTarget.valueAsNumber,
+                      };
+                    })
+                  }
+                />
+              </div>
+            </Show>
 
-            <div class="col-span-4 sm:col-span-2">
-              <label
-                for="bm25K"
-                class="block text-sm font-medium leading-6"
-              >
-                bm25 k parameter
-              </label>
-              <input
-                type="number"
-                name="bm25K"
-                id="bm25K"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={serverConfig().BM25_K ?? 0}
-                onChange={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      BM25_K: e.currentTarget.valueAsNumber,
-                    };
-                  })
-                }
-              />
-            </div>
+            <Show when={serverConfig().BM25_ENABLED}>
+              <div class="col-span-4 sm:col-span-2">
+                <label for="bm25K" class="block text-sm font-medium leading-6">
+                  bm25 k parameter
+                </label>
+                <input
+                  type="number"
+                  name="bm25K"
+                  id="bm25K"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={serverConfig().BM25_K ?? 0}
+                  onChange={(e) =>
+                    setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        BM25_K: e.currentTarget.valueAsNumber,
+                      };
+                    })
+                  }
+                />
+              </div>
+            </Show>
 
-            <div class="col-span-4 sm:col-span-2">
-              <label
-                for="bm25Length"
-                class="block text-sm font-medium leading-6"
-              >
-                bm25 Average chunk length
-              </label>
-              <input
-                type="number"
-                name="bm25Length"
-                id="bm25Length"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={serverConfig().BM25_AVG_LEN ?? 0}
-                onChange={(e) =>
-                  setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      BM25_AVG_LEN: e.currentTarget.valueAsNumber,
-                    };
-                  })
-                }
-              />
-            </div>
-
+            <Show when={serverConfig().BM25_ENABLED}>
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="bm25Length"
+                  class="block text-sm font-medium leading-6"
+                >
+                  bm25 Average chunk length
+                </label>
+                <input
+                  type="number"
+                  name="bm25Length"
+                  id="bm25Length"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={serverConfig().BM25_AVG_LEN ?? 0}
+                  onChange={(e) =>
+                    setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        BM25_AVG_LEN: e.currentTarget.valueAsNumber,
+                      };
+                    })
+                  }
+                />
+              </div>
+            </Show>
           </div>
         </div>
         <div class="border-t bg-neutral-50 px-4 py-3 text-right sm:px-6">

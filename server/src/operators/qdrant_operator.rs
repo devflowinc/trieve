@@ -93,8 +93,6 @@ pub async fn create_new_qdrant_collection_query(
                     },
                 );
 
-
-
                 let quantization_config = if quantize {
                     //TODO: make this scalar
                     Some(QuantizationConfig {
