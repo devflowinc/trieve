@@ -1182,6 +1182,9 @@ pub struct SearchWithinGroupData {
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
+    /// If true, chunks will be reranked using BAAI/bge-reranker-large. "hybrid" search does this
+    /// by default and this flag does not affect it.
+    pub use_reranker: Option<bool>,
 }
 
 impl From<SearchWithinGroupData> for SearchChunksReqPayload {
@@ -1207,6 +1210,7 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
             score_threshold: search_within_group_data.score_threshold,
             slim_chunks: search_within_group_data.slim_chunks,
             content_only: Some(false),
+            use_reranker: search_within_group_data.use_reranker,
         }
     }
 }
