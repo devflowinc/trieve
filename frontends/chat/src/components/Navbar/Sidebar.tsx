@@ -1,7 +1,7 @@
-/* eslint-disable prettier/prettier */
 import {
   BiRegularChat,
   BiRegularCheck,
+  BiRegularEdit,
   BiRegularPlus,
   BiRegularTrash,
   BiRegularX,
@@ -44,6 +44,7 @@ export const Sidebar = (props: SidebarProps) => {
   const [editingTopic, setEditingTopic] = createSignal("");
   const [settingsModalOpen, setSettingsModalOpen] = createSignal(false);
   const [starCount, setStarCount] = createSignal(0);
+  const [showCheckmarkIcon, setShowCheckmarkIcon] = createSignal(true);
 
   const userContext = useContext(UserContext);
 
@@ -77,7 +78,7 @@ export const Sidebar = (props: SidebarProps) => {
     }
 
     setEditingIndex(-1);
-    void props.refetchTopics();
+    await props.refetchTopics();
   };
 
   const deleteSelected = async () => {
@@ -95,7 +96,7 @@ export const Sidebar = (props: SidebarProps) => {
 
     if (res.ok) {
       props.setCurrentTopic(undefined);
-      void props.refetchTopics();
+      await props.refetchTopics();
     } else {
       createToast({
         type: "error",
@@ -104,6 +105,10 @@ export const Sidebar = (props: SidebarProps) => {
       return;
     }
   };
+
+  createEffect(() => {
+    setShowCheckmarkIcon(editingTopic().trim() !== "");
+  });
 
   createEffect(() => {
     try {
@@ -150,23 +155,14 @@ export const Sidebar = (props: SidebarProps) => {
         <div class="flex w-full flex-col space-y-2 overflow-y-auto overflow-x-hidden px-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
           <For each={props.topics()}>
             {(topic, index) => (
-              <button
+              <div
+                class="flex w-full cursor-pointer items-center rounded-md p-2"
                 classList={{
-                  "flex items-center space-x-4 py-2 w-full rounded-md": true,
                   "bg-white border border-neutral-300 dark:border-neutral-600/70 text-black dark:text-white dark:bg-neutral-700/50":
                     props.currentTopic()?.id === topic.id,
                 }}
-                onClick={() => {
-                  const topics = props.topics();
-                  const topic = topics[index()];
-
-                  props.setCurrentTopic(topic);
-                  props.setSelectedNewTopic(true);
-                  props.setIsCreatingTopic(false);
-                  props.setSideBarOpen(false);
-                }}
               >
-                {editingIndex() === index() && (
+                {editingIndex() === index() ? (
                   <div class="flex flex-1 items-center justify-between px-2">
                     <input
                       value={editingTopic()}
@@ -175,6 +171,7 @@ export const Sidebar = (props: SidebarProps) => {
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
+                          e.preventDefault();
                           void submitEditText();
                         }
                       }}
@@ -183,12 +180,13 @@ export const Sidebar = (props: SidebarProps) => {
 
                     <div class="flex flex-row space-x-1 pl-2 text-2xl">
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
                           void submitEditText();
                         }}
                         class="hover:text-green-500"
                       >
-                        <BiRegularCheck />
+                        {showCheckmarkIcon() ? <BiRegularCheck /> : null}
                       </button>
                       <button
                         onClick={(e) => {
@@ -201,27 +199,48 @@ export const Sidebar = (props: SidebarProps) => {
                       </button>
                     </div>
                   </div>
-                )}
-                {editingIndex() !== index() && (
-                  <div class="flex flex-1 items-center px-3">
-                    <BiRegularChat class="mr-2 fill-current" />
+                ) : (
+                  <div
+                    class="flex w-full items-center"
+                    onClick={() => {
+                      const topics = props.topics();
+                      const topic = topics[index()];
+
+                      props.setCurrentTopic(topic);
+                      props.setSelectedNewTopic(true);
+                      props.setIsCreatingTopic(false);
+                      props.setSideBarOpen(false);
+                    }}
+                  >
+                    <BiRegularChat class="mr-2 fill-current text-xl" />
                     <p class="line-clamp-1 break-all">{topic.name}</p>
                     <div class="flex-1" />
-                    <div class="flex flex-row items-center space-x-2">
-                      {props.currentTopic() == topic && (
-                        <div class="text-lg hover:text-purple-500">
-                          <BiRegularTrash
-                            class="fill-current"
-                            onClick={() => {
-                              void deleteSelected();
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
+                    {props.currentTopic()?.id === topic.id && (
+                      <div class="flex flex-row items-center space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setEditingTopic(topic.name);
+                            setEditingIndex(index());
+                          }}
+                          class="text-lg hover:text-blue-500"
+                        >
+                          <BiRegularEdit />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            void deleteSelected();
+                          }}
+                          class="text-lg hover:text-red-500"
+                        >
+                          <BiRegularTrash />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </button>
+              </div>
             )}
           </For>
         </div>
