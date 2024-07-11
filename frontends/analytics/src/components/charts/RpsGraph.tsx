@@ -79,6 +79,11 @@ export const RpsGraph = (props: RpsGraphProps) => {
       });
     }
 
+    if (data.length === 1) {
+      // @ts-expect-error library types not updated
+      chartInstance.options.scales["x"].offset = true;
+    }
+
     // Update the chart data;
     chartInstance.data.labels = data.map((point) =>
       format(new Date(parseCustomDateString(point.time_stamp)), "HH:mm:ss"),
