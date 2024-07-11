@@ -1,5 +1,6 @@
 /* eslint-disable solid/no-innerhtml */
-import { codeToHtml } from "shiki";
+import { createHighlighterCore } from "shiki";
+import getWasm from "shiki/wasm";
 import { FaRegularClipboard, FaSolidCheck } from "solid-icons/fa";
 import { createResource, createSignal, Show } from "solid-js";
 
@@ -12,11 +13,15 @@ export const Codeblock = (props: CodeblockProps) => {
   const [code] = createResource(
     () => props.content,
     async (content) => {
-      const code = await codeToHtml(content, {
+      const highlighter = await createHighlighterCore({
+        themes: [import("shiki/themes/one-dark-pro.d.mts")],
+        langs: [import("shiki/langs/ts.d.mts")],
+        loadWasm: getWasm,
+      });
+      const code = highlighter.codeToHtml(content, {
         lang: "ts",
         theme: "one-dark-pro",
       });
-
       return code;
     },
   );
