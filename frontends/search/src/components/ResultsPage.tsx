@@ -193,6 +193,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
         highlight_window: props.search.debounced.highlightWindow ?? 0,
         group_size: props.search.debounced.group_size ?? 3,
+        use_reranker: props.search.debounced.useReranker,
       };
 
       let searchRoute = "chunk/search";
@@ -487,9 +488,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                                   <button
                                     title="Download uploaded file"
                                     class="h-fit text-neutral-400 dark:text-neutral-300"
-                                    onClick={() =>
-                                      handleDownloadFile(fileId() as string)
-                                    }
+                                    onClick={() => handleDownloadFile(fileId())}
                                   >
                                     <FaSolidDownload />
                                   </button>
