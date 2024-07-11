@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:15
-    container_name: db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -21,7 +20,6 @@ services:
 
   redis:
     image: redis:7.2.2
-    container_name: redis
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
@@ -38,7 +36,6 @@ services:
 
   qdrant-database:
     image: qdrant/qdrant:v1.9.1
-    container_name: qdrant-database
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     ports:
@@ -51,7 +48,6 @@ services:
 
   s3:
     image: minio/minio:RELEASE.2023-09-27T15-22-50Z
-    container_name: s3
     ports:
       - 9000:9000
       - 42625:42625
@@ -71,7 +67,6 @@ services:
 
   s3-client:
     image: minio/mc
-    container_name: s3-client
     depends_on:
       s3:
         condition: service_healthy
@@ -94,7 +89,6 @@ services:
 
   tika:
     image: apache/tika:2.9.1.0-full
-    container_name: tika
     healthcheck:
       test:
         [
@@ -111,7 +105,6 @@ services:
 
   server:
     image: trieve/server
-    container_name: server
     build:
       context: ./server/
       dockerfile: Dockerfile.server
@@ -170,7 +163,6 @@ services:
 
   ingestion-worker:
     image: trieve/ingest
-    container_name: ingestion-worker
     build:
       context: ./server/
       dockerfile: Dockerfile.ingestion-worker
@@ -189,7 +181,6 @@ services:
 
   file-worker:
     image: trieve/file_worker
-    container_name: file-worker
     build:
       context: ./server/
       dockerfile: Dockerfile.file-worker
@@ -208,7 +199,6 @@ services:
 
   delete-worker:
     image: trieve/delete_worker
-    container_name: delete-worker
     build:
       context: ./server/
       dockerfile: Dockerfile.delete-worker
@@ -227,7 +217,6 @@ services:
 
   dashboard:
     image: trieve/dashboard
-    container_name: dashboard
     build: 
       context: ./frontends
       dockerfile: ./dashboard/Dockerfile
@@ -243,7 +232,6 @@ services:
 
   chat:
     image: trieve/chat
-    container_name: chat
     build:
       context: ./frontends
       dockerfile: ./chat/Dockerfile
@@ -257,7 +245,6 @@ services:
 
   search:
     image: trieve/search
-    container_name: search
     build: 
       context: ./frontends
       dockerfile: /search/
@@ -270,7 +257,6 @@ services:
     
   analytics-site:
     image: trieve/analytics-site
-    container_name: analytics-site
     build: 
       context: ./frontends
       dockerfile: ./analytics/Dockerfile
@@ -284,7 +270,6 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7
-    container_name: keycloak
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -319,7 +304,6 @@ services:
 
   keycloak-db:
     image: postgres:15
-    container_name: keycloak-db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -339,7 +323,6 @@ services:
 
   clickhouse-db:
     image: trieve/clickhouse:latest
-    container_name: clickhouse-db
     restart: always
     environment:
       - CLICKHOUSE_USER=clickhouse

@@ -2689,6 +2689,44 @@ pub async fn count_full_text_chunks(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn count_bm25_chunks(
+    data: CountChunksReqPayload,
+    parsed_query: ParsedQuery,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+    config: &ServerDatasetConfiguration,
+) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
+    let sparse_vectors = get_bm25_embeddings(
+        vec![parsed_query.query.clone()],
+        config.BM25_AVG_LEN,
+        config.BM25_B,
+        config.BM25_K,
+    );
+
+    let qdrant_query = RetrievePointQuery {
+        vector: VectorType::BM25Sparse(
+            sparse_vectors
+                .get(0)
+                .expect("Sparse Vector will always exist")
+                .clone(),
+        ),
+        score_threshold: data.score_threshold,
+        filter: data.filters.clone(),
+    }
+    .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
+    .await?;
+
+    let count = count_qdrant_query(
+        data.limit.unwrap_or(100000_u64),
+        vec![qdrant_query],
+        config.clone(),
+    )
+    .await? as u32;
+
+    Ok(CountChunkQueryResponseBody { count })
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn count_hybrid_chunks(
     data: CountChunksReqPayload,
     parsed_query: ParsedQuery,
