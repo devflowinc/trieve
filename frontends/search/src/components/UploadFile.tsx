@@ -80,6 +80,7 @@ export const UploadFile = () => {
     void fetch(`${apiHost}/file`, {
       method: "POST",
       headers: {
+"X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },

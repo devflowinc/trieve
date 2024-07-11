@@ -21,7 +21,6 @@ import {
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { PaginationController } from "./Atoms/PaginationController";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
-import { ScoreChunkArray } from "./ScoreChunkArray";
 import { Portal } from "solid-js/web";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { ChatPopup } from "./ChatPopup";
@@ -36,6 +35,7 @@ import { Filters } from "./FilterModal";
 import { createToast } from "./ShowToasts";
 import { SearchStore } from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
+import ScoreChunk from "./ScoreChunk";
 
 export interface ResultsPageProps {
   search: SearchStore;
@@ -80,6 +80,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "TR-Dataset": dataset.dataset.id,
       },
     }).then((response) => {
@@ -113,12 +114,13 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "POST",
       credentials: "include",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": dataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: resultChunks().flatMap((c) => {
-          return c.metadata.map((m) => m.id);
+          return c.chunk.id;
         }),
       }),
     }).then((response) => {
@@ -218,6 +220,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       void fetch(`${apiHost}/${searchRoute}`, {
         method: "POST",
         headers: {
+          "X-API-version": "2.0",
           "Content-Type": "application/json",
           "TR-Dataset": dataset.dataset.id,
         },
@@ -229,23 +232,19 @@ const ResultsPage = (props: ResultsPageProps) => {
           void response.json().then((data) => {
             let resultingChunks: ScoreChunkDTO[] = [];
             if (groupUnique) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              const groupResult = data.group_chunks as GroupScoreChunkDTO[];
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              setTotalPages(data.total_chunk_pages);
+              const groupResult = data.chunks as GroupScoreChunkDTO[];
+              setTotalPages(data.total_pages);
 
               setGroupResultChunks(groupResult);
 
               resultingChunks = groupResult.flatMap((groupChunkDTO) => {
-                return groupChunkDTO.metadata;
+                return groupChunkDTO.chunks;
               });
             } else {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              resultingChunks = data.score_chunks as ScoreChunkDTO[];
+              resultingChunks = data.chunks as ScoreChunkDTO[];
 
               setResultChunks(resultingChunks);
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              setTotalPages(data.total_chunk_pages);
+              setTotalPages(data.total_pages);
             }
 
             if (resultingChunks.length === 0) {
@@ -351,10 +350,10 @@ const ResultsPage = (props: ResultsPageProps) => {
               <For each={resultChunks()}>
                 {(chunk) => (
                   <div>
-                    <ScoreChunkArray
+                    <ScoreChunk
                       totalGroupPages={totalCollectionPages()}
                       chunkGroups={chunkCollections()}
-                      chunks={chunk.metadata}
+                      chunk={chunk.chunk}
                       score={chunk.score}
                       bookmarks={bookmarks()}
                       setOnDelete={setOnDelete}
@@ -410,7 +409,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                       setSelectedIds(
                         resultChunks()
                           .flatMap((c) => {
-                            return c.metadata.map((m) => m.id);
+                            return c.chunk.id;
                           })
                           .slice(0, 10),
                       );
@@ -509,13 +508,13 @@ const ResultsPage = (props: ResultsPageProps) => {
                       </div>
                     </div>
                     <Show when={groupExpanded()}>
-                      <For each={group.metadata}>
+                      <For each={group.chunks}>
                         {(chunk) => (
                           <div class="ml-5 flex space-y-4">
-                            <ScoreChunkArray
+                            <ScoreChunk
                               totalGroupPages={totalCollectionPages()}
                               chunkGroups={chunkCollections()}
-                              chunks={chunk.metadata}
+                              chunk={chunk.chunk}
                               score={chunk.score}
                               bookmarks={bookmarks()}
                               setOnDelete={setOnDelete}
@@ -574,10 +573,10 @@ const ResultsPage = (props: ResultsPageProps) => {
                       setSelectedIds(
                         groupResultChunks()
                           .flatMap((g) => {
-                            return g.metadata;
+                            return g.chunks;
                           })
                           .flatMap((c) => {
-                            return c.metadata.map((m) => m.id);
+                            return c.chunk.id;
                           }),
                       );
                       setOpenChat(true);

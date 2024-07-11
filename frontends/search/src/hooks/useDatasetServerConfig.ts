@@ -13,6 +13,7 @@ export const useDatasetServerConfig = () => {
       const response = await fetch(`${apiHost}/dataset/${d.dataset.id}`, {
         credentials: "include",
         headers: {
+          "X-API-version": "2.0",
           "TR-Dataset": d.dataset.id,
         },
       });

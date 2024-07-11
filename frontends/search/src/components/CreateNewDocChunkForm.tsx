@@ -117,6 +117,7 @@ export const CreateNewDocChunkForm = () => {
     void fetch(`${apiHost}/chunk`, {
       method: "POST",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": dataset.dataset.id,
       },

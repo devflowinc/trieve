@@ -34,7 +34,7 @@ use simsearch::{SearchOptions, SimSearch};
 pub async fn get_chunk_metadatas_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkMetadata>, ServiceError> {
+) -> Result<Vec<ChunkMetadataTypes>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
@@ -72,7 +72,9 @@ pub async fn get_chunk_metadatas_from_point_ids(
     let chunk_metadatas = chunk_metadata_pairs
         .into_iter()
         .map(|(table, tag_set)| {
-            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or_default())
+            ChunkMetadataTypes::Metadata(
+                ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or_default()).into(),
+            )
         })
         .collect();
 

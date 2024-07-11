@@ -77,6 +77,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           method: "DELETE",
           credentials: "include",
           headers: {
+            "X-API-version": "2.0",
             "TR-Dataset": $currentDataset?.()?.dataset.id ?? "",
           },
         }).then((response) => {

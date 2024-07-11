@@ -78,6 +78,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDatasetId,
       },
@@ -171,6 +172,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     void fetch(`${apiHost}/chunk`, {
       method: "PUT",
       headers: {
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
@@ -221,6 +223,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
       headers: {
+        "X-API-version": "2.0",
         "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",

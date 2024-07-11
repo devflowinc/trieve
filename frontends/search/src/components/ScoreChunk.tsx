@@ -67,9 +67,8 @@ export interface ScoreChunkProps {
   showExpand?: boolean;
   defaultShowMetadata?: boolean;
   setChunkGroups?: Setter<ChunkGroupDTO[]>;
-  counter: string;
+  counter?: string;
   order?: string;
-  total?: number;
   setSelectedIds: Setter<string[]>;
   selectedIds: Accessor<string[]>;
   chat?: boolean;
@@ -125,6 +124,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
         void fetch(`${apiHost}/chunk/${curChunkMetadataId}`, {
           method: "DELETE",
           headers: {
+            "X-API-version": "2.0",
             "TR-Dataset": dataset.dataset.id,
           },
           credentials: "include",
@@ -260,7 +260,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </Show>
               <Show when={props.chat}>
                 <span class="font-semibold">
-                  Doc: {props.counter.toString()}
+                  Doc: {props.counter?.toString()}
                 </span>
               </Show>
               <div class="flex-1" />

@@ -11,10 +11,10 @@ use std::{
     rc::Rc,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum APIVersion {
-    One,
-    Two,
+    V1,
+    V2,
 }
 
 impl FromRequest for APIVersion {
@@ -33,7 +33,7 @@ impl FromRequest for APIVersion {
 
 impl APIVersion {
     fn from_dataset(dataset: &DatasetAndOrgWithSubAndPlan) -> Self {
-        let versioning_date = NaiveDate::from_ymd_opt(2024, 7, 4)
+        let versioning_date = NaiveDate::from_ymd_opt(2024, 7, 12)
             .unwrap()
             .and_hms_opt(0, 0, 0)
             .unwrap();
@@ -43,14 +43,14 @@ impl APIVersion {
             .created_at
             .gt(&versioning_date)
         {
-            return Self::Two;
+            return Self::V2;
         }
-        Self::One
+        Self::V1
     }
     fn to_header_str(&self) -> &str {
         match self {
-            APIVersion::One => "1.0",
-            APIVersion::Two => "2.0",
+            APIVersion::V1 => "1.0",
+            APIVersion::V2 => "2.0",
         }
     }
 }
@@ -105,8 +105,8 @@ where
 
                     Some(match version_header {
                         Some(v) => match v {
-                            "1.0" | "1" => APIVersion::One,
-                            "2.0" | "2" => APIVersion::Two,
+                            "1.0" | "1" => APIVersion::V1,
+                            "2.0" | "2" => APIVersion::V2,
                             _ => APIVersion::from_dataset(dataset),
                         },
                         None => APIVersion::from_dataset(dataset),

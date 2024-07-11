@@ -6,6 +6,7 @@ export const downloadFile = async (fileId: string, datasetId: string) => {
   const response = await fetch(`${apiHost}/file/${fileId}`, {
     credentials: "include",
     headers: {
+"X-API-version": "2.0",
       "TR-Dataset": datasetId,
     },
   });

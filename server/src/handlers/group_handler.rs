@@ -6,10 +6,12 @@ use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataStringTagSet,
         DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool, RecommendType,
-        RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunkDTO,
-        SearchMethod, SearchQueryEventClickhouse, ServerDatasetConfiguration, UnifiedId,
+        RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
+        ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, ServerDatasetConfiguration,
+        UnifiedId,
     },
     errors::ServiceError,
+    middleware::api_version::APIVersion,
     operators::{
         chunk_operator::get_metadata_from_tracking_id_query,
         clickhouse_operator::{get_latency_from_header, send_to_clickhouse, ClickHouseEvent},
@@ -1209,10 +1211,42 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
+#[schema(title = "V1")]
 pub struct SearchWithinGroupResults {
     pub bookmarks: Vec<ScoreChunkDTO>,
     pub group: ChunkGroupAndFileId,
     pub total_pages: i64,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+#[schema(title = "V2")]
+pub struct SearchWithinGroupResponseBody {
+    pub chunks: Vec<ScoreChunk>,
+    pub group: ChunkGroupAndFileId,
+    pub total_pages: i64,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum SearchGroupResponseTypes {
+    #[schema(title = "V1")]
+    V1(SearchWithinGroupResults),
+    #[schema(title = "V2")]
+    V2(SearchWithinGroupResponseBody),
+}
+
+impl SearchWithinGroupResults {
+    pub fn into_new_payload(self) -> SearchWithinGroupResponseBody {
+        SearchWithinGroupResponseBody {
+            chunks: self
+                .bookmarks
+                .into_iter()
+                .map(|chunk| chunk.to_updated_chunk_metadata())
+                .collect(),
+            group: self.group,
+            total_pages: self.total_pages,
+        }
+    }
 }
 
 /// Search Within Group
@@ -1225,7 +1259,7 @@ pub struct SearchWithinGroupResults {
     tag = "Chunk Group",
     request_body(content = SearchWithinGroupData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchWithinGroupResults),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchGroupResponseTypes),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
@@ -1241,6 +1275,7 @@ pub async fn search_within_group(
     data: web::Json<SearchWithinGroupData>,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    api_version: APIVersion,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1342,7 +1377,11 @@ pub async fn search_within_group(
     .await;
     timer.add("send_to_clickhouse");
 
-    Ok(HttpResponse::Ok().json(result_chunks))
+    if api_version == APIVersion::V1 {
+        Ok(HttpResponse::Ok().json(result_chunks))
+    } else {
+        Ok(HttpResponse::Ok().json(result_chunks.into_new_payload()))
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -1389,7 +1428,7 @@ pub struct SearchOverGroupsData {
     tag = "Chunk Group",
     request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResults),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseTypes),
         (status = 400, description = "Service error relating to searching over groups", body = ErrorResponseBody),
     ),
     params(
@@ -1405,6 +1444,7 @@ pub async fn search_over_groups(
     data: web::Json<SearchOverGroupsData>,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    api_version: APIVersion,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1489,7 +1529,9 @@ pub async fn search_over_groups(
     .await;
     timer.add("send_to_clickhouse");
 
-    Ok(HttpResponse::Ok()
-        .insert_header((Timer::header_key(), timer.header_value()))
-        .json(result_chunks))
+    if api_version == APIVersion::V1 {
+        Ok(HttpResponse::Ok().json(result_chunks))
+    } else {
+        Ok(HttpResponse::Ok().json(result_chunks.into_new_payload()))
+    }
 }

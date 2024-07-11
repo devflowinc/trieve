@@ -14,8 +14,8 @@ use super::qdrant_operator::{
 };
 use crate::data::models::{
     convert_to_date_time, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes, ConditionType,
-    ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunkDTO, SearchMethod,
-    ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
+    ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunk, ScoreChunkDTO,
+    SearchMethod, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::get_env;
 use crate::handlers::chunk_handler::{
@@ -883,10 +883,89 @@ pub struct GroupScoreChunk {
     pub file_id: Option<uuid::Uuid>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[schema(example = json!({
+    "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "file_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "metadata": [
+        {
+            "metadata": [
+                {
+                    "id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                    "content": "This is a test content",
+                    "link": "https://www.google.com",
+                    "tag_set": "test",
+                    "metadata": {
+                        "key": "value"
+                    },
+                    "tracking_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                    "time_stamp": "2021-01-01T00:00:00Z",
+                    "weight": 1.0
+                }
+            ],
+            "highlights": ["highlight is two tokens: high, light", "whereas hello is only one token: hello"],
+            "score": 0.5
+        }
+    ]
+}))]
+pub struct GroupChunks {
+    pub group_id: uuid::Uuid,
+    pub group_tracking_id: Option<String>,
+    pub group_name: Option<String>,
+    pub chunks: Vec<ScoreChunk>,
+    pub file_id: Option<uuid::Uuid>,
+}
+
+impl GroupScoreChunk {
+    pub fn to_updated_chunk_metadata(self) -> GroupChunks {
+        GroupChunks {
+            group_id: self.group_id,
+            group_tracking_id: self.group_tracking_id,
+            group_name: self.group_name,
+            chunks: self
+                .metadata
+                .into_iter()
+                .map(|score_chunk| score_chunk.to_updated_chunk_metadata())
+                .collect(),
+            file_id: self.file_id,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, ToSchema)]
+#[schema(title = "V1")]
 pub struct SearchOverGroupsResults {
     pub group_chunks: Vec<GroupScoreChunk>,
     pub total_chunk_pages: i64,
+}
+
+impl SearchOverGroupsResults {
+    pub fn into_new_payload(self) -> SearchOverGroupsResponseBody {
+        SearchOverGroupsResponseBody {
+            chunks: self
+                .group_chunks
+                .into_iter()
+                .map(|chunk| chunk.to_updated_chunk_metadata())
+                .collect(),
+            total_pages: self.total_chunk_pages,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+#[schema(title = "V2")]
+pub struct SearchOverGroupsResponseBody {
+    pub chunks: Vec<GroupChunks>,
+    pub total_pages: i64,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum SearchOverGroupsResponseTypes {
+    #[schema(title = "V1")]
+    V1(SearchOverGroupsResults),
+    #[schema(title = "V2")]
+    V2(SearchOverGroupsResponseBody),
 }
 
 #[tracing::instrument(skip(pool))]

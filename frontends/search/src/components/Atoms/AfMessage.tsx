@@ -80,12 +80,11 @@ export const AfMessage = (props: AfMessageProps) => {
                     {(chunk, idx) => (
                       <ScoreChunk
                         group={undefined}
-                        chunk={chunk.metadata[0]}
+                        chunk={chunk.chunk}
                         score={0}
                         showExpand={!props.streamingCompletion()}
                         counter={(idx() + 1).toString()}
                         order={props.order.toString()}
-                        total={0}
                         selectedIds={selectedIds}
                         setSelectedIds={setSelectedIds}
                         chat={true}
