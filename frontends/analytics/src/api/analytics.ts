@@ -214,14 +214,18 @@ export const getNoResultQueries = async (
 };
 
 export const getQueryCounts = async (
-  gt_date: string,
+  gt_date: Date,
   datasetId: string,
 ): Promise<SearchTypeCount[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      gt_date,
+      filter: transformAnalyticsFilter({
+        date_range: {
+          gt: gt_date,
+        },
+      }),
       type: "count_queries",
     }),
     headers: {

@@ -3769,7 +3769,9 @@ pub enum SearchAnalytics {
         sort_order: Option<SortOrder>,
     },
     #[schema(title = "CountQueries")]
-    CountQueries { gt_date: Option<String> },
+    CountQueries {
+        filter: Option<SearchAnalyticsFilter>,
+    },
     #[schema(title = "QueryDetails")]
     QueryDetails { search_id: uuid::Uuid },
 }

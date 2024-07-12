@@ -34,10 +34,7 @@ export const QueryCounts = () => {
   const headQueriesQuery = createQuery(() => ({
     queryKey: ["queryCounts", { gt_date: dateSelection().date }],
     queryFn: () => {
-      return getQueryCounts(
-        formatDateForApi(dateSelection().date),
-        dataset().dataset.id,
-      );
+      return getQueryCounts(dateSelection().date, dataset().dataset.id);
     },
   }));
 
