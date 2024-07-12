@@ -431,6 +431,7 @@ pub async fn update_qdrant_point_query(
     group_ids: Option<Vec<uuid::Uuid>>,
     dataset_id: uuid::Uuid,
     splade_vector: Vec<(u32, f32)>,
+    bm25_vector: Option<Vec<(u32, f32)>>,
     config: ServerDatasetConfiguration,
     web_pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
@@ -510,10 +511,18 @@ pub async fn update_qdrant_point_query(
                 return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into())
             }
         };
-        let vector_payload = HashMap::from([
+        let mut vector_payload = HashMap::from([
             (vector_name.to_string(), Vector::from(updated_vector)),
             ("sparse_vectors".to_string(), Vector::from(splade_vector)),
         ]);
+
+        if let Some(bm25_vector) = bm25_vector.clone() {
+            vector_payload.insert(
+                "bm25_vectors".to_string(),
+                Vector::from(bm25_vector.clone()),
+            );
+        }
+
 
         let point = PointStruct::new(
             metadata.qdrant_point_id.clone().to_string(),

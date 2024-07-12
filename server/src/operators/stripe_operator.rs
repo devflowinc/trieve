@@ -467,7 +467,7 @@ pub async fn create_stripe_setup_checkout_session(
     )
     .await
     .map_err(|_| {
-        return ServiceError::BadRequest("Failed to create setup checkout session".to_string());
+        ServiceError::BadRequest("Failed to create setup checkout session".to_string())
     })?;
     if session.url.is_none() {
         return Err(ServiceError::BadRequest(
@@ -484,7 +484,7 @@ pub async fn set_subscription_payment_method(
     dbg!(setup_intent.status);
     dbg!(setup_intent.next_action);
     let client = get_stripe_client();
-    let subscription_id = stripe::SubscriptionId::from_str(&subscription_id.as_str())
+    let subscription_id = stripe::SubscriptionId::from_str(subscription_id.as_str())
         .map_err(|_| ServiceError::BadRequest("Invalid subscription id".to_string()))?;
 
     let subscription = stripe::Subscription::retrieve(&client, &subscription_id, &[])
@@ -506,7 +506,7 @@ pub async fn set_subscription_payment_method(
     )
     .await
     .map_err(|_| {
-        return ServiceError::BadRequest("Failed to attach payment method to customer".to_string());
+        ServiceError::BadRequest("Failed to attach payment method to customer".to_string())
     })?;
 
     stripe::Subscription::update(
