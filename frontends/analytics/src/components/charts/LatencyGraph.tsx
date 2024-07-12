@@ -21,7 +21,7 @@ export const parseCustomDateString = (dateString: string) => {
   minute = minute.padStart(2, "0");
   wholeSec = wholeSec.padStart(2, "0");
 
-  const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}`;
+  const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}Z`;
 
   return new Date(isoString);
 };
