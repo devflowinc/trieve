@@ -532,11 +532,19 @@ pub async fn get_sparse_vectors(
                     )))?;
                 let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
+                let clipped_messages = thirty_boosts
+                    .iter()
+                    .map(|(_, message)| {
+                        if message.phrase.len() > 5000 {
+                            message.phrase.chars().take(128000).collect()
+                        } else {
+                            message.phrase.clone()
+                        }
+                    })
+                    .collect::<Vec<String>>();
+
                 let sparse_embed_req = CustomSparseEmbedData {
-                    inputs: thirty_boosts
-                        .iter()
-                        .map(|(_, y)| y.phrase.clone())
-                        .collect(),
+                    inputs: clipped_messages,
                     encode_type: embed_type.to_string(),
                     truncate: true,
                 };
@@ -607,8 +615,19 @@ pub async fn get_sparse_vectors(
                     )))?;
                 let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
+                let clipped_messages = thirty_messages
+                    .iter()
+                    .map(|message| {
+                        if message.len() > 5000 {
+                            message.chars().take(128000).collect()
+                        } else {
+                            message.clone()
+                        }
+                    })
+                    .collect::<Vec<String>>();
+
                 let sparse_embed_req = CustomSparseEmbedData {
-                    inputs: thirty_messages.to_vec(),
+                    inputs: clipped_messages,
                     encode_type: embed_type.to_string(),
                     truncate: true,
                 };
