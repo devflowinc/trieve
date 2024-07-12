@@ -856,7 +856,8 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        let content_and_boosts = content_and_boosts
+        let content_and_boosts: Vec<(String, Option<BoostPhrase>)> = content_and_boosts
+            .clone()
             .into_iter()
             .map(|(content, boost)| {
                 let boost = if boost.is_some() && boost.as_ref().unwrap().phrase.is_empty() {
@@ -869,7 +870,7 @@ async fn upload_chunk(
             })
             .collect();
 
-        match get_sparse_vectors(content_and_boosts, "doc", reqwest_client).await {
+        match get_sparse_vectors(content_and_boosts.clone(), "doc", reqwest_client).await {
             Ok(vectors) => Ok(vectors.first().expect("First vector must exist").clone()),
             Err(err) => Err(err),
         }

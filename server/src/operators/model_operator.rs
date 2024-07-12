@@ -399,7 +399,7 @@ pub async fn create_embeddings(
                 })?;
 
                 let embeddings: EmbeddingResponse = format_response(embeddings_resp.clone())
-                    .map_err(move |e| {
+                    .map_err(move |_e| {
                         log::error!("Failed to format response from embeddings server {:?}", embeddings_resp);
                         ServiceError::InternalServerError(
                             format!("Failed to format response from embeddings server {:?}", embeddings_resp)
