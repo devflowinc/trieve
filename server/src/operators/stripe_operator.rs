@@ -466,9 +466,7 @@ pub async fn create_stripe_setup_checkout_session(
         },
     )
     .await
-    .map_err(|_| {
-        ServiceError::BadRequest("Failed to create setup checkout session".to_string())
-    })?;
+    .map_err(|_| ServiceError::BadRequest("Failed to create setup checkout session".to_string()))?;
     if session.url.is_none() {
         return Err(ServiceError::BadRequest(
             "Failed to get setup checkout session url".to_string(),
