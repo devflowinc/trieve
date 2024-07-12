@@ -347,6 +347,8 @@ impl Modify for SecurityAddon {
             data::models::RecommendationAnalytics,
             data::models::RecommendationType,
             data::models::RecommendType,
+            data::models::SlimChunkMetadataWithArrayTagSet,
+            data::models::NewChunkMetadataTypes,
             data::models::RecommendationStrategy,
             data::models::ScoreChunk,
             data::models::Granularity,

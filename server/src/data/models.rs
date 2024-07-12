@@ -547,9 +547,15 @@ impl From<ChunkMetadataStringTagSet> for ChunkMetadata {
             weight: chunk_metadata_string_tag_set.weight,
             location: chunk_metadata_string_tag_set.location,
             image_urls: chunk_metadata_string_tag_set.image_urls,
-            tag_set: chunk_metadata_string_tag_set
-                .tag_set
-                .map(|tags| tags.split(',').map(|tag| Some(tag.to_string())).collect()),
+            tag_set: chunk_metadata_string_tag_set.tag_set.map(|tags| {
+                let tags: Vec<Option<String>> =
+                    tags.split(',').map(|tag| Some(tag.to_string())).collect();
+                if tags.get(0).unwrap_or(&Some("".to_string())) == &Some("".to_string()) {
+                    vec![]
+                } else {
+                    tags
+                }
+            }),
             num_value: chunk_metadata_string_tag_set.num_value,
         }
     }
@@ -643,31 +649,31 @@ pub struct ChunkMetadataWithScore {
     pub score: f32,
 }
 
-impl Into<ScoreChunk> for ChunkMetadataWithScore {
-    fn into(self) -> ScoreChunk {
+impl From<ChunkMetadataWithScore> for ScoreChunk {
+    fn from(val: ChunkMetadataWithScore) -> Self {
         ScoreChunk {
-            chunk: ChunkMetadataTypes::Metadata(self.clone().into()),
+            chunk: NewChunkMetadataTypes::Metadata(val.clone().into()),
             highlights: None,
-            score: self.score,
+            score: val.score,
         }
     }
 }
 
-impl Into<ChunkMetadataStringTagSet> for ChunkMetadataWithScore {
-    fn into(self) -> ChunkMetadataStringTagSet {
+impl From<ChunkMetadataWithScore> for ChunkMetadataStringTagSet {
+    fn from(val: ChunkMetadataWithScore) -> Self {
         ChunkMetadataStringTagSet {
-            id: self.id,
-            link: self.link,
-            qdrant_point_id: self.qdrant_point_id,
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-            tag_set: self.tag_set,
-            chunk_html: self.chunk_html,
-            metadata: self.metadata,
-            tracking_id: self.tracking_id,
-            time_stamp: self.time_stamp,
-            dataset_id: self.dataset_id,
-            weight: self.weight,
+            id: val.id,
+            link: val.link,
+            qdrant_point_id: val.qdrant_point_id,
+            created_at: val.created_at,
+            updated_at: val.updated_at,
+            tag_set: val.tag_set,
+            chunk_html: val.chunk_html,
+            metadata: val.metadata,
+            tracking_id: val.tracking_id,
+            time_stamp: val.time_stamp,
+            dataset_id: val.dataset_id,
+            weight: val.weight,
             location: None,
             image_urls: None,
             num_value: None,
@@ -675,23 +681,23 @@ impl Into<ChunkMetadataStringTagSet> for ChunkMetadataWithScore {
     }
 }
 
-impl Into<ChunkMetadata> for ChunkMetadataWithScore {
-    fn into(self) -> ChunkMetadata {
+impl From<ChunkMetadataWithScore> for ChunkMetadata {
+    fn from(val: ChunkMetadataWithScore) -> Self {
         ChunkMetadata {
-            id: self.id,
-            link: self.link,
-            qdrant_point_id: self.qdrant_point_id,
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-            tag_set: self
+            id: val.id,
+            link: val.link,
+            qdrant_point_id: val.qdrant_point_id,
+            created_at: val.created_at,
+            updated_at: val.updated_at,
+            tag_set: val
                 .tag_set
                 .map(|tags| tags.split(',').map(|tag| Some(tag.to_string())).collect()),
-            chunk_html: self.chunk_html,
-            metadata: self.metadata,
-            tracking_id: self.tracking_id,
-            time_stamp: self.time_stamp,
-            dataset_id: self.dataset_id,
-            weight: self.weight,
+            chunk_html: val.chunk_html,
+            metadata: val.metadata,
+            tracking_id: val.tracking_id,
+            time_stamp: val.time_stamp,
+            dataset_id: val.dataset_id,
+            weight: val.weight,
             location: None,
             image_urls: None,
             num_value: None,
@@ -761,9 +767,74 @@ pub struct ScoreChunkDTO {
 }))]
 #[schema(title = "V2")]
 pub struct ScoreChunk {
-    pub chunk: ChunkMetadataTypes,
+    pub chunk: NewChunkMetadataTypes,
     pub highlights: Option<Vec<String>>,
     pub score: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct SlimChunkMetadataWithArrayTagSet {
+    pub id: uuid::Uuid,
+    pub link: Option<String>,
+    pub qdrant_point_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<Vec<String>>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub location: Option<GeoInfo>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub image_urls: Option<Vec<Option<String>>>,
+    pub num_value: Option<f64>,
+}
+
+impl From<SlimChunkMetadata> for SlimChunkMetadataWithArrayTagSet {
+    fn from(slim_chunk_metadata: SlimChunkMetadata) -> Self {
+        SlimChunkMetadataWithArrayTagSet {
+            id: slim_chunk_metadata.id,
+            link: slim_chunk_metadata.link,
+            qdrant_point_id: slim_chunk_metadata.qdrant_point_id,
+            created_at: slim_chunk_metadata.created_at,
+            updated_at: slim_chunk_metadata.updated_at,
+            tag_set: slim_chunk_metadata
+                .tag_set
+                .map(|tag| tag.split(',').map(|tag| tag.to_string()).collect()),
+            metadata: slim_chunk_metadata.metadata,
+            tracking_id: slim_chunk_metadata.tracking_id,
+            time_stamp: slim_chunk_metadata.time_stamp,
+            location: slim_chunk_metadata.location,
+            dataset_id: slim_chunk_metadata.dataset_id,
+            weight: slim_chunk_metadata.weight,
+            image_urls: slim_chunk_metadata.image_urls,
+            num_value: slim_chunk_metadata.num_value,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum NewChunkMetadataTypes {
+    ID(SlimChunkMetadataWithArrayTagSet),
+    Metadata(ChunkMetadata),
+    Content(ContentChunkMetadata),
+}
+
+impl From<ChunkMetadataTypes> for NewChunkMetadataTypes {
+    fn from(val: ChunkMetadataTypes) -> Self {
+        match val {
+            ChunkMetadataTypes::ID(slim_chunk_metadata) => {
+                NewChunkMetadataTypes::ID(slim_chunk_metadata.into())
+            }
+            ChunkMetadataTypes::Metadata(chunk_metadata) => {
+                NewChunkMetadataTypes::Metadata(chunk_metadata.into())
+            }
+            ChunkMetadataTypes::Content(content_chunk_metadata) => {
+                NewChunkMetadataTypes::Content(content_chunk_metadata)
+            }
+        }
+    }
 }
 
 impl ScoreChunkDTO {

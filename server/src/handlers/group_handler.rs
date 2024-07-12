@@ -763,7 +763,7 @@ pub async fn get_chunks_in_group(
     .await?;
 
     let response = match api_version {
-        APIVersion::V1 => BookmarkGroupResponse::V1(bookmarks.into()),
+        APIVersion::V1 => BookmarkGroupResponse::V1(bookmarks),
         APIVersion::V2 => BookmarkGroupResponse::V2(bookmarks.into()),
     };
 
@@ -822,7 +822,7 @@ pub async fn get_chunks_in_group_by_tracking_id(
     };
 
     let response = match api_version {
-        APIVersion::V1 => BookmarkGroupResponse::V1(bookmarks.into()),
+        APIVersion::V1 => BookmarkGroupResponse::V1(bookmarks),
         APIVersion::V2 => BookmarkGroupResponse::V2(bookmarks.into()),
     };
 
