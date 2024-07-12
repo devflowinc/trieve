@@ -96,6 +96,7 @@ async function trieve<
 }
 
 // USAGE EXAMPLES
+// Fully typed!!
 
 const r0 = await trieve("/api/file/{file_id}", "delete", {
   fileId: "293",
@@ -109,7 +110,6 @@ const r1 = await trieve("/api/events", "post", {
   trDataset: "someDatasetId",
 });
 
-// Fully typed!!
 console.log(r1.events.length);
 
 const r2 = await trieve("/api/analytics/rag", "post", {
@@ -122,3 +122,12 @@ const r2 = await trieve("/api/analytics/rag", "post", {
 // r2's type is an untagged rust enum, there is no discrimiant
 // so we can eject the type system and specify a return type manually
 console.log(r2);
+
+// const r3 = await trieve<"eject", number, number>("/api/health","", {});
+
+export type HEALTHMETHODS = MethodsForPath<"/api/health">;
+
+const r4 = await trieve("/api/messages/{messages_topic_id}", "get", {
+  messagesTopicId: "29380",
+  trDataset: "someDatsetId",
+});
