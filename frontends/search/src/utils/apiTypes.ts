@@ -6,7 +6,7 @@ export interface ChunkMetadata {
   qdrant_point_id: string;
   created_at: string;
   updated_at: string;
-  tag_set: string | null;
+  tag_set: string[] | null;
   tracking_id: string | null;
   time_stamp: string | null;
   metadata: Record<string, never> | null;
@@ -27,7 +27,7 @@ export interface ChunkMetadataWithScore {
   qdrant_point_id: string;
   created_at: string;
   updated_at: string;
-  tag_set: string | null;
+  tag_set: string[] | null;
   tracking_id: string | null;
   time_stamp: string | null;
   metadata: Record<string, never> | null;
@@ -63,7 +63,7 @@ export const isChunkMetadata = (chunk: unknown): chunk is ChunkMetadata => {
     indirectHasOwnProperty(chunk, "updated_at") &&
     typeof (chunk as ChunkMetadata).updated_at === "string" &&
     indirectHasOwnProperty(chunk, "tag_set") &&
-    (typeof (chunk as ChunkMetadata).tag_set === "string" ||
+    (Array.isArray((chunk as ChunkMetadata).tag_set) ||
       (chunk as ChunkMetadata).tag_set === null) &&
     (typeof (chunk as ChunkMetadata).metadata === "object" ||
       (chunk as ChunkMetadata).metadata === null)

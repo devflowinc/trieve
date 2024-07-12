@@ -2089,25 +2089,21 @@ pub async fn get_recommended_chunks(
     timer.add("recommend_qdrant_query");
 
     let recommended_chunk_metadatas = match data.slim_chunks {
-        Some(true) => {
-            let slim_chunks = get_slim_chunks_from_point_ids_query(
-                recommended_qdrant_results
-                    .clone()
-                    .into_iter()
-                    .map(|recommend_qdrant_result| recommend_qdrant_result.point_id)
-                    .collect(),
-                pool,
-            )
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!(
-                    "Could not get recommended slim chunk_metadatas from qdrant_point_ids: {}",
-                    err
-                ))
-            })?;
-
-            slim_chunks.into_iter().map(|chunk| chunk.into()).collect()
-        }
+        Some(true) => get_slim_chunks_from_point_ids_query(
+            recommended_qdrant_results
+                .clone()
+                .into_iter()
+                .map(|recommend_qdrant_result| recommend_qdrant_result.point_id)
+                .collect(),
+            pool,
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not get recommended slim chunk_metadatas from qdrant_point_ids: {}",
+                err
+            ))
+        })?,
         _ => get_chunk_metadatas_from_point_ids(
             recommended_qdrant_results
                 .clone()

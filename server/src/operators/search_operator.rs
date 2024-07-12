@@ -918,18 +918,18 @@ pub struct GroupChunks {
     pub file_id: Option<uuid::Uuid>,
 }
 
-impl Into<GroupChunks> for GroupScoreChunk {
-    fn into(self) -> GroupChunks {
+impl From<GroupScoreChunk> for GroupChunks {
+    fn from(val: GroupScoreChunk) -> Self {
         GroupChunks {
-            group_id: self.group_id,
-            group_tracking_id: self.group_tracking_id,
-            group_name: self.group_name,
-            chunks: self
+            group_id: val.group_id,
+            group_tracking_id: val.group_tracking_id,
+            group_name: val.group_name,
+            chunks: val
                 .metadata
                 .into_iter()
                 .map(|score_chunk| score_chunk.into())
                 .collect(),
-            file_id: self.file_id,
+            file_id: val.file_id,
         }
     }
 }

@@ -16,10 +16,8 @@ use utoipa::ToSchema;
 
 #[derive(Clone, Debug, PartialEq, Eq, ToSchema, Serialize, Deserialize, Display)]
 pub enum APIVersion {
-    #[serde(rename = "1.0")]
     #[display(fmt = "1.0")]
     V1,
-    #[serde(rename = "2.0")]
     #[display(fmt = "2.0")]
     V2,
 }
@@ -105,8 +103,11 @@ where
                         .and_then(|v| v.to_str().ok());
 
                     Some(match version_header {
-                        Some(v) => serde_json::from_str(v)
-                            .unwrap_or_else(|_| APIVersion::from_dataset(dataset)),
+                        Some(v) => match v {
+                            "1.0" => APIVersion::V1,
+                            "2.0" => APIVersion::V2,
+                            _ => APIVersion::from_dataset(dataset),
+                        },
                         None => APIVersion::from_dataset(dataset),
                     })
                 } else {
