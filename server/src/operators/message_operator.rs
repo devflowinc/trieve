@@ -84,6 +84,7 @@ pub async fn create_message_query(
 
 #[tracing::instrument(skip(pool))]
 pub async fn create_generic_system_message(
+    system_prompt: Option<String>,
     messages_topic_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
@@ -91,8 +92,8 @@ pub async fn create_generic_system_message(
     let topic =
         crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)
             .await?;
-    let system_message_content =
-        "You are Trieve retrieval augmented chatbot, a large language model trained by Trieve to respond in the same tone as and with the context of retrieved information.";
+    let system_message_content = system_prompt.unwrap_or(
+        "You are Trieve retrieval augmented chatbot, a large language model trained by Trieve to respond in the same tone as and with the context of retrieved information.".to_string());
 
     let system_message = Message::from_details(
         system_message_content,
@@ -109,6 +110,7 @@ pub async fn create_generic_system_message(
 
 #[tracing::instrument(skip(pool))]
 pub async fn create_topic_message_query(
+    config: &ServerDatasetConfiguration,
     previous_messages: Vec<Message>,
     new_message: Message,
     dataset_id: uuid::Uuid,
@@ -119,8 +121,13 @@ pub async fn create_topic_message_query(
     let mut previous_messages_len = previous_messages.len();
 
     if previous_messages.is_empty() {
-        let system_message =
-            create_generic_system_message(new_message.topic_id, dataset_id, pool).await?;
+        let system_message = create_generic_system_message(
+            config.SYSTEM_PROMPT.clone(),
+            new_message.topic_id,
+            dataset_id,
+            pool,
+        )
+        .await?;
         ret_messages.extend(vec![system_message.clone()]);
         create_message_query(system_message, pool).await?;
         previous_messages_len = 1;
@@ -455,7 +462,7 @@ pub async fn stream_response(
     ));
 
     // replace the last message with the last message with evidence
-    let mut open_ai_messages: Vec<ChatMessage> = openai_messages
+    let open_ai_messages: Vec<ChatMessage> = openai_messages
         .clone()
         .into_iter()
         .enumerate()
@@ -473,19 +480,6 @@ pub async fn stream_response(
             }
         })
         .collect();
-
-    if dataset_config.SYSTEM_PROMPT.is_some() {
-        open_ai_messages.insert(
-            0,
-            ChatMessage {
-                role: Role::System,
-                content: ChatMessageContent::Text(dataset_config.SYSTEM_PROMPT.clone().unwrap()),
-                tool_calls: None,
-                name: None,
-                tool_call_id: None,
-            },
-        )
-    }
 
     let parameters = ChatCompletionParameters {
         model: chosen_model,

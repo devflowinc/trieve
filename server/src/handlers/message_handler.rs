@@ -212,6 +212,7 @@ pub async fn create_message(
 
     // call create_topic_message_query with the new_message and previous_messages
     let previous_messages = create_topic_message_query(
+        &server_dataset_configuration,
         previous_messages,
         new_message,
         dataset_org_plan_sub.dataset.id,
