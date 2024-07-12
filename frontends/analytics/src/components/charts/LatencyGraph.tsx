@@ -5,7 +5,6 @@ import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getLatency } from "../../api/analytics";
 import { Chart } from "chart.js";
-import { format } from "date-fns";
 import { formatSensibleTimestamp } from "../../utils/formatDate";
 
 export const parseCustomDateString = (dateString: string) => {
