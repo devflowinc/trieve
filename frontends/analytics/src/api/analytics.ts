@@ -14,6 +14,8 @@ import {
   QueryCountResponse,
   RPSGraphResponse,
   AnalyticsFilter,
+  RecommendationAnalyticsFilter,
+  RecommendationEventResponse,
 } from "shared/types";
 import { apiHost } from "../utils/apiHost";
 import { transformAnalyticsFilter } from "../utils/formatDate";
@@ -266,5 +268,39 @@ export const getSearchQuery = async (
   }
 
   const data = (await response.json()) as unknown as SearchQueryEvent;
+  return data;
+};
+
+export const getLowConfidenceRecommendations = async ({
+  filter,
+  page,
+  threshold,
+}: {
+  filter?: RecommendationAnalyticsFilter;
+  page?: number;
+  threshold?: number;
+}) => {
+  const response = await fetch(`${apiHost}/analytics/recommendation`, {
+    credentials: "include",
+    method: "POST",
+    body: JSON.stringify({
+      filter,
+      page,
+      threshold,
+      type: "low_confidence_recommendations",
+    }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch low confidence recommendations: ${response.statusText}`,
+    );
+  }
+
+  const data =
+    (await response.json()) as unknown as RecommendationEventResponse;
   return data;
 };

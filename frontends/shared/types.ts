@@ -515,3 +515,64 @@ export interface LatencyGraphResponse {
 export interface RagQueryResponse {
   queries: RagQueryEvent[];
 }
+
+export interface ChunkMetadata {
+  id: string;
+  chunk_html?: string;
+  link: string | null;
+  qdrant_point_id: string;
+  created_at: string;
+  updated_at: string;
+  tag_set: string | null;
+  tracking_id: string | null;
+  time_stamp: string | null;
+  metadata: Record<string, never> | null;
+  dataset_id: string;
+  weight: number;
+  location: {
+    lat: number;
+    lon: number;
+  } | null;
+  num_value: number | null;
+  image_urls: string[] | null;
+}
+
+export interface ScoreChunkDTO {
+  metadata: [ChunkMetadata];
+  score: number;
+}
+
+export interface GroupScoreChunkDTO {
+  group_id: string;
+  group_name: string;
+  group_tracking_id: string;
+  metadata: ScoreChunkDTO[];
+  file_id?: string;
+}
+
+export type SearchResultType = ScoreChunkDTO | GroupScoreChunkDTO;
+
+// Recommendations
+
+export interface RecommendationAnalyticsFilter {
+  date_range?: DateRangeFilter;
+  recommendation_type?: "chunk" | "group";
+}
+
+export interface RecommendationEvent {
+  id: string;
+  recommendation_type: string;
+  positive_ids: string[];
+  negative_ids: string[];
+  positive_tracking_ids: string[];
+  negative_tracking_ids: string[];
+  request_params: string;
+  results: SearchResultType[];
+  top_score: number;
+  dataset_id: string;
+  created_at: string;
+}
+
+export type RecommendationEventResponse = {
+  queries: RecommendationEvent[];
+};
