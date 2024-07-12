@@ -137,7 +137,9 @@ export const CreateNewDocChunkForm = () => {
           setIsSubmitting(false);
         }
 
-        navigate(`/chunk/${chunkReturnData.chunk_metadata.id}`);
+        navigate(
+          `/chunk/${chunkReturnData.chunk_metadata.id}?dataset=${dataset.dataset.id}`,
+        );
         return;
       });
     });
