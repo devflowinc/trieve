@@ -21,6 +21,8 @@ pub struct EmbeddingParameters {
     pub input: EmbeddingInput,
     /// ID of the model to use.
     pub model: String,
+    /// Truncate the input to ensure it fits within the model's limits.
+    pub truncate: bool,
 }
 
 #[tracing::instrument]
@@ -30,6 +32,10 @@ pub async fn create_embedding(
     embed_type: &str,
     dataset_config: ServerDatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
+    if message.is_empty() || message == "" {
+        return Err(ServiceError::BadRequest("No message to encode".to_string()));
+    }
+
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -126,6 +132,7 @@ pub async fn create_embedding(
     let parameters = EmbeddingParameters {
         model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
         input,
+        truncate: true,
     };
 
     let embeddings_resp = ureq::post(&format!(
@@ -314,6 +321,7 @@ pub async fn create_embeddings(
             embedding_api_key.to_string()
         };
 
+
     let thirty_message_groups = content_and_boosts.chunks(30);
 
     let vec_futures: Vec<_> = thirty_message_groups
@@ -363,6 +371,7 @@ pub async fn create_embeddings(
             let parameters = EmbeddingParameters {
                 model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
                 input,
+                truncate: true,
             };
 
             let cur_client = reqwest_client.clone();

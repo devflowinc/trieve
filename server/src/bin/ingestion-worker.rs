@@ -440,6 +440,7 @@ pub async fn bulk_upload_chunks(
                 distance_phrase: message.chunk.distance_phrase.clone(),
             }
         })
+        .filter(|data| !data.content.is_empty() || data.content != "")
         .collect();
 
     if split_average_being_used {
@@ -496,6 +497,7 @@ pub async fn bulk_upload_chunks(
                     data.distance_phrase.clone(),
                 )
             })
+            .filter(|(c, _, _)| !c.is_empty() || c != "")
             .collect();
 
     let inserted_chunk_metadata_ids: Vec<uuid::Uuid> = inserted_chunk_metadatas
@@ -787,6 +789,10 @@ async fn upload_chunk(
         num_value: payload.chunk.num_value,
     };
 
+    if content.is_empty() || content == "" {
+        return Err(ServiceError::BadRequest("Chunk HTML is required".into()));
+    }
+
     let embedding_vector = match dataset_config.SEMANTIC_ENABLED {
         true => {
             let embedding = match payload.chunk.split_avg.unwrap_or(false) {
@@ -987,6 +993,10 @@ async fn update_chunk(
     };
 
     let chunk_metadata = payload.chunk_metadata.clone();
+
+    if content.is_empty() || content == "" {
+        return Err(ServiceError::BadRequest("Chunk HTML is required".into()));
+    }
 
     let embedding_vector = match server_dataset_config.SEMANTIC_ENABLED {
         true => {
