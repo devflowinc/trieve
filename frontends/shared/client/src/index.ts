@@ -1,4 +1,4 @@
-import { $OpenApiTs } from "./types.gen";
+import { $OpenApiTs, RagQueryEvent } from "./types.gen";
 
 type HttpMethod = "get" | "post" | "put" | "delete" | "patch";
 type Paths = keyof $OpenApiTs;
@@ -32,6 +32,12 @@ type ResponseBody<
 
 type EjectOption = "eject" | false;
 
+type EjectedRequestBase<T> = {
+  trDataset?: string;
+  requestBody?: T;
+  [key: string]: any;
+};
+
 function replacePathParams(
   path: string,
   params: Record<string, string>,
@@ -48,15 +54,17 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 async function trieve<
   EJECT extends EjectOption = false,
-  URQ = EJECT extends "eject" ? any : never,
-  URE = EJECT extends "eject" ? any : never,
+  URQ = EJECT extends "eject" ? EjectedRequestBase<any> : never,
+  URE = EJECT extends "eject" ? unknown : never,
   P extends Paths = Paths,
-  M extends MethodsForPath<P> & HttpMethod = MethodsForPath<P> & HttpMethod,
+  M extends EJECT extends false
+    ? MethodsForPath<P> & HttpMethod
+    : any = MethodsForPath<P> & HttpMethod,
 >(
   path: P,
-  method: M,
-  params?: EJECT extends false ? RequestParams<P, M> : URE,
-): Promise<EJECT extends false ? ResponseBody<P, M> : URQ> {
+  method: EJECT extends false ? M : HttpMethod,
+  params?: EJECT extends false ? RequestParams<P, M> : URQ,
+): Promise<EJECT extends false ? ResponseBody<P, M> : URE> {
   let requestBody: unknown;
   const headers: Record<string, string> = {};
   const pathParams: Record<string, string> = {};
@@ -69,7 +77,7 @@ async function trieve<
     for (const [key, value] of Object.entries(params)) {
       // TODO: Add api key
       if (key === "trDataset" && typeof value === "string") {
-        headers[key] = value;
+        headers["TR-Dataset"] = value;
       } else if (key !== "requestBody" && typeof value === "string") {
         pathParams[key] = value;
       }
@@ -95,7 +103,7 @@ async function trieve<
   return response.json();
 }
 
-// USAGE EXAMPLES
+/// USAGE EXAMPLES ///
 // Fully typed!!
 
 const r0 = await trieve("/api/file/{file_id}", "delete", {
@@ -119,15 +127,13 @@ const r2 = await trieve("/api/analytics/rag", "post", {
   trDataset: "someDatasetId",
 });
 
-// r2's type is an untagged rust enum, there is no discrimiant
-// so we can eject the type system and specify a return type manually
+// r2's type for thie route is an untagged rust enum, there is no discrimiant, which doesn't play well with typescript
+// so we can eject the type system completely and specify a return type manually
 console.log(r2);
 
-// const r3 = await trieve<"eject", number, number>("/api/health","", {});
-
-export type HEALTHMETHODS = MethodsForPath<"/api/health">;
-
-const r4 = await trieve("/api/messages/{messages_topic_id}", "get", {
-  messagesTopicId: "29380",
-  trDataset: "someDatsetId",
-});
+const r2_ejected = (await trieve<"eject">("/api/analytics/rag", "post", {
+  requestBody: {
+    type: "rag_queries",
+  },
+  trDataset: "someDatasetId",
+})) as RagQueryEvent[];
