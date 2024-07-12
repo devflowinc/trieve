@@ -3,7 +3,11 @@ import { SetStoreFunction } from "solid-js/store";
 import { Select } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
-import { createSignal } from "solid-js";
+import { createEffect } from "solid-js";
+import {
+  SimpleTimeRangeSelector,
+  useSimpleTimeRange,
+} from "./SimpleTimeRangeSelector";
 
 const ALL_SEARCH_METHODS: RequiredAnalyticsFilter["search_method"][] = [
   "hybrid",
@@ -38,7 +42,7 @@ export type DateRangeOption = {
 export const dateRanges: DateRangeOption[] = [
   {
     label: "Past Hour",
-    date: subHours(new Date(), 3),
+    date: subHours(new Date(), 1),
   },
   {
     label: "Past Day",
@@ -48,16 +52,16 @@ export const dateRanges: DateRangeOption[] = [
     label: "Past Week",
     date: subDays(new Date(), 7),
   },
-  {
-    label: "Past Month",
-    date: subDays(new Date(), 30),
-  },
 ];
 
 export const FilterBar = (props: FilterBarProps) => {
-  const [dateSelection, setDateSelection] = createSignal<DateRangeOption>(
-    dateRanges[0],
-  );
+  const dateStuff = useSimpleTimeRange();
+
+  createEffect(() => {
+    props.setFilters("granularity", dateStuff.granularity());
+    props.setFilters("filter", "date_range", dateStuff.filter().date_range);
+  });
+
   return (
     <div class="flex justify-between border-neutral-400 px-3 py-2">
       <div class="flex items-center gap-2">
@@ -96,33 +100,10 @@ export const FilterBar = (props: FilterBarProps) => {
 
       <div class="flex gap-2">
         <div>
-          <Select
-            label={<div class="text-sm text-neutral-600">Date Range</div>}
-            class="min-w-[80px] !bg-white"
-            display={(s) => s.label}
-            selected={dateSelection()}
-            onSelected={(e) => {
-              setDateSelection(e);
-              props.setFilters("filter", {
-                ...props.filters.filter,
-                date_range: {
-                  gt: e.date,
-                },
-              });
-            }}
-            options={dateRanges}
-          />
-        </div>
-        <div>
-          <Select
-            label={<div class="text-sm text-neutral-600">Granularity</div>}
-            display={(s) => toTitleCase(s as string)}
-            selected={props.filters.granularity}
-            onSelected={(e) => {
-              props.setFilters("granularity", e);
-            }}
-            options={timeFrameOptions}
-            class="!bg-white"
+          <SimpleTimeRangeSelector
+            label={<div class="text-sm text-neutral-600">Time Range</div>}
+            setDateOption={dateStuff.setDateOption}
+            dateOption={dateStuff.dateOption()}
           />
         </div>
       </div>

@@ -1,11 +1,13 @@
 /* eslint-disable prefer-const */
 import { createQuery } from "@tanstack/solid-query";
 import { AnalyticsFilter, AnalyticsParams } from "shared/types";
+import { enUS } from "date-fns/locale";
 import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getLatency } from "../../api/analytics";
 import { Chart } from "chart.js";
-import { formatSensibleTimestamp } from "../../utils/formatDate";
+
+import "chartjs-adapter-date-fns";
 
 export const parseCustomDateString = (dateString: string) => {
   const [datePart, timePart] = dateString.split(" ");
@@ -86,6 +88,12 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
               beginAtZero: true,
             },
             x: {
+              adapters: {
+                date: {
+                  locale: enUS,
+                },
+              },
+              type: "time",
               title: {
                 text: "Timestamp",
                 display: true,
@@ -106,11 +114,8 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
     }
 
     // Update the chart data
-    chartInstance.data.labels = data.map((point) =>
-      formatSensibleTimestamp(
-        new Date(parseCustomDateString(point.time_stamp)),
-        props.params.filter.date_range,
-      ),
+    chartInstance.data.labels = data.map(
+      (point) => new Date(parseCustomDateString(point.time_stamp)),
     );
     chartInstance.data.datasets[0].data = data.map(
       (point) => point.average_latency,
