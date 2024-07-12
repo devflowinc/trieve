@@ -5,15 +5,22 @@ use actix_web::{
     Error, FromRequest, HttpMessage, HttpRequest,
 };
 use chrono::NaiveDate;
+use derive_more::Display;
 use futures_util::future::LocalBoxFuture;
+use serde::{Deserialize, Serialize};
 use std::{
     future::{ready, Ready},
     rc::Rc,
 };
+use utoipa::ToSchema;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, ToSchema, Serialize, Deserialize, Display)]
 pub enum APIVersion {
+    #[serde(rename = "1.0")]
+    #[display(fmt = "1.0")]
     V1,
+    #[serde(rename = "2.0")]
+    #[display(fmt = "2.0")]
     V2,
 }
 
@@ -46,12 +53,6 @@ impl APIVersion {
             return Self::V2;
         }
         Self::V1
-    }
-    fn to_header_str(&self) -> &str {
-        match self {
-            APIVersion::V1 => "1.0",
-            APIVersion::V2 => "2.0",
-        }
     }
 }
 
@@ -104,11 +105,8 @@ where
                         .and_then(|v| v.to_str().ok());
 
                     Some(match version_header {
-                        Some(v) => match v {
-                            "1.0" | "1" => APIVersion::V1,
-                            "2.0" | "2" => APIVersion::V2,
-                            _ => APIVersion::from_dataset(dataset),
-                        },
+                        Some(v) => serde_json::from_str(v)
+                            .unwrap_or_else(|_| APIVersion::from_dataset(dataset)),
                         None => APIVersion::from_dataset(dataset),
                     })
                 } else {
@@ -125,7 +123,7 @@ where
             if let Some(version) = version.clone() {
                 res.headers_mut().insert(
                     HeaderName::from_static("x-api-version"),
-                    HeaderValue::from_str(version.to_header_str()).expect("A valid header string"),
+                    HeaderValue::from_str(&version.to_string()).expect("A valid header string"),
                 );
             }
 

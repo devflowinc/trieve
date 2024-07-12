@@ -4,11 +4,11 @@ use super::{
 };
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataStringTagSet,
-        DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool, RecommendType,
-        RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
-        ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, ServerDatasetConfiguration,
-        UnifiedId,
+        ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
+        ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool,
+        RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool,
+        ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
+        ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
@@ -680,8 +680,16 @@ pub async fn add_chunk_to_group_by_tracking_id(
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct BookmarkData {
+#[schema(title = "V1")]
+pub struct GroupsBookmarkQueryResult {
     pub chunks: Vec<ChunkMetadataStringTagSet>,
+    pub group: ChunkGroupAndFileId,
+    pub total_pages: u64,
+}
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[schema(title = "V2")]
+pub struct GetChunksForGroupsResponse {
+    pub chunks: Vec<ChunkMetadata>,
     pub group: ChunkGroupAndFileId,
     pub total_pages: u64,
 }
@@ -693,6 +701,23 @@ pub struct GetAllBookmarksData {
     pub limit: Option<u64>,
 }
 
+impl From<GroupsBookmarkQueryResult> for GetChunksForGroupsResponse {
+    fn from(data: GroupsBookmarkQueryResult) -> Self {
+        Self {
+            chunks: data.chunks.into_iter().map(|c| c.into()).collect(),
+            group: data.group,
+            total_pages: data.total_pages,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[serde(untagged)]
+pub enum BookmarkGroupResponse {
+    V2(GetChunksForGroupsResponse),
+    V1(GroupsBookmarkQueryResult),
+}
+
 /// Get Chunks in Group
 ///
 /// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Page is 1-indexed.
@@ -702,13 +727,14 @@ pub struct GetAllBookmarksData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "Chunks present within the specified group", body = BookmarkData),
+        (status = 200, description = "Chunks present within the specified group", body = BookmarkGroupResponse),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("group_id" = uuid::Uuid, Path, description = "Id of the group you want to fetch."),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The version of the API to use for the request"),
         ("page" = Option<u64>, description = "The page of chunks to get from the group"),
     ),
     security(
@@ -720,6 +746,7 @@ pub async fn get_chunks_in_group(
     group_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = group_data.page.unwrap_or(1);
@@ -735,11 +762,12 @@ pub async fn get_chunks_in_group(
     )
     .await?;
 
-    Ok(HttpResponse::Ok().json(BookmarkData {
-        chunks: bookmarks.metadata,
-        group: bookmarks.group,
-        total_pages: bookmarks.total_pages,
-    }))
+    let response = match api_version {
+        APIVersion::V1 => BookmarkGroupResponse::V1(bookmarks.into()),
+        APIVersion::V2 => BookmarkGroupResponse::V2(bookmarks.into()),
+    };
+
+    Ok(HttpResponse::Ok().json(response))
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -757,13 +785,14 @@ pub struct GetAllBookmarksByTrackingIdData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "Chunks present within the specified group", body = BookmarkData),
+        (status = 200, description = "Chunks present within the specified group", body = BookmarkGroupResponse),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("group_tracking_id" = String, description = "The id of the group to get the chunks from"),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The version of the API to use for the request"),
         ("page" = u64, description = "The page of chunks to get from the group"),
     ),
     security(
@@ -775,6 +804,7 @@ pub async fn get_chunks_in_group_by_tracking_id(
     path_data: web::Path<GetAllBookmarksByTrackingIdData>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = path_data.page.unwrap_or(1);
@@ -791,11 +821,12 @@ pub async fn get_chunks_in_group_by_tracking_id(
         .await?
     };
 
-    Ok(HttpResponse::Ok().json(BookmarkData {
-        chunks: bookmarks.metadata,
-        group: bookmarks.group,
-        total_pages: bookmarks.total_pages,
-    }))
+    let response = match api_version {
+        APIVersion::V1 => BookmarkGroupResponse::V1(bookmarks.into()),
+        APIVersion::V2 => BookmarkGroupResponse::V2(bookmarks.into()),
+    };
+
+    Ok(HttpResponse::Ok().json(response))
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -814,7 +845,7 @@ pub struct GetGroupsForChunksData {
     tag = "Chunk Group",
     request_body(content = GetGroupsForChunksData, description = "JSON request payload to get the groups that a chunk is in", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the groups that the chunk is in", body = Vec<BookmarkGroupResult>),
+        (status = 200, description = "JSON body representing the groups that the chunk is in", body = Vec<BookmarkGroupResponse>),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
@@ -925,10 +956,8 @@ pub struct RecommendGroupChunksRequest {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendGroupsResponse {
-    #[schema(title = "V2")]
-    V2(Vec<GroupChunks>),
-    #[serde(rename = "V1")]
-    V1(Vec<GroupScoreChunk>),
+    V2(GroupChunks),
+    V1(GroupScoreChunk),
 }
 
 /// Get Recommended Groups
@@ -941,12 +970,12 @@ pub enum RecommendGroupsResponse {
     tag = "Chunk Group",
     request_body(content = RecommendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = RecommendGroupsResponse),
+        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = Vec<RecommendGroupsResponse>),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1256,16 +1285,16 @@ pub enum SearchGroupResponseTypes {
     V1(SearchWithinGroupResults),
 }
 
-impl SearchWithinGroupResults {
-    pub fn into_new_payload(self) -> SearchWithinGroupResponseBody {
+impl From<SearchWithinGroupResults> for SearchWithinGroupResponseBody {
+    fn from(search_within_group_results: SearchWithinGroupResults) -> Self {
         SearchWithinGroupResponseBody {
-            chunks: self
+            chunks: search_within_group_results
                 .bookmarks
                 .into_iter()
-                .map(|chunk| chunk.to_updated_chunk_metadata())
+                .map(|chunk| chunk.into())
                 .collect(),
-            group: self.group,
-            total_pages: self.total_pages,
+            group: search_within_group_results.group,
+            total_pages: search_within_group_results.total_pages,
         }
     }
 }
@@ -1285,7 +1314,7 @@ impl SearchWithinGroupResults {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1401,7 +1430,7 @@ pub async fn search_within_group(
     if api_version == APIVersion::V1 {
         Ok(HttpResponse::Ok().json(result_chunks))
     } else {
-        Ok(HttpResponse::Ok().json(result_chunks.into_new_payload()))
+        Ok(HttpResponse::Ok().json(SearchWithinGroupResponseBody::from(result_chunks)))
     }
 }
 
@@ -1454,7 +1483,7 @@ pub struct SearchOverGroupsData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),

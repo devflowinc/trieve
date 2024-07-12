@@ -875,6 +875,7 @@ pub struct FullTextDocIds {
         }
     ]
 }))]
+#[schema(title = "V1")]
 pub struct GroupScoreChunk {
     pub group_id: uuid::Uuid,
     pub group_tracking_id: Option<String>,
@@ -908,6 +909,7 @@ pub struct GroupScoreChunk {
         }
     ]
 }))]
+#[schema(title = "V2")]
 pub struct GroupChunks {
     pub group_id: uuid::Uuid,
     pub group_tracking_id: Option<String>,
@@ -925,7 +927,7 @@ impl Into<GroupChunks> for GroupScoreChunk {
             chunks: self
                 .metadata
                 .into_iter()
-                .map(|score_chunk| score_chunk.to_updated_chunk_metadata())
+                .map(|score_chunk| score_chunk.into())
                 .collect(),
             file_id: self.file_id,
         }

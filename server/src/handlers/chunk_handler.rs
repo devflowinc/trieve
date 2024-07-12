@@ -1053,15 +1053,15 @@ pub enum SearchResponseTypes {
     V1(SearchChunkQueryResponseBody),
 }
 
-impl SearchChunkQueryResponseBody {
-    pub fn into_new_payload(self) -> SearchResponseBody {
+impl From<SearchChunkQueryResponseBody> for SearchResponseBody {
+    fn from(search_chunk_query_response_body: SearchChunkQueryResponseBody) -> Self {
         SearchResponseBody {
-            chunks: self
+            chunks: search_chunk_query_response_body
                 .score_chunks
                 .into_iter()
-                .map(|chunk| chunk.to_updated_chunk_metadata())
+                .map(|chunk| chunk.into())
                 .collect(),
-            total_pages: self.total_chunk_pages,
+            total_pages: search_chunk_query_response_body.total_chunk_pages,
         }
     }
 }
@@ -1120,7 +1120,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1243,7 +1243,7 @@ pub async fn search_chunks(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .json(result_chunks.into_new_payload()));
+            .json(SearchResponseTypes::V2(result_chunks.into())));
     }
 
     Ok(HttpResponse::Ok()
@@ -1389,7 +1389,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1489,12 +1489,19 @@ pub async fn autocomplete(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .json(result_chunks.into_new_payload()));
+            .json(SearchResponseTypes::V2(result_chunks.into())));
     }
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
         .json(result_chunks))
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[serde(untagged)]
+pub enum ChunkReturnTypes {
+    V2(ChunkMetadata),
+    V1(ChunkMetadataStringTagSet),
 }
 
 /// Get Chunk By Id
@@ -1506,12 +1513,13 @@ pub async fn autocomplete(
     context_path = "/api",
     tag = "Chunk",
     responses(
-        (status = 200, description = "chunk with the id that you were searching for", body = ChunkMetadataStringTagSet),
+        (status = 200, description = "chunk with the id that you were searching for", body = ChunkReturnTypes),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
         (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request"),
         ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
     security(
@@ -1523,6 +1531,7 @@ pub async fn get_chunk_by_id(
     chunk_id: web::Path<uuid::Uuid>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let chunk_id = chunk_id.into_inner();
@@ -1538,6 +1547,9 @@ pub async fn get_chunk_by_id(
     let pointid_exists = point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?;
 
     if pointid_exists {
+        if api_version == APIVersion::V2 {
+            return Ok(HttpResponse::Ok().json(ChunkMetadata::from(chunk_string_tag_set)));
+        }
         Ok(HttpResponse::Ok().json(chunk_string_tag_set))
     } else {
         Err(ServiceError::NotFound("Chunk not found".to_string()))
@@ -1697,12 +1709,13 @@ pub async fn count_chunks(
     context_path = "/api",
     tag = "Chunk",
     responses(
-        (status = 200, description = "chunk with the tracking_id that you were searching for", body = ChunkMetadataStringTagSet),
+        (status = 200, description = "chunk with the tracking_id that you were searching for", body = ChunkReturnTypes),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
         (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request"),
         ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch"),
     ),
     security(
@@ -1714,6 +1727,7 @@ pub async fn get_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_configuration = ServerDatasetConfiguration::from_json(
@@ -1733,6 +1747,9 @@ pub async fn get_chunk_by_tracking_id(
     let pointid_exists = point_ids_exists_in_qdrant(vec![point_id], dataset_configuration).await?;
 
     if pointid_exists {
+        if api_version == APIVersion::V2 {
+            return Ok(HttpResponse::Ok().json(ChunkMetadata::from(chunk_tag_set_string)));
+        }
         Ok(HttpResponse::Ok().json(chunk_tag_set_string))
     } else {
         Err(ServiceError::NotFound("Chunk not found".to_string()))
@@ -1754,12 +1771,13 @@ pub struct GetChunksData {
     tag = "Chunk",
     request_body(content = GetChunksData, description = "JSON request payload to get the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "chunks with the id that you were searching for", body = Vec<ChunkMetadataStringTagSet>),
+        (status = 200, description = "chunks with the id that you were searching for", body = Vec<ChunkReturnTypes>),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
         (status = 404, description = "Any one of the specified chunks not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1770,6 +1788,7 @@ pub async fn get_chunks_by_ids(
     chunk_payload: web::Json<GetChunksData>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_configuration = ServerDatasetConfiguration::from_json(
@@ -1795,6 +1814,14 @@ pub async fn get_chunks_by_ids(
     let pointids_exists = point_ids_exists_in_qdrant(point_ids, dataset_configuration).await?;
 
     if pointids_exists {
+        if api_version == APIVersion::V2 {
+            return Ok(HttpResponse::Ok().json(
+                chunk_string_tag_sets
+                    .into_iter()
+                    .map(ChunkMetadata::from)
+                    .collect::<Vec<ChunkMetadata>>(),
+            ));
+        }
         Ok(HttpResponse::Ok().json(chunk_string_tag_sets))
     } else {
         Err(ServiceError::NotFound(
@@ -1808,7 +1835,7 @@ pub struct GetTrackingChunksData {
     pub tracking_ids: Vec<String>,
 }
 
-/// Get Chunks By TrackingIds
+/// Get Chunks By Tracking Ids
 ///
 /// Get multiple chunks by ids.
 #[utoipa::path(
@@ -1818,11 +1845,12 @@ pub struct GetTrackingChunksData {
     tag = "Chunk",
     request_body(content = GetTrackingChunksData, description = "JSON request payload to get the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "Chunks with one the ids which were specified", body = Vec<ChunkMetadataStringTagSet>),
+        (status = 200, description = "Chunks with one the ids which were specified", body = Vec<ChunkReturnTypes>),
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1833,6 +1861,7 @@ pub async fn get_chunks_by_tracking_ids(
     chunk_payload: web::Json<GetTrackingChunksData>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_configuration = ServerDatasetConfiguration::from_json(
@@ -1858,6 +1887,14 @@ pub async fn get_chunks_by_tracking_ids(
     let pointids_exists = point_ids_exists_in_qdrant(point_ids, dataset_configuration).await?;
 
     if pointids_exists {
+        if api_version == APIVersion::V2 {
+            return Ok(HttpResponse::Ok().json(
+                chunk_string_tag_sets
+                    .into_iter()
+                    .map(ChunkMetadata::from)
+                    .collect::<Vec<ChunkMetadata>>(),
+            ));
+        }
         Ok(HttpResponse::Ok().json(chunk_string_tag_sets))
     } else {
         Err(ServiceError::NotFound(
@@ -1888,11 +1925,11 @@ pub struct RecommendChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendResponseTypes {
-    V2(Vec<ScoreChunk>),
-    V1(Vec<ChunkMetadataWithScore>),
+    V2(ScoreChunk),
+    V1(ChunkMetadataWithScore),
 }
 
 /// Get Recommended Chunks
@@ -1906,12 +1943,12 @@ pub enum RecommendResponseTypes {
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
 
-        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives", body = RecommendResponseTypes),
+        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives", body = Vec<RecommendResponseTypes>),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<String>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
     ),
     security(
         ("ApiKey" = ["readonly"]),
