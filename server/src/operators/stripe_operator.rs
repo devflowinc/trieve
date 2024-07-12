@@ -161,8 +161,6 @@ pub async fn create_stripe_payment_link(
             ServiceError::BadRequest("Failed to get stripe payment link json".to_string())
         })?;
 
-    log::info!("Payment link response: {:?}", payment_link_response_json);
-
     let payment_link =
         payment_link_response_json["url"]
             .as_str()
