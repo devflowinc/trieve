@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "genclient": "node ./generateClient.mjs"
   },
   "exports": {
     ".": {
@@ -42,6 +42,10 @@
     "terracotta": "^1.0.5"
   },
   "devDependencies": {
+    "solid-icons": "^1.1.0",
+    "solid-js": "^1.8.17",
+    "terracotta": "^1.0.5",
+    "@hey-api/openapi-ts": "^0.48.2",
     "config": "*",
     "typescript": "^5.0.4"
   }
