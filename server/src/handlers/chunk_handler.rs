@@ -954,13 +954,12 @@ pub struct ChunkFilter {
     },
     "recency_bias": 1.0,
     "use_weights": true,
-    "get_collisions": true,
     "highlight_results": true,
     "highlight_delimiters": ["?", ",", ".", "!"],
     "score_threshold": 0.5
 }))]
 pub struct SearchChunksReqPayload {
-    /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid", it will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
+    /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid", it will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
@@ -980,8 +979,6 @@ pub struct SearchChunksReqPayload {
     pub use_weights: Option<bool>,
     /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
     pub tag_weights: Option<HashMap<String, f32>>,
-    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
-    pub get_collisions: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
@@ -994,14 +991,13 @@ pub struct SearchChunksReqPayload {
     pub highlight_max_num: Option<u32>,
     /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
     pub highlight_window: Option<u32>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
-    /// If true, chunks will be reranked using BAAI/bge-reranker-large. "hybrid" search does this
-    /// by default and this flag does not affect it.
+    /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
 }
 
@@ -1018,7 +1014,6 @@ impl Default for SearchChunksReqPayload {
             location_bias: None,
             use_weights: None,
             tag_weights: None,
-            get_collisions: None,
             highlight_results: None,
             highlight_threshold: None,
             highlight_delimiters: None,
@@ -1089,7 +1084,6 @@ pub fn parse_query(query: String) -> ParsedQuery {
     request_body(content = SearchChunksReqPayload, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkQueryResponseBody),
-
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
@@ -1246,7 +1240,6 @@ pub async fn search_chunks(
     },
     "recency_bias": 1.0,
     "use_weights": true,
-    "get_collisions": true,
     "highlight_results": true,
     "highlight_delimiters": ["?", ",", ".", "!"],
     "score_threshold": 0.5
@@ -1282,14 +1275,13 @@ pub struct AutocompleteReqPayload {
     pub highlight_max_num: Option<u32>,
     /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
     pub highlight_window: Option<u32>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
-    /// If true, chunks will be reranked using BAAI/bge-reranker-large. "hybrid" search does this
-    /// by default and this flag does not affect it.
+    /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
 }
 
@@ -1305,7 +1297,6 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             recency_bias: autocomplete_data.recency_bias,
             use_weights: autocomplete_data.use_weights,
             tag_weights: autocomplete_data.tag_weights,
-            get_collisions: None,
             highlight_results: autocomplete_data.highlight_results,
             highlight_threshold: autocomplete_data.highlight_threshold,
             highlight_delimiters: Some(
@@ -1501,7 +1492,7 @@ pub struct CountChunksReqPayload {
     pub query: String,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold. Will restrict the count to only chunks with a score above the threshold.
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Set limit to restrict the maximum number of chunks to count. This is useful for when you want to reduce the latency of the count operation. By default the limit will be the number of chunks in the dataset.
     pub limit: Option<u64>,
@@ -1514,7 +1505,7 @@ pub struct CountChunkQueryResponseBody {
 
 /// Count chunks above threshold
 ///
-/// This route can be used to determine the number of chunks that match a given search criteria including filters and score threshold. It may be high latency for large datasets. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// This route can be used to determine the number of chunks that match a given search criteria including filters and score threshold. It may be high latency for large datasets. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization. There is a dataset configuration imposed restriction on the maximum limit value (default 10,000) which is used to prevent DDOS attacks.
 #[utoipa::path(
     post,
     path = "/chunk/count",
@@ -1528,13 +1519,13 @@ pub struct CountChunkQueryResponseBody {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("ApiKey" = ["admin"]),
+        ("ApiKey" = ["readonly"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn count_chunks(
     data: web::Json<CountChunksReqPayload>,
-    _user: AdminOnly,
+    _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {

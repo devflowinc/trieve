@@ -1031,7 +1031,6 @@ pub async fn retrieve_chunks_for_groups(
 #[tracing::instrument(skip(pool))]
 pub async fn get_metadata_from_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
-    get_collisions: Option<bool>,
     slim_chunks: Option<bool>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
@@ -1430,7 +1429,11 @@ pub async fn search_semantic_chunks(
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
-        score_threshold: data.score_threshold,
+        score_threshold: if data.use_reranker.unwrap_or(false) {
+            None
+        } else {
+            data.score_threshold
+        },
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
@@ -1455,13 +1458,19 @@ pub async fn search_semantic_chunks(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            cross_encoder(
+            let mut cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks,
                 config,
             )
-            .await?
+            .await?;
+
+            if let Some(score_threshold) = data.score_threshold {
+                cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
+            }
+
+            cross_encoder_results
         }
     };
 
@@ -1512,7 +1521,11 @@ pub async fn search_full_text_chunks(
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Sparse(sparse_vector),
-        score_threshold: data.score_threshold,
+        score_threshold: if data.use_reranker.unwrap_or(false) {
+            None
+        } else {
+            data.score_threshold
+        },
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
@@ -1537,13 +1550,19 @@ pub async fn search_full_text_chunks(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            cross_encoder(
+            let mut cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks,
                 config,
             )
-            .await?
+            .await?;
+
+            if let Some(score_threshold) = data.score_threshold {
+                cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
+            }
+
+            cross_encoder_results
         }
     };
 
@@ -1643,13 +1662,17 @@ pub async fn search_hybrid_chunks(
 
     let mut reranked_chunks = {
         let mut reranked_chunks = {
-            let cross_encoder_results = cross_encoder(
+            let mut cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks,
                 config,
             )
             .await?;
+
+            if let Some(score_threshold) = data.score_threshold {
+                cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
+            }
 
             rerank_chunks(
                 cross_encoder_results,
@@ -1663,10 +1686,6 @@ pub async fn search_hybrid_chunks(
         reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
 
         timer.add("reranking");
-
-        if let Some(score_threshold) = data.score_threshold {
-            reranked_chunks.retain(|chunk| chunk.score >= score_threshold.into());
-        }
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
@@ -1720,7 +1739,11 @@ pub async fn search_semantic_groups(
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
-        score_threshold: data.score_threshold,
+        score_threshold: if data.use_reranker.unwrap_or(false) {
+            None
+        } else {
+            data.score_threshold
+        },
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, Some(group.id), pool.clone())
@@ -1745,13 +1768,19 @@ pub async fn search_semantic_groups(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            cross_encoder(
+            let mut cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks,
                 config,
             )
-            .await?
+            .await?;
+
+            if let Some(score_threshold) = data.score_threshold {
+                cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
+            }
+
+            cross_encoder_results
         }
     };
 
@@ -1786,7 +1815,11 @@ pub async fn search_full_text_groups(
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Sparse(sparse_vector),
-        score_threshold: data.score_threshold,
+        score_threshold: if data.use_reranker.unwrap_or(false) {
+            None
+        } else {
+            data.score_threshold
+        },
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, Some(group.id), pool.clone())
@@ -1811,13 +1844,19 @@ pub async fn search_full_text_groups(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            cross_encoder(
+            let mut cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks,
                 config,
             )
-            .await?
+            .await?;
+
+            if let Some(score_threshold) = data.score_threshold {
+                cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
+            }
+
+            cross_encoder_results
         }
     };
 
