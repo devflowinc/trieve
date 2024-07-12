@@ -20,13 +20,18 @@ if "%1"=="l" (
     call :start_local_services
 )
 
+if "%1"=="c" (
+    call :build_ts_client
+)
+
 if "%1"=="" (
-    echo "Usage: ./convenience.bat [q|p|3|s|l]"
+    echo "Usage: ./convenience.bat [q|p|3|s|l|c]"
     echo "q - reset the Qdrant database"
     echo "p - set up the Python environment"
     echo "3 - reset the S3 service"
     echo "s - reset the script Redis database"
     echo "l - start local services"
+    echo "c - build the TypeScript client"
 )
 
 EXIT /B %ERRORLEVEL%
@@ -66,4 +71,10 @@ docker "compose" "up" "-d" "redis"
 docker "compose" "up" "-d" "qdrant-database"
 docker "compose" "up" "-d" "s3"
 docker "compose" "up" "-d" "s3-client"
+EXIT /B 0
+
+:build_ts_client
+echo "Building the TypeScript client..."
+cargo run --features runtime-env --manifest-path server/Cargo.toml --bin redoc_ci > ./frontends/client/openapi.json
+cd ./frontends/client/; yarn build:clean;
 EXIT /B 0

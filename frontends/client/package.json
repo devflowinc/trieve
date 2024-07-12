@@ -1,0 +1,22 @@
+{
+  "name": "trieve-fetch-client",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "version": "0.0.1",
+  "license": "MIT",
+  "scripts": {
+    "build:clean": "rm -rf dist && yarn type:gen && yarn build",
+    "build": "yarn build:src && yarn type:dts",
+    "build:src": "node ./scripts/build.js",
+    "type:gen": "node ./scripts/genClient.js",
+    "type:dts": "tsc --emitDeclarationOnly --declarationMap"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "esbuild": "^0.21.5",
+    "@hey-api/openapi-ts": "^0.48.2",
+    "esbuild-register": "^3.6.0"
+  }
+}

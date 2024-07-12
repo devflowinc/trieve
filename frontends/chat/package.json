@@ -29,7 +29,8 @@
     "solid-markdown": "^2.0.13",
     "tailwind-gradient-mask-image": "^1.2.0",
     "tailwind-scrollbar": "^3.1.0",
-    "terracotta": "^1.0.3"
+    "terracotta": "^1.0.3",
+    "trieve-fetch-client": "*"
   },
   "devDependencies": {
     "config": "*",

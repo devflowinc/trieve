@@ -9,7 +9,8 @@
     "chat",
     "analytics",
     "shared",
-    "config"
+    "config",
+    "client"
   ],
   "scripts": {
     "dev": "turbo dev",

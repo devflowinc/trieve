@@ -5,13 +5,22 @@
     "build": {
       "outputs": [
         "dist/**"
+      ],
+      "dependsOn": [
+        "^build"
       ]
     },
     "lint": {
-      "cache": false
+      "cache": false,
+      "dependsOn": [
+        "^build"
+      ]
     },
     "lint:CI": {
-      "cache": false
+      "cache": false,
+      "dependsOn": [
+        "^build"
+      ]
     },
     "dev": {
       "persistent": true,
