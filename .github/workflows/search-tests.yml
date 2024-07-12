@@ -15,7 +15,7 @@ jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install dependencies
         working-directory: frontends
         run: yarn --frozen-lockfile
@@ -25,7 +25,7 @@ jobs:
   eslint:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install dependencies
         working-directory: frontends
         run: yarn --frozen-lockfile
