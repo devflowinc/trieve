@@ -374,7 +374,7 @@ pub struct QueryCountResponse {
 
 pub async fn get_query_counts_query(
     dataset_id: uuid::Uuid,
-    gt_date: Option<String>,
+    filter: Option<SearchAnalyticsFilter>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<QueryCountResponse, ServiceError> {
     let mut query_string = String::from(
@@ -387,8 +387,8 @@ pub async fn get_query_counts_query(
         WHERE dataset_id = ?",
     );
 
-    if let Some(gt) = gt_date {
-        query_string.push_str(&format!(" AND created_at > '{}'", gt));
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
     }
 
     query_string.push_str(
