@@ -13,13 +13,13 @@ jobs:
   cargo-fmt:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Cargo fmt
         run: cargo fmt --manifest-path=./server/Cargo.toml -- --check
   clippy_check_ingestion:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
@@ -45,7 +45,7 @@ jobs:
   clippy_check_grupdate_worker:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
@@ -71,7 +71,7 @@ jobs:
   clippy_check_file_worker:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
@@ -97,7 +97,7 @@ jobs:
   clippy_check:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
@@ -122,7 +122,7 @@ jobs:
   redoc:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
