@@ -399,6 +399,15 @@ pub async fn create_invoice_query(
 
     use crate::data::schema::stripe_invoices::dsl as stripe_invoices_columns;
 
+    let invoice_exists =
+        invoice_exists_query(stripe_invoice.clone().hosted_invoice_url, pool.clone()).await?;
+
+    if invoice_exists {
+        return Err(ServiceError::BadRequest(
+            "Invoice already exists".to_string(),
+        ));
+    }
+
     let mut conn = pool
         .get()
         .await
@@ -411,6 +420,28 @@ pub async fn create_invoice_query(
         .map_err(|_| ServiceError::BadRequest("Failed to create invoice".to_string()))?;
 
     Ok(())
+}
+
+pub async fn invoice_exists_query(
+    invoice_url: String,
+    pool: web::Data<Pool>,
+) -> Result<bool, ServiceError> {
+    use crate::data::schema::stripe_invoices::dsl as stripe_invoices_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let invoice: Option<String> = stripe_invoices_columns::stripe_invoices
+        .filter(stripe_invoices_columns::hosted_invoice_url.eq(invoice_url))
+        .select(stripe_invoices_columns::hosted_invoice_url)
+        .first::<String>(&mut conn)
+        .await
+        .optional()
+        .map_err(|_| ServiceError::BadRequest("Failed to get stripe invoice".to_string()))?;
+
+    Ok(invoice.is_some())
 }
 
 #[tracing::instrument(skip(pool))]
