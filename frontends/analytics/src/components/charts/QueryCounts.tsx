@@ -6,7 +6,6 @@ import { getQueryCounts } from "../../api/analytics";
 import { toTitleCase } from "../../utils/titleCase";
 import { Select } from "shared/ui";
 import { DateRangeOption, dateRanges } from "../FilterBar";
-import { formatDateForApi } from "../../utils/formatDate";
 
 const displaySearchType = (type: SearchTypeCount["search_type"]) => {
   switch (type) {
