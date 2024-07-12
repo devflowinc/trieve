@@ -81,7 +81,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
   const [recommendedChunks, setRecommendedChunks] = createSignal<
-    ChunkMetadata[]
+    ScoreChunkDTO[]
   >([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
@@ -338,7 +338,7 @@ export const GroupPage = (props: GroupPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prevRecommendations: ChunkMetadata[],
+    prevRecommendations: ScoreChunkDTO[],
     prevGroupRecommendations: GroupScoreChunkDTO[],
     groupRecommendations: boolean,
   ) => {
@@ -392,9 +392,9 @@ export const GroupPage = (props: GroupPageProps) => {
             ];
             setGroupRecommendedChunks(newRecommendations);
           } else {
-            const typedData = data as ChunkMetadata[];
+            const typedData = data as ScoreChunkDTO[];
             const dedupedData = typedData.filter((d) => {
-              return !prevRecommendations.some((c) => c.id == d.id);
+              return !prevRecommendations.some((c) => c.chunk.id == d.chunk.id);
             });
             const newRecommendations = [...prevRecommendations, ...dedupedData];
             setRecommendedChunks(newRecommendations);
@@ -595,7 +595,7 @@ export const GroupPage = (props: GroupPageProps) => {
                     <div class="mt-4">
                       <ChunkMetadataDisplay
                         totalGroupPages={totalGroupPages()}
-                        chunk={chunk}
+                        chunk={chunk.chunk}
                         chunkGroups={chunkGroups()}
                         bookmarks={[]}
                         setShowConfirmModal={setShowConfirmDeleteModal}
