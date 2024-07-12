@@ -321,7 +321,6 @@ pub async fn create_embeddings(
             embedding_api_key.to_string()
         };
 
-
     let thirty_message_groups = content_and_boosts.chunks(30);
 
     let vec_futures: Vec<_> = thirty_message_groups
