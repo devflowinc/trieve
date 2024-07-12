@@ -7,7 +7,11 @@ import { useBetterNav } from "../utils/useBetterNav";
 import { Select } from "shared/ui";
 import { AiOutlineLineChart, AiOutlineUser } from "solid-icons/ai";
 import { apiHost } from "../utils/apiHost";
-import { IoChatboxOutline, IoLogOutOutline } from "solid-icons/io";
+import {
+  IoChatboxOutline,
+  IoLogOutOutline,
+  IoThumbsUpOutline,
+} from "solid-icons/io";
 import { HiOutlineMagnifyingGlass, HiOutlineNewspaper } from "solid-icons/hi";
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
@@ -30,6 +34,11 @@ const navbarRoutes = [
     href: "/rag",
     label: "RAG Analytics",
     icon: IoChatboxOutline,
+  },
+  {
+    href: "/recommendations",
+    label: "Recommendation Analytics",
+    icon: IoThumbsUpOutline,
   },
   {
     href: "/trends",

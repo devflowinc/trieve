@@ -5,6 +5,7 @@ import { render } from "solid-js/web";
 import "./index.css";
 import { RouteDefinition, Router } from "@solidjs/router";
 import { SearchAnalyticsPage } from "./pages/SearchAnalyticsPage";
+import { RecommendationAnalyticsPage } from "./pages/RecommendationAnalyticsPage";
 import { UserAuthContextProvider } from "./contexts/UserAuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { TrendExplorer } from "./pages/TrendExplorer";
@@ -29,6 +30,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/analytics",
         component: SearchAnalyticsPage,
+      },
+      {
+        path: "/recommendations",
+        component: RecommendationAnalyticsPage,
       },
       {
         path: "/rag",
