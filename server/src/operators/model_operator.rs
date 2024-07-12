@@ -91,6 +91,7 @@ pub async fn create_embedding(
         };
 
     let clipped_message = if message.len() > 7000 {
+        println!("Clipping message");
         message.chars().take(20000).collect()
     } else {
         message.clone()
@@ -343,8 +344,8 @@ pub async fn create_embeddings(
                 .iter()
                 .chain(boost_phrases.iter())
                 .map(|message| {
-                    if message.len() > 7000 {
-                        message.chars().take(20000).collect()
+                    if message.len() > 5000 {
+                        message.chars().take(12000).collect()
                     } else {
                         message.clone()
                     }
@@ -392,11 +393,11 @@ pub async fn create_embeddings(
                     ServiceError::BadRequest("Failed to get text from embeddings".to_string())
                 })?;
 
-                let embeddings: EmbeddingResponse = format_response(embeddings_resp)
-                    .map_err(|e| {
-                        log::error!("Failed to format response from embeddings server {:?}", e);
+                let embeddings: EmbeddingResponse = format_response(embeddings_resp.clone())
+                    .map_err(move |e| {
+                        log::error!("Failed to format response from embeddings server {:?}", embeddings_resp);
                         ServiceError::InternalServerError(
-                            "Failed to format response from embeddings server".to_owned(),
+                            format!("Failed to format response from embeddings server {:?}", embeddings_resp)
                         )
                     })?;
 
