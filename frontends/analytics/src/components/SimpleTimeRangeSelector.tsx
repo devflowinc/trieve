@@ -13,8 +13,6 @@ const getReasonableGranularityFromDateRange = (
       return "hour";
     case "Past Week":
       return "day";
-    case "Past Month":
-      return "month";
     default:
       return "hour";
   }
