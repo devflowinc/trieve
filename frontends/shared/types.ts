@@ -434,7 +434,7 @@ export interface RequiredAnalyticsFilter {
 // The search analytics params bar conforms to this
 export interface AnalyticsParams {
   filter: RequiredAnalyticsFilter;
-  granularity: "day" | "week" | "hour" | "month" | "minute" | "second";
+  granularity: "minute" | "second" | "hour" | "day";
 }
 
 export interface LatencyDatapoint {

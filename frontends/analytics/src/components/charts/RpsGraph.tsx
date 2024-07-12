@@ -4,8 +4,8 @@ import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getRps } from "../../api/analytics";
 import { Chart } from "chart.js";
-import { format } from "date-fns";
 import { parseCustomDateString } from "./LatencyGraph";
+import { formatSensibleTimestamp } from "../../utils/formatDate";
 
 interface RpsGraphProps {
   params: {
@@ -83,10 +83,14 @@ export const RpsGraph = (props: RpsGraphProps) => {
       // @ts-expect-error library types not updated
       chartInstance.options.scales["x"].offset = true;
     }
+    console.log("IN COMPONENT", props.params.filter.date_range);
 
     // Update the chart data;
     chartInstance.data.labels = data.map((point) =>
-      format(new Date(parseCustomDateString(point.time_stamp)), "HH:mm:ss"),
+      formatSensibleTimestamp(
+        new Date(parseCustomDateString(point.time_stamp)),
+        props.params.filter.date_range,
+      ),
     );
     chartInstance.data.datasets[0].data = data.map(
       (point) => point.average_rps,

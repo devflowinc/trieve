@@ -25,8 +25,6 @@ interface FilterBarProps {
 
 export const timeFrameOptions: AnalyticsParams["granularity"][] = [
   "day",
-  "week",
-  "month",
   "hour",
   "minute",
   "second",
@@ -40,7 +38,7 @@ export type DateRangeOption = {
 export const dateRanges: DateRangeOption[] = [
   {
     label: "Past Hour",
-    date: subHours(new Date(), 1),
+    date: subHours(new Date(), 3),
   },
   {
     label: "Past Day",
