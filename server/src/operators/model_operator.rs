@@ -32,7 +32,7 @@ pub async fn create_embedding(
     embed_type: &str,
     dataset_config: ServerDatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
-    if message.is_empty() || message == "" {
+    if message.is_empty() || message.is_empty() {
         return Err(ServiceError::BadRequest("No message to encode".to_string()));
     }
 
