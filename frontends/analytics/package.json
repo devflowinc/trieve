@@ -19,6 +19,7 @@
     "@types/matter-js": "^0.19.6",
     "add": "^2.0.6",
     "chart.js": "^4.4.3",
+    "chartjs-adapter-date-fns": "^3.0.0",
     "colord": "^2.9.3",
     "date-fns": "^3.6.0",
     "matter-js": "^0.20.0",
@@ -30,10 +31,10 @@
     "yarn": "^1.22.22"
   },
   "devDependencies": {
-    "config": "*",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "7.14.1",
     "autoprefixer": "^10.4.19",
+    "config": "*",
     "eslint": "^8.13.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-config-semistandard": "^17.0.0",

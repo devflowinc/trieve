@@ -1,4 +1,4 @@
-import { createMemo, createSignal } from "solid-js";
+import { createMemo, createSignal, JSX } from "solid-js";
 import { DateRangeOption, dateRanges } from "./FilterBar";
 import { AnalyticsParams } from "shared/types";
 import { Select } from "shared/ui";
@@ -39,6 +39,7 @@ export const useSimpleTimeRange = () => {
 };
 
 interface SimpleTimeRangeSelectorProps {
+  label?: JSX.Element;
   dateOption: DateRangeOption;
   setDateOption: (date: DateRangeOption) => void;
 }
@@ -48,6 +49,7 @@ export const SimpleTimeRangeSelector = (
 ) => {
   return (
     <Select
+      label={props.label}
       class="min-w-[80px] !bg-white"
       display={(s) => s.label}
       selected={props.dateOption}

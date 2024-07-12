@@ -1,11 +1,11 @@
 import { createQuery } from "@tanstack/solid-query";
+import { enUS } from "date-fns/locale";
 import { AnalyticsFilter, AnalyticsParams } from "shared/types";
 import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getRps } from "../../api/analytics";
 import { Chart } from "chart.js";
 import { parseCustomDateString } from "./LatencyGraph";
-import { formatSensibleTimestamp } from "../../utils/formatDate";
 
 interface RpsGraphProps {
   params: {
@@ -13,6 +13,9 @@ interface RpsGraphProps {
     granularity: AnalyticsParams["granularity"];
   };
 }
+
+import "chartjs-adapter-date-fns";
+
 export const RpsGraph = (props: RpsGraphProps) => {
   const dataset = useContext(DatasetContext);
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
@@ -65,6 +68,12 @@ export const RpsGraph = (props: RpsGraphProps) => {
               beginAtZero: true,
             },
             x: {
+              adapters: {
+                date: {
+                  locale: enUS,
+                },
+              },
+              type: "time",
               title: {
                 text: "Timestamp",
                 display: true,
@@ -85,11 +94,8 @@ export const RpsGraph = (props: RpsGraphProps) => {
     }
 
     // Update the chart data;
-    chartInstance.data.labels = data.map((point) =>
-      formatSensibleTimestamp(
-        new Date(parseCustomDateString(point.time_stamp)),
-        props.params.filter.date_range,
-      ),
+    chartInstance.data.labels = data.map(
+      (point) => new Date(parseCustomDateString(point.time_stamp)),
     );
     chartInstance.data.datasets[0].data = data.map(
       (point) => point.average_rps,
