@@ -1078,13 +1078,8 @@ pub async fn get_recommended_groups(
 
     timer.add("recommend_qdrant_groups_query");
 
-    let recommended_chunk_metadatas = get_metadata_from_groups(
-        group_qdrant_query_result.clone(),
-        Some(false),
-        data.slim_chunks,
-        pool,
-    )
-    .await?;
+    let recommended_chunk_metadatas =
+        get_metadata_from_groups(group_qdrant_query_result.clone(), data.slim_chunks, pool).await?;
 
     let recommended_chunk_metadatas = recommended_groups_from_qdrant
         .into_iter()
@@ -1156,7 +1151,7 @@ pub struct SearchWithinGroupData {
     pub group_id: Option<uuid::Uuid>,
     /// Group_tracking_id specifies the group to search within by tracking id. Results will only consist of chunks which are bookmarks within the specified group. If both group_id and group_tracking_id are provided, group_id will be used.
     pub group_tracking_id: Option<String>,
-    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
+    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,
     /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
     pub location_bias: Option<GeoInfoWithBias>,
@@ -1178,12 +1173,11 @@ pub struct SearchWithinGroupData {
     pub highlight_max_num: Option<u32>,
     /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
     pub highlight_window: Option<u32>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
-    /// If true, chunks will be reranked using BAAI/bge-reranker-large. "hybrid" search does this
-    /// by default and this flag does not affect it.
+    /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
 }
 
@@ -1200,7 +1194,6 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
             location_bias: search_within_group_data.location_bias,
             use_weights: search_within_group_data.use_weights,
             tag_weights: search_within_group_data.tag_weights,
-            get_collisions: Some(false),
             highlight_results: search_within_group_data.highlight_results,
             highlight_threshold: search_within_group_data.highlight_threshold,
             highlight_delimiters: search_within_group_data.highlight_delimiters,
@@ -1224,7 +1217,7 @@ pub struct SearchWithinGroupResults {
 
 /// Search Within Group
 ///
-/// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large.
+/// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model.
 #[utoipa::path(
     post,
     path = "/chunk_group/search",
@@ -1354,7 +1347,7 @@ pub async fn search_within_group(
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct SearchOverGroupsData {
-    /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
+    /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
@@ -1366,8 +1359,6 @@ pub struct SearchOverGroupsData {
     pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
-    pub get_collisions: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
@@ -1380,7 +1371,7 @@ pub struct SearchOverGroupsData {
     pub highlight_max_num: Option<u32>,
     /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
     pub highlight_window: Option<u32>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.
     pub group_size: Option<u32>,
@@ -1390,7 +1381,7 @@ pub struct SearchOverGroupsData {
 
 /// Search Over Groups
 ///
-/// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large. Compatible with semantic, fulltext, or hybrid search modes.
+/// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model. Compatible with semantic, fulltext, or hybrid search modes.
 #[utoipa::path(
     post,
     path = "/chunk_group/group_oriented_search",
