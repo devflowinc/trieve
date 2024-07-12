@@ -1,7 +1,6 @@
 import {
-  AnalyticsParams,
-  AnalyticsFilter,
-  SearchQueryEvent,
+  RecommendationAnalyticsFilter,
+  RecommendationEvent,
 } from "shared/types";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import {
@@ -12,7 +11,7 @@ import {
   Show,
   useContext,
 } from "solid-js";
-import { getLowConfidenceQueries } from "../../api/analytics";
+import { getLowConfidenceRecommendations } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
@@ -20,20 +19,15 @@ import { FullScreenModal } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { IoOpenOutline } from "solid-icons/io";
 import { OrgContext } from "../../contexts/OrgContext";
+import { parseThreshold } from "./LowConfidenceQueries";
 
-interface LowConfidenceQueriesProps {
-  params: AnalyticsParams;
+interface LowConfidenceRecommendationsProps {
+  filter: RecommendationAnalyticsFilter;
 }
 
-export const parseThreshold = (text: string): number | undefined => {
-  const num = parseFloat(text);
-  if (isNaN(num)) {
-    return undefined;
-  }
-  return num;
-};
-
-export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
+export const LowConfidenceRecommendations = (
+  props: LowConfidenceRecommendationsProps,
+) => {
   const dataset = useContext(DatasetContext);
 
   const pages = usePagination();
@@ -43,58 +37,58 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
 
   createEffect(
     on(
-      () => [props.params, dataset().dataset.id, thresholdText()],
+      () => [props.filter, dataset().dataset.id, thresholdText()],
       () => {
         pages.resetMaxPageDiscovered();
       },
     ),
   );
 
-  createEffect(() => {
-    // Preload the next page
-    const params = props.params;
-    const datasetId = dataset().dataset.id;
-    const curPage = pages.page();
-    void queryClient.prefetchQuery({
-      queryKey: [
-        "low-confidence-queries",
-        {
-          params: params,
-          page: curPage + 1,
-          threshold: parseThreshold(thresholdText()) || 0,
-        },
-      ],
-      queryFn: async () => {
-        const results = await getLowConfidenceQueries(
-          params.filter,
-          datasetId,
-          curPage + 1,
-          parseThreshold(thresholdText()),
-        );
-        if (results.length === 0) {
-          pages.setMaxPageDiscovered(curPage);
-        }
-        return results;
-      },
-    });
-  });
+  // createEffect(() => {
+  //   // Preload the next page
+  //   const params = props.params;
+  //   const datasetId = dataset().dataset.id;
+  //   const curPage = pages.page();
+  //   void queryClient.prefetchQuery({
+  //     queryKey: [
+  //       "low-confidence-queries",
+  //       {
+  //         params: params,
+  //         page: curPage + 1,
+  //         threshold: parseThreshold(thresholdText()) || 0,
+  //       },
+  //     ],
+  //     queryFn: async () => {
+  //       const results = await getLowConfidenceQueries(
+  //         params.filter,
+  //         datasetId,
+  //         curPage + 1,
+  //         parseThreshold(thresholdText()),
+  //       );
+  //       if (results.length === 0) {
+  //         pages.setMaxPageDiscovered(curPage);
+  //       }
+  //       return results;
+  //     },
+  //   });
+  // });
 
   const lowConfidenceQueriesQuery = createQuery(() => ({
     queryKey: [
-      "low-confidence-queries",
+      "low-confidence-recs",
       {
-        params: props.params,
+        filters: props.filter,
         page: pages.page(),
         threshold: parseThreshold(thresholdText()) || 0,
       },
     ],
     queryFn: () => {
-      return getLowConfidenceQueries(
-        props.params.filter,
-        dataset().dataset.id,
-        pages.page(),
-        parseThreshold(thresholdText()),
-      );
+      return getLowConfidenceRecommendations({
+        filter: props.filter,
+        dataset: dataset().dataset.id,
+        page: pages.page(),
+        threshold: parseThreshold(thresholdText()),
+      });
     },
   }));
 
@@ -133,9 +127,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
                 each={data()}
               >
                 {(query) => {
-                  return (
-                    <QueryCard query={query} filters={props.params.filter} />
-                  );
+                  return <QueryCard query={query} filters={props.filter} />;
                 }}
               </For>
             </tbody>
@@ -150,8 +142,8 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
 };
 
 export interface QueryCardProps {
-  query: SearchQueryEvent;
-  filters?: AnalyticsFilter;
+  query: RecommendationEvent;
+  filters?: RecommendationAnalyticsFilter;
 }
 export const QueryCard = (props: QueryCardProps) => {
   const [open, setOpen] = createSignal(false);
@@ -161,16 +153,16 @@ export const QueryCard = (props: QueryCardProps) => {
   const dataset = useContext(DatasetContext);
   const organization = useContext(OrgContext);
 
-  const openSearchPlayground = (query: string) => {
-    const orgId = organization.selectedOrg()?.id;
-    const datasetId = dataset()?.dataset?.id;
-    let params = orgId ? `?organization=${orgId}` : "";
-    if (datasetId) params += `&dataset=${datasetId}`;
-    if (query) params += `&query=${query}`;
-    if (props.filters?.search_method)
-      params += `&searchType=${props.filters.search_method}`;
-    return params;
-  };
+  // const openSearchPlayground = (query: string) => {
+  //   const orgId = organization.selectedOrg()?.id;
+  //   const datasetId = dataset()?.dataset?.id;
+  //   let params = orgId ? `?organization=${orgId}` : "";
+  //   if (datasetId) params += `&dataset=${datasetId}`;
+  //   if (query) params += `&query=${query}`;
+  //   if (props.filters?.search_method)
+  //     params += `&searchType=${props.filters.search_method}`;
+  //   return params;
+  // };
 
   return (
     <>
@@ -180,26 +172,9 @@ export const QueryCard = (props: QueryCardProps) => {
         }}
         class="cursor-pointer"
       >
-        <td class="truncate">{props.query.query}</td>
+        <td class="truncate">{props.query.recommendation_type}</td>
         <td class="truncate text-right">{props.query.top_score.toFixed(5)}</td>
       </tr>
-      <FullScreenModal
-        title={props.query.query}
-        show={open}
-        setShow={setOpen}
-        icon={
-          <a
-            type="button"
-            class="hover:text-fuchsia-500"
-            href={`${searchUiURL}${openSearchPlayground(props.query.query)}`}
-            target="_blank"
-          >
-            <IoOpenOutline />
-          </a>
-        }
-      >
-        <SearchQueryEventModal searchEvent={props.query} />
-      </FullScreenModal>
     </>
   );
 };

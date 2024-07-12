@@ -275,10 +275,12 @@ export const getLowConfidenceRecommendations = async ({
   filter,
   page,
   threshold,
+  dataset,
 }: {
   filter?: RecommendationAnalyticsFilter;
   page?: number;
   threshold?: number;
+  dataset: string;
 }) => {
   const response = await fetch(`${apiHost}/analytics/recommendation`, {
     credentials: "include",
@@ -302,5 +304,5 @@ export const getLowConfidenceRecommendations = async ({
 
   const data =
     (await response.json()) as unknown as RecommendationEventResponse;
-  return data;
+  return data.queries;
 };

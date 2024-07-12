@@ -553,6 +553,10 @@ export interface GroupScoreChunkDTO {
 export type SearchResultType = ScoreChunkDTO | GroupScoreChunkDTO;
 
 // Recommendations
+export interface RequiredRecommendationAnalyticsFilter {
+  date_range: DateRangeFilter;
+  recommendation_type: "chunk" | "group";
+}
 
 export interface RecommendationAnalyticsFilter {
   date_range?: DateRangeFilter;
