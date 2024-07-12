@@ -35,7 +35,6 @@ export const formatSensibleTimestamp = (
   date: Date,
   range: AnalyticsFilter["date_range"],
 ): string => {
-  console.log(range);
   const highTime = range.lt || range.lte || new Date();
   if (!highTime) {
     return date.toLocaleString();
@@ -45,13 +44,9 @@ export const formatSensibleTimestamp = (
     return date.toLocaleDateString();
   }
 
-  console.log("Made it");
-
   const hourDifference = differenceInHours(highTime, lowTime);
-  console.log(hourDifference);
   // If the hour difference is 24 hours or less, format only with the time
   if (hourDifference <= 24) {
-    console.log("Formatting short");
     return format(date, "HH:mm:ss");
   }
 

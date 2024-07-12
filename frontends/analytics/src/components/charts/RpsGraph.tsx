@@ -83,7 +83,6 @@ export const RpsGraph = (props: RpsGraphProps) => {
       // @ts-expect-error library types not updated
       chartInstance.options.scales["x"].offset = true;
     }
-    console.log("IN COMPONENT", props.params.filter.date_range);
 
     // Update the chart data;
     chartInstance.data.labels = data.map((point) =>
