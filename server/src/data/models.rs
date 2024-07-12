@@ -1712,7 +1712,7 @@ pub struct ServerDatasetConfiguration {
     pub STOP_TOKENS: Option<Vec<String>>,
     pub INDEXED_ONLY: bool,
     pub LOCKED: bool,
-    pub SYSTEM_PROMPT: Option<String>,
+    pub SYSTEM_PROMPT: String,
     pub MAX_LIMIT: u64,
 }
 
@@ -1904,11 +1904,12 @@ impl ServerDatasetConfiguration {
                 .and_then(|v| v.as_str())
                 .map(|s|
                     if s.is_empty() {
-                        "".to_string()
+                        "You are a helpful assistant".to_string()
                     } else {
                         s.to_string()
                     }
-                ),
+                )
+                .unwrap_or("You are a helpful assistant".to_string()),
             MAX_LIMIT: configuration
                 .get("MAX_LIMIT")
                 .unwrap_or(&json!(10_000))

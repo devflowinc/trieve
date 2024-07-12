@@ -84,7 +84,7 @@ pub async fn create_message_query(
 
 #[tracing::instrument(skip(pool))]
 pub async fn create_generic_system_message(
-    system_prompt: Option<String>,
+    system_prompt: String,
     messages_topic_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
@@ -92,11 +92,9 @@ pub async fn create_generic_system_message(
     let topic =
         crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)
             .await?;
-    let system_message_content = system_prompt.unwrap_or(
-        "You are Trieve retrieval augmented chatbot, a large language model trained by Trieve to respond in the same tone as and with the context of retrieved information.".to_string());
 
     let system_message = Message::from_details(
-        system_message_content,
+        system_prompt,
         topic.id,
         0,
         "system".into(),
