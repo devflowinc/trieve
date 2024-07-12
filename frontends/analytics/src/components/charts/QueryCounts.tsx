@@ -27,7 +27,7 @@ const displaySearchType = (type: SearchTypeCount["search_type"]) => {
 export const QueryCounts = () => {
   const dataset = useContext(DatasetContext);
   const [dateSelection, setDateSelection] = createSignal<DateRangeOption>(
-    dateRanges[3],
+    dateRanges[2],
   );
 
   const headQueriesQuery = createQuery(() => ({
