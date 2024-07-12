@@ -31,6 +31,7 @@ RUN apt-get update -y; \
     mkdir -p /app/tmp
 
 COPY ./migrations/ /app/migrations
+COPY ./ch_migrations /app/ch_migrations
 COPY ./src/public/ /app/src/public
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 
