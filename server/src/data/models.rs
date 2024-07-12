@@ -641,6 +641,62 @@ pub struct ChunkMetadataWithScore {
     pub score: f32,
 }
 
+impl Into<ScoreChunk> for ChunkMetadataWithScore {
+    fn into(self) -> ScoreChunk {
+        ScoreChunk {
+            chunk: ChunkMetadataTypes::Metadata(self.clone().into()),
+            highlights: None,
+            score: self.score,
+        }
+    }
+}
+
+impl Into<ChunkMetadataStringTagSet> for ChunkMetadataWithScore {
+    fn into(self) -> ChunkMetadataStringTagSet {
+        ChunkMetadataStringTagSet {
+            id: self.id,
+            link: self.link,
+            qdrant_point_id: self.qdrant_point_id,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            tag_set: self.tag_set,
+            chunk_html: self.chunk_html,
+            metadata: self.metadata,
+            tracking_id: self.tracking_id,
+            time_stamp: self.time_stamp,
+            dataset_id: self.dataset_id,
+            weight: self.weight,
+            location: None,
+            image_urls: None,
+            num_value: None,
+        }
+    }
+}
+
+impl Into<ChunkMetadata> for ChunkMetadataWithScore {
+    fn into(self) -> ChunkMetadata {
+        ChunkMetadata {
+            id: self.id,
+            link: self.link,
+            qdrant_point_id: self.qdrant_point_id,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            tag_set: self
+                .tag_set
+                .map(|tags| tags.split(',').map(|tag| Some(tag.to_string())).collect()),
+            chunk_html: self.chunk_html,
+            metadata: self.metadata,
+            tracking_id: self.tracking_id,
+            time_stamp: self.time_stamp,
+            dataset_id: self.dataset_id,
+            weight: self.weight,
+            location: None,
+            image_urls: None,
+            num_value: None,
+        }
+    }
+}
+
 impl From<(ChunkMetadata, f32)> for ChunkMetadataWithScore {
     fn from((chunk, score): (ChunkMetadata, f32)) -> Self {
         ChunkMetadataWithScore {
