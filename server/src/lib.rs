@@ -251,6 +251,8 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::SingleQueuedChunkResponse,
             handlers::chunk_handler::BatchQueuedChunkResponse,
             handlers::chunk_handler::ReturnQueuedChunk,
+            handlers::chunk_handler::RecommendResponseTypes,
+            handlers::group_handler::RecommendGroupsResponse,
             handlers::chunk_handler::UpdateChunkReqPayload,
             handlers::chunk_handler::RecommendChunksRequest,
             handlers::group_handler::RecommendGroupChunksRequest,

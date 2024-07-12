@@ -1888,6 +1888,13 @@ pub struct RecommendChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[serde(untagged)]
+pub enum RecommendResponseTypes {
+    V2(Vec<ScoreChunk>),
+    V1(Vec<ChunkMetadataWithScore>),
+}
+
 /// Get Recommended Chunks
 ///
 /// Get recommendations of chunks similar to the positive samples in the request and dissimilar to the negative. You must provide at least one of either positive_chunk_ids or positive_tracking_ids.
@@ -1899,7 +1906,7 @@ pub struct RecommendChunksRequest {
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
 
-        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives", body = Vec<ChunkMetadataWithScore>),
+        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives", body = RecommendResponseTypes),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
@@ -1916,6 +1923,7 @@ pub async fn get_recommended_chunks(
     pool: web::Data<Pool>,
     _user: LoggedUser,
     clickhouse_client: web::Data<clickhouse::Client>,
+    api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_chunk_ids = data.positive_chunk_ids.clone();
@@ -2148,6 +2156,17 @@ pub async fn get_recommended_chunks(
             .collect::<Vec<SlimChunkMetadataWithScore>>();
 
         return Ok(HttpResponse::PartialContent().json(res));
+    }
+
+    if api_version == APIVersion::V2 {
+        let new_payload = recommended_chunk_metadatas_with_score
+            .into_iter()
+            .map(|chunk| chunk.into())
+            .collect::<Vec<ScoreChunk>>();
+
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(new_payload));
     }
 
     Ok(HttpResponse::Ok()

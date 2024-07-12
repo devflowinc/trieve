@@ -916,8 +916,8 @@ pub struct GroupChunks {
     pub file_id: Option<uuid::Uuid>,
 }
 
-impl GroupScoreChunk {
-    pub fn to_updated_chunk_metadata(self) -> GroupChunks {
+impl Into<GroupChunks> for GroupScoreChunk {
+    fn into(self) -> GroupChunks {
         GroupChunks {
             group_id: self.group_id,
             group_tracking_id: self.group_tracking_id,
@@ -945,7 +945,7 @@ impl SearchOverGroupsResults {
             chunks: self
                 .group_chunks
                 .into_iter()
-                .map(|chunk| chunk.to_updated_chunk_metadata())
+                .map(|chunk| chunk.into())
                 .collect(),
             total_pages: self.total_chunk_pages,
         }

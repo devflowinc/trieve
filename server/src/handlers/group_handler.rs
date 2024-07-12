@@ -23,7 +23,7 @@ use crate::{
         search_operator::{
             full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
             search_full_text_groups, search_hybrid_groups, search_semantic_groups,
-            semantic_search_over_groups, GroupScoreChunk, SearchOverGroupsQueryResult,
+            semantic_search_over_groups, GroupChunks, GroupScoreChunk, SearchOverGroupsQueryResult,
         },
     },
 };
@@ -922,6 +922,15 @@ pub struct RecommendGroupChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum RecommendGroupsResponse {
+    #[schema(title = "V2")]
+    V2(Vec<GroupChunks>),
+    #[serde(rename = "V1")]
+    V1(Vec<GroupScoreChunk>),
+}
+
 /// Get Recommended Groups
 ///
 /// Route to get recommended groups. This route will return groups which are similar to the groups in the request body. You must provide at least one positive group id or group tracking id.
@@ -932,7 +941,7 @@ pub struct RecommendGroupChunksRequest {
     tag = "Chunk Group",
     request_body(content = RecommendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = Vec<GroupScoreChunk>),
+        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = RecommendGroupsResponse),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
@@ -948,6 +957,7 @@ pub async fn get_recommended_groups(
     data: web::Json<RecommendGroupChunksRequest>,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    api_version: APIVersion,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1131,9 +1141,20 @@ pub async fn get_recommended_groups(
 
     timer.add("sent to clickhouse");
 
-    Ok(HttpResponse::Ok()
-        .insert_header((Timer::header_key(), timer.header_value()))
-        .json(recommended_chunk_metadatas))
+    if api_version == APIVersion::V1 {
+        Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(recommended_chunk_metadatas))
+    } else {
+        let new_chunk_metadatas = recommended_chunk_metadatas
+            .iter()
+            .map(|group| group.clone().into())
+            .collect::<Vec<GroupChunks>>();
+
+        Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(new_chunk_metadatas))
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, IntoParams)]
