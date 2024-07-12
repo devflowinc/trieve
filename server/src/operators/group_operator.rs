@@ -2,11 +2,11 @@ use crate::errors::ServiceError;
 use crate::operators::qdrant_operator::remove_bookmark_from_qdrant_query;
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataStringTagSet,
-        ChunkMetadataTable, Dataset, FileGroup, Pool, QdrantPayload, RedisPool,
-        ServerDatasetConfiguration, UnifiedId,
+        ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataTable, Dataset,
+        FileGroup, Pool, QdrantPayload, RedisPool, ServerDatasetConfiguration, UnifiedId,
     },
     get_env,
+    handlers::group_handler::GroupsBookmarkQueryResult,
     operators::{
         chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
         qdrant_operator::get_qdrant_connection,
@@ -387,11 +387,7 @@ pub async fn create_chunk_bookmark_query(
 
     Ok(qdrant_point_id)
 }
-pub struct GroupsBookmarkQueryResult {
-    pub metadata: Vec<ChunkMetadataStringTagSet>,
-    pub group: ChunkGroupAndFileId,
-    pub total_pages: u64,
-}
+
 #[tracing::instrument(skip(pool))]
 pub async fn get_bookmarks_for_group_query(
     group_id: UnifiedId,
@@ -441,7 +437,7 @@ pub async fn get_bookmarks_for_group_query(
     let chunk_group = chunk_group_result?;
 
     Ok(GroupsBookmarkQueryResult {
-        metadata: chunk_metadata_string_tag_sets,
+        chunks: chunk_metadata_string_tag_sets,
         group: chunk_group,
         total_pages: (chunk_count as f64 / 10.0).ceil() as u64,
     })

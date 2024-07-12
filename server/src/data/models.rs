@@ -331,6 +331,7 @@ impl Default for GeoInfo {
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
+#[schema(title = "V2")]
 pub struct ChunkMetadata {
     pub id: uuid::Uuid,
     pub link: Option<String>,
@@ -625,6 +626,7 @@ pub struct IngestSpecificChunkMetadata {
     "weight": 0.5,
     "score": 0.9,
 }))]
+#[schema(title = "V1")]
 pub struct ChunkMetadataWithScore {
     pub id: uuid::Uuid,
     pub link: Option<String>,
@@ -757,6 +759,7 @@ pub struct ScoreChunkDTO {
     "highlights": ["highlight is two tokens: high, light", "whereas hello is only one token: hello"],
     "score": 0.5
 }))]
+#[schema(title = "V2")]
 pub struct ScoreChunk {
     pub chunk: ChunkMetadataTypes,
     pub highlights: Option<Vec<String>>,
@@ -783,12 +786,14 @@ impl ScoreChunkDTO {
             .collect();
         slim_chunk_dto
     }
+}
 
-    pub fn to_updated_chunk_metadata(&self) -> ScoreChunk {
+impl From<ScoreChunkDTO> for ScoreChunk {
+    fn from(score_chunk_dto: ScoreChunkDTO) -> Self {
         ScoreChunk {
-            chunk: self.metadata[0].clone().into(),
-            highlights: self.highlights.clone(),
-            score: self.score as f32,
+            chunk: score_chunk_dto.metadata[0].clone().into(),
+            highlights: score_chunk_dto.highlights,
+            score: score_chunk_dto.score as f32,
         }
     }
 }
@@ -900,6 +905,7 @@ impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
+#[schema(title = "V1")]
 pub struct ChunkMetadataStringTagSet {
     pub id: uuid::Uuid,
     pub link: Option<String>,
