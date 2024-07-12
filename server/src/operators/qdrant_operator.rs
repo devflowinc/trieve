@@ -523,7 +523,6 @@ pub async fn update_qdrant_point_query(
             );
         }
 
-
         let point = PointStruct::new(
             metadata.qdrant_point_id.clone().to_string(),
             vector_payload,
