@@ -111,6 +111,8 @@ pub struct CreateMessageReqPayload {
     pub max_tokens: Option<u32>,
     /// Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
     pub stop_tokens: Option<Vec<String>>,
+    /// Optionally, override the system prompt in dataset server settings.
+    pub system_prompt: Option<String>,
 }
 
 /// Create message
@@ -144,7 +146,7 @@ pub async fn create_message(
 ) -> Result<HttpResponse, actix_web::Error> {
     let message_count_pool = pool.clone();
     let message_count_org_id = dataset_org_plan_sub.organization.organization.id;
-    let server_dataset_configuration = ServerDatasetConfiguration::from_json(
+    let mut server_dataset_configuration = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
@@ -165,8 +167,7 @@ pub async fn create_message(
             .message_count
     {
         return Ok(HttpResponse::UpgradeRequired().json(json!({
-            "message": "To create more message completions, you must upgrade your plan"
-        })));
+            "message": "To create more message completions, you must upgrade your plan" })));
     }
 
     let create_message_data = data.into_inner();
@@ -174,6 +175,9 @@ pub async fn create_message(
     let create_message_pool = pool.clone();
     let stream_response_pool = pool.clone();
     let topic_id = create_message_data.topic_id;
+    if let Some(data_system_prompt) = &create_message_data.system_prompt {
+        server_dataset_configuration.SYSTEM_PROMPT = data_system_prompt.clone();
+    }
 
     let new_message = models::Message::from_details(
         create_message_data.new_message_content.clone(),
@@ -341,6 +345,8 @@ pub struct EditMessageReqPayload {
     pub max_tokens: Option<u32>,
     /// Stop tokens are up to 4 sequences where the API will stop generating further tokens.
     pub stop_tokens: Option<Vec<String>>,
+    /// Optionally, override the system prompt in dataset server settings.
+    pub system_prompt: Option<String>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -363,6 +369,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             presence_penalty: data.presence_penalty,
             max_tokens: data.max_tokens,
             stop_tokens: data.stop_tokens,
+            system_prompt: data.system_prompt,
         }
     }
 }
@@ -387,6 +394,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             presence_penalty: data.presence_penalty,
             max_tokens: data.max_tokens,
             stop_tokens: data.stop_tokens,
+            system_prompt: None,
         }
     }
 }

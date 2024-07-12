@@ -61,6 +61,7 @@ const MainLayout = (props: LayoutProps) => {
   const [pageSize, setPageSize] = createSignal<number | null>(null);
   const [searchQuery, setSearchQuery] = createSignal<string | null>(null);
   const [minScore, setMinScore] = createSignal<number | null>(null);
+  const [systemPrompt, setSystemPrompt] = createSignal<string | null>(null);
   const [streamingCompletion, setStreamingCompletion] =
     createSignal<boolean>(false);
   const [completionAbortController, setCompletionAbortController] =
@@ -191,6 +192,7 @@ const MainLayout = (props: LayoutProps) => {
           score_threshold: minScore(),
           new_message_content,
           topic_id: finalTopicId,
+          system_prompt: systemPrompt(),
         }),
         signal: completionAbortController().signal,
       });
@@ -430,6 +432,18 @@ const MainLayout = (props: LayoutProps) => {
                       value={minScore() ?? ""}
                       onChange={(e) => {
                         setMinScore(parseFloat(e.target.value));
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="system_prompt">System Prompt:</label>
+                    <input
+                      type="text"
+                      id="system_prompt"
+                      class="w-3/4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
+                      value={systemPrompt() ?? ""}
+                      onChange={(e) => {
+                        setSystemPrompt(e.target.value);
                       }}
                     />
                   </div>
