@@ -431,12 +431,26 @@ pub async fn bulk_upload_chunks(
                 num_value: message.chunk.num_value,
             };
 
+            let boost_phrase = if message.chunk.boost_phrase.is_some()
+                && message
+                    .chunk
+                    .boost_phrase
+                    .as_ref()
+                    .unwrap()
+                    .phrase
+                    .is_empty()
+            {
+                None
+            } else {
+                message.chunk.boost_phrase.clone()
+            };
+
             ChunkData {
                 chunk_metadata,
                 content,
                 group_ids: message.chunk.group_ids.clone(),
                 upsert_by_tracking_id: message.upsert_by_tracking_id,
-                boost_phrase: message.chunk.boost_phrase.clone(),
+                boost_phrase,
                 distance_phrase: message.chunk.distance_phrase.clone(),
             }
         })
@@ -842,7 +856,20 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vectors(content_and_boosts.clone(), "doc", reqwest_client).await {
+        let content_and_boosts = content_and_boosts
+            .into_iter()
+            .map(|(content, boost)| {
+                let boost = if boost.is_some() && boost.as_ref().unwrap().phrase.is_empty() {
+                    None
+                } else {
+                    boost
+                };
+
+                (content, boost)
+            })
+            .collect();
+
+        match get_sparse_vectors(content_and_boosts, "doc", reqwest_client).await {
             Ok(vectors) => Ok(vectors.first().expect("First vector must exist").clone()),
             Err(err) => Err(err),
         }
