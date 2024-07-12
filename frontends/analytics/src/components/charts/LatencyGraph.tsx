@@ -6,6 +6,7 @@ import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getLatency } from "../../api/analytics";
 import { Chart } from "chart.js";
 import { format } from "date-fns";
+import { formatSensibleTimestamp } from "../../utils/formatDate";
 
 export const parseCustomDateString = (dateString: string) => {
   const [datePart, timePart] = dateString.split(" ");
@@ -107,7 +108,10 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
 
     // Update the chart data
     chartInstance.data.labels = data.map((point) =>
-      format(new Date(parseCustomDateString(point.time_stamp)), "HH:mm:ss"),
+      formatSensibleTimestamp(
+        new Date(parseCustomDateString(point.time_stamp)),
+        props.params.filter.date_range,
+      ),
     );
     chartInstance.data.datasets[0].data = data.map(
       (point) => point.average_latency,
