@@ -835,13 +835,32 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vectors(content_and_boosts, "doc", reqwest_client).await {
+        match get_sparse_vectors(content_and_boosts.clone(), "doc", reqwest_client).await {
             Ok(vectors) => Ok(vectors.first().expect("First vector must exist").clone()),
             Err(err) => Err(err),
         }
     } else {
         Ok(vec![(0, 0.0)])
     }?;
+
+    let bm25_vector = if dataset_config.BM25_ENABLED
+        && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true"
+    {
+        Some(
+            get_bm25_embeddings(
+                content_and_boosts,
+                dataset_config.BM25_AVG_LEN,
+                dataset_config.BM25_B,
+                dataset_config.BM25_K,
+            )
+            .first()
+            .expect("Vector Must exist")
+            .clone(),
+        )
+    } else {
+        None
+    };
+
     //if collision is not nil, insert chunk with collision
     let chunk_metadata_id = {
         payload.ingest_specific_chunk_metadata.qdrant_point_id = qdrant_point_id;
@@ -906,6 +925,13 @@ async fn upload_chunk(
             vector_payload.insert(
                 vector_name.unwrap().to_string(),
                 Vector::from(embedding_vector.unwrap()),
+            );
+        }
+
+        if let Some(bm25_vector) = bm25_vector.clone() {
+            vector_payload.insert(
+                "bm25_vectors".to_string(),
+                Vector::from(bm25_vector.clone()),
             );
         }
 
@@ -980,13 +1006,33 @@ async fn update_chunk(
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
         let reqwest_client = reqwest::Client::new();
 
-        match get_sparse_vectors(vec![(content, payload.boost_phrase)], "doc", reqwest_client).await
+        match get_sparse_vectors(
+            vec![(content.clone(), payload.boost_phrase.clone())],
+            "doc",
+            reqwest_client,
+        )
+        .await
         {
             Ok(v) => v.first().unwrap_or(&vec![(0, 0.0)]).clone(),
             Err(_) => vec![(0, 0.0)],
         }
     } else {
         vec![(0, 0.0)]
+    };
+
+    let bm25_vector = if server_dataset_config.BM25_ENABLED
+        && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true"
+    {
+        let vecs = get_bm25_embeddings(
+            vec![(content, payload.boost_phrase)],
+            server_dataset_config.BM25_AVG_LEN,
+            server_dataset_config.BM25_B,
+            server_dataset_config.BM25_K,
+        );
+
+        vecs.first().cloned()
+    } else {
+        None
     };
 
     if let Some(group_ids) = payload.group_ids {
@@ -1013,6 +1059,7 @@ async fn update_chunk(
             Some(chunk_group_ids),
             payload.dataset_id,
             splade_vector,
+            bm25_vector,
             server_dataset_config,
             web_pool.clone(),
         )
@@ -1034,6 +1081,7 @@ async fn update_chunk(
             None,
             payload.dataset_id,
             splade_vector,
+            bm25_vector,
             server_dataset_config,
             web_pool.clone(),
         )
