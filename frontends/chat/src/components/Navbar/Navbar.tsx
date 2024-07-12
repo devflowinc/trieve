@@ -30,7 +30,7 @@ export interface NavbarProps {
 }
 
 export const Navbar = (props: NavbarProps) => {
-  const api_host: string = import.meta.env.VITE_API_HOST as string;
+  const apiHost: string = import.meta.env.VITE_API_HOST as string;
   const userContext = useContext(UserContext);
 
   const [editing, setEditing] = createSignal(false);
@@ -53,50 +53,43 @@ export const Navbar = (props: NavbarProps) => {
       return;
     }
 
-    if (editedContent().trim()) {
-      await fetch(`${api_host}/topic`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "TR-Dataset": dataset.dataset.id,
-        },
-        body: JSON.stringify({
-          topic_id: selectedTopic.id,
-          name: editedContent().trim(),
-        }),
-      })
-        .then((res) => {
-          if (!res.ok) {
-            console.error("Error updating topic name");
-            setEditing(false);
-            return;
-          }
-          selectedTopic.name = editedContent().trim();
-          props.setSelectedNewTopic(false);
-          setEditing(false);
+    const curEditedContent = editedContent().trim();
 
-          props
-            .refetchTopics()
-            .then((topics) => {
-              const updatedTopic = topics.find(
-                (topic) => topic.id === selectedTopic.id,
-              );
-              if (updatedTopic) {
-                props.setSelectedTopic(updatedTopic);
-              }
-            })
-            .catch((err) => {
-              console.error(
-                "Cannot refetch topics after updating topic name:",
-                err,
-              );
-            });
-        })
-        .catch((err) => {
-          console.error("Error with updating topic name:", err);
-        });
+    if (!curEditedContent) {
+      return;
     }
+
+    const updateTopicResp = await fetch(`${apiHost}/topic`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "TR-Dataset": dataset.dataset.id,
+      },
+      body: JSON.stringify({
+        topic_id: selectedTopic.id,
+        name: editedContent().trim(),
+      }),
+    });
+
+    if (!updateTopicResp.ok) {
+      console.error("Error updating topic name");
+      setEditing(false);
+      return;
+    }
+
+    selectedTopic.name = curEditedContent;
+    props.setSelectedNewTopic(false);
+
+    const newTopics = await props.refetchTopics();
+    const updatedTopic = newTopics.find(
+      (topic) => topic.id === selectedTopic.id,
+    );
+    if (updatedTopic) {
+      props.setSelectedTopic(updatedTopic);
+    }
+
+    setEditing(false);
   };
 
   const handleSaveTitle = () => {
@@ -161,15 +154,16 @@ export const Navbar = (props: NavbarProps) => {
                   onKeyUp={(e) => {
                     if (e.key === "Enter") handleSaveTitle();
                   }}
-                  class="rounded-md border border-neutral-300 px-2 text-sm"
+                  class="rounded-md border border-neutral-300 px-2 text-sm dark:bg-neutral-800"
                 />
                 <Show when={showCheckmarkIcon()}>
-                  <BiRegularCheck
-                    class="hover:text-green-500"
-                    onClick={handleSaveTitle}
-                  />
+                  <button onClick={handleSaveTitle}>
+                    <BiRegularCheck class="hover:text-green-500" />
+                  </button>
                 </Show>
-                <BiRegularX onClick={cancelEdit} class="hover:text-red-500" />
+                <button onClick={cancelEdit}>
+                  <BiRegularX class="hover:text-red-500" />
+                </button>
               </div>
             </Show>
           </div>

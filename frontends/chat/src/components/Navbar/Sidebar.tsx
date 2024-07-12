@@ -152,13 +152,14 @@ export const Sidebar = (props: SidebarProps) => {
             </div>
           </button>
         </div>
-        <div class="flex w-full flex-col space-y-2 overflow-y-auto overflow-x-hidden px-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
+        <div class="flex w-full flex-col space-y-2 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
           <For each={props.topics()}>
             {(topic, index) => (
               <div
-                class="flex w-full cursor-pointer items-center rounded-md p-2"
                 classList={{
-                  "bg-white border border-neutral-300 dark:border-neutral-600/70 text-black dark:text-white dark:bg-neutral-700/50":
+                  "flex w-full cursor-pointer items-center rounded-md border border-transparent p-2 hover:ring-neutral-200 dark:hover:ring-neutral-400/70 hover:ring":
+                    true,
+                  "bg-white border-neutral-300 dark:border-neutral-600/70 text-black dark:text-white dark:bg-neutral-700/50":
                     props.currentTopic()?.id === topic.id,
                 }}
               >
