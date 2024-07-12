@@ -21,6 +21,8 @@ pub struct EmbeddingParameters {
     pub input: EmbeddingInput,
     /// ID of the model to use.
     pub model: String,
+    /// Truncate the input to the maximum length of the model.
+    pub truncate: bool,
 }
 
 #[tracing::instrument]
@@ -126,6 +128,7 @@ pub async fn create_embedding(
     let parameters = EmbeddingParameters {
         model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
         input,
+        truncate: true,
     };
 
     let embeddings_resp = ureq::post(&format!(
@@ -211,6 +214,12 @@ pub async fn get_sparse_vector(
             origin_key
         )))?;
 
+    let clipped_message = if message.len() > 5000 {
+        message.chars().take(128000).collect()
+    } else {
+        message.clone()
+    };
+
     let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
     let sparse_vectors = ureq::post(&embedding_server_call)
@@ -223,7 +232,7 @@ pub async fn get_sparse_vector(
             ),
         )
         .send_json(CustomSparseEmbedData {
-            inputs: vec![message],
+            inputs: vec![clipped_message],
             encode_type: embed_type.to_string(),
             truncate: true,
         })
@@ -340,8 +349,8 @@ pub async fn create_embeddings(
                 .iter()
                 .chain(boost_phrases.iter())
                 .map(|message| {
-                    if message.len() > 7000 {
-                        message.chars().take(20000).collect()
+                    if message.len() > 5000 {
+                        message.chars().take(12000).collect()
                     } else {
                         message.clone()
                     }
@@ -363,6 +372,7 @@ pub async fn create_embeddings(
             let parameters = EmbeddingParameters {
                 model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
                 input,
+                truncate: true
             };
 
             let cur_client = reqwest_client.clone();
@@ -388,11 +398,11 @@ pub async fn create_embeddings(
                     ServiceError::BadRequest("Failed to get text from embeddings".to_string())
                 })?;
 
-                let embeddings: EmbeddingResponse = format_response(embeddings_resp)
-                    .map_err(|e| {
-                        log::error!("Failed to format response from embeddings server {:?}", e);
+                let embeddings: EmbeddingResponse = format_response(embeddings_resp.clone())
+                    .map_err(move |_e| {
+                        log::error!("Failed to format response from embeddings server {:?}", embeddings_resp);
                         ServiceError::InternalServerError(
-                            "Failed to format response from embeddings server".to_owned(),
+                            format!("Failed to format response from embeddings server {:?}", embeddings_resp)
                         )
                     })?;
 
@@ -527,16 +537,24 @@ pub async fn get_sparse_vectors(
                     )))?;
                 let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
+                let clipped_messages = thirty_boosts
+                    .iter()
+                    .map(|(_, message)| {
+                        if message.phrase.len() > 5000 {
+                            message.phrase.chars().take(50000).collect()
+                        } else {
+                            message.phrase.clone()
+                        }
+                    })
+                    .collect::<Vec<String>>();
+
                 let sparse_embed_req = CustomSparseEmbedData {
-                    inputs: thirty_boosts
-                        .iter()
-                        .map(|(_, y)| y.phrase.clone())
-                        .collect(),
+                    inputs: clipped_messages,
                     encode_type: embed_type.to_string(),
                     truncate: true,
                 };
 
-                let sparse_vectors = cur_client
+                let embedding_response = cur_client
                     .post(&embedding_server_call)
                     .header("Content-Type", "application/json")
                     .header(
@@ -551,22 +569,35 @@ pub async fn get_sparse_vectors(
                     .await
                     .map_err(|err| {
                         log::error!(
-                            "Failed parsing response from custom embedding server {:?}",
+                            "Failed sending request from custom embedding server {:?}",
                             err
                         );
-                        ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+                        ServiceError::InternalServerError(format!(
+                            "Failed making call to server {:?}",
+                            err
+                        ))
                     })?
-                    .json::<Vec<Vec<SpladeIndicies>>>()
+                    .text()
                     .await
-                    .map_err(|_e| {
-                        log::error!(
-                            "Failed parsing response from custom embedding server {:?}",
-                            _e
-                        );
-                        ServiceError::BadRequest(
-                            "Failed parsing response from custom embedding server".to_string(),
+                    .map_err(|_| {
+                        ServiceError::InternalServerError(
+                            "Failed to get text from embeddings".to_string(),
                         )
                     })?;
+
+                let sparse_vectors = serde_json::from_str::<Vec<Vec<SpladeIndicies>>>(
+                    &embedding_response,
+                )
+                .map_err(|_e| {
+                    log::error!(
+                        "Failed parsing response from custom embedding server {:?}",
+                        embedding_response
+                    );
+                    ServiceError::InternalServerError(format!(
+                        "Failed parsing response from custom embedding server {:?}",
+                        embedding_response
+                    ))
+                })?;
 
                 let index_vector_boosts: Vec<(usize, f64, Vec<SpladeIndicies>)> = thirty_boosts
                     .iter()
@@ -602,13 +633,24 @@ pub async fn get_sparse_vectors(
                     )))?;
                 let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
+                let clipped_messages = thirty_messages
+                    .iter()
+                    .map(|message| {
+                        if message.len() > 5000 {
+                            message.chars().take(50000).collect()
+                        } else {
+                            message.clone()
+                        }
+                    })
+                    .collect::<Vec<String>>();
+
                 let sparse_embed_req = CustomSparseEmbedData {
-                    inputs: thirty_messages.to_vec(),
+                    inputs: clipped_messages,
                     encode_type: embed_type.to_string(),
                     truncate: true,
                 };
 
-                let sparse_vectors = cur_client
+                let embedding_response = cur_client
                     .post(&embedding_server_call)
                     .header("Content-Type", "application/json")
                     .header(
@@ -623,22 +665,35 @@ pub async fn get_sparse_vectors(
                     .await
                     .map_err(|err| {
                         log::error!(
-                            "Failed parsing response from custom embedding server {:?}",
+                            "Failed sending request from custom embedding server {:?}",
                             err
                         );
-                        ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+                        ServiceError::InternalServerError(format!(
+                            "Failed making call to server {:?}",
+                            err
+                        ))
                     })?
-                    .json::<Vec<Vec<SpladeIndicies>>>()
+                    .text()
                     .await
-                    .map_err(|_e| {
-                        log::error!(
-                            "Failed parsing response from custom embedding server {:?}",
-                            _e
-                        );
-                        ServiceError::BadRequest(
-                            "Failed parsing response from custom embedding server".to_string(),
+                    .map_err(|_| {
+                        ServiceError::InternalServerError(
+                            "Failed to get text from embeddings".to_string(),
                         )
                     })?;
+
+                let sparse_vectors = serde_json::from_str::<Vec<Vec<SpladeIndicies>>>(
+                    &embedding_response,
+                )
+                .map_err(|_e| {
+                    log::error!(
+                        "Failed parsing response from custom embedding server {:?}",
+                        embedding_response
+                    );
+                    ServiceError::InternalServerError(format!(
+                        "Failed parsing response from custom embedding server {:?}",
+                        embedding_response
+                    ))
+                })?;
 
                 Ok((i, sparse_vectors))
             }

@@ -78,3 +78,4 @@ embedding-server/data/*
 .turbo
 */dist/**
 */.vite
+data/*
