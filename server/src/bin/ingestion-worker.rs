@@ -440,6 +440,7 @@ pub async fn bulk_upload_chunks(
                 distance_phrase: message.chunk.distance_phrase.clone(),
             }
         })
+        .filter(|data| !data.content.is_empty())
         .collect();
 
     if split_average_being_used {
@@ -787,6 +788,12 @@ async fn upload_chunk(
         num_value: payload.chunk.num_value,
     };
 
+    if content.is_empty() {
+        return Err(ServiceError::BadRequest(
+            "Chunk must not have empty chunk_html".into(),
+        ));
+    }
+
     let embedding_vector = match dataset_config.SEMANTIC_ENABLED {
         true => {
             let embedding = match payload.chunk.split_avg.unwrap_or(false) {
@@ -985,6 +992,12 @@ async fn update_chunk(
             .clone()
             .unwrap_or_default(),
     };
+
+    if content.is_empty() {
+        return Err(ServiceError::BadRequest(
+            "Chunk must not have empty chunk_html".into(),
+        ));
+    }
 
     let chunk_metadata = payload.chunk_metadata.clone();
 

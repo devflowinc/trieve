@@ -21,6 +21,8 @@ pub struct EmbeddingParameters {
     pub input: EmbeddingInput,
     /// ID of the model to use.
     pub model: String,
+    /// Truncate the input to the maximum length of the model.
+    pub truncate: bool,
 }
 
 #[tracing::instrument]
@@ -126,6 +128,7 @@ pub async fn create_embedding(
     let parameters = EmbeddingParameters {
         model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
         input,
+        truncate: true,
     };
 
     let embeddings_resp = ureq::post(&format!(
@@ -363,6 +366,7 @@ pub async fn create_embeddings(
             let parameters = EmbeddingParameters {
                 model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
                 input,
+                truncate: true
             };
 
             let cur_client = reqwest_client.clone();
