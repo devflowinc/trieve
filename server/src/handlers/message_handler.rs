@@ -176,7 +176,9 @@ pub async fn create_message(
     let stream_response_pool = pool.clone();
     let topic_id = create_message_data.topic_id;
     if let Some(data_system_prompt) = &create_message_data.system_prompt {
-        server_dataset_configuration.SYSTEM_PROMPT = data_system_prompt.clone();
+        server_dataset_configuration
+            .SYSTEM_PROMPT
+            .clone_from(data_system_prompt);
     }
 
     let new_message = models::Message::from_details(
