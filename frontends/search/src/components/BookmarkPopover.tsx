@@ -23,7 +23,6 @@ import {
 import InputRowsForm from "./Atoms/InputRowsForm";
 import { VsBookmark } from "solid-icons/vs";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
-import { A } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface BookmarkPopoverProps {
@@ -280,12 +279,13 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                             <div class="h-px w-full bg-neutral-200 dark:bg-neutral-700" />
                           </Show>
                           <div class="flex w-full items-center justify-between space-x-2">
-                            <A
-                              href={`/group/${group.id}`}
+                            <a
+                              href={`/group/${group.id}?dataset=${$dataset?.()
+                                ?.dataset.id}`}
                               class="max-w-[80%] break-all underline"
                             >
                               {group.name}
-                            </A>
+                            </a>
 
                             <input
                               type="checkbox"

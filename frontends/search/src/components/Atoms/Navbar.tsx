@@ -1,4 +1,4 @@
-import { Show, createSignal, useContext } from "solid-js";
+import { Show, createMemo, createSignal, useContext } from "solid-js";
 import { DatasetAndUserContext } from "../Contexts/DatasetAndUserContext";
 import { OrganizationSelectBox } from "../OrganizationSelectBox";
 import { DatasetSelectBox } from "../DatasetSelectBox";
@@ -9,6 +9,10 @@ export const Navbar = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $currentUser = datasetAndUserContext.user;
+
+  const currentDatasetId = createMemo(() => {
+    return datasetAndUserContext.currentDataset?.()?.dataset.id;
+  });
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -39,25 +43,25 @@ export const Navbar = () => {
 
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
               <a
-                href={dashboardUrl}
+                href={`${dashboardUrl}`}
                 class="hidden text-center min-[420px]:text-lg min-[920px]:block"
               >
                 Dashboard
               </a>
               <a
-                href="/group"
+                href={`/group?dataset=${currentDatasetId()}`}
                 class="hidden text-center min-[420px]:text-lg min-[920px]:block"
               >
                 Groups
               </a>
               <a
-                href="/create"
+                href={`/create?dataset=${currentDatasetId()}`}
                 class="hidden text-center min-[420px]:text-lg min-[920px]:block"
               >
                 Create Chunk
               </a>
               <a
-                href="/upload"
+                href={`/upload?dataset=${currentDatasetId()}`}
                 class="hidden text-center min-[420px]:text-lg min-[920px]:block"
               >
                 Upload File
@@ -116,25 +120,25 @@ export const Navbar = () => {
       >
         <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
           <a
-            href={dashboardUrl}
+            href={`${dashboardUrl}`}
             class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
           >
             Dashboard
           </a>
           <a
-            href="/group"
+            href={`/group?dataset=${currentDatasetId()}`}
             class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
           >
             Groups
           </a>
           <a
-            href="/create"
+            href={`/create?dataset=${currentDatasetId()}`}
             class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
           >
             Create Chunk
           </a>
           <a
-            href="/upload"
+            href={`/upload?dataset=${currentDatasetId()}`}
             class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
           >
             Upload File

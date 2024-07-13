@@ -70,7 +70,6 @@ export const GroupPage = (props: GroupPageProps) => {
   const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO | null>(null);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
-  const [error, setError] = createSignal("");
   const [fetchingGroups, setFetchingGroups] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [editing, setEditing] = createSignal(false);
@@ -100,6 +99,22 @@ export const GroupPage = (props: GroupPageProps) => {
   onMount(() => {
     fetchBookmarks();
   });
+
+  createEffect((prevGroupId) => {
+    const curGroupId = props.groupID;
+    if (curGroupId !== prevGroupId) {
+      setPage(1);
+      setGroupRecommendations(false);
+      setGroupRecommendedChunks([]);
+      setRecommendedChunks([]);
+      setLoadingRecommendations(false);
+      setSearchMetadatasWithVotes([]);
+      setSearchLoading(false);
+      setEditing(false);
+    }
+
+    return curGroupId;
+  }, "");
 
   createEffect(() => {
     const resultsLength = chunkMetadatas().length;
@@ -151,14 +166,7 @@ export const GroupPage = (props: GroupPageProps) => {
               setGroupInfo(groupBookmarks.group);
               setTotalPages(groupBookmarks.total_pages);
               setChunkMetadatas(groupBookmarks.chunks);
-              setError("");
             });
-          }
-          if (response.status == 403) {
-            setError("You are not authorized to view this group");
-          }
-          if (response.status == 404) {
-            setError("Group not found, it never existed or was deleted");
           }
           setClientSideRequestFinished(true);
         });
@@ -197,11 +205,7 @@ export const GroupPage = (props: GroupPageProps) => {
               setGroupInfo(groupBookmarks.group);
               setTotalPages(groupBookmarks.total_pages);
               setSearchMetadatasWithVotes(groupBookmarks.bookmarks);
-              setError("");
             });
-          }
-          if (response.status == 403) {
-            setError("You are not authorized to view this group");
           }
           setClientSideRequestFinished(true);
           setSearchLoading(false);
@@ -431,110 +435,102 @@ export const GroupPage = (props: GroupPageProps) => {
         </Portal>
       </Show>
       <div class="flex w-full flex-col items-center space-y-2">
-        <Show when={error().length == 0}>
-          <div class="flex w-full max-w-7xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
-            <Show
-              when={chunkGroups().some((group) => group.id == groupInfo()?.id)}
+        <div class="flex w-full max-w-7xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
+          <Show when={groupInfo()?.file_id}>
+            <button
+              title="Download uploaded file"
+              class="h-fit text-neutral-400 dark:text-neutral-300"
+              onClick={() => {
+                handleDownloadFile(groupInfo());
+              }}
             >
-              <Show when={groupInfo()?.file_id}>
-                <button
-                  title="Download uploaded file"
-                  class="h-fit text-neutral-400 dark:text-neutral-300"
-                  onClick={() => {
-                    handleDownloadFile(groupInfo());
-                  }}
-                >
-                  <FaSolidDownload />
-                </button>
-              </Show>
-              <button
-                classList={{
-                  "h-fit text-red-700 dark:text-red-400": true,
-                  "animate-pulse": deleting(),
-                }}
-                onClick={() => setShowConfirmGroupmDeleteModal(true)}
-              >
-                <FiTrash class="h-5 w-5" />
-              </button>
-              <button onClick={() => setEditing((prev) => !prev)}>
-                <FiEdit class="h-5 w-5" />
-              </button>
-            </Show>
+              <FaSolidDownload />
+            </button>
+          </Show>
+          <button
+            classList={{
+              "h-fit text-red-700 dark:text-red-400": true,
+              "animate-pulse": deleting(),
+            }}
+            onClick={() => setShowConfirmGroupmDeleteModal(true)}
+          >
+            <FiTrash class="h-5 w-5" />
+          </button>
+          <button onClick={() => setEditing((prev) => !prev)}>
+            <FiEdit class="h-5 w-5" />
+          </button>
+        </div>
+        <Show when={!editing()}>
+          <div class="flex w-full items-center justify-center">
+            <h1 class="max-w-7xl break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
+              {groupInfo()?.name}
+            </h1>
           </div>
-          <Show when={!editing()}>
-            <div class="flex w-full items-center justify-center">
-              <h1 class="max-w-7xl break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
-                {groupInfo()?.name}
-              </h1>
+          <Show when={groupInfo()?.description.length ?? (0 > 0 && !editing())}>
+            <div class="mx-auto flex max-w-7xl justify-items-center gap-x-2 text-center">
+              {groupInfo()?.description}
             </div>
-            <Show
-              when={groupInfo()?.description.length ?? (0 > 0 && !editing())}
-            >
-              <div class="mx-auto flex max-w-7xl justify-items-center gap-x-2 text-center">
-                {groupInfo()?.description}
-              </div>
-            </Show>
           </Show>
+        </Show>
 
-          <Show when={editing()}>
-            <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
-              <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
-                Name:
-              </h1>
-              <input
-                type="text"
-                class="mt-10 max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                value={groupInfo()?.name}
-                onInput={(e) => {
-                  const curGroupInfo = groupInfo();
-                  if (curGroupInfo) {
-                    setGroupInfo({
-                      ...curGroupInfo,
-                      name: e.target.value,
-                    });
-                  }
-                }}
-              />
-              <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
-                Description:
-              </h1>
-              <textarea
-                class="max-md w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                value={groupInfo()?.description}
-                onInput={(e) => {
-                  const curGroupInfo = groupInfo();
-                  if (curGroupInfo) {
-                    setGroupInfo({
-                      ...curGroupInfo,
-                      description: e.target.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-            <div class="mt-4 flex w-full max-w-7xl justify-end px-4 sm:px-8 md:px-20">
-              <button
-                classList={{
-                  "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
-                    true,
-                  "animate-pulse": fetchingGroups(),
-                }}
-                onClick={() => setEditing(false)}
-              >
-                Cancel
-              </button>
-              <button
-                classList={{
-                  "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
-                    true,
-                  "animate-pulse": fetchingGroups(),
-                }}
-                onClick={() => updateGroup()}
-              >
-                Save
-              </button>
-            </div>
-          </Show>
+        <Show when={editing()}>
+          <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
+            <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
+              Name:
+            </h1>
+            <input
+              type="text"
+              class="mt-10 max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
+              value={groupInfo()?.name}
+              onInput={(e) => {
+                const curGroupInfo = groupInfo();
+                if (curGroupInfo) {
+                  setGroupInfo({
+                    ...curGroupInfo,
+                    name: e.target.value,
+                  });
+                }
+              }}
+            />
+            <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
+              Description:
+            </h1>
+            <textarea
+              class="max-md w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
+              value={groupInfo()?.description}
+              onInput={(e) => {
+                const curGroupInfo = groupInfo();
+                if (curGroupInfo) {
+                  setGroupInfo({
+                    ...curGroupInfo,
+                    description: e.target.value,
+                  });
+                }
+              }}
+            />
+          </div>
+          <div class="mt-4 flex w-full max-w-7xl justify-end px-4 sm:px-8 md:px-20">
+            <button
+              classList={{
+                "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
+                  true,
+                "animate-pulse": fetchingGroups(),
+              }}
+              onClick={() => setEditing(false)}
+            >
+              Cancel
+            </button>
+            <button
+              classList={{
+                "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
+                  true,
+                "animate-pulse": fetchingGroups(),
+              }}
+              onClick={() => updateGroup()}
+            >
+              Save
+            </button>
+          </div>
         </Show>
         <div class="flex w-full max-w-7xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
           <div class="mx-auto w-full">
@@ -734,11 +730,6 @@ export const GroupPage = (props: GroupPageProps) => {
                   }}
                 />
               </div>
-            </div>
-          </Show>
-          <Show when={error().length > 0}>
-            <div class="flex w-full flex-col items-center rounded-md p-2">
-              <div class="text-xl font-semibold text-red-500">{error()}</div>
             </div>
           </Show>
           <Show
