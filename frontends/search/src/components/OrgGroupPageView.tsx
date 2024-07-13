@@ -155,7 +155,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                         <td class="cursor-pointer whitespace-nowrap text-wrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
                           <a
                             class="w-full underline"
-                            href={`/group/${group.id}`}
+                            href={`/group/${group.id}?dataset=${$dataset?.()
+                              ?.dataset.id}`}
                           >
                             {group.name}
                           </a>
