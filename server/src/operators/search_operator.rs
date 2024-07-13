@@ -13,9 +13,9 @@ use super::qdrant_operator::{
     count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
 };
 use crate::data::models::{
-    convert_to_date_time, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes, ConditionType,
-    ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunk, ScoreChunkDTO,
-    SearchMethod, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
+    convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
+    ConditionType, ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunk,
+    ScoreChunkDTO, SearchMethod, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::get_env;
 use crate::handlers::chunk_handler::{
@@ -854,28 +854,40 @@ pub struct FullTextDocIds {
 #[schema(title = "V1")]
 pub struct GroupScoreChunk {
     pub group_id: uuid::Uuid,
-    pub group_tracking_id: Option<String>,
     pub group_name: Option<String>,
+    pub group_description: Option<String>,
+    pub group_created_at: chrono::NaiveDateTime,
+    pub group_updated_at: chrono::NaiveDateTime,
+    pub group_tracking_id: Option<String>,
+    pub group_metadata: Option<serde_json::Value>,
+    pub group_tag_set: Option<Vec<Option<String>>>,
+    pub group_dataset_id: uuid::Uuid,
     pub metadata: Vec<ScoreChunkDTO>,
     pub file_id: Option<uuid::Uuid>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[schema(title = "V2")]
-pub struct GroupChunks {
-    pub group_id: uuid::Uuid,
-    pub group_tracking_id: Option<String>,
-    pub group_name: Option<String>,
+pub struct SearchOverGroupsResults {
+    pub group: ChunkGroup,
     pub chunks: Vec<ScoreChunk>,
     pub file_id: Option<uuid::Uuid>,
 }
 
-impl From<GroupScoreChunk> for GroupChunks {
+impl From<GroupScoreChunk> for SearchOverGroupsResults {
     fn from(val: GroupScoreChunk) -> Self {
-        GroupChunks {
-            group_id: val.group_id,
-            group_tracking_id: val.group_tracking_id,
-            group_name: val.group_name,
+        SearchOverGroupsResults {
+            group: ChunkGroup {
+                id: val.group_id,
+                name: val.group_name.unwrap_or("".to_string()),
+                description: val.group_description.unwrap_or("".to_string()),
+                created_at: val.group_created_at,
+                updated_at: val.group_updated_at,
+                dataset_id: val.group_dataset_id,
+                tracking_id: val.group_tracking_id,
+                metadata: val.group_metadata,
+                tag_set: val.group_tag_set,
+            },
             chunks: val
                 .metadata
                 .into_iter()
@@ -888,15 +900,15 @@ impl From<GroupScoreChunk> for GroupChunks {
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[schema(title = "V1")]
-pub struct SearchOverGroupsResults {
+pub struct DeprecatedSearchOverGroupsResponseBody {
     pub group_chunks: Vec<GroupScoreChunk>,
     pub total_chunk_pages: i64,
 }
 
-impl SearchOverGroupsResults {
+impl DeprecatedSearchOverGroupsResponseBody {
     pub fn into_new_payload(self) -> SearchOverGroupsResponseBody {
         SearchOverGroupsResponseBody {
-            chunks: self
+            results: self
                 .group_chunks
                 .into_iter()
                 .map(|chunk| chunk.into())
@@ -909,7 +921,7 @@ impl SearchOverGroupsResults {
 #[derive(Serialize, Deserialize, ToSchema)]
 #[schema(title = "V2")]
 pub struct SearchOverGroupsResponseBody {
-    pub chunks: Vec<GroupChunks>,
+    pub results: Vec<SearchOverGroupsResults>,
     pub total_pages: i64,
 }
 
@@ -919,7 +931,7 @@ pub enum SearchOverGroupsResponseTypes {
     #[schema(title = "V2")]
     V2(SearchOverGroupsResponseBody),
     #[schema(title = "V1")]
-    V1(SearchOverGroupsResults),
+    V1(DeprecatedSearchOverGroupsResponseBody),
 }
 
 #[tracing::instrument(skip(pool))]
@@ -927,7 +939,7 @@ pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     data: &SearchOverGroupsData,
     pool: web::Data<Pool>,
-) -> Result<SearchOverGroupsResults, ServiceError> {
+) -> Result<DeprecatedSearchOverGroupsResponseBody, ServiceError> {
     let point_ids = search_over_groups_query_result
         .search_results
         .clone()
@@ -1044,20 +1056,24 @@ pub async fn retrieve_chunks_for_groups(
                 .collect_vec();
 
             let group_data = groups.iter().find(|group| group.id == group_search_result.group_id);
-            let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
-            let group_name = group_data.map(|group| group.name.clone());
 
             GroupScoreChunk {
                 group_id: group_search_result.group_id,
-                file_id: group_data.and_then(|group| group.file_id),
-                group_name,
-                group_tracking_id,
+                group_name: group_data.map(|group| group.name.clone()),
+                group_description: group_data.map(|group| group.description.clone()),
+                group_created_at: group_data.map(|group| group.created_at).unwrap_or_default(),
+                group_updated_at: group_data.map(|group| group.updated_at).unwrap_or_default(),
+                group_tracking_id: group_data.and_then(|group| group.tracking_id.clone()),
+                group_metadata: group_data.and_then(|group| group.metadata.clone()),
+                group_tag_set: group_data.and_then(|group| group.tag_set.clone()),
+                group_dataset_id: group_data.map(|group| group.dataset_id).unwrap_or_default(),
                 metadata: score_chunks,
+                file_id: group_data.and_then(|group| group.file_id),
             }
         })
         .collect_vec();
 
-    Ok(SearchOverGroupsResults {
+    Ok(DeprecatedSearchOverGroupsResponseBody {
         group_chunks,
         total_chunk_pages: search_over_groups_query_result.total_chunk_pages,
     })
@@ -1145,15 +1161,19 @@ pub async fn get_metadata_from_groups(
                 .collect_vec();
 
             let group_data = groups.iter().find(|group| group.id == group_search_result.group_id);
-            let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
-            let group_name = group_data.map(|group| group.name.clone());
 
             GroupScoreChunk {
                 group_id: group_search_result.group_id,
-                group_name,
-                group_tracking_id,
+                group_name: group_data.map(|group| group.name.clone()),
+                group_description: group_data.map(|group| group.description.clone()),
+                group_created_at: group_data.map(|group| group.created_at).unwrap_or_default(),
+                group_updated_at: group_data.map(|group| group.updated_at).unwrap_or_default(),
+                group_tracking_id: group_data.and_then(|group| group.tracking_id.clone()),
+                group_metadata: group_data.and_then(|group| group.metadata.clone()),
+                group_tag_set: group_data.and_then(|group| group.tag_set.clone()),
+                group_dataset_id: group_data.map(|group| group.dataset_id).unwrap_or_default(),
                 metadata: score_chunk,
-                file_id: group_data.and_then(|grp| grp.file_id),
+                file_id: group_data.and_then(|group| group.file_id),
             }
         })
         .collect_vec();
@@ -2162,7 +2182,7 @@ pub async fn semantic_search_over_groups(
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
     timer: &mut Timer,
-) -> Result<SearchOverGroupsResults, actix_web::Error> {
+) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -2224,7 +2244,7 @@ pub async fn full_text_search_over_groups(
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
     timer: &mut Timer,
-) -> Result<SearchOverGroupsResults, actix_web::Error> {
+) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
     timer.add("start to get sparse vector");
 
     let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
@@ -2344,7 +2364,7 @@ pub async fn hybrid_search_over_groups(
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
     timer: &mut Timer,
-) -> Result<SearchOverGroupsResults, actix_web::Error> {
+) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -2465,7 +2485,7 @@ pub async fn hybrid_search_over_groups(
         });
     }
 
-    let result_chunks = SearchOverGroupsResults {
+    let result_chunks = DeprecatedSearchOverGroupsResponseBody {
         group_chunks: reranked_chunks,
         total_chunk_pages: combined_search_chunk_query_results.total_chunk_pages,
     };

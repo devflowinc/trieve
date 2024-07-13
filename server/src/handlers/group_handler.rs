@@ -23,7 +23,8 @@ use crate::{
         search_operator::{
             full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
             search_full_text_groups, search_hybrid_groups, search_semantic_groups,
-            semantic_search_over_groups, GroupChunks, GroupScoreChunk, SearchOverGroupsQueryResult,
+            semantic_search_over_groups, GroupScoreChunk, SearchOverGroupsQueryResult,
+            SearchOverGroupsResults,
         },
     },
 };
@@ -953,11 +954,17 @@ pub struct RecommendGroupChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
+#[schema(title = "V2")]
+pub struct RecommendGroupsResponseBody {
+    pub results: Vec<SearchOverGroupsResults>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendGroupsResponse {
     #[schema(title = "V2")]
-    V2(GroupChunks),
+    V2(RecommendGroupsResponseBody),
     #[schema(title = "V1")]
     V1(GroupScoreChunk),
 }
@@ -972,7 +979,7 @@ pub enum RecommendGroupsResponse {
     tag = "Chunk Group",
     request_body(content = RecommendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = Vec<RecommendGroupsResponse>),
+        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = RecommendGroupsResponse),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
@@ -1177,10 +1184,12 @@ pub async fn get_recommended_groups(
             .insert_header((Timer::header_key(), timer.header_value()))
             .json(recommended_chunk_metadatas))
     } else {
-        let new_chunk_metadatas = recommended_chunk_metadatas
-            .iter()
-            .map(|group| group.clone().into())
-            .collect::<Vec<GroupChunks>>();
+        let new_chunk_metadatas = RecommendGroupsResponseBody {
+            results: recommended_chunk_metadatas
+                .iter()
+                .map(|group| group.clone().into())
+                .collect::<Vec<SearchOverGroupsResults>>(),
+        };
 
         Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))

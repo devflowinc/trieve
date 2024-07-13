@@ -380,10 +380,10 @@ export const GroupPage = (props: GroupPageProps) => {
       if (response.ok) {
         void response.json().then((data) => {
           if (groupRecommendations) {
-            const typedData = data as GroupScoreChunkDTO[];
+            const typedData = data.results as GroupScoreChunkDTO[];
             const dedupedData = typedData.filter((d) => {
               return !prevGroupRecommendations.some(
-                (c) => c.group_id == d.group_id,
+                (c) => c.group.id == d.group.id,
               );
             });
             const newRecommendations = [
@@ -723,7 +723,7 @@ export const GroupPage = (props: GroupPageProps) => {
                 <div class="text-xl font-semibold">Related Chunks</div>
               </div>
               <For each={groupRecommendedChunks()}>
-                {(group) => {
+                {(groupResult) => {
                   const [groupExpanded, setGroupExpanded] = createSignal(false);
 
                   const toggle = () => {
@@ -747,30 +747,30 @@ export const GroupPage = (props: GroupPageProps) => {
                           <FaSolidChevronDown />
                         </Show>
                         <div>
-                          <Show when={group.group_name}>
+                          <Show when={groupResult.group.name}>
                             <div class="flex space-x-2">
                               <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                                 Name:{" "}
                               </span>
                               <span class="line-clamp-1 break-all">
-                                {group.group_name}
+                                {groupResult.group.name}
                               </span>
                             </div>
                           </Show>
-                          <Show when={group.group_tracking_id}>
+                          <Show when={groupResult.group.tracking_id}>
                             <div class="flex space-x-2">
                               <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                                 Tracking ID:{" "}
                               </span>
                               <span class="line-clamp-1 break-all">
-                                {group.group_tracking_id}
+                                {groupResult.group.tracking_id}
                               </span>
                             </div>
                           </Show>
                         </div>
                       </div>
                       <Show when={groupExpanded()}>
-                        <For each={group.chunks}>
+                        <For each={groupResult.chunks}>
                           {(chunk) => (
                             <div class="ml-5 flex space-y-4">
                               <ScoreChunk
