@@ -27,7 +27,7 @@ import { TbReload } from "solid-icons/tb";
 import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import { BsMagic } from "solid-icons/bs";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
-import { Tooltip } from "../../../components/Tooltip";
+import { Tooltip } from "shared/ui";
 import { Codeblock } from "../../../components/Codeblock";
 
 const SAMPLE_DATASET_SIZE = 921;

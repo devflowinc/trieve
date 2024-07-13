@@ -32,7 +32,7 @@ import {
   FaSolidChevronDown,
 } from "solid-icons/fa";
 import { Item, MultiSelect } from "./MultiSelect";
-import { Tooltip } from "./Tooltip";
+import { Tooltip } from "shared/ui";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;

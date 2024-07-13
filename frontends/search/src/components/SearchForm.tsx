@@ -21,7 +21,7 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { Filter, FilterItem, Filters } from "./FilterModal";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import { SearchOptions, SearchStore } from "../hooks/useSearch";
-import { Tooltip } from "./Atoms/Tooltip";
+import { Tooltip } from "shared/ui";
 import { BsQuestionCircle } from "solid-icons/bs";
 
 const defaultFilter = {

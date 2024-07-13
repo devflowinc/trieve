@@ -851,30 +851,6 @@ pub struct FullTextDocIds {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
-#[schema(example = json!({
-    "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "file_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "metadata": [
-        {
-            "metadata": [
-                {
-                    "id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                    "content": "This is a test content",
-                    "link": "https://www.google.com",
-                    "tag_set": "test",
-                    "metadata": {
-                        "key": "value"
-                    },
-                    "tracking_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                    "time_stamp": "2021-01-01T00:00:00Z",
-                    "weight": 1.0
-                }
-            ],
-            "highlights": ["highlight is two tokens: high, light", "whereas hello is only one token: hello"],
-            "score": 0.5
-        }
-    ]
-}))]
 #[schema(title = "V1")]
 pub struct GroupScoreChunk {
     pub group_id: uuid::Uuid,
@@ -885,30 +861,6 @@ pub struct GroupScoreChunk {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
-#[schema(example = json!({
-    "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "file_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "metadata": [
-        {
-            "metadata": [
-                {
-                    "id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                    "content": "This is a test content",
-                    "link": "https://www.google.com",
-                    "tag_set": "test",
-                    "metadata": {
-                        "key": "value"
-                    },
-                    "tracking_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                    "time_stamp": "2021-01-01T00:00:00Z",
-                    "weight": 1.0
-                }
-            ],
-            "highlights": ["highlight is two tokens: high, light", "whereas hello is only one token: hello"],
-            "score": 0.5
-        }
-    ]
-}))]
 #[schema(title = "V2")]
 pub struct GroupChunks {
     pub group_id: uuid::Uuid,

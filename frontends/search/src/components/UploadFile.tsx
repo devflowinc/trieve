@@ -2,7 +2,7 @@
 import { Show, createSignal, useContext } from "solid-js";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { BiSolidFile } from "solid-icons/bi";
-import { Tooltip } from "./Atoms/Tooltip";
+import { Tooltip } from "shared/ui";
 import { BsInfoCircle } from "solid-icons/bs";
 
 export const UploadFile = () => {

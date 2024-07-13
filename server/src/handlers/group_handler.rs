@@ -956,7 +956,9 @@ pub struct RecommendGroupChunksRequest {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendGroupsResponse {
+    #[schema(title = "V2")]
     V2(GroupChunks),
+    #[schema(title = "V1")]
     V1(GroupScoreChunk),
 }
 
@@ -975,7 +977,7 @@ pub enum RecommendGroupsResponse {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1314,7 +1316,7 @@ impl From<SearchWithinGroupResults> for SearchWithinGroupResponseBody {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1483,7 +1485,7 @@ pub struct SearchOverGroupsData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
         ("ApiKey" = ["readonly"]),

@@ -14,9 +14,9 @@ export const Tooltip = (props: TooltipProps) => {
   const direction = createMemo(() => props.direction || "bottom");
 
   return (
-    <div class="relative inline-block">
+    <div class="relative">
       <div
-        class="flex items-center hover:cursor-help"
+        class="flex items-center"
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
       >
@@ -33,7 +33,7 @@ export const Tooltip = (props: TooltipProps) => {
               direction() === "left",
             "left-full top-1/2 -translate-y-1/2 translate-x-3":
               direction() === "right",
-            "top-full left-1/2 -translate-x-1/2 -translate-y-3":
+            "top-full left-1/2 -translate-x-1/2 translate-y-3":
               direction() === "bottom",
           }}
         >
@@ -41,7 +41,8 @@ export const Tooltip = (props: TooltipProps) => {
         </div>
         <div
           classList={{
-            "caret absolute h-4 w-4 rotate-45 transform": true,
+            "caret absolute h-4 w-4 rotate-45 transform":
+              true,
             "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2":
               direction() === "top",
             "right-0 top-1/2 -translate-y-1/2 translate-x-1/2":
