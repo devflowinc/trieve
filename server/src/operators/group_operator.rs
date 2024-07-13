@@ -1,4 +1,5 @@
 use crate::errors::ServiceError;
+use crate::operators::qdrant_operator::remove_bookmark_from_qdrant_query;
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataStringTagSet,
@@ -256,20 +257,14 @@ pub async fn delete_group_by_id_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let mut chunk_ids = vec![];
     let delete_chunks = delete_chunks.unwrap_or(false);
-
-    if delete_chunks {
-        let chunks = chunk_group_bookmarks_columns::chunk_group_bookmarks
-            .inner_join(chunk_metadata_columns::chunk_metadata)
-            .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
-            .select(ChunkMetadataTable::as_select())
-            .load::<ChunkMetadataTable>(&mut conn)
-            .await
-            .map_err(|_err| ServiceError::BadRequest("Error getting chunks".to_string()))?;
-
-        chunk_ids = chunks.iter().map(|chunk| chunk.id).collect();
-    }
+    let chunks = chunk_group_bookmarks_columns::chunk_group_bookmarks
+        .inner_join(chunk_metadata_columns::chunk_metadata)
+        .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
+        .select(ChunkMetadataTable::as_select())
+        .load::<ChunkMetadataTable>(&mut conn)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Error getting chunks".to_string()))?;
 
     let transaction_result = conn
         .transaction::<_, diesel::result::Error, _>(|conn| {
@@ -314,8 +309,15 @@ pub async fn delete_group_by_id_query(
         .await;
 
     if delete_chunks {
+        let chunk_ids = chunks.iter().map(|chunk| chunk.id).collect();
         delete_chunk_metadata_query(chunk_ids, dataset.clone(), pool.clone(), config.clone())
             .await?;
+    } else {
+        let remove_chunks_from_groups_futures = chunks.iter().map(|chunk| {
+            remove_bookmark_from_qdrant_query(chunk.qdrant_point_id, group_id, config.clone())
+        });
+
+        futures::future::join_all(remove_chunks_from_groups_futures).await;
     }
 
     match transaction_result {
