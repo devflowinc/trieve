@@ -19,7 +19,6 @@ import {
   type ChunkGroupDTO,
   type ChunkGroupBookmarkDTO,
   ScoreChunkDTO,
-  ChunkGroupSearchDTO,
   isScoreChunkDTO,
   isChunkGroupPageDTO,
   ChunkMetadata,
@@ -65,7 +64,7 @@ export const GroupPage = (props: GroupPageProps) => {
 
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<ChunkMetadata[]>([]);
-  const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
+  const [searchWithinGroupResults, setSearchWithinGroupResults] = createSignal<
     ScoreChunkDTO[]
   >(searchChunkMetadatasWithVotes);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
@@ -111,7 +110,6 @@ export const GroupPage = (props: GroupPageProps) => {
       setGroupRecommendedChunks([]);
       setRecommendedChunks([]);
       setLoadingRecommendations(false);
-      setSearchMetadatasWithVotes([]);
       setSearchLoading(false);
       setEditing(false);
     }
@@ -205,11 +203,8 @@ export const GroupPage = (props: GroupPageProps) => {
         }).then((response) => {
           if (response.ok) {
             void response.json().then((data) => {
-              const groupBookmarks = data as ChunkGroupSearchDTO;
-              group_id = groupBookmarks.group.id;
-              setGroupInfo(groupBookmarks.group);
-              setTotalPages(groupBookmarks.total_pages);
-              setSearchMetadatasWithVotes(groupBookmarks.chunks);
+              setTotalPages(data.total_pages);
+              setSearchWithinGroupResults(data.chunks);
             });
           }
           setClientSideRequestFinished(true);
@@ -217,7 +212,7 @@ export const GroupPage = (props: GroupPageProps) => {
         });
 
         onCleanup(() => {
-          abortController.abort();
+          abortController.abort("cleanup");
         });
       }
 
@@ -415,7 +410,7 @@ export const GroupPage = (props: GroupPageProps) => {
   };
 
   const chatPopupChunks = createMemo(() => {
-    const curSearchMetadatasWithVotes = searchMetadatasWithVotes();
+    const curSearchMetadatasWithVotes = searchWithinGroupResults();
     if (curSearchMetadatasWithVotes.length > 0) {
       return curSearchMetadatasWithVotes;
     }
@@ -444,9 +439,8 @@ export const GroupPage = (props: GroupPageProps) => {
           </FullScreenModal>
         </Portal>
       </Show>
-      <div class="flex w-full flex-col items-center space-y-2">
-<<<<<<< HEAD
-        <div class="flex w-full max-w-7xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
+      <div class="flex w-full flex-col items-center space-y-2 px-4">
+        <div class="flex w-full max-w-screen-2xl items-center justify-end space-x-2">
           <Show when={groupInfo()?.file_id}>
             <button
               title="Download uploaded file"
@@ -454,6 +448,7 @@ export const GroupPage = (props: GroupPageProps) => {
               onClick={() => {
                 handleDownloadFile(groupInfo());
               }}
+            >
               <FaSolidDownload />
             </button>
           </Show>
@@ -470,8 +465,20 @@ export const GroupPage = (props: GroupPageProps) => {
             <FiEdit class="h-5 w-5" />
           </button>
         </div>
+        <Show when={!editing()}>
+          <div class="flex w-full items-center justify-center">
+            <h1 class="max-w-screen-2xl break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
+              {groupInfo()?.name}
+            </h1>
+          </div>
+          <Show when={groupInfo()?.description.length ?? (0 > 0 && !editing())}>
+            <div class="mx-auto flex max-w-screen-2xl justify-items-center gap-x-2 text-center">
+              {groupInfo()?.description}
+            </div>
+          </Show>
+        </Show>
         <Show when={editing()}>
-          <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
+          <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2">
             <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
               Name:
             </h1>
@@ -506,7 +513,7 @@ export const GroupPage = (props: GroupPageProps) => {
               }}
             />
           </div>
-          <div class="mt-4 flex w-full max-w-7xl justify-end px-4 sm:px-8 md:px-20">
+          <div class="mt-4 flex w-full max-w-screen-2xl justify-end">
             <button
               classList={{
                 "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
@@ -528,114 +535,8 @@ export const GroupPage = (props: GroupPageProps) => {
               Save
             </button>
           </div>
-=======
-        <Show when={error().length == 0}>
-          <div class="flex w-full max-w-screen-2xl items-center justify-end space-x-2 px-4">
-            <Show
-              when={chunkGroups().some((group) => group.id == groupInfo()?.id)}
-            >
-              <Show when={groupInfo()?.file_id}>
-                <button
-                  title="Download uploaded file"
-                  class="h-fit text-neutral-400 dark:text-neutral-300"
-                  onClick={() => {
-                    handleDownloadFile(groupInfo());
-                  }}
-                >
-                  <FaSolidDownload />
-                </button>
-              </Show>
-              <button
-                classList={{
-                  "h-fit text-red-700 dark:text-red-400": true,
-                  "animate-pulse": deleting(),
-                }}
-                onClick={() => setShowConfirmGroupmDeleteModal(true)}
-              >
-                <FiTrash class="h-5 w-5" />
-              </button>
-              <button onClick={() => setEditing((prev) => !prev)}>
-                <FiEdit class="h-5 w-5" />
-              </button>
-            </Show>
-          </div>
-          <Show when={!editing()}>
-            <div class="flex w-full items-center justify-center">
-              <h1 class="max-w-screen-2xl break-all px-4 text-center text-lg min-[320px]:text-xl sm:text-3xl">
-                {groupInfo()?.name}
-              </h1>
-            </div>
-            <Show
-              when={groupInfo()?.description.length ?? (0 > 0 && !editing())}
-            >
-              <div class="mx-auto flex max-w-screen-2xl justify-items-center gap-x-2 px-4 text-center">
-                {groupInfo()?.description}
-              </div>
-            </Show>
-          </Show>
-
-          <Show when={editing()}>
-            <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2">
-              <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
-                Name:
-              </h1>
-              <input
-                type="text"
-                class="mt-10 max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                value={groupInfo()?.name}
-                onInput={(e) => {
-                  const curGroupInfo = groupInfo();
-                  if (curGroupInfo) {
-                    setGroupInfo({
-                      ...curGroupInfo,
-                      name: e.target.value,
-                    });
-                  }
-                }}
-              />
-              <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
-                Description:
-              </h1>
-              <textarea
-                class="max-md w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                value={groupInfo()?.description}
-                onInput={(e) => {
-                  const curGroupInfo = groupInfo();
-                  if (curGroupInfo) {
-                    setGroupInfo({
-                      ...curGroupInfo,
-                      description: e.target.value,
-                    });
-                  }
-                }}
-              />
-            </div>
-            <div class="mt-4 flex w-full max-w-screen-2xl justify-end px-4">
-              <button
-                classList={{
-                  "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
-                    true,
-                  "animate-pulse": fetchingGroups(),
-                }}
-                onClick={() => setEditing(false)}
-              >
-                Cancel
-              </button>
-              <button
-                classList={{
-                  "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
-                    true,
-                  "animate-pulse": fetchingGroups(),
-                }}
-                onClick={() => updateGroup()}
-              >
-                Save
-              </button>
-            </div>
-          </Show>
->>>>>>> 7af5d491 (cleanup: use shared Tooltip + cleanup: use nested response type for chunk recommendations + feature: add .env for V2_VERSIONING_DATE)
         </Show>
-        <div class="flex w-full max-w-screen-2xl flex-col space-y-4 border-t border-neutral-500 px-4">
+        <div class="flex w-full max-w-screen-2xl flex-col space-y-4 border-t border-neutral-500">
           <div class="mx-auto w-full">
             <div class="mx-auto my-4 w-full">
               <SearchForm search={search} groupID={props.groupID} />
@@ -659,7 +560,7 @@ export const GroupPage = (props: GroupPageProps) => {
                 each={
                   search.state.query == ""
                     ? chunkMetadatas()
-                    : searchMetadatasWithVotes()
+                    : searchWithinGroupResults()
                 }
               >
                 {(chunk) => (
@@ -747,16 +648,14 @@ export const GroupPage = (props: GroupPageProps) => {
                           <FaSolidChevronDown />
                         </Show>
                         <div>
-                          <Show when={groupResult.group.name}>
-                            <div class="flex space-x-2">
-                              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                                Name:{" "}
-                              </span>
-                              <span class="line-clamp-1 break-all">
-                                {groupResult.group.name}
-                              </span>
-                            </div>
-                          </Show>
+                          <div class="flex space-x-2">
+                            <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                              ID:{" "}
+                            </span>
+                            <span class="line-clamp-1 break-all">
+                              {groupResult.group.id}
+                            </span>
+                          </div>
                           <Show when={groupResult.group.tracking_id}>
                             <div class="flex space-x-2">
                               <span class="font-semibold text-neutral-800 dark:text-neutral-200">
@@ -764,6 +663,16 @@ export const GroupPage = (props: GroupPageProps) => {
                               </span>
                               <span class="line-clamp-1 break-all">
                                 {groupResult.group.tracking_id}
+                              </span>
+                            </div>
+                          </Show>
+                          <Show when={groupResult.group.name}>
+                            <div class="flex space-x-2">
+                              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                Name:{" "}
+                              </span>
+                              <span class="line-clamp-1 break-all">
+                                {groupResult.group.name}
                               </span>
                             </div>
                           </Show>
@@ -836,7 +745,7 @@ export const GroupPage = (props: GroupPageProps) => {
           <Show
             when={
               chunkMetadatas().length == 0 &&
-              searchMetadatasWithVotes().length == 0 &&
+              searchWithinGroupResults().length == 0 &&
               clientSideRequestFinished()
             }
           >
@@ -877,7 +786,7 @@ export const GroupPage = (props: GroupPageProps) => {
               type="button"
               class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
               onClick={() => {
-                const searchResults = searchMetadatasWithVotes();
+                const searchResults = searchWithinGroupResults();
                 if (searchResults.length > 0) {
                   setSelectedIds(
                     searchResults

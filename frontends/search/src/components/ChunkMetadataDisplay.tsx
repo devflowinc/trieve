@@ -185,6 +185,12 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   <span>{props.score?.toPrecision(3)}</span>
                 </Show>
               </div>
+              <div class="flex space-x-2">
+                <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                  ID:{" "}
+                </span>
+                <span class="line-clamp-1 break-all">{props.chunk.id}</span>
+              </div>
               <Show when={props.chunk.tracking_id}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">

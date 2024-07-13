@@ -316,24 +316,8 @@ export interface ChunkGroupBookmarkDTO {
 
 export interface ChunkGroupSearchDTO {
   chunks: ScoreChunkDTO[];
-  group: ChunkGroupDTO;
   total_pages: number;
 }
-
-export const isChunkGroupSearchDTO = (
-  group: unknown,
-): group is ChunkGroupSearchDTO => {
-  if (typeof group !== "object" || group === null) return false;
-
-  return (
-    indirectHasOwnProperty(group, "bookmarks") &&
-    isScoreChunkDTO((group as ChunkGroupSearchDTO).chunks[0]) &&
-    indirectHasOwnProperty(group, "group") &&
-    isChunkGroupDTO((group as ChunkGroupSearchDTO).group) &&
-    indirectHasOwnProperty(group, "total_pages") &&
-    typeof (group as ChunkGroupSearchDTO).total_pages === "number"
-  );
-};
 
 export interface CreateChunkDTO {
   message?: string;
