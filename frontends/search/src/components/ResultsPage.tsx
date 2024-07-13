@@ -233,7 +233,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           void response.json().then((data) => {
             let resultingChunks: ScoreChunkDTO[] = [];
             if (groupUnique) {
-              const groupResult = data.chunks as GroupScoreChunkDTO[];
+              const groupResult = data.results as GroupScoreChunkDTO[];
               setTotalPages(data.total_pages);
 
               setGroupResultChunks(groupResult);
@@ -447,7 +447,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           </Match>
           <Match when={!loading() && groupResultChunks().length > 0}>
             <For each={groupResultChunks()}>
-              {(group) => {
+              {(groupResult) => {
                 const [groupExpanded, setGroupExpanded] = createSignal(true);
 
                 const toggle = () => {
@@ -455,11 +455,11 @@ const ResultsPage = (props: ResultsPageProps) => {
                 };
 
                 return (
-                  <div class="flex w-full max-w-screen-2xl flex-col space-y-4 px-4">
+                  <div class="flex w-full max-w-screen-2xl flex-col space-y-4">
                     <div
                       onClick={toggle}
                       classList={{
-                        "mx-8 flex items-center space-x-4 rounded bg-neutral-100 px-4 py-4 dark:bg-neutral-800":
+                        "flex items-center space-x-4 rounded bg-neutral-100 px-4 py-4 dark:bg-neutral-800":
                           true,
                         "-mb-2": groupExpanded(),
                       }}
@@ -471,17 +471,17 @@ const ResultsPage = (props: ResultsPageProps) => {
                         <FaSolidChevronDown />
                       </Show>
                       <div class="w-full">
-                        <Show when={group.group_name}>
+                        <Show when={groupResult.group.name}>
                           <div class="flex w-full flex-row justify-between">
                             <div class="flex space-x-2">
                               <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                                 Name:{" "}
                               </span>
                               <span class="line-clamp-1 break-all">
-                                {group.group_name}
+                                {groupResult.group.name}
                               </span>
                             </div>
-                            <Show when={group.file_id}>
+                            <Show when={groupResult.file_id}>
                               {(fileId) => (
                                 <div class="flex space-x-2">
                                   <button
@@ -496,20 +496,20 @@ const ResultsPage = (props: ResultsPageProps) => {
                             </Show>
                           </div>
                         </Show>
-                        <Show when={group.group_tracking_id}>
+                        <Show when={groupResult.group.tracking_id}>
                           <div class="flex space-x-2">
                             <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                               Tracking ID:{" "}
                             </span>
                             <span class="line-clamp-1 break-all">
-                              {group.group_tracking_id}
+                              {groupResult.group.tracking_id}
                             </span>
                           </div>
                         </Show>
                       </div>
                     </div>
                     <Show when={groupExpanded()}>
-                      <For each={group.chunks}>
+                      <For each={groupResult.chunks}>
                         {(chunk) => (
                           <div class="ml-5 flex space-y-4">
                             <ScoreChunk

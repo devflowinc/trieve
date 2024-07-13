@@ -1,5 +1,4 @@
-use serde::{Deserialize, Serialize};
-
+use super::search_operator::{DeprecatedSearchOverGroupsResponseBody, GroupScoreChunk};
 use crate::{
     data::models::{
         ChunkMetadataTypes, ChunkMetadataWithScore, RagQueryEventClickhouse,
@@ -10,8 +9,7 @@ use crate::{
         chunk_handler::SearchChunkQueryResponseBody, group_handler::SearchWithinGroupResults,
     },
 };
-
-use super::search_operator::{GroupScoreChunk, SearchOverGroupsResults};
+use serde::{Deserialize, Serialize};
 
 pub enum ClickHouseEvent {
     SearchQueryEvent(SearchQueryEventClickhouse),
@@ -89,7 +87,7 @@ impl SearchWithinGroupResults {
     }
 }
 
-impl SearchOverGroupsResults {
+impl DeprecatedSearchOverGroupsResponseBody {
     pub fn into_response_payload(&self) -> Vec<String> {
         self.group_chunks
             .clone()
