@@ -138,6 +138,12 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               {props.chunk.link}
             </a>
           </Show>
+          <div class="flex space-x-2">
+            <span class="whitespace-nowrap text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
+              ID:{" "}
+            </span>
+            <span class="line-clamp-1 break-all">{props.chunk.id}</span>
+          </div>
           <Show when={props.chunk.tracking_id}>
             <div class="flex space-x-2">
               <span class="whitespace-nowrap text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">

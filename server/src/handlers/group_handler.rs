@@ -1283,7 +1283,6 @@ pub struct SearchWithinGroupResults {
 #[schema(title = "V2")]
 pub struct SearchWithinGroupResponseBody {
     pub chunks: Vec<ScoreChunk>,
-    pub group: ChunkGroupAndFileId,
     pub total_pages: i64,
 }
 
@@ -1304,7 +1303,6 @@ impl From<SearchWithinGroupResults> for SearchWithinGroupResponseBody {
                 .into_iter()
                 .map(|chunk| chunk.into())
                 .collect(),
-            group: search_within_group_results.group,
             total_pages: search_within_group_results.total_pages,
         }
     }
