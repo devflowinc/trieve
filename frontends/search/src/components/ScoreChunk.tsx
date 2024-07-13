@@ -25,10 +25,8 @@ import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
-import { FiEdit, FiTrash, FiCheck } from "solid-icons/fi";
-import { FaRegularFileCode } from "solid-icons/fa";
-import { Tooltip } from "./Atoms/Tooltip";
-import { AiOutlineCopy } from "solid-icons/ai";
+import { FiEdit, FiTrash } from "solid-icons/fi";
+import { Tooltip } from "shared/ui";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { A } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
@@ -85,7 +83,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [showPropsModal, setShowPropsModal] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
-  const [copied, setCopied] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(
     props.defaultShowMetadata ?? false,
@@ -140,26 +137,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     });
 
     props.setShowConfirmModal?.(true);
-  };
-
-  const copyChunk = () => {
-    navigator.clipboard
-      .write([
-        new ClipboardItem({
-          "text/html": new Blob([props.chunk.chunk_html ?? ""], {
-            type: "text/html",
-          }),
-        }),
-      ])
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => {
-          setCopied(false);
-        }, 2000);
-      })
-      .catch((err: string) => {
-        alert("Failed to copy to clipboard: " + err);
-      });
   };
 
   const useExpand = createMemo(() => {
@@ -264,71 +241,54 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 </span>
               </Show>
               <div class="flex-1" />
+
               <Tooltip
                 body={
-                  <Show when={Object.keys(props.chunk.metadata ?? {}).length}>
-                    <button
-                      class="h-fit"
-                      onClick={() => setShowMetadata(true)}
-                      title="View Images"
-                    >
-                      <FaRegularFileCode class="h-5 w-5 fill-current" />
-                    </button>
-                  </Show>
-                }
-                tooltipText="View Full Metadata"
-              />
-              <Tooltip
-                body={
-                  <>
-                    <Show when={!copied()}>
-                      <button class="h-fit" onClick={() => copyChunk()}>
-                        <AiOutlineCopy class="h-5 w-5 fill-current" />
-                      </button>
-                    </Show>
-                    <Show when={copied()}>
-                      <FiCheck class="text-green-500" />
-                    </Show>
-                  </>
-                }
-                tooltipText="Copy to clipboard"
-              />
-              <Show when={currentUserRole() > 0 && props.setOnDelete}>
-                <button
-                  classList={{
-                    "h-fit text-red-700 dark:text-red-400": true,
-                    "animate-pulse": deleting(),
-                  }}
-                  title="Delete"
-                  onClick={() => deleteChunk()}
-                >
-                  <FiTrash class="h-5 w-5" />
-                </button>
-              </Show>
-              <Show when={currentUserRole() > 0}>
-                <A
-                  title="Edit"
-                  href={`/chunk/edit/${
-                    props.chunk.id
-                  }?dataset=${$currentDataset?.()?.dataset.id}`}
-                >
-                  <FiEdit class="h-5 w-5" />
-                </A>
-              </Show>
-              <Tooltip
-                body={
-                  <a
-                    title="Open"
+                  <A
                     href={`/chunk/${
                       props.chunk.id
                     }?dataset=${$currentDataset?.()?.dataset.id}`}
-                    target="_blank"
                   >
                     <VsFileSymlinkFile class="h-5 w-5 fill-current" />
-                  </a>
+                  </A>
                 }
                 tooltipText="Open in new tab"
+                direction="left"
               />
+              <Show when={currentUserRole() > 0}>
+                <Tooltip
+                  body={
+                    <A
+                      href={`/chunk/edit/${
+                        props.chunk.id
+                      }?dataset=${$currentDataset?.()?.dataset.id}`}
+                    >
+                      <FiEdit class="h-5 w-5" />
+                    </A>
+                  }
+                  tooltipText="Edit chunk"
+                  direction="left"
+                />
+              </Show>
+              <Show when={currentUserRole() > 0}>
+                <Tooltip
+                  body={
+                    <button
+                      classList={{
+                        "h-fit text-red-700 dark:text-red-400 cursor-pointer":
+                          true,
+                        "animate-pulse": deleting(),
+                      }}
+                      title="Delete"
+                      onClick={() => deleteChunk()}
+                    >
+                      <FiTrash class="h-5 w-5" />
+                    </button>
+                  }
+                  tooltipText="Delete chunk"
+                  direction="left"
+                />
+              </Show>
 
               <Show when={props.chunkGroups}>
                 {(chunkGroups) => (

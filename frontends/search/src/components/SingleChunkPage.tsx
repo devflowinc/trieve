@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   For,
   Show,
@@ -13,7 +14,6 @@ import {
   isChunkGroupPageDTO,
   ChunkMetadata,
   ScoreChunkDTO,
-  ChunkMetadataWithScore,
 } from "../utils/apiTypes";
 import ScoreChunk from "./ScoreChunk";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
@@ -54,7 +54,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
   const [recommendedChunks, setRecommendedChunks] = createSignal<
-    ChunkMetadataWithScore[]
+    ScoreChunkDTO[]
   >([]);
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
@@ -119,7 +119,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prev_recommendations: ChunkMetadataWithScore[],
+    prev_recommendations: ScoreChunkDTO[],
   ) => {
     setLoadingRecommendations(true);
     const currentDataset = $dataset?.();
@@ -140,9 +140,9 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const typed_data = data as ChunkMetadataWithScore[];
+          const typed_data = data.chunks as ScoreChunkDTO[];
           const deduped_data = typed_data.filter((d) => {
-            return !prev_recommendations.some((c) => c.id == d.id);
+            return !prev_recommendations.some((c) => c.chunk.id == d.chunk.id);
           });
           const new_recommendations = [
             ...prev_recommendations,
@@ -236,7 +236,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         </Portal>
       </Show>
       <div class="mt-2 flex w-full flex-col items-center justify-center">
-        <div class="flex w-full max-w-screen-2xl flex-col justify-center">
+        <div class="flex w-full max-w-screen-2xl flex-col justify-center px-4">
           <Show when={error().length > 0 && !fetching()}>
             <div class="flex w-full flex-col items-center rounded-md p-2">
               <div class="text-xl font-bold text-red-500">{error()}</div>
@@ -264,13 +264,13 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                 </div>
 
                 <For each={recommendedChunks()}>
-                  {(chunk) => (
+                  {(scoreChunk) => (
                     <>
                       <div class="mt-4">
                         <ChunkMetadataDisplay
                           totalGroupPages={totalGroupPages()}
-                          chunk={chunk}
-                          score={chunk.score}
+                          chunk={scoreChunk.chunk}
+                          score={scoreChunk.score}
                           chunkGroups={chunkGroups()}
                           bookmarks={bookmarks()}
                           setShowConfirmModal={setShowConfirmDeleteModal}

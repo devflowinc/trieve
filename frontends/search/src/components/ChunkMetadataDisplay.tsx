@@ -22,11 +22,11 @@ import { VsFileSymlinkFile } from "solid-icons/vs";
 import BookmarkPopover from "./BookmarkPopover";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { formatDate, sanitzerOptions } from "./ScoreChunk";
-import { Tooltip } from "./Atoms/Tooltip";
 import { FaRegularFileCode } from "solid-icons/fa";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { createToast } from "./ShowToasts";
+import { Tooltip } from "shared/ui";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
@@ -346,7 +347,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
           </Match>
           <Match when={!loading() && groupResultChunks().length == 0}>
-            <div class="flex w-full max-w-screen-2xl flex-col space-y-4 px-1">
+            <div class="flex w-full max-w-screen-2xl flex-col space-y-4">
               <For each={resultChunks()}>
                 {(chunk) => (
                   <div>
@@ -454,7 +455,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                 };
 
                 return (
-                  <div class="flex w-full max-w-screen-2xl flex-col space-y-4 px-1">
+                  <div class="flex w-full max-w-screen-2xl flex-col space-y-4 px-4">
                     <div
                       onClick={toggle}
                       classList={{

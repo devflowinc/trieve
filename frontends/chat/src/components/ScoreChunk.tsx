@@ -10,7 +10,7 @@ import {
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
-import { Tooltip } from "./Atoms/Tooltip";
+import { Tooltip } from "shared/ui";
 import { AiOutlineCopy } from "solid-icons/ai";
 import { FiCheck, FiGlobe } from "solid-icons/fi";
 

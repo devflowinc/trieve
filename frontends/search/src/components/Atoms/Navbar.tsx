@@ -18,9 +18,9 @@ export const Navbar = () => {
 
   return (
     <nav class="mb-8 bg-white dark:bg-shark-800 dark:text-white">
-      <div class="mx-auto max-w-screen-2xl">
+      <div class="mx-auto max-w-screen-2xl px-4">
         <div class="flex h-16 items-center justify-between">
-          <div class="mx-auto flex h-[60px] w-full max-w-screen-2xl items-center justify-between">
+          <div class="mx-auto flex h-[60px] w-full items-center justify-between">
             <div class="flex min-w-fit items-center space-x-2">
               <a
                 href={`/?dataset=${datasetAndUserContext.currentDataset?.()

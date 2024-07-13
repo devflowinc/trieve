@@ -7,7 +7,7 @@ import {
 import { JSX, Show, createSignal, useContext } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { CreateChunkDTO, isActixApiDefaultError } from "../utils/apiTypes";
-import { Tooltip } from "./Atoms/Tooltip";
+import { Tooltip } from "shared/ui";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { TinyEditor } from "./TinyEditor";
 import { useNavigate } from "@solidjs/router";

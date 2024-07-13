@@ -16,7 +16,7 @@ export const EditChunk = (props: any) => {
           />
           <h1 class="text-center text-4xl">Edit Document Chunk</h1>
         </A>
-        <div class="w-full max-w-screen-2xl">
+        <div class="w-full max-w-screen-2xl px-4">
           <EditChunkPageForm
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             chunkId={props.params.id}

@@ -1120,7 +1120,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1389,7 +1389,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1519,7 +1519,7 @@ pub enum ChunkReturnTypes {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request"),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."),
         ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
     security(
@@ -1715,7 +1715,7 @@ pub async fn count_chunks(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request"),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."),
         ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch"),
     ),
     security(
@@ -1777,7 +1777,7 @@ pub struct GetChunksData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1850,7 +1850,7 @@ pub struct GetTrackingChunksData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1925,11 +1925,19 @@ pub struct RecommendChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(title = "V2")]
+pub struct RecommendChunksResponseBody {
+    pub chunks: Vec<ScoreChunk>,
+}
+
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendResponseTypes {
-    V2(ScoreChunk),
-    V1(ChunkMetadataWithScore),
+    #[schema(title = "V2")]
+    V2(RecommendChunksResponseBody),
+    #[schema(title = "V1")]
+    V1(Vec<ChunkMetadataWithScore>),
 }
 
 /// Get Recommended Chunks
@@ -1942,13 +1950,12 @@ pub enum RecommendResponseTypes {
     tag = "Chunk",
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-
-        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives", body = Vec<RecommendResponseTypes>),
+        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives", body = RecommendResponseTypes),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request")
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -2192,10 +2199,12 @@ pub async fn get_recommended_chunks(
     }
 
     if api_version == APIVersion::V2 {
-        let new_payload = recommended_chunk_metadatas_with_score
-            .into_iter()
-            .map(|chunk| chunk.into())
-            .collect::<Vec<ScoreChunk>>();
+        let new_payload = RecommendChunksResponseBody {
+            chunks: recommended_chunk_metadatas_with_score
+                .into_iter()
+                .map(|chunk| chunk.into())
+                .collect::<Vec<ScoreChunk>>(),
+        };
 
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))

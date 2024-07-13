@@ -18,7 +18,7 @@ export const Upload = () => {
           Warning! Large files may take up to 3 minutes to upload. Please do not
           close this page until the upload is complete.
         </div>
-        <div class="w-full max-w-screen-2xl">
+        <div class="w-full max-w-screen-2xl px-4">
           <UploadFile />
         </div>
       </div>

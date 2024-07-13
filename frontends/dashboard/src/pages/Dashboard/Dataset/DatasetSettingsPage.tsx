@@ -17,7 +17,7 @@ import {
 import { createToast } from "../../../components/ShowToasts";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
 import { useNavigate } from "@solidjs/router";
-import { Tooltip } from "../../../components/Tooltip";
+import { Tooltip } from "shared/ui";
 
 const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
 
@@ -370,7 +370,7 @@ export const ServerSettingsForm = () => {
                   Embedding Model
                 </label>
                 <Tooltip
-                  direction={"right"}
+                  direction="right"
                   body={<AiOutlineInfoCircle />}
                   tooltipText="Embedding Model is only editable on creation"
                 />
@@ -403,7 +403,7 @@ export const ServerSettingsForm = () => {
                   Embedding Query Prefix
                 </label>
                 <Tooltip
-                  direction={"right"}
+                  direction="right"
                   body={<AiOutlineInfoCircle />}
                   tooltipText="For some embedding models, the training data includes query prefixes. The default for Jina is 'Search for: '. You can experiment with different values."
                 />
@@ -434,7 +434,7 @@ export const ServerSettingsForm = () => {
                   Max Limit
                 </label>
                 <Tooltip
-                  direction={"right"}
+                  direction="right"
                   body={<AiOutlineInfoCircle />}
                   tooltipText="Sets the maximum limit when counting chunks above threshold, applies to search and count routes in the API to prevent DDOS attacks on the server. Counting chunks requires a full scan of the search index."
                 />

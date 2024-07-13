@@ -12,7 +12,7 @@ import {
   BiRegularXCircle,
 } from "solid-icons/bi";
 import type { SingleChunkPageProps } from "./SingleChunkPage";
-import { Tooltip } from "./Atoms/Tooltip";
+import { Tooltip } from "shared/ui";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { TinyEditor } from "./TinyEditor";
 import { useNavigate } from "@solidjs/router";

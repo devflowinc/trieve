@@ -38,10 +38,15 @@ impl FromRequest for APIVersion {
 
 impl APIVersion {
     fn from_dataset(dataset: &DatasetAndOrgWithSubAndPlan) -> Self {
-        let versioning_date = NaiveDate::from_ymd_opt(2024, 7, 12)
-            .unwrap()
-            .and_hms_opt(0, 0, 0)
-            .unwrap();
+        let versioning_date = std::env::var("V2_VERSIONING_DATE")
+            .unwrap_or_else(|_| "2024-07-12".to_string())
+            .parse::<NaiveDate>()
+            .unwrap_or_else(|e| {
+                log::error!("Error parsing V2_VERSIONING_DATE: {}", e);
+                NaiveDate::from_ymd(2024, 7, 12)
+            })
+            .and_hms(0, 0, 0);
+
         if dataset
             .organization
             .organization
