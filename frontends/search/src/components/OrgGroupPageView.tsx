@@ -86,8 +86,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
             "TR-Dataset": currentDataset.dataset.id,
           },
         }).then((response) => {
-          setDeleting(false);
           if (response.ok) {
+            setDeleting(false);
             setGroups((prev) => {
               return prev.filter((c) => c.id != group.id);
             });
