@@ -214,7 +214,7 @@ export const UserManagement = () => {
                 setShowInvitations(!showInvitations());
               }}
               type="button"
-              class="block rounded-md bg-neutral-100 px-3 py-2 text-center shadow-sm hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-200"
+              class="block h-[42px] rounded-md border bg-neutral-100 px-3 py-2 text-center shadow-sm hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-200"
             >
               {showInvitations() ? "Show Users" : "Show Invitations"}
             </button>
@@ -235,160 +235,158 @@ export const UserManagement = () => {
                 setInviteUserModalOpen(true);
               }}
               type="button"
-              class="block rounded-md bg-magenta-500 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600"
+              class="block h-[42px] rounded-md border bg-magenta-500 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600"
             >
-              Add user
+              Add User
             </button>
           </Show>
         </div>
       </div>
-      <div class="mt-4 rounded border shadow">
-        <div class="">
-          <table class="min-w-full border-separate border-spacing-0">
-            <Show when={!showInvitations()}>
-              <thead>
-                <tr>
-                  <th
-                    scope="col"
-                    class="sticky top-0 rounded-tl border-b border-neutral-300 bg-white bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8"
-                  >
-                    Name
-                  </th>
-                  <th
-                    scope="col"
-                    class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 px-3 py-3.5 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter"
-                  >
-                    Email
-                  </th>
-                  <th
-                    scope="col"
-                    class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 px-3 py-3.5 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter"
-                  >
-                    Role
-                  </th>
-                  <th
-                    scope="col"
-                    class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 py-3.5 pl-3 backdrop-blur backdrop-filter"
-                  >
-                    <span class="sr-only">Edit</span>
-                  </th>
-                  <th
-                    scope="col"
-                    class="sticky top-0 rounded-tr border-b border-neutral-300 bg-white bg-opacity-75 pr-4 backdrop-blur backdrop-filter sm:pr-6 lg:pr-8"
-                  >
-                    <span class="sr-only">Delete</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <For each={users()}>
-                  {(user) => (
-                    <tr>
-                      <td class="whitespace-nowrap border-b border-neutral-200 py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8">
-                        {user.name}
-                      </td>
-                      <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
-                        {user.email}
-                      </td>
-                      <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
-                        {fromI32ToUserRole(user.user_orgs[0].role) as string}
-                      </td>
-                      <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 text-right font-medium">
-                        <button
-                          onClick={() => {
-                            setEditingUser(user);
-                          }}
-                          disabled={user.id === userContext.user?.()?.id}
-                          classList={{
-                            "text-neutral-200 cursor-not-allowed":
-                              user.id === userContext.user?.()?.id,
-                            "text-magenta-500 hover:text-magenta-900":
-                              user.id !== userContext.user?.()?.id,
-                          }}
-                        >
-                          Edit
-                        </button>
-                      </td>
-                      <td class="whitespace-nowrap border-b border-neutral-200 py-4 pr-4 text-right text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            removeUser(user.id);
-                          }}
-                          disabled={user.id === userContext.user?.()?.id}
-                          classList={{
-                            "text-neutral-200 cursor-not-allowed":
-                              user.id === userContext.user?.()?.id,
-                            "text-red-500 hover:text-red-900":
-                              user.id !== userContext.user?.()?.id,
-                          }}
-                        >
-                          <FaRegularTrashCan />
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                </For>
-              </tbody>
-            </Show>
-            <Show when={showInvitations()}>
-              <thead>
-                <tr>
-                  <th
-                    scope="col"
-                    class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8"
-                  >
-                    Email
-                  </th>
-                  <th
-                    scope="col"
-                    class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 px-3 py-3.5 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter"
-                  >
-                    Role
-                  </th>
-                  <th
-                    scope="col"
-                    class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 px-3 py-3.5 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter"
-                  >
-                    Status
-                  </th>
-                  <th
-                    scope="col"
-                    class="sticky top-0 border-b border-neutral-300 bg-white bg-opacity-75 py-3.5 pl-3 pr-4 backdrop-blur backdrop-filter sm:pr-6 lg:pr-8"
-                  >
-                    <span class="sr-only">Delete</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <For each={invitations()}>
-                  {(invitation) => (
-                    <tr>
-                      <td class="whitespace-nowrap border-b border-neutral-200 py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8">
-                        {invitation.email}
-                      </td>
-                      <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
-                        {fromI32ToUserRole(invitation.role) as string}
-                      </td>
-                      <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
-                        {invitation.used ? "Accepted" : "Not Accepted"}
-                      </td>
-                      <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 pr-4 text-right font-medium sm:pr-8 lg:pr-36 xl:pr-48">
-                        <button
-                          onClick={() => {
-                            deleteInvitation(invitation.id);
-                          }}
-                          class="text-magenta-500 hover:text-magenta-900"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                </For>
-              </tbody>
-            </Show>
-          </table>
-        </div>
+      <div class="mt-8 overflow-hidden rounded shadow-sm ring-1 ring-black ring-opacity-5">
+        <table class="min-w-full divide-y divide-neutral-300">
+          <Show when={!showInvitations()}>
+            <thead class="bg-neutral-100">
+              <tr>
+                <th
+                  scope="col"
+                  class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
+                >
+                  Name
+                </th>
+                <th
+                  scope="col"
+                  class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
+                >
+                  Email
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left text-sm font-semibold"
+                >
+                  Role
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left text-sm font-semibold"
+                >
+                  <span class="sr-only">Edit</span>
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left text-sm font-semibold"
+                >
+                  <span class="sr-only">Delete</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={users()}>
+                {(user) => (
+                  <tr>
+                    <td class="whitespace-nowrap border-b border-neutral-200 py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8">
+                      {user.name}
+                    </td>
+                    <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
+                      {user.email}
+                    </td>
+                    <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
+                      {fromI32ToUserRole(user.user_orgs[0].role) as string}
+                    </td>
+                    <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 text-right font-medium">
+                      <button
+                        onClick={() => {
+                          setEditingUser(user);
+                        }}
+                        disabled={user.id === userContext.user?.()?.id}
+                        classList={{
+                          "text-neutral-200 cursor-not-allowed":
+                            user.id === userContext.user?.()?.id,
+                          "text-magenta-500 hover:text-magenta-900":
+                            user.id !== userContext.user?.()?.id,
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </td>
+                    <td class="whitespace-nowrap border-b border-neutral-200 py-4 pr-4 text-right text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          removeUser(user.id);
+                        }}
+                        disabled={user.id === userContext.user?.()?.id}
+                        classList={{
+                          "text-neutral-200 cursor-not-allowed":
+                            user.id === userContext.user?.()?.id,
+                          "text-red-500 hover:text-red-900":
+                            user.id !== userContext.user?.()?.id,
+                        }}
+                      >
+                        <FaRegularTrashCan />
+                      </button>
+                    </td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </Show>
+          <Show when={showInvitations()}>
+            <thead class="bg-neutral-100">
+              <tr>
+                <th
+                  scope="col"
+                  class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
+                >
+                  Email
+                </th>
+                <th
+                  scope="col"
+                  class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
+                >
+                  Role
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left text-sm font-semibold"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left text-sm font-semibold"
+                >
+                  <span class="sr-only">Delete</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={invitations()}>
+                {(invitation) => (
+                  <tr>
+                    <td class="whitespace-nowrap border-b border-neutral-200 py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8">
+                      {invitation.email}
+                    </td>
+                    <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
+                      {fromI32ToUserRole(invitation.role) as string}
+                    </td>
+                    <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
+                      {invitation.used ? "Accepted" : "Not Accepted"}
+                    </td>
+                    <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 pr-4 text-right font-medium sm:pr-8 lg:pr-36 xl:pr-48">
+                      <button
+                        onClick={() => {
+                          deleteInvitation(invitation.id);
+                        }}
+                        class="text-magenta-500 hover:text-magenta-900"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </Show>
+        </table>
       </div>
       <InviteUserModal
         isOpen={inviteUserModalOpen}

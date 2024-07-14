@@ -1,8 +1,8 @@
-import { Accessor, Show, useContext } from "solid-js";
+import { Accessor, createMemo, onMount, Show, useContext } from "solid-js";
 import { createSignal } from "solid-js";
 import { Dialog, DialogOverlay, DialogPanel, DialogTitle } from "terracotta";
 import { UserContext } from "../contexts/UserContext";
-import { DefaultError } from "shared/types";
+import { DefaultError, fromI32ToUserRole } from "shared/types";
 import { UserRole, fromUserRoleToI32, stringToUserRole } from "shared/types";
 import { createToast } from "./ShowToasts";
 
@@ -19,6 +19,28 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
   const [role, setRole] = createSignal<UserRole>(UserRole.Owner);
 
   const userContext = useContext(UserContext);
+
+  const currentUserRole = createMemo(() => {
+    const selectedOrgId = userContext.selectedOrganizationId?.();
+    if (!selectedOrgId) return 0;
+    return (
+      userContext
+        .user?.()
+        ?.user_orgs.find(
+          (user_org) => user_org.organization_id === selectedOrgId,
+        )?.role ?? 0
+    );
+  });
+
+  onMount(() => {
+    setRole(fromI32ToUserRole(currentUserRole()));
+  });
+
+  const handleCloseModal = () => {
+    setEmail("");
+    setRole(fromI32ToUserRole(currentUserRole()));
+    props.closeModal();
+  };
 
   const inviteUser = (closeModal: () => void) => {
     setSendingEmail(true);
@@ -64,7 +86,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
       <Dialog
         isOpen
         class="fixed inset-0 z-10 overflow-y-auto"
-        onClose={props.closeModal}
+        onClose={handleCloseModal}
       >
         <div class="flex min-h-screen items-center justify-center px-4">
           <DialogOverlay class="fixed inset-0 bg-neutral-900 bg-opacity-50" />
@@ -77,7 +99,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                inviteUser(props.closeModal);
+                inviteUser(handleCloseModal);
               }}
             >
               <div class="space-y-12 sm:space-y-16">
@@ -149,7 +171,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                 <button
                   type="button"
                   class="inline-flex justify-center rounded-md border bg-neutral-100 px-3 py-2 text-sm font-semibold text-black shadow-sm hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:bg-magenta-200"
-                  onClick={() => props.closeModal()}
+                  onClick={handleCloseModal}
                 >
                   Cancel
                 </button>
