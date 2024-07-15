@@ -299,9 +299,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           props.chunk.chunk_html !== undefined
             ? props.chunk.chunk_html
                 .replaceAll("line-height", "lh")
-                .replace("\n", " ")
-                .replace(`<br>`, " ")
-                .replace(`\\n`, " ")
+                .replaceAll("\n", "<br>")
             : "",
           sanitzerOptions,
         )}
