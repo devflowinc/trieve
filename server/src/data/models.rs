@@ -2509,6 +2509,7 @@ pub struct UserApiKey {
     pub blake3_hash: Option<String>,
     pub dataset_ids: Option<Vec<Option<String>>>,
     pub organization_ids: Option<Vec<Option<String>>>,
+    pub scopes: Option<Vec<Option<String>>>,
 }
 
 impl UserApiKey {
@@ -2519,6 +2520,7 @@ impl UserApiKey {
         role: ApiKeyRole,
         dataset_ids: Option<Vec<uuid::Uuid>>,
         organization_ids: Option<Vec<uuid::Uuid>>,
+        scopes: Option<Vec<String>>,
     ) -> Self {
         UserApiKey {
             id: uuid::Uuid::new_v4(),
@@ -2533,6 +2535,7 @@ impl UserApiKey {
                 .map(|ids| ids.into_iter().map(|id| Some(id.to_string())).collect()),
             organization_ids: organization_ids
                 .map(|ids| ids.into_iter().map(|id| Some(id.to_string())).collect()),
+            scopes: scopes.map(|scopes| scopes.into_iter().map(Some).collect()),
         }
     }
 }

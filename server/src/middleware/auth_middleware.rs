@@ -113,6 +113,15 @@ where
                                 return Err(ServiceError::Unauthorized.into());
                             }
                         }
+
+                        let route = format!("{} {}", req.method(), req.match_info().as_str());
+
+                        if let Some(api_key_scopes) = user_api_key.scopes {
+                            if !api_key_scopes.is_empty() && !api_key_scopes.contains(&Some(route))
+                            {
+                                return Err(ServiceError::Unauthorized.into());
+                            }
+                        }
                     }
 
                     req.extensions_mut().insert(dataset_org_plan_sub.clone());
