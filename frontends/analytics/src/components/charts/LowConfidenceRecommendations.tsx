@@ -15,10 +15,6 @@ import { getLowConfidenceRecommendations } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
-import { FullScreenModal } from "shared/ui";
-import { SearchQueryEventModal } from "../../pages/TrendExplorer";
-import { IoOpenOutline } from "solid-icons/io";
-import { OrgContext } from "../../contexts/OrgContext";
 import { parseThreshold } from "./LowConfidenceQueries";
 
 interface LowConfidenceRecommendationsProps {
@@ -146,24 +142,6 @@ export interface QueryCardProps {
   filters?: RecommendationAnalyticsFilter;
 }
 export const QueryCard = (props: QueryCardProps) => {
-  const [open, setOpen] = createSignal(false);
-
-  const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
-
-  const dataset = useContext(DatasetContext);
-  const organization = useContext(OrgContext);
-
-  // const openSearchPlayground = (query: string) => {
-  //   const orgId = organization.selectedOrg()?.id;
-  //   const datasetId = dataset()?.dataset?.id;
-  //   let params = orgId ? `?organization=${orgId}` : "";
-  //   if (datasetId) params += `&dataset=${datasetId}`;
-  //   if (query) params += `&query=${query}`;
-  //   if (props.filters?.search_method)
-  //     params += `&searchType=${props.filters.search_method}`;
-  //   return params;
-  // };
-
   return (
     <>
       <tr

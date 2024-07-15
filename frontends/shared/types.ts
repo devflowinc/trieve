@@ -555,12 +555,12 @@ export type SearchResultType = ScoreChunkDTO | GroupScoreChunkDTO;
 // Recommendations
 export interface RequiredRecommendationAnalyticsFilter {
   date_range: DateRangeFilter;
-  recommendation_type: "chunk" | "group";
+  recommendation_type: "Chunk" | "Group";
 }
 
 export interface RecommendationAnalyticsFilter {
   date_range?: DateRangeFilter;
-  recommendation_type?: "chunk" | "group";
+  recommendation_type?: "Chunk" | "Group";
 }
 
 export interface RecommendationEvent {

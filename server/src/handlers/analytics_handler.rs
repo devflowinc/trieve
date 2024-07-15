@@ -282,7 +282,7 @@ pub async fn get_rag_analytics(
 /// This route allows you to view the recommendation analytics for a dataset.
 #[utoipa::path(
     post,
-    path = "/analytics/recommendation",
+    path = "/analytics/recommendations",
     context_path = "/api",
     tag = "Analytics",
     request_body(content = RecommendationAnalytics, description = "JSON request payload to filter the graph", content_type = "application/json"),

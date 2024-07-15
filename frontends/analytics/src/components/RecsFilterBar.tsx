@@ -15,7 +15,7 @@ interface RecsFilterBarProps {
 
 const allRecTypes: NonNullable<
   RequiredRecommendationAnalyticsFilter["recommendation_type"]
->[] = ["chunk", "group"];
+>[] = ["Chunk", "Group"];
 
 export const RecsFilterBar = (props: RecsFilterBarProps) => {
   const dateSelection = useSimpleTimeRange();
@@ -27,7 +27,7 @@ export const RecsFilterBar = (props: RecsFilterBarProps) => {
   });
 
   return (
-    <div class="flex justify-between border-neutral-400 px-3 py-2">
+    <div class="flex items-end justify-between border-neutral-400 px-3 py-2">
       <div class="flex items-center gap-2">
         <div>
           <Select

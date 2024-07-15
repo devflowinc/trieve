@@ -282,16 +282,17 @@ export const getLowConfidenceRecommendations = async ({
   threshold?: number;
   dataset: string;
 }) => {
-  const response = await fetch(`${apiHost}/analytics/recommendation`, {
+  const response = await fetch(`${apiHost}/analytics/recommendations`, {
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      filter,
+      filter: filter ? transformAnalyticsFilter(filter) : undefined,
       page,
       threshold,
       type: "low_confidence_recommendations",
     }),
     headers: {
+      "TR-Dataset": dataset,
       "Content-Type": "application/json",
     },
   });
