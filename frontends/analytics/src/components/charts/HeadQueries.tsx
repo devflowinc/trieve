@@ -64,12 +64,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
           headQueriesQuery.data.length === 0
         }
       >
-        <div class="py-4 text-center">
-          <div class="text-lg">No queries found</div>
-          <div class="text-sm text-neutral-600">
-            There are no queries to display.
-          </div>
-        </div>
+        <div class="py-8 text-center opacity-80">No Data.</div>
       </Show>
       <Show
         fallback={<div class="py-8">Loading...</div>}
@@ -95,7 +90,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
           </table>
         )}
       </Show>
-      <div class="flex justify-end pt-2">
+      <div class="flex justify-end">
         <PaginationButtons size={18} pages={pages} />
       </div>
     </>

@@ -16,10 +16,16 @@ export const formatDateForApi = (date: Date) => {
     .replace(",", "");
 };
 
-export const transformAnalyticsFilter = (filter: AnalyticsFilter) => {
+interface HasDateRange {
+  date_range?: DateRangeFilter;
+}
+
+export const transformAnalyticsFilter = (filter: HasDateRange) => {
   return {
     ...filter,
-    date_range: transformDateParams(filter.date_range),
+    date_range: filter.date_range
+      ? transformDateParams(filter.date_range)
+      : undefined,
   };
 };
 

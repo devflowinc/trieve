@@ -14,6 +14,9 @@ import {
   QueryCountResponse,
   RPSGraphResponse,
   AnalyticsFilter,
+  RAGAnalyticsFilter,
+  RAGSortBy,
+  SortOrder,
 } from "shared/types";
 import { apiHost } from "../utils/apiHost";
 import { transformAnalyticsFilter } from "../utils/formatDate";
@@ -101,19 +104,27 @@ export const getHeadQueries = async (
   return data.queries;
 };
 
-export const getRAGQueries = async (
-  datasetId: string,
-  page: number,
-): Promise<RagQueryEvent[]> => {
-  const payload = {
-    page,
-  };
-
+export const getRAGQueries = async ({
+  datasetId,
+  page,
+  filter,
+  sort_by,
+  sort_order,
+}: {
+  datasetId: string;
+  page: number;
+  filter?: RAGAnalyticsFilter;
+  sort_by?: RAGSortBy;
+  sort_order?: SortOrder;
+}): Promise<RagQueryEvent[]> => {
   const response = await fetch(`${apiHost}/analytics/rag`, {
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      ...payload,
+      page,
+      sort_by,
+      sort_order,
+      filter: filter ? transformAnalyticsFilter(filter) : undefined,
       type: "rag_queries",
     }),
     headers: {
@@ -132,6 +143,7 @@ export const getRAGQueries = async (
 
 export const getRAGUsage = async (
   datasetId: string,
+  filter?: RAGAnalyticsFilter,
 ): Promise<RAGUsageResponse> => {
   const response = await fetch(`${apiHost}/analytics/rag`, {
     method: "POST",
@@ -142,6 +154,7 @@ export const getRAGUsage = async (
     },
     body: JSON.stringify({
       type: "rag_usage",
+      filter: filter ? transformAnalyticsFilter(filter) : undefined,
     }),
   });
 

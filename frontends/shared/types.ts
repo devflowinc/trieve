@@ -470,9 +470,19 @@ export interface SearchTypeCount {
   search_count: number;
 }
 
-export interface RAGAnalyticsFilter {
-  rag_type: "chosen_chunks" | "all_chunks";
+export interface RequiredRAGAnalyticsFilter {
+  rag_type?: "chosen_chunks" | "all_chunks"; // Optional because that means "BOTH"
+  date_range: DateRangeFilter;
 }
+
+export interface RAGAnalyticsFilter {
+  rag_type?: "chosen_chunks" | "all_chunks";
+  date_range?: DateRangeFilter;
+}
+
+export type RAGSortBy = "created_at" | "latency" | "top_score";
+
+export type SortOrder = "desc" | "asc";
 
 export interface RagQueryEvent {
   id: string;
