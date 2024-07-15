@@ -115,31 +115,36 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
           onInput={(e) => setThresholdText(e.currentTarget.value)}
         />
       </div>
+      <Show when={lowConfidenceQueriesQuery.data?.length === 0}>
+        <div class="py-8 text-center opacity-80">No Data.</div>
+      </Show>
       <Show
         fallback={<div class="py-8">Loading...</div>}
         when={lowConfidenceQueriesQuery.data}
       >
         {(data) => (
-          <table class="mt-2 w-full py-2">
-            <thead>
-              <tr>
-                <th class="text-left font-semibold">Query</th>
-                <th class="text-right font-semibold">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <For
-                fallback={<div class="pt-4 text-center">No data found</div>}
-                each={data()}
-              >
-                {(query) => {
-                  return (
-                    <QueryCard query={query} filters={props.params.filter} />
-                  );
-                }}
-              </For>
-            </tbody>
-          </table>
+          <Show when={data().length > 0}>
+            <table class="mt-2 w-full py-2">
+              <thead>
+                <tr>
+                  <th class="text-left font-semibold">Query</th>
+                  <th class="text-right font-semibold">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <For
+                  fallback={<div class="pt-4 text-center">No data found</div>}
+                  each={data()}
+                >
+                  {(query) => {
+                    return (
+                      <QueryCard query={query} filters={props.params.filter} />
+                    );
+                  }}
+                </For>
+              </tbody>
+            </table>
+          </Show>
         )}
       </Show>
       <div class="flex justify-end pt-2">

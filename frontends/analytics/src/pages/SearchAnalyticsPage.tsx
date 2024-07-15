@@ -6,7 +6,6 @@ import { LatencyGraph } from "../components/charts/LatencyGraph";
 import { RpsGraph } from "../components/charts/RpsGraph";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries";
-import { RagQueries } from "../components/charts/RagQueries";
 import { NoResultQueries } from "../components/charts/NoResultQueries";
 import { ChartCard } from "../components/charts/ChartCard";
 
@@ -45,10 +44,6 @@ export const SearchAnalyticsPage = () => {
 
         <ChartCard class="px-4" width={5}>
           <LowConfidenceQueries params={analyticsFilters} />
-        </ChartCard>
-
-        <ChartCard class="flex flex-col justify-between px-4" width={5}>
-          <RagQueries />
         </ChartCard>
 
         <ChartCard class="flex flex-col justify-between px-4" width={5}>
