@@ -46,6 +46,7 @@ import { useSearch } from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
 import { BiRegularXCircle } from "solid-icons/bi";
+import { createToast } from "./ShowToasts";
 
 export interface GroupPageProps {
   groupID: string;
@@ -172,6 +173,15 @@ export const GroupPage = (props: GroupPageProps) => {
               setGroupInfo(groupBookmarks.group);
               setTotalPages(groupBookmarks.total_pages);
               setChunkMetadatas(groupBookmarks.chunks);
+            });
+          } else if (response.status == 404) {
+            setGroupInfo(null);
+            setTotalPages(0);
+            setChunkMetadatas([]);
+
+            createToast({
+              type: "error",
+              message: "Group not found for this dataset",
             });
           }
           setClientSideRequestFinished(true);
