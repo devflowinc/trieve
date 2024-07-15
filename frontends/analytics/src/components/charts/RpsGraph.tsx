@@ -93,6 +93,16 @@ export const RpsGraph = (props: RpsGraphProps) => {
       chartInstance.options.scales["x"].offset = true;
     }
 
+    if (props.params.granularity === "day") {
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.unit = "day";
+    } else {
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.unit = undefined;
+    }
+
     // Update the chart data;
     chartInstance.data.labels = data.map(
       (point) => new Date(parseCustomDateString(point.time_stamp)),
