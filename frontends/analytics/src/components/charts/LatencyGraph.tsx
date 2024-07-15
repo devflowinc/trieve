@@ -98,7 +98,7 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
                 text: "Timestamp",
                 display: true,
               },
-              offset: data.length === 1,
+              offset: data.length <= 1,
             },
           },
           animation: {
@@ -112,13 +112,17 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
       // @ts-expect-error library types not updated
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = "day";
+    } else if (props.params.granularity === "minute") {
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.unit = "minute";
     } else {
       // @ts-expect-error library types not updated
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = undefined;
     }
 
-    if (data.length === 1) {
+    if (data.length <= 1) {
       // @ts-expect-error library types not updated
       chartInstance.options.scales["x"].offset = true;
     }
