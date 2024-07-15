@@ -48,8 +48,8 @@ pub type RedisPool = bb8_redis::bb8::Pool<bb8_redis::RedisConnectionManager>;
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "email": "developers@trieve.ai",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "name": "Trieve",
 }))]
 #[diesel(table_name = users)]
@@ -95,8 +95,8 @@ impl User {
     "owner_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
     "deleted": false,
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
 }))]
 #[diesel(table_name = topics)]
@@ -134,8 +134,8 @@ impl Topic {
     "deleted": false,
     "prompt_tokens": 300,
     "completion_tokens": 300,
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
 }))]
 #[diesel(table_name = messages)]
@@ -321,13 +321,13 @@ impl Default for GeoInfo {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
     "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "[tag1,tag2]",
     "chunk_html": "<p>Hello, world!</p>",
     "metadata": {"key": "value"},
     "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
@@ -621,13 +621,13 @@ pub struct IngestSpecificChunkMetadata {
     "content": "Hello, world!",
     "link": "https://trieve.ai",
     "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
     "chunk_html": "<p>Hello, world!</p>",
     "metadata": {"key": "value"},
     "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
     "score": 0.9,
@@ -738,7 +738,7 @@ impl From<(ChunkMetadata, f32)> for ChunkMetadataWithScore {
             "link": "https://example.com",
             "chunk_html": "<p>Some HTML content</p>",
             "metadata": {"key1": "value1", "key2": "value2"},
-            "time_stamp": "2021-01-01T00:00:00",
+            "time_stamp": "2021-01-01 00:00:00.000",
             "weight": 0.5,
         }
     ],
@@ -759,7 +759,7 @@ pub struct ScoreChunkDTO {
         "link": "https://example.com",
         "chunk_html": "<p>Some HTML content</p>",
         "metadata": {"key1": "value1", "key2": "value2"},
-        "time_stamp": "2021-01-01T00:00:00",
+        "time_stamp": "2021-01-01 00:00:00.000",
         "weight": 0.5,
     },
     "highlights": ["highlight is two tokens: high, light", "whereas hello is only one token: hello"],
@@ -920,12 +920,12 @@ impl ChunkMetadataTypes {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
     "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
     "metadata": {"key": "value"},
     "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
     "score": 0.9,
@@ -967,12 +967,12 @@ impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
     "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
     "metadata": {"key": "value"},
     "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
@@ -1065,12 +1065,12 @@ pub struct SlimChunkMetadataTable {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
     "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
     "metadata": {"key": "value"},
     "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
@@ -1184,12 +1184,12 @@ impl From<ContentChunkMetadata> for SlimChunkMetadata {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
     "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
     "metadata": {"key": "value"},
     "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
@@ -1230,16 +1230,16 @@ impl From<ChunkMetadata> for ContentChunkMetadata {
             "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
             "org_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
             "role": 0,
-            "created_at": "2021-01-01T00:00:00",
-            "updated_at": "2021-01-01T00:00:00",
+            "created_at": "2021-01-01 00:00:00.000",
+            "updated_at": "2021-01-01 00:00:00.000",
         }
     ],
     "orgs": [
         {
             "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
             "name": "Trieve",
-            "created_at": "2021-01-01T00:00:00",
-            "updated_at": "2021-01-01T00:00:00",
+            "created_at": "2021-01-01 00:00:00.000",
+            "updated_at": "2021-01-01 00:00:00.000",
             "registerable": true,
         }
     ],
@@ -1281,8 +1281,8 @@ pub struct UserDTO {
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "tracking_id": "3",
 }))]
@@ -1350,8 +1350,8 @@ impl ChunkGroup {
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
     "description": "A group of chunks",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "file_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "tracking_id": "3",
 }))]
@@ -1406,8 +1406,8 @@ impl ChunkGroupAndFileId {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "chunk_metadata_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
 }))]
 #[diesel(table_name = chunk_group_bookmarks)]
 pub struct ChunkGroupBookmark {
@@ -1437,8 +1437,8 @@ impl ChunkGroupBookmark {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "file_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
 }))]
 #[diesel(table_name = groups_from_files)]
 pub struct FileGroup {
@@ -1476,13 +1476,13 @@ pub struct UserDTOWithChunks {
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "file_name": "file.txt",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "size": 1000,
     "tag_set": "tag1,tag2",
     "metadata": {"key": "value"},
     "link": "https://trieve.ai",
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
 }))]
 #[diesel(table_name = files)]
@@ -1542,8 +1542,8 @@ pub struct FileAndGroupId {
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "file_name": "file.txt",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "size": 1000,
     "s3_url": "https://trieve.ai",
     "metadata": {"key": "value"},
@@ -1590,8 +1590,8 @@ pub struct ClickhouseEvent {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "event_type": "file_uploaded",
     "event_data": {"group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3", "file_name": "file.txt"},
@@ -1713,8 +1713,8 @@ pub struct DatasetEventCount {
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "tracking_id": "3",
     "server_configuration": {"key": "value"},
@@ -1755,8 +1755,8 @@ impl Dataset {
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "tracking_id": "3",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
 }))]
@@ -1800,8 +1800,8 @@ pub struct DatasetUsageCount {
     "dataset": {
         "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "name": "Trieve",
-        "created_at": "2021-01-01T00:00:00",
-        "updated_at": "2021-01-01T00:00:00",
+        "created_at": "2021-01-01 00:00:00.000",
+        "updated_at": "2021-01-01 00:00:00.000",
         "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "client_configuration": {"key": "value"},
     },
@@ -2113,8 +2113,8 @@ impl DatasetAndOrgWithSubAndPlan {
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "registerable": true,
 }))]
 #[diesel(table_name = organizations)]
@@ -2183,8 +2183,8 @@ impl Invitation {
     "dataset_count": 1,
     "message_count": 1000,
     "amount": 1000,
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "name": "Free",
 }))]
 #[diesel(table_name = stripe_plans)]
@@ -2272,9 +2272,9 @@ impl Default for StripePlan {
     "stripe_id": "sub_123",
     "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
-    "current_period_end": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
+    "current_period_end": "2021-01-01 00:00:00.000",
 }))]
 #[diesel(table_name = stripe_subscriptions)]
 pub struct StripeSubscription {
@@ -2311,8 +2311,8 @@ impl StripeSubscription {
     "organization": {
         "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "name": "Trieve",
-        "created_at": "2021-01-01T00:00:00",
-        "updated_at": "2021-01-01T00:00:00",
+        "created_at": "2021-01-01 00:00:00.000",
+        "updated_at": "2021-01-01 00:00:00.000",
         "registerable": true,
     },
     "plan": {
@@ -2324,8 +2324,8 @@ impl StripeSubscription {
         "dataset_count": 1,
         "message_count": 1000,
         "amount": 1000,
-        "created_at": "2021-01-01T00:00:00",
-        "updated_at": "2021-01-01T00:00:00",
+        "created_at": "2021-01-01 00:00:00.000",
+        "updated_at": "2021-01-01 00:00:00.000",
         "name": "Free",
     },
     "subscription": {
@@ -2333,9 +2333,9 @@ impl StripeSubscription {
         "stripe_id": "sub_123",
         "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "created_at": "2021-01-01T00:00:00",
-        "updated_at": "2021-01-01T00:00:00",
-        "current_period_end": "2021-01-01T00:00:00",
+        "created_at": "2021-01-01 00:00:00.000",
+        "updated_at": "2021-01-01 00:00:00.000",
+        "current_period_end": "2021-01-01 00:00:00.000",
     }
 }))]
 pub struct OrganizationWithSubAndPlan {
@@ -2399,8 +2399,8 @@ impl From<UserRole> for i32 {
     "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "role": 2,
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
 }))]
 #[diesel(table_name = user_organizations)]
 pub struct UserOrganization {
@@ -2492,8 +2492,8 @@ impl From<ApiKeyRole> for i32 {
     "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3",
     "api_key_hash": "hash",
     "name": "Trieve",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
     "role": 1,
     "blake3_hash": "hash",
 }))]
@@ -2545,8 +2545,8 @@ impl UserApiKey {
     "role": 1,
     "dataset_ids": ["d0d0d0d0-d0d0-d0d0-d0d0-d0d0d0d0d0d0"],
     "organization_ids": ["o1o1o1o1-o1o1-o1o1-o1o1-o1o1o1o1o1o1"],
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
 }))]
 pub struct ApiKeyRespBody {
     pub id: uuid::Uuid,
@@ -2816,10 +2816,10 @@ pub struct Range {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
-    "gte": "2021-01-01T00:00:00",
-    "lte": "2021-01-01T00:00:00",
-    "gt": "2021-01-01T00:00:00",
-    "lt": "2021-01-01T00:00:00"
+    "gte": "2021-01-01 00:00:00.000",
+    "lte": "2021-01-01 00:00:00.000",
+    "gt": "2021-01-01 00:00:00.000",
+    "lt": "2021-01-01 00:00:00.000"
 }))]
 pub struct DateRange {
     // gte is the lower bound of the range. This is inclusive.

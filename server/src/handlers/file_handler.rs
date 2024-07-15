@@ -49,7 +49,7 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
     "tag_set": ["tag1", "tag2"],
     "description": "This is an example file",
     "link": "https://example.com",
-    "time_stamp": "2021-01-01T00:00:00Z",
+    "time_stamp": "2021-01-01 00:00:00.000Z",
     "metadata": {
         "key1": "value1",
         "key2": "value2"

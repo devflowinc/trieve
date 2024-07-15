@@ -71,7 +71,7 @@ pub struct DistancePhrase {
     "tracking_id": "tracking_id",
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "location": {
         "lat": -34,
         "lon": 151
@@ -139,7 +139,7 @@ pub enum ReturnQueuedChunk {
         "tag_set": ["tag1", "tag2"],
         "metadata": {"key1": "value1", "key2": "value2"},
         "tracking_id": "tracking_id",
-        "time_stamp": "2021-01-01T00:00:00",
+        "time_stamp": "2021-01-01 00:00:00.000",
         "weight": 0.5
     }],
     "pos_in_queue": 1
@@ -160,7 +160,7 @@ pub struct SingleQueuedChunkResponse {
         "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
         "metadata": {"key1": "value1", "key2": "value2"},
         "tracking_id": "tracking_id",
-        "time_stamp": "2021-01-01T00:00:00",
+        "time_stamp": "2021-01-01 00:00:00.000",
         "weight": 0.5
     },
     {
@@ -170,7 +170,7 @@ pub struct SingleQueuedChunkResponse {
         "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
         "metadata": {"key1": "value1", "key2": "value2"},
         "tracking_id": "tracking_id",
-        "time_stamp": "2021-01-01T00:00:00",
+        "time_stamp": "2021-01-01 00:00:00.000",
         "weight": 0.5
     }],
     "pos_in_queue": 2
@@ -209,7 +209,7 @@ pub struct BulkUploadIngestionMessage {
     "upsert_by_tracking_id": true,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "location": {
         "lat": -34,
         "lon": 151
@@ -230,7 +230,7 @@ pub struct CreateSingleChunkReqPayload(pub ChunkReqPayload);
     "upsert_by_tracking_id": true,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "image_urls": ["https://example.com/red", "https://example.com/blue"],
     "location": {
         "lat": -34,
@@ -245,7 +245,7 @@ pub struct CreateSingleChunkReqPayload(pub ChunkReqPayload);
     "upsert_by_tracking_id": true,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "group_tracking_ids": ["group_tracking_id"],
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "image_urls": [],
     "location": {
         "lat": -34,
@@ -528,7 +528,7 @@ pub async fn delete_chunk_by_tracking_id(
     "link": "https://example.com",
     "chunk_html": "<p>Some HTML content</p>",
     "metadata": {"key1": "value1", "key2": "value2"},
-    "time_stamp": "2021-01-01T00:00:00",
+    "time_stamp": "2021-01-01 00:00:00.000",
     "weight": 0.5,
     "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
 }))]
