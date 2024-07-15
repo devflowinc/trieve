@@ -439,8 +439,8 @@ export const GroupPage = (props: GroupPageProps) => {
           </FullScreenModal>
         </Portal>
       </Show>
-      <div class="flex w-full flex-col items-center space-y-2 px-4">
-        <div class="flex w-full max-w-screen-2xl items-center justify-end space-x-2">
+      <div class="mx-auto flex w-full max-w-screen-2xl flex-col items-center space-y-2 px-4">
+        <div class="flex w-full items-center justify-end space-x-2">
           <Show when={groupInfo()?.file_id}>
             <button
               title="Download uploaded file"
@@ -544,15 +544,8 @@ export const GroupPage = (props: GroupPageProps) => {
           </div>
           <Switch>
             <Match when={searchLoading()}>
-              <div class="flex w-full justify-center">
-                <div
-                  class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                  role="status"
-                >
-                  <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                    Loading...
-                  </span>
-                </div>
+              <div class="animate-pulse text-center text-2xl font-bold">
+                Loading...
               </div>
             </Match>
             <Match when={!searchLoading()}>

@@ -8,7 +8,7 @@ export const HomeSearch = () => {
   const search = useSearch();
 
   return (
-    <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
+    <div class="flex min-h-screen w-full flex-col bg-white dark:bg-shark-800 dark:text-white">
       <Navbar />
       <div class="space-y mx-auto mt-8 flex w-full max-w-screen-2xl flex-col items-center px-4">
         <div class="mx-auto w-full">

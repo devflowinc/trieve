@@ -125,107 +125,100 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
         </div>
       </Show>
       <Show when={!loading() && groups().length > 0}>
-        <div class="mx-auto w-full max-w-7xl">
-          <div class="mx-auto w-full text-center text-2xl font-bold">
+        <div class="w-full">
+          <div class="w-full text-center text-2xl font-bold">
             {$dataset?.()?.dataset.name}'s Groups
           </div>
-          <div class="mt-2 flow-root">
-            <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-              <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-                  <thead>
+          <div class="mt-2 inline-block min-w-full py-2 align-middle">
+            <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+              <thead>
+                <tr>
+                  <th
+                    scope="col"
+                    class="py-3.5 pl-4 pr-3 text-left text-base font-semibold dark:text-white sm:pl-[18px]"
+                  >
+                    Name
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-3 py-3.5 text-left text-base font-semibold dark:text-white"
+                  >
+                    Description
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-3 py-3.5 text-left text-base font-semibold dark:text-white"
+                  >
+                    Created at
+                  </th>
+                  <Show when={$user?.() != undefined}>
+                    <th
+                      scope="col"
+                      class="relative hidden py-3.5 pl-3 pr-4 sm:pr-0"
+                    >
+                      <span class="sr-only">Delete</span>
+                    </th>
+                  </Show>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                <For each={groups()}>
+                  {(group) => (
                     <tr>
-                      <th
-                        scope="col"
-                        class="py-3.5 pl-4 pr-3 text-left text-base font-semibold dark:text-white sm:pl-[18px]"
-                      >
-                        Name
-                      </th>
-                      <th
-                        scope="col"
-                        class="px-3 py-3.5 text-left text-base font-semibold dark:text-white"
-                      >
-                        Description
-                      </th>
-                      <th
-                        scope="col"
-                        class="px-3 py-3.5 text-left text-base font-semibold dark:text-white"
-                      >
-                        Created at
-                      </th>
-                      <Show when={$user?.() != undefined}>
-                        <th
-                          scope="col"
-                          class="relative hidden py-3.5 pl-3 pr-4 sm:pr-0"
+                      <td class="cursor-pointer whitespace-nowrap text-wrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
+                        <a
+                          class="w-full underline"
+                          href={`/group/${group.id}?dataset=${$dataset?.()
+                            ?.dataset.id}`}
                         >
-                          <span class="sr-only">Delete</span>
-                        </th>
-                      </Show>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
-                    <For each={groups()}>
-                      {(group) => (
-                        <tr>
-                          <td class="cursor-pointer whitespace-nowrap text-wrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
-                            <a
-                              class="w-full underline"
-                              href={`/group/${group.id}?dataset=${$dataset?.()
-                                ?.dataset.id}`}
+                          {group.name}
+                        </a>
+                      </td>
+                      <td class="whitespace-nowrap text-wrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
+                        {group.description}
+                      </td>
+                      <td class="whitespace-nowrap px-3 py-4 text-left text-sm text-gray-900 dark:text-gray-300">
+                        {getLocalTime(group.created_at).toLocaleDateString() +
+                          " " +
+                          //remove seconds from time
+                          getLocalTime(group.created_at)
+                            .toLocaleTimeString()
+                            .replace(/:\d+\s/, " ")}
+                      </td>
+                      <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                        <div class="flex items-center gap-3">
+                          <Show
+                            when={
+                              serverConfig()?.["DOCUMENT_DOWNLOAD_FEATURE"] !=
+                                false && group.file_id
+                            }
+                          >
+                            <button
+                              title="Download uploaded file"
+                              class="h-fit text-neutral-400 dark:text-neutral-300"
+                              onClick={() => {
+                                handleDownloadFile(group);
+                              }}
                             >
-                              {group.name}
-                            </a>
-                          </td>
-                          <td class="whitespace-nowrap text-wrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
-                            {group.description}
-                          </td>
-                          <td class="whitespace-nowrap px-3 py-4 text-left text-sm text-gray-900 dark:text-gray-300">
-                            {getLocalTime(
-                              group.created_at,
-                            ).toLocaleDateString() +
-                              " " +
-                              //remove seconds from time
-                              getLocalTime(group.created_at)
-                                .toLocaleTimeString()
-                                .replace(/:\d+\s/, " ")}
-                          </td>
-                          <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                            <div class="flex items-center gap-3">
-                              <Show
-                                when={
-                                  serverConfig()?.[
-                                    "DOCUMENT_DOWNLOAD_FEATURE"
-                                  ] != false && group.file_id
-                                }
-                              >
-                                <button
-                                  title="Download uploaded file"
-                                  class="h-fit text-neutral-400 dark:text-neutral-300"
-                                  onClick={() => {
-                                    handleDownloadFile(group);
-                                  }}
-                                >
-                                  <FaSolidDownload />
-                                </button>
-                              </Show>
-                              <button
-                                classList={{
-                                  "h-fit text-red-700 dark:text-red-400": true,
-                                  "animate-pulse": deleting(),
-                                }}
-                                onClick={() => deleteGroup(group)}
-                              >
-                                <FiTrash class="h-5 w-5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </For>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                              <FaSolidDownload />
+                            </button>
+                          </Show>
+                          <button
+                            classList={{
+                              "h-fit text-red-700 dark:text-red-400": true,
+                              "animate-pulse": deleting(),
+                            }}
+                            onClick={() => deleteGroup(group)}
+                          >
+                            <FiTrash class="h-5 w-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </tbody>
+            </table>
           </div>
           <div class="mt-4 flex items-center justify-between">
             <div />

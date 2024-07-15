@@ -12,7 +12,7 @@ export const OrgGroups = () => {
 
   return (
     <SearchLayout>
-      <div class="mx-[10rem] mb-4 mt-4 flex flex-col overflow-hidden pt-4 text-xl">
+      <div class="mx-auto my-4 flex w-full max-w-screen-2xl flex-col px-4 text-xl">
         <GroupUserPageView
           setOnDelete={setOnGroupDelete}
           setShowConfirmModal={setShowConfirmGroupDeleteModal}

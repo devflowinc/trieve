@@ -37,7 +37,7 @@ export const SearchLayout = (props: { children: JSX.Element }) => {
 
   return (
     <>
-      <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
+      <div class="flex min-h-screen w-full flex-col bg-white dark:bg-shark-800 dark:text-white">
         <Navbar />
         {props.children}
       </div>

@@ -11,7 +11,6 @@ import { EditChunk } from "./pages/chunk/edit/EditChunk";
 import { ViewChunk } from "./pages/chunk/ViewChunk";
 import { ViewGroup } from "./pages/group/ViewGroup";
 import { OrgGroups } from "./pages/group/OrgGroups";
-import { OrgFiles } from "./pages/file/OrgFiles";
 import { DatasetAndUserContextWrapper } from "./components/Contexts/DatasetAndUserContext";
 
 const NotFoundRedirect = () => {
@@ -51,7 +50,6 @@ render(
       </Route>
       <Route path="/group" component={OrgGroups} />
       <Route path="/group/:id" component={ViewGroup} />
-      <Route path="/files" component={OrgFiles} />
       <Route path="/:not_found" component={NotFoundRedirect} />
     </Router>
   ),
