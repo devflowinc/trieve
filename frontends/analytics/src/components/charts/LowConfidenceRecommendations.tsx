@@ -92,9 +92,9 @@ export const LowConfidenceRecommendations = (
     <>
       <div class="flex items-start justify-between gap-2">
         <div>
-          <div class="text-lg">Low Confidence Queries</div>
+          <div class="text-lg">Low Confidence Recommendations</div>
           <div class="text-sm text-neutral-600">
-            Searches with lowest top scores
+            Recommendations with the lowest top scores
           </div>
         </div>
         <input
@@ -144,12 +144,7 @@ export interface QueryCardProps {
 export const QueryCard = (props: QueryCardProps) => {
   return (
     <>
-      <tr
-        onClick={() => {
-          setOpen(true);
-        }}
-        class="cursor-pointer"
-      >
+      <tr>
         <td class="truncate">{props.query.recommendation_type}</td>
         <td class="truncate text-right">{props.query.top_score.toFixed(5)}</td>
       </tr>
