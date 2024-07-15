@@ -117,8 +117,17 @@ where
                         let route = format!("{} {}", req.method(), req.match_info().as_str());
 
                         if let Some(api_key_scopes) = user_api_key.scopes {
-                            if !api_key_scopes.is_empty() && !api_key_scopes.contains(&Some(route))
-                            {
+                            if !api_key_scopes.is_empty() && api_key_scopes.contains(&Some(route)) {
+                                if let Some(ref mut user) = user {
+                                    user.user_orgs.iter_mut().for_each(|org| {
+                                        if org.organization_id
+                                            == dataset_org_plan_sub.organization.organization.id
+                                        {
+                                            org.role = UserRole::Admin.into();
+                                        }
+                                    });
+                                }
+                            } else {
                                 return Err(ServiceError::Unauthorized.into());
                             }
                         }
@@ -142,7 +151,7 @@ where
                 }
             };
 
-            if let Some(user) = user {
+            if let Some(ref user) = user {
                 let find_user_org_span =
                     transaction.start_child("find_user_org_role", "Finding user org role");
 
