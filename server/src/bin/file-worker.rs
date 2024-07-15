@@ -11,7 +11,10 @@ use trieve_server::{
     data::models::{self, FileWorkerMessage},
     errors::ServiceError,
     establish_connection, get_env,
-    operators::file_operator::{create_file_chunks, create_file_query, get_aws_bucket},
+    operators::{
+        dataset_operator::get_dataset_and_organization_from_dataset_id_query,
+        file_operator::{create_file_chunks, create_file_query, get_aws_bucket},
+    },
 };
 
 fn main() {
@@ -316,7 +319,7 @@ async fn upload_file(
         file_id,
         file_size_mb,
         file_worker_message.upload_file_data.clone(),
-        file_worker_message.dataset_org_plan_sub.dataset.id,
+        file_worker_message.dataset_id,
         web_pool.clone(),
     )
     .await?;
@@ -334,11 +337,17 @@ async fn upload_file(
         "Queue chunks for creation for file",
     );
 
+    let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
+        models::UnifiedId::TrieveUuid(file_worker_message.dataset_id),
+        web_pool.clone(),
+    )
+    .await?;
+
     create_file_chunks(
         created_file.id,
         file_worker_message.upload_file_data,
         html_content,
-        file_worker_message.dataset_org_plan_sub,
+        dataset_org_plan_sub,
         web_pool.clone(),
         clickhouse_client.clone(),
         redis_conn,

@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{
-    self, ChunkData, ChunkMetadata, Event, QdrantPayload, ServerDatasetConfiguration,
+    self, ChunkData, ChunkMetadata, Event, QdrantPayload, ServerDatasetConfiguration, UnifiedId,
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -22,6 +22,7 @@ use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
     insert_chunk_metadata_query, update_chunk_metadata_query,
 };
+use trieve_server::operators::dataset_operator::get_dataset_by_id_query;
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
 use trieve_server::operators::model_operator::{
@@ -250,10 +251,44 @@ async fn ingestion_worker(
                 continue;
             }
         };
+
+        let dataset_result: Result<models::Dataset, ServiceError> = match ingestion_message.clone()
+        {
+            IngestionMessage::Update(payload) => {
+                get_dataset_by_id_query(UnifiedId::TrieveUuid(payload.dataset_id), web_pool.clone())
+                    .await
+            }
+            IngestionMessage::BulkUpload(payload) => {
+                get_dataset_by_id_query(UnifiedId::TrieveUuid(payload.dataset_id), web_pool.clone())
+                    .await
+            }
+        };
+        let dataset = match dataset_result {
+            Ok(dataset) => dataset,
+            Err(err) => {
+                let _ = readd_error_to_queue(
+                    ingestion_message,
+                    err.clone(),
+                    redis_pool.clone(),
+                    clickhouse_client.clone(),
+                )
+                .await;
+                log::error!("Failed to get dataset; likely does not exist: {:?}", err);
+                transaction.finish();
+                continue;
+            }
+        };
+        let dataset_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+
         match ingestion_message.clone() {
             IngestionMessage::BulkUpload(payload) => {
-                match bulk_upload_chunks(payload.clone(), web_pool.clone(), reqwest_client.clone())
-                    .await
+                match bulk_upload_chunks(
+                    payload.clone(),
+                    dataset_config.clone(),
+                    web_pool.clone(),
+                    reqwest_client.clone(),
+                )
+                .await
                 {
                     Ok(chunk_ids) => {
                         log::info!("Uploaded {:} chunks", chunk_ids.len());
@@ -294,13 +329,7 @@ async fn ingestion_worker(
             }
 
             IngestionMessage::Update(payload) => {
-                match update_chunk(
-                    payload.clone(),
-                    web_pool.clone(),
-                    payload.server_dataset_config.clone(),
-                )
-                .await
-                {
+                match update_chunk(payload.clone(), web_pool.clone(), dataset_config).await {
                     Ok(_) => {
                         log::info!("Updated chunk: {:?}", payload.chunk_metadata.id);
                         let _ = create_event_query(
@@ -345,6 +374,7 @@ async fn ingestion_worker(
 #[tracing::instrument(skip(payload, web_pool))]
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
+    dataset_config: ServerDatasetConfiguration,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
@@ -358,8 +388,6 @@ pub async fn bulk_upload_chunks(
         "precomputing_data_before_insert",
         "precomputing some important data before insert",
     );
-
-    let dataset_config = payload.dataset_configuration;
 
     // Being blocked out because it is difficult to create multiple split_avg embeddings in batch
     let split_average_being_used = payload
@@ -463,6 +491,7 @@ pub async fn bulk_upload_chunks(
         for (message, ingestion_data) in izip!(payload.ingestion_messages, ingestion_data) {
             let upload_chunk_result = upload_chunk(
                 message,
+                dataset_config.clone(),
                 ingestion_data,
                 web_pool.clone(),
                 reqwest_client.clone(),
@@ -727,6 +756,7 @@ pub async fn bulk_upload_chunks(
 #[tracing::instrument(skip(payload, web_pool))]
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
+    dataset_config: ServerDatasetConfiguration,
     ingestion_data: ChunkData,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
@@ -737,8 +767,6 @@ async fn upload_chunk(
     );
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
-
-    let dataset_config = payload.dataset_config;
 
     let mut qdrant_point_id = uuid::Uuid::new_v4();
     let content = match payload.chunk.convert_html_to_text.unwrap_or(true) {

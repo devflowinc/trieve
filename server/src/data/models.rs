@@ -2787,7 +2787,7 @@ impl From<RetrievedPoint> for QdrantPayload {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FileWorkerMessage {
     pub file_id: uuid::Uuid,
-    pub dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    pub dataset_id: uuid::Uuid,
     pub upload_file_data: UploadFileReqPayload,
     pub attempt_number: u8,
 }

@@ -1669,7 +1669,6 @@ pub async fn create_chunk_metadata(
                 dataset_config: dataset_configuration.clone(),
             },
             dataset_id: dataset_uuid,
-            dataset_config: dataset_configuration.clone(),
             chunk: chunk_only_group_ids.clone(),
             upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
         };
@@ -1681,7 +1680,6 @@ pub async fn create_chunk_metadata(
         BulkUploadIngestionMessage {
             attempt_number: 0,
             dataset_id: dataset_uuid,
-            dataset_configuration,
             ingestion_messages,
         },
         chunk_metadatas,
