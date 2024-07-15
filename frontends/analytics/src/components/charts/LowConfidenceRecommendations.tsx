@@ -2,7 +2,7 @@ import {
   RecommendationAnalyticsFilter,
   RecommendationEvent,
 } from "shared/types";
-import { createQuery, useQueryClient } from "@tanstack/solid-query";
+import { createQuery } from "@tanstack/solid-query";
 import {
   createEffect,
   createSignal,
@@ -27,8 +27,6 @@ export const LowConfidenceRecommendations = (
   const dataset = useContext(DatasetContext);
 
   const pages = usePagination();
-  const queryClient = useQueryClient();
-
   const [thresholdText, setThresholdText] = createSignal("");
 
   createEffect(
@@ -145,7 +143,7 @@ export const QueryCard = (props: QueryCardProps) => {
   return (
     <>
       <tr>
-        <td class="truncate">{props.query.recommendation_type}</td>
+        <td class="truncate">{props.query.positive_ids.join(",")}</td>
         <td class="truncate text-right">{props.query.top_score.toFixed(5)}</td>
       </tr>
     </>
