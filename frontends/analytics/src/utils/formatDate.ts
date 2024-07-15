@@ -1,4 +1,4 @@
-import { AnalyticsFilter, DateRangeFilter } from "shared/types";
+import { DateRangeFilter } from "shared/types";
 
 export const formatDateForApi = (date: Date) => {
   return date
