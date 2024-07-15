@@ -8,11 +8,14 @@ use std::sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
-    data::models,
+    data::models::{self, ServerDatasetConfiguration},
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
-        dataset_operator::{delete_chunks_in_dataset, delete_dataset_by_id_query, DeleteMessage},
+        dataset_operator::{
+            delete_chunks_in_dataset, delete_dataset_by_id_query, get_dataset_by_id_query,
+            DeleteMessage,
+        },
         event_operator::create_event_query,
         organization_operator::{
             delete_actual_organization_query, get_soft_deleted_datasets_for_organization,
@@ -216,13 +219,31 @@ async fn delete_worker(
         let delete_worker_message: DeleteMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
+        let dataset_result = get_dataset_by_id_query(
+            models::UnifiedId::TrieveUuid(delete_worker_message.dataset_id),
+            web_pool.clone(),
+        )
+        .await;
+        let dataset = match dataset_result {
+            Ok(dataset) => dataset,
+            Err(err) => {
+                let _ =
+                    readd_error_to_queue(delete_worker_message, err.clone(), redis_pool.clone())
+                        .await;
+                log::error!("Failed to get dataset; likely does not exist: {:?}", err);
+                transaction.finish();
+                continue;
+            }
+        };
+        let server_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+
         if delete_worker_message.empty_dataset {
             log::info!("Cleaning dataset {:?}", delete_worker_message.dataset_id);
             match delete_chunks_in_dataset(
                 delete_worker_message.dataset_id,
                 web_pool.clone(),
                 clickhouse_client.clone(),
-                delete_worker_message.server_config.clone(),
+                server_config.clone(),
             )
             .await
             {
@@ -270,7 +291,7 @@ async fn delete_worker(
             delete_worker_message.dataset_id,
             web_pool.clone(),
             clickhouse_client.clone(),
-            delete_worker_message.server_config.clone(),
+            server_config.clone(),
         )
         .await
         {

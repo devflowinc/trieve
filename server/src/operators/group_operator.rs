@@ -690,7 +690,7 @@ pub async fn check_group_ids_exist_query(
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GroupUpdateMessage {
-    pub config: ServerDatasetConfiguration,
+    pub dataset_id: uuid::Uuid,
     pub group: ChunkGroup,
     pub prev_group: ChunkGroup,
     pub attempt_number: usize,
@@ -700,7 +700,7 @@ pub async fn soft_update_grouped_chunks_query(
     new_group: ChunkGroup,
     prev_group: ChunkGroup,
     redis_pool: web::Data<RedisPool>,
-    config: ServerDatasetConfiguration,
+    dataset_id: uuid::Uuid,
 ) -> Result<(), ServiceError> {
     let mut redis_conn = redis_pool
         .get()
@@ -708,7 +708,7 @@ pub async fn soft_update_grouped_chunks_query(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let message = GroupUpdateMessage {
-        config,
+        dataset_id,
         group: new_group,
         prev_group,
         attempt_number: 0,

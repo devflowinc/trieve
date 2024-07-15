@@ -187,7 +187,6 @@ pub struct UploadIngestionMessage {
     pub ingest_specific_chunk_metadata: IngestSpecificChunkMetadata,
     pub chunk: ChunkReqPayload,
     pub dataset_id: uuid::Uuid,
-    pub dataset_config: ServerDatasetConfiguration,
     pub upsert_by_tracking_id: bool,
 }
 
@@ -195,7 +194,6 @@ pub struct UploadIngestionMessage {
 pub struct BulkUploadIngestionMessage {
     pub attempt_number: usize,
     pub dataset_id: uuid::Uuid,
-    pub dataset_configuration: ServerDatasetConfiguration,
     pub ingestion_messages: Vec<UploadIngestionMessage>,
 }
 
@@ -570,7 +568,6 @@ pub struct UpdateChunkReqPayload {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateIngestionMessage {
     pub chunk_metadata: ChunkMetadata,
-    pub server_dataset_config: ServerDatasetConfiguration,
     pub dataset_id: uuid::Uuid,
     pub group_ids: Option<Vec<UnifiedId>>,
     pub convert_html_to_text: Option<bool>,
@@ -606,10 +603,6 @@ pub async fn update_chunk(
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
-
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let chunk_id = update_chunk_data.chunk_id;
 
@@ -699,7 +692,6 @@ pub async fn update_chunk(
 
     let message = UpdateIngestionMessage {
         chunk_metadata: chunk_metadata.clone(),
-        server_dataset_config,
         dataset_id,
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,
@@ -783,10 +775,6 @@ pub async fn update_chunk_by_tracking_id(
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
-
     let chunk_metadata =
         get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool.clone()).await?;
 
@@ -850,7 +838,6 @@ pub async fn update_chunk_by_tracking_id(
 
     let message = UpdateIngestionMessage {
         chunk_metadata: metadata.clone(),
-        server_dataset_config,
         dataset_id,
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,

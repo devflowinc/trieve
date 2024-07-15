@@ -6,7 +6,6 @@ use std::sync::{
     Arc,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
-use trieve_server::data::models::Event;
 use trieve_server::{
     data::models,
     errors::ServiceError,
@@ -15,6 +14,10 @@ use trieve_server::{
         event_operator::create_event_query,
         group_operator::{update_grouped_chunks_query, GroupUpdateMessage},
     },
+};
+use trieve_server::{
+    data::models::{Event, ServerDatasetConfiguration},
+    operators::dataset_operator::get_dataset_by_id_query,
 };
 
 fn main() {
@@ -213,11 +216,33 @@ async fn grupdate_worker(
             }
         };
 
+        let dataset_result = get_dataset_by_id_query(
+            models::UnifiedId::TrieveUuid(group_update_msg.dataset_id),
+            web_pool.clone(),
+        )
+        .await;
+        let dataset = match dataset_result {
+            Ok(dataset) => dataset,
+            Err(err) => {
+                let _ = readd_group_error_to_queue(
+                    group_update_msg,
+                    err.clone(),
+                    redis_pool.clone(),
+                    web_clickhouse_client.clone(),
+                )
+                .await;
+                log::error!("Failed to get dataset {:?}", err);
+                transaction.finish();
+                continue;
+            }
+        };
+        let service_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+
         match update_grouped_chunks_query(
             group_update_msg.prev_group.clone(),
             group_update_msg.group.clone(),
             web_pool.clone(),
-            group_update_msg.config.clone(),
+            service_config.clone(),
         )
         .await
         {

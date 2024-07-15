@@ -155,7 +155,6 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DeleteMessage {
     pub dataset_id: uuid::Uuid,
-    pub server_config: ServerDatasetConfiguration,
     pub attempt_number: usize,
     pub empty_dataset: bool,
 }
@@ -196,7 +195,6 @@ pub async fn soft_delete_dataset_by_id_query(
 
     let message = DeleteMessage {
         dataset_id: id,
-        server_config: config,
         attempt_number: 0,
         empty_dataset: false,
     };
@@ -231,7 +229,6 @@ pub async fn clear_dataset_by_dataset_id_query(
 
     let message = DeleteMessage {
         dataset_id: id,
-        server_config: config,
         attempt_number: 0,
         empty_dataset: true,
     };
