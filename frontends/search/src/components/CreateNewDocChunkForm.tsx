@@ -23,6 +23,9 @@ export const CreateNewDocChunkForm = () => {
   const [docChunkLink, setDocChunkLink] = createSignal<string | undefined>(
     undefined,
   );
+  const [trackingID, setTrackingID] = createSignal<string | undefined>(
+    undefined,
+  );
   const [tagSet, setTagSet] = createSignal<string | undefined>(undefined);
   const [weight, setWeight] = createSignal<number | undefined>(undefined);
   const [locationLat, setLocationLat] = createSignal<number | undefined>(
@@ -114,6 +117,10 @@ export const CreateNewDocChunkForm = () => {
       requestBody.time_stamp = timestamp() + " 00:00:00";
     }
 
+    if (trackingID()) {
+      requestBody.tracking_id = trackingID();
+    }
+
     void fetch(`${apiHost}/chunk`, {
       method: "POST",
       headers: {
@@ -167,6 +174,18 @@ export const CreateNewDocChunkForm = () => {
               "w-full bg-neutral-100 border border-gray-300 rounded-md px-4 py-1 dark:bg-neutral-700":
                 true,
               "border border-red-500": errorFields().includes("docChunkLink"),
+            }}
+          />
+          <div>Tracking ID</div>
+          <input
+            type="text"
+            placeholder="optional - a string which can be used to identify a chunk."
+            value={trackingID() ?? ""}
+            onInput={(e) => setTrackingID(e.target.value)}
+            classList={{
+              "w-full bg-neutral-100 border border-gray-300 rounded-md px-4 py-1 dark:bg-neutral-700":
+                true,
+              "border border-red-500": errorFields().includes("trackingID"),
             }}
           />
           <div>Tag Set</div>

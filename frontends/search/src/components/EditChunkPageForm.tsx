@@ -284,6 +284,14 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                   onInput={(e) => setLink(e.target.value)}
                   class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
                 />
+                <div>Tracking ID</div>
+                <input
+                  type="text"
+                  placeholder="optional - a string which can be used to identify a chunk."
+                  value={trackingId() ?? ""}
+                  onInput={(e) => setTrackingId(e.target.value)}
+                  class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+                />
                 <div>Tag Set</div>
                 <input
                   type="text"
