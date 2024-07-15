@@ -108,6 +108,16 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
       });
     }
 
+    if (props.params.granularity === "day") {
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.unit = "day";
+    } else {
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.unit = undefined;
+    }
+
     if (data.length === 1) {
       // @ts-expect-error library types not updated
       chartInstance.options.scales["x"].offset = true;
