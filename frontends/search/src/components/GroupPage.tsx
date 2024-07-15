@@ -45,6 +45,7 @@ import {
 import { useSearch } from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
+import { BiRegularXCircle } from "solid-icons/bi";
 
 export interface GroupPageProps {
   groupID: string;
@@ -84,13 +85,16 @@ export const GroupPage = (props: GroupPageProps) => {
   >([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
-  const [showConfirmGroupDeleteModal, setShowConfirmGroupmDeleteModal] =
+  const [showConfirmGroupDeleteModal, setShowConfirmGroupDeleteModal] =
     createSignal(false);
+  const [deleteChunksInGroup, setDeleteChunksInGroup] = createSignal(false);
   const [totalGroupPages, setTotalGroupPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => {});
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onGroupDelete, setOnGroupDelete] = createSignal(() => {});
+  const [onGroupDelete, setOnGroupDelete] = createSignal<
+    (delete_chunks: boolean) => void
+  >(() => {});
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [groupRecommendations, setGroupRecommendations] = createSignal(false);
@@ -219,20 +223,23 @@ export const GroupPage = (props: GroupPageProps) => {
       fetchChunkGroups();
 
       setOnGroupDelete(() => {
-        return () => {
+        return (delete_chunks: boolean) => {
           setDeleting(true);
           if (group_id === null) return;
 
-          void fetch(`${apiHost}/chunk_group/${group_id}`, {
-            method: "DELETE",
-            credentials: "include",
-            headers: {
-              "X-API-version": "2.0",
-              "Content-Type": "application/json",
-              "TR-Dataset": currentDataset.dataset.id,
+          void fetch(
+            `${apiHost}/chunk_group/${group_id}?delete_chunks=${delete_chunks.toString()}`,
+            {
+              method: "DELETE",
+              credentials: "include",
+              headers: {
+                "X-API-version": "2.0",
+                "Content-Type": "application/json",
+                "TR-Dataset": currentDataset.dataset.id,
+              },
+              signal: abortController.signal,
             },
-            signal: abortController.signal,
-          }).then((response) => {
+          ).then((response) => {
             setDeleting(false);
             if (response.ok) {
               navigate(`/`);
@@ -457,7 +464,7 @@ export const GroupPage = (props: GroupPageProps) => {
               "h-fit text-red-700 dark:text-red-400": true,
               "animate-pulse": deleting(),
             }}
-            onClick={() => setShowConfirmGroupmDeleteModal(true)}
+            onClick={() => setShowConfirmGroupDeleteModal(true)}
           >
             <FiTrash class="h-5 w-5" />
           </button>
@@ -834,12 +841,49 @@ export const GroupPage = (props: GroupPageProps) => {
         onConfirm={onDelete}
         message="Are you sure you want to delete this chunk?"
       />
-      <ConfirmModal
-        showConfirmModal={showConfirmGroupDeleteModal}
-        setShowConfirmModal={setShowConfirmGroupmDeleteModal}
-        onConfirm={onGroupDelete}
-        message="Are you sure you want to delete this group?"
-      />
+      <Show when={showConfirmGroupDeleteModal()}>
+        <FullScreenModal
+          isOpen={showConfirmGroupDeleteModal}
+          setIsOpen={setShowConfirmGroupDeleteModal}
+        >
+          <div class="min-w-[250px] sm:min-w-[300px]">
+            <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
+            <div class="mb-4 text-center text-xl font-bold text-current dark:text-white">
+              {"Are you sure you want to delete this group?"}
+            </div>
+            <div class="flex items-center space-x-2 justify-self-center text-current dark:text-white">
+              <label class="text-sm">Delete chunks</label>
+              <input
+                class="h-4 w-4"
+                type="checkbox"
+                checked={deleteChunksInGroup()}
+                onChange={(e) => {
+                  setDeleteChunksInGroup(e.target.checked);
+                }}
+              />
+            </div>
+            <div class="mx-auto mt-4 flex w-fit space-x-3">
+              <button
+                class="flex items-center space-x-2 rounded-md bg-magenta-500 p-2 text-white"
+                onClick={() => {
+                  setShowConfirmGroupDeleteModal(false);
+                  const onGroupDelFunc = onGroupDelete();
+                  onGroupDelFunc(deleteChunksInGroup());
+                }}
+              >
+                Delete
+                <FiTrash class="h-5 w-5" />
+              </button>
+              <button
+                class="flex space-x-2 rounded-md bg-neutral-500 p-2 text-white"
+                onClick={() => setShowConfirmGroupDeleteModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </FullScreenModal>
+      </Show>
     </>
   );
 };

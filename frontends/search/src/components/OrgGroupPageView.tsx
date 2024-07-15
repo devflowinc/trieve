@@ -16,7 +16,7 @@ import { downloadFile } from "../utils/downloadFile";
 import { FaSolidDownload } from "solid-icons/fa";
 
 export interface GroupUserPageViewProps {
-  setOnDelete: Setter<() => void>;
+  setOnDelete: Setter<(delete_chunks: boolean) => void>;
   setShowConfirmModal: Setter<boolean>;
 }
 
@@ -75,22 +75,28 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     if (!currentDataset) return;
 
     props.setOnDelete(() => {
-      return () => {
+      return (delete_chunks: boolean) => {
         setDeleting(true);
-        void fetch(`${apiHost}/chunk_group/${group.id}`, {
-          method: "DELETE",
-          credentials: "include",
-          headers: {
-            "X-API-version": "2.0",
-            "Content-Type": "application/json",
-            "TR-Dataset": currentDataset.dataset.id,
+        void fetch(
+          `${apiHost}/chunk_group/${
+            group.id
+          }?delete_chunks=${delete_chunks.toString()}`,
+          {
+            method: "DELETE",
+            credentials: "include",
+            headers: {
+              "X-API-version": "2.0",
+              "Content-Type": "application/json",
+              "TR-Dataset": currentDataset.dataset.id,
+            },
           },
-        }).then((response) => {
+        ).then((response) => {
           if (response.ok) {
             setDeleting(false);
-            setGroups((prev) => {
-              return prev.filter((c) => c.id != group.id);
-            });
+            if (!delete_chunks)
+              setGroups((prev) => {
+                return prev.filter((c) => c.id != group.id);
+              });
           }
           if (response.status == 403) {
             setDeleting(false);

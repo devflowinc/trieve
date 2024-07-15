@@ -6,7 +6,7 @@ export const downloadFile = async (fileId: string, datasetId: string) => {
   const response = await fetch(`${apiHost}/file/${fileId}`, {
     credentials: "include",
     headers: {
-"X-API-version": "2.0",
+      "X-API-version": "2.0",
       "TR-Dataset": datasetId,
     },
   });
@@ -16,7 +16,6 @@ export const downloadFile = async (fileId: string, datasetId: string) => {
   }
 
   const data = (await response.json()) as ChunkFile;
-  console.log(data);
   const possibleLink = data["s3_url"];
   if (possibleLink) {
     // Create a link element
