@@ -190,6 +190,7 @@ pub async fn set_user_api_key_query(
     role: ApiKeyRole,
     dataset_ids: Option<Vec<uuid::Uuid>>,
     organization_ids: Option<Vec<uuid::Uuid>>,
+    scopes: Option<Vec<String>>,
     pool: web::Data<Pool>,
 ) -> Result<String, ServiceError> {
     let raw_api_key = generate_api_key();
@@ -204,6 +205,7 @@ pub async fn set_user_api_key_query(
         role,
         dataset_ids,
         organization_ids,
+        scopes,
     );
 
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
@@ -539,6 +541,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         api_key_hash,
         "default".to_string(),
         ApiKeyRole::ReadAndWrite,
+        None,
         None,
         None,
     );

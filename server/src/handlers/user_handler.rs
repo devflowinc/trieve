@@ -115,6 +115,8 @@ pub struct SetUserApiKeyRequest {
     dataset_ids: Option<Vec<uuid::Uuid>>,
     /// The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.
     organization_ids: Option<Vec<uuid::Uuid>>,
+    /// The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, ["GET /api/dataset", "POST /api/dataset"].
+    scopes: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -154,6 +156,7 @@ pub async fn set_user_api_key(
         role.into(),
         data.dataset_ids.clone(),
         data.organization_ids.clone(),
+        data.scopes.clone(),
         pool,
     )
     .await

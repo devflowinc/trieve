@@ -249,6 +249,7 @@ diesel::table! {
         blake3_hash -> Nullable<Text>,
         dataset_ids -> Nullable<Array<Nullable<Text>>>,
         organization_ids -> Nullable<Array<Nullable<Text>>>,
+        scopes -> Nullable<Array<Nullable<Text>>>,
     }
 }
 
