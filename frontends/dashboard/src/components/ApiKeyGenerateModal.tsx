@@ -33,6 +33,7 @@ import {
 } from "solid-icons/fa";
 import { Item, MultiSelect } from "./MultiSelect";
 import { Tooltip } from "shared/ui";
+import { ApiRoutes } from "./Routes";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
@@ -53,6 +54,7 @@ export const ApiKeyGenerateModal = (props: {
   const organizations = createMemo(() => userContext?.user?.()?.orgs ?? []);
   const [selectedOrgs, setSelectedOrgs] = createSignal<Organization[]>([]);
   const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<Item[]>([]);
+  const [selectedRoutes, setSelectedRoutes] = createSignal<Item[]>([]);
 
   const [datasetsAndUsages] = createResource(
     selectedOrgs,
@@ -104,6 +106,7 @@ export const ApiKeyGenerateModal = (props: {
         role: role(),
         dataset_ids: selectedDatasetIds().map((d) => d.id),
         organization_ids: selectedOrgs().map((org) => org.id),
+        scopes: selectedRoutes().map((route) => route.name),
       }),
     }).then((res) => {
       if (res.ok) {
@@ -288,6 +291,25 @@ export const ApiKeyGenerateModal = (props: {
                               selected={selectedDatasetIds()}
                               setSelected={(selected: Item[]) => {
                                 setSelectedDatasetIds(selected);
+                              }}
+                            />
+                          </div>
+                          <div class="flex items-center space-x-2">
+                            <label
+                              for="organization"
+                              class="block text-sm font-medium leading-6"
+                            >
+                              Routes:
+                            </label>
+                            <MultiSelect
+                              disabled={selectedOrgs().length === 0}
+                              items={ApiRoutes.map((item, index) => ({
+                                id: `${index}`,
+                                name: item,
+                              }))}
+                              selected={selectedRoutes()}
+                              setSelected={(selected: Item[]) => {
+                                setSelectedRoutes(selected);
                               }}
                             />
                           </div>
