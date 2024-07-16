@@ -5,6 +5,7 @@ import { getHeadQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
+import { Table, Td, Tr } from "shared/ui";
 
 interface HeadQueriesProps {
   params: { filter: AnalyticsFilter };
@@ -71,40 +72,19 @@ export const HeadQueries = (props: HeadQueriesProps) => {
         when={headQueriesQuery.data}
       >
         {(data) => (
-          <table class="mt-2 w-full py-2">
-            <thead>
-              <Show when={data().length > 0}>
-                <tr>
-                  <th class="text-left font-semibold">Query</th>
-                  <th class="text-right font-semibold">Count</th>
-                </tr>
-              </Show>
-            </thead>
-            <tbody>
-              <For each={data()}>
-                {(query) => {
-                  return <QueryCard query={query} />;
-                }}
-              </For>
-            </tbody>
-          </table>
+          <Table data={data()} headers={["Query", "Count"]} class="my-2">
+            {(row) => (
+              <Tr>
+                <Td>{row.query}</Td>
+                <Td class="text-right">{row.count}</Td>
+              </Tr>
+            )}
+          </Table>
         )}
       </Show>
       <div class="flex justify-end">
         <PaginationButtons size={18} pages={pages} />
       </div>
     </>
-  );
-};
-
-interface QueryCardProps {
-  query: HeadQuery;
-}
-const QueryCard = (props: QueryCardProps) => {
-  return (
-    <tr>
-      <td class="truncate">{props.query.query}</td>
-      <td class="text-right">{props.query.count}</td>
-    </tr>
   );
 };

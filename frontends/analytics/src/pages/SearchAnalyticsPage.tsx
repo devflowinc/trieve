@@ -42,9 +42,7 @@ export const SearchAnalyticsPage = () => {
           <HeadQueries params={analyticsFilters} />
         </ChartCard>
 
-        <ChartCard class="px-4" width={5}>
-          <LowConfidenceQueries params={analyticsFilters} />
-        </ChartCard>
+        <LowConfidenceQueries params={analyticsFilters} />
 
         <ChartCard class="flex flex-col justify-between px-4" width={5}>
           <NoResultQueries params={analyticsFilters} />
