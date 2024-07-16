@@ -102,7 +102,7 @@ export const RagQueries = (props: RagQueriesProps) => {
           when={ragQueriesQuery.data}
         >
           {(data) => (
-            <Table headers={["Message", "RAG Type"]} data={data()}>
+            <Table class="mt-2" headers={["Message", "RAG Type"]} data={data()}>
               {(row) => (
                 <Tr>
                   <Td border="subtle">{row.user_message}</Td>
