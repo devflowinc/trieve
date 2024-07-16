@@ -7,7 +7,7 @@ use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
 use super::model_operator::{
-    create_embedding, cross_encoder, get_bm25_embeddings, get_sparse_vector,
+    create_embedding, cross_encoder, get_bm25_embeddings, get_sparse_vector, create_embedding_grpc
 };
 use super::qdrant_operator::{
     count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
@@ -47,6 +47,7 @@ use qdrant_client::qdrant::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::time::Instant;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SearchResult {

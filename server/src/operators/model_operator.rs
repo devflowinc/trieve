@@ -4,13 +4,17 @@ use crate::{
     get_env,
     handlers::chunk_handler::{BoostPhrase, DistancePhrase},
 };
+use futures::StreamExt;
+use itertools::Itertools;
 use murmur3::murmur3_32;
 use openai_dive::v1::{
     helpers::format_response,
     resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingResponse},
 };
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use std::{collections::HashMap, io::Cursor, ops::IndexMut};
+use tei::{embed_client::EmbedClient, EmbedRequest};
 
 use super::parse_operator::convert_html_to_text;
 
@@ -359,7 +363,7 @@ pub async fn create_embeddings(
 
             let input = match embed_type {
                 "doc" => EmbeddingInput::StringArray(clipped_messages),
-                "query" => EmbeddingInput::String(
+"query" => EmbeddingInput::String(
                     format!(
                         "{}{}",
                         dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_messages[0]
@@ -1029,4 +1033,176 @@ pub fn term_frequency(
             tf_map.into_iter().collect::<Vec<(u32, f32)>>()
         })
         .collect()
+}
+
+pub mod tei {
+    tonic::include_proto!("tei.v1");
+}
+
+async fn create_batch_embedding_call(messages: Vec<String>) -> Result<Vec<Vec<f32>>, ServiceError> {
+    let grpc_origin = get_env!("EMBEDDING_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let client = EmbedClient::connect(grpc_origin).await.map_err(|_| {
+        ServiceError::BadRequest("Failed to connect to embedding server".to_string())
+    })?;
+
+    let stream = tokio_stream::iter(messages)
+        .map(|message| {
+            let mut client = client.clone();
+            async move {
+                let request = EmbedRequest {
+                    inputs: message,
+                    truncate: false,
+                    normalize: true,
+                    truncation_direction: 0,
+                    prompt_name: None,
+                };
+
+                let response = client.embed(request).await.map_err(|_| {
+                    ServiceError::BadRequest("Failed to get embedding from grpc client".to_string())
+                });
+
+                response
+            }
+        })
+        .buffered(5);
+
+    let stream = tokio_stream::StreamExt::chunks_timeout(stream, 3, Duration::from_secs(10));
+
+    let embedding_responses_buffers: Vec<_> = stream.collect().await;
+
+    let embedding_responses: Result<Vec<_>, _> = embedding_responses_buffers
+        .into_iter()
+        .flatten()
+        .map_ok(|res| res.into_inner().embeddings)
+        .collect();
+
+    embedding_responses
+}
+
+#[tracing::instrument]
+pub async fn create_embedding_grpc(
+    message: String,
+    distance_phrase: Option<DistancePhrase>,
+    embed_type: &str,
+    dataset_config: ServerDatasetConfiguration,
+) -> Result<Vec<f32>, ServiceError> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("create_embedding", "Create semantic dense embedding")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "create_embedding",
+                "Create semantic dense embedding",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    let clipped_message = if message.len() > 7000 {
+        message.chars().take(20000).collect()
+    } else {
+        message.clone()
+    };
+
+    let mut messages = vec![clipped_message.clone()];
+
+    if distance_phrase.is_some() {
+        let clipped_boost = if distance_phrase.as_ref().unwrap().phrase.len() > 7000 {
+            distance_phrase
+                .as_ref()
+                .unwrap()
+                .phrase
+                .chars()
+                .take(20000)
+                .collect()
+        } else {
+            distance_phrase.as_ref().unwrap().phrase.clone()
+        };
+        messages.push(clipped_boost);
+    }
+
+    let mut vectors = match embed_type {
+        "doc" => create_batch_embedding_call(messages),
+        "query" => create_batch_embedding_call(vec![format!(
+            "{}{}",
+            dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_message
+        )
+        .to_string()]),
+        _ => create_batch_embedding_call(messages),
+    }
+    .await?;
+
+    if distance_phrase.is_some() {
+        let distance_factor = distance_phrase.unwrap().distance_factor;
+        let boost_vector = vectors.pop().unwrap();
+        let embedding_vector = vectors.pop().unwrap();
+
+        return Ok(embedding_vector
+            .iter()
+            .zip(boost_vector)
+            .map(|(vec_elem, boost_vec_elem)| vec_elem + distance_factor * boost_vec_elem)
+            .collect());
+    }
+
+    match vectors.first() {
+        Some(v) => Ok(v.clone()),
+        None => Err(ServiceError::InternalServerError(
+            "No dense embeddings returned from server".to_owned(),
+        )),
+    }
+}
+
+pub async fn create_embeddings_grpc(
+    content_and_boosts: Vec<(String, Option<DistancePhrase>)>,
+    embed_type: &str,
+    dataset_config: ServerDatasetConfiguration,
+) -> Result<Vec<Vec<f32>>, ServiceError> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("create_embedding", "Create semantic dense embedding")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "create_embedding",
+                "Create semantic dense embedding",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+    let (contents, boosts): (Vec<_>, Vec<_>) = content_and_boosts.into_iter().unzip();
+    let (boost_indices, boost_phrases): (Vec<usize>, Vec<String>) = boosts
+        .clone()
+        .iter()
+        .enumerate()
+        .filter_map(|(index, boost)| boost.clone().map(|distance_phrase| (index, distance_phrase.phrase)))
+        .unzip();
+
+    let content_vecs = create_batch_embedding_call(contents).await?;
+    let boost_vecs = create_batch_embedding_call(boost_phrases).await?;
+
+    let mut combined_vecs = content_vecs;
+    for (index, boost_vec) in boost_indices.into_iter().zip(boost_vecs.into_iter()) {
+        let content_vec = combined_vecs[index].clone();
+        let distance_phrase = boosts[index].clone();
+        if distance_phrase.is_none() {
+            return Err(ServiceError::InternalServerError(
+                "Could not find matching distance phrase (should not happen)".to_string(),
+            ));
+        }
+        let distance_phrase = distance_phrase.unwrap();
+        combined_vecs[index] = content_vec
+            .iter()
+            .zip(boost_vec)
+            .map(|(vec_elem, boost_vec_elem)| {
+                vec_elem + distance_phrase.distance_factor * boost_vec_elem
+            })
+            .collect();
+    }
+
+    Ok(combined_vecs)
 }
