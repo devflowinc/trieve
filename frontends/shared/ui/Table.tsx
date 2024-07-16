@@ -9,6 +9,7 @@ interface TableProps<D> extends VariantProps<typeof table> {
   // Will show if data is an empty array
   fallback?: JSX.Element;
   headers?: string[];
+  class?: string;
 }
 
 const table = cva(["w-full"], {
@@ -41,7 +42,7 @@ export const td = cva([], {
 export const Table = <D,>(props: TableProps<D>) => {
   return (
     <Show when={props.data.length != 0} fallback={props.fallback}>
-      <table class={table({ ...props })}>
+      <table class={table({ ...props, class: props.class })}>
         <Show when={props.headers}>
           {(headers) => (
             <thead>
@@ -69,8 +70,9 @@ export const Tr = (props: { children: JSX.Element }) => {
 
 interface TdProps extends VariantProps<typeof td> {
   children?: JSX.Element;
+  class?: string;
 }
 
 export const Td = (props: TdProps) => {
-  return <td class={td({ ...props })}>{props.children}</td>;
+  return <td class={td({ ...props, class: props.class })}>{props.children}</td>;
 };
