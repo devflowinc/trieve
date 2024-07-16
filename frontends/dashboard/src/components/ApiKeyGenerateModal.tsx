@@ -33,7 +33,7 @@ import {
 } from "solid-icons/fa";
 import { Item, MultiSelect } from "./MultiSelect";
 import { Tooltip } from "shared/ui";
-import { ApiRoutes } from "./Routes";
+import { ApiRoutes, RouteScope } from "./Routes";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
@@ -55,6 +55,11 @@ export const ApiKeyGenerateModal = (props: {
   const [selectedOrgs, setSelectedOrgs] = createSignal<Organization[]>([]);
   const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<Item[]>([]);
   const [selectedRoutes, setSelectedRoutes] = createSignal<Item[]>([]);
+
+  const availableRoutes = Object.keys(ApiRoutes).map((item, index) => ({
+    id: `${index}`,
+    name: item,
+  }));
 
   const [datasetsAndUsages] = createResource(
     selectedOrgs,
@@ -106,7 +111,9 @@ export const ApiKeyGenerateModal = (props: {
         role: role(),
         dataset_ids: selectedDatasetIds().map((d) => d.id),
         organization_ids: selectedOrgs().map((org) => org.id),
-        scopes: selectedRoutes().map((route) => route.name),
+        scopes: selectedRoutes()
+          .map((route) => ApiRoutes[route.name as RouteScope])
+          .flat(),
       }),
     }).then((res) => {
       if (res.ok) {
@@ -303,10 +310,7 @@ export const ApiKeyGenerateModal = (props: {
                             </label>
                             <MultiSelect
                               disabled={selectedOrgs().length === 0}
-                              items={ApiRoutes.map((item, index) => ({
-                                id: `${index}`,
-                                name: item,
-                              }))}
+                              items={availableRoutes}
                               selected={selectedRoutes()}
                               setSelected={(selected: Item[]) => {
                                 setSelectedRoutes(selected);
