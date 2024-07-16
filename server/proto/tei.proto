@@ -1,0 +1,203 @@
+syntax = "proto3";
+
+package tei.v1;
+
+service Info {
+    rpc Info (InfoRequest) returns (InfoResponse) {
+        option idempotency_level = IDEMPOTENT;
+    };
+}
+
+service Embed {
+    rpc Embed (EmbedRequest) returns (EmbedResponse);
+    rpc EmbedStream (stream EmbedRequest) returns (stream EmbedResponse);
+    rpc EmbedSparse (EmbedSparseRequest) returns (EmbedSparseResponse);
+    rpc EmbedSparseStream (stream EmbedSparseRequest) returns (stream EmbedSparseResponse);
+    rpc EmbedAll (EmbedAllRequest) returns (EmbedAllResponse);
+    rpc EmbedAllStream (stream EmbedAllRequest) returns (stream EmbedAllResponse);
+}
+
+service Predict {
+    rpc Predict (PredictRequest) returns (PredictResponse);
+    rpc PredictPair (PredictPairRequest) returns (PredictResponse);
+    rpc PredictStream (stream PredictRequest) returns (stream PredictResponse);
+    rpc PredictPairStream (stream PredictPairRequest) returns (stream PredictResponse);
+}
+
+service Rerank {
+    rpc Rerank (RerankRequest) returns (RerankResponse);
+    rpc RerankStream (stream RerankStreamRequest) returns (RerankResponse);
+}
+
+service Tokenize {
+    rpc Tokenize (EncodeRequest) returns (EncodeResponse);
+    rpc TokenizeStream (stream EncodeRequest) returns (stream EncodeResponse);
+    rpc Decode (DecodeRequest) returns (DecodeResponse);
+    rpc DecodeStream (stream DecodeRequest) returns (stream DecodeResponse);
+}
+
+message InfoRequest {}
+
+enum ModelType {
+    MODEL_TYPE_EMBEDDING = 0;
+    MODEL_TYPE_CLASSIFIER = 1;
+    MODEL_TYPE_RERANKER = 2;
+}
+
+message InfoResponse {
+    string version = 1;
+    optional string sha = 2;
+    optional string docker_label = 3;
+    string model_id = 4;
+    optional string model_sha = 5;
+    string model_dtype = 6;
+    ModelType model_type = 7;
+    uint32 max_concurrent_requests = 8;
+    uint32 max_input_length = 9;
+    uint32 max_batch_tokens = 10;
+    optional uint32 max_batch_requests = 11;
+    uint32 max_client_batch_size = 12;
+    uint32 tokenization_workers = 13;
+}
+
+message Metadata {
+    uint32 compute_chars = 1;
+    uint32 compute_tokens = 2;
+    uint64 total_time_ns = 3;
+    uint64 tokenization_time_ns = 4;
+    uint64 queue_time_ns = 5;
+    uint64 inference_time_ns = 6;
+}
+
+enum TruncationDirection {
+    TRUNCATION_DIRECTION_RIGHT = 0;
+    TRUNCATION_DIRECTION_LEFT = 1;
+}
+
+message EmbedRequest {
+    string inputs = 1;
+    bool truncate = 2;
+    bool normalize = 3;
+    TruncationDirection truncation_direction = 4;
+    optional string prompt_name = 5;
+}
+
+message EmbedResponse {
+    repeated float embeddings = 1;
+    Metadata metadata = 2;
+}
+
+message EmbedSparseRequest {
+    string inputs = 1;
+    bool truncate = 2;
+    TruncationDirection truncation_direction = 3;
+    optional string prompt_name = 4;
+}
+
+message SparseValue {
+    uint32 index = 1;
+    float value = 2;
+}
+
+message EmbedSparseResponse {
+    repeated SparseValue sparse_embeddings = 1;
+    Metadata metadata = 2;
+}
+
+message EmbedAllRequest {
+    string inputs = 1;
+    bool truncate = 2;
+    TruncationDirection truncation_direction = 3;
+    optional string prompt_name = 4;
+}
+
+message TokenEmbedding {
+    repeated float embeddings = 1;
+}
+
+message EmbedAllResponse {
+    repeated TokenEmbedding token_embeddings = 1;
+    Metadata metadata = 2;
+}
+
+message PredictRequest {
+    string inputs = 1;
+    bool truncate = 2;
+    bool raw_scores = 3;
+    TruncationDirection truncation_direction = 4;
+}
+
+message PredictPairRequest {
+    repeated string inputs = 1;
+    bool truncate = 2;
+    bool raw_scores = 3;
+    TruncationDirection truncation_direction = 4;
+}
+
+message Prediction {
+    float score = 1;
+    string label = 2;
+}
+
+message PredictResponse {
+    repeated Prediction predictions = 1;
+    Metadata metadata = 2;
+}
+
+message RerankRequest {
+    string query = 1;
+    repeated string texts = 2;
+    bool truncate = 3;
+    bool raw_scores = 4;
+    bool return_text = 5;
+    TruncationDirection truncation_direction = 6;
+}
+
+message RerankStreamRequest{
+    string query = 1;
+    string text = 2;
+    bool truncate = 3;
+    // The server will only consider the first value
+    bool raw_scores = 4;
+    // The server will only consider the first value
+    bool return_text = 5;
+    TruncationDirection truncation_direction = 6;
+}
+
+message Rank {
+    uint32 index = 1;
+    optional string text = 2;
+    float score = 3;
+}
+
+message RerankResponse {
+    repeated Rank ranks = 1;
+    Metadata metadata = 2;
+}
+
+message EncodeRequest {
+    string inputs = 1;
+    bool add_special_tokens = 2;
+    optional string prompt_name = 3;
+}
+
+message SimpleToken {
+    uint32 id = 1;
+    string text = 2;
+    bool special = 3;
+    optional uint32 start = 4;
+    optional uint32 stop = 5;
+}
+
+message EncodeResponse {
+    repeated SimpleToken tokens = 1;
+}
+
+message DecodeRequest {
+    repeated uint32 ids = 1;
+    bool skip_special_tokens = 2;
+}
+
+message DecodeResponse {
+    string text = 1;
+}

@@ -42,6 +42,8 @@ name = "sync-qdrant"
 path = "src/bin/sync-qdrant.rs"
 
 [dependencies]
+tonic = "0.12"
+prost = "0.13"
 actix-identity = { version = "0.7.1" }
 actix-session = { version = "0.9.0", features = [
     "redis-rs-session",
@@ -140,6 +142,7 @@ murmur3 = "0.5.2"
 tantivy = "0.22.0"
 
 [build-dependencies]
+tonic-build = "0.12"
 dotenvy = "0.15.7"
 
 [features]
