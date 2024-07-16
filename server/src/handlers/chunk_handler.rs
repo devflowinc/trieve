@@ -3,11 +3,10 @@ use std::collections::HashMap;
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
-    ConditionType, DatasetAndOrgWithSubAndPlan, GeoInfo, GeoInfoWithBias,
+    ConditionType, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo, GeoInfoWithBias,
     IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RecommendType,
     RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO,
-    SearchMethod, SearchQueryEventClickhouse, ServerDatasetConfiguration,
-    SlimChunkMetadataWithScore, UnifiedId,
+    SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -327,9 +326,8 @@ pub async fn create_chunk(
         .into());
     }
 
-    let server_dataset_configuration = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let non_upsert_chunks = chunks
         .iter()
@@ -355,14 +353,14 @@ pub async fn create_chunk(
     let (non_upsert_chunk_ingestion_message, non_upsert_chunk_metadatas) = create_chunk_metadata(
         non_upsert_chunks,
         dataset_org_plan_sub.dataset.id,
-        server_dataset_configuration.clone(),
+        dataset_config.clone(),
         pool.clone(),
     )
     .await?;
     let (upsert_chunk_ingestion_message, upsert_chunk_metadatas) = create_chunk_metadata(
         upsert_chunks,
         dataset_org_plan_sub.dataset.id,
-        server_dataset_configuration.clone(),
+        dataset_config.clone(),
         pool.clone(),
     )
     .await?;
@@ -456,9 +454,8 @@ pub async fn delete_chunk(
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let chunk_id = chunk_id.into_inner();
 
@@ -466,7 +463,7 @@ pub async fn delete_chunk(
         vec![chunk_id],
         dataset_org_plan_sub.dataset,
         pool,
-        server_dataset_config,
+        dataset_config,
     )
     .await?;
 
@@ -502,9 +499,8 @@ pub async fn delete_chunk_by_tracking_id(
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let chunk_metadata =
         get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone()).await?;
@@ -513,7 +509,7 @@ pub async fn delete_chunk_by_tracking_id(
         vec![chunk_metadata.id],
         dataset_org_plan_sub.dataset,
         pool,
-        server_dataset_config,
+        dataset_config,
     )
     .await?;
 
@@ -1122,9 +1118,8 @@ pub async fn search_chunks(
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let parsed_query = parse_query(data.query.clone());
 
@@ -1135,7 +1130,7 @@ pub async fn search_chunks(
 
     let result_chunks = match data.search_type {
         SearchMethod::FullText => {
-            if !server_dataset_config.FULLTEXT_ENABLED {
+            if !dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
                 )
@@ -1147,7 +1142,7 @@ pub async fn search_chunks(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
                 &mut timer,
             )
             .await?
@@ -1158,13 +1153,13 @@ pub async fn search_chunks(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
                 &mut timer,
             )
             .await?
         }
         SearchMethod::Semantic => {
-            if !server_dataset_config.SEMANTIC_ENABLED {
+            if !dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),
                 )
@@ -1175,7 +1170,7 @@ pub async fn search_chunks(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
                 &mut timer,
             )
             .await?
@@ -1187,7 +1182,7 @@ pub async fn search_chunks(
                     parsed_query,
                     pool,
                     dataset_org_plan_sub.dataset.clone(),
-                    &server_dataset_config,
+                    &dataset_config,
                     &mut timer,
                 )
                 .await?
@@ -1391,9 +1386,8 @@ pub async fn autocomplete(
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let parsed_query = parse_query(data.query.clone());
 
@@ -1405,7 +1399,7 @@ pub async fn autocomplete(
 
     let result_chunks = match data.search_type {
         SearchMethod::FullText => {
-            if !server_dataset_config.FULLTEXT_ENABLED {
+            if !dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
                 )
@@ -1417,13 +1411,13 @@ pub async fn autocomplete(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
                 &mut timer,
             )
             .await?
         }
         SearchMethod::Semantic => {
-            if !server_dataset_config.SEMANTIC_ENABLED {
+            if !dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),
                 )
@@ -1434,7 +1428,7 @@ pub async fn autocomplete(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
                 &mut timer,
             )
             .await?
@@ -1523,9 +1517,8 @@ pub async fn get_chunk_by_id(
 ) -> Result<HttpResponse, ServiceError> {
     let chunk_id = chunk_id.into_inner();
 
-    let dataset_configuration = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_configuration =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let chunk = get_metadata_from_id_query(chunk_id, dataset_org_plan_sub.dataset.id, pool).await?;
     let chunk_string_tag_set = ChunkMetadataStringTagSet::from(chunk);
@@ -1593,9 +1586,8 @@ pub async fn count_chunks(
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
     let parsed_query = parse_query(data.query.clone());
 
     let limit = match data.limit {
@@ -1612,17 +1604,17 @@ pub async fn count_chunks(
         ..data.clone()
     };
 
-    if limit > server_dataset_config.MAX_LIMIT {
+    if limit > dataset_config.MAX_LIMIT {
         return Err(ServiceError::BadRequest(format!(
             "Limit of {} is greater than the maximum limit of {}. Please reduce the limit.",
-            limit, server_dataset_config.MAX_LIMIT
+            limit, dataset_config.MAX_LIMIT
         ))
         .into());
     }
 
     let result_chunks = match data.search_type {
         SearchMethod::FullText => {
-            if !server_dataset_config.FULLTEXT_ENABLED {
+            if !dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
                 )
@@ -1634,12 +1626,12 @@ pub async fn count_chunks(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
             )
             .await?
         }
         SearchMethod::BM25 => {
-            if !server_dataset_config.BM25_ENABLED
+            if !dataset_config.BM25_ENABLED
                 && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) != "true"
             {
                 return Err(ServiceError::BadRequest(
@@ -1653,7 +1645,7 @@ pub async fn count_chunks(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
             )
             .await?
         }
@@ -1663,12 +1655,12 @@ pub async fn count_chunks(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
             )
             .await?
         }
         SearchMethod::Semantic => {
-            if !server_dataset_config.SEMANTIC_ENABLED {
+            if !dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),
                 )
@@ -1679,7 +1671,7 @@ pub async fn count_chunks(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
             )
             .await?
         }
@@ -1717,9 +1709,8 @@ pub async fn get_chunk_by_tracking_id(
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset_configuration = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_configuration =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let chunk = get_metadata_from_tracking_id_query(
         tracking_id.into_inner(),
@@ -1778,9 +1769,8 @@ pub async fn get_chunks_by_ids(
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset_configuration = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_configuration =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let chunks = get_metadata_from_ids_query(
         chunk_payload.ids.clone(),
@@ -1851,9 +1841,8 @@ pub async fn get_chunks_by_tracking_ids(
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset_configuration = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_configuration =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let chunks = get_metadata_from_tracking_ids_query(
         chunk_payload.tracking_ids.clone(),
@@ -1962,8 +1951,8 @@ pub async fn get_recommended_chunks(
     let positive_tracking_ids = data.positive_tracking_ids.clone();
     let negative_tracking_ids = data.negative_tracking_ids.clone();
     let limit = data.limit.unwrap_or(10);
-    let server_dataset_config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     if positive_chunk_ids.is_none() && positive_tracking_ids.is_none() {
         return Err(ServiceError::BadRequest(
@@ -2072,7 +2061,7 @@ pub async fn get_recommended_chunks(
         data.filters.clone(),
         limit,
         dataset_org_plan_sub.dataset.id,
-        server_dataset_config,
+        dataset_config,
         pool.clone(),
     )
     .await
@@ -2286,7 +2275,7 @@ pub async fn generate_off_chunks(
         get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool).await?;
 
     let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let base_url = dataset_config.LLM_BASE_URL;
 

@@ -4,8 +4,8 @@ use super::{
 };
 use crate::{
     data::models::{
-        self, ChunkMetadataTypes, DatasetAndOrgWithSubAndPlan, Pool, SearchMethod,
-        ServerDatasetConfiguration,
+        self, ChunkMetadataTypes, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool,
+        SearchMethod,
     },
     errors::ServiceError,
     get_env,
@@ -146,9 +146,8 @@ pub async fn create_message(
 ) -> Result<HttpResponse, actix_web::Error> {
     let message_count_pool = pool.clone();
     let message_count_org_id = dataset_org_plan_sub.organization.organization.id;
-    let mut server_dataset_configuration = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let mut dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     check_completion_param_validity(
         data.temperature,
@@ -176,9 +175,7 @@ pub async fn create_message(
     let stream_response_pool = pool.clone();
     let topic_id = create_message_data.topic_id;
     if let Some(data_system_prompt) = &create_message_data.system_prompt {
-        server_dataset_configuration
-            .SYSTEM_PROMPT
-            .clone_from(data_system_prompt);
+        dataset_config.SYSTEM_PROMPT.clone_from(data_system_prompt);
     }
 
     let new_message = models::Message::from_details(
@@ -218,7 +215,7 @@ pub async fn create_message(
 
     // call create_topic_message_query with the new_message and previous_messages
     let previous_messages = create_topic_message_query(
-        &server_dataset_configuration,
+        &dataset_config,
         previous_messages,
         new_message,
         dataset_org_plan_sub.dataset.id,
@@ -232,7 +229,7 @@ pub async fn create_message(
         dataset_org_plan_sub.dataset,
         stream_response_pool,
         clickhouse_client,
-        server_dataset_configuration,
+        dataset_config,
         create_message_data,
     )
     .await
@@ -499,9 +496,8 @@ pub async fn regenerate_message(
     clickhouse_client: web::Data<clickhouse::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
-    let server_dataset_configuration = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     check_completion_param_validity(
         data.temperature,
@@ -530,7 +526,7 @@ pub async fn regenerate_message(
             dataset_org_plan_sub.dataset,
             create_message_pool,
             clickhouse_client,
-            server_dataset_configuration,
+            dataset_config,
             data.into_inner().into(),
         )
         .await;
@@ -584,7 +580,7 @@ pub async fn regenerate_message(
         dataset_org_plan_sub.dataset,
         create_message_pool,
         clickhouse_client,
-        server_dataset_configuration,
+        dataset_config,
         data.into_inner().into(),
     )
     .await
@@ -629,9 +625,8 @@ pub async fn get_suggested_queries(
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.clone().server_configuration,
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.clone().server_configuration);
 
     let base_url = dataset_config.LLM_BASE_URL.clone();
     let default_model = dataset_config.LLM_DEFAULT_MODEL.clone();

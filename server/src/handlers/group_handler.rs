@@ -5,10 +5,10 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
-        ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, GeoInfoWithBias, Pool,
-        RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool,
-        ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
-        ServerDatasetConfiguration, UnifiedId,
+        ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
+        GeoInfoWithBias, Pool, RecommendType, RecommendationEventClickhouse,
+        RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
+        SearchQueryEventClickhouse, UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
@@ -372,9 +372,8 @@ pub async fn delete_group_by_tracking_id(
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let delete_group_pool = pool.clone();
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
     let tracking_id = tracking_id.into_inner();
 
     let group = dataset_owns_group(
@@ -389,7 +388,7 @@ pub async fn delete_group_by_tracking_id(
         dataset_org_plan_sub.dataset,
         data.delete_chunks,
         delete_group_pool,
-        server_dataset_config,
+        dataset_config,
     )
     .await?;
 
@@ -431,9 +430,8 @@ pub async fn delete_chunk_group(
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let delete_group_pool = pool.clone();
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let group_id = group_id.into_inner();
 
@@ -449,7 +447,7 @@ pub async fn delete_chunk_group(
         dataset_org_plan_sub.dataset,
         data.delete_chunks,
         delete_group_pool,
-        server_dataset_config,
+        dataset_config,
     )
     .await?;
 
@@ -597,9 +595,8 @@ pub async fn add_chunk_to_group(
 ) -> Result<HttpResponse, actix_web::Error> {
     let group_id = group_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool.clone()).await?;
 
@@ -616,7 +613,7 @@ pub async fn add_chunk_to_group(
     let qdrant_point_id =
         create_chunk_bookmark_query(pool, ChunkGroupBookmark::from_details(group_id, id)).await?;
 
-    add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
+    add_bookmark_to_qdrant_query(qdrant_point_id, group_id, dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -659,9 +656,8 @@ pub async fn add_chunk_to_group_by_tracking_id(
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunk_metadata_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let group = dataset_owns_group(
         UnifiedId::TrackingId(tracking_id.into_inner()),
@@ -677,7 +673,7 @@ pub async fn add_chunk_to_group_by_tracking_id(
     )
     .await?;
 
-    add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
+    add_bookmark_to_qdrant_query(qdrant_point_id, group_id, dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -912,15 +908,14 @@ pub async fn remove_chunk_from_group(
     let group_id = group_id.into_inner();
     let chunk_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool.clone()).await?;
 
     let qdrant_point_id = delete_chunk_from_group_query(chunk_id, group_id, pool).await?;
 
-    remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
+    remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -1014,8 +1009,8 @@ pub async fn get_recommended_groups(
     }
 
     let limit = data.limit.unwrap_or(10);
-    let server_dataset_config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let mut timer = Timer::new();
@@ -1115,7 +1110,7 @@ pub async fn get_recommended_groups(
         limit,
         data.group_size.unwrap_or(10),
         dataset_org_plan_sub.dataset.id,
-        server_dataset_config,
+        dataset_config,
         pool.clone(),
     )
     .await
@@ -1340,9 +1335,8 @@ pub async fn search_within_group(
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     //search over the links as well
     let group_id = data.group_id;
@@ -1367,7 +1361,7 @@ pub async fn search_within_group(
 
     let result_chunks = match data.search_type {
         SearchMethod::FullText => {
-            if !server_dataset_config.FULLTEXT_ENABLED {
+            if !dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
                 )
@@ -1380,7 +1374,7 @@ pub async fn search_within_group(
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
             )
             .await?
         }
@@ -1391,12 +1385,12 @@ pub async fn search_within_group(
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
             )
             .await?
         }
         _ => {
-            if !server_dataset_config.SEMANTIC_ENABLED {
+            if !dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),
                 )
@@ -1408,7 +1402,7 @@ pub async fn search_within_group(
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
             )
             .await?
         }
@@ -1509,9 +1503,8 @@ pub async fn search_over_groups(
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let parsed_query = parse_query(data.query.clone());
 
@@ -1519,7 +1512,7 @@ pub async fn search_over_groups(
 
     let result_chunks = match data.search_type {
         SearchMethod::FullText => {
-            if !server_dataset_config.FULLTEXT_ENABLED {
+            if !dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
                 )
@@ -1531,7 +1524,7 @@ pub async fn search_over_groups(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
                 &mut timer,
             )
             .await?
@@ -1542,13 +1535,13 @@ pub async fn search_over_groups(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
                 &mut timer,
             )
             .await?
         }
         _ => {
-            if !server_dataset_config.SEMANTIC_ENABLED {
+            if !dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),
                 )
@@ -1559,7 +1552,7 @@ pub async fn search_over_groups(
                 parsed_query,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
-                &server_dataset_config,
+                &dataset_config,
                 &mut timer,
             )
             .await?

@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{ChunkMetadataTypes, ScoreChunkDTO, ServerDatasetConfiguration},
+    data::models::{ChunkMetadataTypes, DatasetConfiguration, ScoreChunkDTO},
     errors::ServiceError,
     get_env,
     handlers::chunk_handler::{BoostPhrase, DistancePhrase},
@@ -30,7 +30,7 @@ pub async fn create_embedding(
     message: String,
     distance_phrase: Option<DistancePhrase>,
     embed_type: &str,
-    dataset_config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -269,7 +269,7 @@ pub async fn get_sparse_vector(
 pub async fn create_embeddings(
     content_and_boosts: Vec<(String, Option<DistancePhrase>)>,
     embed_type: &str,
-    dataset_config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<f32>>, ServiceError> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -780,7 +780,7 @@ pub async fn cross_encoder(
     query: String,
     page_size: u64,
     results: Vec<ScoreChunkDTO>,
-    dataset_config: &ServerDatasetConfiguration,
+    dataset_config: &DatasetConfiguration,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {

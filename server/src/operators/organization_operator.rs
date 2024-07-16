@@ -1,18 +1,17 @@
 use crate::{
     data::models::{
-        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool,
-        ServerDatasetConfiguration, SlimUser, StripePlan, StripeSubscription, User,
-        UserOrganization,
+        Dataset, DatasetConfiguration, Organization, OrganizationUsageCount,
+        OrganizationWithSubAndPlan, Pool, RedisPool, SlimUser, StripePlan, StripeSubscription,
+        User, UserOrganization,
     },
     errors::ServiceError,
     operators::dataset_operator::soft_delete_dataset_by_id_query,
     randutil,
 };
 use actix_web::{web, HttpRequest};
-use diesel::prelude::*;
 use diesel::{
-    result::DatabaseErrorKind, ExpressionMethods, JoinOnDsl, NullableExpressionMethods,
-    SelectableHelper, Table,
+    prelude::*, result::DatabaseErrorKind, sql_query, ExpressionMethods, JoinOnDsl,
+    NullableExpressionMethods, SelectableHelper, Table,
 };
 use diesel_async::RunQueryDsl;
 use itertools::Itertools;
@@ -193,7 +192,7 @@ pub async fn delete_organization_query(
         })?;
 
     for dataset in datasets {
-        let config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+        let config = DatasetConfiguration::from_json(dataset.server_configuration);
 
         soft_delete_dataset_by_id_query(
             dataset.id,
@@ -619,6 +618,32 @@ pub async fn delete_actual_organization_query(
         );
         ServiceError::BadRequest("Error deleting organization".to_string())
     })?;
+
+    Ok(())
+}
+
+pub async fn update_all_org_dataset_configs_query(
+    org_id: uuid::Uuid,
+    new_config: serde_json::Value,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    let concat_configs_raw_query = sql_query(format!(
+        "UPDATE datasets SET server_configuration = server_configuration || '{}' WHERE organization_id = '{}';",
+        new_config, org_id
+    ));
+
+    let mut conn = pool.get().await.unwrap();
+
+    concat_configs_raw_query
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Error updating datasets in update_all_org_dataset_server_configs: {:?}",
+                e
+            );
+            ServiceError::BadRequest("Error updating datasets".to_string())
+        })?;
 
     Ok(())
 }

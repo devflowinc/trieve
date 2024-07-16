@@ -1,8 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
-        DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, FileWorkerMessage, Pool, RedisPool,
-        ServerDatasetConfiguration,
+        DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, FileAndGroupId, FileWorkerMessage,
+        Pool, RedisPool,
     },
     errors::ServiceError,
     middleware::auth_middleware::verify_member,
@@ -352,14 +352,13 @@ pub async fn delete_file_handler(
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
     delete_file_query(
         file_id.into_inner(),
         dataset_org_plan_sub.dataset,
         pool,
-        server_dataset_config,
+        dataset_config,
     )
     .await?;
 

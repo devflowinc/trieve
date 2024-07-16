@@ -1,8 +1,8 @@
 use super::auth_handler::{AdminOnly, OwnerOnly};
 use crate::{
     data::models::{
-        Dataset, DatasetAndOrgWithSubAndPlan, Pool, RedisPool, ServerDatasetConfiguration,
-        StripePlan, UnifiedId,
+        Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool, RedisPool, StripePlan,
+        UnifiedId,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -44,8 +44,32 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
 #[schema(example = json!({
     "dataset_name": "My Dataset",
     "organization_id": "00000000-0000-0000-0000-000000000000",
-    "server_configuration": {},
-    "client_configuration": {}
+    "server_configuration": {
+        "LLM_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+        "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+        "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+        "N_RETRIEVALS_TO_INCLUDE": 8,
+        "EMBEDDING_SIZE": 1536,
+        "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+        "BM25_ENABLED": true,
+        "BM25_B": 0.75,
+        "BM25_K": 0.75,
+        "BM25_AVG_LEN": 256.0,
+        "FULLTEXT_ENABLED": true,
+        "SEMANTIC_ENABLED": true,
+        "EMBEDDING_QUERY_PREFIX": "",
+        "USE_MESSAGE_TO_QUERY_PROMPT": false,
+        "FREQUENCY_PENALTY": 0.0,
+        "TEMPERATURE": 0.5,
+        "PRESENCE_PENALTY": 0.0,
+        "STOP_TOKENS": ["\n\n", "\n"],
+        "INDEXED_ONLY": false,
+        "LOCKED": false,
+        "SYSTEM_PROMPT": "You are a helpful assistant",
+        "MAX_LIMIT": 10000
+    }
 }))]
 pub struct CreateDatasetRequest {
     /// Name of the dataset.
@@ -54,10 +78,8 @@ pub struct CreateDatasetRequest {
     pub organization_id: uuid::Uuid,
     /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization.
     pub tracking_id: Option<String>,
-    /// Server configuration for the dataset, can be arbitrary JSON. We recommend setting to `{}` to start. See docs.trieve.ai for more information or adjust with the admin dashboard.
-    pub server_configuration: serde_json::Value,
-    /// Client configuration for the dataset, can be arbitrary JSON. We recommend setting to `{}` to start. See docs.trieve.ai for more information or adjust with the admin dashboard.
-    pub client_configuration: serde_json::Value,
+    /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
+    pub server_configuration: Option<serde_json::Value>,
 }
 
 /// Create dataset
@@ -108,7 +130,7 @@ pub async fn create_dataset(
         data.dataset_name.clone(),
         data.organization_id,
         data.tracking_id.clone(),
-        data.server_configuration.clone(),
+        data.server_configuration.clone().unwrap_or(json!({})),
     );
 
     let d = create_dataset_query(dataset, pool).await?;
@@ -119,7 +141,32 @@ pub async fn create_dataset(
 #[schema(example = json!({
     "dataset_id": "00000000-0000-0000-0000-000000000000",
     "dataset_name": "My Dataset",
-    "server_configuration": {},
+    "server_configuration": {
+        "LLM_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+        "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+        "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+        "N_RETRIEVALS_TO_INCLUDE": 8,
+        "EMBEDDING_SIZE": 1536,
+        "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+        "BM25_ENABLED": true,
+        "BM25_B": 0.75,
+        "BM25_K": 0.75,
+        "BM25_AVG_LEN": 256.0,
+        "FULLTEXT_ENABLED": true,
+        "SEMANTIC_ENABLED": true,
+        "EMBEDDING_QUERY_PREFIX": "",
+        "USE_MESSAGE_TO_QUERY_PROMPT": false,
+        "FREQUENCY_PENALTY": 0.0,
+        "TEMPERATURE": 0.5,
+        "PRESENCE_PENALTY": 0.0,
+        "STOP_TOKENS": ["\n\n", "\n"],
+        "INDEXED_ONLY": false,
+        "LOCKED": false,
+        "SYSTEM_PROMPT": "You are a helpful assistant",
+        "MAX_LIMIT": 10000
+    }
 }))]
 pub struct UpdateDatasetRequest {
     /// The id of the dataset you want to update.
@@ -128,10 +175,8 @@ pub struct UpdateDatasetRequest {
     pub tracking_id: Option<String>,
     /// The new name of the dataset. Must be unique within the organization. If not provided, the name will not be updated.
     pub dataset_name: Option<String>,
-    /// The new server configuration of the dataset, can be arbitrary JSON. See docs.trieve.ai for more information. If not provided, the server configuration will not be updated.
+    /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously updating this field. We recommend updating through the settings panel for your dataset at dashboard.trieve.ai.
     pub server_configuration: Option<serde_json::Value>,
-    /// The new client configuration of the dataset, can be arbitrary JSON. See docs.trieve.ai for more information. If not provided, the client configuration will not be updated.
-    pub client_configuration: Option<serde_json::Value>,
     /// Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated.
     pub new_tracking_id: Option<String>,
 }
@@ -231,8 +276,7 @@ pub async fn delete_dataset(
         return Err(ServiceError::Forbidden);
     }
 
-    let config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     soft_delete_dataset_by_id_query(data.into_inner(), config, pool, redis_pool).await?;
     Ok(HttpResponse::NoContent().finish())
@@ -275,8 +319,7 @@ pub async fn clear_dataset(
         return Err(ServiceError::Forbidden);
     }
 
-    let config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     clear_dataset_by_dataset_id_query(data.into_inner(), config, redis_pool).await?;
     Ok(HttpResponse::NoContent().finish())
@@ -321,8 +364,7 @@ pub async fn delete_dataset_by_tracking_id(
         return Err(ServiceError::Forbidden);
     }
 
-    let config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     soft_delete_dataset_by_id_query(dataset_org_plan_sub.dataset.id, config, pool, redis_pool)
         .await?;
@@ -363,9 +405,7 @@ pub async fn get_dataset(
         return Err(ServiceError::Forbidden);
     }
 
-    d.server_configuration = json!(ServerDatasetConfiguration::from_json(
-        d.server_configuration
-    ));
+    d.server_configuration = json!(DatasetConfiguration::from_json(d.server_configuration));
 
     Ok(HttpResponse::Ok().json(d))
 }
@@ -439,9 +479,7 @@ pub async fn get_dataset_by_tracking_id(
         return Err(ServiceError::Forbidden);
     }
 
-    d.server_configuration = json!(ServerDatasetConfiguration::from_json(
-        d.server_configuration
-    ));
+    d.server_configuration = json!(DatasetConfiguration::from_json(d.server_configuration));
 
     Ok(HttpResponse::Ok().json(d))
 }

@@ -1,6 +1,6 @@
 use crate::data::models::{
-    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, RagQueryEventClickhouse,
-    SearchMethod, ServerDatasetConfiguration,
+    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetConfiguration,
+    RagQueryEventClickhouse, SearchMethod,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -108,7 +108,7 @@ pub async fn create_generic_system_message(
 
 #[tracing::instrument(skip(pool))]
 pub async fn create_topic_message_query(
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     previous_messages: Vec<Message>,
     new_message: Message,
     dataset_id: uuid::Uuid,
@@ -226,11 +226,10 @@ pub async fn stream_response(
     dataset: Dataset,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     create_message_req_payload: CreateMessageReqPayload,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let user_message_query = match create_message_req_payload.concat_user_messages_query {
         Some(true) => messages
@@ -675,8 +674,7 @@ pub async fn get_topic_string(
         seed: None,
     };
 
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
     let base_url = dataset_config.LLM_BASE_URL;
 
     let base_url = if base_url.is_empty() {
