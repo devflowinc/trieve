@@ -27,3 +27,13 @@ mark > p {
 html {
   scrollbar-gutter: stable;
 }
+
+code {
+  color: #1c709b;
+  background-color: #edf7fc;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  display: inline-block;
+  margin: 3px 0
+}
