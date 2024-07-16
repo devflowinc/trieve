@@ -104,7 +104,7 @@ export const RagQueries = (props: RagQueriesProps) => {
             <Table
               fallback={<div class="py-8 text-center">No Data</div>}
               headerClass="px-2"
-              class="my-2"
+              class="my-4"
               headers={["Message", "RAG Type"]}
               data={data()}
             >
