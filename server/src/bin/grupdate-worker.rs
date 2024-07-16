@@ -340,7 +340,7 @@ pub async fn readd_group_error_to_queue(
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
         redis::cmd("lpush")
-            .arg("dead_letters")
+            .arg("dead_letters_group")
             .arg(old_payload_message)
             .query_async(&mut *redis_conn)
             .await

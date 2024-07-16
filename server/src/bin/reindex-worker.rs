@@ -1,5 +1,7 @@
 use itertools::Itertools;
-use qdrant_client::qdrant::{self, PointId};
+use qdrant_client::qdrant::{self, PointId, RetrievedPoint};
+#[allow(deprecated)]
+use qdrant_client::client::QdrantClient;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
     data::models::{MigratePointMessage, MigrationMode},
@@ -121,66 +123,83 @@ async fn main() -> Result<(), ServiceError> {
             })?
             .result;
 
-        match migration_message.mode {
+        let result = match migration_message.mode {
             MigrationMode::BM25 { average_len, k, b } => {
-                // Insert points into new collection
-                let new_points = points
-                    .iter()
-                    .map(|point| {
-                        let content = match point.payload.get("content") {
-                            Some(qdrant::Value {
-                                kind: Some(qdrant::value::Kind::StringValue(content)),
-                            }) => content.clone(),
-                            _ => {
-                                unreachable!()
-                            }
-                        };
-
-                        // calculate bm25
-                        let bm25_embeddings =
-                            get_bm25_embeddings(vec![(content, None)], average_len, b, k);
-
-                        let bm25_embedding = bm25_embeddings.first().expect("BM25 Vectors");
-
-                        let new_vectors = match &point.vectors {
-                            Some(qdrant::Vectors {
-                                vectors_options:
-                                    Some(qdrant::vectors::VectorsOptions::Vectors(
-                                        qdrant::NamedVectors {
-                                            vectors: vector_hash,
-                                        },
-                                    )),
-                            }) => {
-                                let mut vectors_cloned = vector_hash.clone();
-
-                                vectors_cloned.insert(
-                                    "bm25_vectors".to_string(),
-                                    qdrant::Vector::from(bm25_embedding.clone()),
-                                );
-
-                                vectors_cloned.into()
-                            }
-                            _ => {
-                                unreachable!()
-                            }
-                        };
-
-                        qdrant::PointStruct {
-                            id: point.id.clone(),
-                            payload: point.payload.clone(),
-                            vectors: Some(new_vectors),
-                        }
-                    })
-                    .collect_vec();
-
-                #[allow(deprecated)]
-                qdrant_client
-                    .upsert_points(migration_message.to_collection, None, new_points, None)
-                    .await
-                    .map_err(|e| {
-                        ServiceError::BadRequest(format!("Failed to upsert points {:?}", e))
-                    })?;
+                migrate_bm25(qdrant_client, points, migration_message.to_collection, average_len, b, k).await
             }
+        };
+
+        if let Err(e) = result {
+            log::error!("Error migrating points {:?}", e);
+            redis::cmd("lpush")
+                .arg("migration_failed")
+                .arg("");
         }
     }
+}
+
+#[allow(deprecated)]
+#[tracing::instrument(skip(qdrant_client, points))]
+pub async fn migrate_bm25(
+    qdrant_client: QdrantClient,
+    points: Vec<RetrievedPoint>,
+    to_collection: String,
+    average_len: f32,
+    b: f32,
+    k: f32,
+) -> Result<(), ServiceError> {
+    // Insert points into new collection
+    let new_points = points
+        .iter()
+        .map(|point| {
+            let content = match point.payload.get("content") {
+                Some(qdrant::Value {
+                    kind: Some(qdrant::value::Kind::StringValue(content)),
+                }) => content.clone(),
+                _ => {
+                    unreachable!()
+                }
+            };
+
+            // calculate bm25
+            let bm25_embeddings = get_bm25_embeddings(vec![(content, None)], average_len, b, k);
+
+            let bm25_embedding = bm25_embeddings.first().expect("BM25 Vectors");
+
+            let new_vectors = match &point.vectors {
+                Some(qdrant::Vectors {
+                    vectors_options:
+                        Some(qdrant::vectors::VectorsOptions::Vectors(qdrant::NamedVectors {
+                            vectors: vector_hash,
+                        })),
+                }) => {
+                    let mut vectors_cloned = vector_hash.clone();
+
+                    vectors_cloned.insert(
+                        "bm25_vectors".to_string(),
+                        qdrant::Vector::from(bm25_embedding.clone()),
+                    );
+
+                    vectors_cloned.into()
+                }
+                _ => {
+                    unreachable!()
+                }
+            };
+
+            qdrant::PointStruct {
+                id: point.id.clone(),
+                payload: point.payload.clone(),
+                vectors: Some(new_vectors),
+            }
+        })
+        .collect_vec();
+
+    #[allow(deprecated)]
+    qdrant_client
+        .upsert_points(to_collection, None, new_points, None)
+        .await
+        .map_err(|e| ServiceError::BadRequest(format!("Failed to upsert points {:?}", e)))?;
+
+    Ok(())
 }
