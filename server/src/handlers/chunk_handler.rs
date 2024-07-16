@@ -1001,6 +1001,7 @@ pub struct SearchChunksReqPayload {
     pub content_only: Option<bool>,
     /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
+    pub use_grpc: Option<bool>,
 }
 
 impl Default for SearchChunksReqPayload {
@@ -1340,6 +1341,7 @@ pub struct AutocompleteReqPayload {
     pub content_only: Option<bool>,
     /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
+    pub use_grpc: Option<bool>,
 }
 
 impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
@@ -1369,6 +1371,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             slim_chunks: autocomplete_data.slim_chunks,
             content_only: autocomplete_data.content_only,
             use_reranker: autocomplete_data.use_reranker,
+            use_grpc: autocomplete_data.use_grpc
         }
     }
 }

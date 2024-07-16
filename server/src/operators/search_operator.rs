@@ -7,7 +7,7 @@ use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
 use super::model_operator::{
-    create_embedding, cross_encoder, get_bm25_embeddings, get_sparse_vector, create_embedding_grpc
+    create_embedding, create_embedding_grpc, cross_encoder, get_bm25_embeddings, get_sparse_vector,
 };
 use super::qdrant_operator::{
     count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
@@ -1478,8 +1478,12 @@ pub async fn search_semantic_chunks(
 
     timer.add("start to create dense embedding vector");
 
-    let embedding_vector =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?;
+    let embedding_vector = match data.use_grpc {
+        Some(true) => {
+            create_embedding_grpc(data.query.clone(), None, "query", dataset_config.clone()).await?
+        }
+        _ => create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?,
+    };
 
     timer.add("computed dense embedding");
 
