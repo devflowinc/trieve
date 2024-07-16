@@ -2032,7 +2032,7 @@ impl DatasetConfiguration {
             BM25_K: configuration
                 .get("BM25_K")
                 .and_then(|v| v.as_f64().map(|f| f as f32))
-                .unwrap_or(0.75f32),
+                .unwrap_or(1.2f32),
             BM25_AVG_LEN: configuration
                 .get("BM25_AVG_LEN")
                 .and_then(|v| v.as_f64().map(|f| f as f32))
@@ -4115,4 +4115,17 @@ pub enum EventTypeRequest {
     GroupChunksUpdated,
     #[display(fmt = "group_chunks_action_failed")]
     GroupChunksActionFailed,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum MigrationMode {
+    BM25 { average_len: f32, k: f32, b: f32 },
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct MigratePointMessage {
+    pub qdrant_point_ids: Vec<uuid::Uuid>,
+    pub to_collection: String,
+    pub from_collection: String,
+    pub mode: MigrationMode,
 }
