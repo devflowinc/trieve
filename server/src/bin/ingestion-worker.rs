@@ -212,27 +212,30 @@ async fn ingestion_worker(
             .query_async(&mut *redis_connection)
             .await;
 
-        let serialized_message = if let Ok(payload) = payload_result {
-            broken_pipe_sleep = std::time::Duration::from_secs(10);
+        let serialized_message = match payload_result {
+            Ok(payload) => {
+                broken_pipe_sleep = std::time::Duration::from_secs(10);
 
-            if payload.is_empty() {
+                if payload.is_empty() {
+                    continue;
+                }
+
+                payload
+                    .first()
+                    .expect("Payload must have a first element")
+                    .clone()
+            }
+            Err(err) => {
+                log::error!("Unable to process {:?}", err);
+
+                if err.is_io_error() {
+                    tokio::time::sleep(broken_pipe_sleep).await;
+                    broken_pipe_sleep =
+                        std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));
+                }
+
                 continue;
             }
-
-            payload
-                .first()
-                .expect("Payload must have a first element")
-                .clone()
-        } else {
-            log::error!("Unable to process {:?}", payload_result);
-
-            if payload_result.is_err_and(|err| err.is_io_error()) {
-                tokio::time::sleep(broken_pipe_sleep).await;
-                broken_pipe_sleep =
-                    std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));
-            }
-
-            continue;
         };
 
         let processing_chunk_ctx = sentry::TransactionContext::new(

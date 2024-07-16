@@ -41,6 +41,15 @@ path = "src/bin/create-new-qdrant.rs"
 name = "sync-qdrant"
 path = "src/bin/sync-qdrant.rs"
 
+[[bin]]
+name = "queue-bm25"
+path = "src/bin/queue-bm25-migration.rs"
+
+[[bin]]
+name = "reindex-worker"
+path = "src/bin/reindex-worker.rs"
+
+
 [dependencies]
 actix-identity = { version = "0.7.1" }
 actix-session = { version = "0.9.0", features = [
