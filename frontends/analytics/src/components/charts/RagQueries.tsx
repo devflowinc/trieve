@@ -11,7 +11,7 @@ import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
 import { ChartCard } from "./ChartCard";
-import { Select } from "shared/ui";
+import { Select, Table, Td, Tr } from "shared/ui";
 
 interface RagQueriesProps {
   filter: RAGAnalyticsFilter;
@@ -102,32 +102,14 @@ export const RagQueries = (props: RagQueriesProps) => {
           when={ragQueriesQuery.data}
         >
           {(data) => (
-            <Show when={data().length > 0}>
-              <div class="pt-2">
-                <table class="w-full">
-                  <thead>
-                    <tr>
-                      <th class="text-left font-semibold">Message</th>
-                      <th class="text-right font-semibold">RAG Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <For each={data()}>
-                      {(rag_query_event) => {
-                        return (
-                          <RagQueryEventCard
-                            rag_query_event={rag_query_event}
-                          />
-                        );
-                      }}
-                    </For>
-                  </tbody>
-                </table>
-                <div class="flex justify-end pt-4">
-                  <PaginationButtons size={18} pages={pages} />
-                </div>
-              </div>
-            </Show>
+            <Table headers={["Message", "RAG Type"]} data={data()}>
+              {(row) => (
+                <Tr>
+                  <Td border="subtle">{row.user_message}</Td>
+                  <Td border="subtle">{row.rag_type}</Td>
+                </Tr>
+              )}
+            </Table>
           )}
         </Show>
       </div>
