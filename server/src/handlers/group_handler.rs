@@ -1477,6 +1477,7 @@ pub struct SearchOverGroupsData {
     pub group_size: Option<u32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
+    pub use_grpc: Option<bool>
 }
 
 /// Search Over Groups

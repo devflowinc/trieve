@@ -7,8 +7,8 @@ use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
 use super::model_operator::{
-    create_embedding, create_embedding_grpc, cross_encoder, get_bm25_embeddings, get_sparse_vector,
-    get_sparse_vector_grpc,
+    create_embedding, create_embedding_grpc, cross_encoder, cross_encoder_grpc,
+    get_bm25_embeddings, get_sparse_vector, get_sparse_vector_grpc,
 };
 use super::qdrant_operator::{
     count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
@@ -50,7 +50,6 @@ use qdrant_client::qdrant::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::time::Instant;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SearchResult {
@@ -1521,13 +1520,26 @@ pub async fn search_semantic_chunks(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            let mut cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                result_chunks.score_chunks,
-                config,
-            )
-            .await?;
+            let mut cross_encoder_results = match data.use_grpc {
+                Some(true) => {
+                    cross_encoder_grpc(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+                _ => {
+                    cross_encoder(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+            };
 
             if let Some(score_threshold) = data.score_threshold {
                 cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
@@ -1616,13 +1628,26 @@ pub async fn search_bm25_chunks(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            let mut cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                result_chunks.score_chunks,
-                config,
-            )
-            .await?;
+            let mut cross_encoder_results = match data.use_grpc {
+                Some(true) => {
+                    cross_encoder_grpc(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+                _ => {
+                    cross_encoder(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+            };
 
             if let Some(score_threshold) = data.score_threshold {
                 cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
@@ -1721,13 +1746,26 @@ pub async fn search_full_text_chunks(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            let mut cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                result_chunks.score_chunks,
-                config,
-            )
-            .await?;
+            let mut cross_encoder_results = match data.use_grpc {
+                Some(true) => {
+                    cross_encoder_grpc(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+                _ => {
+                    cross_encoder(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+            };
 
             if let Some(score_threshold) = data.score_threshold {
                 cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
@@ -1850,13 +1888,26 @@ pub async fn search_hybrid_chunks(
 
     let mut reranked_chunks = {
         let mut reranked_chunks = {
-            let mut cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                result_chunks.score_chunks,
-                config,
-            )
-            .await?;
+            let mut cross_encoder_results = match data.use_grpc {
+                Some(true) => {
+                    cross_encoder_grpc(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+                _ => {
+                    cross_encoder(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+            };
 
             if let Some(score_threshold) = data.score_threshold {
                 cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
@@ -1922,14 +1973,12 @@ pub async fn search_semantic_groups(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-
     let embedding_vector = match data.use_grpc {
         Some(true) => {
             create_embedding_grpc(data.query.clone(), None, "query", dataset_config.clone()).await?
         }
         _ => create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?,
     };
-
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
@@ -1962,13 +2011,26 @@ pub async fn search_semantic_groups(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            let mut cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                result_chunks.score_chunks,
-                config,
-            )
-            .await?;
+            let mut cross_encoder_results = match data.use_grpc {
+                Some(true) => {
+                    cross_encoder_grpc(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+                _ => {
+                    cross_encoder(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+            };
 
             if let Some(score_threshold) = data.score_threshold {
                 cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
@@ -2039,13 +2101,26 @@ pub async fn search_full_text_groups(
     let rerank_chunks_input = match data.use_reranker {
         Some(false) | None => result_chunks.score_chunks,
         Some(true) => {
-            let mut cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                result_chunks.score_chunks,
-                config,
-            )
-            .await?;
+            let mut cross_encoder_results = match data.use_grpc {
+                Some(true) => {
+                    cross_encoder_grpc(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+                _ => {
+                    cross_encoder(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+            };
 
             if let Some(score_threshold) = data.score_threshold {
                 cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
@@ -2166,16 +2241,27 @@ pub async fn search_hybrid_groups(
                 .map(|chunk| chunk.to_vec())
                 .collect::<Vec<Vec<ScoreChunkDTO>>>();
 
-            let cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                split_results
-                    .get(0)
-                    .expect("Split results must exist")
-                    .to_vec(),
-                config,
-            )
-            .await?;
+            let cross_encoder_results = match data.use_grpc {
+                Some(true) => {
+                    cross_encoder_grpc(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+                _ => {
+                    cross_encoder(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+            };
+
             let score_chunks = rerank_chunks(
                 cross_encoder_results,
                 data.recency_bias,
@@ -2190,13 +2276,26 @@ pub async fn search_hybrid_groups(
                 .cloned()
                 .collect::<Vec<ScoreChunkDTO>>()
         } else {
-            let cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                result_chunks.score_chunks.clone(),
-                config,
-            )
-            .await?;
+            let cross_encoder_results = match data.use_grpc {
+                Some(true) => {
+                    cross_encoder_grpc(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+                _ => {
+                    cross_encoder(
+                        data.query.clone(),
+                        data.page_size.unwrap_or(10),
+                        result_chunks.score_chunks,
+                        config,
+                    )
+                    .await?
+                }
+            };
 
             rerank_chunks(
                 cross_encoder_results,
@@ -2238,8 +2337,12 @@ pub async fn semantic_search_over_groups(
 
     timer.add("start to create dense embedding vector");
 
-    let embedding_vector =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?;
+    let embedding_vector = match data.use_grpc {
+        Some(true) => {
+            create_embedding_grpc(data.query.clone(), None, "query", dataset_config.clone()).await?
+        }
+        _ => create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?,
+    };
 
     timer.add("computed dense embedding");
 
@@ -2297,9 +2400,10 @@ pub async fn full_text_search_over_groups(
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
     timer.add("start to get sparse vector");
 
-    let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+    let sparse_vector = match data.use_grpc {
+        Some(true) => get_sparse_vector_grpc(parsed_query.query.clone(), "query").await?,
+        _ => get_sparse_vector(parsed_query.query.clone(), "query").await?,
+    };
 
     timer.add("computed sparse vector");
 
@@ -2351,6 +2455,7 @@ async fn cross_encoder_for_groups(
     page_size: u64,
     groups_chunks: Vec<GroupScoreChunk>,
     config: &ServerDatasetConfiguration,
+    use_grpc: Option<bool>,
 ) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
@@ -2364,7 +2469,11 @@ async fn cross_encoder_for_groups(
         })
         .collect_vec();
 
-    let cross_encoder_results = cross_encoder(query, page_size, score_chunks, config).await?;
+    let cross_encoder_results = match use_grpc {
+        Some(true) => cross_encoder_grpc(query, page_size, score_chunks, config).await?,
+        _ => cross_encoder(query, page_size, score_chunks, config).await?,
+    };
+
     let mut group_results = cross_encoder_results
         .into_iter()
         .map(|score_chunk| {
@@ -2420,10 +2529,29 @@ pub async fn hybrid_search_over_groups(
 
     timer.add("start to create dense embedding vector and sparse vector");
 
-    let dense_embedding_vectors_future =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone());
+    let dense_embedding_vectors_future: Pin<
+        Box<dyn Future<Output = Result<Vec<f32>, ServiceError>>>,
+    > = match data.use_grpc {
+        Some(true) => Box::pin(create_embedding_grpc(
+            data.query.clone(),
+            None,
+            "query",
+            dataset_config.clone(),
+        )),
+        _ => Box::pin(create_embedding(
+            data.query.clone(),
+            None,
+            "query",
+            dataset_config.clone(),
+        )),
+    };
 
-    let sparse_embedding_vector_future = get_sparse_vector(data.query.clone(), "query");
+    let sparse_embedding_vector_future: Pin<
+        Box<dyn Future<Output = Result<Vec<(u32, f32)>, ServiceError>>>,
+    > = match data.use_grpc {
+        Some(true) => Box::pin(get_sparse_vector_grpc(parsed_query.query.clone(), "query")),
+        _ => Box::pin(get_sparse_vector(parsed_query.query.clone(), "query")),
+    };
 
     let (dense_vector, sparse_vector) = futures::try_join!(
         dense_embedding_vectors_future,
@@ -2506,6 +2634,7 @@ pub async fn hybrid_search_over_groups(
                 .expect("Split results must exist")
                 .to_vec(),
             config,
+            data.use_grpc,
         )
         .await?;
 
@@ -2520,6 +2649,7 @@ pub async fn hybrid_search_over_groups(
             data.page_size.unwrap_or(10).into(),
             combined_result_chunks.group_chunks.clone(),
             config,
+            data.use_grpc,
         )
         .await?
     };
@@ -2571,8 +2701,12 @@ pub async fn autocomplete_semantic_chunks(
 
     timer.add("start to create dense embedding vector");
 
-    let embedding_vector =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?;
+    let embedding_vector = match data.use_grpc {
+        Some(true) => {
+            create_embedding_grpc(data.query.clone(), None, "query", dataset_config.clone()).await?
+        }
+        _ => create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?,
+    };
 
     timer.add("computed dense embedding");
 
@@ -2675,9 +2809,10 @@ pub async fn autocomplete_fulltext_chunks(
 
     timer.add("start to create sparse embedding vector");
 
-    let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+    let sparse_vector = match data.use_grpc {
+        Some(true) => get_sparse_vector_grpc(parsed_query.query.clone(), "query").await?,
+        _ => get_sparse_vector(parsed_query.query.clone(), "query").await?,
+    };
 
     timer.add("computed sparse vector");
 

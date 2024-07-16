@@ -14,7 +14,10 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use std::{collections::HashMap, io::Cursor, ops::IndexMut};
-use tei::{embed_client::EmbedClient, EmbedRequest, EmbedSparseRequest, TruncationDirection};
+use tei::{
+    embed_client::EmbedClient, rerank_client::RerankClient, EmbedRequest, EmbedSparseRequest,
+    RerankRequest, TruncationDirection,
+};
 
 use super::parse_operator::convert_html_to_text;
 
@@ -1057,8 +1060,8 @@ async fn create_batch_embedding_call(messages: Vec<String>) -> Result<Vec<Vec<f3
                     prompt_name: None,
                 };
 
-                let response = client.embed(request).await.map_err(|_| {
-                    ServiceError::BadRequest("Failed to get embedding from grpc client".to_string())
+                let response = client.embed(request).await.map_err(|e| {
+                    ServiceError::BadRequest(format!("Failed making call to grpc embedding server: {:?}", e))
                 });
 
                 response
@@ -1215,7 +1218,7 @@ pub async fn get_sparse_vector_grpc(
     message: String,
     embed_type: &str,
 ) -> Result<Vec<(u32, f32)>, ServiceError> {
-    let grpc_origin = get_env!("EMBEDDING_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let grpc_origin = get_env!("SPARSE_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
     let mut client = EmbedClient::connect(grpc_origin).await.map_err(|_| {
         ServiceError::BadRequest("Failed to connect to embedding server".to_string())
     })?;
@@ -1236,7 +1239,7 @@ pub async fn get_sparse_vector_grpc(
     let response = client
         .embed_sparse(request)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed making call to server".to_string()))?
+        .map_err(|e| ServiceError::BadRequest(format!("Failed making call to sparse vector grpc server: {:?}", e)))?
         .into_inner();
 
     let sparse_vectors: Vec<(u32, f32)> = response
@@ -1246,4 +1249,75 @@ pub async fn get_sparse_vector_grpc(
         .collect();
 
     Ok(sparse_vectors)
+}
+
+pub async fn cross_encoder_grpc(
+    query: String,
+    page_size: u64,
+    results: Vec<ScoreChunkDTO>,
+    _dataset_config: &ServerDatasetConfiguration,
+) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("Cross Encoder", "Cross Encode semantic and hybrid chunks")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "Cross Encoder",
+                "Cross Encode semantic and hybrid chunks",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    if results.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let mut results = results.clone();
+    let request_docs = results
+        .clone()
+        .into_iter()
+        .map(|x| {
+            let chunk = match x.metadata[0].clone() {
+                ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
+                _ => Err(ServiceError::BadRequest("Metadata not found".to_string())),
+            }?;
+
+            Ok(convert_html_to_text(
+                &(chunk.chunk_html.unwrap_or_default()),
+            ))
+        })
+        .collect::<Result<Vec<String>, ServiceError>>()?;
+
+    let grpc_origin = get_env!("RERANKER_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let mut client = RerankClient::connect(grpc_origin).await.map_err(|_| {
+        ServiceError::BadRequest("Failed to connect to rerank server".to_string())
+    })?;
+
+    let request = RerankRequest {
+        query,
+        texts: request_docs,
+        truncate: true,
+        truncation_direction: TruncationDirection::Right.into(),
+        return_text: false,
+        raw_scores: false,
+    };
+
+    let response = client.rerank(request).await.map_err(|e| {
+        ServiceError::BadRequest(format!("Failed to make call to grpc rerank server: {:?}", e))
+    })?.into_inner();
+
+    response.ranks.into_iter().for_each(|rank| {
+        results.index_mut(rank.index as usize).score = rank.score as f64;
+    });
+
+    results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+
+    results.truncate(page_size.try_into().unwrap());
+
+    transaction.finish();
+    Ok(results)
 }
