@@ -1242,6 +1242,7 @@ pub struct SearchWithinGroupData {
     pub slim_chunks: Option<bool>,
     /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
+    pub use_grpc: Option<bool>,
 }
 
 impl From<SearchWithinGroupData> for SearchChunksReqPayload {
@@ -1267,6 +1268,7 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
             slim_chunks: search_within_group_data.slim_chunks,
             content_only: Some(false),
             use_reranker: search_within_group_data.use_reranker,
+            use_grpc: search_within_group_data.use_grpc,
         }
     }
 }

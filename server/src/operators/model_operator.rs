@@ -14,7 +14,7 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use std::{collections::HashMap, io::Cursor, ops::IndexMut};
-use tei::{embed_client::EmbedClient, EmbedRequest};
+use tei::{embed_client::EmbedClient, EmbedRequest, EmbedSparseRequest, TruncationDirection};
 
 use super::parse_operator::convert_html_to_text;
 
@@ -1179,7 +1179,11 @@ pub async fn create_embeddings_grpc(
         .clone()
         .iter()
         .enumerate()
-        .filter_map(|(index, boost)| boost.clone().map(|distance_phrase| (index, distance_phrase.phrase)))
+        .filter_map(|(index, boost)| {
+            boost
+                .clone()
+                .map(|distance_phrase| (index, distance_phrase.phrase))
+        })
         .unzip();
 
     let content_vecs = create_batch_embedding_call(contents).await?;
@@ -1205,4 +1209,41 @@ pub async fn create_embeddings_grpc(
     }
 
     Ok(combined_vecs)
+}
+
+pub async fn get_sparse_vector_grpc(
+    message: String,
+    embed_type: &str,
+) -> Result<Vec<(u32, f32)>, ServiceError> {
+    let grpc_origin = get_env!("EMBEDDING_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let mut client = EmbedClient::connect(grpc_origin).await.map_err(|_| {
+        ServiceError::BadRequest("Failed to connect to embedding server".to_string())
+    })?;
+
+    let clipped_message = if message.len() > 5000 {
+        message.chars().take(128000).collect()
+    } else {
+        message.clone()
+    };
+
+    let request = EmbedSparseRequest {
+        inputs: clipped_message,
+        truncate: true,
+        truncation_direction: TruncationDirection::Right.into(),
+        prompt_name: None,
+    };
+
+    let response = client
+        .embed_sparse(request)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed making call to server".to_string()))?
+        .into_inner();
+
+    let sparse_vectors: Vec<(u32, f32)> = response
+        .sparse_embeddings
+        .into_iter()
+        .map(|embedding| (embedding.index, embedding.value))
+        .collect();
+
+    Ok(sparse_vectors)
 }

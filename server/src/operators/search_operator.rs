@@ -8,6 +8,7 @@ use super::group_operator::{
 };
 use super::model_operator::{
     create_embedding, create_embedding_grpc, cross_encoder, get_bm25_embeddings, get_sparse_vector,
+    get_sparse_vector_grpc,
 };
 use super::qdrant_operator::{
     count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
@@ -35,6 +36,8 @@ use diesel::dsl::sql;
 use diesel::sql_types::{Bool, Float, Text};
 use diesel::{ExpressionMethods, JoinOnDsl, PgArrayExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
+use std::future::Future;
+use std::pin::Pin;
 
 use itertools::Itertools;
 use simple_server_timing_header::Timer;
@@ -1680,9 +1683,10 @@ pub async fn search_full_text_chunks(
 
     timer.add("start to get sparse vector");
 
-    let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+    let sparse_vector = match data.use_grpc {
+        Some(true) => get_sparse_vector_grpc(parsed_query.query.clone(), "query").await?,
+        _ => get_sparse_vector(parsed_query.query.clone(), "query").await?,
+    };
 
     timer.add("computed sparse vector");
 
@@ -1784,10 +1788,27 @@ pub async fn search_hybrid_chunks(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let dense_vector_future =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone());
+    let dense_vector_future: Pin<Box<dyn Future<Output = Result<Vec<f32>, ServiceError>>>> =
+        match data.use_grpc {
+            Some(true) => Box::pin(create_embedding_grpc(
+                data.query.clone(),
+                None,
+                "query",
+                dataset_config.clone(),
+            )),
+            _ => Box::pin(create_embedding(
+                data.query.clone(),
+                None,
+                "query",
+                dataset_config.clone(),
+            )),
+        };
 
-    let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), "query");
+    let sparse_vector_future: Pin<Box<dyn Future<Output = Result<Vec<(u32, f32)>, ServiceError>>>> =
+        match data.use_grpc {
+            Some(true) => Box::pin(get_sparse_vector_grpc(parsed_query.query.clone(), "query")),
+            _ => Box::pin(get_sparse_vector(parsed_query.query.clone(), "query")),
+        };
 
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
@@ -1901,8 +1922,14 @@ pub async fn search_semantic_groups(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let embedding_vector =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?;
+
+    let embedding_vector = match data.use_grpc {
+        Some(true) => {
+            create_embedding_grpc(data.query.clone(), None, "query", dataset_config.clone()).await?
+        }
+        _ => create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?,
+    };
+
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
@@ -1976,9 +2003,10 @@ pub async fn search_full_text_groups(
     dataset: Dataset,
     config: &ServerDatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
-    let sparse_vector = get_sparse_vector(data.query.clone(), "query")
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+    let sparse_vector = match data.use_grpc {
+        Some(true) => get_sparse_vector_grpc(parsed_query.query.clone(), "query").await?,
+        _ => get_sparse_vector(parsed_query.query.clone(), "query").await?,
+    };
 
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::SpladeSparse(sparse_vector),
@@ -2055,10 +2083,27 @@ pub async fn search_hybrid_groups(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let dense_vector_future =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone());
+    let dense_vector_future: Pin<Box<dyn Future<Output = Result<Vec<f32>, ServiceError>>>> =
+        match data.use_grpc {
+            Some(true) => Box::pin(create_embedding_grpc(
+                data.query.clone(),
+                None,
+                "query",
+                dataset_config.clone(),
+            )),
+            _ => Box::pin(create_embedding(
+                data.query.clone(),
+                None,
+                "query",
+                dataset_config.clone(),
+            )),
+        };
 
-    let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), "query");
+    let sparse_vector_future: Pin<Box<dyn Future<Output = Result<Vec<(u32, f32)>, ServiceError>>>> =
+        match data.use_grpc {
+            Some(true) => Box::pin(get_sparse_vector_grpc(parsed_query.query.clone(), "query")),
+            _ => Box::pin(get_sparse_vector(parsed_query.query.clone(), "query")),
+        };
 
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;

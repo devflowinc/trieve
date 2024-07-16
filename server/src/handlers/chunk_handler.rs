@@ -1027,6 +1027,7 @@ impl Default for SearchChunksReqPayload {
             slim_chunks: None,
             content_only: None,
             use_reranker: None,
+            use_grpc: None,
         }
     }
 }
