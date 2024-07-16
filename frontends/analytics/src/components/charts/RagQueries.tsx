@@ -31,8 +31,8 @@ export const RagQueries = (props: RagQueriesProps) => {
         {
           page: curPage + 1,
           filter: props.filter,
-          sort_by: sortBy(),
-          sort_order: sortOrder(),
+          sortBy: sortBy(),
+          sortOrder: sortOrder(),
         },
       ],
       queryFn: async () => {
@@ -52,7 +52,15 @@ export const RagQueries = (props: RagQueriesProps) => {
   });
 
   const ragQueriesQuery = createQuery(() => ({
-    queryKey: ["rag-queries", { page: pages.page(), filter: props.filter }],
+    queryKey: [
+      "rag-queries",
+      {
+        page: pages.page(),
+        filter: props.filter,
+        sortBy: sortBy(),
+        sortOrder: sortOrder(),
+      },
+    ],
     queryFn: () => {
       return getRAGQueries({
         datasetId: dataset().dataset.id,
