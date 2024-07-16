@@ -629,7 +629,7 @@ pub async fn update_all_org_dataset_configs_query(
 ) -> Result<(), ServiceError> {
     let concat_configs_raw_query = sql_query(format!(
         "UPDATE datasets SET server_configuration = server_configuration || '{}' WHERE organization_id = '{}';",
-        new_config.to_string().replace('\'', "''").replace('\\', ""), org_id
+        new_config.to_string().replace('\'', "''"), org_id
     ));
 
     let mut conn = pool.get().await.unwrap();
