@@ -24,12 +24,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "clsx": "^2.1.1",
+    "cva": "npm:class-variance-authority",
+    "solid-icons": "^1.1.0",
     "solid-js": "^1.8.17",
-    "terracotta": "^1.0.5",
-    "solid-icons": "^1.1.0"
+    "tailwind-merge": "^2.4.0",
+    "terracotta": "^1.0.5"
   },
   "devDependencies": {
-    "typescript": "^5.0.4",
-    "config": "*"
+    "config": "*",
+    "typescript": "^5.0.4"
   }
 }
