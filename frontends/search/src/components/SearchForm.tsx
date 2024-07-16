@@ -683,6 +683,22 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           />
                         </div>
                         <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Use Quote Negated Words</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={tempSearchValues().useQuoteNegatedTerms}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  useQuoteNegatedTerms: e.target.checked,
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Get Total Pages (Latency Penalty):</label>
                           <input
                             class="h-4 w-4"

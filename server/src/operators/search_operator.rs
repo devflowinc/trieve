@@ -236,16 +236,16 @@ pub async fn assemble_qdrant_filter(
         }
     };
 
-    if quote_words.is_some() {
-        for quote_word in quote_words.unwrap() {
+    if let Some(quote_words) = quote_words {
+        for quote_word in quote_words {
             filter
                 .must
                 .push(Condition::matches_text("content", quote_word));
         }
     }
 
-    if negated_words.is_some() {
-        for negated_word in negated_words.unwrap() {
+    if let Some(negated_words) = negated_words {
+        for negated_word in negated_words {
             filter
                 .must_not
                 .push(Condition::matches_text("content", negated_word));

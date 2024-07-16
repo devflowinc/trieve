@@ -1,6 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{parse_query, ChunkFilter, SearchChunksReqPayload},
+    chunk_handler::{parse_query, ChunkFilter, ParsedQuery, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{
@@ -1237,8 +1237,12 @@ pub struct SearchWithinGroupData {
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
+    /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
+    pub content_only: Option<bool>,
     /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
 }
 
 impl From<SearchWithinGroupData> for SearchChunksReqPayload {
@@ -1262,8 +1266,9 @@ impl From<SearchWithinGroupData> for SearchChunksReqPayload {
             highlight_window: search_within_group_data.highlight_window,
             score_threshold: search_within_group_data.score_threshold,
             slim_chunks: search_within_group_data.slim_chunks,
-            content_only: Some(false),
+            content_only: search_within_group_data.content_only,
             use_reranker: search_within_group_data.use_reranker,
+            use_quote_negated_terms: search_within_group_data.use_quote_negated_terms,
         }
     }
 }
@@ -1357,7 +1362,15 @@ pub async fn search_within_group(
         }
     };
 
-    let parsed_query = parse_query(data.query.clone());
+    let parsed_query = if data.use_quote_negated_terms.unwrap_or(false) {
+        parse_query(data.query.clone())
+    } else {
+        ParsedQuery {
+            query: data.query.clone(),
+            quote_words: None,
+            negated_words: None,
+        }
+    };
 
     let result_chunks = match data.search_type {
         SearchMethod::FullText => {
@@ -1471,6 +1484,8 @@ pub struct SearchOverGroupsData {
     pub group_size: Option<u32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
 }
 
 /// Search Over Groups
@@ -1506,7 +1521,15 @@ pub async fn search_over_groups(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = parse_query(data.query.clone());
+    let parsed_query = if data.use_quote_negated_terms.unwrap_or(false) {
+        parse_query(data.query.clone())
+    } else {
+        ParsedQuery {
+            query: data.query.clone(),
+            quote_words: None,
+            negated_words: None,
+        }
+    };
 
     let mut timer = Timer::new();
 
