@@ -2,9 +2,12 @@ import { Show, createMemo, createSignal, useContext } from "solid-js";
 import { DatasetAndUserContext } from "../Contexts/DatasetAndUserContext";
 import { OrganizationSelectBox } from "../OrganizationSelectBox";
 import { DatasetSelectBox } from "../DatasetSelectBox";
+import { useLocation } from "@solidjs/router";
 
 export const Navbar = () => {
   const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL as string;
+
+  const location = useLocation();
 
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
@@ -12,6 +15,15 @@ export const Navbar = () => {
 
   const currentDatasetId = createMemo(() => {
     return datasetAndUserContext.currentDataset?.()?.dataset.id;
+  });
+
+  const showSearchChunks = createMemo(() => {
+    const pathPieces = location.pathname.split("/");
+    if (pathPieces.length > 1 && pathPieces[1] !== "") {
+      return true;
+    }
+
+    return false;
   });
 
   const [isOpen, setIsOpen] = createSignal(false);
@@ -47,13 +59,15 @@ export const Navbar = () => {
             >
               Dashboard
             </a>
-            <a
-              href={`/?dataset=${datasetAndUserContext.currentDataset?.()
-                ?.dataset.id}`}
-              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
-            >
-              Search Chunks
-            </a>
+            <Show when={showSearchChunks()}>
+              <a
+                href={`/?dataset=${datasetAndUserContext.currentDataset?.()
+                  ?.dataset.id}`}
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Search Chunks
+              </a>
+            </Show>
             <a
               href={`/group?dataset=${currentDatasetId()}`}
               class="hidden text-center min-[420px]:text-lg min-[920px]:block"
@@ -129,13 +143,15 @@ export const Navbar = () => {
             >
               Dashboard
             </a>
-            <a
-              href={`/?dataset=${datasetAndUserContext.currentDataset?.()
-                ?.dataset.id}`}
-              class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-            >
-              Search Chunks
-            </a>
+            <Show when={showSearchChunks()}>
+              <a
+                href={`/?dataset=${datasetAndUserContext.currentDataset?.()
+                  ?.dataset.id}`}
+                class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+              >
+                Search Chunks
+              </a>
+            </Show>
             <a
               href={`/group?dataset=${currentDatasetId()}`}
               class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
