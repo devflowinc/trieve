@@ -186,6 +186,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         page_size: props.search.debounced.pageSize ?? 10,
         get_total_pages: props.search.debounced.getTotalPages ?? false,
         highlight_results: props.search.debounced.highlightResults ?? true,
+        highlight_threshold: props.search.debounced.highlightThreshold,
         highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
           "?",
           ".",

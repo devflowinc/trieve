@@ -14,6 +14,7 @@ const initalState = {
   pageSize: 10,
   getTotalPages: false,
   highlightResults: true,
+  highlightThreshold: 0.8,
   highlightDelimiters: ["?", ".", "!"],
   highlightMaxLength: 8,
   highlightMaxNum: 3,
@@ -38,6 +39,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     pageSize: state.pageSize.toString(),
     getTotalPages: state.getTotalPages.toString(),
     highlightResults: state.highlightResults.toString(),
+    highlightThreshold: state.highlightThreshold.toString(),
     highlightDelimiters: state.highlightDelimiters.join(","),
     highlightMaxLength: state.highlightMaxLength.toString(),
     highlightMaxNum: state.highlightMaxNum.toString(),
@@ -62,6 +64,7 @@ const fromParamsToState = (
     pageSize: parseInt(params.pageSize ?? "10"),
     getTotalPages: (params.getTotalPages ?? "true") === "true",
     highlightResults: (params.highlightResults ?? "true") === "true",
+    highlightThreshold: parseFloat(params.highlightThreshold ?? "0.8"),
     highlightDelimiters:
       params.highlightDelimiters?.split(",") ?? initalState.highlightDelimiters,
     highlightMaxLength: parseInt(params.highlightMaxLength ?? "8"),
