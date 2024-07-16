@@ -79,8 +79,9 @@ export const Table = <D,>(props: TableProps<D>) => {
   );
 };
 
-export const Tr = (props: { children: JSX.Element }) => {
-  return <tr>{props.children}</tr>;
+interface TrProps extends JSX.HTMLAttributes<HTMLTableRowElement> {}
+export const Tr = (props: TrProps) => {
+  return <tr {...props}>{props.children}</tr>;
 };
 
 interface TdProps extends VariantProps<typeof td> {
