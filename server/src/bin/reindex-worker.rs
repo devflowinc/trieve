@@ -1,7 +1,7 @@
 use itertools::Itertools;
-use qdrant_client::qdrant::{self, PointId, RetrievedPoint};
 #[allow(deprecated)]
 use qdrant_client::client::QdrantClient;
+use qdrant_client::qdrant::{self, PointId, RetrievedPoint};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
     data::models::{MigratePointMessage, MigrationMode},
@@ -125,15 +125,35 @@ async fn main() -> Result<(), ServiceError> {
 
         let result = match migration_message.mode {
             MigrationMode::BM25 { average_len, k, b } => {
-                migrate_bm25(qdrant_client, points, migration_message.to_collection, average_len, b, k).await
+                migrate_bm25(
+                    qdrant_client,
+                    points,
+                    migration_message.to_collection,
+                    average_len,
+                    b,
+                    k,
+                )
+                .await
             }
         };
 
-        if let Err(e) = result {
-            log::error!("Error migrating points {:?}", e);
-            redis::cmd("lpush")
-                .arg("migration_failed")
-                .arg("");
+        match result {
+            Ok(()) => {
+                log::info!(
+                    "Succesfully Migrated {} Points",
+                    migration_message.qdrant_point_ids.len()
+                );
+            }
+            Err(e) => {
+                log::error!(
+                    "Error migrating points {:?} {:?}",
+                    e,
+                    serialized_message.clone()
+                );
+                redis::cmd("lpush")
+                    .arg("dead_letters")
+                    .arg(serialized_message);
+            }
         }
     }
 }
