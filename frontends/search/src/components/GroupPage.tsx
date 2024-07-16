@@ -208,6 +208,7 @@ export const GroupPage = (props: GroupPageProps) => {
             page_size: search.debounced.pageSize,
             get_total_pages: search.debounced.getTotalPages,
             highlight_results: search.debounced.highlightResults,
+            highlight_threshold: search.debounced.highlightThreshold,
             highlight_delimiters: search.debounced.highlightDelimiters,
             highlight_max_length: search.debounced.highlightMaxLength,
             highlight_window: search.debounced.highlightWindow,

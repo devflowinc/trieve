@@ -48,6 +48,13 @@ export const Navbar = () => {
               Dashboard
             </a>
             <a
+              href={`/?dataset=${datasetAndUserContext.currentDataset?.()
+                ?.dataset.id}`}
+              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+            >
+              Search Chunks
+            </a>
+            <a
               href={`/group?dataset=${currentDatasetId()}`}
               class="hidden text-center min-[420px]:text-lg min-[920px]:block"
             >
@@ -121,6 +128,13 @@ export const Navbar = () => {
               class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             >
               Dashboard
+            </a>
+            <a
+              href={`/?dataset=${datasetAndUserContext.currentDataset?.()
+                ?.dataset.id}`}
+              class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+            >
+              Search Chunks
             </a>
             <a
               href={`/group?dataset=${currentDatasetId()}`}
