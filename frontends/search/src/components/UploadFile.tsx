@@ -20,6 +20,7 @@ export const UploadFile = () => {
   const [splitDelimiters, setSplitDelimiters] = createSignal([".", "?", "\\n"]);
   const [targetSplitsPerChunk, setTargetSplitsPerChunk] = createSignal(20);
   const [rebalanceChunks, setRebalanceChunks] = createSignal(false);
+  const [groupTrackingId, setGroupTrackingId] = createSignal("");
 
   const handleDragUpload = (e: DragEvent) => {
     e.preventDefault();
@@ -70,6 +71,7 @@ export const UploadFile = () => {
       split_delimiters: splitDelimiters(),
       target_splits_per_chunk: targetSplitsPerChunk(),
       rebalance_chunks: rebalanceChunks(),
+      group_tracking_id: groupTrackingId(),
     };
 
     if (timestamp()) {
@@ -80,7 +82,7 @@ export const UploadFile = () => {
     void fetch(`${apiHost}/file`, {
       method: "POST",
       headers: {
-"X-API-version": "2.0",
+        "X-API-version": "2.0",
         "Content-Type": "application/json",
         "TR-Dataset": currentDataset.dataset.id,
       },
@@ -111,6 +113,16 @@ export const UploadFile = () => {
         </div>
       </Show>
       <div class="my-4 flex w-full flex-col gap-y-3">
+        <div class="flex flex-col space-y-2">
+          <div>Group tracking_id</div>
+          <input
+            type="url"
+            placeholder="optional"
+            value={groupTrackingId()}
+            onInput={(e) => setGroupTrackingId(e.target.value)}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+        </div>
         <div class="flex flex-col space-y-2">
           <div>Link to file</div>
           <input
