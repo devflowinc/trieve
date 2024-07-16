@@ -1,4 +1,4 @@
-import { cva, VariantProps } from "cva";
+import { cva, cx, VariantProps } from "cva";
 import { For, JSX, Show } from "solid-js";
 
 type TRenderFunction<D> = (item: D) => JSX.Element;
@@ -10,6 +10,7 @@ interface TableProps<D> extends VariantProps<typeof table> {
   fallback?: JSX.Element;
   headers?: string[];
   class?: string;
+  headerClass?: string;
 }
 
 const table = cva(["w-full"], {
@@ -22,20 +23,30 @@ const table = cva(["w-full"], {
   },
 });
 
-export const td = cva([], {
+export const td = cva([""], {
   variants: {
     spacing: {
-      md: ["p-1"],
+      md: ["p-1", "px-2"],
     },
     border: {
       none: undefined,
-      subtle: ["border border-neutral-300"],
-      strong: ["border border-neutral-700"],
+      subtle: ["border-neutral-200"],
+      strong: ["border-neutral-400"],
+    },
+    borderStyle: {
+      both: ["border"],
+      horizontal: ["border-t", "border-b", "border-l-0", "border-r-0"],
+    },
+    fullWidth: {
+      true: ["w-full"],
+      false: [],
     },
   },
   defaultVariants: {
     border: "none",
     spacing: "md",
+    borderStyle: "both",
+    fullWidth: false,
   },
 });
 
@@ -49,7 +60,11 @@ export const Table = <D,>(props: TableProps<D>) => {
               <tr>
                 <For each={headers()}>
                   {(header) => (
-                    <th class="text-left font-semibold">{header}</th>
+                    <th
+                      class={cx("text-left font-semibold", props.headerClass)}
+                    >
+                      {header}
+                    </th>
                   )}
                 </For>
               </tr>

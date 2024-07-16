@@ -1,15 +1,9 @@
-import {
-  RAGAnalyticsFilter,
-  RagQueryEvent,
-  RAGSortBy,
-  SortOrder,
-} from "shared/types";
+import { RAGAnalyticsFilter, RAGSortBy, SortOrder } from "shared/types";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import { createEffect, createSignal, For, Show, useContext } from "solid-js";
+import { createEffect, createSignal, Show, useContext } from "solid-js";
 import { getRAGQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
-import { PaginationButtons } from "../PaginationButtons";
 import { ChartCard } from "./ChartCard";
 import { Select, Table, Td, Tr } from "shared/ui";
 
@@ -94,19 +88,26 @@ export const RagQueries = (props: RagQueriesProps) => {
       }
     >
       <div>
-        <Show when={ragQueriesQuery.data?.length === 0}>
-          <div class="py-8 text-center opacity-80">No Data.</div>
-        </Show>
         <Show
           fallback={<div class="py-8 text-center">Loading...</div>}
           when={ragQueriesQuery.data}
         >
           {(data) => (
-            <Table class="mt-2" headers={["Message", "RAG Type"]} data={data()}>
+            <Table
+              fallback={<div class="py-8 text-center">No Data</div>}
+              headerClass="px-2"
+              class="my-2"
+              headers={["Message", "RAG Type"]}
+              data={data()}
+            >
               {(row) => (
                 <Tr>
-                  <Td border="subtle">{row.user_message}</Td>
-                  <Td border="subtle">{row.rag_type}</Td>
+                  <Td fullWidth={true} borderStyle="horizontal" border="subtle">
+                    {row.user_message}
+                  </Td>
+                  <Td class="pr-8" borderStyle="horizontal" border="subtle">
+                    {row.rag_type}
+                  </Td>
                 </Tr>
               )}
             </Table>
@@ -114,20 +115,6 @@ export const RagQueries = (props: RagQueriesProps) => {
         </Show>
       </div>
     </ChartCard>
-  );
-};
-
-interface QueryCardProps {
-  rag_query_event: RagQueryEvent;
-}
-const RagQueryEventCard = (props: QueryCardProps) => {
-  return (
-    <tr>
-      <td class="w-full max-w-0 truncate">
-        {props.rag_query_event.user_message}
-      </td>
-      <td class="text-right">{props.rag_query_event.rag_type}</td>
-    </tr>
   );
 };
 
