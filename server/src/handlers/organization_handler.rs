@@ -6,7 +6,8 @@ use crate::{
     operators::{
         organization_operator::{
             create_organization_query, delete_organization_query, get_org_from_id_query,
-            get_org_usage_by_id_query, get_org_users_by_id_query, update_organization_query,
+            get_org_usage_by_id_query, get_org_users_by_id_query,
+            update_all_org_dataset_configs_query, update_organization_query,
         },
         user_operator::{add_user_to_organization, remove_user_from_org_query},
     },
@@ -99,7 +100,7 @@ pub async fn delete_organization(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct UpdateOrganizationData {
+pub struct UpdateOrganizationReqPayload {
     /// The id of the organization to update.
     organization_id: uuid::Uuid,
     /// The new name of the organization. If not provided, the name will not be updated.
@@ -114,7 +115,7 @@ pub struct UpdateOrganizationData {
     path = "/organization",
     context_path = "/api",
     tag = "Organization",
-    request_body(content = UpdateOrganizationData, description = "The organization data that you want to update", content_type = "application/json"),
+    request_body(content = UpdateOrganizationReqPayload, description = "The organization data that you want to update", content_type = "application/json"),
     responses(
         (status = 200, description = "Updated organization object", body = Organization),
         (status = 400, description = "Service error relating to updating the organization", body = ErrorResponseBody),
@@ -128,7 +129,7 @@ pub struct UpdateOrganizationData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn update_organization(
-    organization: web::Json<UpdateOrganizationData>,
+    organization: web::Json<UpdateOrganizationReqPayload>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
@@ -155,7 +156,7 @@ pub async fn update_organization(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct CreateOrganizationData {
+pub struct CreateOrganizationReqPayload {
     /// The arbitrary name which will be used to identify the organization. This name must be unique.
     name: String,
 }
@@ -168,7 +169,7 @@ pub struct CreateOrganizationData {
     path = "/organization",
     context_path = "/api",
     tag = "Organization",
-    request_body(content = CreateOrganizationData, description = "The organization data that you want to create", content_type = "application/json"),
+    request_body(content = CreateOrganizationReqPayload, description = "The organization data that you want to create", content_type = "application/json"),
     responses(
         (status = 200, description = "Created organization object", body = Organization),
         (status = 400, description = "Service error relating to creating the organization", body = ErrorResponseBody),
@@ -180,7 +181,7 @@ pub struct CreateOrganizationData {
 #[tracing::instrument(skip(pool))]
 pub async fn create_organization(
     req: HttpRequest,
-    organization: web::Json<CreateOrganizationData>,
+    organization: web::Json<CreateOrganizationReqPayload>,
     pool: web::Data<Pool>,
     user: LoggedUser,
     redis_pool: web::Data<RedisPool>,
@@ -261,15 +262,15 @@ pub async fn get_organization_usage(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_organization_users(
-    organization: web::Path<uuid::Uuid>,
+    organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_admin(&user, &organization) {
+    if !verify_admin(&user, &organization_id) {
         return Ok(HttpResponse::Forbidden().finish());
     };
 
-    let org_id = organization.into_inner();
+    let org_id = organization_id.into_inner();
 
     let usage = get_org_users_by_id_query(org_id, pool).await?;
 
@@ -277,7 +278,7 @@ pub async fn get_organization_users(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct RemoveUserFromOrgData {
+pub struct RemoveUserFromOrgPathParams {
     /// The id of the organization to remove the user from.
     organization_id: uuid::Uuid,
     /// The id of the user to remove from the organization.
@@ -298,14 +299,15 @@ pub struct RemoveUserFromOrgData {
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
-        ("user_id" = Option<uuid::Uuid>, Path, description = "The id of the user you want to remove from the organization."),
+        ("organization_id" = uuid::Uuid, Path, description = "The id of the organization you want to remove the user from"),
+        ("user_id" = uuid::Uuid, Path, description = "The id of the user you want to remove from the organization"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
     )
 )]
 pub async fn remove_user_from_org(
-    data: web::Path<RemoveUserFromOrgData>,
+    data: web::Path<RemoveUserFromOrgPathParams>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     user: AdminOnly,
@@ -321,6 +323,52 @@ pub async fn remove_user_from_org(
     };
 
     remove_user_from_org_query(data.user_id, user_role, org_id, pool, redis_pool).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct UpdateAllOrgDatasetConfigsReqPayload {
+    /// The id of the organization to update the dataset configurations for.
+    pub organization_id: uuid::Uuid,
+    /// The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values.
+    pub dataset_config: serde_json::Value,
+}
+
+/// Update All Dataset Configurations
+///
+/// Update the configurations for all datasets in an organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values. Auth'ed user or api key must have an owner role for the specified organization.
+#[utoipa::path(
+    post,
+    path = "/organization/update_dataset_configs",
+    context_path = "/api",
+    tag = "Organization",
+    request_body(content = UpdateAllOrgDatasetConfigsReqPayload, description = "The organization data that you want to create", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the dataset ServerConfigurations were updated successfully"),
+        (status = 400, description = "Service error relating to updating the dataset ServerConfigurations", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["owner"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn update_all_org_dataset_configs(
+    req_payload: web::Json<UpdateAllOrgDatasetConfigsReqPayload>,
+    pool: web::Data<Pool>,
+    user: OwnerOnly,
+) -> Result<HttpResponse, actix_web::Error> {
+    let organization_id = req_payload.organization_id;
+    if !verify_owner(&user, &organization_id) {
+        return Ok(HttpResponse::Forbidden().finish());
+    };
+
+    let new_dataset_config = req_payload.dataset_config.clone();
+
+    update_all_org_dataset_configs_query(organization_id, new_dataset_config, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

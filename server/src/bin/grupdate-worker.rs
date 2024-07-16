@@ -16,7 +16,7 @@ use trieve_server::{
     },
 };
 use trieve_server::{
-    data::models::{Event, ServerDatasetConfiguration},
+    data::models::{DatasetConfiguration, Event},
     operators::dataset_operator::get_dataset_by_id_query,
 };
 
@@ -236,7 +236,7 @@ async fn grupdate_worker(
                 continue;
             }
         };
-        let service_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+        let service_config = DatasetConfiguration::from_json(dataset.server_configuration);
 
         match update_grouped_chunks_query(
             group_update_msg.prev_group.clone(),

@@ -140,7 +140,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.11.0",
+        version = "0.11.1",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -210,6 +210,7 @@ impl Modify for SecurityAddon {
         handlers::organization_handler::delete_organization,
         handlers::organization_handler::get_organization_usage,
         handlers::organization_handler::get_organization_users,
+        handlers::organization_handler::update_all_org_dataset_configs,
         handlers::dataset_handler::create_dataset,
         handlers::dataset_handler::update_dataset,
         handlers::dataset_handler::delete_dataset,
@@ -297,8 +298,9 @@ impl Modify for SecurityAddon {
             handlers::file_handler::UploadFileResult,
             handlers::invitation_handler::InvitationData,
             handlers::event_handler::GetEventsData,
-            handlers::organization_handler::CreateOrganizationData,
-            handlers::organization_handler::UpdateOrganizationData,
+            handlers::organization_handler::CreateOrganizationReqPayload,
+            handlers::organization_handler::UpdateOrganizationReqPayload,
+            handlers::organization_handler::UpdateAllOrgDatasetConfigsReqPayload,
             operators::event_operator::EventReturn,
             operators::search_operator::DeprecatedSearchOverGroupsResponseBody,
             operators::search_operator::GroupScoreChunk,
@@ -949,6 +951,10 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::get().to(
                                             handlers::organization_handler::get_organization_users,
                                         )),
+                                )
+                                .service(
+                                    web::resource("/update_dataset_configs")
+                                        .route(web::post().to(handlers::organization_handler::update_all_org_dataset_configs)),
                                 )
                                 .service(
                                     web::resource("/{organization_id}/user/{user_id}")

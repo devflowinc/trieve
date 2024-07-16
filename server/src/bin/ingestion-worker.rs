@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{
-    self, ChunkData, ChunkMetadata, Event, QdrantPayload, ServerDatasetConfiguration, UnifiedId,
+    self, ChunkData, ChunkMetadata, DatasetConfiguration, Event, QdrantPayload, UnifiedId,
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -278,7 +278,7 @@ async fn ingestion_worker(
                 continue;
             }
         };
-        let dataset_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+        let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
 
         match ingestion_message.clone() {
             IngestionMessage::BulkUpload(payload) => {
@@ -374,7 +374,7 @@ async fn ingestion_worker(
 #[tracing::instrument(skip(payload, web_pool))]
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
-    dataset_config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
@@ -756,7 +756,7 @@ pub async fn bulk_upload_chunks(
 #[tracing::instrument(skip(payload, web_pool))]
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
-    dataset_config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     ingestion_data: ChunkData,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
@@ -1032,7 +1032,7 @@ async fn upload_chunk(
 async fn update_chunk(
     payload: UpdateIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
-    server_dataset_config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
     let content = match payload.convert_html_to_text.unwrap_or(true) {
         true => convert_html_to_text(
@@ -1057,13 +1057,13 @@ async fn update_chunk(
 
     let chunk_metadata = payload.chunk_metadata.clone();
 
-    let embedding_vector = match server_dataset_config.SEMANTIC_ENABLED {
+    let embedding_vector = match dataset_config.SEMANTIC_ENABLED {
         true => {
             let embedding = create_embedding(
                 content.to_string(),
                 payload.distance_phrase,
                 "doc",
-                server_dataset_config.clone(),
+                dataset_config.clone(),
             )
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
@@ -1072,7 +1072,7 @@ async fn update_chunk(
         false => None,
     };
 
-    let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
+    let splade_vector = if dataset_config.FULLTEXT_ENABLED {
         let reqwest_client = reqwest::Client::new();
 
         match get_sparse_vectors(
@@ -1089,14 +1089,14 @@ async fn update_chunk(
         vec![(0, 0.0)]
     };
 
-    let bm25_vector = if server_dataset_config.BM25_ENABLED
+    let bm25_vector = if dataset_config.BM25_ENABLED
         && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true"
     {
         let vecs = get_bm25_embeddings(
             vec![(content, payload.boost_phrase)],
-            server_dataset_config.BM25_AVG_LEN,
-            server_dataset_config.BM25_B,
-            server_dataset_config.BM25_K,
+            dataset_config.BM25_AVG_LEN,
+            dataset_config.BM25_B,
+            dataset_config.BM25_K,
         );
 
         vecs.first().cloned()
@@ -1129,7 +1129,7 @@ async fn update_chunk(
             payload.dataset_id,
             splade_vector,
             bm25_vector,
-            server_dataset_config,
+            dataset_config,
             web_pool.clone(),
         )
         .await
@@ -1151,7 +1151,7 @@ async fn update_chunk(
             payload.dataset_id,
             splade_vector,
             bm25_vector,
-            server_dataset_config,
+            dataset_config,
             web_pool.clone(),
         )
         .await

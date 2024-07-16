@@ -14,8 +14,8 @@ use super::qdrant_operator::{
 };
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
-    ConditionType, ContentChunkMetadata, Dataset, GeoInfoWithBias, HasIDCondition, ScoreChunk,
-    ScoreChunkDTO, SearchMethod, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
+    ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
+    HasIDCondition, ScoreChunk, ScoreChunkDTO, SearchMethod, SlimChunkMetadata, UnifiedId,
 };
 use crate::get_env;
 use crate::handlers::chunk_handler::{
@@ -300,7 +300,7 @@ pub async fn retrieve_qdrant_points_query(
     page: u64,
     get_total_pages: bool,
     limit: u64,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<SearchChunkQueryResult, ServiceError> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -736,7 +736,7 @@ pub async fn retrieve_group_qdrant_points_query(
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<SearchOverGroupsQueryResult, ServiceError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -773,9 +773,9 @@ pub async fn retrieve_group_qdrant_points_query(
 pub async fn global_unfiltered_top_match_query(
     embedding_vector: Vec<f32>,
     dataset_id: uuid::Uuid,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<SearchResult, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1457,7 +1457,7 @@ pub async fn search_semantic_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1472,8 +1472,7 @@ pub async fn search_semantic_chunks(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     timer.add("start to create dense embedding vector");
 
@@ -1550,7 +1549,7 @@ pub async fn search_bm25_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1657,7 +1656,7 @@ pub async fn search_full_text_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1761,7 +1760,7 @@ pub async fn search_hybrid_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1776,8 +1775,7 @@ pub async fn search_hybrid_chunks(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let dense_vector_future =
         create_embedding(data.query.clone(), None, "query", dataset_config.clone());
@@ -1891,10 +1889,9 @@ pub async fn search_semantic_groups(
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let embedding_vector =
         create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?;
@@ -1969,7 +1966,7 @@ pub async fn search_full_text_groups(
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let sparse_vector = get_sparse_vector(data.query.clone(), "query")
         .await
@@ -2045,10 +2042,9 @@ pub async fn search_hybrid_groups(
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let dense_vector_future =
         create_embedding(data.query.clone(), None, "query", dataset_config.clone());
@@ -2180,11 +2176,10 @@ pub async fn semantic_search_over_groups(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     timer.add("start to create dense embedding vector");
 
@@ -2242,7 +2237,7 @@ pub async fn full_text_search_over_groups(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
     timer.add("start to get sparse vector");
@@ -2300,7 +2295,7 @@ async fn cross_encoder_for_groups(
     query: String,
     page_size: u64,
     groups_chunks: Vec<GroupScoreChunk>,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
@@ -2362,11 +2357,10 @@ pub async fn hybrid_search_over_groups(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     timer.add("start to create dense embedding vector and sparse vector");
 
@@ -2501,7 +2495,7 @@ pub async fn autocomplete_semantic_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -2516,8 +2510,7 @@ pub async fn autocomplete_semantic_chunks(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     timer.add("start to create dense embedding vector");
 
@@ -2607,7 +2600,7 @@ pub async fn autocomplete_fulltext_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -2712,10 +2705,9 @@ pub async fn count_semantic_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
     let embedding_vector =
         create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?;
     let qdrant_query = RetrievePointQuery {
@@ -2742,7 +2734,7 @@ pub async fn count_full_text_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
     let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
         .await
@@ -2772,7 +2764,7 @@ pub async fn count_bm25_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
     let sparse_vectors = get_bm25_embeddings(
         vec![(parsed_query.query.clone(), None)],
@@ -2810,10 +2802,9 @@ pub async fn count_hybrid_chunks(
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    config: &ServerDatasetConfiguration,
+    config: &DatasetConfiguration,
 ) -> Result<CountChunkQueryResponseBody, actix_web::Error> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let dense_vector_future =
         create_embedding(data.query.clone(), None, "query", dataset_config.clone());

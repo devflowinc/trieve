@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::data::models::{
     ChunkData, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes,
-    ContentChunkMetadata, Dataset, DatasetTags, IngestSpecificChunkMetadata,
-    ServerDatasetConfiguration, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
+    ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags, IngestSpecificChunkMetadata,
+    SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::get_env;
 use crate::handlers::chunk_handler::UploadIngestionMessage;
@@ -1187,7 +1187,7 @@ pub async fn delete_chunk_metadata_query(
     chunk_uuid: Vec<uuid::Uuid>,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
     let chunk_metadata =
         get_metadata_from_ids_query(chunk_uuid.clone(), dataset.id, pool.clone()).await?;
@@ -1227,7 +1227,7 @@ pub async fn delete_chunk_metadata_query(
         })
         .await;
 
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1548,7 +1548,7 @@ pub async fn get_row_count_for_organization_id_query(
 pub async fn create_chunk_metadata(
     chunks: Vec<ChunkReqPayload>,
     dataset_uuid: uuid::Uuid,
-    dataset_configuration: ServerDatasetConfiguration,
+    dataset_configuration: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<(BulkUploadIngestionMessage, Vec<ChunkMetadata>), ServiceError> {
     let mut ingestion_messages = vec![];

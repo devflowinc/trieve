@@ -3,7 +3,7 @@ use crate::operators::qdrant_operator::remove_bookmark_from_qdrant_query;
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataTable, Dataset,
-        FileGroup, Pool, QdrantPayload, RedisPool, ServerDatasetConfiguration, UnifiedId,
+        DatasetConfiguration, FileGroup, Pool, QdrantPayload, RedisPool, UnifiedId,
     },
     get_env,
     handlers::group_handler::GroupsBookmarkQueryResult,
@@ -247,7 +247,7 @@ pub async fn delete_group_by_id_query(
     dataset: Dataset,
     delete_chunks: Option<bool>,
     pool: web::Data<Pool>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
@@ -310,11 +310,20 @@ pub async fn delete_group_by_id_query(
 
     if delete_chunks {
         let chunk_ids = chunks.iter().map(|chunk| chunk.id).collect();
-        delete_chunk_metadata_query(chunk_ids, dataset.clone(), pool.clone(), config.clone())
-            .await?;
+        delete_chunk_metadata_query(
+            chunk_ids,
+            dataset.clone(),
+            pool.clone(),
+            dataset_config.clone(),
+        )
+        .await?;
     } else {
         let remove_chunks_from_groups_futures = chunks.iter().map(|chunk| {
-            remove_bookmark_from_qdrant_query(chunk.qdrant_point_id, group_id, config.clone())
+            remove_bookmark_from_qdrant_query(
+                chunk.qdrant_point_id,
+                group_id,
+                dataset_config.clone(),
+            )
         });
 
         futures::future::join_all(remove_chunks_from_groups_futures).await;
@@ -731,7 +740,7 @@ pub async fn update_grouped_chunks_query(
     prev_group: ChunkGroup,
     new_group: ChunkGroup,
     pool: web::Data<Pool>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
@@ -744,7 +753,7 @@ pub async fn update_grouped_chunks_query(
         Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
     )
     .await?;
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let group_id = new_group.id;
     let prev_group_tag_set = prev_group

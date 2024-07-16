@@ -1,7 +1,6 @@
 use crate::data::models::{
-    DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetUsageCount, Organization,
-    OrganizationWithSubAndPlan, RedisPool, ServerDatasetConfiguration, StripePlan,
-    StripeSubscription, UnifiedId,
+    DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetConfiguration, DatasetUsageCount,
+    Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
 };
 use crate::get_env;
 use crate::handlers::dataset_handler::GetDatasetsPagination;
@@ -162,7 +161,7 @@ pub struct DeleteMessage {
 #[tracing::instrument(skip(pool))]
 pub async fn soft_delete_dataset_by_id_query(
     id: uuid::Uuid,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
@@ -171,7 +170,7 @@ pub async fn soft_delete_dataset_by_id_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    if config.LOCKED {
+    if dataset_config.LOCKED {
         return Err(ServiceError::BadRequest(
             "Cannot delete a locked dataset".to_string(),
         ));
@@ -214,10 +213,10 @@ pub async fn soft_delete_dataset_by_id_query(
 
 pub async fn clear_dataset_by_dataset_id_query(
     id: uuid::Uuid,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
-    if config.LOCKED {
+    if dataset_config.LOCKED {
         return Err(ServiceError::BadRequest(
             "Cannot delete a locked dataset".to_string(),
         ));
@@ -250,13 +249,13 @@ pub async fn delete_chunks_in_dataset(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -355,13 +354,19 @@ pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
     clickhouse_client: actix_web::web::Data<clickhouse::Client>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    delete_chunks_in_dataset(id, pool.clone(), clickhouse_client.clone(), config.clone()).await?;
+    delete_chunks_in_dataset(
+        id,
+        pool.clone(),
+        clickhouse_client.clone(),
+        dataset_config.clone(),
+    )
+    .await?;
 
     let dataset: Dataset =
         diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))

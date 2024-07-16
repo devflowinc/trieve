@@ -1,7 +1,10 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
+use super::schema::*;
 use crate::errors::ServiceError;
 use crate::get_env;
+use crate::handlers::chunk_handler::{BoostPhrase, DistancePhrase};
+use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::analytics_operator::{
     HeadQueryResponse, LatencyGraphResponse, QueryCountResponse, RPSGraphResponse,
     RagQueryResponse, RecommendationsEventResponse, SearchClusterResponse, SearchQueryResponse,
@@ -9,11 +12,6 @@ use crate::operators::analytics_operator::{
 use crate::operators::chunk_operator::get_metadata_from_ids_query;
 use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
 use crate::operators::parse_operator::convert_html_to_text;
-use std::io::Write;
-
-use super::schema::*;
-use crate::handlers::chunk_handler::{BoostPhrase, DistancePhrase};
-use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
     get_metadata_filter_condition, GroupScoreChunk,
@@ -37,6 +35,7 @@ use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon,
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::io::Write;
 use time::OffsetDateTime;
 use utoipa::ToSchema;
 
@@ -610,7 +609,7 @@ impl From<ContentChunkMetadata> for ChunkMetadata {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
-    pub dataset_config: ServerDatasetConfiguration,
+    pub dataset_config: DatasetConfiguration,
     pub dataset_id: uuid::Uuid,
     pub qdrant_point_id: uuid::Uuid,
 }
@@ -1709,6 +1708,7 @@ pub struct DatasetEventCount {
     Clone,
     ToSchema,
     QueryableByName,
+    AsChangeset,
 )]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -1716,8 +1716,33 @@ pub struct DatasetEventCount {
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "tracking_id": "3",
-    "server_configuration": {"key": "value"},
+    "tracking_id": "foobar-dataset",
+    "server_configuration": {
+        "LLM_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+        "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+        "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+        "N_RETRIEVALS_TO_INCLUDE": 8,
+        "EMBEDDING_SIZE": 1536,
+        "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+        "BM25_ENABLED": true,
+        "BM25_B": 0.75,
+        "BM25_K": 0.75,
+        "BM25_AVG_LEN": 256.0,
+        "FULLTEXT_ENABLED": true,
+        "SEMANTIC_ENABLED": true,
+        "EMBEDDING_QUERY_PREFIX": "",
+        "USE_MESSAGE_TO_QUERY_PROMPT": false,
+        "FREQUENCY_PENALTY": 0.0,
+        "TEMPERATURE": 0.5,
+        "PRESENCE_PENALTY": 0.0,
+        "STOP_TOKENS": ["\n\n", "\n"],
+        "INDEXED_ONLY": false,
+        "LOCKED": false,
+        "SYSTEM_PROMPT": "You are a helpful assistant",
+        "MAX_LIMIT": 10000
+    },
 }))]
 #[diesel(table_name = datasets)]
 pub struct Dataset {
@@ -1827,19 +1852,21 @@ impl DatasetAndUsage {
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example=json!({
-    "DOCUMENT_UPLOAD_FEATURE": true,
-    "DOCUMENT_DOWNLOAD_FEATURE": true,
     "LLM_BASE_URL": "https://api.openai.com/v1",
     "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
     "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
-    "N_RETRIEVALS_TO_INCLUDE": 5,
-    "DUPLICATE_DISTANCE_THRESHOLD": 1.1,
+    "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+    "N_RETRIEVALS_TO_INCLUDE": 8,
     "EMBEDDING_SIZE": 1536,
     "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+    "BM25_ENABLED": true,
+    "BM25_B": 0.75,
+    "BM25_K": 0.75,
+    "BM25_AVG_LEN": 256.0,
     "FULLTEXT_ENABLED": true,
     "SEMANTIC_ENABLED": true,
-    "EMBEDDING_QUERY_PREFIX": "Search for",
+    "EMBEDDING_QUERY_PREFIX": "",
     "USE_MESSAGE_TO_QUERY_PROMPT": false,
     "FREQUENCY_PENALTY": 0.0,
     "TEMPERATURE": 0.5,
@@ -1847,9 +1874,11 @@ impl DatasetAndUsage {
     "STOP_TOKENS": ["\n\n", "\n"],
     "INDEXED_ONLY": false,
     "LOCKED": false,
+    "SYSTEM_PROMPT": "You are a helpful assistant",
+    "MAX_LIMIT": 10000
 }))]
 #[allow(non_snake_case)]
-pub struct ServerDatasetConfiguration {
+pub struct DatasetConfiguration {
     pub LLM_BASE_URL: String,
     pub EMBEDDING_BASE_URL: String,
     pub EMBEDDING_MODEL_NAME: String,
@@ -1877,14 +1906,14 @@ pub struct ServerDatasetConfiguration {
     pub MAX_LIMIT: u64,
 }
 
-impl ServerDatasetConfiguration {
+impl DatasetConfiguration {
     pub fn from_json(configuration: serde_json::Value) -> Self {
         let default_config = json!({});
         let configuration = configuration
             .as_object()
             .unwrap_or(default_config.as_object().unwrap());
 
-        ServerDatasetConfiguration {
+        DatasetConfiguration {
             LLM_BASE_URL: configuration
                 .get("LLM_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))

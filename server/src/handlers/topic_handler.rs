@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, Topic},
+    data::models::{DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool, Topic},
     errors::ServiceError,
     handlers::auth_handler::AdminOnly,
     operators::{
@@ -52,10 +52,9 @@ pub async fn create_topic(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
-    let default_model = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    )
-    .LLM_DEFAULT_MODEL;
+    let default_model =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone())
+            .LLM_DEFAULT_MODEL;
 
     let first_message = data_inner.first_user_message;
 

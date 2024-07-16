@@ -4,8 +4,8 @@ use super::{
 };
 use crate::{
     data::models::{
-        ChunkMetadata, Pool, QdrantPayload, RecommendType, RecommendationStrategy,
-        ServerDatasetConfiguration,
+        ChunkMetadata, DatasetConfiguration, Pool, QdrantPayload, RecommendType,
+        RecommendationStrategy,
     },
     errors::ServiceError,
     get_env,
@@ -328,7 +328,7 @@ pub async fn create_new_qdrant_collection_query(
 #[tracing::instrument(skip(points))]
 pub async fn bulk_upsert_qdrant_points_query(
     points: Vec<PointStruct>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
     if points.is_empty() {
         return Err(ServiceError::BadRequest(
@@ -337,7 +337,7 @@ pub async fn bulk_upsert_qdrant_points_query(
         ));
     }
 
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -364,7 +364,7 @@ pub async fn create_new_qdrant_point_query(
     chunk_metadata: ChunkMetadata,
     splade_vector: Vec<(u32, f32)>,
     group_ids: Option<Vec<uuid::Uuid>>,
-    config: ServerDatasetConfiguration,
+    dataste_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     let chunk_tags: Option<Vec<Option<String>>> = if let Some(ref group_ids) = group_ids {
@@ -382,7 +382,7 @@ pub async fn create_new_qdrant_point_query(
     };
 
     let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags);
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataste_config.EMBEDDING_SIZE);
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
@@ -432,12 +432,12 @@ pub async fn update_qdrant_point_query(
     dataset_id: uuid::Uuid,
     splade_vector: Vec<(u32, f32)>,
     bm25_vector: Option<Vec<(u32, f32)>>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     web_pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
     let qdrant_point_id: Vec<PointId> = vec![metadata.qdrant_point_id.to_string().clone().into()];
 
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -558,9 +558,9 @@ pub async fn update_qdrant_point_query(
 pub async fn add_bookmark_to_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -639,9 +639,9 @@ pub async fn add_bookmark_to_qdrant_query(
 pub async fn remove_bookmark_from_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -745,10 +745,10 @@ pub async fn search_over_groups_query(
     score_threshold: Option<f32>,
     group_size: u32,
     vector: VectorType,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<(Vec<GroupSearchResults>, u64), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -789,7 +789,7 @@ pub async fn search_over_groups_query(
             timeout: Some(60),
             params: Some(SearchParams {
                 exact: Some(false),
-                indexed_only: Some(config.INDEXED_ONLY),
+                indexed_only: Some(dataset_config.INDEXED_ONLY),
                 ..Default::default()
             }),
             ..Default::default()
@@ -811,7 +811,7 @@ pub async fn search_over_groups_query(
                 timeout: Some(60),
                 params: Some(SearchParams {
                     exact: Some(false),
-                    indexed_only: Some(config.INDEXED_ONLY),
+                    indexed_only: Some(dataset_config.INDEXED_ONLY),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -829,7 +829,7 @@ pub async fn search_over_groups_query(
 
     let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
 
-    let count_future = count_qdrant_query(count_limit, vec![qdrant_query], config.clone());
+    let count_future = count_qdrant_query(count_limit, vec![qdrant_query], dataset_config.clone());
 
     let (qdrant_search_results, count) =
         futures::future::join(point_id_futures, count_future).await;
@@ -883,14 +883,14 @@ pub async fn search_qdrant_query(
     page: u64,
     limit: u64,
     queries: Vec<QdrantSearchQuery>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<(Vec<SearchResult>, u64, Vec<usize>), ServiceError> {
     if limit == 0 {
         return Ok((vec![], 0, vec![]));
     }
 
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -900,7 +900,7 @@ pub async fn search_qdrant_query(
 
     let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
 
-    let count_future = count_qdrant_query(count_limit, queries.clone(), config.clone());
+    let count_future = count_qdrant_query(count_limit, queries.clone(), dataset_config.clone());
 
     let search_point_req_payloads: Vec<SearchPoints> = queries
         .into_iter()
@@ -969,7 +969,7 @@ pub async fn search_qdrant_query(
                     timeout: Some(60),
                     params: Some(SearchParams {
                         exact: Some(false),
-                        indexed_only: Some(config.INDEXED_ONLY),
+                        indexed_only: Some(dataset_config.INDEXED_ONLY),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -1041,10 +1041,10 @@ pub async fn recommend_qdrant_query(
     filters: Option<ChunkFilter>,
     limit: u64,
     dataset_id: uuid::Uuid,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<Vec<QdrantRecommendResult>, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let recommend_strategy = match strategy {
         Some(strategy) => match strategy {
@@ -1068,7 +1068,7 @@ pub async fn recommend_qdrant_query(
     let recommend_type = recommend_type.unwrap_or(RecommendType::Semantic);
 
     let vector_name = match recommend_type {
-        RecommendType::Semantic => match config.EMBEDDING_SIZE {
+        RecommendType::Semantic => match dataset_config.EMBEDDING_SIZE {
             384 => "384_vectors",
             512 => "512_vectors",
             768 => "768_vectors",
@@ -1094,7 +1094,7 @@ pub async fn recommend_qdrant_query(
         with_vectors: Some(WithVectorsSelector::from(false)),
         params: Some(SearchParams {
             exact: Some(false),
-            indexed_only: Some(config.INDEXED_ONLY),
+            indexed_only: Some(dataset_config.INDEXED_ONLY),
             ..Default::default()
         }),
         score_threshold: None,
@@ -1152,10 +1152,10 @@ pub async fn recommend_qdrant_groups_query(
     limit: u64,
     group_size: u32,
     dataset_id: uuid::Uuid,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<Vec<GroupSearchResults>, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let recommend_strategy = match strategy {
         Some(RecommendationStrategy::BestScore) => Some(RecommendStrategy::BestScore.into()),
@@ -1176,7 +1176,7 @@ pub async fn recommend_qdrant_groups_query(
     let recommend_type = recommend_type.unwrap_or(RecommendType::Semantic);
 
     let vector_name = match recommend_type {
-        RecommendType::Semantic => match config.EMBEDDING_SIZE {
+        RecommendType::Semantic => match dataset_config.EMBEDDING_SIZE {
             384 => "384_vectors",
             512 => "512_vectors",
             768 => "768_vectors",
@@ -1202,7 +1202,7 @@ pub async fn recommend_qdrant_groups_query(
         with_vectors: Some(WithVectorsSelector::from(false)),
         params: Some(SearchParams {
             exact: Some(false),
-            indexed_only: Some(config.INDEXED_ONLY),
+            indexed_only: Some(dataset_config.INDEXED_ONLY),
             ..Default::default()
         }),
         score_threshold: None,
@@ -1278,9 +1278,9 @@ pub async fn recommend_qdrant_groups_query(
 #[tracing::instrument]
 pub async fn point_ids_exists_in_qdrant(
     point_ids: Vec<uuid::Uuid>,
-    config: ServerDatasetConfiguration,
+    datast_config: DatasetConfiguration,
 ) -> Result<bool, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", datast_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1308,7 +1308,7 @@ pub async fn point_ids_exists_in_qdrant(
     Ok(data.result.len() == point_ids.len())
 }
 
-pub fn get_collection_name_from_config(config: &ServerDatasetConfiguration) -> String {
+pub fn get_collection_name_from_config(config: &DatasetConfiguration) -> String {
     format!("{}_vectors", config.EMBEDDING_SIZE)
 }
 
@@ -1415,19 +1415,19 @@ pub async fn scroll_qdrant_collection_ids(
 pub async fn count_qdrant_query(
     limit: u64,
     queries: Vec<QdrantSearchQuery>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<u64, ServiceError> {
     if limit == 0 {
         return Ok(0);
     }
 
-    let limit = if limit > config.MAX_LIMIT {
-        config.MAX_LIMIT
+    let limit = if limit > dataset_config.MAX_LIMIT {
+        dataset_config.MAX_LIMIT
     } else {
         limit
     };
 
-    let qdrant_collection = format!("{}_vectors", config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1499,7 +1499,7 @@ pub async fn count_qdrant_query(
                     timeout: Some(60),
                     params: Some(SearchParams {
                         exact: Some(false),
-                        indexed_only: Some(config.INDEXED_ONLY),
+                        indexed_only: Some(dataset_config.INDEXED_ONLY),
                         ..Default::default()
                     }),
                     ..Default::default()

@@ -8,7 +8,7 @@ use std::sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
-    data::models::{self, ServerDatasetConfiguration},
+    data::models::{self, DatasetConfiguration},
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
@@ -235,7 +235,7 @@ async fn delete_worker(
                 continue;
             }
         };
-        let server_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+        let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
 
         if delete_worker_message.empty_dataset {
             log::info!("Cleaning dataset {:?}", delete_worker_message.dataset_id);
@@ -243,7 +243,7 @@ async fn delete_worker(
                 delete_worker_message.dataset_id,
                 web_pool.clone(),
                 clickhouse_client.clone(),
-                server_config.clone(),
+                dataset_config.clone(),
             )
             .await
             {
@@ -291,7 +291,7 @@ async fn delete_worker(
             delete_worker_message.dataset_id,
             web_pool.clone(),
             clickhouse_client.clone(),
-            server_config.clone(),
+            dataset_config.clone(),
         )
         .await
         {

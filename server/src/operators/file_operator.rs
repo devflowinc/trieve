@@ -6,9 +6,7 @@ use super::group_operator::{create_group_from_file_query, create_group_query};
 use super::parse_operator::{build_chunking_regex, coarse_doc_chunker, convert_html_to_text};
 use crate::data::models::ChunkGroup;
 use crate::data::models::FileDTO;
-use crate::data::models::{
-    Dataset, DatasetAndOrgWithSubAndPlan, EventType, ServerDatasetConfiguration,
-};
+use crate::data::models::{Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, EventType};
 use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::{data::models::Event, get_env};
@@ -211,8 +209,8 @@ pub async fn create_file_chunks(
         ));
     }
 
-    let server_dataset_configuration =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let chunk_segments = chunks
         .chunks(120)
@@ -225,7 +223,7 @@ pub async fn create_file_chunks(
         let (ingestion_message, _) = create_chunk_metadata(
             chunk_segment,
             dataset_org_plan_sub.dataset.id,
-            server_dataset_configuration.clone(),
+            dataset_config.clone(),
             pool.clone(),
         )
         .await?;
@@ -352,7 +350,7 @@ pub async fn delete_file_query(
     file_uuid: uuid::Uuid,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    config: ServerDatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<(), actix_web::Error> {
     use crate::data::schema::files::dsl as files_columns;
 
