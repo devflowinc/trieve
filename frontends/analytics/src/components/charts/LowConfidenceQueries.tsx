@@ -108,9 +108,6 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
       class="px-4"
       width={5}
     >
-      <Show when={lowConfidenceQueriesQuery.data?.length === 0}>
-        <div class="py-8 text-center opacity-80">No Data.</div>
-      </Show>
       <Show
         fallback={<div class="py-8">Loading...</div>}
         when={lowConfidenceQueriesQuery.data}

@@ -60,14 +60,6 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   return (
     <>
       <Show
-        when={
-          headQueriesQuery.status === "success" &&
-          headQueriesQuery.data.length === 0
-        }
-      >
-        <div class="py-8 text-center opacity-80">No Data.</div>
-      </Show>
-      <Show
         fallback={<div class="py-8">Loading...</div>}
         when={headQueriesQuery.data}
       >
