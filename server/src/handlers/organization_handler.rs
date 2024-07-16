@@ -328,6 +328,35 @@ pub async fn remove_user_from_org(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "organization_id": "00000000-0000-0000-0000-000000000000",
+    "server_configuration": {
+        "LLM_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+        "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+        "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+        "N_RETRIEVALS_TO_INCLUDE": 8,
+        "EMBEDDING_SIZE": 1536,
+        "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+        "BM25_ENABLED": true,
+        "BM25_B": 0.75,
+        "BM25_K": 0.75,
+        "BM25_AVG_LEN": 256.0,
+        "FULLTEXT_ENABLED": true,
+        "SEMANTIC_ENABLED": true,
+        "EMBEDDING_QUERY_PREFIX": "",
+        "USE_MESSAGE_TO_QUERY_PROMPT": false,
+        "FREQUENCY_PENALTY": 0.0,
+        "TEMPERATURE": 0.5,
+        "PRESENCE_PENALTY": 0.0,
+        "STOP_TOKENS": ["\n\n", "\n"],
+        "INDEXED_ONLY": false,
+        "LOCKED": false,
+        "SYSTEM_PROMPT": "You are a helpful assistant",
+        "MAX_LIMIT": 10000
+    }
+}))]
 pub struct UpdateAllOrgDatasetConfigsReqPayload {
     /// The id of the organization to update the dataset configurations for.
     pub organization_id: uuid::Uuid,

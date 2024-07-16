@@ -38,7 +38,7 @@ pub struct CreateTopicReqPayload {
         (status = 400, description = "Topic name empty or a service error", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -108,7 +108,7 @@ pub struct DeleteTopicData {
         (status = 400, description = "Service error relating to topic deletion", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("topic_id" = uuid, Path, description = "The id of the topic you want to delete."),
     ),
     security(
@@ -151,7 +151,7 @@ pub struct UpdateTopicReqPayload {
         (status = 400, description = "Service error relating to topic update", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -191,7 +191,7 @@ pub async fn update_topic(
     ),
     params (
         ("owner_id", description="The owner_id to get topics of; A common approach is to use a browser fingerprint or your user's id"),
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),

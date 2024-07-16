@@ -76,7 +76,7 @@ pub struct CreateDatasetRequest {
     pub dataset_name: String,
     /// Organization ID that the dataset will belong to.
     pub organization_id: uuid::Uuid,
-    /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization.
+    /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
     pub tracking_id: Option<String>,
     /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
     pub server_configuration: Option<serde_json::Value>,
@@ -171,19 +171,19 @@ pub async fn create_dataset(
 pub struct UpdateDatasetRequest {
     /// The id of the dataset you want to update.
     pub dataset_id: Option<uuid::Uuid>,
-    /// tracking ID for the dataset. Can be used to track the dataset in external systems.
+    /// The tracking ID of the dataset you want to update.
     pub tracking_id: Option<String>,
     /// The new name of the dataset. Must be unique within the organization. If not provided, the name will not be updated.
     pub dataset_name: Option<String>,
     /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously updating this field. We recommend updating through the settings panel for your dataset at dashboard.trieve.ai.
     pub server_configuration: Option<serde_json::Value>,
-    /// Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated.
+    /// Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
     pub new_tracking_id: Option<String>,
 }
 
 /// Update Dataset
 ///
-/// Update a dataset. The auth'ed user must be an owner of the organization to update a dataset.
+/// Update a dataset by id or tracking_id. One of id or tracking_id must be provided. The auth'ed user must be an owner of the organization to update a dataset.
 #[utoipa::path(
     put,
     path = "/dataset",
@@ -250,7 +250,7 @@ pub async fn update_dataset(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to delete."),
 
     ),
@@ -296,7 +296,7 @@ pub async fn delete_dataset(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to clear."),
 
     ),
@@ -339,7 +339,7 @@ pub async fn clear_dataset(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = String, Path, description = "The tracking id of the dataset you want to delete."),
     ),
     security(
@@ -385,7 +385,7 @@ pub async fn delete_dataset_by_tracking_id(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
     ),
     security(
@@ -424,7 +424,7 @@ pub async fn get_dataset(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve usage for."),
     ),
     security(
@@ -458,7 +458,7 @@ pub async fn get_usage_by_dataset_id(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = String, Path, description = "The tracking id of the dataset you want to retrieve."),
     ),
     security(
