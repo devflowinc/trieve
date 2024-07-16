@@ -25,7 +25,7 @@ use actix_web::{web, HttpResponse};
         (status = 400, description = "Service error relating to getting cluster analytics", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -79,7 +79,7 @@ pub async fn get_cluster_analytics(
         (status = 400, description = "Service error relating to getting search analytics", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -231,7 +231,7 @@ pub async fn get_search_analytics(
         (status = 400, description = "Service error relating to getting RAG analytics", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -292,7 +292,7 @@ pub async fn get_rag_analytics(
         (status = 400, description = "Service error relating to getting recommendation analytics", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),

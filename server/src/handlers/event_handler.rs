@@ -37,7 +37,7 @@ pub struct GetEventsData {
         (status = 400, description = "Service error relating to getting events for the dataset", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
