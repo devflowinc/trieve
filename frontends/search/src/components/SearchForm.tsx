@@ -565,6 +565,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 highlightWindow: 0,
                                 group_size: 3,
                                 useReranker: false,
+                                useGRPC: false,
                               } as SearchOptions);
                             }}
                           >
@@ -585,6 +586,22 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                   scoreThreshold: parseFloat(
                                     e.currentTarget.value,
                                   ),
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Use GRPC</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={tempSearchValues().useGRPC}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  useGRPC: e.target.checked,
                                 };
                               });
                             }}

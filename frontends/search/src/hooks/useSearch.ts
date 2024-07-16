@@ -20,6 +20,7 @@ const initalState = {
   highlightWindow: 0,
   group_size: 3,
   useReranker: false,
+  useGRPC: false,
 };
 
 export type SearchOptions = typeof initalState;
@@ -43,6 +44,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     highlightWindow: state.highlightWindow.toString(),
     group_size: state.group_size?.toString(),
     useReranker: state.useReranker.toString(),
+    useGRPC: state.useGRPC.toString(),
   };
 };
 
@@ -67,6 +69,7 @@ const fromParamsToState = (
     highlightWindow: parseInt(params.highlightWindow ?? "0"),
     group_size: parseInt(params.group_size ?? "3"),
     useReranker: (params.useReranker ?? "false") === "true",
+    useGRPC: (params.useGRPC ?? "false") == "true",
   };
 };
 

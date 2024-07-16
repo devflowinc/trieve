@@ -1158,65 +1158,9 @@ pub async fn create_embedding_grpc(
     }
 }
 
-pub async fn create_embeddings_grpc(
-    content_and_boosts: Vec<(String, Option<DistancePhrase>)>,
-    embed_type: &str,
-    dataset_config: ServerDatasetConfiguration,
-) -> Result<Vec<Vec<f32>>, ServiceError> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("create_embedding", "Create semantic dense embedding")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "create_embedding",
-                "Create semantic dense embedding",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-    let (contents, boosts): (Vec<_>, Vec<_>) = content_and_boosts.into_iter().unzip();
-    let (boost_indices, boost_phrases): (Vec<usize>, Vec<String>) = boosts
-        .clone()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, boost)| {
-            boost
-                .clone()
-                .map(|distance_phrase| (index, distance_phrase.phrase))
-        })
-        .unzip();
-
-    let content_vecs = create_batch_embedding_call(contents).await?;
-    let boost_vecs = create_batch_embedding_call(boost_phrases).await?;
-
-    let mut combined_vecs = content_vecs;
-    for (index, boost_vec) in boost_indices.into_iter().zip(boost_vecs.into_iter()) {
-        let content_vec = combined_vecs[index].clone();
-        let distance_phrase = boosts[index].clone();
-        if distance_phrase.is_none() {
-            return Err(ServiceError::InternalServerError(
-                "Could not find matching distance phrase (should not happen)".to_string(),
-            ));
-        }
-        let distance_phrase = distance_phrase.unwrap();
-        combined_vecs[index] = content_vec
-            .iter()
-            .zip(boost_vec)
-            .map(|(vec_elem, boost_vec_elem)| {
-                vec_elem + distance_phrase.distance_factor * boost_vec_elem
-            })
-            .collect();
-    }
-
-    Ok(combined_vecs)
-}
-
 pub async fn get_sparse_vector_grpc(
     message: String,
-    embed_type: &str,
+    _embed_type: &str,
 ) -> Result<Vec<(u32, f32)>, ServiceError> {
     let grpc_origin = get_env!("SPARSE_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
     let mut client = EmbedClient::connect(grpc_origin).await.map_err(|_| {
