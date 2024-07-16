@@ -213,6 +213,7 @@ export const GroupPage = (props: GroupPageProps) => {
             highlight_window: search.debounced.highlightWindow,
             recency_bias: search.debounced.recencyBias,
             use_reranker: search.debounced.useReranker,
+            use_quote_negated_terms: search.debounced.useQuoteNegatedTerms,
           }),
         }).then((response) => {
           if (response.ok) {

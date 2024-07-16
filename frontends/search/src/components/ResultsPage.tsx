@@ -196,6 +196,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         highlight_window: props.search.debounced.highlightWindow ?? 0,
         group_size: props.search.debounced.group_size ?? 3,
         use_reranker: props.search.debounced.useReranker,
+        use_quote_negated_terms: props.search.debounced.useQuoteNegatedTerms,
       };
 
       let searchRoute = "chunk/search";

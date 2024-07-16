@@ -984,6 +984,8 @@ pub struct SearchChunksReqPayload {
     pub content_only: Option<bool>,
     /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
 }
 
 impl Default for SearchChunksReqPayload {
@@ -1009,6 +1011,7 @@ impl Default for SearchChunksReqPayload {
             slim_chunks: None,
             content_only: None,
             use_reranker: None,
+            use_quote_negated_terms: None,
         }
     }
 }
@@ -1121,7 +1124,15 @@ pub async fn search_chunks(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = parse_query(data.query.clone());
+    let parsed_query = if data.use_quote_negated_terms.unwrap_or(false) {
+        parse_query(data.query.clone())
+    } else {
+        ParsedQuery {
+            query: data.query.clone(),
+            quote_words: None,
+            negated_words: None,
+        }
+    };
 
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
@@ -1322,6 +1333,8 @@ pub struct AutocompleteReqPayload {
     pub content_only: Option<bool>,
     /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
     pub use_reranker: Option<bool>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
 }
 
 impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
@@ -1351,6 +1364,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             slim_chunks: autocomplete_data.slim_chunks,
             content_only: autocomplete_data.content_only,
             use_reranker: autocomplete_data.use_reranker,
+            use_quote_negated_terms: autocomplete_data.use_quote_negated_terms,
         }
     }
 }
@@ -1389,7 +1403,15 @@ pub async fn autocomplete(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = parse_query(data.query.clone());
+    let parsed_query = if data.use_quote_negated_terms.unwrap_or(false) {
+        parse_query(data.query.clone())
+    } else {
+        ParsedQuery {
+            query: data.query.clone(),
+            quote_words: None,
+            negated_words: None,
+        }
+    };
 
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
