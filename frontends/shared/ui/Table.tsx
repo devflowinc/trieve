@@ -43,9 +43,9 @@ export const td = cva([""], {
     },
   },
   defaultVariants: {
-    border: "none",
+    border: "subtle",
     spacing: "md",
-    borderStyle: "both",
+    borderStyle: "horizontal",
     fullWidth: false,
   },
 });

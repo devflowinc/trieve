@@ -110,12 +110,8 @@ export const RagQueries = (props: RagQueriesProps) => {
             >
               {(row) => (
                 <Tr>
-                  <Td fullWidth={true} borderStyle="horizontal" border="subtle">
-                    {row.user_message}
-                  </Td>
-                  <Td class="pr-8" borderStyle="horizontal" border="subtle">
-                    {row.rag_type}
-                  </Td>
+                  <Td fullWidth={true}>{row.user_message}</Td>
+                  <Td class="pr-8">{row.rag_type}</Td>
                 </Tr>
               )}
             </Table>
