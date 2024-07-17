@@ -26,8 +26,8 @@ import {
 import { formatDate } from "../formatters";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "./ShowToasts";
-import { DefaultError, Organization } from "shared/types";
 import { Tooltip } from "shared/ui";
+import { DatasetAndUsage, DefaultError, Organization } from "shared/types";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
@@ -35,11 +35,6 @@ export interface DatasetOverviewProps {
 }
 
 export const DatasetOverview = (props: DatasetOverviewProps) => {
-  const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
-  const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
-  const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
-
-  const navigate = useNavigate();
   const [page, setPage] = createSignal(0);
   const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
   const [usage, setUsage] = createSignal<
@@ -528,6 +523,145 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
         </div>
       </Show>
     </>
+  );
+};
+
+interface DatasetTableRowProps {
+  dataset: DatasetAndUsage;
+  orgDatasetParams: string;
+  deleteDataset: (datasetId: string) => Promise<void>;
+  clearDataset: (datasetId: string) => Promise<void>;
+  usage: Accessor<
+    Record<
+      string,
+      {
+        chunk_count: number;
+      }
+    >
+  >;
+  reloadChunkCount: (datasetId: string) => void;
+}
+
+const DatasetTableRow = (props: DatasetTableRowProps) => {
+  const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
+  const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
+  const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
+  const navigate = useNavigate();
+  return (
+    <tr class="cursor-pointer hover:bg-neutral-100">
+      <td
+        class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium"
+        onClick={() => {
+          navigate(`/dashboard/dataset/${props.dataset.dataset.id}/start`);
+        }}
+      >
+        <div class="inline-flex items-center">{props.dataset.dataset.name}</div>
+      </td>
+      <td
+        class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium"
+        onClick={() => {
+          navigate(`/dashboard/dataset/${props.dataset.dataset.id}/start`);
+        }}
+      >
+        <div class="flex items-center gap-4">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              window.open(`${searchUiURL}${props.orgDatasetParams}`);
+            }}
+            class="hover:text-fuchsia-500"
+            title="Open search playground for this dataset"
+          >
+            <AiOutlineSearch class="h-5 w-5" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              window.open(`${chatUiURL}${props.orgDatasetParams}`);
+            }}
+            class="hover:text-fuchsia-500"
+            title="Open RAG playground for this dataset"
+          >
+            <AiOutlineComment class="h-5 w-5" />{" "}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              window.open(`${analyticsUiURL}${props.orgDatasetParams}`);
+            }}
+            class="hover:text-fuchsia-500"
+            title="Open analytics for this dataset"
+          >
+            <AiOutlineBarChart class="h-5 w-5" />
+          </button>
+        </div>
+      </td>
+      <td
+        class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600"
+        onClick={() => {
+          navigate(`/dashboard/dataset/${props.dataset.dataset.id}/start`);
+        }}
+      >
+        <span class="inline-flex items-center">
+          <div>
+            {props.usage()[props.dataset.dataset.id]?.chunk_count ??
+              props.dataset.dataset_usage.chunk_count}{" "}
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              props.reloadChunkCount(props.dataset.dataset.id);
+            }}
+            class="ml-2 hover:text-fuchsia-500"
+          >
+            <TbReload />
+          </button>
+        </span>
+      </td>
+      <td
+        class="hidden whitespace-nowrap px-3 py-4 text-sm text-neutral-600 lg:block"
+        onClick={() => {
+          navigate(`/dashboard/dataset/${props.dataset.dataset.id}/start`);
+        }}
+      >
+        {props.dataset.dataset.id}
+      </td>
+      <td class="whitespace-nowrap py-4 text-sm text-neutral-600">
+        {formatDate(new Date(props.dataset.dataset.created_at))}
+      </td>
+      <td class="flex items-center justify-end gap-4 whitespace-nowrap py-4 pr-2 text-right text-sm font-medium">
+        <button
+          class="text-lg text-neutral-500 hover:text-neutral-900"
+          onClick={() => {
+            navigate(`/dashboard/dataset/${props.dataset.dataset.id}/settings`);
+          }}
+        >
+          <FaSolidGear />
+        </button>
+        <button
+          class="text-lg text-red-500 hover:text-neutral-900"
+          onClick={() => {
+            confirm("Are you sure you want to delete this dataset?") &&
+              void props.deleteDataset(props.dataset.dataset.id);
+          }}
+        >
+          <FiTrash />
+        </button>
+        <button
+          class="text-lg text-red-500 hover:text-neutral-900"
+          onClick={() => {
+            confirm("Are you sure you want to clear this dataset?") &&
+              void props.clearDataset(props.dataset.dataset.id);
+          }}
+        >
+          <AiOutlineClear />
+        </button>
+      </td>
+    </tr>
   );
 };
 
