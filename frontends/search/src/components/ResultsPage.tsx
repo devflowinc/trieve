@@ -182,7 +182,11 @@ const ResultsPage = (props: ResultsPageProps) => {
           ? props.search.debounced.searchType.replace("autocomplete-", "")
           : props.search.debounced.searchType,
         score_threshold: props.search.debounced.scoreThreshold,
-        recency_bias: props.search.debounced.recencyBias ?? 0.0,
+        sort_by: props.search.debounced.sort_by
+          ? {
+              field: props.search.debounced.sort_by,
+            }
+          : undefined,
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
         get_total_pages: props.search.debounced.getTotalPages ?? false,

@@ -913,12 +913,19 @@ pub async fn search_qdrant_query(
                 let sparse_vector: VectorInput = VectorInput::new_sparse(indices, data);
 
                 let resp = if let Some(sort_by) = query.sort_by {
+                    let prefetch_limit = sort_by.prefetch_limit.unwrap_or(1000);
+                    let prefetch_limit = if prefetch_limit > dataset_config.MAX_LIMIT {
+                        dataset_config.MAX_LIMIT
+                    } else {
+                        prefetch_limit
+                    };
+
                     QueryPoints {
                         collection_name: qdrant_collection.to_string(),
                         limit: Some(limit),
                         prefetch: vec![PrefetchQuery {
                             query: Some(Query::new_nearest(sparse_vector)),
-                            limit: Some(sort_by.prefetch_limit.unwrap_or(1000)),
+                            limit: Some(prefetch_limit),
                             using: Some("sparse_vectors".to_string()),
                             score_threshold: query.score_threshold,
                             filter: Some(query.filter.clone()),
@@ -967,12 +974,19 @@ pub async fn search_qdrant_query(
                 let data = vector.iter().map(|(_, value)| *value).collect::<Vec<f32>>();
                 let bm25_vector: VectorInput = VectorInput::new_sparse(indices, data);
                 let resp = if let Some(sort_by) = query.sort_by {
+                    let prefetch_limit = sort_by.prefetch_limit.unwrap_or(1000);
+                    let prefetch_limit = if prefetch_limit > dataset_config.MAX_LIMIT {
+                        dataset_config.MAX_LIMIT
+                    } else {
+                        prefetch_limit
+                    };
+
                     QueryPoints {
                         collection_name: qdrant_collection.to_string(),
                         limit: Some(limit),
                         prefetch: vec![PrefetchQuery {
                             query: Some(Query::new_nearest(bm25_vector)),
-                            limit: Some(sort_by.prefetch_limit.unwrap_or(1000)),
+                            limit: Some(prefetch_limit),
                             using: Some("bm25_vectors".to_string()),
                             score_threshold: query.score_threshold,
                             filter: Some(query.filter.clone()),
@@ -1032,6 +1046,13 @@ pub async fn search_qdrant_query(
                 };
 
                 let resp = if let Some(sort_by) = query.sort_by {
+                    let prefetch_limit = sort_by.prefetch_limit.unwrap_or(1000);
+                    let prefetch_limit = if prefetch_limit > dataset_config.MAX_LIMIT {
+                        dataset_config.MAX_LIMIT
+                    } else {
+                        prefetch_limit
+                    };
+
                     QueryPoints {
                         collection_name: qdrant_collection.to_string(),
                         limit: Some(limit),
@@ -1039,7 +1060,7 @@ pub async fn search_qdrant_query(
                             query: Some(Query::new_nearest(VectorInput::new_dense(
                                 embedding_vector.clone(),
                             ))),
-                            limit: Some(sort_by.prefetch_limit.unwrap_or(1000)),
+                            limit: Some(prefetch_limit),
                             using: Some(vector_name.to_string()),
                             score_threshold: query.score_threshold,
                             filter: Some(query.filter.clone()),

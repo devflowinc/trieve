@@ -313,9 +313,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   {props.chunk.link}
                 </a>
               </Show>
-              <div class="grid w-fit auto-cols-min grid-cols-[1fr,3fr] gap-x-2 text-magenta-500 dark:text-magenta-400">
+              <div class="grid w-fit auto-cols-min grid-cols-[1fr,3fr] gap-x-2">
                 <Show when={props.score != 0}>
-                  <span class="font-semibold">Similarity: </span>
+                  <span class="font-semibold">Score: </span>
                   <span>{props.score.toPrecision(3)}</span>
                 </Show>
               </div>

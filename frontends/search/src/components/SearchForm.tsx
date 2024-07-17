@@ -103,6 +103,18 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   }
 
   const [searchTypes, setSearchTypes] = createSignal(default_settings);
+  const [sortTypes, setSortTypes] = createSignal([
+    {
+      name: "Timestamp",
+      isSelected: false,
+      route: "time_stamp",
+    },
+    {
+      name: "Num Value",
+      isSelected: false,
+      route: "num_value",
+    },
+  ]);
 
   createEffect(() => {
     setSearchTypes((prev) => {
@@ -117,9 +129,28 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   });
 
   createEffect(() => {
+    setSortTypes((prev) => {
+      return prev.map((type) => {
+        if (type.route === props.search.state.sort_by) {
+          return { ...type, isSelected: true };
+        } else {
+          return { ...type, isSelected: false };
+        }
+      });
+    });
+  });
+
+  createEffect(() => {
     props.search.setSearch(
       "searchType",
       searchTypes().find((type) => type.isSelected)?.route ?? "hybrid",
+    );
+  });
+
+  createEffect(() => {
+    props.search.setSearch(
+      "sort_by",
+      sortTypes().find((type) => type.isSelected)?.route ?? "",
     );
   });
 
@@ -512,6 +543,81 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 </>
               )}
             </Popover>
+            <Popover defaultOpen={false} class="relative">
+              {({ isOpen, setState }) => (
+                <>
+                  <PopoverButton
+                    aria-label="Toggle filters"
+                    type="button"
+                    class="flex items-center space-x-1 pb-1 text-sm"
+                  >
+                    <span>Sort</span>
+                    <Switch>
+                      <Match when={isOpen()}>
+                        <FiChevronUp class="h-3.5 w-3.5" />
+                      </Match>
+                      <Match when={!isOpen()}>
+                        <FiChevronDown class="h-3.5 w-3.5" />
+                      </Match>
+                    </Switch>
+                  </PopoverButton>
+                  <Show when={isOpen()}>
+                    <PopoverPanel
+                      unmount={false}
+                      class="absolute z-10 mt-2 h-fit w-[180px] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                    >
+                      <Menu class="ml-1 space-y-1">
+                        <For each={sortTypes()}>
+                          {(option) => {
+                            const onClick = (e: Event) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSortTypes((prev) => {
+                                return prev.map((item) => {
+                                  if (item.name === option.name) {
+                                    return {
+                                      ...item,
+                                      isSelected: !item.isSelected,
+                                    };
+                                  } else {
+                                    return {
+                                      ...item,
+                                      isSelected: item.isSelected,
+                                    };
+                                  }
+                                });
+                              });
+                              setState(true);
+                            };
+                            return (
+                              <MenuItem
+                                as="button"
+                                classList={{
+                                  "flex w-full items-center justify-between rounded p-1 focus:text-black focus:outline-none dark:hover:text-white dark:focus:text-white":
+                                    true,
+                                  "bg-neutral-300 dark:bg-neutral-900":
+                                    option.isSelected,
+                                }}
+                                onClick={onClick}
+                              >
+                                <div class="flex flex-row justify-start space-x-2">
+                                  <span class="text-left">{option.name}</span>
+                                </div>
+                                {option.isSelected && (
+                                  <span>
+                                    <FaSolidCheck class="fill-current text-xl" />
+                                  </span>
+                                )}
+                              </MenuItem>
+                            );
+                          }}
+                        </For>
+                      </Menu>
+                    </PopoverPanel>
+                  </Show>
+                </>
+              )}
+            </Popover>
             <Popover
               defaultOpen={false}
               class="relative"
@@ -555,7 +661,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 scoreThreshold: 0.0,
                                 extendResults: false,
                                 slimChunks: false,
-                                recencyBias: 0.0,
+                                sort_by: "",
                                 pageSize: 10,
                                 getTotalPages: true,
                                 highlightResults: true,
@@ -626,25 +732,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 return {
                                   ...prev,
                                   slimChunks: e.target.checked,
-                                };
-                              });
-                            }}
-                          />
-                        </div>
-                        <div class="flex items-center justify-between space-x-2 p-1">
-                          <label>Recency Bias (0.0 to 1.0):</label>
-                          <input
-                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
-                            type="number"
-                            step="any"
-                            value={tempSearchValues().recencyBias}
-                            onChange={(e) => {
-                              setTempSearchValues((prev) => {
-                                return {
-                                  ...prev,
-                                  recencyBias: parseFloat(
-                                    e.currentTarget.value,
-                                  ),
                                 };
                               });
                             }}
