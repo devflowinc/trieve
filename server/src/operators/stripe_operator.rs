@@ -393,12 +393,18 @@ pub async fn create_invoice_query(
         .unwrap_or(stripe::InvoiceStatus::Draft)
         .to_string();
     let url = invoice.hosted_invoice_url.unwrap_or("".to_string());
-    let stripe_invoice = StripeInvoice::from_details(org_id, total, created_at, status, url);
+    let stripe_invoice = StripeInvoice::from_details(
+        org_id,
+        total,
+        created_at,
+        status,
+        url,
+        invoice_id.to_string(),
+    );
 
     use crate::data::schema::stripe_invoices::dsl as stripe_invoices_columns;
 
-    let invoice_exists =
-        invoice_exists_query(stripe_invoice.clone().hosted_invoice_url, pool.clone()).await?;
+    let invoice_exists = invoice_exists_query(invoice_id.clone().to_string(), pool.clone()).await?;
 
     if invoice_exists {
         return Err(ServiceError::BadRequest(
@@ -421,7 +427,7 @@ pub async fn create_invoice_query(
 }
 
 pub async fn invoice_exists_query(
-    invoice_url: String,
+    invoice_id: String,
     pool: web::Data<Pool>,
 ) -> Result<bool, ServiceError> {
     use crate::data::schema::stripe_invoices::dsl as stripe_invoices_columns;
@@ -432,7 +438,7 @@ pub async fn invoice_exists_query(
         .expect("Failed to get connection from pool");
 
     let invoice: Option<String> = stripe_invoices_columns::stripe_invoices
-        .filter(stripe_invoices_columns::hosted_invoice_url.eq(invoice_url))
+        .filter(stripe_invoices_columns::stripe_id.eq(invoice_id))
         .select(stripe_invoices_columns::hosted_invoice_url)
         .first::<String>(&mut conn)
         .await
