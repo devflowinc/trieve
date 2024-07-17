@@ -47,6 +47,7 @@ import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
 import { BiRegularXCircle } from "solid-icons/bi";
 import { createToast } from "./ShowToasts";
+import { VsFileSymlinkFile } from "solid-icons/vs";
 
 export interface GroupPageProps {
   groupID: string;
@@ -659,35 +660,45 @@ export const GroupPage = (props: GroupPageProps) => {
                         <Show when={!groupExpanded()}>
                           <FaSolidChevronDown />
                         </Show>
-                        <div>
-                          <div class="flex space-x-2">
-                            <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                              ID:{" "}
-                            </span>
-                            <span class="line-clamp-1 break-all">
-                              {groupResult.group.id}
-                            </span>
+                        <div class="flex w-full items-center">
+                          <div class="w-full">
+                            <div class="flex space-x-2">
+                              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                ID:{" "}
+                              </span>
+                              <span class="line-clamp-1 break-all">
+                                {groupResult.group.id}
+                              </span>
+                            </div>
+                            <Show when={groupResult.group.tracking_id}>
+                              <div class="flex space-x-2">
+                                <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                  Tracking ID:{" "}
+                                </span>
+                                <span class="line-clamp-1 break-all">
+                                  {groupResult.group.tracking_id}
+                                </span>
+                              </div>
+                            </Show>
+                            <Show when={groupResult.group.name}>
+                              <div class="flex space-x-2">
+                                <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                  Name:{" "}
+                                </span>
+                                <span class="line-clamp-1 break-all">
+                                  {groupResult.group.name}
+                                </span>
+                              </div>
+                            </Show>
                           </div>
-                          <Show when={groupResult.group.tracking_id}>
-                            <div class="flex space-x-2">
-                              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                                Tracking ID:{" "}
-                              </span>
-                              <span class="line-clamp-1 break-all">
-                                {groupResult.group.tracking_id}
-                              </span>
-                            </div>
-                          </Show>
-                          <Show when={groupResult.group.name}>
-                            <div class="flex space-x-2">
-                              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                                Name:{" "}
-                              </span>
-                              <span class="line-clamp-1 break-all">
-                                {groupResult.group.name}
-                              </span>
-                            </div>
-                          </Show>
+                          <a
+                            title="View group"
+                            href={`/group/${
+                              groupResult.group.id
+                            }?dataset=${dataset()?.dataset.id}`}
+                          >
+                            <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+                          </a>
                         </div>
                       </div>
                       <Show when={groupExpanded()}>

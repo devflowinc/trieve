@@ -37,6 +37,7 @@ import { createToast } from "./ShowToasts";
 import { SearchStore } from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
+import { VsFileSymlinkFile } from "solid-icons/vs";
 
 export interface ResultsPageProps {
   search: SearchStore;
@@ -472,50 +473,60 @@ const ResultsPage = (props: ResultsPageProps) => {
                       <Show when={!groupExpanded()}>
                         <FaSolidChevronDown />
                       </Show>
-                      <div class="w-full">
-                        <div class="flex space-x-2">
-                          <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                            ID:{" "}
-                          </span>
-                          <span class="line-clamp-1 break-all">
-                            {groupResult.group.id}
-                          </span>
-                        </div>
-                        <Show when={groupResult.group.tracking_id}>
+                      <div class="flex w-full items-center">
+                        <div class="w-full">
                           <div class="flex space-x-2">
                             <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                              Tracking ID:{" "}
+                              ID:{" "}
                             </span>
                             <span class="line-clamp-1 break-all">
-                              {groupResult.group.tracking_id}
+                              {groupResult.group.id}
                             </span>
                           </div>
-                        </Show>
-                        <Show when={groupResult.group.name}>
-                          <div class="flex w-full flex-row justify-between">
+                          <Show when={groupResult.group.tracking_id}>
                             <div class="flex space-x-2">
                               <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                                Name:{" "}
+                                Tracking ID:{" "}
                               </span>
                               <span class="line-clamp-1 break-all">
-                                {groupResult.group.name}
+                                {groupResult.group.tracking_id}
                               </span>
                             </div>
-                            <Show when={groupResult.file_id}>
-                              {(fileId) => (
-                                <div class="flex space-x-2">
-                                  <button
-                                    title="Download uploaded file"
-                                    class="h-fit text-neutral-400 dark:text-neutral-300"
-                                    onClick={() => handleDownloadFile(fileId())}
-                                  >
-                                    <FaSolidDownload />
-                                  </button>
-                                </div>
-                              )}
-                            </Show>
-                          </div>
-                        </Show>
+                          </Show>
+                          <Show when={groupResult.group.name}>
+                            <div class="flex w-full flex-row justify-between">
+                              <div class="flex space-x-2">
+                                <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                  Name:{" "}
+                                </span>
+                                <span class="line-clamp-1 break-all">
+                                  {groupResult.group.name}
+                                </span>
+                              </div>
+                            </div>
+                          </Show>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                          <Show when={groupResult.file_id}>
+                            {(fileId) => (
+                              <button
+                                title="Download uploaded file"
+                                class="h-fit text-neutral-400 dark:text-neutral-300"
+                                onClick={() => handleDownloadFile(fileId())}
+                              >
+                                <FaSolidDownload />
+                              </button>
+                            )}
+                          </Show>
+                          <a
+                            title="View group"
+                            href={`/group/${
+                              groupResult.group.id
+                            }?dataset=${dataset()?.dataset.id}`}
+                          >
+                            <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+                          </a>
+                        </div>
                       </div>
                     </div>
                     <Show when={groupExpanded()}>
