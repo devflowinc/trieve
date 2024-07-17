@@ -110,9 +110,9 @@ pub struct ChunkReqPayload {
     pub split_avg: Option<bool>,
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
     pub convert_html_to_text: Option<bool>,
-    /// Boost is useful for when you want to boost certain phrases in the fulltext search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
+    /// Boost phrase is useful for when you want to boost certain phrases in the fulltext and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
     pub boost_phrase: Option<BoostPhrase>,
-    /// Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push the latest model of a iphone closer to flagship by using the distance phrase "flagship" and a boost factor above 0.
+    /// Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push the latest model of a iphone closer to flagship by using the distance phrase "flagship" and a boost factor above 0. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
     pub distance_phrase: Option<DistancePhrase>,
 }
 
