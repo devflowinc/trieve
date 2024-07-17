@@ -452,7 +452,7 @@ pub async fn get_bookmarks_for_group_query(
     })
 }
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct BookmarkGroupResult {
+pub struct GroupsForChunk {
     pub chunk_uuid: uuid::Uuid,
     pub slim_groups: Vec<ChunkGroupAndFileId>,
 }
@@ -462,7 +462,7 @@ pub async fn get_groups_for_bookmark_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<BookmarkGroupResult>, ServiceError> {
+) -> Result<Vec<GroupsForChunk>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
@@ -498,7 +498,7 @@ pub async fn get_groups_for_bookmark_query(
             })
             .collect();
 
-    let bookmark_groups: Vec<BookmarkGroupResult> =
+    let bookmark_groups: Vec<GroupsForChunk> =
         groups.into_iter().fold(Vec::new(), |mut acc, item| {
             if item.1 == uuid::Uuid::default() {
                 return acc;
@@ -512,7 +512,7 @@ pub async fn get_groups_for_bookmark_query(
                     .push(ChunkGroupAndFileId::from_group(item.0, item.2));
             } else {
                 //if not make new output item
-                acc.push(BookmarkGroupResult {
+                acc.push(GroupsForChunk {
                     chunk_uuid: item.1,
                     slim_groups: vec![ChunkGroupAndFileId::from_group(item.0, item.2)],
                 });
