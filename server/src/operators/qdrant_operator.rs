@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     data::models::{
-        ChunkMetadata, DatasetConfiguration, Pool, QdrantPayload, RecommendType,
+        ChunkMetadata, DatasetConfiguration, Pool, QdrantPayload, QdrantSortBy, RecommendType,
         RecommendationStrategy,
     },
     errors::ServiceError,
@@ -18,12 +18,13 @@ use qdrant_client::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
         quantization_config::Quantization, BinaryQuantization, CreateCollectionBuilder,
         CreateFieldIndexCollectionBuilder, DeleteFieldIndexCollectionBuilder, DeletePointsBuilder,
-        Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, PayloadIndexParams, PointId,
-        PointStruct, QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy,
-        ScrollPointsBuilder, SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints,
-        SetPayloadPointsBuilder, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
-        TextIndexParams, TokenizerType, UpsertPointsBuilder, Value, Vector, VectorParams,
-        VectorParamsMap, VectorsConfig, WithPayloadSelector, WithVectorsSelector,
+        Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, OrderBy, PayloadIndexParams,
+        PointId, PointStruct, PrefetchQuery, QuantizationConfig, Query, QueryBatchPoints,
+        QueryPoints, RecommendPointGroups, RecommendPoints, RecommendStrategy, ScrollPointsBuilder,
+        SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints, SetPayloadPointsBuilder,
+        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType,
+        UpsertPointsBuilder, Value, Vector, VectorInput, VectorParams, VectorParamsMap,
+        VectorsConfig, WithPayloadSelector, WithVectorsSelector,
     },
     Payload, Qdrant,
 };
@@ -732,6 +733,7 @@ pub enum VectorType {
 pub struct QdrantSearchQuery {
     pub filter: Filter,
     pub score_threshold: Option<f32>,
+    pub sort_by: Option<QdrantSortBy>,
     pub vector: VectorType,
 }
 
@@ -823,6 +825,7 @@ pub async fn search_over_groups_query(
     let qdrant_query = QdrantSearchQuery {
         filter,
         score_threshold,
+        sort_by: None,
         vector,
     };
 
@@ -880,6 +883,7 @@ pub async fn search_over_groups_query(
 #[tracing::instrument]
 pub async fn search_qdrant_query(
     page: u64,
+    prefetch_limit: Option<u64>,
     limit: u64,
     queries: Vec<QdrantSearchQuery>,
     dataset_config: DatasetConfiguration,
@@ -901,44 +905,117 @@ pub async fn search_qdrant_query(
 
     let count_future = count_qdrant_query(count_limit, queries.clone(), dataset_config.clone());
 
-    let search_point_req_payloads: Vec<SearchPoints> = queries
+    let search_point_req_payloads: Vec<QueryPoints> = queries
         .into_iter()
         .map(|query| match query.vector {
             VectorType::SpladeSparse(vector) => {
-                let sparse_vector: Vector = vector.into();
-                Ok(SearchPoints {
-                    collection_name: qdrant_collection.to_string(),
-                    vector: sparse_vector.data,
-                    sparse_indices: sparse_vector.indices,
-                    vector_name: Some("sparse_vectors".to_string()),
-                    limit,
-                    score_threshold: query.score_threshold,
-                    offset: Some((page - 1) * limit),
-                    with_payload: Some(WithPayloadSelector::from(false)),
-                    with_vectors: Some(WithVectorsSelector::from(false)),
-                    filter: Some(query.filter.clone()),
-                    timeout: Some(60),
-                    params: None,
-                    ..Default::default()
-                })
+                let indices = vector.iter().map(|(index, _)| *index).collect::<Vec<u32>>();
+                let data = vector.iter().map(|(_, value)| *value).collect::<Vec<f32>>();
+                let sparse_vector: VectorInput = VectorInput::new_sparse(indices, data);
+
+                let resp = if let Some(sort_by) = query.sort_by {
+                    QueryPoints {
+                        collection_name: qdrant_collection.to_string(),
+                        limit: Some(limit),
+                        prefetch: vec![PrefetchQuery {
+                            query: Some(Query::new_nearest(sparse_vector)),
+                            limit: Some(prefetch_limit.unwrap_or(1000)),
+                            using: Some("sparse_vectors".to_string()),
+                            score_threshold: query.score_threshold,
+                            filter: Some(query.filter.clone()),
+                            ..Default::default()
+                        }],
+                        query: Some(Query::new_order_by(OrderBy {
+                            key: sort_by.field,
+                            direction: Some(sort_by.direction.into()),
+                            ..Default::default()
+                        })),
+                        with_payload: Some(WithPayloadSelector::from(false)),
+                        with_vectors: Some(WithVectorsSelector::from(false)),
+                        timeout: Some(60),
+                        filter: Some(query.filter.clone()),
+                        params: Some(SearchParams {
+                            exact: Some(false),
+                            indexed_only: Some(dataset_config.INDEXED_ONLY),
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    }
+                } else {
+                    QueryPoints {
+                        collection_name: qdrant_collection.to_string(),
+                        limit: Some(limit),
+                        query: Some(Query::new_nearest(sparse_vector)),
+                        using: Some("sparse_vectors".to_string()),
+                        score_threshold: query.score_threshold,
+                        offset: Some((page - 1) * limit),
+                        with_payload: Some(WithPayloadSelector::from(false)),
+                        with_vectors: Some(WithVectorsSelector::from(false)),
+                        timeout: Some(60),
+                        filter: Some(query.filter.clone()),
+                        params: Some(SearchParams {
+                            exact: Some(false),
+                            indexed_only: Some(dataset_config.INDEXED_ONLY),
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    }
+                };
+                Ok(resp)
             }
             VectorType::BM25Sparse(vector) => {
-                let bm25_vector: Vector = vector.into();
-                Ok(SearchPoints {
-                    collection_name: qdrant_collection.to_string(),
-                    vector: bm25_vector.data,
-                    sparse_indices: bm25_vector.indices,
-                    vector_name: Some("bm25_vectors".to_string()),
-                    limit,
-                    score_threshold: query.score_threshold,
-                    offset: Some((page - 1) * limit),
-                    with_payload: Some(WithPayloadSelector::from(false)),
-                    with_vectors: Some(WithVectorsSelector::from(false)),
-                    filter: Some(query.filter.clone()),
-                    timeout: Some(60),
-                    params: None,
-                    ..Default::default()
-                })
+                let indices = vector.iter().map(|(index, _)| *index).collect::<Vec<u32>>();
+                let data = vector.iter().map(|(_, value)| *value).collect::<Vec<f32>>();
+                let bm25_vector: VectorInput = VectorInput::new_sparse(indices, data);
+                let resp = if let Some(sort_by) = query.sort_by {
+                    QueryPoints {
+                        collection_name: qdrant_collection.to_string(),
+                        limit: Some(limit),
+                        prefetch: vec![PrefetchQuery {
+                            query: Some(Query::new_nearest(bm25_vector)),
+                            limit: Some(prefetch_limit.unwrap_or(1000)),
+                            using: Some("bm25_vectors".to_string()),
+                            score_threshold: query.score_threshold,
+                            filter: Some(query.filter.clone()),
+                            ..Default::default()
+                        }],
+                        query: Some(Query::new_order_by(OrderBy {
+                            key: sort_by.field,
+                            direction: Some(sort_by.direction.into()),
+                            ..Default::default()
+                        })),
+                        with_payload: Some(WithPayloadSelector::from(false)),
+                        with_vectors: Some(WithVectorsSelector::from(false)),
+                        timeout: Some(60),
+                        filter: Some(query.filter.clone()),
+                        params: Some(SearchParams {
+                            exact: Some(false),
+                            indexed_only: Some(dataset_config.INDEXED_ONLY),
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    }
+                } else {
+                    QueryPoints {
+                        collection_name: qdrant_collection.to_string(),
+                        limit: Some(limit),
+                        query: Some(Query::new_nearest(bm25_vector)),
+                        using: Some("bm25_vectors".to_string()),
+                        score_threshold: query.score_threshold,
+                        offset: Some((page - 1) * limit),
+                        with_payload: Some(WithPayloadSelector::from(false)),
+                        with_vectors: Some(WithVectorsSelector::from(false)),
+                        timeout: Some(60),
+                        filter: Some(query.filter.clone()),
+                        params: Some(SearchParams {
+                            exact: Some(false),
+                            indexed_only: Some(dataset_config.INDEXED_ONLY),
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    }
+                };
+                Ok(resp)
             }
             VectorType::Dense(embedding_vector) => {
                 let vector_name = match embedding_vector.len() {
@@ -955,36 +1032,72 @@ pub async fn search_qdrant_query(
                     }
                 };
 
-                Ok(SearchPoints {
-                    collection_name: qdrant_collection.to_string(),
-                    vector: embedding_vector,
-                    vector_name: Some(vector_name.to_string()),
-                    limit,
-                    score_threshold: query.score_threshold,
-                    offset: Some((page - 1) * limit),
-                    with_payload: Some(WithPayloadSelector::from(false)),
-                    with_vectors: Some(WithVectorsSelector::from(false)),
-                    filter: Some(query.filter.clone()),
-                    timeout: Some(60),
-                    params: Some(SearchParams {
-                        exact: Some(false),
-                        indexed_only: Some(dataset_config.INDEXED_ONLY),
+                let resp = if let Some(sort_by) = query.sort_by {
+                    QueryPoints {
+                        collection_name: qdrant_collection.to_string(),
+                        limit: Some(limit),
+                        prefetch: vec![PrefetchQuery {
+                            query: Some(Query::new_nearest(VectorInput::new_dense(
+                                embedding_vector.clone(),
+                            ))),
+                            limit: Some(prefetch_limit.unwrap_or(1000)),
+                            using: Some(vector_name.to_string()),
+                            score_threshold: query.score_threshold,
+                            filter: Some(query.filter.clone()),
+                            ..Default::default()
+                        }],
+                        query: Some(Query::new_order_by(OrderBy {
+                            key: sort_by.field,
+                            direction: Some(sort_by.direction.into()),
+                            ..Default::default()
+                        })),
+                        with_payload: Some(WithPayloadSelector::from(false)),
+                        with_vectors: Some(WithVectorsSelector::from(false)),
+                        timeout: Some(60),
+                        filter: Some(query.filter.clone()),
+                        params: Some(SearchParams {
+                            exact: Some(false),
+                            indexed_only: Some(dataset_config.INDEXED_ONLY),
+                            ..Default::default()
+                        }),
                         ..Default::default()
-                    }),
-                    ..Default::default()
-                })
+                    }
+                } else {
+                    QueryPoints {
+                        collection_name: qdrant_collection.to_string(),
+                        limit: Some(limit),
+                        query: Some(Query::new_nearest(VectorInput::new_dense(
+                            embedding_vector.clone(),
+                        ))),
+                        using: Some(vector_name.to_string()),
+                        score_threshold: query.score_threshold,
+                        offset: Some((page - 1) * limit),
+                        with_payload: Some(WithPayloadSelector::from(false)),
+                        with_vectors: Some(WithVectorsSelector::from(false)),
+                        timeout: Some(60),
+                        filter: Some(query.filter.clone()),
+                        params: Some(SearchParams {
+                            exact: Some(false),
+                            indexed_only: Some(dataset_config.INDEXED_ONLY),
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    }
+                };
+
+                Ok(resp)
             }
         })
-        .collect::<Result<Vec<SearchPoints>, ServiceError>>()?;
+        .collect::<Result<Vec<QueryPoints>, ServiceError>>()?;
 
-    let batch_points = SearchBatchPoints {
+    let batch_points = QueryBatchPoints {
         collection_name: qdrant_collection.to_string(),
-        search_points: search_point_req_payloads.clone(),
+        query_points: search_point_req_payloads.clone(),
         timeout: Some(60),
         ..Default::default()
     };
 
-    let search_batch_future = qdrant_client.search_batch_points(batch_points);
+    let search_batch_future = qdrant_client.query_batch(batch_points);
 
     let (count, search_batch_response) =
         futures::future::join(count_future, search_batch_future).await;

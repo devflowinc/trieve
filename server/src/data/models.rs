@@ -3924,6 +3924,15 @@ pub enum SortOrder {
     Asc,
 }
 
+impl From<SortOrder> for i32 {
+    fn from(val: SortOrder) -> Self {
+        match val {
+            SortOrder::Desc => 1,
+            SortOrder::Asc => 0,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
@@ -4132,4 +4141,10 @@ pub struct MigratePointMessage {
     pub to_collection: String,
     pub from_collection: String,
     pub mode: MigrationMode,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct QdrantSortBy {
+    pub field: String,
+    pub direction: SortOrder,
 }

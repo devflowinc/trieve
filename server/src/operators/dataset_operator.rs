@@ -76,6 +76,35 @@ pub async fn get_dataset_by_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn get_deleted_dataset_by_id_query(
+    id: UnifiedId,
+    pool: web::Data<Pool>,
+) -> Result<Dataset, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let dataset = match id {
+        UnifiedId::TrieveUuid(id) => datasets_columns::datasets
+            .filter(datasets_columns::id.eq(id))
+            .select(Dataset::as_select())
+            .first(&mut conn)
+            .await
+            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
+        UnifiedId::TrackingId(id) => datasets_columns::datasets
+            .filter(datasets_columns::tracking_id.eq(id))
+            .select(Dataset::as_select())
+            .first(&mut conn)
+            .await
+            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
+    };
+
+    Ok(dataset)
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_and_organization_from_dataset_id_query(
     id: UnifiedId,
     pool: web::Data<Pool>,
