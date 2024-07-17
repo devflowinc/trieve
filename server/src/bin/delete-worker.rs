@@ -13,7 +13,7 @@ use trieve_server::{
     establish_connection, get_env,
     operators::{
         dataset_operator::{
-            delete_chunks_in_dataset, delete_dataset_by_id_query, get_dataset_by_id_query,
+            delete_chunks_in_dataset, delete_dataset_by_id_query, get_deleted_dataset_by_id_query,
             DeleteMessage,
         },
         event_operator::create_event_query,
@@ -219,7 +219,7 @@ async fn delete_worker(
         let delete_worker_message: DeleteMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
-        let dataset_result = get_dataset_by_id_query(
+        let dataset_result = get_deleted_dataset_by_id_query(
             models::UnifiedId::TrieveUuid(delete_worker_message.dataset_id),
             web_pool.clone(),
         )

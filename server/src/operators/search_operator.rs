@@ -15,7 +15,8 @@ use super::qdrant_operator::{
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
     ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
-    HasIDCondition, ScoreChunk, ScoreChunkDTO, SearchMethod, SlimChunkMetadata, UnifiedId,
+    HasIDCondition, QdrantSortBy, ScoreChunk, ScoreChunkDTO, SearchMethod, SlimChunkMetadata,
+    UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
@@ -256,6 +257,7 @@ pub async fn assemble_qdrant_filter(
 pub struct RetrievePointQuery {
     vector: VectorType,
     score_threshold: Option<f32>,
+    sort_by: Option<QdrantSortBy>,
     filter: Option<ChunkFilter>,
 }
 
@@ -285,6 +287,7 @@ impl RetrievePointQuery {
         Ok(QdrantSearchQuery {
             vector: self.vector,
             score_threshold: self.score_threshold,
+            sort_by: self.sort_by,
             filter: filter.clone(),
         })
     }
@@ -318,6 +321,7 @@ pub async fn retrieve_qdrant_points_query(
 
     let (point_ids, count, batch_lengths) = search_qdrant_query(
         page,
+        None,
         limit,
         qdrant_searches,
         config.clone(),
@@ -1241,7 +1245,6 @@ pub async fn retrieve_chunks_from_point_ids(
 #[tracing::instrument]
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
-    recency_weight: Option<f32>,
     tag_weights: Option<HashMap<String, f32>>,
     use_weights: Option<bool>,
     query_location: Option<GeoInfoWithBias>,
@@ -1258,52 +1261,6 @@ pub fn rerank_chunks(
         });
     } else {
         reranked_chunks = chunks;
-    }
-
-    if recency_weight.is_some() && recency_weight.unwrap() > 0.0 {
-        let recency_weight = recency_weight.unwrap();
-        let min_timestamp = reranked_chunks
-            .iter()
-            .filter_map(|chunk| chunk.metadata[0].metadata().time_stamp)
-            .min();
-        let max_timestamp = reranked_chunks
-            .iter()
-            .filter_map(|chunk| chunk.metadata[0].metadata().time_stamp)
-            .max();
-        let max_score = reranked_chunks
-            .iter()
-            .map(|chunk| chunk.score)
-            .max_by(|a, b| a.partial_cmp(b).unwrap());
-        let min_score = reranked_chunks
-            .iter()
-            .map(|chunk| chunk.score)
-            .min_by(|a, b| a.partial_cmp(b).unwrap());
-
-        if let (Some(min), Some(max)) = (min_timestamp, max_timestamp) {
-            let min_duration = chrono::Utc::now().signed_duration_since(min.and_utc());
-            let max_duration = chrono::Utc::now().signed_duration_since(max.and_utc());
-
-            reranked_chunks = reranked_chunks
-                .iter_mut()
-                .map(|chunk| {
-                    if let Some(time_stamp) = chunk.metadata[0].metadata().time_stamp {
-                        let duration =
-                            chrono::Utc::now().signed_duration_since(time_stamp.and_utc());
-                        let normalized_recency_score = (duration.num_seconds() as f32
-                            - min_duration.num_seconds() as f32)
-                            / (max_duration.num_seconds() as f32
-                                - min_duration.num_seconds() as f32);
-
-                        let normalized_chunk_score = (chunk.score - min_score.unwrap_or(0.0))
-                            / (max_score.unwrap_or(1.0) - min_score.unwrap_or(0.0));
-
-                        chunk.score = (normalized_chunk_score * (1.0 / recency_weight) as f64)
-                            + (recency_weight * normalized_recency_score) as f64
-                    }
-                    chunk.clone()
-                })
-                .collect::<Vec<ScoreChunkDTO>>();
-        }
     }
 
     if query_location.is_some() && query_location.unwrap().bias > 0.0 {
@@ -1410,6 +1367,7 @@ pub async fn search_semantic_chunks(
         } else {
             data.score_threshold
         },
+        sort_by: data.sort_by.clone(),
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
@@ -1452,7 +1410,6 @@ pub async fn search_semantic_chunks(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
-        data.recency_bias,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1505,6 +1462,7 @@ pub async fn search_bm25_chunks(
         } else {
             data.score_threshold
         },
+        sort_by: data.sort_by.clone(),
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
@@ -1547,7 +1505,6 @@ pub async fn search_bm25_chunks(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
-        data.recency_bias,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1609,6 +1566,8 @@ pub async fn search_full_text_chunks(
         } else {
             data.score_threshold
         },
+        sort_by: data.sort_by.clone(),
+
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
@@ -1651,7 +1610,6 @@ pub async fn search_full_text_chunks(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
-        data.recency_bias,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1713,6 +1671,8 @@ pub async fn search_hybrid_chunks(
         RetrievePointQuery {
             vector: VectorType::Dense(dense_vector),
             score_threshold: None,
+            sort_by: data.sort_by.clone(),
+
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
@@ -1720,6 +1680,8 @@ pub async fn search_hybrid_chunks(
         RetrievePointQuery {
             vector: VectorType::SpladeSparse(sparse_vector),
             score_threshold: None,
+            sort_by: data.sort_by.clone(),
+
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
@@ -1758,7 +1720,6 @@ pub async fn search_hybrid_chunks(
 
             rerank_chunks(
                 cross_encoder_results,
-                data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
                 data.location_bias,
@@ -1825,6 +1786,8 @@ pub async fn search_semantic_groups(
         } else {
             data.score_threshold
         },
+        sort_by: data.sort_by.clone(),
+
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, Some(group.id), pool.clone())
@@ -1867,7 +1830,6 @@ pub async fn search_semantic_groups(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
-        data.recency_bias,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1901,6 +1863,8 @@ pub async fn search_full_text_groups(
         } else {
             data.score_threshold
         },
+        sort_by: data.sort_by.clone(),
+
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, Some(group.id), pool.clone())
@@ -1943,7 +1907,6 @@ pub async fn search_full_text_groups(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
-        data.recency_bias,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1980,6 +1943,8 @@ pub async fn search_hybrid_groups(
         RetrievePointQuery {
             vector: VectorType::Dense(dense_vector),
             score_threshold: None,
+            sort_by: data.sort_by.clone(),
+
             filter: data.filters.clone(),
         }
         .into_qdrant_query(
@@ -1992,6 +1957,8 @@ pub async fn search_hybrid_groups(
         RetrievePointQuery {
             vector: VectorType::SpladeSparse(sparse_vector),
             score_threshold: None,
+            sort_by: data.sort_by.clone(),
+
             filter: data.filters.clone(),
         }
         .into_qdrant_query(
@@ -2046,7 +2013,6 @@ pub async fn search_hybrid_groups(
             .await?;
             let score_chunks = rerank_chunks(
                 cross_encoder_results,
-                data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
                 data.location_bias,
@@ -2068,7 +2034,6 @@ pub async fn search_hybrid_groups(
 
             rerank_chunks(
                 cross_encoder_results,
-                data.recency_bias,
                 data.tag_weights,
                 data.use_weights,
                 data.location_bias,
@@ -2445,6 +2410,8 @@ pub async fn autocomplete_semantic_chunks(
         RetrievePointQuery {
             vector: VectorType::Dense(embedding_vector.clone()),
             score_threshold: data.score_threshold,
+            sort_by: data.sort_by.clone(),
+
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
@@ -2461,6 +2428,8 @@ pub async fn autocomplete_semantic_chunks(
             RetrievePointQuery {
                 vector: VectorType::Dense(embedding_vector),
                 score_threshold: data.score_threshold,
+                sort_by: data.sort_by.clone(),
+
                 filter: data.filters.clone(),
             }
             .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
@@ -2495,14 +2464,12 @@ pub async fn autocomplete_semantic_chunks(
     let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),
-        data.recency_bias,
         data.tag_weights.clone(),
         data.use_weights,
         data.location_bias,
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
-        data.recency_bias,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -2550,6 +2517,7 @@ pub async fn autocomplete_fulltext_chunks(
         RetrievePointQuery {
             vector: VectorType::SpladeSparse(sparse_vector.clone()),
             score_threshold: data.score_threshold,
+            sort_by: data.sort_by.clone(),
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
@@ -2566,6 +2534,8 @@ pub async fn autocomplete_fulltext_chunks(
             RetrievePointQuery {
                 vector: VectorType::SpladeSparse(sparse_vector),
                 score_threshold: data.score_threshold,
+                sort_by: data.sort_by.clone(),
+
                 filter: data.filters.clone(),
             }
             .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
@@ -2600,14 +2570,12 @@ pub async fn autocomplete_fulltext_chunks(
     let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),
-        data.recency_bias,
         data.tag_weights.clone(),
         data.use_weights,
         data.location_bias,
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
-        data.recency_bias,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -2635,6 +2603,7 @@ pub async fn count_semantic_chunks(
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::Dense(embedding_vector),
         score_threshold: data.score_threshold,
+        sort_by: None,
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
@@ -2665,6 +2634,7 @@ pub async fn count_full_text_chunks(
     let qdrant_query = RetrievePointQuery {
         vector: VectorType::SpladeSparse(sparse_vector),
         score_threshold: data.score_threshold,
+        sort_by: None,
         filter: data.filters.clone(),
     }
     .into_qdrant_query(parsed_query, dataset.id, None, pool.clone())
@@ -2702,6 +2672,7 @@ pub async fn count_bm25_chunks(
                 .expect("Sparse Vector will always exist")
                 .clone(),
         ),
+        sort_by: None,
         score_threshold: data.score_threshold,
         filter: data.filters.clone(),
     }
@@ -2740,6 +2711,7 @@ pub async fn count_hybrid_chunks(
         RetrievePointQuery {
             vector: VectorType::Dense(dense_vector),
             score_threshold: None,
+            sort_by: None,
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
@@ -2747,6 +2719,7 @@ pub async fn count_hybrid_chunks(
         RetrievePointQuery {
             vector: VectorType::SpladeSparse(sparse_vector),
             score_threshold: None,
+            sort_by: None,
             filter: data.filters.clone(),
         }
         .into_qdrant_query(parsed_query.clone(), dataset.id, None, pool.clone())
