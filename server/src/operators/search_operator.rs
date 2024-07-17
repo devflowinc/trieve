@@ -16,7 +16,7 @@ use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
     ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
     HasIDCondition, QdrantSortBy, ScoreChunk, ScoreChunkDTO, SearchMethod, SlimChunkMetadata,
-    UnifiedId,
+    SortOrder, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
@@ -1244,6 +1244,7 @@ pub async fn retrieve_chunks_from_point_ids(
 #[tracing::instrument]
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
+    sort_by: Option<QdrantSortBy>,
     tag_weights: Option<HashMap<String, f32>>,
     use_weights: Option<bool>,
     query_location: Option<GeoInfoWithBias>,
@@ -1319,12 +1320,61 @@ pub fn rerank_chunks(
             })
             .collect::<Vec<ScoreChunkDTO>>();
     }
-
     reranked_chunks.sort_by(|a, b| {
         b.score
             .partial_cmp(&a.score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
+
+    if let Some(sort_by) = sort_by {
+        match sort_by.field.as_str() {
+            "time_stamp" => {
+                if sort_by.direction.is_some_and(|dir| dir == SortOrder::Asc) {
+                    reranked_chunks.sort_by(|a, b| {
+                        a.metadata[0]
+                            .metadata()
+                            .time_stamp
+                            .partial_cmp(&b.metadata[0].metadata().time_stamp)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                } else {
+                    reranked_chunks.sort_by(|a, b| {
+                        b.metadata[0]
+                            .metadata()
+                            .time_stamp
+                            .partial_cmp(&a.metadata[0].metadata().time_stamp)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                }
+            }
+            "num_value" => {
+                if sort_by.direction.is_some_and(|dir| dir == SortOrder::Asc) {
+                    reranked_chunks.sort_by(|a, b| {
+                        a.metadata[0]
+                            .metadata()
+                            .num_value
+                            .partial_cmp(&b.metadata[0].metadata().num_value)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                } else {
+                    reranked_chunks.sort_by(|a, b| {
+                        b.metadata[0]
+                            .metadata()
+                            .num_value
+                            .partial_cmp(&a.metadata[0].metadata().num_value)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                }
+            }
+            _ => {
+                log::error!("Unsupported sort_by field: {}", sort_by.field);
+                sentry::capture_message(
+                    &format!("Unsupported sort_by field: {}", sort_by.field),
+                    sentry::Level::Error,
+                );
+            }
+        }
+    }
 
     reranked_chunks
 }
@@ -1409,6 +1459,7 @@ pub async fn search_semantic_chunks(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
+        data.sort_by,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1504,6 +1555,7 @@ pub async fn search_bm25_chunks(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
+        data.sort_by,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1609,6 +1661,7 @@ pub async fn search_full_text_chunks(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
+        data.sort_by,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1719,6 +1772,7 @@ pub async fn search_hybrid_chunks(
 
             rerank_chunks(
                 cross_encoder_results,
+                data.sort_by,
                 data.tag_weights,
                 data.use_weights,
                 data.location_bias,
@@ -1829,6 +1883,7 @@ pub async fn search_semantic_groups(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
+        data.sort_by,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -1906,6 +1961,7 @@ pub async fn search_full_text_groups(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
+        data.sort_by,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -2012,6 +2068,7 @@ pub async fn search_hybrid_groups(
             .await?;
             let score_chunks = rerank_chunks(
                 cross_encoder_results,
+                data.sort_by,
                 data.tag_weights,
                 data.use_weights,
                 data.location_bias,
@@ -2033,6 +2090,7 @@ pub async fn search_hybrid_groups(
 
             rerank_chunks(
                 cross_encoder_results,
+                data.sort_by,
                 data.tag_weights,
                 data.use_weights,
                 data.location_bias,
@@ -2463,12 +2521,14 @@ pub async fn autocomplete_semantic_chunks(
     let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),
+        data.sort_by.clone(),
         data.tag_weights.clone(),
         data.use_weights,
         data.location_bias,
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
+        data.sort_by,
         data.tag_weights,
         data.use_weights,
         data.location_bias,
@@ -2569,12 +2629,14 @@ pub async fn autocomplete_fulltext_chunks(
     let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),
+        data.sort_by.clone(),
         data.tag_weights.clone(),
         data.use_weights,
         data.location_bias,
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
+        data.sort_by,
         data.tag_weights,
         data.use_weights,
         data.location_bias,

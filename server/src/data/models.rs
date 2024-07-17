@@ -3915,7 +3915,7 @@ pub enum SortBy {
     TopScore,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum SortOrder {
     #[display(fmt = "DESC")]
