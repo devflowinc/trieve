@@ -18,6 +18,10 @@
     "./ui": {
       "import": "./ui/index.ts",
       "require": "./ui/index.ts"
+    },
+    "./utils": {
+      "import": "./utils/index.ts",
+      "require": "./utils/index.ts"
     }
   },
   "keywords": [],

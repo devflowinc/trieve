@@ -18,7 +18,7 @@ export const RagUsage = (props: RagUsageProps) => {
   }));
 
   return (
-    <ChartCard title="RAG Usage" width={1}>
+    <ChartCard class="px-4" title="RAG Usage" width={1}>
       <Show
         fallback={<div class="py-6 text-center">Loading...</div>}
         when={ragUsageQuery.data}

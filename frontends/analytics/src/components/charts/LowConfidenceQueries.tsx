@@ -9,7 +9,7 @@ import { getLowConfidenceQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
-import { FullScreenModal, Table, Td, Tr } from "shared/ui";
+import { FullScreenModal, Table, Td, Th, Tr } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { IoOpenOutline } from "solid-icons/io";
 import { OrgContext } from "../../contexts/OrgContext";
@@ -113,7 +113,17 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
         when={lowConfidenceQueriesQuery.data}
       >
         {(data) => (
-          <Table class="my-4" data={data()} headers={["Query", "Score"]}>
+          <Table
+            fallback={<div class="py-8 text-center">No Data</div>}
+            class="my-4"
+            data={data()}
+            headers={
+              <Tr>
+                <Th>Query</Th>
+                <Th class="text-right">Score</Th>
+              </Tr>
+            }
+          >
             {(row) => <QueryCard query={row} />}
           </Table>
         )}
@@ -154,7 +164,9 @@ export const QueryCard = (props: QueryCardProps) => {
         onClick={() => {
           setOpen(true);
         }}
-        class="cursor-pointer"
+        style={{
+          cursor: "pointer",
+        }}
       >
         <Td class="truncate">{props.query.query}</Td>
         <Td class="truncate text-right">{props.query.top_score.toFixed(5)}</Td>

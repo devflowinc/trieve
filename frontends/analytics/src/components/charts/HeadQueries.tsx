@@ -5,7 +5,7 @@ import { getHeadQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
-import { Table, Td, Tr } from "shared/ui";
+import { Table, Td, Th, Tr } from "shared/ui";
 
 interface HeadQueriesProps {
   params: { filter: AnalyticsFilter };
@@ -67,7 +67,13 @@ export const HeadQueries = (props: HeadQueriesProps) => {
           <Table
             fallback={<div class="py-8 text-center">No Data</div>}
             data={data()}
-            headers={["Query", "Count"]}
+            headers={
+              <Tr>
+                <Th>Query</Th>
+                <Th class="text-right">Score</Th>
+              </Tr>
+            }
+            // headerz={["Query", "Count"]}
             class="my-2"
           >
             {(row) => (

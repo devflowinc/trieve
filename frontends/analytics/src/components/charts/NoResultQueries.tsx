@@ -1,17 +1,10 @@
 import { AnalyticsFilter, SearchQueryEvent } from "shared/types";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import {
-  createEffect,
-  createSignal,
-  For,
-  on,
-  Show,
-  useContext,
-} from "solid-js";
+import { createEffect, createSignal, on, Show, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
-import { FullScreenModal } from "shared/ui";
+import { FullScreenModal, Table, Td, Th, Tr } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { getNoResultQueries } from "../../api/analytics";
 
@@ -94,22 +87,17 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
           when={notResultQuery.data}
         >
           {(data) => (
-            <Show when={data().length > 0}>
-              <table class="mt-2 w-full py-2">
-                <thead>
-                  <tr>
-                    <th class="text-left font-semibold">Query</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <For each={data()}>
-                    {(query) => {
-                      return <QueryCard query={query} />;
-                    }}
-                  </For>
-                </tbody>
-              </table>
-            </Show>
+            <Table
+              headers={
+                <Tr>
+                  <Th>Query</Th>
+                </Tr>
+              }
+              class="mt-2 w-full py-2"
+              data={data()}
+            >
+              {(query) => <QueryCard query={query} />}
+            </Table>
           )}
         </Show>
       </div>
@@ -127,14 +115,14 @@ const QueryCard = (props: QueryCardProps) => {
   const [open, setOpen] = createSignal(false);
   return (
     <>
-      <tr
+      <Tr
         onClick={() => {
           setOpen(true);
         }}
         class="cursor-pointer"
       >
-        <td class="truncate">{props.query.query}</td>
-      </tr>
+        <Td class="truncate">{props.query.query}</Td>
+      </Tr>
       <FullScreenModal title={props.query.query} show={open} setShow={setOpen}>
         <SearchQueryEventModal searchEvent={props.query} />
       </FullScreenModal>
