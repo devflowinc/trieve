@@ -444,7 +444,7 @@ const DatasetTableRow = (props: DatasetTableRowProps) => {
         {props.dataset.dataset.id}
       </Td>
       <Td class="">{formatDate(new Date(props.dataset.dataset.created_at))}</Td>
-      <Td class="flex items-center justify-end gap-4">
+      <Td>
         <button
           class="text-neutral-500 hover:text-neutral-900"
           onClick={() => {
