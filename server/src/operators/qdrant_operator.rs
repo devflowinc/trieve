@@ -14,16 +14,18 @@ use crate::{
 use actix_web::web;
 use itertools::Itertools;
 use qdrant_client::{
-    client::{QdrantClient, QdrantClientConfig},
     qdrant::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
-        quantization_config::Quantization, BinaryQuantization, CreateCollection, Distance,
-        FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
-        QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy, ScrollPoints,
-        SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints, SparseIndexConfig,
-        SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector,
-        VectorParams, VectorParamsMap, VectorsConfig, WithPayloadSelector, WithVectorsSelector,
+        quantization_config::Quantization, BinaryQuantization, CreateCollectionBuilder,
+        CreateFieldIndexCollectionBuilder, DeleteFieldIndexCollectionBuilder, DeletePointsBuilder,
+        Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, PayloadIndexParams, PointId,
+        PointStruct, QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy,
+        ScrollPointsBuilder, SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints,
+        SetPayloadPointsBuilder, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
+        TextIndexParams, TokenizerType, UpsertPointsBuilder, Value, Vector, VectorParams,
+        VectorParamsMap, VectorsConfig, WithPayloadSelector, WithVectorsSelector,
     },
+    Payload, Qdrant,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, str::FromStr};
@@ -32,7 +34,7 @@ use std::{collections::HashMap, str::FromStr};
 pub async fn get_qdrant_connection(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
-) -> Result<QdrantClient, ServiceError> {
+) -> Result<Qdrant, ServiceError> {
     let qdrant_url = qdrant_url.unwrap_or(get_env!(
         "QDRANT_URL",
         "QDRANT_URL should be set if this is called"
@@ -41,10 +43,11 @@ pub async fn get_qdrant_connection(
         "QDRANT_API_KEY",
         "QDRANT_API_KEY should be set if this is called"
     ));
-    let mut config = QdrantClientConfig::from_url(qdrant_url);
-    config.api_key = Some(qdrant_api_key.to_owned());
-    config.timeout = std::time::Duration::from_secs(60);
-    QdrantClient::new(Some(config))
+
+    Qdrant::from_url(qdrant_url)
+        .api_key(qdrant_api_key)
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
         .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))
 }
 
@@ -126,27 +129,28 @@ pub async fn create_new_qdrant_collection_query(
                 );
 
                 qdrant_client
-                    .create_collection(&CreateCollection {
-                        collection_name: qdrant_collection.clone(),
-                        vectors_config: Some(VectorsConfig {
-                            config: Some(qdrant_client::qdrant::vectors_config::Config::ParamsMap(
-                                VectorParamsMap {
-                                    map: vectors_hash_map,
-                                },
-                            )),
-                        }),
-                        hnsw_config: Some(HnswConfigDiff {
-                            payload_m: Some(16),
-                            m: Some(0),
-                            ..Default::default()
-                        }),
-                        sparse_vectors_config: Some(SparseVectorConfig {
-                            map: sparse_vector_config,
-                        }),
-                        write_consistency_factor: Some(1),
-                        replication_factor: Some(replication_factor),
-                        ..Default::default()
-                    })
+                    .create_collection(
+                        CreateCollectionBuilder::new(qdrant_collection.clone())
+                            .vectors_config(VectorsConfig {
+                                config: Some(
+                                    qdrant_client::qdrant::vectors_config::Config::ParamsMap(
+                                        VectorParamsMap {
+                                            map: vectors_hash_map,
+                                        },
+                                    ),
+                                ),
+                            })
+                            .sparse_vectors_config(SparseVectorConfig {
+                                map: sparse_vector_config,
+                            })
+                            .hnsw_config(HnswConfigDiff {
+                                payload_m: Some(16),
+                                m: Some(0),
+                                ..Default::default()
+                            })
+                            .write_consistency_factor(1)
+                            .replication_factor(replication_factor),
+                    )
                     .await
                     .map_err(|err| {
                         if err.to_string().contains("already exists") {
@@ -159,134 +163,149 @@ pub async fn create_new_qdrant_collection_query(
 
         if recreate_indexes {
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "link", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "link",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "tag_set", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "tag_set",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "dataset_id", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "dataset_id",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "metadata", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "metadata",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "time_stamp", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "time_stamp",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "group_ids", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "group_ids",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "location", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "location",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "content", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "content",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
 
             qdrant_client
-                .delete_field_index(qdrant_collection.clone(), "num_value", None)
+                .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "num_value",
+                ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
         }
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "link",
-                FieldType::Text,
-                None,
-                None,
-            )
+                FieldType::Keyword,
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "tag_set",
                 FieldType::Keyword,
-                None,
-                None,
-            )
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "dataset_id",
                 FieldType::Keyword,
-                None,
-                None,
-            )
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "metadata",
                 FieldType::Keyword,
-                None,
-                None,
-            )
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "time_stamp",
                 FieldType::Integer,
-                None,
-                None,
-            )
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "group_ids",
                 FieldType::Keyword,
-                None,
-                None,
-            )
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "location",
                 FieldType::Geo,
-                None,
-                None,
-            )
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
             .create_field_index(
-                qdrant_collection.clone(),
-                "content",
-                FieldType::Text,
-                Some(&PayloadIndexParams {
+                CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "content",
+                    FieldType::Text,
+                )
+                .field_index_params(PayloadIndexParams {
                     index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
                         tokenizer: TokenizerType::Prefix as i32,
                         min_token_len: Some(2),
@@ -294,30 +313,25 @@ pub async fn create_new_qdrant_collection_query(
                         lowercase: Some(true),
                     })),
                 }),
-                None,
             )
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "num_value",
                 FieldType::Float,
-                None,
-                None,
-            )
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(
+            .create_field_index(CreateFieldIndexCollectionBuilder::new(
                 qdrant_collection.clone(),
                 "group_tag_set",
                 FieldType::Keyword,
-                None,
-                None,
-            )
+            ))
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
     }
@@ -346,7 +360,7 @@ pub async fn bulk_upsert_qdrant_points_query(
     .await?;
 
     qdrant_client
-        .upsert_points_blocking(qdrant_collection, None, points, None)
+        .upsert_points(UpsertPointsBuilder::new(qdrant_collection, points))
         .await
         .map_err(|err| {
             sentry::capture_message(&format!("Error {:?}", err), sentry::Level::Error);
@@ -412,7 +426,7 @@ pub async fn create_new_qdrant_point_query(
     .await?;
 
     qdrant_client
-        .upsert_points_blocking(qdrant_collection, None, vec![point], None)
+        .upsert_points(UpsertPointsBuilder::new(qdrant_collection, vec![point]))
         .await
         .map_err(|err| {
             sentry::capture_message(&format!("Error {:?}", err), sentry::Level::Error);
@@ -447,12 +461,10 @@ pub async fn update_qdrant_point_query(
 
     let current_point_vec = qdrant_client
         .get_points(
-            qdrant_collection.clone(),
-            None,
-            &qdrant_point_id,
-            false.into(),
-            true.into(),
-            None,
+            GetPointsBuilder::new(qdrant_collection.clone(), qdrant_point_id.clone())
+                .with_payload(true)
+                .with_vectors(false)
+                .build(),
         )
         .await
         .map_err(|_err| ServiceError::BadRequest("Failed to search_points from qdrant".into()))?
@@ -497,8 +509,6 @@ pub async fn update_qdrant_point_query(
         )
     };
 
-    let points_selector = qdrant_point_id.into();
-
     if let Some(updated_vector) = updated_vector {
         let vector_name = match updated_vector.len() {
             384 => "384_vectors",
@@ -530,7 +540,7 @@ pub async fn update_qdrant_point_query(
         );
 
         qdrant_client
-            .upsert_points(qdrant_collection, None, vec![point], None)
+            .upsert_points(UpsertPointsBuilder::new(qdrant_collection, vec![point]))
             .await
             .map_err(|_err| ServiceError::BadRequest("Failed upserting chunk in qdrant".into()))?;
 
@@ -539,12 +549,11 @@ pub async fn update_qdrant_point_query(
 
     qdrant_client
         .overwrite_payload(
-            qdrant_collection,
-            None,
-            &points_selector,
-            payload.into(),
-            None,
-            None,
+            SetPayloadPointsBuilder::new(
+                qdrant_collection,
+                <QdrantPayload as std::convert::Into<Payload>>::into(payload),
+            )
+            .points_selector(qdrant_point_id),
         )
         .await
         .map_err(|_err| {
@@ -572,12 +581,10 @@ pub async fn add_bookmark_to_qdrant_query(
 
     let current_point_vec = qdrant_client
         .get_points(
-            qdrant_collection.clone(),
-            None,
-            &qdrant_point_id,
-            false.into(),
-            true.into(),
-            None,
+            GetPointsBuilder::new(qdrant_collection.clone(), qdrant_point_id.clone())
+                .with_payload(true)
+                .with_vectors(false)
+                .build(),
         )
         .await
         .map_err(|_err| {
@@ -616,20 +623,17 @@ pub async fn add_bookmark_to_qdrant_query(
 
     let payload = QdrantPayload::new_from_point(current_point.clone(), Some(group_ids));
 
-    let points_selector = qdrant_point_id.into();
-
     qdrant_client
         .overwrite_payload(
-            qdrant_collection,
-            None,
-            &points_selector,
-            payload.into(),
-            None,
-            None,
+            SetPayloadPointsBuilder::new(
+                qdrant_collection,
+                <QdrantPayload as std::convert::Into<Payload>>::into(payload),
+            )
+            .points_selector(qdrant_point_id),
         )
         .await
         .map_err(|_err| {
-            ServiceError::BadRequest("Failed updating chunk payload in qdrant".to_string())
+            ServiceError::BadRequest("Failed updating chunk payload in qdrant".into())
         })?;
 
     Ok(())
@@ -653,12 +657,10 @@ pub async fn remove_bookmark_from_qdrant_query(
 
     let current_point_vec = qdrant_client
         .get_points(
-            qdrant_collection.clone(),
-            None,
-            &qdrant_point_id,
-            false.into(),
-            true.into(),
-            None,
+            GetPointsBuilder::new(qdrant_collection.clone(), qdrant_point_id.clone())
+                .with_payload(true)
+                .with_vectors(false)
+                .build(),
         )
         .await
         .map_err(|_err| {
@@ -697,16 +699,13 @@ pub async fn remove_bookmark_from_qdrant_query(
 
     let payload = QdrantPayload::new_from_point(current_point.clone(), Some(group_ids));
 
-    let points_selector = qdrant_point_id.into();
-
     qdrant_client
         .overwrite_payload(
-            qdrant_collection,
-            None,
-            &points_selector,
-            payload.into(),
-            None,
-            None,
+            SetPayloadPointsBuilder::new(
+                qdrant_collection,
+                <QdrantPayload as std::convert::Into<Payload>>::into(payload),
+            )
+            .points_selector(qdrant_point_id),
         )
         .await
         .map_err(|_err| {
@@ -819,7 +818,7 @@ pub async fn search_over_groups_query(
         }
     };
 
-    let point_id_futures = qdrant_client.search_groups(&search_point_groups);
+    let point_id_futures = qdrant_client.search_groups(search_point_groups);
 
     let qdrant_query = QdrantSearchQuery {
         filter,
@@ -985,7 +984,7 @@ pub async fn search_qdrant_query(
         ..Default::default()
     };
 
-    let search_batch_future = qdrant_client.search_batch_points(&batch_points);
+    let search_batch_future = qdrant_client.search_batch_points(batch_points);
 
     let (count, search_batch_response) =
         futures::future::join(count_future, search_batch_future).await;
@@ -1116,7 +1115,7 @@ pub async fn recommend_qdrant_query(
     .await?;
 
     let recommended_point_ids = qdrant_client
-        .recommend(&recommend_points)
+        .recommend(recommend_points)
         .await
         .map_err(|err| {
             log::error!("Failed to recommend points from qdrant: {:?}", err);
@@ -1226,7 +1225,7 @@ pub async fn recommend_qdrant_groups_query(
     .await?;
 
     let data = qdrant_client
-        .recommend_groups(&recommend_points)
+        .recommend_groups(recommend_points)
         .await
         .map_err(|err| {
             log::error!("Failed to recommend groups points from qdrant: {:?}", err);
@@ -1292,12 +1291,10 @@ pub async fn point_ids_exists_in_qdrant(
 
     let data = qdrant_client
         .get_points(
-            qdrant_collection,
-            None,
-            &points,
-            false.into(),
-            false.into(),
-            None,
+            GetPointsBuilder::new(qdrant_collection.clone(), points.clone())
+                .with_payload(false)
+                .with_vectors(false)
+                .build(),
         )
         .await
         .map_err(|err| {
@@ -1325,7 +1322,11 @@ pub async fn delete_points_from_qdrant(
     let points: Vec<PointId> = point_ids.iter().map(|x| x.to_string().into()).collect();
 
     qdrant_client
-        .delete_points_blocking(qdrant_collection, None, &points.into(), None)
+        .delete_points(
+            DeletePointsBuilder::new(qdrant_collection.clone())
+                .points(points)
+                .build(),
+        )
         .await
         .map_err(|err| {
             log::info!("Failed to delete points from qdrant {:?}", err);
@@ -1367,20 +1368,17 @@ pub async fn scroll_qdrant_collection_ids(
     )
     .await?;
 
-    let scroll_points_params = ScrollPoints {
-        collection_name,
-        limit,
-        offset: offset_id.map(|id| id.into()),
-        filter: None,
-        with_payload: Some(WithPayloadSelector::from(false)),
-        with_vectors: Some(WithVectorsSelector::from(false)),
-        read_consistency: None,
-        shard_key_selector: None,
-        order_by: None,
+    let mut scroll_points_params = ScrollPointsBuilder::new(collection_name);
+
+    if let Some(offset_id) = offset_id {
+        scroll_points_params = scroll_points_params.offset(offset_id);
     };
 
+    if let Some(limit) = limit {
+        scroll_points_params = scroll_points_params.limit(limit);
+    };
     let qdrant_point_ids = qdrant_client
-        .scroll(&scroll_points_params)
+        .scroll(scroll_points_params.with_payload(false).with_vectors(false))
         .await
         .map_err(|err| {
             log::info!("Failed to scroll points from qdrant {:?}", err);
@@ -1516,7 +1514,7 @@ pub async fn count_qdrant_query(
     };
 
     let search_batch_response = qdrant_client
-        .search_batch_points(&batch_points)
+        .search_batch_points(batch_points)
         .await
         .map_err(|e| {
             log::error!("Failed to search points on Qdrant to get count {:?}", e);
@@ -1533,4 +1531,74 @@ pub async fn count_qdrant_query(
         .unwrap_or(0);
 
     Ok(max_count)
+}
+
+pub async fn update_group_tag_sets_in_qdrant_query(
+    collection_name: String,
+    prev_group_tag_set: Vec<String>,
+    new_group_tag_set: Vec<String>,
+    point_ids: Vec<uuid::Uuid>,
+) -> Result<(), ServiceError> {
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+
+    let points: Vec<PointId> = point_ids.iter().map(|x| x.to_string().into()).collect();
+
+    let results = qdrant_client
+        .get_points(
+            GetPointsBuilder::new(collection_name.clone(), points.clone())
+                .with_payload(true)
+                .with_vectors(false)
+                .build(),
+        )
+        .await
+        .map_err(|e| {
+            log::info!("Failed to fetch points from qdrant {:?}", e);
+            ServiceError::BadRequest("Failed to fetch points from qdrant".to_string())
+        })?;
+    let qdrant_payloads: Vec<QdrantPayload> = results
+        .result
+        .iter()
+        .map(|x| x.clone().into())
+        .collect::<Vec<QdrantPayload>>();
+
+    for (point, payload) in points.iter().zip(qdrant_payloads) {
+        let mut payload_tags: Vec<Option<String>> = payload
+            .group_tag_set
+            .clone()
+            .unwrap_or_default()
+            .iter()
+            .filter(|tag| match tag {
+                Some(tag) => !prev_group_tag_set.contains(tag),
+                None => false,
+            })
+            .cloned()
+            .collect();
+
+        let new_tags = new_group_tag_set.iter().map(|x| Some(x.clone()));
+        payload_tags.extend(new_tags);
+        payload_tags.dedup();
+
+        let new_payload = QdrantPayload {
+            group_tag_set: Some(payload_tags.clone()),
+            ..payload
+        };
+        qdrant_client
+            .overwrite_payload(
+                SetPayloadPointsBuilder::new(
+                    collection_name.clone(),
+                    <QdrantPayload as std::convert::Into<Payload>>::into(new_payload),
+                )
+                .points_selector(vec![point.clone()]),
+            )
+            .await
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed updating chunk payload in qdrant".into())
+            })?;
+    }
+
+    Ok(())
 }

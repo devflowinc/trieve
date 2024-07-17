@@ -35,7 +35,7 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
 
   qdrant-database:
-    image: qdrant/qdrant:v1.9.1
+    image: qdrant/qdrant:v1.10.1
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     ports:
@@ -217,7 +217,7 @@ services:
 
   dashboard:
     image: trieve/dashboard
-    build: 
+    build:
       context: ./frontends
       dockerfile: ./dashboard/Dockerfile
     networks:
@@ -245,7 +245,7 @@ services:
 
   search:
     image: trieve/search
-    build: 
+    build:
       context: ./frontends
       dockerfile: /search/
     networks:
@@ -254,10 +254,10 @@ services:
       - 5174:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
-    
+
   analytics-site:
     image: trieve/analytics-site
-    build: 
+    build:
       context: ./frontends
       dockerfile: ./analytics/Dockerfile
     networks:
