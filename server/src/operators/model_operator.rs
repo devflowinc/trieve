@@ -4,13 +4,22 @@ use crate::{
     get_env,
     handlers::chunk_handler::{BoostPhrase, DistancePhrase},
 };
+use actix_web::dev::Service;
+use futures::StreamExt;
+use itertools::Itertools;
 use murmur3::murmur3_32;
 use openai_dive::v1::{
     helpers::format_response,
     resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingResponse},
 };
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use std::{collections::HashMap, io::Cursor, ops::IndexMut};
+use tei::{
+    embed_client::EmbedClient, rerank_client::RerankClient, EmbedRequest, EmbedSparseRequest,
+    RerankRequest, TruncationDirection,
+};
+use tonic::transport::Channel;
 
 use super::parse_operator::convert_html_to_text;
 
@@ -32,6 +41,10 @@ pub async fn create_embedding(
     embed_type: &str,
     dataset_config: DatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
+    let use_grpc = std::env::var("USE_GRPC").unwrap_or("false".to_string());
+    if use_grpc == "true" {
+        return create_embedding_grpc(message, distance_phrase, embed_type, dataset_config).await;
+    }
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -200,6 +213,10 @@ pub async fn get_sparse_vector(
     message: String,
     embed_type: &str,
 ) -> Result<Vec<(u32, f32)>, ServiceError> {
+    let use_grpc = std::env::var("USE_GRPC").unwrap_or("false".to_string());
+    if use_grpc == "true" {
+        return get_sparse_vector_grpc(message, embed_type).await;
+    }
     let origin_key = match embed_type {
         "doc" => "SPARSE_SERVER_DOC_ORIGIN",
         "query" => "SPARSE_SERVER_QUERY_ORIGIN",
@@ -272,6 +289,10 @@ pub async fn create_embeddings(
     dataset_config: DatasetConfiguration,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<f32>>, ServiceError> {
+    let use_grpc = std::env::var("USE_GRPC").unwrap_or("false".to_string());
+    if use_grpc == "true" {
+        return create_embeddings_grpc(content_and_boosts, embed_type, dataset_config).await;
+    }
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -496,6 +517,10 @@ pub async fn get_sparse_vectors(
     embed_type: &str,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
+    let use_grpc = std::env::var("USE_GRPC").unwrap_or("false".to_string());
+    if use_grpc == "true" {
+        return get_sparse_vectors_grpc(messages).await;
+    }
     if messages.is_empty() {
         return Err(ServiceError::BadRequest(
             "No messages to encode".to_string(),
@@ -782,6 +807,10 @@ pub async fn cross_encoder(
     results: Vec<ScoreChunkDTO>,
     dataset_config: &DatasetConfiguration,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
+    let use_grpc = std::env::var("USE_GRPC").unwrap_or("false".to_string());
+    if use_grpc == "true" {
+        return cross_encoder_grpc(query, page_size, results, dataset_config).await;
+    }
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -1029,4 +1058,496 @@ pub fn term_frequency(
             tf_map.into_iter().collect::<Vec<(u32, f32)>>()
         })
         .collect()
+}
+
+pub mod tei {
+    tonic::include_proto!("tei.v1");
+}
+
+async fn create_batch_embedding_call(
+    messages: Vec<String>,
+    channel_to_use: Option<Channel>,
+) -> Result<Vec<Vec<f32>>, ServiceError> {
+    let grpc_origin = get_env!("EMBEDDING_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+
+    let channel = match channel_to_use {
+        Some(channel) => Ok(channel),
+        None => Channel::from_static(grpc_origin)
+            .connect()
+            .await
+            .map_err(|_| {
+                ServiceError::InternalServerError(
+                    "Failed to connect to embedding server".to_string(),
+                )
+            }),
+    }?;
+
+    let stream = tokio_stream::iter(messages)
+        .map(|message| {
+            let mut client = EmbedClient::new(channel.clone());
+            async move {
+                let request = EmbedRequest {
+                    inputs: message,
+                    truncate: false,
+                    normalize: true,
+                    truncation_direction: 0,
+                    prompt_name: None,
+                };
+
+                let response = client.embed(request).await.map_err(|e| {
+                    ServiceError::BadRequest(format!(
+                        "Failed making call to grpc embedding server: {:?}",
+                        e
+                    ))
+                });
+
+                response
+            }
+        })
+        .buffered(5);
+
+    let stream = tokio_stream::StreamExt::chunks_timeout(stream, 3, Duration::from_secs(10));
+
+    let embedding_responses_buffers: Vec<_> = stream.collect().await;
+
+    let embedding_responses: Result<Vec<_>, _> = embedding_responses_buffers
+        .into_iter()
+        .flatten()
+        .map_ok(|res| res.into_inner().embeddings)
+        .collect();
+
+    embedding_responses
+}
+
+#[tracing::instrument]
+pub async fn create_embedding_grpc(
+    message: String,
+    distance_phrase: Option<DistancePhrase>,
+    embed_type: &str,
+    dataset_config: DatasetConfiguration,
+) -> Result<Vec<f32>, ServiceError> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("create_embedding", "Create semantic dense embedding")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "create_embedding",
+                "Create semantic dense embedding",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    let clipped_message = if message.len() > 7000 {
+        message.chars().take(20000).collect()
+    } else {
+        message.clone()
+    };
+
+    let mut messages = vec![clipped_message.clone()];
+
+    if distance_phrase.is_some() {
+        let clipped_boost = if distance_phrase.as_ref().unwrap().phrase.len() > 7000 {
+            distance_phrase
+                .as_ref()
+                .unwrap()
+                .phrase
+                .chars()
+                .take(20000)
+                .collect()
+        } else {
+            distance_phrase.as_ref().unwrap().phrase.clone()
+        };
+        messages.push(clipped_boost);
+    }
+
+    let mut vectors = match embed_type {
+        "doc" => create_batch_embedding_call(messages, None),
+        "query" => create_batch_embedding_call(
+            vec![format!(
+                "{}{}",
+                dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_message
+            )
+            .to_string()],
+            None,
+        ),
+        _ => create_batch_embedding_call(messages, None),
+    }
+    .await?;
+
+    if distance_phrase.is_some() {
+        let distance_factor = distance_phrase.unwrap().distance_factor;
+        let boost_vector = vectors.pop().unwrap();
+        let embedding_vector = vectors.pop().unwrap();
+
+        return Ok(embedding_vector
+            .iter()
+            .zip(boost_vector)
+            .map(|(vec_elem, boost_vec_elem)| vec_elem + distance_factor * boost_vec_elem)
+            .collect());
+    }
+
+    match vectors.first() {
+        Some(v) => Ok(v.clone()),
+        None => Err(ServiceError::InternalServerError(
+            "No dense embeddings returned from server".to_owned(),
+        )),
+    }
+}
+
+pub async fn create_embeddings_grpc(
+    content_and_boosts: Vec<(String, Option<DistancePhrase>)>,
+    _embed_type: &str,
+    _dataset_config: DatasetConfiguration,
+) -> Result<Vec<Vec<f32>>, ServiceError> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("create_embedding", "Create semantic dense embedding")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "create_embedding",
+                "Create semantic dense embedding",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+    let (contents, boosts): (Vec<_>, Vec<_>) = content_and_boosts.into_iter().unzip();
+    let (boost_indices, boost_phrases): (Vec<usize>, Vec<String>) = boosts
+        .clone()
+        .iter()
+        .enumerate()
+        .filter_map(|(index, boost)| {
+            boost
+                .clone()
+                .map(|distance_phrase| (index, distance_phrase.phrase))
+        })
+        .unzip();
+
+    let grpc_origin = get_env!("EMBEDDING_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let channel = Channel::from_static(grpc_origin)
+        .connect()
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to connect to embedding server".to_string())
+        })?;
+
+    let content_vecs = create_batch_embedding_call(contents, Some(channel.clone())).await?;
+    let boost_vecs = create_batch_embedding_call(boost_phrases, Some(channel.clone())).await?;
+
+    let mut combined_vecs = content_vecs;
+    for (index, boost_vec) in boost_indices.into_iter().zip(boost_vecs.into_iter()) {
+        let content_vec = combined_vecs[index].clone();
+        let distance_phrase = boosts[index].clone();
+        if distance_phrase.is_none() {
+            return Err(ServiceError::InternalServerError(
+                "Could not find matching distance phrase (should not happen)".to_string(),
+            ));
+        }
+        let distance_phrase = distance_phrase.unwrap();
+        combined_vecs[index] = content_vec
+            .iter()
+            .zip(boost_vec)
+            .map(|(vec_elem, boost_vec_elem)| {
+                vec_elem + distance_phrase.distance_factor * boost_vec_elem
+            })
+            .collect();
+    }
+
+    Ok(combined_vecs)
+}
+
+pub async fn get_sparse_vector_grpc(
+    message: String,
+    _embed_type: &str,
+) -> Result<Vec<(u32, f32)>, ServiceError> {
+    let grpc_origin = get_env!("SPARSE_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let mut client = EmbedClient::connect(grpc_origin).await.map_err(|_| {
+        ServiceError::BadRequest("Failed to connect to embedding server".to_string())
+    })?;
+
+    let clipped_message = if message.len() > 5000 {
+        message.chars().take(128000).collect()
+    } else {
+        message.clone()
+    };
+
+    let request = EmbedSparseRequest {
+        inputs: clipped_message,
+        truncate: true,
+        truncation_direction: TruncationDirection::Right.into(),
+        prompt_name: None,
+    };
+
+    let response = client
+        .embed_sparse(request)
+        .await
+        .map_err(|e| {
+            ServiceError::BadRequest(format!(
+                "Failed making call to sparse vector grpc server: {:?}",
+                e
+            ))
+        })?
+        .into_inner();
+
+    let sparse_vectors: Vec<(u32, f32)> = response
+        .sparse_embeddings
+        .into_iter()
+        .map(|embedding| (embedding.index, embedding.value))
+        .collect();
+
+    Ok(sparse_vectors)
+}
+
+pub async fn cross_encoder_grpc(
+    query: String,
+    page_size: u64,
+    results: Vec<ScoreChunkDTO>,
+    _dataset_config: &DatasetConfiguration,
+) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("Cross Encoder", "Cross Encode semantic and hybrid chunks")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "Cross Encoder",
+                "Cross Encode semantic and hybrid chunks",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    if results.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let mut results = results.clone();
+    let request_docs = results
+        .clone()
+        .into_iter()
+        .map(|x| {
+            let chunk = match x.metadata[0].clone() {
+                ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
+                _ => Err(ServiceError::BadRequest("Metadata not found".to_string())),
+            }?;
+
+            Ok(convert_html_to_text(
+                &(chunk.chunk_html.unwrap_or_default()),
+            ))
+        })
+        .collect::<Result<Vec<String>, ServiceError>>()?;
+
+    let grpc_origin = get_env!("RERANKER_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let mut client = RerankClient::connect(grpc_origin)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to connect to rerank server".to_string()))?;
+
+    let request = RerankRequest {
+        query,
+        texts: request_docs,
+        truncate: true,
+        truncation_direction: TruncationDirection::Right.into(),
+        return_text: false,
+        raw_scores: false,
+    };
+
+    let response = client
+        .rerank(request)
+        .await
+        .map_err(|e| {
+            ServiceError::BadRequest(format!(
+                "Failed to make call to grpc rerank server: {:?}",
+                e
+            ))
+        })?
+        .into_inner();
+
+    response.ranks.into_iter().for_each(|rank| {
+        results.index_mut(rank.index as usize).score = rank.score as f64;
+    });
+
+    results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+
+    results.truncate(page_size.try_into().unwrap());
+
+    transaction.finish();
+    Ok(results)
+}
+
+pub async fn get_sparse_vectors_grpc(
+    messages: Vec<(String, Option<BoostPhrase>)>,
+) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
+    if messages.is_empty() {
+        return Err(ServiceError::BadRequest(
+            "No messages to encode".to_string(),
+        ));
+    }
+    let contents = messages
+        .clone()
+        .into_iter()
+        .map(|(x, _)| x)
+        .collect::<Vec<String>>();
+    let thirty_content_groups = contents.chunks(30);
+    let filtered_boosts_with_index = messages
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, (_, y))| y.map(|boost_phrase| (i, boost_phrase)))
+        .collect::<Vec<(usize, BoostPhrase)>>();
+    let filtered_boosts_with_index_groups = filtered_boosts_with_index.chunks(30);
+    let grpc_origin = get_env!("SPARSE_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let channel = Channel::from_static(grpc_origin)
+        .connect()
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError(
+                "Failed to connect to sparse embedding server".to_string(),
+            )
+        })?;
+
+    let vec_boost_futures: Vec<_> = filtered_boosts_with_index_groups
+        .enumerate()
+        .map(|(i, thirty_boosts)| {
+            let channel = channel.clone();
+            async move {
+                let boost_phrases = thirty_boosts
+                    .iter()
+                    .map(|(_, phrase)| phrase.phrase.clone())
+                    .collect();
+                let boost_vecs =
+                    get_batch_sparse_vectors_grpc(boost_phrases, Some(channel)).await?;
+                let index_vector_boosts: Vec<_> = thirty_boosts
+                    .iter()
+                    .zip(boost_vecs)
+                    .map(|((og_index, y), sparse_vec)| (*og_index, y.boost_factor, sparse_vec))
+                    .collect();
+
+                Ok((i, index_vector_boosts))
+            }
+        })
+        .collect();
+
+    let vec_content_futures: Vec<_> = thirty_content_groups
+        .enumerate()
+        .map(|(i, thirty_messages)| {
+            let channel = channel.clone();
+            async move {
+                let content_vecs =
+                    get_batch_sparse_vectors_grpc(thirty_messages.to_vec(), Some(channel)).await?;
+                Ok((i, content_vecs))
+            }
+        })
+        .collect();
+
+    let all_content_vectors: Vec<(usize, Vec<Vec<(u32, f32)>>)> =
+        futures::future::join_all(vec_content_futures)
+            .await
+            .into_iter()
+            .collect::<Result<Vec<(usize, Vec<Vec<(u32, f32)>>)>, ServiceError>>()?;
+
+    let mut content_vectors_sorted = vec![];
+    for index in 0..all_content_vectors.len() {
+        let (_, vectors_i) = all_content_vectors
+            .iter()
+            .find(|(i, _)| *i == index)
+            .ok_or(ServiceError::InternalServerError(
+                "Failed to get index i (this should never happen)".to_string(),
+            ))?;
+
+        content_vectors_sorted.extend(vectors_i.clone());
+    }
+
+    #[allow(clippy::type_complexity)]
+    let all_boost_vectors: Vec<(usize, Vec<(usize, f64, Vec<(u32, f32)>)>)> =
+        futures::future::join_all(vec_boost_futures)
+            .await
+            .into_iter()
+            .collect::<Result<Vec<(usize, Vec<(usize, f64, Vec<(u32, f32)>)>)>, ServiceError>>()?;
+
+    for (_, boost_vectors) in all_boost_vectors {
+        for (og_index, boost_amt, boost_vector) in boost_vectors {
+            content_vectors_sorted[og_index] = content_vectors_sorted[og_index]
+                .iter()
+                .map(|splade_index| {
+                    if boost_vector
+                        .iter()
+                        .any(|boost_splade_indice| boost_splade_indice.0 == splade_index.0)
+                    {
+                        (splade_index.0, splade_index.1 * (boost_amt as f32))
+                    } else {
+                        *splade_index
+                    }
+                })
+                .collect();
+        }
+    }
+
+    Ok(content_vectors_sorted)
+}
+
+pub async fn get_batch_sparse_vectors_grpc(
+    messages: Vec<String>,
+    channel_to_use: Option<Channel>,
+) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
+    let grpc_origin = get_env!("SPARSE_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+
+    let channel = match channel_to_use {
+        Some(endpoint) => Ok(endpoint),
+        None => Channel::from_static(grpc_origin)
+            .connect()
+            .await
+            .map_err(|_| {
+                ServiceError::InternalServerError(
+                    "Failed to connect to sparse embedding server".to_string(),
+                )
+            }),
+    }?;
+
+    let stream = tokio_stream::iter(messages)
+        .map(|message| {
+            let mut client = EmbedClient::new(channel.clone());
+            async move {
+                let clipped_message = if message.len() > 5000 {
+                    message.chars().take(128000).collect()
+                } else {
+                    message.clone()
+                };
+                let response = client
+                    .embed_sparse(EmbedSparseRequest {
+                        inputs: clipped_message,
+                        truncate: true,
+                        truncation_direction: TruncationDirection::Right.into(),
+                        prompt_name: None,
+                    })
+                    .await
+                    .map_err(|_| {
+                        ServiceError::BadRequest(
+                            "Failed to call sparse embedding server".to_string(),
+                        )
+                    });
+                response
+            }
+        })
+        .buffered(5);
+    let stream = tokio_stream::StreamExt::chunks_timeout(stream, 3, Duration::from_secs(10));
+    let sparse_responses_buffers: Vec<_> = stream.collect().await;
+    let sparse_responses: Result<Vec<_>, _> = sparse_responses_buffers
+        .into_iter()
+        .flatten()
+        .map_ok(|res| {
+            res.into_inner()
+                .sparse_embeddings
+                .into_iter()
+                .map(|s| (s.index, s.value))
+                .collect_vec()
+        })
+        .collect();
+    sparse_responses
 }
