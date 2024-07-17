@@ -363,6 +363,7 @@ impl Modify for SecurityAddon {
             data::models::HeadQueries,
             data::models::SlimUser,
             data::models::UserOrganization,
+            data::models::QdrantSortBy,
             data::models::Topic,
             data::models::Message,
             data::models::ChunkMetadata,

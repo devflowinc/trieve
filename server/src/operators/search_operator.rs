@@ -321,7 +321,6 @@ pub async fn retrieve_qdrant_points_query(
 
     let (point_ids, count, batch_lengths) = search_qdrant_query(
         page,
-        None,
         limit,
         qdrant_searches,
         config.clone(),

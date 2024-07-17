@@ -5,7 +5,7 @@ use super::{
 use crate::{
     data::models::{
         ChunkMetadata, DatasetConfiguration, Pool, QdrantPayload, QdrantSortBy, RecommendType,
-        RecommendationStrategy,
+        RecommendationStrategy, SortOrder,
     },
     errors::ServiceError,
     get_env,
@@ -883,7 +883,6 @@ pub async fn search_over_groups_query(
 #[tracing::instrument]
 pub async fn search_qdrant_query(
     page: u64,
-    prefetch_limit: Option<u64>,
     limit: u64,
     queries: Vec<QdrantSearchQuery>,
     dataset_config: DatasetConfiguration,
@@ -919,7 +918,7 @@ pub async fn search_qdrant_query(
                         limit: Some(limit),
                         prefetch: vec![PrefetchQuery {
                             query: Some(Query::new_nearest(sparse_vector)),
-                            limit: Some(prefetch_limit.unwrap_or(1000)),
+                            limit: Some(sort_by.prefetch_limit.unwrap_or(1000)),
                             using: Some("sparse_vectors".to_string()),
                             score_threshold: query.score_threshold,
                             filter: Some(query.filter.clone()),
@@ -927,7 +926,7 @@ pub async fn search_qdrant_query(
                         }],
                         query: Some(Query::new_order_by(OrderBy {
                             key: sort_by.field,
-                            direction: Some(sort_by.direction.into()),
+                            direction: Some(sort_by.direction.unwrap_or(SortOrder::Desc).into()),
                             ..Default::default()
                         })),
                         with_payload: Some(WithPayloadSelector::from(false)),
@@ -973,7 +972,7 @@ pub async fn search_qdrant_query(
                         limit: Some(limit),
                         prefetch: vec![PrefetchQuery {
                             query: Some(Query::new_nearest(bm25_vector)),
-                            limit: Some(prefetch_limit.unwrap_or(1000)),
+                            limit: Some(sort_by.prefetch_limit.unwrap_or(1000)),
                             using: Some("bm25_vectors".to_string()),
                             score_threshold: query.score_threshold,
                             filter: Some(query.filter.clone()),
@@ -981,7 +980,7 @@ pub async fn search_qdrant_query(
                         }],
                         query: Some(Query::new_order_by(OrderBy {
                             key: sort_by.field,
-                            direction: Some(sort_by.direction.into()),
+                            direction: Some(sort_by.direction.unwrap_or(SortOrder::Desc).into()),
                             ..Default::default()
                         })),
                         with_payload: Some(WithPayloadSelector::from(false)),
@@ -1040,7 +1039,7 @@ pub async fn search_qdrant_query(
                             query: Some(Query::new_nearest(VectorInput::new_dense(
                                 embedding_vector.clone(),
                             ))),
-                            limit: Some(prefetch_limit.unwrap_or(1000)),
+                            limit: Some(sort_by.prefetch_limit.unwrap_or(1000)),
                             using: Some(vector_name.to_string()),
                             score_threshold: query.score_threshold,
                             filter: Some(query.filter.clone()),
@@ -1048,7 +1047,7 @@ pub async fn search_qdrant_query(
                         }],
                         query: Some(Query::new_order_by(OrderBy {
                             key: sort_by.field,
-                            direction: Some(sort_by.direction.into()),
+                            direction: Some(sort_by.direction.unwrap_or(SortOrder::Desc).into()),
                             ..Default::default()
                         })),
                         with_payload: Some(WithPayloadSelector::from(false)),
