@@ -23,7 +23,7 @@ use crate::handlers::chunk_handler::{
     ParsedQuery, SearchChunkQueryResponseBody, SearchChunksReqPayload,
 };
 use crate::handlers::group_handler::{
-    SearchOverGroupsData, SearchWithinGroupData, SearchWithinGroupResults,
+    SearchOverGroupsReqPayload, SearchWithinGroupReqPayload, SearchWithinGroupResults,
 };
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{
@@ -937,7 +937,7 @@ pub enum SearchOverGroupsResponseTypes {
 #[tracing::instrument(skip(pool))]
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
-    data: &SearchOverGroupsData,
+    data: &SearchOverGroupsReqPayload,
     pool: web::Data<Pool>,
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, ServiceError> {
     let point_ids = search_over_groups_query_result
@@ -1884,7 +1884,7 @@ pub async fn search_hybrid_chunks(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_semantic_groups(
-    data: SearchWithinGroupData,
+    data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQuery,
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
@@ -1961,7 +1961,7 @@ pub async fn search_semantic_groups(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_full_text_groups(
-    data: SearchWithinGroupData,
+    data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQuery,
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
@@ -2037,7 +2037,7 @@ pub async fn search_full_text_groups(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_hybrid_groups(
-    data: SearchWithinGroupData,
+    data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQuery,
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
@@ -2172,7 +2172,7 @@ pub async fn search_hybrid_groups(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn semantic_search_over_groups(
-    data: SearchOverGroupsData,
+    data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -2233,7 +2233,7 @@ pub async fn semantic_search_over_groups(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn full_text_search_over_groups(
-    data: SearchOverGroupsData,
+    data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -2353,7 +2353,7 @@ async fn cross_encoder_for_groups(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn hybrid_search_over_groups(
-    data: SearchOverGroupsData,
+    data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,

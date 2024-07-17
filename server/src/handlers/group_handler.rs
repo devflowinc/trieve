@@ -455,7 +455,7 @@ pub async fn delete_chunk_group(
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct UpdateChunkGroupData {
+pub struct UpdateChunkGroupReqPayload {
     /// Id of the chunk_group to update.
     pub group_id: Option<uuid::Uuid>,
     /// Tracking Id of the chunk_group to update.
@@ -475,13 +475,13 @@ pub struct UpdateChunkGroupData {
 
 /// Update Group
 ///
-/// Update a chunk_group. If you try to change the tracking_id to one that already exists, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Update a chunk_group. One of group_id or tracking_id must be provided. If you try to change the tracking_id to one that already exists, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
     path = "/chunk_group",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = UpdateChunkGroupData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
+    request_body(content = UpdateChunkGroupReqPayload, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was updated"),
         (status = 400, description = "Service error relating to updating the chunkGroup", body = ErrorResponseBody),
@@ -495,7 +495,7 @@ pub struct UpdateChunkGroupData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn update_chunk_group(
-    data: web::Json<UpdateChunkGroupData>,
+    data: web::Json<UpdateChunkGroupReqPayload>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -557,22 +557,22 @@ pub async fn update_chunk_group(
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct AddChunkToGroupData {
+pub struct AddChunkToGroupReqPayload {
     /// Id of the chunk to make a member of the group.
     pub chunk_id: Option<uuid::Uuid>,
     /// Tracking Id of the chunk to make a member of the group.
-    pub tracking_id: Option<String>,
+    pub chunk_tracking_id: Option<String>,
 }
 
 /// Add Chunk to Group
 ///
-/// Route to add a chunk to a group. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Route to add a chunk to a group. One of chunk_id or chunk_tracking_id must be provided. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/chunk_group/chunk/{group_id}",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
+    request_body(content = AddChunkToGroupReqPayload, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk was added to the group (bookmark'ed)."),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in.", body = ErrorResponseBody),
@@ -587,7 +587,7 @@ pub struct AddChunkToGroupData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group(
-    body: web::Json<AddChunkToGroupData>,
+    body: web::Json<AddChunkToGroupReqPayload>,
     group_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -600,9 +600,9 @@ pub async fn add_chunk_to_group(
 
     dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool.clone()).await?;
 
-    let id = if body.chunk_id.is_some() {
+    let chunk_id = if body.chunk_id.is_some() {
         body.chunk_id.unwrap()
-    } else if let Some(tracking_id) = body.tracking_id.clone() {
+    } else if let Some(tracking_id) = body.chunk_tracking_id.clone() {
         let chunk =
             get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool.clone()).await?;
         chunk.id
@@ -611,50 +611,43 @@ pub async fn add_chunk_to_group(
     };
 
     let qdrant_point_id =
-        create_chunk_bookmark_query(pool, ChunkGroupBookmark::from_details(group_id, id)).await?;
+        create_chunk_bookmark_query(pool, ChunkGroupBookmark::from_details(group_id, chunk_id))
+            .await?;
 
     add_bookmark_to_qdrant_query(qdrant_point_id, group_id, dataset_config).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct AddChunkToGroupByTrackingIdData {
-    /// Id of the chunk to make a member of the group.
-    pub chunk_id: uuid::Uuid,
-}
-
 /// Add Chunk to Group by Tracking ID
 ///
-/// Route to add a chunk to a group by tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Route to add a chunk to a group by tracking id. One of chunk_id or chunk_tracking_id must be provided. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
+    request_body(content = AddChunkToGroupReqPayload, description = "JSON request payload to add a chunk to a group via tracking_id", content_type = "application/json"),
     responses(
-        (status = 204, description = "Confirmation that the chunk was added to the group (bookmark'ed)."),
-        (status = 400, description = "Service error relating to getting the groups that the chunk is in.", body = ErrorResponseBody),
+        (status = 204, description = "Confirmation that the chunk was added to the group"),
+        (status = 400, description = "Service error related to adding the chunk group by tracking_id", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
-        ("tracking_id" = uuid, description = "Id of the group to add the chunk to as a bookmark"),
+        ("tracking_id" = uuid, description = "Tracking id of the group to add the chunk to as a bookmark"),
     ),
     security(
         ("ApiKey" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
-#[deprecated]
 pub async fn add_chunk_to_group_by_tracking_id(
-    body: web::Json<AddChunkToGroupByTrackingIdData>,
+    data: web::Json<AddChunkToGroupReqPayload>,
     tracking_id: web::Path<String>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let chunk_metadata_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
@@ -667,11 +660,19 @@ pub async fn add_chunk_to_group_by_tracking_id(
     .await?;
     let group_id = group.id;
 
-    let qdrant_point_id = create_chunk_bookmark_query(
-        pool,
-        ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
-    )
-    .await?;
+    let chunk_id = if data.chunk_id.is_some() {
+        data.chunk_id.unwrap()
+    } else if let Some(tracking_id) = data.chunk_tracking_id.clone() {
+        let chunk =
+            get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool.clone()).await?;
+        chunk.id
+    } else {
+        return Err(ServiceError::BadRequest("No chunk id or tracking id provided".into()).into());
+    };
+
+    let qdrant_point_id =
+        create_chunk_bookmark_query(pool, ChunkGroupBookmark::from_details(group_id, chunk_id))
+            .await?;
 
     add_bookmark_to_qdrant_query(qdrant_point_id, group_id, dataset_config).await?;
 
@@ -687,20 +688,20 @@ pub struct GroupsBookmarkQueryResult {
 }
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[schema(title = "V2")]
-pub struct GetChunksForGroupsResponse {
+pub struct GetChunksInGroupsResponseBody {
     pub chunks: Vec<ChunkMetadata>,
     pub group: ChunkGroupAndFileId,
     pub total_pages: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetAllBookmarksData {
+pub struct GetChunksInGroupPathParams {
     pub group_id: uuid::Uuid,
     pub page: Option<u64>,
     pub limit: Option<u64>,
 }
 
-impl From<GroupsBookmarkQueryResult> for GetChunksForGroupsResponse {
+impl From<GroupsBookmarkQueryResult> for GetChunksInGroupsResponseBody {
     fn from(data: GroupsBookmarkQueryResult) -> Self {
         Self {
             chunks: data.chunks.into_iter().map(|c| c.into()).collect(),
@@ -712,8 +713,8 @@ impl From<GroupsBookmarkQueryResult> for GetChunksForGroupsResponse {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
-pub enum BookmarkGroupResponse {
-    V2(GetChunksForGroupsResponse),
+pub enum GetChunksInGroupResponse {
+    V2(GetChunksInGroupsResponseBody),
     V1(GroupsBookmarkQueryResult),
 }
 
@@ -726,7 +727,7 @@ pub enum BookmarkGroupResponse {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "Chunks present within the specified group", body = BookmarkGroupResponse),
+        (status = 200, description = "Chunks present within the specified group", body = GetChunksInGroupResponse),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
@@ -742,7 +743,7 @@ pub enum BookmarkGroupResponse {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group(
-    group_data: web::Path<GetAllBookmarksData>,
+    group_data: web::Path<GetChunksInGroupPathParams>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
     api_version: APIVersion,
@@ -762,15 +763,15 @@ pub async fn get_chunks_in_group(
     .await?;
 
     let response = match api_version {
-        APIVersion::V1 => BookmarkGroupResponse::V1(bookmarks),
-        APIVersion::V2 => BookmarkGroupResponse::V2(bookmarks.into()),
+        APIVersion::V1 => GetChunksInGroupResponse::V1(bookmarks),
+        APIVersion::V2 => GetChunksInGroupResponse::V2(bookmarks.into()),
     };
 
     Ok(HttpResponse::Ok().json(response))
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetAllBookmarksByTrackingIdData {
+pub struct GetChunksInGroupByTrackingIdReqPayload {
     pub tracking_id: String,
     pub page: Option<u64>,
 }
@@ -784,7 +785,7 @@ pub struct GetAllBookmarksByTrackingIdData {
     context_path = "/api",
     tag = "Chunk Group",
     responses(
-        (status = 200, description = "Chunks present within the specified group", body = BookmarkGroupResponse),
+        (status = 200, description = "Chunks present within the specified group", body = GetChunksInGroupResponse),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
@@ -800,7 +801,7 @@ pub struct GetAllBookmarksByTrackingIdData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group_by_tracking_id(
-    path_data: web::Path<GetAllBookmarksByTrackingIdData>,
+    path_data: web::Path<GetChunksInGroupByTrackingIdReqPayload>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
     api_version: APIVersion,
@@ -821,15 +822,15 @@ pub async fn get_chunks_in_group_by_tracking_id(
     };
 
     let response = match api_version {
-        APIVersion::V1 => BookmarkGroupResponse::V1(bookmarks),
-        APIVersion::V2 => BookmarkGroupResponse::V2(bookmarks.into()),
+        APIVersion::V1 => GetChunksInGroupResponse::V1(bookmarks),
+        APIVersion::V2 => GetChunksInGroupResponse::V2(bookmarks.into()),
     };
 
     Ok(HttpResponse::Ok().json(response))
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct GetGroupsForChunksData {
+pub struct GetGroupsForChunksReqPayload {
     pub chunk_ids: Vec<uuid::Uuid>,
 }
 
@@ -842,9 +843,9 @@ pub struct GetGroupsForChunksData {
     path = "/chunk_group/chunks",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = GetGroupsForChunksData, description = "JSON request payload to get the groups that a chunk is in", content_type = "application/json"),
+    request_body(content = GetGroupsForChunksReqPayload, description = "JSON request payload to get the groups that a chunk is in", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the groups that the chunk is in", body = Vec<BookmarkGroupResponse>),
+        (status = 200, description = "JSON body representing the groups that the chunk is in", body = Vec<GroupsForChunk>),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
@@ -855,8 +856,8 @@ pub struct GetGroupsForChunksData {
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn get_groups_chunk_is_in(
-    data: web::Json<GetGroupsForChunksData>,
+pub async fn get_groups_for_chunks(
+    data: web::Json<GetGroupsForChunksReqPayload>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _required_user: LoggedUser,
@@ -920,15 +921,8 @@ pub async fn remove_chunk_from_group(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GenerateOffGroupData {
-    pub group_id: uuid::Uuid,
-    pub page: Option<u64>,
-    pub query: Option<String>,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct RecommendGroupChunksRequest {
+pub struct RecommendGroupsReqPayload {
     /// The ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
     pub positive_group_ids: Option<Vec<uuid::Uuid>>,
     /// The ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
@@ -974,7 +968,7 @@ pub enum RecommendGroupsResponse {
     path = "/chunk_group/recommend",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = RecommendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
+    request_body(content = RecommendGroupsReqPayload, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones", body = RecommendGroupsResponse),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
@@ -989,7 +983,7 @@ pub enum RecommendGroupsResponse {
 )]
 #[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn get_recommended_groups(
-    data: web::Json<RecommendGroupChunksRequest>,
+    data: web::Json<RecommendGroupsReqPayload>,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
     api_version: APIVersion,
@@ -1196,7 +1190,7 @@ pub async fn get_recommended_groups(
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, IntoParams)]
 #[into_params(style = Form, parameter_in = Query)]
-pub struct SearchWithinGroupData {
+pub struct SearchWithinGroupReqPayload {
     /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
     /// The page of chunks to fetch. Page is 1-indexed.
@@ -1245,8 +1239,8 @@ pub struct SearchWithinGroupData {
     pub use_quote_negated_terms: Option<bool>,
 }
 
-impl From<SearchWithinGroupData> for SearchChunksReqPayload {
-    fn from(search_within_group_data: SearchWithinGroupData) -> Self {
+impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
+    fn from(search_within_group_data: SearchWithinGroupReqPayload) -> Self {
         Self {
             query: search_within_group_data.query,
             page: search_within_group_data.page,
@@ -1318,7 +1312,7 @@ impl From<SearchWithinGroupResults> for SearchWithinGroupResponseBody {
     path = "/chunk_group/search",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = SearchWithinGroupData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
+    request_body(content = SearchWithinGroupReqPayload, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchGroupResponseTypes),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
@@ -1333,7 +1327,7 @@ impl From<SearchWithinGroupResults> for SearchWithinGroupResponseBody {
 )]
 #[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn search_within_group(
-    data: web::Json<SearchWithinGroupData>,
+    data: web::Json<SearchWithinGroupReqPayload>,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
     api_version: APIVersion,
@@ -1453,7 +1447,7 @@ pub async fn search_within_group(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct SearchOverGroupsData {
+pub struct SearchOverGroupsReqPayload {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
@@ -1496,7 +1490,7 @@ pub struct SearchOverGroupsData {
     path = "/chunk_group/group_oriented_search",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
+    request_body(content = SearchOverGroupsReqPayload, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseTypes),
         (status = 400, description = "Service error relating to searching over groups", body = ErrorResponseBody),
@@ -1511,7 +1505,7 @@ pub struct SearchOverGroupsData {
 )]
 #[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn search_over_groups(
-    data: web::Json<SearchOverGroupsData>,
+    data: web::Json<SearchOverGroupsReqPayload>,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
     api_version: APIVersion,

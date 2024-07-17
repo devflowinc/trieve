@@ -3618,7 +3618,7 @@ pub enum SearchType {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum SearchMethod {
-    #[serde(rename = "full_text", alias = "fulltext")]
+    #[serde(rename = "fulltext", alias = "full_text")]
     #[display(fmt = "fulltext")]
     FullText,
     #[display(fmt = "semantic")]
