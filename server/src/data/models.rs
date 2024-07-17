@@ -319,7 +319,6 @@ impl Default for GeoInfo {
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
-    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "[tag1,tag2]",
@@ -334,6 +333,7 @@ impl Default for GeoInfo {
 pub struct ChunkMetadata {
     pub id: uuid::Uuid,
     pub link: Option<String>,
+    #[serde(skip_serializing)]
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -619,7 +619,6 @@ pub struct IngestSpecificChunkMetadata {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "content": "Hello, world!",
     "link": "https://trieve.ai",
-    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
@@ -635,6 +634,7 @@ pub struct IngestSpecificChunkMetadata {
 pub struct ChunkMetadataWithScore {
     pub id: uuid::Uuid,
     pub link: Option<String>,
+    #[serde(skip)]
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -775,6 +775,7 @@ pub struct ScoreChunk {
 pub struct SlimChunkMetadataWithArrayTagSet {
     pub id: uuid::Uuid,
     pub link: Option<String>,
+    #[serde(skip)]
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -918,7 +919,6 @@ impl ChunkMetadataTypes {
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
-    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
@@ -932,6 +932,7 @@ impl ChunkMetadataTypes {
 pub struct SlimChunkMetadataWithScore {
     pub id: uuid::Uuid,
     pub link: Option<String>,
+    #[serde(skip)]
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -965,7 +966,6 @@ impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
-    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
@@ -979,6 +979,7 @@ impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
 pub struct ChunkMetadataStringTagSet {
     pub id: uuid::Uuid,
     pub link: Option<String>,
+    #[serde(skip)]
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -1063,7 +1064,6 @@ pub struct SlimChunkMetadataTable {
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
-    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
@@ -1076,6 +1076,7 @@ pub struct SlimChunkMetadataTable {
 pub struct SlimChunkMetadata {
     pub id: uuid::Uuid,
     pub link: Option<String>,
+    #[serde(skip)]
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -1182,7 +1183,6 @@ impl From<ContentChunkMetadata> for SlimChunkMetadata {
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
-    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "tag_set": "tag1,tag2",
@@ -1194,6 +1194,7 @@ impl From<ContentChunkMetadata> for SlimChunkMetadata {
 }))]
 pub struct ContentChunkMetadata {
     pub id: uuid::Uuid,
+    #[serde(skip)]
     pub qdrant_point_id: uuid::Uuid,
     pub chunk_html: Option<String>,
     pub tracking_id: Option<String>,
