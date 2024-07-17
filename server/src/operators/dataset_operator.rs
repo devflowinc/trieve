@@ -2,10 +2,9 @@ use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetConfiguration, DatasetUsageCount,
     Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
 };
-use crate::get_env;
 use crate::handlers::dataset_handler::GetDatasetsPagination;
 use crate::operators::event_operator::create_event_query;
-use crate::operators::qdrant_operator::get_qdrant_connection;
+use crate::operators::qdrant_operator::delete_points_from_qdrant;
 use crate::{
     data::models::{Dataset, Event, EventType, Pool},
     errors::ServiceError,
@@ -14,7 +13,6 @@ use actix_web::web;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use diesel_async::RunQueryDsl;
-use qdrant_client::qdrant::{Condition, Filter};
 use serde::{Deserialize, Serialize};
 
 #[tracing::instrument(skip(pool))]
@@ -257,12 +255,6 @@ pub async fn delete_chunks_in_dataset(
 
     let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
-    let qdrant_client = get_qdrant_connection(
-        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
-        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
-    )
-    .await?;
-
     let mut last_offset_id = uuid::Uuid::nil();
 
     loop {
@@ -295,8 +287,8 @@ pub async fn delete_chunks_in_dataset(
             .collect::<Vec<uuid::Uuid>>();
         let qdrant_point_ids = chunk_and_qdrant_ids
             .iter()
-            .map(|(_, qdrant_id)| qdrant_id.clone().to_string())
-            .collect::<Vec<String>>();
+            .map(|(_, qdrant_id)| *qdrant_id)
+            .collect::<Vec<uuid::Uuid>>();
 
         if chunk_ids.is_empty() {
             break;
@@ -314,13 +306,7 @@ pub async fn delete_chunks_in_dataset(
             ServiceError::BadRequest("Could not delete chunks".to_string())
         })?;
 
-        qdrant_client
-            .delete_points_blocking(
-                qdrant_collection.clone(),
-                None,
-                &Filter::must([Condition::has_id(qdrant_point_ids)]).into(),
-                None,
-            )
+        delete_points_from_qdrant(qdrant_point_ids, qdrant_collection.clone())
             .await
             .map_err(|err| {
                 ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))

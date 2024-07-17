@@ -1,7 +1,9 @@
 use itertools::Itertools;
 #[allow(deprecated)]
-use qdrant_client::client::QdrantClient;
-use qdrant_client::qdrant::{self, PointId, RetrievedPoint};
+use qdrant_client::{
+    qdrant::{self, GetPointsBuilder, PointId, RetrievedPoint, UpsertPointsBuilder},
+    Qdrant,
+};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
     data::models::{MigratePointMessage, MigrationMode},
@@ -103,19 +105,20 @@ async fn main() -> Result<(), ServiceError> {
         .await?;
 
         // Get all points in message including Payload & Friends
-        #[allow(deprecated)]
+
         let points = qdrant_client
             .get_points(
-                migration_message.from_collection,
-                None,
-                &migration_message
-                    .qdrant_point_ids
-                    .iter()
-                    .map(|uuid| PointId::from(uuid.to_string()))
-                    .collect_vec(),
-                true.into(),
-                true.into(),
-                None,
+                GetPointsBuilder::new(
+                    migration_message.from_collection.clone(),
+                    migration_message
+                        .qdrant_point_ids
+                        .iter()
+                        .map(|uuid| PointId::from(uuid.to_string()))
+                        .collect_vec(),
+                )
+                .with_payload(true)
+                .with_vectors(true)
+                .build(),
             )
             .await
             .map_err(|_err| {
@@ -158,10 +161,9 @@ async fn main() -> Result<(), ServiceError> {
     }
 }
 
-#[allow(deprecated)]
 #[tracing::instrument(skip(qdrant_client, points))]
 pub async fn migrate_bm25(
-    qdrant_client: QdrantClient,
+    qdrant_client: Qdrant,
     points: Vec<RetrievedPoint>,
     to_collection: String,
     average_len: f32,
@@ -215,9 +217,8 @@ pub async fn migrate_bm25(
         })
         .collect_vec();
 
-    #[allow(deprecated)]
     qdrant_client
-        .upsert_points(to_collection, None, new_points, None)
+        .upsert_points(UpsertPointsBuilder::new(to_collection, new_points))
         .await
         .map_err(|e| ServiceError::BadRequest(format!("Failed to upsert points {:?}", e)))?;
 

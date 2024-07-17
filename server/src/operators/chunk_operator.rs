@@ -5,14 +5,13 @@ use crate::data::models::{
     ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags, IngestSpecificChunkMetadata,
     SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
-use crate::get_env;
 use crate::handlers::chunk_handler::UploadIngestionMessage;
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
 use crate::operators::parse_operator::convert_html_to_text;
-use crate::operators::qdrant_operator::get_qdrant_connection;
+use crate::operators::qdrant_operator::delete_points_from_qdrant;
 use crate::{
     data::models::{ChunkMetadata, Pool},
     errors::ServiceError,
@@ -27,7 +26,6 @@ use diesel::upsert::excluded;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use itertools::Itertools;
-use qdrant_client::qdrant::PointId;
 use simsearch::{SearchOptions, SimSearch};
 
 #[tracing::instrument(skip(pool))]
@@ -1229,21 +1227,13 @@ pub async fn delete_chunk_metadata_query(
 
     let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
-    let qdrant_client = get_qdrant_connection(
-        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
-        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
-    )
-    .await?;
-
     let point_ids = chunk_metadata
         .iter()
         .map(|x| x.qdrant_point_id)
-        .map(|x| x.to_string().into())
-        .collect::<Vec<PointId>>();
+        .collect::<Vec<uuid::Uuid>>();
 
     match transaction_result {
-        Ok(()) => qdrant_client
-            .delete_points_blocking(qdrant_collection, None, &point_ids.into(), None)
+        Ok(()) => delete_points_from_qdrant(point_ids, qdrant_collection)
             .await
             .map_err(|_e| {
                 ServiceError::BadRequest("Failed to delete chunk from qdrant".to_string())

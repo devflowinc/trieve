@@ -1,25 +1,20 @@
 use crate::errors::ServiceError;
-use crate::operators::qdrant_operator::remove_bookmark_from_qdrant_query;
+use crate::operators::qdrant_operator::{
+    remove_bookmark_from_qdrant_query, update_group_tag_sets_in_qdrant_query,
+};
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadataTable, Dataset,
-        DatasetConfiguration, FileGroup, Pool, QdrantPayload, RedisPool, UnifiedId,
+        DatasetConfiguration, FileGroup, Pool, RedisPool, UnifiedId,
     },
-    get_env,
     handlers::group_handler::GroupsBookmarkQueryResult,
-    operators::{
-        chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
-        qdrant_operator::get_qdrant_connection,
-    },
+    operators::chunk_operator::{delete_chunk_metadata_query, get_chunk_metadatas_from_point_ids},
 };
 use actix_web::web;
 use diesel::prelude::*;
 use diesel::{dsl::sql, sql_types::Text};
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
-use qdrant_client::qdrant::{
-    points_selector::PointsSelectorOneOf, PointId, PointsIdsList, PointsSelector,
-};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -748,11 +743,7 @@ pub async fn update_grouped_chunks_query(
     let mut offset = uuid::Uuid::nil();
 
     let mut conn = pool.get().await.unwrap();
-    let qdrant_client = get_qdrant_connection(
-        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
-        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
-    )
-    .await?;
+
     let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
     let group_id = new_group.id;
@@ -792,70 +783,15 @@ pub async fn update_grouped_chunks_query(
 
         offset = qdrant_ids.last().unwrap().1;
 
-        let points: Vec<PointId> = qdrant_ids
-            .iter()
-            .map(|(point_id, _)| point_id.to_string().into())
-            .collect();
+        let points: Vec<uuid::Uuid> = qdrant_ids.iter().map(|(point_id, _)| *point_id).collect();
 
-        let results = qdrant_client
-            .get_points(
-                qdrant_collection.clone(),
-                None,
-                &points,
-                false.into(),
-                true.into(),
-                None,
-            )
-            .await
-            .map_err(|e| {
-                log::info!("Failed to fetch points from qdrant {:?}", e);
-                ServiceError::BadRequest("Failed to fetch points from qdrant".to_string())
-            })?;
-        let qdrant_payloads: Vec<QdrantPayload> = results
-            .result
-            .iter()
-            .map(|x| x.clone().into())
-            .collect::<Vec<QdrantPayload>>();
-        for (point, payload) in points.iter().zip(qdrant_payloads) {
-            let mut payload_tags: Vec<Option<String>> = payload
-                .group_tag_set
-                .clone()
-                .unwrap_or_default()
-                .iter()
-                .filter(|tag| match tag {
-                    Some(tag) => !prev_group_tag_set.contains(tag),
-                    None => false,
-                })
-                .cloned()
-                .collect();
-
-            let new_tags = new_group_tag_set.iter().map(|x| Some(x.clone()));
-            payload_tags.extend(new_tags);
-            payload_tags.dedup();
-
-            let point_selector = PointsSelector {
-                points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-                    ids: vec![point.clone()],
-                })),
-            };
-            let new_payload = QdrantPayload {
-                group_tag_set: Some(payload_tags.clone()),
-                ..payload
-            };
-            qdrant_client
-                .overwrite_payload(
-                    qdrant_collection.clone(),
-                    None,
-                    &point_selector,
-                    new_payload.into(),
-                    None,
-                    None,
-                )
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Failed updating chunk payload in qdrant".into())
-                })?;
-        }
+        update_group_tag_sets_in_qdrant_query(
+            qdrant_collection.clone(),
+            prev_group_tag_set.clone(),
+            new_group_tag_set.clone(),
+            points,
+        )
+        .await?;
     }
 
     Ok(())

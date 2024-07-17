@@ -17,7 +17,6 @@ use crate::data::models::{
     ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
     HasIDCondition, ScoreChunk, ScoreChunkDTO, SearchMethod, SlimChunkMetadata, UnifiedId,
 };
-use crate::get_env;
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
     ParsedQuery, SearchChunkQueryResponseBody, SearchChunksReqPayload,
@@ -25,7 +24,7 @@ use crate::handlers::chunk_handler::{
 use crate::handlers::group_handler::{
     SearchOverGroupsReqPayload, SearchWithinGroupReqPayload, SearchWithinGroupResults,
 };
-use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
+use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::{
     data::models::{get_range, FieldCondition, MatchCondition, Pool},
     errors::ServiceError,
@@ -42,9 +41,7 @@ use utoipa::ToSchema;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::qdrant::Filter;
-use qdrant_client::qdrant::{
-    point_id::PointIdOptions, Condition, HasIdCondition, PointId, SearchPoints,
-};
+use qdrant_client::qdrant::{Condition, HasIdCondition, PointId};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
@@ -767,81 +764,6 @@ pub async fn retrieve_group_qdrant_points_query(
         search_results: point_ids,
         total_chunk_pages: pages,
     })
-}
-
-#[tracing::instrument(skip(embedding_vector))]
-pub async fn global_unfiltered_top_match_query(
-    embedding_vector: Vec<f32>,
-    dataset_id: uuid::Uuid,
-    dataset_config: DatasetConfiguration,
-) -> Result<SearchResult, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
-
-    let qdrant_client = get_qdrant_connection(
-        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
-        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
-    )
-    .await?;
-
-    let mut dataset_filter = Filter::default();
-    dataset_filter
-        .must
-        .push(Condition::matches("dataset_id", dataset_id.to_string()));
-
-    let vector_name = match embedding_vector.len() {
-        384 => "384_vectors",
-        512 => "512_vectors",
-        768 => "768_vectors",
-        1024 => "1024_vectors",
-        3072 => "3072_vectors",
-        1536 => "1536_vectors",
-        _ => {
-            return Err(ServiceError::BadRequest(
-                "Invalid embedding vector size".to_string(),
-            ))
-        }
-    };
-
-    let data = qdrant_client
-        .search_points(&SearchPoints {
-            collection_name: qdrant_collection,
-            vector: embedding_vector,
-            vector_name: Some(vector_name.to_string()),
-            limit: 1,
-            with_payload: None,
-            filter: Some(dataset_filter),
-            ..Default::default()
-        })
-        .await
-        .map_err(|e| {
-            log::error!("Failed to search points on Qdrant {:?}", e);
-            ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
-        })?;
-
-    let top_search_result: SearchResult = match data.result.get(0) {
-        Some(point) => match point.clone().id {
-            Some(point_id) => match point_id.point_id_options {
-                Some(PointIdOptions::Uuid(id)) => SearchResult {
-                    score: point.score,
-                    point_id: uuid::Uuid::parse_str(&id).map_err(|_| {
-                        ServiceError::BadRequest("Failed to parse uuid".to_string())
-                    })?,
-                },
-                Some(PointIdOptions::Num(_)) => {
-                    return Err(ServiceError::BadRequest("Failed to parse uuid".to_string()))
-                }
-                None => return Err(ServiceError::BadRequest("Failed to parse uuid".to_string())),
-            },
-            None => return Err(ServiceError::BadRequest("Failed to parse uuid".to_string())),
-        },
-        // This only happens when there are no chunks in the database
-        None => SearchResult {
-            score: 0.0,
-            point_id: uuid::Uuid::nil(),
-        },
-    };
-
-    Ok(top_search_result)
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable)]
