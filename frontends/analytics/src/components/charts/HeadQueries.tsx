@@ -64,7 +64,12 @@ export const HeadQueries = (props: HeadQueriesProps) => {
         when={headQueriesQuery.data}
       >
         {(data) => (
-          <Table data={data()} headers={["Query", "Count"]} class="my-2">
+          <Table
+            fallback={<div class="py-8 text-center">No Data</div>}
+            data={data()}
+            headers={["Query", "Count"]}
+            class="my-2"
+          >
             {(row) => (
               <Tr>
                 <Td>{row.query}</Td>
