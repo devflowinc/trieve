@@ -4145,6 +4145,10 @@ pub struct MigratePointMessage {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct QdrantSortBy {
+    /// Field to sort by
     pub field: String,
-    pub direction: SortOrder,
+    /// Direction to sort by
+    pub direction: Option<SortOrder>,
+    /// How many results to pull in before the sort
+    pub prefetch_limit: Option<u64>,
 }
