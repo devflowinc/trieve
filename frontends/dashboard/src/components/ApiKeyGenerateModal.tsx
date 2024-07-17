@@ -309,7 +309,6 @@ export const ApiKeyGenerateModal = (props: {
                               Routes:
                             </label>
                             <MultiSelect
-                              disabled={selectedOrgs().length === 0}
                               items={availableRoutes}
                               selected={selectedRoutes()}
                               setSelected={(selected: Item[]) => {
