@@ -194,6 +194,7 @@ diesel::table! {
         created_at -> Timestamp,
         status -> Text,
         hosted_invoice_url -> Text,
+        stripe_id -> Nullable<Text>,
     }
 }
 

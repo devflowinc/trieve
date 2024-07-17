@@ -3867,6 +3867,7 @@ pub struct StripeInvoice {
     pub created_at: chrono::NaiveDateTime,
     pub status: String,
     pub hosted_invoice_url: String,
+    pub stripe_id: Option<String>,
 }
 
 impl StripeInvoice {
@@ -3876,6 +3877,7 @@ impl StripeInvoice {
         created_at: chrono::NaiveDateTime,
         status: String,
         url: String,
+        stripe_id: String,
     ) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
@@ -3884,6 +3886,7 @@ impl StripeInvoice {
             created_at,
             status,
             hosted_invoice_url: url,
+            stripe_id: Some(stripe_id),
         }
     }
 }
