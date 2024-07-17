@@ -12,3 +12,7 @@ pre.shiki {
   padding-right: 14px;
   padding-left: 14px;
 }
+
+.debug {
+  outline: 1px solid red;
+}

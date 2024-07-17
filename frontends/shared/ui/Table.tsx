@@ -24,7 +24,7 @@ const table = cva(["w-full"], {
   },
 });
 
-export const td = cva([], {
+export const td = cva(["whitespace-nowrap"], {
   variants: {
     spacing: {
       md: ["p-1", "px-2"],
