@@ -27,21 +27,8 @@ export const AfMessage = (props: AfMessageProps) => {
 
   createEffect(() => {
     if (props.streamingCompletion()) return;
-    const curOrder = props.order;
 
-    setContent(
-      props.content.replace(
-        /[[(]([^,\])]+)/g,
-        (entireMatch: string, content: string) => {
-          const match = content.match(/\d+\.\d+|\d+/);
-
-          if (match) {
-            return `<span>${entireMatch[0]}<button onclick='document.getElementById("doc_${curOrder}${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});' style='color: #3b82f6; text-decoration: underline;'>${content}</button></span>`;
-          }
-          return `[${content}]`;
-        },
-      ),
-    );
+    setContent(props.content);
   });
 
   return (
