@@ -96,23 +96,15 @@ export const AfMessage = (props: AfMessageProps) => {
   });
 
   const displayMessage = createMemo(() => {
-    if (props.role !== "assistant") return { content: props.content };
+    if (props.role !== "assistant") {
+      return { content: props.content };
+    }
 
-    const curOrder = props.order;
     const split_content = props.content.split("||");
     let content = props.content;
     if (split_content.length > 1) {
       setChunkMetadatas(JSON.parse(split_content[0]));
-      content = split_content[1].replace(
-        /\[([^,\]]+)/g,
-        (_, content: string) => {
-          const match = content.match(/\d+\.\d+|\d+/);
-          if (match) {
-            return `<span>[<button onclick='document.getElementById("doc_${curOrder}${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});' style='color: #3b82f6; text-decoration: underline;'>${content}</button></span>`;
-          }
-          return `[${content}]`;
-        },
-      );
+      content = split_content[1];
     } else if (props.content.length > 25) {
       return {
         content:
