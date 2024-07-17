@@ -31,7 +31,7 @@ import { Tooltip } from "shared/ui";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
-  selectedOrganization: Accessor<Organization | undefined>;
+  selectedOrganization: Accessor<Organization>;
 }
 
 export const DatasetOverview = (props: DatasetOverviewProps) => {
@@ -222,7 +222,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
   };
 
   const orgDatasetParams = (datasetId: string) => {
-    const orgId = props.selectedOrganization()?.id;
+    const orgId = props.selectedOrganization().id;
     return orgId && datasetId
       ? `/?organization=${orgId}&dataset=${datasetId}`
       : "";

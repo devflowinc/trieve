@@ -152,10 +152,12 @@ export const Overview = () => {
       />
       <div class="h-1" />
       <Show when={selectedOrganization()}>
-        <DatasetOverview
-          selectedOrganization={selectedOrganization}
-          setOpenNewDatasetModal={setNewDatasetModalOpen}
-        />
+        {(org) => (
+          <DatasetOverview
+            selectedOrganization={org}
+            setOpenNewDatasetModal={setNewDatasetModalOpen}
+          />
+        )}
       </Show>
       <NewDatasetModal
         isOpen={newDatasetModalOpen}
