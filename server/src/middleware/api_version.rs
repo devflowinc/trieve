@@ -111,6 +111,8 @@ where
                         Some(v) => match v {
                             "1.0" => APIVersion::V1,
                             "2.0" => APIVersion::V2,
+                            "V1" => APIVersion::V1,
+                            "V2" => APIVersion::V2,
                             _ => APIVersion::from_dataset(dataset),
                         },
                         None => APIVersion::from_dataset(dataset),
