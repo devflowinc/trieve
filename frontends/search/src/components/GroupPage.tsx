@@ -213,7 +213,11 @@ export const GroupPage = (props: GroupPageProps) => {
             highlight_delimiters: search.debounced.highlightDelimiters,
             highlight_max_length: search.debounced.highlightMaxLength,
             highlight_window: search.debounced.highlightWindow,
-            recency_bias: search.debounced.recencyBias,
+            sort_by: search.debounced.sort_by
+              ? {
+                  field: search.debounced.sort_by,
+                }
+              : undefined,
             use_reranker: search.debounced.useReranker,
             use_quote_negated_terms: search.debounced.useQuoteNegatedTerms,
           }),
