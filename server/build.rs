@@ -11,6 +11,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("cargo:rerun-if-changed=.env");
 
+    tonic_build::compile_protos("proto/tei.proto")?;
+
     Ok(())
 }
 
