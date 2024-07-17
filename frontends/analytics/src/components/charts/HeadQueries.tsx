@@ -1,6 +1,6 @@
-import { AnalyticsFilter, HeadQuery } from "shared/types";
+import { AnalyticsFilter } from "shared/types";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import { createEffect, For, Show, useContext } from "solid-js";
+import { createEffect, Show, useContext } from "solid-js";
 import { getHeadQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
