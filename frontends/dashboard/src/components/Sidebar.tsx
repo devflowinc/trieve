@@ -19,7 +19,13 @@ export const Sidebar = () => {
 
   const [showNewOrgModal, setShowNewOrgModal] = createSignal(false);
 
-  const organizations = createMemo(() => userContext?.user?.()?.orgs ?? []);
+  const sortedOrgs = createMemo(
+    () =>
+      [...(userContext?.user?.()?.orgs ?? [])].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      ) ?? [],
+  );
 
   // Construct ?organization=7136f468-fedb-4b50-a689-cbf94e01d629&dataset=674c7d49-132e-4d94-8b0e-3c8f898eda49 URL
   const orgDatasetParams = createMemo(() => {
@@ -38,7 +44,7 @@ export const Sidebar = () => {
           <div class="border-b px-4 py-3">
             <h5 class="font-semibold text-neutral-600">Organizations</h5>
             <div class="flex flex-col items-start space-y-1 py-2">
-              <For each={organizations()}>
+              <For each={sortedOrgs()}>
                 {(org) => (
                   <button
                     onClick={() => {
