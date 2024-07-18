@@ -6,9 +6,12 @@ import clickhouse_connect
 import clickhouse_connect.driver
 import clickhouse_connect.driver.client
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.cluster import HDBSCAN
 from scipy.spatial.distance import cosine
-anthropic_client = anthropic.Anthropic()
+import dotenv
+
+dotenv.load_dotenv()
+anthropic_client = anthropic.Anthropic(api_key=os.getenv("LLM_API_KEY"))
 
 
 # Function to fetch data from ClickHouse
@@ -33,6 +36,21 @@ def fetch_dataset_vectors(
     return rows
 
 
+def get_clusters(hdbscan, data):
+    labels = hdbscan.labels_
+    probabilties = hdbscan.probabilities_
+    clusters = {}
+    for i in range(len(labels)):
+        label = labels[i]
+        if label < 0:
+            continue
+        else:
+            if label not in clusters:
+                clusters[label] = []
+            clusters[label].append((data[i], probabilties[i], i))
+    return clusters
+
+
 def get_datasets(client: clickhouse_connect.driver.client.Client):
     query = """
         SELECT DISTINCT dataset_id
@@ -44,27 +62,20 @@ def get_datasets(client: clickhouse_connect.driver.client.Client):
     return rows
 
 
-def kmeans_clustering(data, n_clusters=10):
+def hdbscan_clustering(data):
     vectors = np.array([row[3] for row in data])
-    kmeans = KMeans(n_clusters=n_clusters, init="k-means++")
-    kmeans.fit(vectors)
-    return kmeans, vectors
+    hdb = HDBSCAN(min_cluster_size=30, min_samples=None)
+    hdb.fit(vectors)
+    return hdb
 
 
-# Function to find the closest queries to the centroids
-def get_topics(kmeans, vectors, data, n_points=5):
-    centroids = kmeans.cluster_centers_
-    topics = []
-
-    for i, centroid in enumerate(centroids):
-        distances = [cosine(centroid, vector) for vector in vectors]
-        closest_indices = np.argsort(distances)[
-            : n_points + 1
-        ]  # include the centroid itself
-
-        for row in data:
-            if row[4] == i:
-                row.append(cosine(centroid, row[3]))
+def get_topics(hdbscan, clusters, data, top_n=5):
+    topics = {}
+    for label, queries_and_index in clusters.items():
+        # Get the top_n queries with the highest probabilites for this cluster
+        top_queries = [
+            q[0][1] for q in sorted(queries_and_index, key=lambda x: x[1])[:top_n]
+        ]
 
         # Create a request to the ChatGPT model
         response = anthropic_client.messages.create(
@@ -74,44 +85,36 @@ def get_topics(kmeans, vectors, data, n_points=5):
             messages=[
                 {
                     "role": "user",
-                    "content": f"Here are some search queries from a cluster: {', '.join([data[idx][1] for idx in closest_indices])}",
+                    "content": f"Here are some search queries from a cluster: {', '.join(top_queries)}",
                 },
             ],
         )
         # Get the response text
         reply = response.content[0].text
         # Extract the topic name
-        topics.append(reply)
+        topics[label] = reply
 
-    return data, topics
-
-
-def append_cluster_membership(data, kmeans):
-    labels = kmeans.labels_
-    for i, row in enumerate(data):
-        row = list(row)
-        row.append(labels[i])
-        data[i] = row
-    return data
+    return topics
 
 
 def insert_centroids(
-    client: clickhouse_connect.driver.client.Client, data, dataset_id, topics
+    client: clickhouse_connect.driver.client.Client, data, dataset_id, topics, clusters
 ):
-    topic_ids = [uuid.uuid4() for _ in range(len(topics))]
+    for t in topics:
+        topics[t] = (topics[t], uuid.uuid4())
 
     client.insert(
         "cluster_topics",
         [
             [
-                topic_ids[i],
+                topic_and_topic_id[1],
                 dataset_id[0],
-                topic,
-                len([row for row in data if len(row) == 6 and row[4] == i]),
-                np.mean([row[2] for row in data if len(row) == 6 and row[4] == i]),
+                topic_and_topic_id[0],
+                len(clusters[label]),
+                np.mean([p[0][2] for p in clusters[label]]),
                 datetime.datetime.now(),
             ]
-            for i, topic in enumerate(topics)
+            for label, topic_and_topic_id in topics.items()
         ],
         column_names=[
             "id",
@@ -127,9 +130,17 @@ def insert_centroids(
         },
     )
 
+    membership_rows = []
+    for label, queries_and_index in clusters.items():
+        cluster_id = topics[label][1]
+        for row in queries_and_index:
+            search_id = row[0][0]
+            prob = row[1]
+            membership_rows.append([uuid.uuid4(), search_id, cluster_id, prob])
+
     client.insert(
         "search_cluster_memberships",
-        [[uuid.uuid4(), row[0], topic_ids[row[4]], float(row[5])] for row in data],
+        membership_rows,
         settings={
             "async_insert": "1",
             "wait_for_async_insert": "0",
@@ -151,17 +162,15 @@ if __name__ == "__main__":
             data = fetch_dataset_vectors(client, dataset_id[0], 3000)
 
             # Perform spherical k-means clustering
-            n_clusters = 15  # Change this to the desired number of clusters
-            kmeans, vectors = kmeans_clustering(data, n_clusters)
+            hdbscan = hdbscan_clustering(data)
 
-            # Append cluster membership to the data
-            data = append_cluster_membership(data, kmeans)
+            clusters = get_clusters(hdbscan, data)
 
             # Find the closest queries to the centroids
-            data, topics = get_topics(kmeans, vectors, data)
+            topics = get_topics(hdbscan, clusters, data)
 
             # Insert the topics into the database
-            insert_centroids(client, data, dataset_id, topics)
+            insert_centroids(client, data, dataset_id, topics, clusters)
 
             print(f"Finished clustering for {dataset_id[0]}")
         except Exception as e:
