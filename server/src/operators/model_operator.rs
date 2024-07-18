@@ -4,7 +4,6 @@ use crate::{
     get_env,
     handlers::chunk_handler::{BoostPhrase, DistancePhrase},
 };
-use actix_web::dev::Service;
 use futures::StreamExt;
 use itertools::Itertools;
 use murmur3::murmur3_32;
@@ -1094,14 +1093,12 @@ async fn create_batch_embedding_call(
                     prompt_name: None,
                 };
 
-                let response = client.embed(request).await.map_err(|e| {
+                client.embed(request).await.map_err(|e| {
                     ServiceError::BadRequest(format!(
                         "Failed making call to grpc embedding server: {:?}",
                         e
                     ))
-                });
-
-                response
+                })
             }
         })
         .buffered(5);
@@ -1446,6 +1443,7 @@ pub async fn get_sparse_vectors_grpc(
         })
         .collect();
 
+    #[allow(clippy::type_complexity)]
     let all_content_vectors: Vec<(usize, Vec<Vec<(u32, f32)>>)> =
         futures::future::join_all(vec_content_futures)
             .await
@@ -1519,7 +1517,8 @@ pub async fn get_batch_sparse_vectors_grpc(
                 } else {
                     message.clone()
                 };
-                let response = client
+
+                client
                     .embed_sparse(EmbedSparseRequest {
                         inputs: clipped_message,
                         truncate: true,
@@ -1531,8 +1530,7 @@ pub async fn get_batch_sparse_vectors_grpc(
                         ServiceError::BadRequest(
                             "Failed to call sparse embedding server".to_string(),
                         )
-                    });
-                response
+                    })
             }
         })
         .buffered(5);

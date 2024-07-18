@@ -18,5 +18,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 #[cfg(feature = "runtime-env")]
 fn main() -> Result<(), Box<dyn Error>> {
+    tonic_build::compile_protos("proto/tei.proto")?;
     Ok(())
 }
