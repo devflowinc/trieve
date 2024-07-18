@@ -154,6 +154,12 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
     );
   });
 
+  const filtersLength = createMemo(() => {
+    return (
+      mustFilters().length + mustNotFilters().length + shouldFilters().length
+    );
+  });
+
   return (
     <>
       <div class="w-full">
@@ -241,6 +247,23 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                     type="button"
                     class="flex items-center space-x-1 pb-1 text-sm"
                   >
+                    <Tooltip
+                      direction="right"
+                      body={
+                        <div
+                          classList={{
+                            "rounded-full w-3 h-3 text-[8px] text-center leading-[10px]":
+                              true,
+                            "bg-fuchsia-500 text-white": filtersLength() > 0,
+                            "bg-neutral-100 text-neutral-500":
+                              filtersLength() === 0,
+                          }}
+                        >
+                          {filtersLength()}
+                        </div>
+                      }
+                      tooltipText={`${filtersLength()} filter(s) applied`}
+                    />
                     <span>Filters</span>
                     <Switch>
                       <Match when={isOpen()}>
