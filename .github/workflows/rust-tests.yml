@@ -21,6 +21,8 @@ jobs:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
@@ -46,6 +48,8 @@ jobs:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
