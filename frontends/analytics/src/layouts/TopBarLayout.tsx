@@ -78,7 +78,7 @@ export const TopBarLayout: ParentComponent = (props) => {
   };
 
   return (
-    <div class="grid min-h-screen grid-cols-[250px_1fr] items-start bg-neutral-100 lg:grid-cols-[300px_1fr]">
+    <div class="grid h-screen min-h-screen grid-rows-1 overflow-hidden bg-neutral-100 lg:grid-cols-[300px_1fr]">
       <Sidebar
         datasetOptions={datasetsQuery.data || []}
         selectedDataset={selectedDataset()}
@@ -98,7 +98,7 @@ export const TopBarLayout: ParentComponent = (props) => {
           <DatasetContext.Provider
             value={selectedDataset as Accessor<DatasetAndUsage>}
           >
-            {props.children}
+            <div class="h-full overflow-auto">{props.children}</div>
           </DatasetContext.Provider>
         </Show>
       </div>
