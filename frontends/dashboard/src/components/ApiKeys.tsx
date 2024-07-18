@@ -96,41 +96,42 @@ export const ApiKeys = () => {
         <Show when={apiKeys().length > 0}>
           <div class="inline-block min-w-full overflow-hidden rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
             <table class="min-w-full divide-y divide-gray-300">
-              <thead>
+              <thead class="w-full min-w-full bg-neutral-100">
                 <tr>
                   <th
                     scope="col"
-                    class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 lg:pl-8"
+                    class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
                   >
                     Name
                   </th>
                   <th
                     scope="col"
-                    class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
                   >
                     Perms
                   </th>
                   <th
                     scope="col"
-                    class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    class="px-3 py-3.5 text-left text-sm font-semibold"
                   >
                     Datasets
                   </th>
                   <th
                     scope="col"
-                    class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    class="px-3 py-3.5 text-left text-sm font-semibold"
                   >
                     Organizations
                   </th>
                   <th
                     scope="col"
-                    class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    class="px-3 py-3.5 text-left text-sm font-semibold"
                   >
                     Created At
                   </th>
+                  <th />
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200 bg-white">
+              <tbody class="divide-y divide-neutral-200 bg-white">
                 <For each={apiKeys()}>
                   {(apiKey) => (
                     <tr>
@@ -197,16 +198,17 @@ export const ApiKeys = () => {
                         {formatDate(new Date(apiKey.created_at))}
                       </td>
                       <td class="px-3 py-3.5 text-center text-sm text-gray-900">
-                        <div
+                        <button
+                          class="text-red-500 hover:text-neutral-900"
                           onClick={(e) => {
                             e.preventDefault();
-                            deleteApiKey(apiKey.id);
+                            confirm(
+                              "Are you sure you want to delete this key?",
+                            ) && deleteApiKey(apiKey.id);
                           }}
                         >
-                          <button>
-                            <FaRegularTrashCan />
-                          </button>
-                        </div>
+                          <FaRegularTrashCan />
+                        </button>
                       </td>
                     </tr>
                   )}
