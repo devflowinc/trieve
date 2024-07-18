@@ -18,7 +18,7 @@ export const SearchAnalyticsPage = () => {
       search_method: "hybrid",
       search_type: "search",
     },
-    granularity: "second",
+    granularity: "day",
   });
 
   return (

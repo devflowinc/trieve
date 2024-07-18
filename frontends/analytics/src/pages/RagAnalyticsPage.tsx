@@ -5,7 +5,7 @@ import {
 } from "../components/SimpleTimeRangeSelector";
 import { createStore } from "solid-js/store";
 import { createEffect, createSignal } from "solid-js";
-import { Select } from "shared/ui";
+import { DateRangePicker, Select } from "shared/ui";
 import { RagQueries } from "../components/charts/RagQueries";
 import { RagUsage } from "../components/charts/RagUsage";
 
@@ -62,10 +62,10 @@ export const RagAnalyticsPage = () => {
           />
         </div>
         <div>
-          <SimpleTimeRangeSelector
-            label={<div class="text-sm text-neutral-600">Time Range</div>}
-            dateOption={dateRange.dateOption()}
-            setDateOption={dateRange.setDateOption}
+          <DateRangePicker
+            label="Date Range"
+            value={filter.date_range}
+            onChange={(e) => setFilter("date_range", e)}
           />
         </div>
       </div>

@@ -4,6 +4,7 @@
     "src",
     "ui",
     "types",
+    "types.ts",
     "utils"
   ],
 }
