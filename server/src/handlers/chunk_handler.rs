@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
-    ConditionType, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo, GeoInfoWithBias,
-    IngestSpecificChunkMetadata, Pool, QdrantSortBy, RagQueryEventClickhouse, RecommendType,
-    RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO,
-    SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore, UnifiedId,
+    ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo,
+    GeoInfoWithBias, IngestSpecificChunkMetadata, Pool, QdrantSortBy, RagQueryEventClickhouse,
+    RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
+    ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -21,8 +21,8 @@ use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
     autocomplete_fulltext_chunks, autocomplete_semantic_chunks, count_bm25_chunks,
-    count_full_text_chunks, count_hybrid_chunks, count_semantic_chunks, search_bm25_chunks,
-    search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
+    count_full_text_chunks, count_semantic_chunks, search_bm25_chunks, search_full_text_chunks,
+    search_hybrid_chunks, search_semantic_chunks,
 };
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -1565,8 +1565,8 @@ pub async fn get_chunk_by_id(
     "score_threshold": 0.5
 }))]
 pub struct CountChunksReqPayload {
-    /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid" it will pull in the count for both semantic and full-text searches and return the larger of the two. "semantic" will pull in the count for the nearest cosine distant vectors. "fulltext" will pull in the count for full-text results based on SPLADE.
-    pub search_type: SearchMethod,
+    /// Can be either "semantic", "fulltext", or "bm25". "hybrid" is not supported due to latency limitations with using the reranker. These search types are applied without the reranker cross-encoder model, so if you are using it be aware that the count may not directly correlate with an actual search query.
+    pub search_type: CountSearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
@@ -1584,12 +1584,13 @@ pub struct CountChunkQueryResponseBody {
 
 /// Count chunks above threshold
 ///
-/// This route can be used to determine the number of chunks that match a given search criteria including filters and score threshold. It may be high latency for large datasets. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization. There is a dataset configuration imposed restriction on the maximum limit value (default 10,000) which is used to prevent DDOS attacks.
+/// This route can be used to determine the number of chunk results that match a search query including score threshold and filters. It may be high latency for large limits. There is a dataset configuration imposed restriction on the maximum limit value (default 10,000) which is used to prevent DDOS attacks. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/chunk/count",
     context_path = "/api",
     tag = "Chunk",
+    request_body(content = CountChunksReqPayload, description = "JSON request payload to count chunks for a search query", content_type = "application/json"),
     responses(
         (status = 200, description = "Number of chunks satisfying the query", body = CountChunkQueryResponseBody),
         (status = 404, description = "Failed to count chunks", body = ErrorResponseBody)
@@ -1635,7 +1636,7 @@ pub async fn count_chunks(
     }
 
     let result_chunks = match data.search_type {
-        SearchMethod::FullText => {
+        CountSearchMethod::FullText => {
             if !dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
@@ -1652,7 +1653,7 @@ pub async fn count_chunks(
             )
             .await?
         }
-        SearchMethod::BM25 => {
+        CountSearchMethod::BM25 => {
             if !dataset_config.BM25_ENABLED
                 && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) != "true"
             {
@@ -1671,17 +1672,7 @@ pub async fn count_chunks(
             )
             .await?
         }
-        SearchMethod::Hybrid => {
-            count_hybrid_chunks(
-                search_req_data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-            )
-            .await?
-        }
-        SearchMethod::Semantic => {
+        CountSearchMethod::Semantic => {
             if !dataset_config.SEMANTIC_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Semantic search is not enabled for this dataset".into(),

@@ -3631,6 +3631,19 @@ pub enum SearchMethod {
     BM25,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum CountSearchMethod {
+    #[serde(rename = "fulltext", alias = "full_text")]
+    #[display(fmt = "fulltext")]
+    FullText,
+    #[display(fmt = "semantic")]
+    Semantic,
+    #[serde(rename = "bm25", alias = "BM25")]
+    #[display(fmt = "BM25")]
+    BM25,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SearchAnalyticsFilter {
     pub date_range: Option<DateRange>,
