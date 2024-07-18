@@ -16,9 +16,13 @@ export const Tooltip = (props: TooltipProps) => {
   return (
     <div class="relative">
       <div
-        class="flex items-center"
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
+        class="cursor-help flex items-center"
+        onMouseEnter={() => {
+          setShow(true);
+        }}
+        onMouseLeave={() => {
+          setShow(false);
+        }}
       >
         {props.body}
       </div>
@@ -39,19 +43,6 @@ export const Tooltip = (props: TooltipProps) => {
         >
           {props.tooltipText}
         </div>
-        <div
-          classList={{
-            "caret absolute h-4 w-4 rotate-45 transform": true,
-            "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2":
-              direction() === "top",
-            "right-0 top-1/2 -translate-y-1/2 translate-x-1/2":
-              direction() === "left",
-            "left-0 top-1/2 -translate-y-1/2 -translate-x-1/2":
-              direction() === "right",
-            "top-0 left-1/2 -translate-x-1/2 -translate-y-1/2":
-              direction() === "bottom",
-          }}
-        />
       </Show>
     </div>
   );
