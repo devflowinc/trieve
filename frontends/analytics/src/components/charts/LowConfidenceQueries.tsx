@@ -167,6 +167,7 @@ export const QueryCard = (props: QueryCardProps) => {
         style={{
           cursor: "pointer",
         }}
+        class="cursor-pointer odd:bg-white even:bg-neutral-100 hover:underline hover:odd:bg-neutral-100/80 hover:even:bg-neutral-200/80"
       >
         <Td class="truncate">{props.query.query}</Td>
         <Td class="truncate text-right">{props.query.top_score.toFixed(5)}</Td>
