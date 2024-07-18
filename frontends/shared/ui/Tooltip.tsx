@@ -25,7 +25,7 @@ export const Tooltip = (props: TooltipProps) => {
       <Show when={show()}>
         <div
           classList={{
-            "absolute z-10 inline-block w-[300px] rounded bg-white p-2 text-center shadow-lg dark:bg-black":
+            "absolute z-10 inline-block w-[300px] rounded bg-white p-2 text-center shadow-lg dark:bg-black text-wrap":
               true,
             "bottom-full left-1/2 -translate-x-1/2 translate-y-3":
               direction() === "top",
@@ -41,8 +41,7 @@ export const Tooltip = (props: TooltipProps) => {
         </div>
         <div
           classList={{
-            "caret absolute h-4 w-4 rotate-45 transform":
-              true,
+            "caret absolute h-4 w-4 rotate-45 transform": true,
             "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2":
               direction() === "top",
             "right-0 top-1/2 -translate-y-1/2 translate-x-1/2":

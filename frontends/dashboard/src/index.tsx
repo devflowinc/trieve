@@ -41,7 +41,7 @@ render(
     <Router>
       <Route path="/" component={ContextWrapper}>
         <Route path="/" component={Home} />
-        <Route path="/dashboard/dataset/:id" component={DatasetLayout}>
+        <Route path="/dashboard/dataset/:dataset_id" component={DatasetLayout}>
           <Route path="/" component={DatasetStart} />
           <Route path="/start" component={DatasetStart} />
           <Route path="/settings" component={DatasetSettingsPage} />

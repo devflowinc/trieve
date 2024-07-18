@@ -24,12 +24,13 @@ export const DatasetContext = createContext<DatasetStore>({
 });
 
 export const DatasetContextWrapper = (props: DatasetStoreContextProps) => {
+  const apiHost = import.meta.env.VITE_API_HOST as string;
   const userContext = useContext(UserContext);
   const [dataset, setDataset] = createSignal<Dataset | null>(null);
 
   createEffect(() => {
     if (userContext?.user?.()) {
-      const id = useParams().id;
+      const id = useParams().dataset_id;
       if (!id) return;
 
       if (!id || !id.match(/^[a-f0-9-]+$/)) {
@@ -37,8 +38,7 @@ export const DatasetContextWrapper = (props: DatasetStoreContextProps) => {
         return;
       }
 
-      const api_host = import.meta.env.VITE_API_HOST as string;
-      fetch(`${api_host}/dataset/${id}`, {
+      fetch(`${apiHost}/dataset/${id}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

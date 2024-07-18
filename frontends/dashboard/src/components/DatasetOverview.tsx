@@ -27,6 +27,7 @@ import { formatDate } from "../formatters";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "./ShowToasts";
 import { DefaultError, Organization } from "shared/types";
+import { Tooltip } from "shared/ui";
 
 export interface DatasetOverviewProps {
   setOpenNewDatasetModal: Setter<boolean>;
@@ -286,7 +287,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           </div>
         </div>
       </div>
-      <Show when={maxDatasets() === 0 && page() === 0}>
+      <Show when={(maxDatasets() === 0 && page() === 0) || !hasLoaded()}>
         <Switch>
           <Match when={hasLoaded()}>
             <button
@@ -305,7 +306,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
           </Match>
         </Switch>
       </Show>
-      <Show when={maxDatasets() > 0}>
+      <Show when={maxDatasets() > 0 && hasLoaded()}>
         <div class="mt-8">
           <div class="overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5">
             <table class="min-w-full divide-y divide-neutral-300">
@@ -458,36 +459,58 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                         )}
                       </td>
                       <td class="flex items-center justify-end gap-4 whitespace-nowrap py-4 pr-2 text-right text-sm font-medium">
-                        <button
-                          class="text-lg text-neutral-500 hover:text-neutral-900"
-                          onClick={() => {
-                            navigate(
-                              `/dashboard/dataset/${datasetAndUsage.dataset.id}/settings`,
-                            );
-                          }}
-                        >
-                          <FaSolidGear />
-                        </button>
-                        <button
-                          class="text-lg text-red-500 hover:text-neutral-900"
-                          onClick={() => {
-                            confirm(
-                              "Are you sure you want to delete this dataset?",
-                            ) && void deleteDataset(datasetAndUsage.dataset.id);
-                          }}
-                        >
-                          <FiTrash />
-                        </button>
-                        <button
-                          class="text-lg text-red-500 hover:text-neutral-900"
-                          onClick={() => {
-                            confirm(
-                              "Are you sure you want to clear this dataset?",
-                            ) && void clearDataset(datasetAndUsage.dataset.id);
-                          }}
-                        >
-                          <AiOutlineClear />
-                        </button>
+                        <Tooltip
+                          direction="left"
+                          body={
+                            <button
+                              class="text-lg text-neutral-500 hover:text-neutral-900"
+                              onClick={() => {
+                                navigate(
+                                  `/dashboard/dataset/${datasetAndUsage.dataset.id}/settings`,
+                                );
+                              }}
+                            >
+                              <FaSolidGear />
+                            </button>
+                          }
+                          tooltipText="Settings - Edit the dataset's RAG, search, and recommendation settings."
+                        />
+                        <Tooltip
+                          direction="left"
+                          body={
+                            <button
+                              class="text-lg text-red-500 hover:text-neutral-900"
+                              onClick={() => {
+                                confirm(
+                                  "Are you sure you want to delete this dataset?",
+                                ) &&
+                                  void deleteDataset(
+                                    datasetAndUsage.dataset.id,
+                                  );
+                              }}
+                            >
+                              <FiTrash />
+                            </button>
+                          }
+                          tooltipText="Delete Dataset - This will fully delete the dataset and make it no longer accessible. All chunks, groups, files , and the dataset itself will be fully removed."
+                        />
+                        <Tooltip
+                          direction="left"
+                          body={
+                            <button
+                              class="text-lg text-red-500 hover:text-neutral-900"
+                              onClick={() => {
+                                confirm(
+                                  "Are you sure you want to clear this dataset?",
+                                ) &&
+                                  void clearDataset(datasetAndUsage.dataset.id);
+                              }}
+                            >
+                              <AiOutlineClear />
+                            </button>
+                          }
+                          tooltipText="Clear Dataset - This will remove all chunks from the dataset, but not groups, files, or the dataset itself."
+                        />
                       </td>
                     </tr>
                   )}

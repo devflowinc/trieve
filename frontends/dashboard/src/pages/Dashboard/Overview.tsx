@@ -21,7 +21,7 @@ import { createToast } from "../../components/ShowToasts";
 import { BuildingSomething } from "../../components/BuildingSomething";
 
 export const Overview = () => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const userContext = useContext(UserContext);
   const [orgSubPlan, setOrgSubPlan] = createSignal<OrganizationAndSubAndPlan>();
@@ -36,11 +36,11 @@ export const Overview = () => {
   });
 
   createEffect(() => {
-    const selectedOrgId = selectedOrganization()?.id;
+    const selectedOrgId = userContext.selectedOrganizationId?.();
     if (!selectedOrgId) return;
 
     const orgSubPlanAbortController = new AbortController();
-    void fetch(`${api_host}/organization/${selectedOrgId}`, {
+    void fetch(`${apiHost}/organization/${selectedOrgId}`, {
       credentials: "include",
       headers: {
         "TR-Organization": selectedOrgId,
@@ -53,7 +53,7 @@ export const Overview = () => {
       });
 
     const orgUsageAbortController = new AbortController();
-    void fetch(`${api_host}/organization/usage/${selectedOrgId}`, {
+    void fetch(`${apiHost}/organization/usage/${selectedOrgId}`, {
       credentials: "include",
       headers: {
         "TR-Organization": selectedOrgId,
