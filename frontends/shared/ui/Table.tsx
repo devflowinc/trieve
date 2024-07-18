@@ -78,7 +78,7 @@ export const Table = <D,>(props: TableProps<D>) => {
 interface TrProps extends JSX.HTMLAttributes<HTMLTableRowElement> {}
 export const Tr = (props: TrProps) => {
   return (
-    <tr class={cn("even:bg-neutral-100 odd:bg-white", props.class)} {...props}>
+    <tr class={cn("odd:bg-neutral-100 even:bg-white", props.class)} {...props}>
       {props.children}
     </tr>
   );
@@ -96,7 +96,7 @@ export const Td = (props: TdProps) => {
   const [className, styleProps, rest] = splitProps(
     props,
     ["class"],
-    ["spacing", "border", "borderStyle", "fullWidth"],
+    ["spacing", "border", "borderStyle", "fullWidth"]
   );
 
   return (
@@ -118,7 +118,7 @@ export const Th = (props: ThProps) => {
   const [className, styleProps, rest] = splitProps(
     props,
     ["class"],
-    ["spacing"],
+    ["spacing"]
   );
 
   return (
