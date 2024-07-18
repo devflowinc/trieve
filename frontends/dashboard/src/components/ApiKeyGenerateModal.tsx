@@ -109,11 +109,20 @@ export const ApiKeyGenerateModal = (props: {
       body: JSON.stringify({
         name: name(),
         role: role(),
-        dataset_ids: selectedDatasetIds().map((d) => d.id),
-        organization_ids: selectedOrgs().map((org) => org.id),
-        scopes: selectedRoutes()
-          .map((route) => ApiRoutes[route.name as RouteScope])
-          .flat(),
+        dataset_ids:
+          selectedDatasetIds().length > 0
+            ? selectedDatasetIds().map((d) => d.id)
+            : undefined,
+        organization_ids:
+          selectedOrgs().length > 0
+            ? selectedOrgs().map((org) => org.id)
+            : undefined,
+        scopes:
+          selectedRoutes().length > 0
+            ? selectedRoutes()
+                .map((route) => ApiRoutes[route.name as RouteScope])
+                .flat()
+            : undefined,
       }),
     }).then((res) => {
       if (res.ok) {
