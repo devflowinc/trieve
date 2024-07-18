@@ -1,13 +1,8 @@
 import { AnalyticsParams, RequiredAnalyticsFilter } from "shared/types";
 import { SetStoreFunction } from "solid-js/store";
-import { Select } from "shared/ui";
+import { DateRangePicker, Select } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
-import { createEffect } from "solid-js";
-import {
-  SimpleTimeRangeSelector,
-  useSimpleTimeRange,
-} from "./SimpleTimeRangeSelector";
 
 const ALL_SEARCH_METHODS: RequiredAnalyticsFilter["search_method"][] = [
   "hybrid",
@@ -55,13 +50,6 @@ export const dateRanges: DateRangeOption[] = [
 ];
 
 export const FilterBar = (props: FilterBarProps) => {
-  const dateStuff = useSimpleTimeRange();
-
-  createEffect(() => {
-    props.setFilters("granularity", dateStuff.granularity());
-    props.setFilters("filter", "date_range", dateStuff.filter().date_range);
-  });
-
   return (
     <div class="flex justify-between border-neutral-400 px-3 py-2">
       <div class="flex items-center gap-2">
@@ -100,10 +88,11 @@ export const FilterBar = (props: FilterBarProps) => {
 
       <div class="flex gap-2">
         <div>
-          <SimpleTimeRangeSelector
-            label={<div class="text-sm text-neutral-600">Time Range</div>}
-            setDateOption={dateStuff.setDateOption}
-            dateOption={dateStuff.dateOption()}
+          <DateRangePicker
+            label="Date Range"
+            value={props.filters.filter.date_range}
+            onChange={(e) => props.setFilters("filter", "date_range", e)}
+            onGranularitySuggestion={(g) => props.setFilters("granularity", g)}
           />
         </div>
       </div>

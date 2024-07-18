@@ -502,6 +502,18 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.1.1.tgz#1ec17e2edbec25c8306d424ecfbf13c7de1aaa31"
   integrity sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==
 
+"@rnwonder/simple-datejs@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@rnwonder/simple-datejs/-/simple-datejs-1.0.5.tgz#859d07766c17f81bc5f35f4f9a5cf91071aa6f12"
+  integrity sha512-0cJtQBkPLZlvrWsiBFmjNtH1ikyNps5rMWQN6wcIg3W3Zy7mdR5oyJrZW+sAW8Cj+3xZEgbOXRV+IyEbiKbujw==
+
+"@rnwonder/solid-date-picker@^1.3.8":
+  version "1.3.8"
+  resolved "https://registry.yarnpkg.com/@rnwonder/solid-date-picker/-/solid-date-picker-1.3.8.tgz#a66b7aa9cad5ad784bff1a345293eecdb2b084f3"
+  integrity sha512-+Al5wh0ZRdu1zOKVHUOqzOIQBg1trNnOeaIQ3RYGgk/CSCJnlsjzHZflBb+Pvj+AIQwi4f0L36LVsLm1Nn4a7w==
+  dependencies:
+    "@rnwonder/simple-datejs" "^1.0.5"
+
 "@rollup/rollup-android-arm-eabi@4.18.0":
   version "4.18.0"
   resolved "https://registry.yarnpkg.com/@rollup/rollup-android-arm-eabi/-/rollup-android-arm-eabi-4.18.0.tgz#bbd0e616b2078cd2d68afc9824d1fadb2f2ffd27"
