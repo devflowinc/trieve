@@ -140,7 +140,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.11.3",
+        version = "0.11.4",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -331,6 +331,7 @@ impl Modify for SecurityAddon {
             data::models::RAGAnalyticsFilter,
             data::models::RagTypes,
             data::models::RagQueryEvent,
+            data::models::CountSearchMethod,
             data::models::SearchMethod,
             data::models::SearchType,
             data::models::ApiKeyRespBody,
