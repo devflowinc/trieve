@@ -2,7 +2,7 @@ import { Accessor, createEffect, createMemo, createSignal } from "solid-js";
 import { DatasetAndUsage, Organization } from "shared/types";
 import createFuzzySearch from "@nozbe/microfuzz";
 
-const FETCHING_SIZE = 100;
+const FETCHING_SIZE = 1000;
 const PAGE_SIZE = 20;
 
 const getDatasets = async ({ orgId }: { orgId: string }) => {
@@ -60,6 +60,8 @@ export const useDatasetPages = (props: {
     if (!org_id) {
       return;
     }
+
+    setHasLoaded(false);
     void getDatasets({ orgId: org_id }).then((datasets) => {
       setRealDatasets(datasets);
       setHasLoaded(true);
