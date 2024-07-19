@@ -42,7 +42,11 @@ import {
   FaSolidChevronUp,
   FaSolidDownload,
 } from "solid-icons/fa";
-import { useSearch } from "../hooks/useSearch";
+import {
+  isSortByField,
+  isSortBySearchType,
+  useSearch,
+} from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
 import { BiRegularXCircle } from "solid-icons/bi";
@@ -190,6 +194,18 @@ export const GroupPage = (props: GroupPageProps) => {
       } else {
         setSearchLoading(true);
 
+        let sort_by;
+
+        if (isSortBySearchType(search.debounced.sort_by)) {
+          search.debounced.sort_by.rerank_type != ""
+            ? (sort_by = search.debounced.sort_by)
+            : (sort_by = undefined);
+        } else if (isSortByField(search.debounced.sort_by)) {
+          search.debounced.sort_by.field != ""
+            ? (sort_by = search.debounced.sort_by)
+            : (sort_by = undefined);
+        }
+
         void fetch(`${apiHost}/chunk_group/search`, {
           method: "POST",
           headers: {
@@ -213,12 +229,7 @@ export const GroupPage = (props: GroupPageProps) => {
             highlight_delimiters: search.debounced.highlightDelimiters,
             highlight_max_length: search.debounced.highlightMaxLength,
             highlight_window: search.debounced.highlightWindow,
-            sort_by: search.debounced.sort_by
-              ? {
-                  field: search.debounced.sort_by,
-                }
-              : undefined,
-            use_reranker: search.debounced.useReranker,
+            sort_by: sort_by,
             use_quote_negated_terms: search.debounced.useQuoteNegatedTerms,
           }),
         }).then((response) => {

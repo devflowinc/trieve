@@ -2,7 +2,48 @@ import { Params, useSearchParams } from "@solidjs/router";
 import { createEffect, on } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 
-const initalState = {
+export interface SortByField {
+  field: string;
+}
+
+export interface SortBySearchType {
+  rerank_type: string;
+}
+
+export function isSortByField(
+  sortBy: SortByField | SortBySearchType,
+): sortBy is SortByField {
+  return (sortBy as SortByField).field !== undefined;
+}
+
+export function isSortBySearchType(
+  sortBy: SortByField | SortBySearchType,
+): sortBy is SortBySearchType {
+  return (sortBy as SortBySearchType).rerank_type !== undefined;
+}
+
+export interface SearchOptions {
+  version: number;
+  query: string;
+  searchType: string;
+  scoreThreshold: number;
+  extendResults: boolean;
+  slimChunks: boolean;
+  groupUniqueSearch: boolean;
+  sort_by: SortByField | SortBySearchType;
+  pageSize: number;
+  getTotalPages: boolean;
+  highlightResults: boolean;
+  highlightThreshold: number;
+  highlightDelimiters: string[];
+  highlightMaxLength: number;
+  highlightMaxNum: number;
+  highlightWindow: number;
+  group_size: number;
+  useQuoteNegatedTerms: boolean;
+}
+
+const initalState: SearchOptions = {
   version: 0, // Variable used to subscribe to entire store.
   query: "",
   searchType: "",
@@ -10,7 +51,9 @@ const initalState = {
   extendResults: false,
   slimChunks: false,
   groupUniqueSearch: false,
-  sort_by: "",
+  sort_by: {
+    field: "",
+  },
   pageSize: 10,
   getTotalPages: false,
   highlightResults: true,
@@ -20,11 +63,8 @@ const initalState = {
   highlightMaxNum: 3,
   highlightWindow: 0,
   group_size: 3,
-  useReranker: false,
   useQuoteNegatedTerms: false,
 };
-
-export type SearchOptions = typeof initalState;
 
 const fromStateToParams = (state: SearchOptions): Params => {
   return {
@@ -35,7 +75,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     extendResults: state.extendResults.toString(),
     slimChunks: state.slimChunks.toString(),
     groupUniqueSearch: state.groupUniqueSearch.toString(),
-    sort_by: state.sort_by.toString(),
+    sort_by: JSON.stringify(state.sort_by),
     pageSize: state.pageSize.toString(),
     getTotalPages: state.getTotalPages.toString(),
     highlightResults: state.highlightResults.toString(),
@@ -45,7 +85,6 @@ const fromStateToParams = (state: SearchOptions): Params => {
     highlightMaxNum: state.highlightMaxNum.toString(),
     highlightWindow: state.highlightWindow.toString(),
     group_size: state.group_size?.toString(),
-    useReranker: state.useReranker.toString(),
     useQuoteNegatedTerms: state.useQuoteNegatedTerms.toString(),
   };
 };
@@ -60,7 +99,9 @@ const fromParamsToState = (
     extendResults: params.extendResults === "true",
     slimChunks: params.slimChunks === "true",
     groupUniqueSearch: params.groupUniqueSearch === "true",
-    sort_by: params.sort_by ?? initalState.sort_by,
+    sort_by:
+      (JSON.parse(params.sort_by ?? "{}") as SortByField | SortBySearchType) ??
+      initalState.sort_by,
     pageSize: parseInt(params.pageSize ?? "10"),
     getTotalPages: (params.getTotalPages ?? "true") === "true",
     highlightResults: (params.highlightResults ?? "true") === "true",
@@ -71,7 +112,6 @@ const fromParamsToState = (
     highlightMaxNum: parseInt(params.highlightMaxNum ?? "3"),
     highlightWindow: parseInt(params.highlightWindow ?? "0"),
     group_size: parseInt(params.group_size ?? "3"),
-    useReranker: (params.useReranker ?? "false") === "true",
     useQuoteNegatedTerms: (params.useQuoteNegatedTerms ?? "false") === "true",
   };
 };

@@ -4168,7 +4168,7 @@ pub struct MigratePointMessage {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SortByField {
-    /// Field to sort by
+    /// Field to sort by. This has to be a numeric field with a Qdrant `Range` index on it. i.e. num_value and timestamp
     pub field: String,
     /// Direction to sort by
     pub direction: Option<SortOrder>,
@@ -4178,7 +4178,7 @@ pub struct SortByField {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SortBySearchType {
-    /// Field to sort by
+    /// Search Method to get candidates from
     pub rerank_type: ReRankOptions,
     /// Direction to sort by
     pub prefetch_limit: Option<u64>,
