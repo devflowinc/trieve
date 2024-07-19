@@ -11,7 +11,7 @@ from scipy.spatial.distance import cosine
 import dotenv
 
 dotenv.load_dotenv()
-anthropic_client = anthropic.Anthropic(api_key=os.getenv("LLM_API_KEY"))
+anthropic_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
 # Function to fetch data from ClickHouse
