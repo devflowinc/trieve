@@ -195,30 +195,26 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 placeholder="Search for chunks..."
                 rows={props.search.state.query.split("\n").length}
               />
-              <Show when={props.search.state.query}>
-                <button
-                  classList={{
-                    "pt-[2px]": !!props.search.state.query,
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    props.search.setSearch("query", "");
-                  }}
-                >
-                  <BiRegularX class="h-7 w-7 fill-current" />
-                </button>
-              </Show>
-              <Show when={props.search.state.query}>
-                <button
-                  classList={{
-                    "border-l border-neutral-600 pl-[10px] dark:border-neutral-200":
-                      !!props.search.state.query,
-                  }}
-                  type="submit"
-                >
-                  <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
-                </button>
-              </Show>
+              <button
+                classList={{
+                  "pt-[2px]": !!props.search.state.query,
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  props.search.setSearch("query", "");
+                }}
+              >
+                <BiRegularX class="h-7 w-7 fill-current" />
+              </button>
+              <button
+                classList={{
+                  "border-l border-neutral-600 pl-[10px] dark:border-neutral-200":
+                    !!props.search.state.query,
+                }}
+                type="submit"
+              >
+                <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
+              </button>
             </div>
           </div>
           <div class="flex space-x-3">

@@ -1735,3 +1735,61 @@ pub async fn update_group_tag_sets_in_qdrant_query(
 
     Ok(())
 }
+
+pub async fn scroll_dataset_points(
+    limit: u64,
+    offset_id: Option<uuid::Uuid>,
+    sort_by: Option<QdrantSortBy>,
+    dataset_config: DatasetConfiguration,
+    filter: Filter,
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
+    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let mut scroll_points_params = ScrollPointsBuilder::new(qdrant_collection);
+
+    scroll_points_params = scroll_points_params.limit(limit as u32);
+
+    if let Some(offset_id) = offset_id {
+        scroll_points_params = scroll_points_params.offset(offset_id.to_string());
+    };
+
+    if let Some(sort_by) = sort_by {
+        scroll_points_params = scroll_points_params.order_by(OrderBy {
+            key: sort_by.field,
+            direction: Some(sort_by.direction.unwrap_or(SortOrder::Desc).into()),
+            ..Default::default()
+        });
+    };
+
+    scroll_points_params = scroll_points_params.filter(filter);
+
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+
+    let qdrant_point_ids = qdrant_client
+        .scroll(scroll_points_params.with_payload(false).with_vectors(false))
+        .await
+        .map_err(|err| {
+            log::error!("Failed to scroll points from qdrant {:?}", err);
+            ServiceError::BadRequest("Failed to scroll points from qdrant".to_string())
+        })?;
+
+    let point_ids = qdrant_point_ids
+        .result
+        .iter()
+        .filter_map(|point| {
+            let point_id = match point.id.clone()?.point_id_options? {
+                PointIdOptions::Uuid(id) => uuid::Uuid::parse_str(&id).ok()?,
+                PointIdOptions::Num(_) => {
+                    return None;
+                }
+            };
+
+            Some(point_id)
+        })
+        .collect::<Vec<uuid::Uuid>>();
+
+    Ok(point_ids)
+}
