@@ -20,7 +20,12 @@ import { FaSolidCheck } from "solid-icons/fa";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { Filter, FilterItem, Filters } from "./FilterModal";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
-import { SearchOptions, SearchStore } from "../hooks/useSearch";
+import {
+  isSortByField,
+  isSortBySearchType,
+  SearchOptions,
+  SearchStore,
+} from "../hooks/useSearch";
 import { Tooltip } from "shared/ui";
 import { BsQuestionCircle } from "solid-icons/bs";
 
@@ -107,12 +112,30 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
     {
       name: "Timestamp",
       isSelected: false,
-      route: "time_stamp",
+      value: "time_stamp",
     },
     {
       name: "Num Value",
       isSelected: false,
-      route: "num_value",
+      value: "num_value",
+    },
+  ]);
+
+  const [rerankTypes, setRerankTypes] = createSignal([
+    {
+      name: "Semantic",
+      isSelected: false,
+      value: "semantic",
+    },
+    {
+      name: "FullText",
+      isSelected: false,
+      value: "fulltext",
+    },
+    {
+      name: "Cross Encoder",
+      isSelected: false,
+      value: "cross_encoder",
     },
   ]);
 
@@ -131,8 +154,28 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   createEffect(() => {
     setSortTypes((prev) => {
       return prev.map((type) => {
-        if (type.route === props.search.state.sort_by) {
-          return { ...type, isSelected: true };
+        if (isSortByField(props.search.state.sort_by)) {
+          if (type.value === props.search.state.sort_by.field) {
+            return { ...type, isSelected: true };
+          } else {
+            return { ...type, isSelected: false };
+          }
+        } else {
+          return { ...type, isSelected: false };
+        }
+      });
+    });
+  });
+
+  createEffect(() => {
+    setRerankTypes((prev) => {
+      return prev.map((type) => {
+        if (isSortBySearchType(props.search.state.sort_by)) {
+          if (type.value === props.search.state.sort_by.rerank_type) {
+            return { ...type, isSelected: true };
+          } else {
+            return { ...type, isSelected: false };
+          }
         } else {
           return { ...type, isSelected: false };
         }
@@ -148,10 +191,15 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   });
 
   createEffect(() => {
-    props.search.setSearch(
-      "sort_by",
-      sortTypes().find((type) => type.isSelected)?.route ?? "",
-    );
+    props.search.setSearch("sort_by", {
+      field: sortTypes().find((type) => type.isSelected)?.value,
+    });
+  });
+
+  createEffect(() => {
+    props.search.setSearch("sort_by", {
+      rerank_type: rerankTypes().find((type) => type.isSelected)?.value,
+    });
   });
 
   const filtersLength = createMemo(() => {
@@ -637,6 +685,81 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 </>
               )}
             </Popover>
+            <Popover defaultOpen={false} class="relative">
+              {({ isOpen, setState }) => (
+                <>
+                  <PopoverButton
+                    aria-label="Toggle filters"
+                    type="button"
+                    class="flex items-center space-x-1 pb-1 text-sm"
+                  >
+                    <span>Rerank By</span>
+                    <Switch>
+                      <Match when={isOpen()}>
+                        <FiChevronUp class="h-3.5 w-3.5" />
+                      </Match>
+                      <Match when={!isOpen()}>
+                        <FiChevronDown class="h-3.5 w-3.5" />
+                      </Match>
+                    </Switch>
+                  </PopoverButton>
+                  <Show when={isOpen()}>
+                    <PopoverPanel
+                      unmount={false}
+                      class="absolute z-10 mt-2 h-fit w-[180px] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                    >
+                      <Menu class="ml-1 space-y-1">
+                        <For each={rerankTypes()}>
+                          {(option) => {
+                            const onClick = (e: Event) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setRerankTypes((prev) => {
+                                return prev.map((item) => {
+                                  if (item.name === option.name) {
+                                    return {
+                                      ...item,
+                                      isSelected: !item.isSelected,
+                                    };
+                                  } else {
+                                    return {
+                                      ...item,
+                                      isSelected: item.isSelected,
+                                    };
+                                  }
+                                });
+                              });
+                              setState(true);
+                            };
+                            return (
+                              <MenuItem
+                                as="button"
+                                classList={{
+                                  "flex w-full items-center justify-between rounded p-1 focus:text-black focus:outline-none dark:hover:text-white dark:focus:text-white":
+                                    true,
+                                  "bg-neutral-300 dark:bg-neutral-900":
+                                    option.isSelected,
+                                }}
+                                onClick={onClick}
+                              >
+                                <div class="flex flex-row justify-start space-x-2">
+                                  <span class="text-left">{option.name}</span>
+                                </div>
+                                {option.isSelected && (
+                                  <span>
+                                    <FaSolidCheck class="fill-current text-xl" />
+                                  </span>
+                                )}
+                              </MenuItem>
+                            );
+                          }}
+                        </For>
+                      </Menu>
+                    </PopoverPanel>
+                  </Show>
+                </>
+              )}
+            </Popover>
             <Popover
               defaultOpen={false}
               class="relative"
@@ -680,7 +803,9 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 scoreThreshold: 0.0,
                                 extendResults: false,
                                 slimChunks: false,
-                                sort_by: "",
+                                sort_by: {
+                                  field: "",
+                                },
                                 pageSize: 10,
                                 getTotalPages: true,
                                 highlightResults: true,
@@ -689,7 +814,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 highlightMaxNum: 3,
                                 highlightWindow: 0,
                                 group_size: 3,
-                                useReranker: false,
                               } as SearchOptions);
                             }}
                           >
@@ -767,22 +891,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                 return {
                                   ...prev,
                                   pageSize: parseInt(e.currentTarget.value),
-                                };
-                              });
-                            }}
-                          />
-                        </div>
-                        <div class="flex items-center justify-between space-x-2 p-1">
-                          <label>Use Re-Ranker</label>
-                          <input
-                            class="h-4 w-4"
-                            type="checkbox"
-                            checked={tempSearchValues().useReranker}
-                            onChange={(e) => {
-                              setTempSearchValues((prev) => {
-                                return {
-                                  ...prev,
-                                  useReranker: e.target.checked,
                                 };
                               });
                             }}

@@ -37,7 +37,11 @@ import {
 } from "solid-icons/fa";
 import { Filters } from "./FilterModal";
 import { createToast } from "./ShowToasts";
-import { SearchStore } from "../hooks/useSearch";
+import {
+  isSortByField,
+  isSortBySearchType,
+  SearchStore,
+} from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
 import { VsFileSymlinkFile } from "solid-icons/vs";
@@ -156,6 +160,19 @@ const ResultsPage = (props: ResultsPageProps) => {
       const dataset = $dataset?.();
       if (!dataset) return;
 
+      let sort_by;
+
+      if (isSortBySearchType(props.search.debounced.sort_by)) {
+        props.search.debounced.sort_by.rerank_type != ""
+          ? (sort_by = props.search.debounced.sort_by)
+          : (sort_by = undefined);
+      } else if (isSortByField(props.search.debounced.sort_by)) {
+        props.search.debounced.sort_by.field != ""
+          ? (sort_by = props.search.debounced.sort_by)
+          : (sort_by = undefined);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const requestBody: any = {
         query: props.search.debounced.query,
         page: page(),
@@ -164,11 +181,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           ? props.search.debounced.searchType.replace("autocomplete-", "")
           : props.search.debounced.searchType,
         score_threshold: props.search.debounced.scoreThreshold,
-        sort_by: props.search.debounced.sort_by
-          ? {
-              field: props.search.debounced.sort_by,
-            }
-          : undefined,
+        sort_by: sort_by,
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
         get_total_pages: props.search.debounced.getTotalPages ?? false,
@@ -183,7 +196,6 @@ const ResultsPage = (props: ResultsPageProps) => {
         highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
         highlight_window: props.search.debounced.highlightWindow ?? 0,
         group_size: props.search.debounced.group_size ?? 3,
-        use_reranker: props.search.debounced.useReranker,
         use_quote_negated_terms: props.search.debounced.useQuoteNegatedTerms,
       };
 
