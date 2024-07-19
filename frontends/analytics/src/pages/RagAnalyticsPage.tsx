@@ -1,13 +1,10 @@
 import { RequiredRAGAnalyticsFilter } from "shared/types";
-import {
-  SimpleTimeRangeSelector,
-  useSimpleTimeRange,
-} from "../components/SimpleTimeRangeSelector";
 import { createStore } from "solid-js/store";
 import { createEffect, createSignal } from "solid-js";
 import { DateRangePicker, Select } from "shared/ui";
 import { RagQueries } from "../components/charts/RagQueries";
 import { RagUsage } from "../components/charts/RagUsage";
+import { subDays } from "date-fns";
 
 type FakeRAGType = "chosen_chunks" | "all_chunks" | "both";
 type FakeRAGOption = {
@@ -21,20 +18,16 @@ const ALL_FAKE_RAG_OPTIONS: FakeRAGOption[] = [
 ];
 
 export const RagAnalyticsPage = () => {
-  const dateRange = useSimpleTimeRange();
-
   const [filter, setFilter] = createStore<RequiredRAGAnalyticsFilter>({
-    date_range: dateRange.filter().date_range,
+    date_range: {
+      gt: subDays(new Date(), 7),
+    },
     rag_type: undefined,
   });
 
   const [fakeType, setFakeType] = createSignal<FakeRAGOption>(
     ALL_FAKE_RAG_OPTIONS[0],
   );
-
-  createEffect(() => {
-    setFilter("date_range", dateRange.filter().date_range);
-  });
 
   // Sync the fake rag type with the real one, setting it undefined if its both
   createEffect(() => {
