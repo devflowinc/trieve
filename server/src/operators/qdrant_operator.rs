@@ -997,13 +997,24 @@ pub async fn search_qdrant_query(
     let search_point_req_payloads: Vec<QueryPoints> = queries
         .into_iter()
         .map(|query| {
-            let (prefetch, (vector_name, qdrant_query)) =
+            let (mut prefetch, (vector_name, qdrant_query)) =
                 get_prefetch_query(query.clone(), dataset_config.clone());
+
+            let offset = query.limit * page.saturating_sub(1);
+            if let Some(prefetch) = prefetch.get_mut(0) {
+                let new_page = if offset / prefetch.limit.unwrap_or(0) > 0 {
+                    (offset / prefetch.limit.unwrap_or(0)) + 1
+                } else {
+                    1
+                };
+
+                prefetch.limit = Some(prefetch.limit.unwrap_or(0) * new_page);
+            }
 
             QueryPoints {
                 collection_name: qdrant_collection.to_string(),
                 limit: Some(query.limit),
-                offset: Some(query.limit * page.checked_sub(1).unwrap_or(0)),
+                offset: Some(offset),
                 prefetch,
                 using: vector_name,
                 query: Some(qdrant_query),
