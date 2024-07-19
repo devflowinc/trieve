@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Show,
   createEffect,
@@ -140,19 +143,6 @@ const ResultsPage = (props: ResultsPageProps) => {
       `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
   );
 
-  createEffect(
-    on(
-      () => [props.search.state.query],
-      () => {
-        if (!props.search.state.query) {
-          setResultChunks([]);
-          setGroupResultChunks([]);
-          setClientSideRequestFinished(true);
-        }
-      },
-    ),
-  );
-
   const dataset = createMemo(() => {
     if ($dataset) {
       return $dataset();
@@ -165,15 +155,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     on([() => props.search.debounced.version, dataset, page], () => {
       const dataset = $dataset?.();
       if (!dataset) return;
-      if (
-        !props.search.debounced.query ||
-        props.search.debounced.query === ""
-      ) {
-        setLoading(false);
-        return;
-      }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const requestBody: any = {
         query: props.search.debounced.query,
         page: page(),
@@ -205,16 +187,25 @@ const ResultsPage = (props: ResultsPageProps) => {
         use_quote_negated_terms: props.search.debounced.useQuoteNegatedTerms,
       };
 
-      let searchRoute = "chunk/search";
-      const groupUnique = props.search.debounced.groupUniqueSearch;
-      if (groupUnique) {
-        searchRoute = "chunk_group/group_oriented_search";
-      }
+      let searchRoute = "";
+      let groupUnique = false;
+      if (
+        !props.search.debounced.query ||
+        props.search.debounced.query === ""
+      ) {
+        searchRoute = "chunks/scroll";
+      } else {
+        searchRoute = "chunk/search";
+        groupUnique = props.search.debounced.groupUniqueSearch;
+        if (groupUnique) {
+          searchRoute = "chunk_group/group_oriented_search";
+        }
 
-      if (props.search.debounced.searchType.includes("autocomplete")) {
-        searchRoute = "chunk/autocomplete";
-        requestBody["extend_results"] =
-          props.search.debounced.extendResults ?? false;
+        if (props.search.debounced.searchType.includes("autocomplete")) {
+          searchRoute = "chunk/autocomplete";
+          requestBody["extend_results"] =
+            props.search.debounced.extendResults ?? false;
+        }
       }
 
       setLoading(true);
@@ -238,7 +229,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       }).then((response) => {
         if (response.ok) {
           void response.json().then((data) => {
-            let resultingChunks: ScoreChunkDTO[] = [];
+            let resultingChunks: any = [];
             if (groupUnique) {
               const groupResult = data.results as GroupScoreChunkDTO[];
               setTotalPages(data.total_pages);
@@ -249,7 +240,17 @@ const ResultsPage = (props: ResultsPageProps) => {
                 return groupChunkDTO.chunks;
               });
             } else {
-              resultingChunks = data.chunks as ScoreChunkDTO[];
+              resultingChunks = data.chunks;
+              resultingChunks = resultingChunks.map((chunk: any) => {
+                if (!Object.keys(chunk).includes("score")) {
+                  return {
+                    chunk: chunk,
+                    score: 0,
+                  };
+                } else {
+                  return chunk;
+                }
+              });
 
               setResultChunks(resultingChunks);
               setTotalPages(data.total_pages);

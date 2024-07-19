@@ -18,11 +18,13 @@ use crate::operators::clickhouse_operator::{
 };
 use crate::operators::dataset_operator::get_dataset_usage_query;
 use crate::operators::parse_operator::convert_html_to_text;
-use crate::operators::qdrant_operator::{point_ids_exists_in_qdrant, recommend_qdrant_query};
+use crate::operators::qdrant_operator::{
+    point_ids_exists_in_qdrant, recommend_qdrant_query, scroll_dataset_points,
+};
 use crate::operators::search_operator::{
-    autocomplete_fulltext_chunks, autocomplete_semantic_chunks, count_bm25_chunks,
-    count_full_text_chunks, count_semantic_chunks, search_bm25_chunks, search_full_text_chunks,
-    search_hybrid_chunks, search_semantic_chunks,
+    assemble_qdrant_filter, autocomplete_fulltext_chunks, autocomplete_semantic_chunks,
+    count_bm25_chunks, count_full_text_chunks, count_semantic_chunks, search_bm25_chunks,
+    search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
 };
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -1505,6 +1507,76 @@ pub async fn autocomplete(
 pub enum ChunkReturnTypes {
     V2(ChunkMetadata),
     V1(ChunkMetadataStringTagSet),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct ScrollChunksResponseBody {
+    pub chunks: Vec<ChunkMetadata>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct ScrollChunksReqPayload {
+    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+    pub page_size: Option<u64>,
+    /// Offset chunk id is the id of the chunk to start the page from. If not specified, this defaults to the first chunk in the dataset sorted by id ascending.
+    pub offset_chunk_id: Option<uuid::Uuid>,
+    /// Get total page count for the query accounting for the applied filters. Defaults to false, but can be set to true when the latency penalty is acceptable (typically 50-200ms).
+    pub filters: Option<ChunkFilter>,
+    /// Sort by lets you specify a key to sort the results by. If not specified, this defaults to the id's of the chunks. If specified, the field can be num_value, time_stamp, or any key in the chunk metadata. This key must be a numeric value within the payload.
+    pub sort_by: Option<QdrantSortBy>,
+}
+
+/// Scroll Chunks
+///
+/// Get paginated chunks from your dataset with filters and custom sorting. If sort by is not specified, the results will sort by the id's of the chunks in ascending order.
+#[utoipa::path(
+    post,
+    path = "/chunks/scroll",
+    context_path = "/api",
+    tag = "Chunk",
+    responses(
+        (status = 200, description = "Number of chunks equivalent to page_size starting from offset_chunk_id", body = ScrollChunksReqPayload),
+        (status = 400, description = "Service error relating to scrolling chunks", body = ErrorResponseBody)
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn scroll_dataset_chunks(
+    data: web::Json<ScrollChunksReqPayload>,
+    _user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+    let filters = data.filters.clone();
+
+    let filter = assemble_qdrant_filter(filters, None, None, dataset_id, pool.clone()).await?;
+
+    let qdrant_point_ids = scroll_dataset_points(
+        data.page_size.unwrap_or(10),
+        data.offset_chunk_id,
+        data.sort_by.clone(),
+        dataset_config,
+        filter,
+    )
+    .await?;
+
+    let chunks = get_chunk_metadatas_from_point_ids(qdrant_point_ids, pool)
+        .await?
+        .into_iter()
+        .map(ChunkMetadata::from)
+        .collect();
+
+    let resp = ScrollChunksResponseBody { chunks };
+
+    Ok(HttpResponse::Ok().json(resp))
 }
 
 /// Get Chunk By Id

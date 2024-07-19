@@ -140,7 +140,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.11.4",
+        version = "0.11.5",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -179,6 +179,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::get_chunk_by_id,
         handlers::chunk_handler::autocomplete,
         handlers::chunk_handler::get_chunks_by_ids,
+        handlers::chunk_handler::scroll_dataset_chunks,
         handlers::user_handler::update_user,
         handlers::user_handler::set_user_api_key,
         handlers::user_handler::delete_user_api_key,
@@ -270,6 +271,8 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::GetTrackingChunksData,
             handlers::chunk_handler::DistancePhrase,
             handlers::chunk_handler::ChunkReturnTypes,
+            handlers::chunk_handler::ScrollChunksReqPayload,
+            handlers::chunk_handler::ScrollChunksResponseBody,
             handlers::group_handler::RecommendGroupsReqPayload,
             handlers::group_handler::RecommendGroupsResponse,
             handlers::group_handler::SearchWithinGroupReqPayload,
@@ -664,6 +667,10 @@ pub fn main() -> std::io::Result<()> {
                                 ).service(
                                     web::resource("/tracking")
                                         .route(web::post().to(handlers::chunk_handler::get_chunks_by_tracking_ids))
+                                )
+                                .service(
+                                    web::resource("/scroll")
+                                        .route(web::post().to(handlers::chunk_handler::scroll_dataset_chunks))
                                 )
                         )
                         .service(
