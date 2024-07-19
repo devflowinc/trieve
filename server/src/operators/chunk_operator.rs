@@ -1189,10 +1189,14 @@ pub async fn delete_chunk_metadata_query(
 ) -> Result<(), ServiceError> {
     let chunk_metadata =
         get_metadata_from_ids_query(chunk_uuid.clone(), dataset.id, pool.clone()).await?;
-    if chunk_metadata.get(0).unwrap().dataset_id != dataset.id {
-        return Err(ServiceError::BadRequest(
-            "chunk does not belong to dataset".to_string(),
-        ));
+    if let Some(chunk_metadata) = chunk_metadata.get(0) {
+        if chunk_metadata.dataset_id != dataset.id {
+            return Err(ServiceError::BadRequest(
+                "chunk does not belong to dataset".to_string(),
+            ));
+        }
+    } else {
+        return Ok(());
     }
 
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
