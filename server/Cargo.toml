@@ -144,7 +144,7 @@ clickhouse = { git = "https://github.com/loyd/clickhouse.rs", features = [
     "uuid",
 ] }
 prometheus = "0.13.4"
-chm = "0.1.7"
+chm = "0.1.8"
 murmur3 = "0.5.2"
 tantivy = "0.22.0"
 

@@ -858,9 +858,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chm"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e020bef2cbb5ed5f1de941683930151855a6be7f45d745e3adfb808b79a40528"
+checksum = "44e3c638c759172f7aea176217b5cc1e5a5a414955207509bcb9644bf0179be0"
 dependencies = [
  "chrono",
  "clap",
