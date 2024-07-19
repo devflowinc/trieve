@@ -4173,15 +4173,15 @@ pub struct SortByField {
     /// Direction to sort by
     pub direction: Option<SortOrder>,
     /// How many results to pull in before the sort
-    pub prefetch_limit: Option<u64>,
+    pub prefetch_amount: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SortBySearchType {
     /// Search Method to get candidates from
     pub rerank_type: ReRankOptions,
-    /// Direction to sort by
-    pub prefetch_limit: Option<u64>,
+    /// How many results to pull in before the rerabj
+    pub prefetch_amount: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]

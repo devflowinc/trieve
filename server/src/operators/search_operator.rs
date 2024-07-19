@@ -300,7 +300,7 @@ impl RetrievePointQuery {
                     Some(QdrantSearchQuery {
                         vector,
                         score_threshold: self.score_threshold,
-                        limit: rerank_by.prefetch_limit.unwrap_or(1000),
+                        limit: rerank_by.prefetch_amount.unwrap_or(1000),
                         rerank_by: Box::new(None),
                         sort_by: None,
                         filter: filter.clone(),
@@ -317,7 +317,7 @@ impl RetrievePointQuery {
                     Some(QdrantSearchQuery {
                         vector,
                         score_threshold: self.score_threshold,
-                        limit: rerank_by.prefetch_limit.unwrap_or(1000),
+                        limit: rerank_by.prefetch_amount.unwrap_or(1000),
                         rerank_by: Box::new(None),
                         sort_by: None,
                         filter: filter.clone(),

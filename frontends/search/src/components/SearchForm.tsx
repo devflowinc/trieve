@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
 import {
   For,
@@ -724,7 +725,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                   } else {
                                     return {
                                       ...item,
-                                      isSelected: item.isSelected,
+                                      isSelected: false,
                                     };
                                   }
                                 });
