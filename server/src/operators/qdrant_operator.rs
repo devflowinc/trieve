@@ -1649,7 +1649,7 @@ pub async fn update_group_tag_sets_in_qdrant_query(
 pub async fn scroll_dataset_points(
     limit: u64,
     offset_id: Option<uuid::Uuid>,
-    sort_by: Option<QdrantSortBy>,
+    sort_by: Option<SortByField>,
     dataset_config: DatasetConfiguration,
     filter: Filter,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
