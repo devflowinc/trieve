@@ -5,8 +5,9 @@ use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo,
     GeoInfoWithBias, IngestSpecificChunkMetadata, Pool, QdrantSortBy, RagQueryEventClickhouse,
-    RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
-    ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore, UnifiedId,
+    ReRankOptions, RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool,
+    ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
+    SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -22,9 +23,7 @@ use crate::operators::qdrant_operator::{
     point_ids_exists_in_qdrant, recommend_qdrant_query, scroll_dataset_points,
 };
 use crate::operators::search_operator::{
-    assemble_qdrant_filter, autocomplete_fulltext_chunks, autocomplete_semantic_chunks,
-    count_bm25_chunks, count_full_text_chunks, count_semantic_chunks, search_bm25_chunks,
-    search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
+    autocomplete_chunks_query, count_chunks_query, search_chunks_query, search_hybrid_chunks,
 };
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -958,7 +957,7 @@ pub struct SearchChunksReqPayload {
     pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-    /// Sort by lets you specify a key to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
+    /// Sort by lets you specify a method to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
     pub sort_by: Option<QdrantSortBy>,
     /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
     pub location_bias: Option<GeoInfoWithBias>,
@@ -984,8 +983,6 @@ pub struct SearchChunksReqPayload {
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
-    /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
-    pub use_reranker: Option<bool>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
 }
@@ -1012,7 +1009,6 @@ impl Default for SearchChunksReqPayload {
             score_threshold: None,
             slim_chunks: None,
             content_only: None,
-            use_reranker: None,
             use_quote_negated_terms: None,
         }
     }
@@ -1142,24 +1138,6 @@ pub async fn search_chunks(
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type {
-        SearchMethod::FullText => {
-            if !dataset_config.FULLTEXT_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Fulltext search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-
-            search_full_text_chunks(
-                data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-                &mut timer,
-            )
-            .await?
-        }
         SearchMethod::Hybrid => {
             search_hybrid_chunks(
                 data.clone(),
@@ -1171,14 +1149,8 @@ pub async fn search_chunks(
             )
             .await?
         }
-        SearchMethod::Semantic => {
-            if !dataset_config.SEMANTIC_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Semantic search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-            search_semantic_chunks(
+        _ => {
+            search_chunks_query(
                 data.clone(),
                 parsed_query,
                 pool,
@@ -1187,24 +1159,6 @@ pub async fn search_chunks(
                 &mut timer,
             )
             .await?
-        }
-        SearchMethod::BM25 => {
-            if std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true" {
-                search_bm25_chunks(
-                    data.clone(),
-                    parsed_query,
-                    pool,
-                    dataset_org_plan_sub.dataset.clone(),
-                    &dataset_config,
-                    &mut timer,
-                )
-                .await?
-            } else {
-                return Err(ServiceError::BadRequest(
-                    "BM25 is not enabled in this plan.".to_string(),
-                )
-                .into());
-            }
         }
     };
     timer.add("search_chunks");
@@ -1333,8 +1287,8 @@ pub struct AutocompleteReqPayload {
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
-    /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
-    pub use_reranker: Option<bool>,
+    /// Rerank_by lets you choose the method to use to rerank. If not specified, this defaults to None. You can use this param to rerank your original query by another search method. Hybrid search will automatically rerank using the cross encoder.
+    pub rerank_by: Option<ReRankOptions>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
 }
@@ -1365,7 +1319,6 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             score_threshold: autocomplete_data.score_threshold,
             slim_chunks: autocomplete_data.slim_chunks,
             content_only: autocomplete_data.content_only,
-            use_reranker: autocomplete_data.use_reranker,
             use_quote_negated_terms: autocomplete_data.use_quote_negated_terms,
         }
     }
@@ -1421,49 +1374,16 @@ pub async fn autocomplete(
 
     let mut timer = Timer::new();
 
-    let result_chunks = match data.search_type {
-        SearchMethod::FullText => {
-            if !dataset_config.FULLTEXT_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Fulltext search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
+    let result_chunks = autocomplete_chunks_query(
+        data.clone(),
+        parsed_query,
+        pool,
+        dataset_org_plan_sub.dataset.clone(),
+        &dataset_config,
+        &mut timer,
+    )
+    .await?;
 
-            autocomplete_fulltext_chunks(
-                data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-                &mut timer,
-            )
-            .await?
-        }
-        SearchMethod::Semantic => {
-            if !dataset_config.SEMANTIC_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Semantic search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-            autocomplete_semantic_chunks(
-                data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-                &mut timer,
-            )
-            .await?
-        }
-        _ => {
-            return Err(ServiceError::BadRequest(
-                "Invalid search type. Must be one of 'semantic' or 'fulltext'".into(),
-            )
-            .into())
-        }
-    };
     timer.add("autocomplete_chunks");
 
     let clickhouse_event = SearchQueryEventClickhouse {
@@ -1649,6 +1569,33 @@ pub struct CountChunksReqPayload {
     pub limit: Option<u64>,
 }
 
+impl From<CountChunksReqPayload> for SearchChunksReqPayload {
+    fn from(count_data: CountChunksReqPayload) -> Self {
+        SearchChunksReqPayload {
+            search_type: count_data.search_type.into(),
+            query: count_data.query,
+            page: Some(1),
+            get_total_pages: None,
+            page_size: count_data.limit,
+            filters: count_data.filters,
+            sort_by: None,
+            use_weights: None,
+            tag_weights: None,
+            highlight_results: None,
+            highlight_threshold: None,
+            highlight_delimiters: None,
+            highlight_max_length: None,
+            highlight_max_num: None,
+            highlight_window: None,
+            score_threshold: count_data.score_threshold,
+            slim_chunks: None,
+            content_only: None,
+            location_bias: None,
+            use_quote_negated_terms: None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct CountChunkQueryResponseBody {
     pub count: u32,
@@ -1707,60 +1654,15 @@ pub async fn count_chunks(
         .into());
     }
 
-    let result_chunks = match data.search_type {
-        CountSearchMethod::FullText => {
-            if !dataset_config.FULLTEXT_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Fulltext search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
+    let result_chunks = count_chunks_query(
+        search_req_data.clone(),
+        parsed_query,
+        pool,
+        dataset_org_plan_sub.dataset.clone(),
+        &dataset_config,
+    )
+    .await?;
 
-            count_full_text_chunks(
-                search_req_data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-            )
-            .await?
-        }
-        CountSearchMethod::BM25 => {
-            if !dataset_config.BM25_ENABLED
-                && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) != "true"
-            {
-                return Err(ServiceError::BadRequest(
-                    "BM25 search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-
-            count_bm25_chunks(
-                search_req_data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-            )
-            .await?
-        }
-        CountSearchMethod::Semantic => {
-            if !dataset_config.SEMANTIC_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Semantic search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-            count_semantic_chunks(
-                search_req_data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-            )
-            .await?
-        }
-    };
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 

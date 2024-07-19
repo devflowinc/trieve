@@ -6,9 +6,9 @@ use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
         ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        GeoInfoWithBias, Pool, QdrantSortBy, RecommendType, RecommendationEventClickhouse,
-        RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
-        SearchQueryEventClickhouse, UnifiedId,
+        GeoInfoWithBias, Pool, QdrantSortBy, ReRankOptions, RecommendType,
+        RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
+        ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
@@ -22,9 +22,8 @@ use crate::{
         },
         search_operator::{
             full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
-            search_full_text_groups, search_hybrid_groups, search_semantic_groups,
-            semantic_search_over_groups, GroupScoreChunk, SearchOverGroupsQueryResult,
-            SearchOverGroupsResults,
+            search_groups_query, search_hybrid_groups, semantic_search_over_groups,
+            GroupScoreChunk, SearchOverGroupsQueryResult, SearchOverGroupsResults,
         },
     },
 };
@@ -1233,8 +1232,8 @@ pub struct SearchWithinGroupReqPayload {
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
-    /// If true, chunks will be reranked using scores from a cross encoder model. "hybrid" search will always use the reranker regardless of this setting.
-    pub use_reranker: Option<bool>,
+    /// Rerank_by lets you choose the method to use to rerank. If not specified, this defaults to None. You can use this param to rerank your original query by another search method. Hybrid search will automatically rerank using the cross encoder.
+    pub rerank_by: Option<ReRankOptions>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
 }
@@ -1261,7 +1260,6 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             score_threshold: search_within_group_data.score_threshold,
             slim_chunks: search_within_group_data.slim_chunks,
             content_only: search_within_group_data.content_only,
-            use_reranker: search_within_group_data.use_reranker,
             use_quote_negated_terms: search_within_group_data.use_quote_negated_terms,
         }
     }
@@ -1367,24 +1365,6 @@ pub async fn search_within_group(
     };
 
     let result_chunks = match data.search_type {
-        SearchMethod::FullText => {
-            if !dataset_config.FULLTEXT_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Fulltext search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-
-            search_full_text_groups(
-                data.clone(),
-                parsed_query,
-                group,
-                search_pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-            )
-            .await?
-        }
         SearchMethod::Hybrid => {
             search_hybrid_groups(
                 data.clone(),
@@ -1397,13 +1377,7 @@ pub async fn search_within_group(
             .await?
         }
         _ => {
-            if !dataset_config.SEMANTIC_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Semantic search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-            search_semantic_groups(
+            search_groups_query(
                 data.clone(),
                 parsed_query,
                 group,
@@ -1455,7 +1429,7 @@ pub struct SearchOverGroupsReqPayload {
     /// Page of group results to fetch. Page is 1-indexed.
     pub page: Option<u64>,
     /// Page size is the number of group results to fetch. The default is 10.
-    pub page_size: Option<u32>,
+    pub page_size: Option<u64>,
     /// Get total page count for the query accounting for the applied filters. Defaults to false, but can be set to true when the latency penalty is acceptable (typically 50-200ms).
     pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.

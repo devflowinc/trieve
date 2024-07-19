@@ -36,9 +36,6 @@ pub struct OpCallback {
     pub code: String,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-struct AFClaims {}
-
 pub type LoggedUser = SlimUser;
 
 impl FromRequest for LoggedUser {
