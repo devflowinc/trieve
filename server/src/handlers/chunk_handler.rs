@@ -7,7 +7,7 @@ use crate::data::models::{
     GeoInfoWithBias, IngestSpecificChunkMetadata, Pool, QdrantSortBy, RagQueryEventClickhouse,
     ReRankOptions, RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool,
     ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
-    SlimChunkMetadataWithScore, UnifiedId,
+    SlimChunkMetadataWithScore, SortByField, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -23,7 +23,8 @@ use crate::operators::qdrant_operator::{
     point_ids_exists_in_qdrant, recommend_qdrant_query, scroll_dataset_points,
 };
 use crate::operators::search_operator::{
-    autocomplete_chunks_query, count_chunks_query, search_chunks_query, search_hybrid_chunks,
+    assemble_qdrant_filter, autocomplete_chunks_query, count_chunks_query, search_chunks_query,
+    search_hybrid_chunks,
 };
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -1443,7 +1444,7 @@ pub struct ScrollChunksReqPayload {
     /// Get total page count for the query accounting for the applied filters. Defaults to false, but can be set to true when the latency penalty is acceptable (typically 50-200ms).
     pub filters: Option<ChunkFilter>,
     /// Sort by lets you specify a key to sort the results by. If not specified, this defaults to the id's of the chunks. If specified, the field can be num_value, time_stamp, or any key in the chunk metadata. This key must be a numeric value within the payload.
-    pub sort_by: Option<QdrantSortBy>,
+    pub sort_by: Option<SortByField>,
 }
 
 /// Scroll Chunks
