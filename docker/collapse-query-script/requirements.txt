@@ -1,0 +1,7 @@
+certifi==2024.7.4
+clickhouse-connect==0.7.16
+lz4==4.3.3
+python-dotenv==1.0.1
+pytz==2024.1
+urllib3==2.2.2
+zstandard==0.23.0
