@@ -75,16 +75,30 @@ where
                         Ok(dataset_id) => {
                             get_dataset_and_organization_from_dataset_id_query(
                                 UnifiedId::TrieveUuid(dataset_id),
+                                None,
                                 pool.clone(),
                             )
                             .await?
                         }
                         Err(_) => {
-                            get_dataset_and_organization_from_dataset_id_query(
-                                UnifiedId::TrackingId(dataset_id.clone()),
-                                pool.clone(),
-                            )
-                            .await?
+                            if let Some(org_header) = get_org_id_from_headers(req.headers()) {
+                                let org_id = org_header.parse::<uuid::Uuid>().map_err(|_| {
+                                    Into::<Error>::into(ServiceError::BadRequest(
+                                        "Could not convert Organization to UUID".to_string(),
+                                    ))
+                                })?;
+
+                                get_dataset_and_organization_from_dataset_id_query(
+                                    UnifiedId::TrackingId(dataset_id.clone()),
+                                    Some(org_id),
+                                    pool.clone(),
+                                )
+                                .await?
+                            } else {
+                                return Err(ServiceError::BadRequest(
+                                "Using Dataset Tracking IDs requires providing the TR-Organization header".to_string(),
+                            ).into());
+                            }
                         }
                     };
 

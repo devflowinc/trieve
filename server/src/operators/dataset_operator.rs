@@ -107,6 +107,7 @@ pub async fn get_deleted_dataset_by_id_query(
 #[tracing::instrument(skip(pool))]
 pub async fn get_dataset_and_organization_from_dataset_id_query(
     id: UnifiedId,
+    org_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<DatasetAndOrgWithSubAndPlan, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -152,6 +153,7 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
             .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
         UnifiedId::TrackingId(id) => query
             .filter(datasets_columns::tracking_id.eq(id))
+            .filter(datasets_columns::organization_id.eq(org_id.unwrap_or_default()))
             .filter(datasets_columns::deleted.eq(0))
             .select((
                 Dataset::as_select(),
