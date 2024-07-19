@@ -1003,6 +1003,7 @@ pub async fn search_qdrant_query(
             QueryPoints {
                 collection_name: qdrant_collection.to_string(),
                 limit: Some(query.limit),
+                offset: Some(query.limit * page.checked_sub(1).unwrap_or(0)),
                 prefetch,
                 using: vector_name,
                 query: Some(qdrant_query),
