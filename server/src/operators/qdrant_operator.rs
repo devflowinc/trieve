@@ -929,28 +929,28 @@ fn get_prefetch_query(
         let (name, vector) = get_qdrant_vector(query.clone());
         (
             vec![PrefetchQuery {
-                query: Some(Query::new_nearest(rerank_vector)),
+                query: Some(Query::new_nearest(vector)),
                 limit: Some(rerank_query.limit),
-                using: Some(rerank_vector_name),
+                using: Some(name),
                 score_threshold: query.score_threshold,
                 filter: Some(query.filter.clone()),
                 ..Default::default()
             }],
-            (Some(name), Query::new_nearest(vector)),
+            (Some(rerank_vector_name), Query::new_nearest(rerank_vector)),
         )
     } else if let Some(ref sort_by) = query.sort_by {
         let (name, vector) = get_qdrant_vector(query.clone());
-        let prefetch_limit = sort_by.prefetch_limit.unwrap_or(1000);
-        let prefetch_limit = if prefetch_limit > dataset_config.MAX_LIMIT {
+        let prefetch_amount = sort_by.prefetch_amount.unwrap_or(50);
+        let prefetch_amount = if prefetch_amount > dataset_config.MAX_LIMIT {
             dataset_config.MAX_LIMIT
         } else {
-            prefetch_limit
+            prefetch_amount
         };
 
         (
             vec![PrefetchQuery {
                 query: Some(Query::new_nearest(vector)),
-                limit: Some(prefetch_limit),
+                limit: Some(prefetch_amount),
                 using: Some(name),
                 score_threshold: query.score_threshold,
                 filter: Some(query.filter.clone()),
