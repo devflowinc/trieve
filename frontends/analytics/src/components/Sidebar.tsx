@@ -128,7 +128,7 @@ export const Sidebar = (props: NavbarProps) => {
           }}
         </For>
       </div>
-      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start justify-self-end border-t border-t-neutral-300 bg-neutral-200/50 px-4 py-4">
+      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start border-t border-t-neutral-300 bg-neutral-200/50 px-4 py-4">
         <div class="flex items-center gap-2">
           <p>{userContext?.user().email}</p>
           <AiOutlineUser class="h-4 w-4" />
