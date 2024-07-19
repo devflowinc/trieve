@@ -482,8 +482,8 @@ export const ServerSettingsForm = () => {
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
               <input
                 type="checkbox"
-                name="fullTextEnabled"
-                id="fullTextEnabled"
+                name="semanticEnabled"
+                id="semanticEnabled"
                 checked={serverConfig().SEMANTIC_ENABLED}
                 onInput={(e) =>
                   setServerConfig((prev) => {
@@ -495,7 +495,7 @@ export const ServerSettingsForm = () => {
                 }
               />
               <label
-                for="fullTextEnabled"
+                for="semanticEnabled"
                 class="block text-sm font-medium leading-6"
               >
                 Semantic Enabled
