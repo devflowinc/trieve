@@ -3644,6 +3644,16 @@ pub enum CountSearchMethod {
     BM25,
 }
 
+impl From<CountSearchMethod> for SearchMethod {
+    fn from(count_search_method: CountSearchMethod) -> Self {
+        match count_search_method {
+            CountSearchMethod::FullText => SearchMethod::FullText,
+            CountSearchMethod::Semantic => SearchMethod::Semantic,
+            CountSearchMethod::BM25 => SearchMethod::BM25,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SearchAnalyticsFilter {
     pub date_range: Option<DateRange>,
@@ -4157,11 +4167,34 @@ pub struct MigratePointMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-pub struct QdrantSortBy {
+pub struct SortByField {
     /// Field to sort by
     pub field: String,
     /// Direction to sort by
     pub direction: Option<SortOrder>,
     /// How many results to pull in before the sort
     pub prefetch_limit: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct SortBySearchType {
+    /// Field to sort by
+    pub rerank_type: ReRankOptions,
+    /// Direction to sort by
+    pub prefetch_limit: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[serde(untagged)]
+pub enum QdrantSortBy {
+    Field(SortByField),
+    SearchType(SortBySearchType),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ReRankOptions {
+    Semantic,
+    Fulltext,
+    CrossEncoder,
 }
