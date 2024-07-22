@@ -25,7 +25,7 @@ import {
 } from "solid-icons/ai";
 import { TbReload } from "solid-icons/tb";
 import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
-import { BsMagic } from "solid-icons/bs";
+import { BsMagic, BsUpload } from "solid-icons/bs";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 import { Tooltip } from "shared/ui";
 import { Codeblock } from "../../../components/Codeblock";
@@ -293,6 +293,16 @@ export const DatasetStart = () => {
                 <BiRegularLinkExternal class="h-4 w-4" />
               </a>
               <Show when={usage() && usage()?.chunk_count === 0}>
+                <a
+                  class="flex cursor-pointer items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
+                  href={`${searchUiURL}/upload${orgDatasetParams(
+                    curDataset()?.id ?? "",
+                  )}`}
+                  target="_blank"
+                >
+                  <p>Upload file</p>
+                  <BsUpload class="h-4 w-4" />
+                </a>
                 <button
                   class="flex items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
                   onClick={() => setOpenSampleDataModal(true)}
