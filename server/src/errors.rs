@@ -119,8 +119,8 @@ pub fn custom_json_error_handler(
 ) -> actix_web::Error {
     let (error_message, solution) = match &err {
                 JsonPayloadError::ContentType => (
-                    "Content type error",
-                    "Ensure that the content type of the request body is set to application/json."
+                    "Content type header error",
+                    "Ensure the content type request header of the HTTP request is set as `Content-Type: application/json`."
                 ),
                 JsonPayloadError::Payload(_) => (
                     "Payload error",
