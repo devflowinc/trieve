@@ -1,10 +1,13 @@
 {
-  "extends": "config/tsconfig",
-  "include": [
-    "src",
-    "ui",
-    "types",
-    "types.ts",
-    "utils"
-  ],
+	"extends": "config/tsconfig",
+	"compilerOptions": {
+		"noUnusedLocals": false
+	},
+	"include": [
+		"src",
+		"ui",
+		"types",
+		"types.ts",
+		"utils"
+	],
 }

@@ -1,6 +1,9 @@
 {
-  "extends": "config/tsconfig",
-  "include": [
-    "src",
-  ],
+	"extends": "config/tsconfig",
+	"compilerOptions": {
+		"noUnusedLocals": false
+	},
+	"include": [
+		"src"
+	]
 }
