@@ -5,6 +5,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  onMount,
   useContext,
 } from "solid-js";
 import {
@@ -61,6 +62,8 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [scoreChunk, setScoreChunk] = createSignal<ScoreChunkDTO[]>([]);
+  const [shouldPoll, setShouldPoll] = createSignal(true);
+  const [pollingTrigger, setPollingTrigger] = createSignal(0);
 
   const recentlyUploaded = searchParams.recently_uploaded === "true";
 
@@ -165,15 +168,9 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     });
   };
 
-  createEffect(() => {
-    fetchChunkGroups();
-    fetchBookmarks();
-  });
-
-  createEffect(() => {
+  const fetchChunk = () => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
-
     setFetching(true);
     void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
@@ -189,9 +186,11 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
           setScoreChunk([{ chunk: data, score: 0 }]);
           setError("");
         });
+        setShouldPoll(false);
       }
       if (response.status == 404) {
         if (recentlyUploaded) {
+          setShouldPoll(true);
           setError(
             "This chunk was recently uploaded. We are currently processing it.",
           );
@@ -204,6 +203,19 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       setClientSideRequestFinished(true);
       setFetching(false);
     });
+  };
+
+  createEffect(() => {
+    if (shouldPoll()) {
+      fetchChunk();
+      pollingTrigger();
+      setTimeout(() => setPollingTrigger((prev) => prev + 1), 500);
+    }
+  });
+
+  onMount(() => {
+    fetchChunkGroups();
+    fetchBookmarks();
   });
 
   const getChunk = createMemo(() => {
@@ -255,7 +267,14 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         <div class="flex w-full max-w-screen-2xl flex-col justify-center px-4">
           <Show when={error().length > 0 && !fetching()}>
             <div class="flex w-full flex-col items-center rounded-md p-2">
-              <div class="text-xl font-bold text-red-500">{error()}</div>
+              <div
+                classList={{
+                  "text-xl font-bold text-red-500": true,
+                  "text-blue-500 animate-pulse": recentlyUploaded,
+                }}
+              >
+                {error()}
+              </div>
             </div>
           </Show>
           <Show when={!chunkMetadata() && fetching()}>
