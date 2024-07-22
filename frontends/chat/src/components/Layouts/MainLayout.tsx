@@ -151,7 +151,7 @@ const MainLayout = (props: LayoutProps) => {
 
     let requestMethod = "POST";
     if (regenerateLastMessage) {
-      requestMethod = "DELETE";
+      requestMethod = "PATCH";
       setMessages((prev): Message[] => {
         const newMessages = [{ content: "" }];
         return [...prev.slice(0, -1), ...newMessages];
