@@ -284,6 +284,8 @@ impl Modify for SecurityAddon {
             handlers::group_handler::CreateChunkGroupReqPayloadEnum,
             handlers::group_handler::CreateBatchChunkGroupReqPayload,
             handlers::group_handler::CreateSingleChunkGroupReqPayload,
+            handlers::group_handler::ChunkGroups,
+            handlers::group_handler::CreateChunkGroupResponseEnum,
             handlers::group_handler::UpdateChunkGroupReqPayload,
             handlers::group_handler::AddChunkToGroupReqPayload,
             handlers::group_handler::GetGroupsForChunksReqPayload,

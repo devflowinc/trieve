@@ -95,7 +95,7 @@ pub struct CreateSingleChunkGroupReqPayload {
 },{
     "name": "Versions of Slim-Fit T-Shirt",
     "description": "All versions and colorways of the slim-fit t-shirt",
-    "tracking_id": "SLIMFITTSHIRT",
+    "tracking_id": "SNSLIMFITTSHIRT",
     "tag_set": ["tshirt", "slim", "clothing"],
     "metadata": {
         "foo": "bar"
@@ -111,9 +111,54 @@ pub enum CreateChunkGroupReqPayloadEnum {
     Batch(CreateBatchChunkGroupReqPayload),
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!([{
+    "name": "Versions of Oversized T-Shirt",
+    "description": "All versions and colorways of the oversized t-shirt",
+    "tracking_id": "SNOVERSIZEDTSHIRT",
+    "tag_set": ["tshirt", "oversized", "clothing"],
+    "metadata": {
+        "foo": "bar"
+    },
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+},{
+    "name": "Versions of Slim-Fit T-Shirt",
+    "description": "All versions and colorways of the slim-fit t-shirt",
+    "tracking_id": "SNSLIMFITTSHIRT",
+    "tag_set": ["tshirt", "slim", "clothing"],
+    "metadata": {
+        "foo": "bar"
+    },
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+}]))]
+pub struct ChunkGroups(pub Vec<ChunkGroup>);
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum CreateChunkGroupResponseEnum {
+    Single(ChunkGroup),
+    Batch(ChunkGroups),
+}
+
+impl From<ChunkGroup> for CreateChunkGroupResponseEnum {
+    fn from(group: ChunkGroup) -> Self {
+        Self::Single(group)
+    }
+}
+
+impl From<Vec<ChunkGroup>> for CreateChunkGroupResponseEnum {
+    fn from(groups: Vec<ChunkGroup>) -> Self {
+        Self::Batch(ChunkGroups(groups))
+    }
+}
+
 /// Create or Upsert Group or Groups
 ///
-/// Create new chunk_group(s). This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Create new chunk_group(s). This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Only 1000 chunk groups can be created at a time. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/chunk_group",
@@ -121,8 +166,8 @@ pub enum CreateChunkGroupReqPayloadEnum {
     tag = "Chunk Group",
     request_body(content = CreateChunkGroupReqPayloadEnum, description = "JSON request payload to cretea a chunk_group(s)", content_type = "application/json"),
     responses(
-        (status = 200, description = "Returns the created chunk_group if a single chunK_group was specified", body = ChunkGroup),
-        (status = 200, description = "Returns the created chunk_groups if a batch of chunk_groups was specified", body = Vec<ChunkGroup>),
+        (status = 200, description = "Returns the created chunk_group if a single chunk_group was specified or an array of all chunk_groups which were created", body = CreateChunkGroupResponseEnum),
+        (status = 413, description = "Service error indicating more 1000 chunk groups are trying to be created at once", body = ErrorResponseBody),
         (status = 400, description = "Service error relating to creating the chunk_group(s)", body = ErrorResponseBody),
     ),
     params(
@@ -143,6 +188,13 @@ pub async fn create_chunk_group(
         CreateChunkGroupReqPayloadEnum::Single(single) => vec![single],
         CreateChunkGroupReqPayloadEnum::Batch(batch) => batch.0,
     };
+
+    if payloads.len() > 1000 {
+        return Err(ServiceError::PayloadTooLarge(
+            "Cannot create more than 1000 chunk groups at a time".into(),
+        )
+        .into());
+    }
 
     let (upsert_payloads, non_upsert_payloads) = payloads
         .into_iter()
