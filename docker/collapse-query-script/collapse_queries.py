@@ -23,7 +23,6 @@ def get_search_queries(
         str(dataset_id),
         limit,
     )
-
     if offset is not None:
         query = """
         SELECT id, query, top_score, created_at
@@ -37,7 +36,6 @@ def get_search_queries(
             str(offset),
             limit,
         )
-
     vector_result = client.query(query)
     rows = vector_result.result_rows
     return rows
@@ -48,7 +46,6 @@ def get_datasets(client: clickhouse_connect.driver.client.Client):
         SELECT DISTINCT dataset_id
         FROM default.search_queries
         """
-
     dataset_result = client.query(query)
     rows = dataset_result.result_rows
     return rows
@@ -64,7 +61,6 @@ def get_dataset_last_collapsed(
     """.format(
         str(dataset_id)
     )
-
     dataset_result = client.query(query, query_formats={"DateTime": "int"})
     row = dataset_result.result_rows
     if len(row) == 1:
@@ -91,9 +87,7 @@ def set_dataset_last_collapsed(
     last_collapsed: datetime.datetime,
 ):
     delete_dataset_last_collapsed(client, dataset_id)
-
     print("setting last collapsed for", dataset_id, last_collapsed)
-
     client.insert(
         "last_collapsed_dataset",
         [
@@ -117,10 +111,17 @@ def collapse_queries(rows):
     rows_to_be_deleted = []
     cur_row = None
     for row in rows:
-        if cur_row == None or row[1].startswith(cur_row[1]):
-            if cur_row is not None:
-                rows_to_be_deleted.append(cur_row)
+        if cur_row is None:
             cur_row = row
+        elif row[1].startswith(cur_row[1]):
+            # Check if the current row's timestamp is within 10 seconds of the previous row
+            time_difference = (row[3] - cur_row[3]).total_seconds()
+            print(time_difference)
+            if time_difference <= 10:
+                rows_to_be_deleted.append(cur_row)
+                cur_row = row
+            else:
+                cur_row = row
         else:
             cur_row = row
     return rows_to_be_deleted
@@ -181,7 +182,6 @@ def main():
             print()
 
     except Exception as e:
-
         print(f"Error: {e}")
 
 
