@@ -275,6 +275,7 @@ pub enum CreateChunkReqPayloadEnum {
     responses(
         (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
         (status = 426, description = "Error when upgrade is needed to process more chunks", body = ErrorResponseBody),
+        (status = 413, description = "Error when more than 120 chunks are provided in bulk", body = ErrorResponseBody),
         (status = 400, description = "Error typically due to deserialization issues", body = ErrorResponseBody),
     ),
     params(
@@ -322,7 +323,7 @@ pub async fn create_chunk(
     }
 
     if chunks.len() > 120 {
-        return Err(ServiceError::BadRequest(
+        return Err(ServiceError::PayloadTooLarge(
             "Too many chunks provided in bulk. The limit is 120 chunks per bulk upload".to_string(),
         )
         .into());
