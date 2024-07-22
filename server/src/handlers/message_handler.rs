@@ -470,6 +470,126 @@ pub async fn edit_message(
 ///
 /// Regenerate the assistant response to the last user message of a topic. This will delete the last message and replace it with a new message. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
+    patch,
+    path = "/message",
+    context_path = "/api",
+    tag = "Message",
+    request_body(content = RegenerateMessageReqPayload, description = "JSON request payload to delete an agent message then regenerate it in a strem", content_type = "application/json"),
+    responses(
+        (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
+        (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
+        (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+#[tracing::instrument(skip(pool, clickhouse_client))]
+pub async fn regenerate_message_patch(
+    data: web::Json<RegenerateMessageReqPayload>,
+    user: AdminOnly,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let topic_id = data.topic_id;
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
+
+    check_completion_param_validity(
+        data.temperature,
+        data.frequency_penalty,
+        data.presence_penalty,
+        data.stop_tokens.clone(),
+    )?;
+
+    let get_messages_pool = pool.clone();
+    let create_message_pool = pool.clone();
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+
+    let mut previous_messages =
+        get_topic_messages(topic_id, dataset_id, &get_messages_pool).await?;
+
+    if previous_messages.len() < 2 {
+        return Err(
+            ServiceError::BadRequest("Not enough messages to regenerate".to_string()).into(),
+        );
+    }
+
+    if previous_messages.len() == 2 {
+        return stream_response(
+            previous_messages,
+            topic_id,
+            dataset_org_plan_sub.dataset,
+            create_message_pool,
+            clickhouse_client,
+            dataset_config,
+            data.into_inner().into(),
+        )
+        .await;
+    }
+
+    // remove citations from the previous messages
+    previous_messages = previous_messages
+        .into_iter()
+        .map(|message| {
+            let mut message = message;
+            if message.role == "assistant" {
+                message.content = message
+                    .content
+                    .split("||")
+                    .last()
+                    .unwrap_or("I give up, I can't find a citation")
+                    .to_string();
+            }
+            message
+        })
+        .collect::<Vec<models::Message>>();
+
+    let mut message_to_regenerate = None;
+    for message in previous_messages.iter().rev() {
+        if message.role == "assistant" {
+            message_to_regenerate = Some(message.clone());
+            break;
+        }
+    }
+
+    let message_id = match message_to_regenerate {
+        Some(message) => message.id,
+        None => {
+            return Err(ServiceError::BadRequest("No message to regenerate".to_string()).into());
+        }
+    };
+
+    let mut previous_messages_to_regenerate = Vec::new();
+    for message in previous_messages.iter() {
+        if message.id == message_id {
+            break;
+        }
+        previous_messages_to_regenerate.push(message.clone());
+    }
+
+    delete_message_query(message_id, topic_id, dataset_id, &pool).await?;
+
+    stream_response(
+        previous_messages_to_regenerate,
+        topic_id,
+        dataset_org_plan_sub.dataset,
+        create_message_pool,
+        clickhouse_client,
+        dataset_config,
+        data.into_inner().into(),
+    )
+    .await
+}
+
+/// Regenerate message
+///
+/// Regenerate the assistant response to the last user message of a topic. This will delete the last message and replace it with a new message. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+#[utoipa::path(
     delete,
     path = "/message",
     context_path = "/api",
@@ -487,6 +607,7 @@ pub async fn edit_message(
         ("ApiKey" = ["readonly"]),
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool, clickhouse_client))]
 pub async fn regenerate_message(
     data: web::Json<RegenerateMessageReqPayload>,

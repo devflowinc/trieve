@@ -164,6 +164,7 @@ impl Modify for SecurityAddon {
         handlers::message_handler::get_all_topic_messages,
         handlers::message_handler::edit_message,
         handlers::message_handler::regenerate_message,
+        handlers::message_handler::regenerate_message_patch,
         handlers::message_handler::get_suggested_queries,
         handlers::chunk_handler::create_chunk,
         handlers::chunk_handler::update_chunk,
@@ -767,6 +768,10 @@ pub fn main() -> std::io::Result<()> {
                                     ),
                                 )
                                 .route(web::put().to(handlers::message_handler::edit_message))
+                                .route(
+                                    web::patch()
+                                        .to(handlers::message_handler::regenerate_message_patch),
+                                )
                                 .route(
                                     web::delete()
                                         .to(handlers::message_handler::regenerate_message),
