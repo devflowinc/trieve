@@ -406,6 +406,13 @@ pub async fn callback(
             oauth2::RequestTokenError::ServerResponse(e) => {
                 ServiceError::InternalServerError(e.to_string())
             }
+            oauth2::RequestTokenError::Request(e) => {
+                ServiceError::InternalServerError(e.to_string())
+            }
+            oauth2::RequestTokenError::Parse(e, _) => {
+                ServiceError::InternalServerError(e.to_string())
+            }
+            oauth2::RequestTokenError::Other(e) => ServiceError::InternalServerError(e.to_string()),
             _ => ServiceError::InternalServerError("Unknown error".into()),
         })?;
 
