@@ -518,7 +518,7 @@ pub async fn get_sparse_vectors(
 ) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
     let use_grpc = std::env::var("USE_GRPC").unwrap_or("false".to_string());
     if use_grpc == "true" {
-        return get_sparse_vectors_grpc(messages).await;
+        return get_sparse_vectors_grpc(messages, embed_type).await;
     }
     if messages.is_empty() {
         return Err(ServiceError::BadRequest(
@@ -1066,17 +1066,19 @@ pub mod tei {
 async fn create_batch_embedding_call(
     messages: Vec<String>,
     channel_to_use: Option<Channel>,
+    dataset_config: DatasetConfiguration,
 ) -> Result<Vec<Vec<f32>>, ServiceError> {
-    let grpc_origin = get_env!("EMBEDDING_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let grpc_origin = get_grpc_embedding_base_url(dataset_config)?;
 
     let channel = match channel_to_use {
         Some(channel) => Ok(channel),
-        None => Channel::from_static(grpc_origin)
+        None => Channel::from_shared(grpc_origin)
+            .map_err(|_| ServiceError::BadRequest("Invalid grpc URI".to_string()))?
             .connect()
             .await
             .map_err(|_| {
                 ServiceError::InternalServerError(
-                    "Failed to connect to embedding server".to_string(),
+                    "Failed to connect to sparse embedding server".to_string(),
                 )
             }),
     }?;
@@ -1162,7 +1164,7 @@ pub async fn create_embedding_grpc(
     }
 
     let mut vectors = match embed_type {
-        "doc" => create_batch_embedding_call(messages, None),
+        "doc" => create_batch_embedding_call(messages, None, dataset_config.clone()),
         "query" => create_batch_embedding_call(
             vec![format!(
                 "{}{}",
@@ -1170,8 +1172,9 @@ pub async fn create_embedding_grpc(
             )
             .to_string()],
             None,
+            dataset_config.clone(),
         ),
-        _ => create_batch_embedding_call(messages, None),
+        _ => create_batch_embedding_call(messages, None, dataset_config.clone()),
     }
     .await?;
 
@@ -1198,7 +1201,7 @@ pub async fn create_embedding_grpc(
 pub async fn create_embeddings_grpc(
     content_and_boosts: Vec<(String, Option<DistancePhrase>)>,
     _embed_type: &str,
-    _dataset_config: DatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<Vec<Vec<f32>>, ServiceError> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -1226,16 +1229,22 @@ pub async fn create_embeddings_grpc(
         })
         .unzip();
 
-    let grpc_origin = get_env!("EMBEDDING_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
-    let channel = Channel::from_static(grpc_origin)
+    let grpc_origin = get_grpc_embedding_base_url(dataset_config.clone())?;
+
+    let channel = Channel::from_shared(grpc_origin)
+        .map_err(|_| ServiceError::BadRequest("Invalid grpc URI".to_string()))?
         .connect()
         .await
         .map_err(|_| {
             ServiceError::InternalServerError("Failed to connect to embedding server".to_string())
         })?;
 
-    let content_vecs = create_batch_embedding_call(contents, Some(channel.clone())).await?;
-    let boost_vecs = create_batch_embedding_call(boost_phrases, Some(channel.clone())).await?;
+    let content_vecs =
+        create_batch_embedding_call(contents, Some(channel.clone()), dataset_config.clone())
+            .await?;
+    let boost_vecs =
+        create_batch_embedding_call(boost_phrases, Some(channel.clone()), dataset_config.clone())
+            .await?;
 
     let mut combined_vecs = content_vecs;
     for (index, boost_vec) in boost_indices.into_iter().zip(boost_vecs.into_iter()) {
@@ -1261,9 +1270,20 @@ pub async fn create_embeddings_grpc(
 
 pub async fn get_sparse_vector_grpc(
     message: String,
-    _embed_type: &str,
+    embed_type: &str,
 ) -> Result<Vec<(u32, f32)>, ServiceError> {
-    let grpc_origin = get_env!("SPARSE_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let grpc_origin = match embed_type {
+        "doc" => std::env::var("SPARSE_SERVER_DOC_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse doc server is not set".to_string())
+        }),
+        "query" => std::env::var("SPARSE_SERVER_QUERY_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse query server is not set".to_string())
+        }),
+        _ => std::env::var("SPARSE_SERVER_DOC_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse doc server is not set".to_string())
+        }),
+    }?;
+
     let mut client = EmbedClient::connect(grpc_origin).await.map_err(|_| {
         ServiceError::BadRequest("Failed to connect to embedding server".to_string())
     })?;
@@ -1305,7 +1325,7 @@ pub async fn cross_encoder_grpc(
     query: String,
     page_size: u64,
     results: Vec<ScoreChunkDTO>,
-    _dataset_config: &DatasetConfiguration,
+    dataset_config: &DatasetConfiguration,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -1342,7 +1362,20 @@ pub async fn cross_encoder_grpc(
         })
         .collect::<Result<Vec<String>, ServiceError>>()?;
 
-    let grpc_origin = get_env!("RERANKER_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let mut grpc_origin = std::env::var("EMBEDDING_SERVER_GRPC_RERANKER_ORIGIN").map_err(|_| {
+        ServiceError::BadRequest("Grpc origin for embedding server is not set".to_string())
+    })?;
+
+    let default_reranker_server_origin = get_env!(
+        "RERANKER_SERVER_ORIGIN",
+        "RERANKER_SERVER_ORIGIN mut be set"
+    )
+    .to_string();
+
+    if dataset_config.RERANKER_BASE_URL != default_reranker_server_origin {
+        grpc_origin = dataset_config.RERANKER_BASE_URL.clone();
+    }
+
     let mut client = RerankClient::connect(grpc_origin)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to connect to rerank server".to_string()))?;
@@ -1381,6 +1414,7 @@ pub async fn cross_encoder_grpc(
 
 pub async fn get_sparse_vectors_grpc(
     messages: Vec<(String, Option<BoostPhrase>)>,
+    embed_type: &str,
 ) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
     if messages.is_empty() {
         return Err(ServiceError::BadRequest(
@@ -1399,8 +1433,21 @@ pub async fn get_sparse_vectors_grpc(
         .filter_map(|(i, (_, y))| y.map(|boost_phrase| (i, boost_phrase)))
         .collect::<Vec<(usize, BoostPhrase)>>();
     let filtered_boosts_with_index_groups = filtered_boosts_with_index.chunks(30);
-    let grpc_origin = get_env!("SPARSE_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
-    let channel = Channel::from_static(grpc_origin)
+
+    let grpc_origin = match embed_type {
+        "doc" => std::env::var("SPARSE_SERVER_DOC_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse doc server is not set".to_string())
+        }),
+        "query" => std::env::var("SPARSE_SERVER_QUERY_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse query server is not set".to_string())
+        }),
+        _ => std::env::var("SPARSE_SERVER_DOC_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse doc server is not set".to_string())
+        }),
+    }?;
+
+    let channel = Channel::from_shared(grpc_origin)
+        .map_err(|_| ServiceError::BadRequest("Invalid grpc URI".to_string()))?
         .connect()
         .await
         .map_err(|_| {
@@ -1419,7 +1466,7 @@ pub async fn get_sparse_vectors_grpc(
                     .map(|(_, phrase)| phrase.phrase.clone())
                     .collect();
                 let boost_vecs =
-                    get_batch_sparse_vectors_grpc(boost_phrases, Some(channel)).await?;
+                    get_batch_sparse_vectors_grpc(boost_phrases, Some(channel), embed_type).await?;
                 let index_vector_boosts: Vec<_> = thirty_boosts
                     .iter()
                     .zip(boost_vecs)
@@ -1436,8 +1483,12 @@ pub async fn get_sparse_vectors_grpc(
         .map(|(i, thirty_messages)| {
             let channel = channel.clone();
             async move {
-                let content_vecs =
-                    get_batch_sparse_vectors_grpc(thirty_messages.to_vec(), Some(channel)).await?;
+                let content_vecs = get_batch_sparse_vectors_grpc(
+                    thirty_messages.to_vec(),
+                    Some(channel),
+                    embed_type,
+                )
+                .await?;
                 Ok((i, content_vecs))
             }
         })
@@ -1493,12 +1544,24 @@ pub async fn get_sparse_vectors_grpc(
 pub async fn get_batch_sparse_vectors_grpc(
     messages: Vec<String>,
     channel_to_use: Option<Channel>,
+    embed_type: &str,
 ) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
-    let grpc_origin = get_env!("SPARSE_SERVER_GRPC_ORIGIN", "Grpc origin should be set");
+    let grpc_origin = match embed_type {
+        "doc" => std::env::var("SPARSE_SERVER_DOC_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse doc server is not set".to_string())
+        }),
+        "query" => std::env::var("SPARSE_SERVER_QUERY_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse query server is not set".to_string())
+        }),
+        _ => std::env::var("SPARSE_SERVER_DOC_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Grpc origin for sparse doc server is not set".to_string())
+        }),
+    }?;
 
     let channel = match channel_to_use {
         Some(endpoint) => Ok(endpoint),
-        None => Channel::from_static(grpc_origin)
+        None => Channel::from_shared(grpc_origin)
+            .map_err(|_| ServiceError::BadRequest("Invalid grpc URI".to_string()))?
             .connect()
             .await
             .map_err(|_| {
@@ -1548,4 +1611,32 @@ pub async fn get_batch_sparse_vectors_grpc(
         })
         .collect();
     sparse_responses
+}
+
+fn get_grpc_embedding_base_url(
+    dataset_config: DatasetConfiguration,
+) -> Result<String, ServiceError> {
+    let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
+
+    let embedding_base_url = match config_embedding_base_url.as_str() {
+        "https://embedding.trieve.ai" => {
+            std::env::var("EMBEDDING_SERVER_GRPC_ORIGIN").map_err(|_| {
+                ServiceError::BadRequest("Embedding server grpc origin should be set".to_string())
+            })
+        }
+        "https://embedding.trieve.ai/bge-m3" => std::env::var("EMBEDDING_SERVER_GRPC_ORIGIN_BGEM3")
+            .map_err(|_| {
+                ServiceError::BadRequest("Embedding server grpc origin should be set".to_string())
+            }),
+        "https://embedding.trieve.ai/jina-code" => {
+            std::env::var("EMBEDDING_SERVER_GRPC_ORIGIN_JINA_CODE").map_err(|_| {
+                ServiceError::BadRequest("Embedding server grpc origin should be set".to_string())
+            })
+        }
+        _ => std::env::var("EMBEDDING_SERVER_GRPC_ORIGIN").map_err(|_| {
+            ServiceError::BadRequest("Embedding server grpc origin should be set".to_string())
+        }),
+    };
+
+    embedding_base_url
 }
