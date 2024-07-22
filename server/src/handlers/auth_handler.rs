@@ -413,7 +413,6 @@ pub async fn callback(
                 ServiceError::InternalServerError(e.to_string())
             }
             oauth2::RequestTokenError::Other(e) => ServiceError::InternalServerError(e.to_string()),
-            _ => ServiceError::InternalServerError("Unknown error".into()),
         })?;
 
     let id_token = token_response
