@@ -595,6 +595,7 @@ pub fn main() -> std::io::Result<()> {
             App::new()
                 .wrap(Cors::permissive())
                 .app_data(PayloadConfig::new(134200000))
+                .wrap(middleware::json_middleware::JsonMiddlewareFactory)
                 .app_data(json_cfg.clone())
                 .app_data(
                     web::PathConfig::default()
