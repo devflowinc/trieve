@@ -1011,6 +1011,12 @@ pub struct RemoveChunkFromGroupReqPayload {
     pub chunk_id: uuid::Uuid,
 }
 
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct RemoveChunkFromGroupReqQuery {
+    /// Id of the chunk to remove from the group.
+    pub chunk_id: uuid::Uuid,
+}
+
 /// Remove Chunk from Group
 ///
 /// Route to remove a chunk from a group. Auth'ed user or api key must be an admin or owner of the dataset's organization to remove a chunk from a group.
@@ -1019,14 +1025,15 @@ pub struct RemoveChunkFromGroupReqPayload {
     path = "/chunk_group/chunk/{group_id}",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = RemoveChunkFromGroupReqPayload, description = "JSON request payload to remove a chunk from a group", content_type = "application/json"),
+    request_body(content = Option<RemoveChunkFromGroupReqPayload>, description = "JSON request payload to remove a chunk from a group", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk was removed to the group"),
         (status = 400, description = "Service error relating to removing the chunk from the group", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
-        ("group_id" = Option<uuid::Uuid>, Path, description = "Id of the group you want to remove the chunk from."),
+        ("group_id" = uuid::Uuid, Path, description = "Id of the group you want to remove the chunk from."),
+        ("chunk_id" = Option<uuid::Uuid>, Query, description = "Id of the chunk you want to remove from the group"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -1035,13 +1042,23 @@ pub struct RemoveChunkFromGroupReqPayload {
 #[tracing::instrument(skip(pool))]
 pub async fn remove_chunk_from_group(
     group_id: web::Path<uuid::Uuid>,
-    body: web::Json<RemoveChunkFromGroupReqPayload>,
+    body: Option<web::Json<RemoveChunkFromGroupReqPayload>>,
+    query: Option<web::Query<RemoveChunkFromGroupReqQuery>>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let group_id = group_id.into_inner();
-    let chunk_id = body.chunk_id;
+
+    let chunk_id = match (body, query) {
+        (Some(body), None) => Ok(body.chunk_id),
+        (None, Some(query)) => Ok(query.chunk_id),
+        (None, None) => Err(ServiceError::BadRequest(
+            "chunk_id not specified".to_string(),
+        )),
+        (Some(body), Some(_query)) => Ok(body.chunk_id),
+    }?;
+
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
