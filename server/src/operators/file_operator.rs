@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::chunk_operator::{create_chunk_metadata, get_row_count_for_organization_id_query};
 use super::event_operator::create_event_query;
-use super::group_operator::{create_group_from_file_query, create_group_query};
+use super::group_operator::{create_group_from_file_query, create_groups_query};
 use super::parse_operator::{build_chunking_regex, coarse_doc_chunker, convert_html_to_text};
 use crate::data::models::ChunkGroup;
 use crate::data::models::FileDTO;
@@ -149,12 +149,22 @@ pub async fn create_file_chunks(
             .map(|tag_set| tag_set.into_iter().map(Some).collect()),
     );
 
-    let chunk_group = create_group_query(chunk_group, true, pool.clone())
+    let chunk_group_option = create_groups_query(vec![chunk_group], true, pool.clone())
         .await
         .map_err(|e| {
             log::error!("Could not create group {:?}", e);
             ServiceError::BadRequest("Could not create group".to_string())
-        })?;
+        })?
+        .pop();
+
+    let chunk_group = match chunk_group_option {
+        Some(group) => group,
+        None => {
+            return Err(ServiceError::BadRequest(
+                "Could not create group from file".to_string(),
+            ));
+        }
+    };
 
     let group_id = chunk_group.id;
 
