@@ -24,6 +24,7 @@ import { ChatPopup } from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline } from "solid-icons/io";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { useSearchParams } from "@solidjs/router";
 
 export interface SingleChunkPageProps {
   chunkId: string | undefined;
@@ -35,6 +36,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
 
   const $dataset = datasetAndUserContext.currentDataset;
   const initialChunkMetadata = props.defaultResultChunk.metadata;
+  const [searchParams] = useSearchParams();
 
   const [chunkMetadata, setChunkMetadata] = createSignal<ChunkMetadata | null>(
     initialChunkMetadata,
@@ -60,13 +62,21 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [scoreChunk, setScoreChunk] = createSignal<ScoreChunkDTO[]>([]);
 
+  const recentlyUploaded = searchParams.recently_uploaded === "true";
+
   if (props.defaultResultChunk.status == 401) {
     setError("You are not authorized to view this chunk.");
   }
   if (props.defaultResultChunk.status == 404) {
-    setError(
-      "This chunk could not be found. It may be in a different dataset or deleted.",
-    );
+    if (recentlyUploaded) {
+      setError(
+        "This chunk was recently uploaded. We are currently processing it.",
+      );
+    } else {
+      setError(
+        "This chunk could not be found. It may be in a different dataset or deleted.",
+      );
+    }
   }
 
   // Fetch the chunk groups for the auth'ed user
@@ -181,9 +191,15 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         });
       }
       if (response.status == 404) {
-        setError(
-          "This chunk could not be found. It may be in a different dataset or deleted.",
-        );
+        if (recentlyUploaded) {
+          setError(
+            "This chunk was recently uploaded. We are currently processing it.",
+          );
+        } else {
+          setError(
+            "This chunk could not be found. It may be in a different dataset or deleted.",
+          );
+        }
       }
       setClientSideRequestFinished(true);
       setFetching(false);
