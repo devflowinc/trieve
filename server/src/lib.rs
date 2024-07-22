@@ -534,6 +534,7 @@ pub fn main() -> std::io::Result<()> {
             .unwrap_or(vec![384,512,768,1024,1536,3072]);
 
         let json_cfg = web::JsonConfig::default()
+            .content_type_required(false)
             .limit(134200000)
             .error_handler(custom_json_error_handler);
 
