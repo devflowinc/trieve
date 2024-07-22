@@ -55,7 +55,7 @@ const transformRow = (row: { data: ChunkData }): Data | undefined => {
       metadata: JSON.parse(row.data.Metadata.replace(/;/g, ",")),
       upsert_by_tracking_id: true,
     };
-  } catch (e) {
+  } catch (_e) {
     return undefined;
   }
 };

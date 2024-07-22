@@ -37,7 +37,7 @@ const getDatasets = async ({ orgId }: { orgId: string }) => {
       } else {
         canFetchAgain = false;
       }
-    } catch (error) {
+    } catch (_error) {
       canFetchAgain = false;
     }
   }

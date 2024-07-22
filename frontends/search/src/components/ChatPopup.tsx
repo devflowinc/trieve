@@ -134,7 +134,7 @@ export const ChatPopup = (props: LayoutProps) => {
         return;
       }
       await handleReader(reader);
-    } catch (e) {
+    } catch (_e) {
       const newEvent = new CustomEvent("show-toast", {
         detail: {
           type: "error",
