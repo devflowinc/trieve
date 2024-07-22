@@ -37,6 +37,9 @@ pub enum ServiceError {
 
     #[display(fmt = "Json Deserialization Error: {_0}")]
     JsonDeserializeError(String),
+
+    #[display(fmt = "Payload Too Large")]
+    PayloadTooLarge(String),
 }
 
 // impl ResponseError trait allows to convert our errors into http responses with appropriate data
@@ -72,6 +75,11 @@ impl ResponseError for ServiceError {
             ServiceError::JsonDeserializeError(ref message) => {
                 HttpResponse::BadRequest().json(ErrorResponseBody {
                     message: format!("Json Deserialization Error: {}", message),
+                })
+            }
+            ServiceError::PayloadTooLarge(ref message) => {
+                HttpResponse::PayloadTooLarge().json(ErrorResponseBody {
+                    message: message.to_string(),
                 })
             }
         }

@@ -1279,12 +1279,16 @@ pub struct UserDTO {
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
 #[schema(example = json!({
-    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "name": "Trieve",
+    "name": "Versions of Oversized T-Shirt",
+    "description": "All versions and colorways of the oversized t-shirt",
+    "tracking_id": "SNOVERSIZEDTSHIRT",
+    "tag_set": ["tshirt", "oversized", "clothing"],
+    "metadata": {
+        "foo": "bar"
+    },
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "tracking_id": "3",
 }))]
 #[diesel(table_name = chunk_group)]
 pub struct ChunkGroup {
