@@ -12,7 +12,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::prelude::*;
-use diesel::{dsl::sql, sql_types::Text};
+use diesel::{dsl::sql, sql_types::Text, upsert::excluded};
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
@@ -97,42 +97,53 @@ pub async fn update_group_by_tracking_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn create_group_query(
-    new_group: ChunkGroup,
+pub async fn create_groups_query(
+    new_groups: Vec<ChunkGroup>,
     upsert_by_tracking_id: bool,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, ServiceError> {
-    use crate::data::schema::chunk_group::dsl::*;
+) -> Result<Vec<ChunkGroup>, ServiceError> {
+    if new_groups.is_empty() {
+        return Ok(vec![]);
+    }
+
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    if let Some(other_tracking_id) = new_group.tracking_id.clone() {
-        if upsert_by_tracking_id {
-            if let Ok(existing_group) = get_group_from_tracking_id_query(
-                other_tracking_id.clone(),
-                new_group.dataset_id,
-                pool.clone(),
-            )
+    let inserted_groups = if upsert_by_tracking_id {
+        diesel::insert_into(chunk_group_columns::chunk_group)
+            .values(&new_groups)
+            .on_conflict((
+                chunk_group_columns::dataset_id,
+                chunk_group_columns::tracking_id,
+            ))
+            .do_update()
+            .set((
+                chunk_group_columns::name.eq(excluded(chunk_group_columns::name)),
+                chunk_group_columns::description.eq(excluded(chunk_group_columns::description)),
+                chunk_group_columns::metadata.eq(excluded(chunk_group_columns::metadata)),
+                chunk_group_columns::tag_set.eq(excluded(chunk_group_columns::tag_set)),
+            ))
+            .returning(ChunkGroup::as_select())
+            .get_results::<ChunkGroup>(&mut conn)
             .await
-            {
-                let mut update_group = new_group.clone();
-                update_group.id = existing_group.id;
-                update_group.created_at = existing_group.created_at;
+            .map_err(|e| {
+                log::error!("Error upserting groups {:?}", e);
+                ServiceError::BadRequest("Error upserting groups".to_string())
+            })?
+    } else {
+        diesel::insert_into(chunk_group_columns::chunk_group)
+            .values(&new_groups)
+            .on_conflict_do_nothing()
+            .get_results::<ChunkGroup>(&mut conn)
+            .await
+            .map_err(|e| {
+                log::error!("Error inserting groups {:?}", e);
+                ServiceError::BadRequest("Error inserting groups".to_string())
+            })?
+    };
 
-                let updated_group = update_chunk_group_query(update_group, pool.clone()).await?;
-
-                return Ok(updated_group);
-            }
-        }
-    }
-
-    diesel::insert_into(chunk_group)
-        .values(&new_group)
-        .execute(&mut conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(format!("Error creating group {:?}", err)))?;
-
-    Ok(new_group)
+    Ok(inserted_groups)
 }
 
 #[tracing::instrument(skip(pool))]

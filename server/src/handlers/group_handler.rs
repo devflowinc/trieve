@@ -55,8 +55,19 @@ pub async fn dataset_owns_group(
     Ok(group)
 }
 
-#[derive(Deserialize, Serialize, Debug, ToSchema)]
-pub struct CreateChunkGroupReqPayload {
+#[derive(Deserialize, Serialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "name": "Versions of Oversized T-Shirt",
+    "description": "All versions and colorways of the oversized t-shirt",
+    "tracking_id": "SNOVERSIZEDTSHIRT",
+    "tag_set": ["tshirt", "oversized", "clothing"],
+    "metadata": {
+        "color": "black",
+        "size": "large"
+    },
+    "upsert_by_tracking_id": false
+}))]
+pub struct CreateSingleChunkGroupReqPayload {
     /// Name to assign to the chunk_group. Does not need to be unique.
     pub name: Option<String>,
     /// Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for.
@@ -71,18 +82,48 @@ pub struct CreateChunkGroupReqPayload {
     pub upsert_by_tracking_id: Option<bool>,
 }
 
-/// Create Chunk Group
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!([{
+    "name": "Versions of Oversized T-Shirt",
+    "description": "All versions and colorways of the oversized t-shirt",
+    "tracking_id": "SNOVERSIZEDTSHIRT",
+    "tag_set": ["tshirt", "oversized", "clothing"],
+    "metadata": {
+        "foo": "bar"
+    },
+    "upsert_by_tracking_id": false
+},{
+    "name": "Versions of Slim-Fit T-Shirt",
+    "description": "All versions and colorways of the slim-fit t-shirt",
+    "tracking_id": "SLIMFITTSHIRT",
+    "tag_set": ["tshirt", "slim", "clothing"],
+    "metadata": {
+        "foo": "bar"
+    },
+    "upsert_by_tracking_id": false
+}]))]
+pub struct CreateBatchChunkGroupReqPayload(pub Vec<CreateSingleChunkGroupReqPayload>);
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum CreateChunkGroupReqPayloadEnum {
+    Single(CreateSingleChunkGroupReqPayload),
+    Batch(CreateBatchChunkGroupReqPayload),
+}
+
+/// Create or Upsert Group or Groups
 ///
-/// Create a new chunk_group. This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Create new chunk_group(s). This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/chunk_group",
     context_path = "/api",
     tag = "Chunk Group",
-    request_body(content = CreateChunkGroupReqPayload, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
+    request_body(content = CreateChunkGroupReqPayloadEnum, description = "JSON request payload to cretea a chunk_group(s)", content_type = "application/json"),
     responses(
-        (status = 200, description = "Returns the created chunkGroup", body = ChunkGroup),
-        (status = 400, description = "Service error relating to creating the chunkGroup", body = ErrorResponseBody),
+        (status = 200, description = "Returns the created chunk_group if a single chunK_group was specified", body = ChunkGroup),
+        (status = 200, description = "Returns the created chunk_groups if a batch of chunk_groups was specified", body = Vec<ChunkGroup>),
+        (status = 400, description = "Service error relating to creating the chunk_group(s)", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
@@ -93,35 +134,77 @@ pub struct CreateChunkGroupReqPayload {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn create_chunk_group(
-    body: web::Json<CreateChunkGroupReqPayload>,
+    create_group_data: web::Json<CreateChunkGroupReqPayloadEnum>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let name = body.name.clone();
-    let description = body.description.clone();
+    let payloads = match create_group_data.into_inner() {
+        CreateChunkGroupReqPayloadEnum::Single(single) => vec![single],
+        CreateChunkGroupReqPayloadEnum::Batch(batch) => batch.0,
+    };
 
-    let group_tag_set = body.tag_set.clone().map(|tag_set| {
-        tag_set
-            .into_iter()
-            .map(|tag| Some(tag.clone()))
-            .collect::<Vec<Option<String>>>()
-    });
+    let (upsert_payloads, non_upsert_payloads) = payloads
+        .into_iter()
+        .partition::<Vec<_>, _>(|payload| payload.upsert_by_tracking_id.unwrap_or(false));
 
-    let group = ChunkGroup::from_details(
-        name,
-        description,
-        dataset_org_plan_sub.dataset.id,
-        body.tracking_id.clone(),
-        body.metadata.clone(),
-        group_tag_set,
-    );
-    {
-        let group = group.clone();
-        create_group_query(group, body.upsert_by_tracking_id.unwrap_or(false), pool).await?;
+    let upsert_groups = upsert_payloads
+        .into_iter()
+        .map(|payload| {
+            let group_tag_set = payload.tag_set.clone().map(|tag_set| {
+                tag_set
+                    .into_iter()
+                    .map(|tag| Some(tag.clone()))
+                    .collect::<Vec<Option<String>>>()
+            });
+
+            ChunkGroup::from_details(
+                payload.name.clone(),
+                payload.description.clone(),
+                dataset_org_plan_sub.dataset.id,
+                payload.tracking_id.clone(),
+                payload.metadata.clone(),
+                group_tag_set,
+            )
+        })
+        .collect::<Vec<ChunkGroup>>();
+
+    let non_upsert_groups = non_upsert_payloads
+        .into_iter()
+        .map(|payload| {
+            let group_tag_set = payload.tag_set.clone().map(|tag_set| {
+                tag_set
+                    .into_iter()
+                    .map(|tag| Some(tag.clone()))
+                    .collect::<Vec<Option<String>>>()
+            });
+
+            ChunkGroup::from_details(
+                payload.name.clone(),
+                payload.description.clone(),
+                dataset_org_plan_sub.dataset.id,
+                payload.tracking_id.clone(),
+                payload.metadata.clone(),
+                group_tag_set,
+            )
+        })
+        .collect::<Vec<ChunkGroup>>();
+
+    let (upsert_results, non_upsert_results) = futures::future::join(
+        create_groups_query(upsert_groups, true, pool.clone()),
+        create_groups_query(non_upsert_groups, false, pool.clone()),
+    )
+    .await;
+    let created_groups = upsert_results?
+        .into_iter()
+        .chain(non_upsert_results?.into_iter())
+        .collect::<Vec<ChunkGroup>>();
+
+    if created_groups.len() == 1 {
+        Ok(HttpResponse::Ok().json(created_groups[0].clone()))
+    } else {
+        Ok(HttpResponse::Ok().json(created_groups))
     }
-
-    Ok(HttpResponse::Ok().json(group))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
