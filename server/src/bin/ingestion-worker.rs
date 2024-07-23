@@ -1117,7 +1117,7 @@ async fn update_chunk(
         }
 
         update_chunk_metadata_query(
-            chunk_metadata.clone(),
+            chunk_metadata.clone().into(),
             Some(chunk_group_ids.clone()),
             payload.dataset_id,
             web_pool.clone(),
@@ -1126,7 +1126,7 @@ async fn update_chunk(
 
         update_qdrant_point_query(
             // If the chunk is a collision, we don't want to update the qdrant point
-            chunk_metadata,
+            chunk_metadata.into(),
             embedding_vector,
             Some(chunk_group_ids),
             payload.dataset_id,
@@ -1139,7 +1139,7 @@ async fn update_chunk(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     } else {
         update_chunk_metadata_query(
-            chunk_metadata.clone(),
+            chunk_metadata.clone().into(),
             None,
             payload.dataset_id,
             web_pool.clone(),
@@ -1148,7 +1148,7 @@ async fn update_chunk(
 
         update_qdrant_point_query(
             // If the chunk is a collision, we don't want to update the qdrant point
-            chunk_metadata,
+            chunk_metadata.into(),
             embedding_vector,
             None,
             payload.dataset_id,

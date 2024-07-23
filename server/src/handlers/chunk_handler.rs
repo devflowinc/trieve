@@ -7,7 +7,7 @@ use crate::data::models::{
     GeoInfoWithBias, IngestSpecificChunkMetadata, Pool, QdrantSortBy, RagQueryEventClickhouse,
     ReRankOptions, RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool,
     ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
-    SlimChunkMetadataWithScore, SortByField, UnifiedId,
+    SlimChunkMetadataWithScore, SortByField, UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -560,13 +560,13 @@ pub struct UpdateChunkReqPayload {
     convert_html_to_text: Option<bool>,
     /// Boost is useful for when you want to boost certain phrases in the fulltext search results for official listings. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the AirBNB token for its official listing.
     pub boost_phrase: Option<BoostPhrase>,
-
+    /// Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push the latest model of a iphone closer to flagship by using the distance phrase "flagship" and a boost factor above 0. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
     pub distance_phrase: Option<DistancePhrase>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateIngestionMessage {
-    pub chunk_metadata: ChunkMetadata,
+    pub chunk_metadata: UpdateSpecificChunkMetadata,
     pub dataset_id: uuid::Uuid,
     pub group_ids: Option<Vec<UnifiedId>>,
     pub convert_html_to_text: Option<bool>,
@@ -616,15 +616,15 @@ pub async fn update_chunk(
         .into());
     };
 
-    let link = update_chunk_data
-        .link
-        .clone()
-        .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
+    let link = match update_chunk_data.link.clone() {
+        Some(link) => Some(link),
+        None => chunk_metadata.link,
+    };
 
-    let chunk_tracking_id = update_chunk_data
-        .tracking_id
-        .clone()
-        .filter(|chunk_tracking| !chunk_tracking.is_empty());
+    let chunk_tracking_id = match update_chunk_data.tracking_id.clone() {
+        Some(tracking_id) => Some(tracking_id),
+        None => chunk_metadata.tracking_id,
+    };
 
     let chunk_tag_set = update_chunk_data.tag_set.clone().map(|tag_set| {
         tag_set
@@ -641,7 +641,7 @@ pub async fn update_chunk(
     let chunk_metadata = ChunkMetadata::from_details_with_id(
         chunk_metadata.id,
         chunk_html,
-        &Some(link),
+        &link,
         &chunk_tag_set.or(chunk_metadata.tag_set),
         chunk_metadata.qdrant_point_id,
         <std::option::Option<serde_json::Value> as Clone>::clone(&update_chunk_data.metadata)
@@ -690,7 +690,7 @@ pub async fn update_chunk(
     };
 
     let message = UpdateIngestionMessage {
-        chunk_metadata: chunk_metadata.clone(),
+        chunk_metadata: chunk_metadata.clone().into(),
         dataset_id,
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,
@@ -836,7 +836,7 @@ pub async fn update_chunk_by_tracking_id(
     };
 
     let message = UpdateIngestionMessage {
-        chunk_metadata: metadata.clone(),
+        chunk_metadata: metadata.clone().into(),
         dataset_id,
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,

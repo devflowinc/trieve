@@ -315,6 +315,69 @@ impl Default for GeoInfo {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct UpdateSpecificChunkMetadata {
+    pub id: uuid::Uuid,
+    pub link: Option<String>,
+    pub qdrant_point_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub chunk_html: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub location: Option<GeoInfo>,
+    pub image_urls: Option<Vec<Option<String>>>,
+    pub tag_set: Option<Vec<Option<String>>>,
+    pub num_value: Option<f64>,
+}
+
+impl From<UpdateSpecificChunkMetadata> for ChunkMetadata {
+    fn from(update_specific_chunk_metadata: UpdateSpecificChunkMetadata) -> Self {
+        ChunkMetadata {
+            id: update_specific_chunk_metadata.id,
+            link: update_specific_chunk_metadata.link,
+            qdrant_point_id: update_specific_chunk_metadata.qdrant_point_id,
+            created_at: update_specific_chunk_metadata.created_at,
+            updated_at: update_specific_chunk_metadata.updated_at,
+            chunk_html: update_specific_chunk_metadata.chunk_html,
+            metadata: update_specific_chunk_metadata.metadata,
+            tracking_id: update_specific_chunk_metadata.tracking_id,
+            time_stamp: update_specific_chunk_metadata.time_stamp,
+            dataset_id: update_specific_chunk_metadata.dataset_id,
+            weight: update_specific_chunk_metadata.weight,
+            location: update_specific_chunk_metadata.location,
+            image_urls: update_specific_chunk_metadata.image_urls,
+            tag_set: update_specific_chunk_metadata.tag_set,
+            num_value: update_specific_chunk_metadata.num_value,
+        }
+    }
+}
+
+impl From<ChunkMetadata> for UpdateSpecificChunkMetadata {
+    fn from(chunk_metadata: ChunkMetadata) -> Self {
+        UpdateSpecificChunkMetadata {
+            id: chunk_metadata.id,
+            link: chunk_metadata.link,
+            qdrant_point_id: chunk_metadata.qdrant_point_id,
+            created_at: chunk_metadata.created_at,
+            updated_at: chunk_metadata.updated_at,
+            chunk_html: chunk_metadata.chunk_html,
+            metadata: chunk_metadata.metadata,
+            tracking_id: chunk_metadata.tracking_id,
+            time_stamp: chunk_metadata.time_stamp,
+            dataset_id: chunk_metadata.dataset_id,
+            weight: chunk_metadata.weight,
+            location: chunk_metadata.location,
+            image_urls: chunk_metadata.image_urls,
+            tag_set: chunk_metadata.tag_set,
+            num_value: chunk_metadata.num_value,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
