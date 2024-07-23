@@ -22,7 +22,7 @@ def fetch_dataset_vectors(
         SELECT id, query, top_score, query_vector 
         FROM default.search_queries 
         WHERE dataset_id = '{}'
-            AND created_at >= now() - INTERVAL 7 DAY
+            AND created_at >= now() - INTERVAL 7 DAY AND is_duplicate = 0
         ORDER BY rand() 
         LIMIT {}
         """.format(
