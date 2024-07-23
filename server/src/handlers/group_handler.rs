@@ -1011,12 +1011,6 @@ pub struct RemoveChunkFromGroupReqPayload {
     pub chunk_id: uuid::Uuid,
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct RemoveChunkFromGroupReqQuery {
-    /// Id of the chunk to remove from the group.
-    pub chunk_id: uuid::Uuid,
-}
-
 /// Remove Chunk from Group
 ///
 /// Route to remove a chunk from a group. Auth'ed user or api key must be an admin or owner of the dataset's organization to remove a chunk from a group.
@@ -1043,7 +1037,7 @@ pub struct RemoveChunkFromGroupReqQuery {
 pub async fn remove_chunk_from_group(
     group_id: web::Path<uuid::Uuid>,
     body: Option<web::Json<RemoveChunkFromGroupReqPayload>>,
-    query: Option<web::Query<RemoveChunkFromGroupReqQuery>>,
+    query: Option<web::Query<RemoveChunkFromGroupReqPayload>>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
