@@ -41,6 +41,7 @@ jobs:
             trieve/clickhouse-clustering
           tags: |
             type=raw,latest
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

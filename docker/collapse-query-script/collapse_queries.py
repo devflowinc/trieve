@@ -87,7 +87,7 @@ def set_dataset_last_collapsed(
     last_collapsed: datetime.datetime,
 ):
     delete_dataset_last_collapsed(client, dataset_id)
-    print("setting last collapsed for", dataset_id, last_collapsed)
+
     client.insert(
         "last_collapsed_dataset",
         [
@@ -116,7 +116,6 @@ def collapse_queries(rows):
         elif row[1].startswith(cur_row[1]):
             # Check if the current row's timestamp is within 10 seconds of the previous row
             time_difference = (row[3] - cur_row[3]).total_seconds()
-            print(time_difference)
             if time_difference <= 10:
                 rows_to_be_deleted.append(cur_row)
                 cur_row = row
@@ -156,7 +155,7 @@ def main():
 
             last_collapsed = get_dataset_last_collapsed(client, dataset_id)
 
-            print("last collapsed", last_collapsed, "dataset_id", dataset_id)
+            print("Collapsing dataset ", dataset_id, "from ", last_collapsed)
 
             num_deleted = 0
 
