@@ -808,7 +808,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                   field: "",
                                 },
                                 pageSize: 10,
-                                getTotalPages: true,
+                                getTotalPages: false,
                                 highlightResults: true,
                                 highlightDelimiters: ["?", ".", "!"],
                                 highlightMaxLength: 8,
