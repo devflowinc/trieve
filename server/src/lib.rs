@@ -17,7 +17,7 @@ use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::{Key, SameSite},
-    middleware::Logger,
+    middleware::{Compress, Logger},
     web::{self, PayloadConfig},
     App, HttpServer,
 };
@@ -785,13 +785,17 @@ pub fn main() -> std::io::Result<()> {
                                 )
                                 .service(web::resource("/recommend").route(
                                     web::post().to(handlers::chunk_handler::get_recommended_chunks),
-                                ))
+                                )
+                                .wrap(Compress::default())
+                            )
                                 .service(
                                     web::resource("/autocomplete")
+                                        .wrap(Compress::default())
                                         .route(web::post().to(handlers::chunk_handler::autocomplete)),
                                 )
                                 .service(
                                     web::resource("/search")
+                                        .wrap(Compress::default())
                                         .route(web::post().to(handlers::chunk_handler::search_chunks)),
                                 )
                                 .service(
@@ -861,17 +865,21 @@ pub fn main() -> std::io::Result<()> {
                                 ))
                                 .service(
                                     web::resource("/search")
-                                        .route(web::post().to(handlers::group_handler::search_within_group)),
+                                        .route(web::post().to(handlers::group_handler::search_within_group))
+                                        .wrap(Compress::default())
+,
                                 )
                                 .service(
                                     web::resource("/group_oriented_search").route(
                                         web::post().to(handlers::group_handler::search_over_groups),
-                                    ),
+                                    )
+                                    .wrap(Compress::default())
                                 )
                                 .service(
                                     web::resource("/recommend").route(
                                         web::post().to(handlers::group_handler::get_recommended_groups),
-                                    ),
+                                    )                                        .wrap(Compress::default())
+,
                                 )
                                 .service(
                                     web::resource("/chunk/{chunk_group_id}")
