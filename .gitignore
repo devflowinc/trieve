@@ -82,5 +82,3 @@ data/*
 
 server/src/trieve_protobufs/*
 server/proto/*
-server/ch_migrations/1721754801_ctr_table/down.sql
-server/ch_migrations/1721754801_ctr_table/up.sql

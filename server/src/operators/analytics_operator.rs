@@ -14,7 +14,10 @@ use crate::{
         SortBy, SortOrder,
     },
     errors::ServiceError,
+    handlers::analytics_handler::CTRDataRequestBody,
 };
+
+use super::chunk_operator::get_metadata_from_tracking_id_query;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SearchClusterResponse {
@@ -763,4 +766,47 @@ pub async fn get_recommendation_queries_query(
     .await;
 
     Ok(RecommendationsEventResponse { queries })
+}
+
+pub async fn send_ctr_data_query(
+    data: CTRDataRequestBody,
+    clickhouse_client: &clickhouse::Client,
+    pool: web::Data<Pool>,
+    dataset_id: uuid::Uuid,
+) -> Result<(), ServiceError> {
+    let chunk_id = if let Some(chunk_id) = data.clicked_chunk_id {
+        chunk_id
+    } else if let Some(tracking_id) = data.clicked_chunk_tracking_id {
+        get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool)
+            .await
+            .map_err(|e| {
+                log::error!("Error fetching metadata: {:?}", e);
+                ServiceError::InternalServerError("Error fetching metadata".to_string())
+            })?
+            .id
+    } else {
+        return Err(ServiceError::BadRequest(
+            "Missing tracking_id or clicked_chunk_id".to_string(),
+        ));
+    };
+
+    clickhouse_client
+        .query(
+            "INSERT INTO default.ctr_data (id, request_id, chunk_id, dataset_id, position, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, now())",
+        )
+        .bind(uuid::Uuid::new_v4())
+        .bind(data.reqeust_id)
+        .bind(chunk_id)
+        .bind(dataset_id)
+        .bind(data.position)
+        .bind(serde_json::to_string(&data.metadata.unwrap_or_default()).unwrap_or_default())
+        .execute()
+        .await
+        .map_err(|err| {
+            log::error!("Error writing to ClickHouse: {:?}", err);
+            sentry::capture_message(&format!("Error writing to ClickHouse: {:?}", err), sentry::Level::Error);
+            ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
+        })?;
+
+    Ok(())
 }

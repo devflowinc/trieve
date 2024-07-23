@@ -9,6 +9,7 @@ use crate::{
     operators::analytics_operator::*,
 };
 use actix_web::{web, HttpResponse};
+use serde::{Deserialize, Serialize};
 
 /// Get Cluster Analytics
 ///
@@ -345,4 +346,34 @@ pub async fn get_recommendation_analytics(
     };
 
     Ok(HttpResponse::Ok().json(response))
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct CTRDataRequestBody {
+    pub reqeust_id: uuid::Uuid,
+    pub clicked_chunk_id: Option<uuid::Uuid>,
+    pub clicked_chunk_tracking_id: Option<String>,
+    pub position: i32,
+    pub metadata: Option<serde_json::Value>,
+}
+
+/// Send CTR Data
+///
+/// This route allows you to send CTR data to the system.
+pub async fn send_ctr_data(
+    _user: AdminOnly,
+    data: web::Json<CTRDataRequestBody>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    send_ctr_data_query(
+        data.into_inner(),
+        clickhouse_client.get_ref(),
+        pool.clone(),
+        dataset_org_plan_sub.dataset.id,
+    )
+    .await?;
+
+    Ok(HttpResponse::NoContent().finish())
 }
