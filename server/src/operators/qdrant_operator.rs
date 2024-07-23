@@ -64,7 +64,7 @@ pub async fn create_new_qdrant_collection_query(
 ) -> Result<(), ServiceError> {
     let qdrant_client = get_qdrant_connection(qdrant_url, qdrant_api_key).await?;
     for vector in accepted_vectors.iter() {
-        let qdrant_collection = format!("{}_vectors", vector);
+        let qdrant_collection = format!("{}_vectors_bm25", vector);
         // check if collection exists
         let collection = qdrant_client
             .collection_exists(qdrant_collection.clone())
@@ -352,7 +352,7 @@ pub async fn bulk_upsert_qdrant_points_query(
         ));
     }
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -397,7 +397,7 @@ pub async fn create_new_qdrant_point_query(
     };
 
     let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags);
-    let qdrant_collection = format!("{}_vectors", dataste_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataste_config.EMBEDDING_SIZE);
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
@@ -452,7 +452,7 @@ pub async fn update_qdrant_point_query(
 ) -> Result<(), actix_web::Error> {
     let qdrant_point_id: Vec<PointId> = vec![metadata.qdrant_point_id.to_string().clone().into()];
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -570,7 +570,7 @@ pub async fn add_bookmark_to_qdrant_query(
     group_id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -646,7 +646,7 @@ pub async fn remove_bookmark_from_qdrant_query(
     group_id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -751,7 +751,7 @@ pub async fn search_over_groups_query(
     dataset_config: DatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<(Vec<GroupSearchResults>, u64), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -982,7 +982,7 @@ pub async fn search_qdrant_query(
         return Ok((vec![], 0, vec![]));
     }
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1098,7 +1098,7 @@ pub async fn recommend_qdrant_query(
     dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<Vec<QdrantRecommendResult>, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let recommend_strategy = match strategy {
         Some(strategy) => match strategy {
@@ -1209,7 +1209,7 @@ pub async fn recommend_qdrant_groups_query(
     dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<Vec<GroupSearchResults>, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let recommend_strategy = match strategy {
         Some(RecommendationStrategy::BestScore) => Some(RecommendStrategy::BestScore.into()),
@@ -1334,7 +1334,7 @@ pub async fn point_ids_exists_in_qdrant(
     point_ids: Vec<uuid::Uuid>,
     datast_config: DatasetConfiguration,
 ) -> Result<bool, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", datast_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", datast_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1361,7 +1361,7 @@ pub async fn point_ids_exists_in_qdrant(
 }
 
 pub fn get_collection_name_from_config(config: &DatasetConfiguration) -> String {
-    format!("{}_vectors", config.EMBEDDING_SIZE)
+    format!("{}_vectors_bm25", config.EMBEDDING_SIZE)
 }
 
 pub async fn delete_points_from_qdrant(
@@ -1480,7 +1480,7 @@ pub async fn count_qdrant_query(
         limit
     };
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1665,7 +1665,7 @@ pub async fn scroll_dataset_points(
     dataset_config: DatasetConfiguration,
     filter: Filter,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
     let mut scroll_points_params = ScrollPointsBuilder::new(qdrant_collection);
 
     scroll_points_params = scroll_points_params.limit(limit as u32);

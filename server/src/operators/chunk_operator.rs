@@ -1229,7 +1229,7 @@ pub async fn delete_chunk_metadata_query(
         })
         .await;
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let point_ids = chunk_metadata
         .iter()

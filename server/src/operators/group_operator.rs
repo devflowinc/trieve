@@ -755,7 +755,7 @@ pub async fn update_grouped_chunks_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let group_id = new_group.id;
     let prev_group_tag_set = prev_group

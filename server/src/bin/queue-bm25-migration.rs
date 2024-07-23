@@ -45,7 +45,7 @@ async fn main() -> Result<(), ServiceError> {
 
     let collections: Vec<String> = vector_sizes
         .iter()
-        .map(|size| format!("{}_vectors", size))
+        .map(|size| format!("{}_vectors_bm25", size))
         .collect();
 
     for collection in collections {
