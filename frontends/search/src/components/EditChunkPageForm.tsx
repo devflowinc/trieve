@@ -402,6 +402,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                   />
                   <input
                     type="number"
+                    step="any"
                     placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
                     value={boostFactor()}
                     onChange={(e) =>
