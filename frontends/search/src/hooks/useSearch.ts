@@ -103,7 +103,7 @@ const fromParamsToState = (
       (JSON.parse(params.sort_by ?? "{}") as SortByField | SortBySearchType) ??
       initalState.sort_by,
     pageSize: parseInt(params.pageSize ?? "10"),
-    getTotalPages: (params.getTotalPages ?? "true") === "true",
+    getTotalPages: (params.getTotalPages ?? "false") === "true",
     highlightResults: (params.highlightResults ?? "true") === "true",
     highlightThreshold: parseFloat(params.highlightThreshold ?? "0.8"),
     highlightDelimiters:
