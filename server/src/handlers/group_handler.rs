@@ -1082,6 +1082,7 @@ pub struct RecommendGroupsReqPayload {
 #[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
 #[schema(title = "V2")]
 pub struct RecommendGroupsResponseBody {
+    pub id: uuid::Uuid,
     pub results: Vec<SearchOverGroupsResults>,
 }
 
@@ -1268,8 +1269,10 @@ pub async fn get_recommended_groups(
 
     timer.add("fetched metadata from ids");
 
+    let recommendation_id = uuid::Uuid::new_v4();
+
     let clickhouse_event = RecommendationEventClickhouse {
-        id: uuid::Uuid::new_v4(),
+        id: recommendation_id,
         recommendation_type: String::from("group"),
         positive_ids: positive_group_ids
             .unwrap_or_default()
@@ -1310,6 +1313,7 @@ pub async fn get_recommended_groups(
             .json(recommended_chunk_metadatas))
     } else {
         let new_chunk_metadatas = RecommendGroupsResponseBody {
+            id: recommendation_id,
             results: recommended_chunk_metadatas
                 .iter()
                 .map(|group| group.clone().into())
@@ -1411,6 +1415,7 @@ pub struct SearchWithinGroupResults {
 #[derive(Serialize, Deserialize, ToSchema)]
 #[schema(title = "V2")]
 pub struct SearchWithinGroupResponseBody {
+    pub id: uuid::Uuid,
     pub chunks: Vec<ScoreChunk>,
     pub total_pages: i64,
 }
@@ -1424,15 +1429,16 @@ pub enum SearchGroupResponseTypes {
     V1(SearchWithinGroupResults),
 }
 
-impl From<SearchWithinGroupResults> for SearchWithinGroupResponseBody {
-    fn from(search_within_group_results: SearchWithinGroupResults) -> Self {
+impl SearchWithinGroupResults {
+    fn into_v2(self, search_id: uuid::Uuid) -> SearchWithinGroupResponseBody {
         SearchWithinGroupResponseBody {
-            chunks: search_within_group_results
+            id: search_id,
+            chunks: self
                 .bookmarks
                 .into_iter()
                 .map(|chunk| chunk.into())
                 .collect(),
-            total_pages: search_within_group_results.total_pages,
+            total_pages: self.total_pages,
         }
     }
 }
@@ -1525,8 +1531,10 @@ pub async fn search_within_group(
     };
     timer.add("search_chunks");
 
+    let search_id = uuid::Uuid::new_v4();
+
     let clickhouse_event = SearchQueryEventClickhouse {
-        id: uuid::Uuid::new_v4(),
+        id: search_id,
         search_type: String::from("search_within_groups"),
         query: data.query.clone(),
         request_params: serde_json::to_string(&data.clone()).unwrap(),
@@ -1551,7 +1559,7 @@ pub async fn search_within_group(
     if api_version == APIVersion::V1 {
         Ok(HttpResponse::Ok().json(result_chunks))
     } else {
-        Ok(HttpResponse::Ok().json(SearchWithinGroupResponseBody::from(result_chunks)))
+        Ok(HttpResponse::Ok().json(result_chunks.into_v2(search_id)))
     }
 }
 
@@ -1686,8 +1694,10 @@ pub async fn search_over_groups(
     };
     timer.add("search_chunks");
 
+    let search_id = uuid::Uuid::new_v4();
+
     let clickhouse_event = SearchQueryEventClickhouse {
-        id: uuid::Uuid::new_v4(),
+        id: search_id,
         search_type: String::from("search_over_groups"),
         query: data.query.clone(),
         request_params: serde_json::to_string(&data.clone()).unwrap(),
@@ -1712,6 +1722,6 @@ pub async fn search_over_groups(
     if api_version == APIVersion::V1 {
         Ok(HttpResponse::Ok().json(result_chunks))
     } else {
-        Ok(HttpResponse::Ok().json(result_chunks.into_new_payload()))
+        Ok(HttpResponse::Ok().json(result_chunks.into_v2(search_id)))
     }
 }

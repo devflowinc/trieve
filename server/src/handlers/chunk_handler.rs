@@ -1026,6 +1026,7 @@ pub struct SearchChunkQueryResponseBody {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(title = "V2")]
 pub struct SearchResponseBody {
+    pub id: uuid::Uuid,
     pub chunks: Vec<ScoreChunk>,
     pub total_pages: i64,
 }
@@ -1039,15 +1040,16 @@ pub enum SearchResponseTypes {
     V1(SearchChunkQueryResponseBody),
 }
 
-impl From<SearchChunkQueryResponseBody> for SearchResponseBody {
-    fn from(search_chunk_query_response_body: SearchChunkQueryResponseBody) -> Self {
+impl SearchChunkQueryResponseBody {
+    fn into_v2(self, search_id: uuid::Uuid) -> SearchResponseBody {
         SearchResponseBody {
-            chunks: search_chunk_query_response_body
+            id: search_id,
+            chunks: self
                 .score_chunks
                 .into_iter()
                 .map(|chunk| chunk.into())
                 .collect(),
-            total_pages: search_chunk_query_response_body.total_chunk_pages,
+            total_pages: self.total_chunk_pages,
         }
     }
 }
@@ -1165,8 +1167,10 @@ pub async fn search_chunks(
     };
     timer.add("search_chunks");
 
+    let search_id = uuid::Uuid::new_v4();
+
     let clickhouse_event = SearchQueryEventClickhouse {
-        id: uuid::Uuid::new_v4(),
+        id: search_id,
         search_type: String::from("search"),
         query: data.query.clone(),
         request_params: serde_json::to_string(&data.clone()).unwrap(),
@@ -1194,7 +1198,7 @@ pub async fn search_chunks(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .json(SearchResponseTypes::V2(result_chunks.into())));
+            .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
     }
 
     Ok(HttpResponse::Ok()
@@ -1388,8 +1392,10 @@ pub async fn autocomplete(
 
     timer.add("autocomplete_chunks");
 
+    let search_id = uuid::Uuid::new_v4();
+
     let clickhouse_event = SearchQueryEventClickhouse {
-        id: uuid::Uuid::new_v4(),
+        id: search_id,
         search_type: String::from("autocomplete"),
         query: data.query.clone(),
         request_params: serde_json::to_string(&data.clone()).unwrap(),
@@ -1416,7 +1422,7 @@ pub async fn autocomplete(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .json(SearchResponseTypes::V2(result_chunks.into())));
+            .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
     }
 
     Ok(HttpResponse::Ok()
@@ -1893,6 +1899,7 @@ pub struct RecommendChunksRequest {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(title = "V2")]
 pub struct RecommendChunksResponseBody {
+    pub id: uuid::Uuid,
     pub chunks: Vec<ScoreChunk>,
 }
 
@@ -2119,8 +2126,10 @@ pub async fn get_recommended_chunks(
 
     timer.add("fetched metadata from point_ids");
 
+    let recommendation_id = uuid::Uuid::new_v4();
+
     let clickhouse_event = RecommendationEventClickhouse {
-        id: uuid::Uuid::new_v4(),
+        id: recommendation_id,
         recommendation_type: String::from("chunk"),
         positive_ids: positive_chunk_ids
             .unwrap_or_default()
@@ -2165,6 +2174,7 @@ pub async fn get_recommended_chunks(
 
     if api_version == APIVersion::V2 {
         let new_payload = RecommendChunksResponseBody {
+            id: recommendation_id,
             chunks: recommended_chunk_metadatas_with_score
                 .into_iter()
                 .map(|chunk| chunk.into())

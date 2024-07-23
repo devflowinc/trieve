@@ -1074,6 +1074,10 @@ pub fn main() -> std::io::Result<()> {
                                 web::resource("/recommendations")
                                 .route(web::post().to(handlers::analytics_handler::get_recommendation_analytics)),
                             )
+                            .service(
+                                web::resource("/ctr")
+                                .route(web::post().to(handlers::analytics_handler::send_ctr_data)),
+                            )
                         ),
                 )
         })

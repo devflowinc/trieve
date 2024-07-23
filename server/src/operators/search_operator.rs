@@ -882,8 +882,9 @@ pub struct DeprecatedSearchOverGroupsResponseBody {
 }
 
 impl DeprecatedSearchOverGroupsResponseBody {
-    pub fn into_new_payload(self) -> SearchOverGroupsResponseBody {
+    pub fn into_v2(self, search_id: uuid::Uuid) -> SearchOverGroupsResponseBody {
         SearchOverGroupsResponseBody {
+            id: search_id,
             results: self
                 .group_chunks
                 .into_iter()
@@ -897,6 +898,7 @@ impl DeprecatedSearchOverGroupsResponseBody {
 #[derive(Serialize, Deserialize, ToSchema)]
 #[schema(title = "V2")]
 pub struct SearchOverGroupsResponseBody {
+    pub id: uuid::Uuid,
     pub results: Vec<SearchOverGroupsResults>,
     pub total_pages: i64,
 }
