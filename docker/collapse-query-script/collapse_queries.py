@@ -16,7 +16,7 @@ def get_search_queries(
     query = """
         SELECT id, query, top_score, created_at
         FROM default.search_queries 
-        WHERE dataset_id = '{}'
+        WHERE dataset_id = '{}' AND is_duplicate = 0
         ORDER BY created_at, length(query)
         LIMIT {}
         """.format(
@@ -28,7 +28,7 @@ def get_search_queries(
         SELECT id, query, top_score, created_at
         FROM default.search_queries 
         WHERE dataset_id = '{}'
-            AND created_at >= '{}'
+            AND created_at >= '{}' AND is_duplicate = 0
         ORDER BY created_at, length(query)
         LIMIT {}
         """.format(
@@ -130,7 +130,8 @@ def collapse_queries(rows):
 def delete_queries(client: clickhouse_connect.driver.client.Client, rows):
     for row in rows:
         query = """
-        DELETE FROM default.search_queries
+        ALTER TABLE default.search_queries
+        UPDATE is_duplicate = 1
         WHERE id = '{}'
         """.format(
             str(row[0])

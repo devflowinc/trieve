@@ -70,7 +70,7 @@ pub async fn get_queries_for_cluster_query(
         FROM search_queries 
         JOIN search_cluster_memberships ON search_queries.id = search_cluster_memberships.search_id 
         WHERE search_cluster_memberships.cluster_id = ? 
-            AND search_queries.dataset_id = ? 
+            AND search_queries.dataset_id = ? AND search_queries.is_duplicate = 0
         ORDER BY
             search_cluster_memberships.distance_to_centroid DESC
         LIMIT 15 
@@ -107,7 +107,7 @@ pub async fn get_search_query(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryEvent, ServiceError> {
     let clickhouse_query = clickhouse_client
-        .query("SELECT ?fields FROM search_queries WHERE id = ? AND dataset_id = ?")
+        .query("SELECT ?fields FROM search_queries WHERE id = ? AND dataset_id = ? AND search_queries.is_duplicate = 0")
         .bind(search_id)
         .bind(dataset_id)
         .fetch_one::<SearchQueryEventClickhouse>()
@@ -173,7 +173,7 @@ pub async fn get_head_queries_query(
             count(*) AS count
         FROM 
             default.search_queries
-        WHERE dataset_id = ?",
+        WHERE dataset_id = ? AND search_queries.is_duplicate = 0",
     );
 
     if let Some(filter) = filter {
@@ -218,7 +218,7 @@ pub async fn get_low_confidence_queries_query(
             ?fields
         FROM 
             default.search_queries
-        WHERE dataset_id = ?",
+        WHERE dataset_id = ? AND search_queries.is_duplicate = 0",
     );
 
     if let Some(filter) = filter {
@@ -279,7 +279,7 @@ pub async fn get_no_result_queries_query(
         FROM 
             default.search_queries
         WHERE dataset_id = ?
-        AND top_score = 0",
+        AND top_score = 0 AND search_queries.is_duplicate = 0",
     );
 
     if let Some(filter) = filter {
@@ -329,7 +329,7 @@ pub async fn get_all_queries_query(
             ?fields
         FROM 
             default.search_queries
-        WHERE dataset_id = ?",
+        WHERE dataset_id = ? AND search_queries.is_duplicate = 0",
     );
 
     if let Some(filter) = filter {
