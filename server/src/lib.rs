@@ -17,7 +17,7 @@ use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::{Key, SameSite},
-    middleware::Logger,
+    middleware::{Compress, Logger},
     web::{self, PayloadConfig},
     App, HttpServer,
 };
@@ -606,6 +606,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(clickhouse_client.clone()))
                 .app_data(web::Data::new(metrics.clone()))
                 .wrap(sentry_actix::Sentry::new())
+                .wrap(Compress::default())
                 .wrap(middleware::api_version::ApiVersionCheckFactory)
                 .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
