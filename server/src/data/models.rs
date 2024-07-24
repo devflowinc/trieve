@@ -4249,7 +4249,7 @@ pub struct SortBySearchType {
     pub rerank_type: ReRankOptions,
     /// How many results to pull in before the rerabj
     pub prefetch_amount: Option<u64>,
-    /// Query to use for prefetching
+    /// Query to use for prefetching defaults to the search query
     pub rerank_query: Option<String>,
 }
 
