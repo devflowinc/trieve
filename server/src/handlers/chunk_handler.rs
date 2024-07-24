@@ -332,26 +332,25 @@ pub async fn create_chunk(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let non_upsert_chunks = chunks
+    let (upsert_chunks, non_upsert_chunks) = chunks
         .iter()
         .filter_map(|chunk| {
             if !chunk.upsert_by_tracking_id.unwrap_or(false) {
-                Some(chunk.clone())
+                let non_empty_tracking_id = chunk
+                    .tracking_id
+                    .clone()
+                    .filter(|tracking_id| !tracking_id.is_empty());
+                let new_chunk = ChunkReqPayload {
+                    tracking_id: non_empty_tracking_id,
+                    ..chunk.clone()
+                };
+
+                Some(new_chunk)
             } else {
                 None
             }
         })
-        .collect::<Vec<ChunkReqPayload>>();
-    let upsert_chunks = chunks
-        .iter()
-        .filter_map(|chunk| {
-            if chunk.upsert_by_tracking_id.unwrap_or(false) {
-                Some(chunk.clone())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<ChunkReqPayload>>();
+        .partition(|chunk| chunk.upsert_by_tracking_id.unwrap_or(false));
 
     let (non_upsert_chunk_ingestion_message, non_upsert_chunk_metadatas) = create_chunk_metadata(
         non_upsert_chunks,
@@ -622,7 +621,13 @@ pub async fn update_chunk(
     };
 
     let chunk_tracking_id = match update_chunk_data.tracking_id.clone() {
-        Some(tracking_id) => Some(tracking_id),
+        Some(tracking_id) => {
+            if tracking_id.is_empty() {
+                None
+            } else {
+                Some(tracking_id)
+            }
+        }
         None => chunk_metadata.tracking_id,
     };
 
