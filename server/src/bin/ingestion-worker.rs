@@ -26,7 +26,7 @@ use trieve_server::operators::dataset_operator::get_dataset_by_id_query;
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
 use trieve_server::operators::model_operator::{
-    create_embedding, create_embeddings, get_bm25_embeddings, get_sparse_vectors,
+    get_bm25_embeddings, get_dense_vector, get_dense_vectors, get_sparse_vectors,
 };
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
@@ -557,7 +557,7 @@ pub async fn bulk_upload_chunks(
 
     let embedding_vectors = match dataset_config.SEMANTIC_ENABLED {
         true => {
-            let vectors = match create_embeddings(
+            let vectors = match get_dense_vectors(
                 content_and_boosts
                     .iter()
                     .map(|(content, _, distance_boost)| (content.clone(), distance_boost.clone()))
@@ -845,7 +845,7 @@ async fn upload_chunk(
                 true => {
                     let chunks = coarse_doc_chunker(content.clone(), None, false, 20);
 
-                    let embeddings = create_embeddings(
+                    let embeddings = get_dense_vectors(
                         chunks
                             .iter()
                             .map(|chunk| (chunk.clone(), payload.chunk.distance_phrase.clone()))
@@ -859,7 +859,7 @@ async fn upload_chunk(
                     average_embeddings(embeddings)?
                 }
                 false => {
-                    let embedding_vectors = create_embeddings(
+                    let embedding_vectors = get_dense_vectors(
                         vec![(content.clone(), payload.chunk.distance_phrase.clone())],
                         "doc",
                         dataset_config.clone(),
@@ -1062,7 +1062,7 @@ async fn update_chunk(
 
     let embedding_vector = match dataset_config.SEMANTIC_ENABLED {
         true => {
-            let embedding = create_embedding(
+            let embedding = get_dense_vector(
                 content.to_string(),
                 payload.distance_phrase,
                 "doc",
