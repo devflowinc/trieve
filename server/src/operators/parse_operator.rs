@@ -9,6 +9,10 @@ use crate::errors::ServiceError;
 #[tracing::instrument]
 pub fn convert_html_to_text(html: &str) -> String {
     let dom = Html::parse_fragment(html);
+    let element_texts = dom.root_element().text();
+    for element_text in element_texts {
+        println!("element: {}", element_text);
+    }
     let text = dom.root_element().text().collect::<String>();
     text
 }
