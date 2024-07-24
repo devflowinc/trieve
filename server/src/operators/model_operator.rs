@@ -334,20 +334,20 @@ pub async fn create_embeddings(
                 .cloned()
                 .collect::<Vec<String>>();
 
-            let boost_phrase_and_index = combined_messages
+            let distance_phrase_and_index = combined_messages
                 .iter()
                 .enumerate()
                 .filter_map(|(i, (_, y))| y.clone().map(|phrase| (i, phrase)))
                 .collect::<Vec<(usize, DistancePhrase)>>();
 
-            let boost_phrases = combined_messages
+            let distance_phrases = combined_messages
                 .iter()
                 .filter_map(|(_, y)| y.clone().map(|x| x.phrase.clone()))
                 .collect::<Vec<String>>();
 
             let clipped_messages = messages
                 .iter()
-                .chain(boost_phrases.iter())
+                .chain(distance_phrases.iter())
                 .map(|message| {
                     if message.len() > 5000 {
                         message.chars().take(12000).collect()
@@ -380,23 +380,23 @@ pub async fn create_embeddings(
 
             let embedding_api_key = embedding_api_key.clone();
 
-            let vectors_resp = async move {
+            let chunk_vectors_resp = async move {
                 let embeddings_resp = cur_client
-                .post(&format!("{}/embeddings?api-version=2023-05-15", url))
-                .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
-                .header("api-key", &embedding_api_key.clone())
-                .header("Content-Type", "application/json")
-                .json(&parameters)
-                .send()
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Failed to send message to embedding server".to_string())
-                })?
-                .text()
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Failed to get text from embeddings".to_string())
-                })?;
+                    .post(&format!("{}/embeddings?api-version=2023-05-15", url))
+                    .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
+                    .header("api-key", &embedding_api_key.clone())
+                    .header("Content-Type", "application/json")
+                    .json(&parameters)
+                    .send()
+                    .await
+                    .map_err(|_| {
+                        ServiceError::BadRequest("Failed to send message to embedding server".to_string())
+                    })?
+                    .text()
+                    .await
+                    .map_err(|_| {
+                        ServiceError::BadRequest("Failed to get text from embeddings".to_string())
+                    })?;
 
                 let embeddings: EmbeddingResponse = format_response(embeddings_resp.clone())
                     .map_err(move |_e| {
@@ -424,12 +424,12 @@ pub async fn create_embeddings(
                     ));
                 }
 
-            if !boost_phrase_and_index.is_empty() {
-                let boost_vectors = vectors
+            if !distance_phrase_and_index.is_empty() {
+                let distance_vectors = vectors
                     .split_off(messages.len()).to_vec();
 
                 let mut vectors_sorted = vectors.clone();
-                for ((og_index, phrase), boost_vector) in boost_phrase_and_index.iter().zip(boost_vectors) {
+                for ((og_index, phrase), boost_vector) in distance_phrase_and_index.iter().zip(distance_vectors) {
                     vectors_sorted[*og_index] = vectors_sorted[*og_index]
                         .iter()
                         .zip(boost_vector)
@@ -443,7 +443,7 @@ pub async fn create_embeddings(
                 Ok((i, vectors))
             };
 
-            vectors_resp
+            chunk_vectors_resp
         })
         .collect();
 
