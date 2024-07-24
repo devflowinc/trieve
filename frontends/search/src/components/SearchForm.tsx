@@ -47,7 +47,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   const [mustNotFilters, setMustNotFilters] = createSignal<Filter[]>([]);
   const [shouldFilters, setShouldFilters] = createSignal<Filter[]>([]);
   const [jsonbPrefilter, setJsonbPrefilter] = createSignal<boolean>(true);
-  const [prefetchQuery, setPrefetchQuery] = createSignal<string>("");
+  const [rerankQuery, setRerankQuery] = createSignal<string>("");
   const curDatasetFiltersKey = createMemo(
     () =>
       `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
@@ -201,7 +201,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   createEffect(() => {
     props.search.setSearch("sort_by", {
       rerank_type: rerankTypes().find((type) => type.isSelected)?.value,
-      prefetch_query: prefetchQuery() == "" ? undefined : prefetchQuery(),
+      rerank_query: rerankQuery() == "" ? undefined : rerankQuery(),
     });
   });
 
@@ -715,11 +715,11 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                         <input
                           type="text"
                           class="max-w-[165px] rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                          placeholder="Prefetch Query"
+                          placeholder="Rerank Query"
                           onChange={(e) => {
-                            setPrefetchQuery(e.currentTarget.value);
+                            setRerankQuery(e.currentTarget.value);
                           }}
-                          value={prefetchQuery()}
+                          value={rerankQuery()}
                         />
                         <For each={rerankTypes()}>
                           {(option) => {

@@ -4250,7 +4250,7 @@ pub struct SortBySearchType {
     /// How many results to pull in before the rerabj
     pub prefetch_amount: Option<u64>,
     /// Query to use for prefetching
-    pub prefetch_query: Option<String>,
+    pub rerank_query: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
