@@ -7,7 +7,7 @@ use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
 use super::model_operator::{
-    create_embedding, cross_encoder, get_bm25_embeddings, get_sparse_vector,
+    cross_encoder, get_bm25_embeddings, get_dense_vector, get_sparse_vector,
 };
 use super::qdrant_operator::{
     count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
@@ -1451,7 +1451,7 @@ async fn get_qdrant_vector(
                 ));
             }
             let embedding_vector =
-                create_embedding(data.query.clone(), None, "query", config.clone()).await?;
+                get_dense_vector(data.query.clone(), None, "query", config.clone()).await?;
             Ok(VectorType::Dense(embedding_vector))
         }
         SearchMethod::BM25 => {
@@ -1615,7 +1615,7 @@ pub async fn search_hybrid_chunks(
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let dense_vector_future =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone());
+        get_dense_vector(data.query.clone(), None, "query", dataset_config.clone());
 
     let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), "query");
 
@@ -1829,7 +1829,7 @@ pub async fn search_hybrid_groups(
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let dense_vector_future =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone());
+        get_dense_vector(data.query.clone(), None, "query", dataset_config.clone());
 
     let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), "query");
 
@@ -1981,7 +1981,7 @@ pub async fn semantic_search_over_groups(
     timer.add("start to create dense embedding vector");
 
     let embedding_vector =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone()).await?;
+        get_dense_vector(data.query.clone(), None, "query", dataset_config.clone()).await?;
 
     timer.add("computed dense embedding");
 
@@ -2162,7 +2162,7 @@ pub async fn hybrid_search_over_groups(
     timer.add("start to create dense embedding vector and sparse vector");
 
     let dense_embedding_vectors_future =
-        create_embedding(data.query.clone(), None, "query", dataset_config.clone());
+        get_dense_vector(data.query.clone(), None, "query", dataset_config.clone());
 
     let sparse_embedding_vector_future = get_sparse_vector(data.query.clone(), "query");
 
