@@ -8,7 +8,7 @@ export interface SortByField {
 
 export interface SortBySearchType {
   rerank_type: string;
-  prefetch_query: string;
+  rerank_query: string;
 }
 
 export function isSortByField(

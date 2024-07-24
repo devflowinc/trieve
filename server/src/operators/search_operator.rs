@@ -287,12 +287,12 @@ impl RetrievePointQuery {
                 .push(Condition::matches("group_ids", group_id.to_string()));
         }
 
-        let prefetch_query = if let Some(rerank_by) = self.rerank_by {
+        let rerank_query = if let Some(rerank_by) = self.rerank_by {
             match rerank_by.rerank_type {
                 ReRankOptions::Fulltext => {
                     let data = SearchChunksReqPayload {
                         query: rerank_by
-                            .prefetch_query
+                            .rerank_query
                             .clone()
                             .unwrap_or(parsed_query.query.clone()),
                         search_type: SearchMethod::FullText,
@@ -312,7 +312,7 @@ impl RetrievePointQuery {
                 ReRankOptions::Semantic => {
                     let data = SearchChunksReqPayload {
                         query: rerank_by
-                            .prefetch_query
+                            .rerank_query
                             .clone()
                             .unwrap_or(parsed_query.query.clone()),
                         search_type: SearchMethod::Semantic,
@@ -339,7 +339,7 @@ impl RetrievePointQuery {
             vector: self.vector,
             score_threshold: self.score_threshold,
             limit: self.limit,
-            rerank_by: Box::new(prefetch_query),
+            rerank_by: Box::new(rerank_query),
             sort_by: self.sort_by,
             filter: filter.clone(),
         })
