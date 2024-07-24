@@ -198,7 +198,30 @@ pub async fn create_chunk_group(
 
     let (upsert_payloads, non_upsert_payloads) = payloads
         .into_iter()
+        .map(|payload| {
+            let non_empty_tracking_id = payload.tracking_id.clone().filter(|id| !id.is_empty());
+            CreateSingleChunkGroupReqPayload {
+                tracking_id: non_empty_tracking_id,
+                ..payload
+            }
+        })
         .partition::<Vec<_>, _>(|payload| payload.upsert_by_tracking_id.unwrap_or(false));
+
+    let tracking_ids = upsert_payloads
+        .iter()
+        .filter_map(|payload| payload.tracking_id.clone())
+        .collect::<Vec<String>>();
+    if tracking_ids.len()
+        != tracking_ids
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+    {
+        return Err(ServiceError::BadRequest(
+            "Cannot create multiple groups with the same tracking_id".into(),
+        )
+        .into());
+    }
 
     let upsert_groups = upsert_payloads
         .into_iter()
