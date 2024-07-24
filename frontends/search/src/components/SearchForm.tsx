@@ -47,6 +47,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   const [mustNotFilters, setMustNotFilters] = createSignal<Filter[]>([]);
   const [shouldFilters, setShouldFilters] = createSignal<Filter[]>([]);
   const [jsonbPrefilter, setJsonbPrefilter] = createSignal<boolean>(true);
+  const [prefetchQuery, setPrefetchQuery] = createSignal<string>("");
   const curDatasetFiltersKey = createMemo(
     () =>
       `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
@@ -200,6 +201,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   createEffect(() => {
     props.search.setSearch("sort_by", {
       rerank_type: rerankTypes().find((type) => type.isSelected)?.value,
+      prefetch_query: prefetchQuery() == "" ? undefined : prefetchQuery(),
     });
   });
 
@@ -710,6 +712,15 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                       class="absolute z-10 mt-2 h-fit w-[180px] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
                     >
                       <Menu class="ml-1 space-y-1">
+                        <input
+                          type="text"
+                          class="max-w-[165px] rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                          placeholder="Prefetch Query"
+                          onChange={(e) => {
+                            setPrefetchQuery(e.currentTarget.value);
+                          }}
+                          value={prefetchQuery()}
+                        />
                         <For each={rerankTypes()}>
                           {(option) => {
                             const onClick = (e: Event) => {

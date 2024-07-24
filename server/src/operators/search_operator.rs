@@ -291,7 +291,10 @@ impl RetrievePointQuery {
             match rerank_by.rerank_type {
                 ReRankOptions::Fulltext => {
                     let data = SearchChunksReqPayload {
-                        query: parsed_query.query.clone(),
+                        query: rerank_by
+                            .prefetch_query
+                            .clone()
+                            .unwrap_or(parsed_query.query.clone()),
                         search_type: SearchMethod::FullText,
                         ..Default::default()
                     };
@@ -308,7 +311,10 @@ impl RetrievePointQuery {
                 }
                 ReRankOptions::Semantic => {
                     let data = SearchChunksReqPayload {
-                        query: parsed_query.query.clone(),
+                        query: rerank_by
+                            .prefetch_query
+                            .clone()
+                            .unwrap_or(parsed_query.query.clone()),
                         search_type: SearchMethod::Semantic,
                         ..Default::default()
                     };
