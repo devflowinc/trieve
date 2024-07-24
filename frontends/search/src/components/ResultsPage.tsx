@@ -206,6 +206,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         props.search.debounced.query === ""
       ) {
         searchRoute = "chunks/scroll";
+        requestBody["sort_by"] = undefined;
       } else {
         searchRoute = "chunk/search";
         groupUnique = props.search.debounced.groupUniqueSearch;
