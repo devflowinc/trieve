@@ -3420,8 +3420,8 @@ impl RecommendationsWithClicksCTRResponseClickhouse {
 
 #[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
 pub struct RecommendationsWithoutClicksCTRResponseClickhouse {
-    pub positive_ids: Vec<uuid::Uuid>,
-    pub negative_ids: Vec<uuid::Uuid>,
+    pub positive_ids: Vec<String>,
+    pub negative_ids: Vec<String>,
     pub positive_tracking_ids: Vec<String>,
     pub negative_tracking_ids: Vec<String>,
     #[serde(with = "clickhouse::serde::time::datetime")]
@@ -3430,8 +3430,8 @@ pub struct RecommendationsWithoutClicksCTRResponseClickhouse {
 
 #[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
 pub struct RecommendationsWithoutClicksCTRResponse {
-    pub positive_ids: Option<Vec<uuid::Uuid>>,
-    pub negative_ids: Option<Vec<uuid::Uuid>>,
+    pub positive_ids: Option<Vec<String>>,
+    pub negative_ids: Option<Vec<String>>,
     pub positive_tracking_ids: Option<Vec<String>>,
     pub negative_tracking_ids: Option<Vec<String>>,
     pub created_at: String,
