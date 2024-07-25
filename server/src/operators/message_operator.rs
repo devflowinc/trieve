@@ -256,7 +256,9 @@ pub async fn stream_response(
 
     let base_url = dataset_config.LLM_BASE_URL.clone();
 
-    let llm_api_key = if base_url.contains("openai.com") {
+    let llm_api_key = if !dataset_config.LLM_API_KEY.is_empty() {
+        dataset_config.LLM_API_KEY.clone()
+    } else if base_url.contains("openai.com") {
         get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
     } else {
         get_env!(
@@ -265,6 +267,7 @@ pub async fn stream_response(
         )
         .into()
     };
+
 
     let client = Client {
         project: None,
@@ -683,7 +686,9 @@ pub async fn get_topic_string(
         base_url
     };
 
-    let llm_api_key = if base_url.contains("openai.com") {
+    let llm_api_key = if !dataset_config.LLM_API_KEY.is_empty() {
+        dataset_config.LLM_API_KEY.clone()
+    } else if base_url.contains("openai.com") {
         get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
     } else {
         get_env!(
