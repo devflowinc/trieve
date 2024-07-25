@@ -22,6 +22,7 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { Filter, FilterItem, Filters } from "./FilterModal";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import {
+  HighlightStrategy,
   isSortByField,
   isSortBySearchType,
   SearchOptions,
@@ -854,6 +855,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                   getTotalPages: false,
                                   highlightResults: true,
                                   highlightDelimiters: ["?", ".", "!"],
+                                  highlightStrategy: "v1",
                                   highlightMaxLength: 8,
                                   highlightMaxNum: 3,
                                   highlightWindow: 0,
@@ -883,6 +885,25 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                               });
                             }}
                           />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Highlight exact match</label>
+                          <select
+                            class="h-fit rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                            onChange={(s) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightStrategy: s.target
+                                    .value as HighlightStrategy,
+                                };
+                              });
+                            }}
+                            value={tempSearchValues().highlightStrategy}
+                          >
+                            <option value="v1">V1</option>
+                            <option value="exactmatch">Exact match</option>
+                          </select>
                         </div>
                         <Show
                           when={
