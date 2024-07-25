@@ -138,7 +138,7 @@ pub async fn get_search_metrics_query(
     let mut query_string = String::from(
         "SELECT 
             total_queries,
-            total_queries / 1.0 AS search_rps,
+            total_queries / dateDiff('second', min_created_at, max_created_at) AS search_rps,
             avg_latency,
             p99,
             p95,
