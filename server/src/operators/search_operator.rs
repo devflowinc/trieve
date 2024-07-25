@@ -179,7 +179,6 @@ pub async fn assemble_qdrant_filter(
 
                         let qdrant_condition = should_condition
                             .convert_to_qdrant_condition(
-                                "should",
                                 filters.jsonb_prefilter,
                                 dataset_id,
                                 pool.clone(),
@@ -209,7 +208,6 @@ pub async fn assemble_qdrant_filter(
 
                         let qdrant_condition = must_condition
                             .convert_to_qdrant_condition(
-                                "must",
                                 filters.jsonb_prefilter,
                                 dataset_id,
                                 pool.clone(),
@@ -239,7 +237,6 @@ pub async fn assemble_qdrant_filter(
 
                         let qdrant_condition = must_not_condition
                             .convert_to_qdrant_condition(
-                                "must_not",
                                 filters.jsonb_prefilter,
                                 dataset_id,
                                 pool.clone(),
