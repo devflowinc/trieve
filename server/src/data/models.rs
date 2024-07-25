@@ -6,10 +6,12 @@ use crate::get_env;
 use crate::handlers::chunk_handler::{BoostPhrase, DistancePhrase};
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::analytics_operator::{
-    HeadQueryResponse, LatencyGraphResponse, QueryCountResponse, RPSGraphResponse,
-    RagQueryResponse, RecommendationsEventResponse, SearchClusterResponse, SearchQueryResponse,
+    CTRRecommendationsWithClicksResponse, CTRRecommendationsWithoutClicksResponse,
+    CTRSearchQueryWithClicksResponse, CTRSearchQueryWithoutClicksResponse, HeadQueryResponse,
+    LatencyGraphResponse, QueryCountResponse, RPSGraphResponse, RagQueryResponse,
+    RecommendationsEventResponse, SearchClusterResponse, SearchQueryResponse,
 };
-use crate::operators::chunk_operator::get_metadata_from_ids_query;
+use crate::operators::chunk_operator::{get_metadata_from_id_query, get_metadata_from_ids_query};
 use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::search_operator::{
@@ -3282,6 +3284,198 @@ impl Default for SearchQueryEvent {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct SearchQueriesWithClicksCTRResponseClickhouse {
+    pub query: String,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub clicked_chunk: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub position: i32,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct SearchQueriesWithClicksCTRResponse {
+    pub query: String,
+    pub clicked_chunk: ChunkMetadata,
+    pub position: i32,
+    pub created_at: String,
+}
+
+impl SearchQueriesWithClicksCTRResponseClickhouse {
+    pub async fn from_clickhouse(
+        self,
+        pool: web::Data<Pool>,
+    ) -> SearchQueriesWithClicksCTRResponse {
+        let chunk = get_metadata_from_id_query(self.clicked_chunk, self.dataset_id, pool)
+            .await
+            .unwrap_or_default();
+
+        SearchQueriesWithClicksCTRResponse {
+            query: self.query,
+            clicked_chunk: chunk,
+            position: self.position,
+            created_at: self.created_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct SearchQueriesWithoutClicksCTRResponseClickhouse {
+    pub query: String,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct SearchQueriesWithoutClicksCTRResponse {
+    pub query: String,
+    pub created_at: String,
+}
+
+impl From<SearchQueriesWithoutClicksCTRResponseClickhouse>
+    for SearchQueriesWithoutClicksCTRResponse
+{
+    fn from(clickhouse: SearchQueriesWithoutClicksCTRResponseClickhouse) -> Self {
+        SearchQueriesWithoutClicksCTRResponse {
+            query: clickhouse.query,
+            created_at: clickhouse.created_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct RecommendationsWithClicksCTRResponseClickhouse {
+    pub positive_ids: Vec<String>,
+    pub negative_ids: Vec<String>,
+    pub positive_tracking_ids: Vec<String>,
+    pub negative_tracking_ids: Vec<String>,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub clicked_chunk: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub position: i32,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct RecommendationsWithClicksCTRResponse {
+    pub positive_ids: Option<Vec<String>>,
+    pub negative_ids: Option<Vec<String>>,
+    pub positive_tracking_ids: Option<Vec<String>>,
+    pub negative_tracking_ids: Option<Vec<String>>,
+    pub clicked_chunk: ChunkMetadata,
+    pub position: i32,
+    pub created_at: String,
+}
+
+impl RecommendationsWithClicksCTRResponseClickhouse {
+    pub async fn from_clickhouse(
+        self,
+        pool: web::Data<Pool>,
+    ) -> RecommendationsWithClicksCTRResponse {
+        let clicked_chunk = get_metadata_from_id_query(self.clicked_chunk, self.dataset_id, pool)
+            .await
+            .unwrap_or_default();
+
+        //only return the vecs that are not empty everything else should be None
+        let positive_ids = if !self.positive_ids.is_empty() {
+            Some(self.positive_ids)
+        } else {
+            None
+        };
+
+        let negative_ids = if !self.negative_ids.is_empty() {
+            Some(self.negative_ids)
+        } else {
+            None
+        };
+
+        let positive_tracking_ids = if !self.positive_tracking_ids.is_empty() {
+            Some(self.positive_tracking_ids)
+        } else {
+            None
+        };
+
+        let negative_tracking_ids = if !self.negative_tracking_ids.is_empty() {
+            Some(self.negative_tracking_ids)
+        } else {
+            None
+        };
+
+        RecommendationsWithClicksCTRResponse {
+            positive_ids,
+            negative_ids,
+            positive_tracking_ids,
+            negative_tracking_ids,
+            clicked_chunk,
+            position: self.position,
+            created_at: self.created_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct RecommendationsWithoutClicksCTRResponseClickhouse {
+    pub positive_ids: Vec<uuid::Uuid>,
+    pub negative_ids: Vec<uuid::Uuid>,
+    pub positive_tracking_ids: Vec<String>,
+    pub negative_tracking_ids: Vec<String>,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct RecommendationsWithoutClicksCTRResponse {
+    pub positive_ids: Option<Vec<uuid::Uuid>>,
+    pub negative_ids: Option<Vec<uuid::Uuid>>,
+    pub positive_tracking_ids: Option<Vec<String>>,
+    pub negative_tracking_ids: Option<Vec<String>>,
+    pub created_at: String,
+}
+
+impl From<RecommendationsWithoutClicksCTRResponseClickhouse>
+    for RecommendationsWithoutClicksCTRResponse
+{
+    fn from(clickhouse: RecommendationsWithoutClicksCTRResponseClickhouse) -> Self {
+        //only return the vecs that are not empty everything else should be None
+        let positive_ids = if !clickhouse.positive_ids.is_empty() {
+            Some(clickhouse.positive_ids)
+        } else {
+            None
+        };
+
+        let negative_ids = if !clickhouse.negative_ids.is_empty() {
+            Some(clickhouse.negative_ids)
+        } else {
+            None
+        };
+
+        let positive_tracking_ids = if !clickhouse.positive_tracking_ids.is_empty() {
+            Some(clickhouse.positive_tracking_ids)
+        } else {
+            None
+        };
+
+        let negative_tracking_ids = if !clickhouse.negative_tracking_ids.is_empty() {
+            Some(clickhouse.negative_tracking_ids)
+        } else {
+            None
+        };
+
+        RecommendationsWithoutClicksCTRResponse {
+            positive_ids,
+            negative_ids,
+            positive_tracking_ids,
+            negative_tracking_ids,
+            created_at: clickhouse.created_at.to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SearchQueryEventClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
@@ -3927,6 +4121,39 @@ impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
     }
 }
 
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchCTRMetricsClickhouse {
+    pub searches_with_clicks: i64,
+    pub percent_searches_with_clicks: f64,
+    pub avg_position_of_click: f64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchCTRMetrics {
+    pub searches_with_clicks: i64,
+    pub percent_searches_with_clicks: f64,
+    pub avg_position_of_click: f64,
+}
+
+impl From<SearchCTRMetricsClickhouse> for SearchCTRMetrics {
+    fn from(metrics: SearchCTRMetricsClickhouse) -> Self {
+        SearchCTRMetrics {
+            searches_with_clicks: metrics.searches_with_clicks,
+            percent_searches_with_clicks: f64::from_be_bytes(
+                metrics.percent_searches_with_clicks.to_be_bytes(),
+            ),
+            avg_position_of_click: f64::from_be_bytes(metrics.avg_position_of_click.to_be_bytes()),
+        }
+    }
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct RecommendationCTRMetrics {
+    pub recommendations_with_clicks: i64,
+    pub percent_recommendations_with_clicks: f64,
+    pub avg_position_of_click: f64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ChunkData {
     pub chunk_metadata: ChunkMetadata,
@@ -4124,6 +4351,36 @@ pub enum ClusterAnalytics {
     },
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+pub enum CTRAnalytics {
+    #[serde(rename = "search_ctr_metrics")]
+    SearchCTRMetrics {
+        filter: Option<SearchAnalyticsFilter>,
+    },
+    SearchesWithClicks {
+        filter: Option<SearchAnalyticsFilter>,
+        page: Option<u32>,
+    },
+    SearchesWithoutClicks {
+        filter: Option<SearchAnalyticsFilter>,
+        page: Option<u32>,
+    },
+    #[serde(rename = "recommendation_ctr_metrics")]
+    RecommendationCTRMetrics {
+        filter: Option<RecommendationAnalyticsFilter>,
+    },
+    RecommendationsWithClicks {
+        filter: Option<RecommendationAnalyticsFilter>,
+        page: Option<u32>,
+    },
+    RecommendationsWithoutClicks {
+        filter: Option<RecommendationAnalyticsFilter>,
+        page: Option<u32>,
+    },
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
 pub struct RAGUsageResponse {
     pub total_queries: u32,
@@ -4177,6 +4434,23 @@ pub enum RecommendationAnalyticsResponse {
     LowConfidenceRecommendations(RecommendationsEventResponse),
     #[schema(title = "RecommendationQueries")]
     RecommendationQueries(RecommendationsEventResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum CTRAnalyticsResponse {
+    #[schema(title = "SearchCTRMetrics")]
+    SearchCTRMetrics(SearchCTRMetrics),
+    #[schema(title = "SearchesWithoutClicks")]
+    SearchesWithoutClicks(CTRSearchQueryWithoutClicksResponse),
+    #[schema(title = "SearchesWithClicks")]
+    SearchesWithClicks(CTRSearchQueryWithClicksResponse),
+    #[schema(title = "RecommendationCTRMetrics")]
+    RecommendationCTRMetrics(RecommendationCTRMetrics),
+    #[schema(title = "RecommendationsWithoutClicks")]
+    RecommendationsWithoutClicks(CTRRecommendationsWithoutClicksResponse),
+    #[schema(title = "RecommendationsWithClicks")]
+    RecommendationsWithClicks(CTRRecommendationsWithClicksResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
@@ -4266,4 +4540,11 @@ pub enum ReRankOptions {
     Semantic,
     Fulltext,
     CrossEncoder,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum CTRType {
+    Search,
+    Recommendation,
 }

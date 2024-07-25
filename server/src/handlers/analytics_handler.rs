@@ -1,15 +1,17 @@
 use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
-        ClusterAnalytics, ClusterAnalyticsResponse, DatasetAndOrgWithSubAndPlan, Pool,
-        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
-        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
+        CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
+        DatasetAndOrgWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
+        SearchAnalyticsResponse,
     },
     errors::ServiceError,
     operators::analytics_operator::*,
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// Get Cluster Analytics
 ///
@@ -348,18 +350,43 @@ pub async fn get_recommendation_analytics(
     Ok(HttpResponse::Ok().json(response))
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
 pub struct CTRDataRequestBody {
+    /// The request id for the CTR data
     pub reqeust_id: uuid::Uuid,
+    /// The type of CTR data being sent e.g. search or recommendation
+    pub ctr_type: CTRType,
+    /// The ID of chunk that was clicked
     pub clicked_chunk_id: Option<uuid::Uuid>,
+    /// The tracking ID of the chunk that was clicked
     pub clicked_chunk_tracking_id: Option<String>,
+    /// The position of the clicked chunk
     pub position: i32,
+    /// Any metadata you want to include with the event i.e. action, user_id, etc.
     pub metadata: Option<serde_json::Value>,
 }
 
 /// Send CTR Data
 ///
 /// This route allows you to send CTR data to the system.
+#[utoipa::path(
+    put,
+    path = "/analytics/ctr",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = CTRDataRequestBody, description = "JSON request payload to send CTR data", content_type = "application/json"),
+    responses(
+        (status = 204, description = "The CTR data was successfully sent"),
+
+        (status = 400, description = "Service error relating to sending CTR data", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
 pub async fn send_ctr_data(
     _user: AdminOnly,
     data: web::Json<CTRDataRequestBody>,
@@ -376,4 +403,104 @@ pub async fn send_ctr_data(
     .await?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+/// Get CTR Analytics
+///
+/// This route allows you to view the CTR analytics for a dataset.
+#[utoipa::path(
+    post,
+    path = "/analytics/ctr",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = CTRAnalytics, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The CTR analytics for the dataset", body = CTRAnalyticsResponse),
+
+        (status = 400, description = "Service error relating to getting CTR analytics", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_ctr_analytics(
+    _user: AdminOnly,
+    data: web::Json<CTRAnalytics>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let response = match data.into_inner() {
+        CTRAnalytics::SearchCTRMetrics { filter } => {
+            let ctr_metrics = get_search_ctr_metrics_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            CTRAnalyticsResponse::SearchCTRMetrics(ctr_metrics)
+        }
+        CTRAnalytics::SearchesWithClicks { filter, page } => {
+            let searches_with_clicks = get_searches_with_clicks_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                filter,
+                pool.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            CTRAnalyticsResponse::SearchesWithClicks(searches_with_clicks)
+        }
+        CTRAnalytics::SearchesWithoutClicks { filter, page } => {
+            let searches_without_clicks = get_searches_without_clicks_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            CTRAnalyticsResponse::SearchesWithoutClicks(searches_without_clicks)
+        }
+        CTRAnalytics::RecommendationCTRMetrics { filter } => {
+            let ctr_metrics = get_recommendation_ctr_metrics_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            CTRAnalyticsResponse::RecommendationCTRMetrics(ctr_metrics)
+        }
+        CTRAnalytics::RecommendationsWithClicks { filter, page } => {
+            let recommendations_with_clicks = get_recommendations_with_clicks_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                filter,
+                pool.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            CTRAnalyticsResponse::RecommendationsWithClicks(recommendations_with_clicks)
+        }
+        CTRAnalytics::RecommendationsWithoutClicks { filter, page } => {
+            let recommendations_without_clicks = get_recommendations_without_clicks_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            CTRAnalyticsResponse::RecommendationsWithoutClicks(recommendations_without_clicks)
+        }
+    };
+
+    Ok(HttpResponse::Ok().json(response))
 }

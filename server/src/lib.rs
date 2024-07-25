@@ -231,6 +231,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
         handlers::analytics_handler::get_recommendation_analytics,
+        handlers::analytics_handler::send_ctr_data,
         handlers::metrics_handler::get_metrics,
     ),
     components(
@@ -326,6 +327,7 @@ impl Modify for SecurityAddon {
             operators::analytics_operator::SearchQueryResponse,
             operators::analytics_operator::RecommendationsEventResponse,
             operators::analytics_operator::QueryCountResponse,
+            handlers::analytics_handler::CTRDataRequestBody,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             data::models::DateRange,
             data::models::FieldCondition,
@@ -1081,7 +1083,8 @@ pub fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/ctr")
-                                .route(web::post().to(handlers::analytics_handler::send_ctr_data)),
+                                .route(web::put().to(handlers::analytics_handler::send_ctr_data))
+                                .route(web::post().to(handlers::analytics_handler::get_ctr_analytics)),
                             )
                         ),
                 )
