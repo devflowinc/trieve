@@ -1,7 +1,7 @@
 use super::chunk_operator::{
     get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
-    get_content_chunk_from_point_ids_query, get_highlights, get_qdrant_ids_from_chunk_ids_query,
-    get_slim_chunks_from_point_ids_query,
+    get_content_chunk_from_point_ids_query, get_highlights, get_highlights_with_exact_match,
+    get_qdrant_ids_from_chunk_ids_query, get_slim_chunks_from_point_ids_query, HighlightStrategy,
 };
 use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
@@ -1145,23 +1145,46 @@ pub async fn retrieve_chunks_for_groups(
 
                     let mut highlights: Option<Vec<String>> = None;
                     if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
-                       let (highlighted_chunk, highlighted_snippets) = get_highlights(
-                            chunk.clone().into(),
-                            data.query.clone(),
-                            data.highlight_threshold,
-                            data.highlight_delimiters.clone().unwrap_or(vec![
-                                ".".to_string(),
-                                "!".to_string(),
-                                "?".to_string(),
-                                "\n".to_string(),
-                                "\t".to_string(),
-                                ",".to_string(),
-                            ]),
-                            data.highlight_max_length,
-                            data.highlight_max_num,
-                data.highlight_window
-                        )
-                        .unwrap_or((chunk.clone().into(), vec![]));
+                        let (highlighted_chunk, highlighted_snippets) = match data.highlight_strategy {
+                            Some(HighlightStrategy::ExactMatch) => {
+                                   get_highlights_with_exact_match(
+                                        chunk.clone().into(),
+                                        data.query.clone(),
+                                        data.highlight_threshold,
+                                        data.highlight_delimiters.clone().unwrap_or(vec![
+                                            ".".to_string(),
+                                            "!".to_string(),
+                                            "?".to_string(),
+                                            "\n".to_string(),
+                                            "\t".to_string(),
+                                            ",".to_string(),
+                                        ]),
+                                        data.highlight_max_length,
+                                        data.highlight_max_num,
+                                        data.highlight_window
+                                    )
+                                    .unwrap_or((chunk.clone().into(), vec![]))
+                            },
+                            _ => {
+                                   get_highlights(
+                                        chunk.clone().into(),
+                                        data.query.clone(),
+                                        data.highlight_threshold,
+                                        data.highlight_delimiters.clone().unwrap_or(vec![
+                                            ".".to_string(),
+                                            "!".to_string(),
+                                            "?".to_string(),
+                                            "\n".to_string(),
+                                            "\t".to_string(),
+                                            ",".to_string(),
+                                        ]),
+                                        data.highlight_max_length,
+                                        data.highlight_max_num,
+                                        data.highlight_window,
+                                    )
+                                    .unwrap_or((chunk.clone().into(), vec![]))
+                            },
+                        };
 
                         highlights = Some(highlighted_snippets);
 
@@ -1400,23 +1423,42 @@ pub async fn retrieve_chunks_from_point_ids(
 
             let mut highlights: Option<Vec<String>> = None;
             if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
-                let (highlighted_chunk, highlighted_snippets) = get_highlights(
-                    chunk.clone().into(),
-                    data.query.clone(),
-                    data.highlight_threshold,
-                    data.highlight_delimiters.clone().unwrap_or(vec![
-                        ".".to_string(),
-                        "!".to_string(),
-                        "?".to_string(),
-                        "\n".to_string(),
-                        "\t".to_string(),
-                        ",".to_string(),
-                    ]),
-                    data.highlight_max_length,
-                    data.highlight_max_num,
-                    data.highlight_window,
-                )
-                .unwrap_or((chunk.clone().into(), vec![]));
+                let (highlighted_chunk, highlighted_snippets) = match data.highlight_strategy {
+                    Some(HighlightStrategy::ExactMatch) => get_highlights_with_exact_match(
+                        chunk.clone().into(),
+                        data.query.clone(),
+                        data.highlight_threshold,
+                        data.highlight_delimiters.clone().unwrap_or(vec![
+                            ".".to_string(),
+                            "!".to_string(),
+                            "?".to_string(),
+                            "\n".to_string(),
+                            "\t".to_string(),
+                            ",".to_string(),
+                        ]),
+                        data.highlight_max_length,
+                        data.highlight_max_num,
+                        data.highlight_window,
+                    )
+                    .unwrap_or((chunk.clone().into(), vec![])),
+                    _ => get_highlights(
+                        chunk.clone().into(),
+                        data.query.clone(),
+                        data.highlight_threshold,
+                        data.highlight_delimiters.clone().unwrap_or(vec![
+                            ".".to_string(),
+                            "!".to_string(),
+                            "?".to_string(),
+                            "\n".to_string(),
+                            "\t".to_string(),
+                            ",".to_string(),
+                        ]),
+                        data.highlight_max_length,
+                        data.highlight_max_num,
+                        data.highlight_window,
+                    )
+                    .unwrap_or((chunk.clone().into(), vec![])),
+                };
 
                 highlights = Some(highlighted_snippets);
 

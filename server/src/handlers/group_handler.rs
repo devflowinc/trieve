@@ -13,7 +13,7 @@ use crate::{
     errors::ServiceError,
     middleware::api_version::APIVersion,
     operators::{
-        chunk_operator::get_metadata_from_tracking_id_query,
+        chunk_operator::{get_metadata_from_tracking_id_query, HighlightStrategy},
         clickhouse_operator::{get_latency_from_header, send_to_clickhouse, ClickHouseEvent},
         group_operator::*,
         qdrant_operator::{
@@ -1389,6 +1389,8 @@ pub struct SearchWithinGroupReqPayload {
     pub tag_weights: Option<HashMap<String, f32>>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
+    /// Set highlight_exact_match to true to highlight exact matches from your query.
+    pub highlight_strategy: Option<HighlightStrategy>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
     pub highlight_threshold: Option<f64>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting.
@@ -1425,6 +1427,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             use_weights: search_within_group_data.use_weights,
             tag_weights: search_within_group_data.tag_weights,
             highlight_results: search_within_group_data.highlight_results,
+            highlight_strategy: search_within_group_data.highlight_strategy,
             highlight_threshold: search_within_group_data.highlight_threshold,
             highlight_delimiters: search_within_group_data.highlight_delimiters,
             highlight_max_length: search_within_group_data.highlight_max_length,
@@ -1613,6 +1616,8 @@ pub struct SearchOverGroupsReqPayload {
     pub filters: Option<ChunkFilter>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
+    /// Set highlight_exact_match to true to highlight exact matches from your query.
+    pub highlight_strategy: Option<HighlightStrategy>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
     pub highlight_threshold: Option<f64>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting.

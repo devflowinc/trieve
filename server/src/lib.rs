@@ -333,6 +333,7 @@ impl Modify for SecurityAddon {
             operators::analytics_operator::CTRRecommendationsWithClicksResponse,
             operators::analytics_operator::CTRRecommendationsWithoutClicksResponse,
             handlers::analytics_handler::CTRDataRequestBody,
+            operators::chunk_operator::HighlightStrategy,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             data::models::DateRange,
             data::models::FieldCondition,

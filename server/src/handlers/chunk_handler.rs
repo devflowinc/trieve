@@ -969,6 +969,8 @@ pub struct SearchChunksReqPayload {
     pub tag_weights: Option<HashMap<String, f32>>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
+    /// Set highlight_exact_match to true to highlight exact matches from your query.
+    pub highlight_strategy: Option<HighlightStrategy>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
     pub highlight_threshold: Option<f64>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting. These are the characters that will be used to split the chunk_html into splits for highlighting.
@@ -1003,6 +1005,7 @@ impl Default for SearchChunksReqPayload {
             use_weights: None,
             tag_weights: None,
             highlight_results: None,
+            highlight_strategy: None,
             highlight_threshold: None,
             highlight_delimiters: None,
             highlight_max_length: None,
@@ -1277,6 +1280,8 @@ pub struct AutocompleteReqPayload {
     pub tag_weights: Option<HashMap<String, f32>>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
+    /// Set highlight_exact_match to true to highlight exact matches from your query.
+    pub highlight_strategy: Option<HighlightStrategy>,
     /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
     pub highlight_threshold: Option<f64>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting.
@@ -1312,6 +1317,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             use_weights: autocomplete_data.use_weights,
             tag_weights: autocomplete_data.tag_weights,
             highlight_results: autocomplete_data.highlight_results,
+            highlight_strategy: autocomplete_data.highlight_strategy,
             highlight_threshold: autocomplete_data.highlight_threshold,
             highlight_delimiters: Some(
                 autocomplete_data
@@ -1590,6 +1596,7 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             use_weights: None,
             tag_weights: None,
             highlight_results: None,
+            highlight_strategy: None,
             highlight_threshold: None,
             highlight_delimiters: None,
             highlight_max_length: None,
