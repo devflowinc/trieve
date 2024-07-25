@@ -3015,8 +3015,11 @@ pub struct HasIDCondition {
 pub struct FieldCondition {
     /// Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
     pub field: String,
-    /// Match is the value to match on the field. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata.
-    pub r#match: Option<Vec<MatchCondition>>,
+    /// Match any lets you pass in an array of values that will return results if any of the items match. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. If both match_all and match_any are provided, the match_any condition will be used.
+    #[serde(alias = "match")]
+    pub match_any: Option<Vec<MatchCondition>>,
+    /// Match all lets you pass in an array of values that will return results if all of the items match. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. If both match_all and match_any are provided, the match_any condition will be used.
+    pub match_all: Option<Vec<MatchCondition>>,
     /// Range is a JSON object which can be used to filter chunks by a range of values. This only works for numerical fields. You can specify this if you want values in a certain range.
     pub range: Option<Range>,
     /// Date range is a JSON object which can be used to filter chunks by a range of dates. This only works for date fields. You can specify this if you want values in a certain range. You must provide ISO 8601 combined date and time without timezone.
@@ -3081,7 +3084,7 @@ impl FieldCondition {
         dataset_id: uuid::Uuid,
         pool: web::Data<Pool>,
     ) -> Result<Option<qdrant::Condition>, ServiceError> {
-        if self.r#match.is_some() && self.range.is_some() {
+        if (self.match_all.is_some() || self.match_any.is_some()) && self.range.is_some() {
             return Err(ServiceError::BadRequest(
                 "Cannot have both match and range conditions".to_string(),
             ));
@@ -3196,24 +3199,32 @@ impl FieldCondition {
             )));
         }
 
-        let matches = match self.r#match.clone() {
-            Some(matches) => matches,
-            // Return nothing, there isn't a
-            None => return Ok(None),
-        };
-
-        match matches.first().ok_or(ServiceError::BadRequest(
-            "Should have at least one value for match".to_string(),
-        ))? {
-            MatchCondition::Text(_) => match condition_type {
-                "must" | "should" => Ok(Some(qdrant::Condition::matches(
+        if let Some(match_any) = &self.match_any {
+            match match_any.first().ok_or(ServiceError::BadRequest(
+                "Should have at least one value for match".to_string(),
+            ))? {
+                MatchCondition::Text(_) => Ok(Some(qdrant::Condition::matches(
                     self.field.as_str(),
-                    matches.iter().map(|x| x.to_string()).collect_vec(),
+                    match_any.iter().map(|x| x.to_string()).collect_vec(),
                 ))),
-                "must_not" => Ok(Some(
+                MatchCondition::Integer(_) | MatchCondition::Float(_) => {
+                    Ok(Some(qdrant::Condition::matches(
+                        self.field.as_str(),
+                        match_any
+                            .iter()
+                            .map(|x: &MatchCondition| x.to_i64())
+                            .collect_vec(),
+                    )))
+                }
+            }
+        } else if let Some(match_all) = &self.match_all {
+            match match_all.first().ok_or(ServiceError::BadRequest(
+                "Should have at least one value for match".to_string(),
+            ))? {
+                MatchCondition::Text(_) => Ok(Some(
                     qdrant::Filter::must(
-                        matches
-                            .into_iter()
+                        match_all
+                            .iter()
                             .map(|cond| {
                                 qdrant::Condition::matches(
                                     self.field.as_str(),
@@ -3224,22 +3235,10 @@ impl FieldCondition {
                     )
                     .into(),
                 )),
-                _ => Err(ServiceError::BadRequest(
-                    "Invalid condition type".to_string(),
-                )),
-            },
-            MatchCondition::Integer(_) | MatchCondition::Float(_) => match condition_type {
-                "must" | "should" => Ok(Some(qdrant::Condition::matches(
-                    self.field.as_str(),
-                    matches
-                        .iter()
-                        .map(|x: &MatchCondition| x.to_i64())
-                        .collect_vec(),
-                ))),
-                "must_not" => Ok(Some(
+                MatchCondition::Integer(_) | MatchCondition::Float(_) => Ok(Some(
                     qdrant::Filter::must(
-                        matches
-                            .into_iter()
+                        match_all
+                            .iter()
                             .map(|cond| {
                                 qdrant::Condition::matches(self.field.as_str(), vec![cond.to_i64()])
                             })
@@ -3247,10 +3246,11 @@ impl FieldCondition {
                     )
                     .into(),
                 )),
-                _ => Err(ServiceError::BadRequest(
-                    "Invalid condition type".to_string(),
-                )),
-            },
+            }
+        } else {
+            Err(ServiceError::BadRequest(
+                "Should have either match_all or match_any".to_string(),
+            ))
         }
     }
 }
