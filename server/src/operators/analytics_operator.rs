@@ -137,14 +137,24 @@ pub async fn get_search_metrics_query(
 ) -> Result<DatasetAnalytics, ServiceError> {
     let mut query_string = String::from(
         "SELECT 
-            count(*) as total_queries,
-            count(*) / dateDiff('second', min(created_at), max(created_at)) AS search_rps,
-            avg(latency) as avg_latency,
-            quantile(0.99)(latency) as p99,
-            quantile(0.95)(latency) as p95,
-            quantile(0.5)(latency) as p50
-        FROM default.search_queries
-        WHERE dataset_id = ?",
+            total_queries,
+            total_queries / 1.0 AS search_rps,
+            avg_latency,
+            p99,
+            p95,
+            p50
+        FROM (
+            SELECT 
+                count(*) as total_queries,
+                min(created_at) as min_created_at,
+                max(created_at) as max_created_at,
+                avg(latency) as avg_latency,
+                quantile(0.99)(latency) as p99,
+                quantile(0.95)(latency) as p95,
+                quantile(0.5)(latency) as p50
+            FROM default.search_queries
+            WHERE dataset_id = ?
+        ) subquery",
     );
 
     if let Some(filter) = filter {
@@ -833,17 +843,24 @@ pub async fn get_search_ctr_metrics_query(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchCTRMetrics, ServiceError> {
     let mut query_string = String::from(
-        "SELECT 
-            COUNT(*) AS searches_with_clicks,
-            (COUNT(*)  / (
-                SELECT COUNT(*) 
-                FROM default.search_queries 
-                WHERE dataset_id = ? AND is_duplicate = 0
-            )) * 100.0 AS percent_searches_with_click,
-            AVG(ctr_data.`position`) AS avg_position_of_click
-        FROM default.ctr_data 
-        JOIN default.search_queries ON ctr_data.request_id = search_queries.id 
-        WHERE search_queries.dataset_id = ?",
+        "WITH total_searches AS (
+            SELECT COUNT(*) AS total
+            FROM default.search_queries
+            WHERE dataset_id = ? AND is_duplicate = 0
+        )
+        SELECT 
+            searches_with_clicks,
+            (searches_with_clicks * 100.0 / total) AS percent_searches_with_click,
+            avg_position_of_click
+        FROM (
+            SELECT 
+                COUNT(*) AS searches_with_clicks,
+                AVG(ctr_data.`position`) AS avg_position_of_click
+            FROM default.ctr_data
+            JOIN default.search_queries ON ctr_data.request_id = search_queries.id
+            WHERE search_queries.dataset_id = ?
+        ) subquery
+        CROSS JOIN total_searches",
     );
 
     if let Some(filter) = filter {
@@ -964,17 +981,24 @@ pub async fn get_recommendation_ctr_metrics_query(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RecommendationCTRMetrics, ServiceError> {
     let mut query_string = String::from(
-        "SELECT 
-            COUNT(*) AS recommendations_with_clicks,
-            (COUNT(*)  / (
-                SELECT COUNT(*) 
-                FROM default.recommendations 
-                WHERE dataset_id = ?SearchQueryResponse
-            )) * 100.0 AS percent_recommendations_with_clicks,
-            AVG(ctr_data.`position`) AS avg_position_of_click
-        FROM default.ctr_data 
-        JOIN default.recommendations ON ctr_data.request_id = recommendations.id 
-        WHERE recommendations.dataset_id = ?",
+        "WITH total_recommendations AS (
+            SELECT COUNT(*) AS total
+            FROM default.recommendations
+            WHERE dataset_id = ?
+        )
+        SELECT 
+            recommendations_with_clicks,
+            (recommendations_with_clicks * 100.0 / total) AS percent_recommendations_with_click,
+            avg_position_of_click
+        FROM (
+            SELECT 
+                COUNT(*) AS recommendations_with_clicks,
+                AVG(ctr_data.`position`) AS avg_position_of_click
+            FROM default.ctr_data
+            JOIN default.recommendations ON ctr_data.request_id = recommendations.id
+            WHERE recommendations.dataset_id = ?
+        ) subquery
+        CROSS JOIN total_recommendations",
     );
 
     if let Some(filter) = filter {
