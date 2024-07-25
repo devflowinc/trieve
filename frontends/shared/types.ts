@@ -109,6 +109,7 @@ export interface DatasetAndUsage {
 export interface ServerEnvsConfiguration {
   LLM_BASE_URL: string;
   LLM_DEFAULT_MODEL: string;
+  LLM_API_KEY: string;
   EMBEDDING_BASE_URL: string;
   EMBEDDING_MODEL_NAME: string;
   MESSAGE_TO_QUERY_PROMPT: string;

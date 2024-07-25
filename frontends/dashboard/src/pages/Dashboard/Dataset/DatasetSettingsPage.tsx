@@ -24,6 +24,7 @@ const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
 export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LLM_BASE_URL: "",
   LLM_DEFAULT_MODEL: "",
+  LLM_API_KEY: "",
   EMBEDDING_BASE_URL: "https://embedding.trieve.ai",
   EMBEDDING_MODEL_NAME: "jina-base-en",
   MESSAGE_TO_QUERY_PROMPT: "",
@@ -139,6 +140,37 @@ export const ServerSettingsForm = () => {
                     return {
                       ...prev,
                       LLM_BASE_URL: e.currentTarget.value,
+                    };
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <div class="flex items-center">
+                <label
+                  for="llmAPIURL"
+                  class="block pr-2 text-sm font-medium leading-6"
+                >
+                  LLM API Key
+                </label>
+                <Tooltip
+                  direction="right"
+                  body={<AiOutlineInfoCircle />}
+                  tooltipText="LLM API Key cannot be viewed after you set it"
+                />
+              </div>
+              <input
+                type="text"
+                name="llmAPIURL"
+                id="llmAPIURL"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={""}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      LLM_API_KEY: e.currentTarget.value,
                     };
                   })
                 }

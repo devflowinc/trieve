@@ -1950,6 +1950,8 @@ impl DatasetAndUsage {
 #[allow(non_snake_case)]
 pub struct DatasetConfiguration {
     pub LLM_BASE_URL: String,
+    #[serde(skip_serializing)]
+    pub LLM_API_KEY: String,
     pub EMBEDDING_BASE_URL: String,
     pub EMBEDDING_MODEL_NAME: String,
     pub RERANKER_BASE_URL: String,
@@ -1996,6 +1998,18 @@ impl DatasetConfiguration {
                     }
                 })
                 .unwrap_or("https://api.openai.com/v1".to_string()),
+            LLM_API_KEY: configuration
+                .get("LLM_API_KEY")
+                .unwrap_or(&json!("".to_string()))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        "".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .unwrap_or("".to_string()),
             EMBEDDING_BASE_URL: configuration
                 .get("EMBEDDING_BASE_URL")
                 .unwrap_or(&json!(get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string()))
