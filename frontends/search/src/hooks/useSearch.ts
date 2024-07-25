@@ -23,6 +23,14 @@ export function isSortBySearchType(
   return (sortBy as SortBySearchType).rerank_type !== undefined;
 }
 
+export type HighlightStrategy = "v1" | "exactmatch";
+
+export function isHighlightStrategy(
+  value: string | undefined,
+): value is HighlightStrategy {
+  return value === "v1" || value === "exactmatch";
+}
+
 export interface SearchOptions {
   version: number;
   query: string;
@@ -35,6 +43,7 @@ export interface SearchOptions {
   pageSize: number;
   getTotalPages: boolean;
   highlightResults: boolean;
+  highlightStrategy: HighlightStrategy;
   highlightThreshold: number;
   highlightDelimiters: string[];
   highlightMaxLength: number;
@@ -58,6 +67,7 @@ const initalState: SearchOptions = {
   pageSize: 10,
   getTotalPages: false,
   highlightResults: true,
+  highlightStrategy: "v1",
   highlightThreshold: 0.8,
   highlightDelimiters: ["?", ".", "!"],
   highlightMaxLength: 8,
@@ -106,6 +116,9 @@ const fromParamsToState = (
     pageSize: parseInt(params.pageSize ?? "10"),
     getTotalPages: (params.getTotalPages ?? "false") === "true",
     highlightResults: (params.highlightResults ?? "true") === "true",
+    highlightStrategy: isHighlightStrategy(params.highlightStrategy)
+      ? params.highlightStrategy
+      : "v1",
     highlightThreshold: parseFloat(params.highlightThreshold ?? "0.8"),
     highlightDelimiters:
       params.highlightDelimiters?.split(",") ?? initalState.highlightDelimiters,
