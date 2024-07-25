@@ -4356,25 +4356,31 @@ pub enum ClusterAnalytics {
 #[serde(rename_all = "snake_case")]
 pub enum CTRAnalytics {
     #[serde(rename = "search_ctr_metrics")]
+    #[schema(title = "SearchCTRMetrics")]
     SearchCTRMetrics {
         filter: Option<SearchAnalyticsFilter>,
     },
+    #[schema(title = "SearchesWithClicks")]
     SearchesWithClicks {
         filter: Option<SearchAnalyticsFilter>,
         page: Option<u32>,
     },
+    #[schema(title = "SearchesWithoutClicks")]
     SearchesWithoutClicks {
         filter: Option<SearchAnalyticsFilter>,
         page: Option<u32>,
     },
+    #[schema(title = "RecommendationCTRMetrics")]
     #[serde(rename = "recommendation_ctr_metrics")]
     RecommendationCTRMetrics {
         filter: Option<RecommendationAnalyticsFilter>,
     },
+    #[schema(title = "RecommendationsWithClicks")]
     RecommendationsWithClicks {
         filter: Option<RecommendationAnalyticsFilter>,
         page: Option<u32>,
     },
+    #[schema(title = "RecommendationsWithourClicks")]
     RecommendationsWithoutClicks {
         filter: Option<RecommendationAnalyticsFilter>,
         page: Option<u32>,
