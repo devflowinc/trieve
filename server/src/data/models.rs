@@ -4380,7 +4380,7 @@ pub enum CTRAnalytics {
         filter: Option<RecommendationAnalyticsFilter>,
         page: Option<u32>,
     },
-    #[schema(title = "RecommendationsWithourClicks")]
+    #[schema(title = "RecommendationsWithoutClicks")]
     RecommendationsWithoutClicks {
         filter: Option<RecommendationAnalyticsFilter>,
         page: Option<u32>,
