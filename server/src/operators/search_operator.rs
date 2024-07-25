@@ -65,31 +65,57 @@ async fn convert_group_tracking_ids_to_group_ids(
     pool: web::Data<Pool>,
 ) -> Result<FieldCondition, ServiceError> {
     if condition.field == "group_tracking_ids" {
-        let matches = condition
-            .r#match
-            .ok_or(ServiceError::BadRequest(
-                "match key not found for group_tracking_ids".to_string(),
-            ))?
-            .iter()
-            .map(|item| item.to_string())
-            .collect();
-
-        let correct_matches: Vec<MatchCondition> =
-            get_group_ids_from_tracking_ids_query(matches, dataset_id, pool.clone())
-                .await?
+        if let Some(match_any) = condition.r#match_any {
+            let matches = match_any
                 .iter()
-                .map(|(id, _)| MatchCondition::Text(id.to_string()))
-                .collect();
+                .map(|item| item.to_string())
+                .collect::<Vec<String>>();
 
-        Ok(FieldCondition {
-            field: "group_ids".to_string(),
-            r#match: Some(correct_matches),
-            date_range: None,
-            range: None,
-            geo_bounding_box: None,
-            geo_polygon: None,
-            geo_radius: None,
-        })
+            let correct_matches: Vec<MatchCondition> =
+                get_group_ids_from_tracking_ids_query(matches, dataset_id, pool.clone())
+                    .await?
+                    .iter()
+                    .map(|(id, _)| MatchCondition::Text(id.to_string()))
+                    .collect();
+
+            Ok(FieldCondition {
+                field: "group_ids".to_string(),
+                match_any: Some(correct_matches),
+                match_all: None,
+                date_range: None,
+                range: None,
+                geo_bounding_box: None,
+                geo_polygon: None,
+                geo_radius: None,
+            })
+        } else if let Some(match_all) = condition.match_all {
+            let matches = match_all
+                .iter()
+                .map(|item| item.to_string())
+                .collect::<Vec<String>>();
+
+            let correct_matches: Vec<MatchCondition> =
+                get_group_ids_from_tracking_ids_query(matches, dataset_id, pool.clone())
+                    .await?
+                    .iter()
+                    .map(|(id, _)| MatchCondition::Text(id.to_string()))
+                    .collect();
+
+            Ok(FieldCondition {
+                field: "group_ids".to_string(),
+                match_any: None,
+                match_all: Some(correct_matches),
+                date_range: None,
+                range: None,
+                geo_bounding_box: None,
+                geo_polygon: None,
+                geo_radius: None,
+            })
+        } else {
+            Err(ServiceError::BadRequest(
+                "match_any key not found for group_tracking_ids".to_string(),
+            ))?
+        }
     } else {
         Ok(condition)
     }
@@ -415,7 +441,7 @@ pub async fn get_metadata_filter_condition(
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
 
-    if let Some(matches) = &filter.r#match {
+    if let Some(matches) = &filter.match_any {
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Text(string_val) => {
@@ -461,7 +487,53 @@ pub async fn get_metadata_filter_condition(
                 }
             }
         }
-    };
+    } else if let Some(matches) = &filter.match_all {
+        if let Some(first_val) = matches.get(0) {
+            match first_val {
+                MatchCondition::Text(string_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, string_val
+                    )));
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
+                MatchCondition::Float(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
+            }
+        }
+
+        for match_condition in matches.iter().skip(1) {
+            match match_condition {
+                MatchCondition::Text(string_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, string_val
+                    )));
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
+                MatchCondition::Float(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
+            }
+        }
+    }
 
     if let Some(range) = &filter.range {
         let range_filter = get_range(range.clone())?;
@@ -586,26 +658,26 @@ pub async fn get_group_metadata_filter_condition(
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .into_boxed();
 
-    if let Some(matches) = &filter.r#match {
+    if let Some(matches) = &filter.match_any {
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Text(string_val) => {
                     query = query.filter(sql::<Bool>(&format!(
-                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
                         key, string_val
-                    )))
+                    )));
                 }
                 MatchCondition::Integer(id_val) => {
                     query = query.filter(sql::<Bool>(&format!(
-                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
                         key, id_val
-                    )))
+                    )));
                 }
                 MatchCondition::Float(id_val) => {
                     query = query.filter(sql::<Bool>(&format!(
-                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
                         key, id_val
-                    )))
+                    )));
                 }
             }
         }
@@ -614,21 +686,67 @@ pub async fn get_group_metadata_filter_condition(
             match match_condition {
                 MatchCondition::Text(string_val) => {
                     query = query.or_filter(sql::<Bool>(&format!(
-                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
                         key, string_val
-                    )))
+                    )));
                 }
                 MatchCondition::Integer(id_val) => {
                     query = query.or_filter(sql::<Bool>(&format!(
-                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
                         key, id_val
-                    )))
+                    )));
                 }
                 MatchCondition::Float(id_val) => {
                     query = query.or_filter(sql::<Bool>(&format!(
-                        "chunk_group.metadata @> '{{\"{}\":\"{}\"}}'",
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
                         key, id_val
-                    )))
+                    )));
+                }
+            }
+        }
+    } else if let Some(matches) = &filter.match_all {
+        if let Some(first_val) = matches.get(0) {
+            match first_val {
+                MatchCondition::Text(string_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, string_val
+                    )));
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
+                MatchCondition::Float(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
+            }
+        }
+
+        for match_condition in matches.iter().skip(1) {
+            match match_condition {
+                MatchCondition::Text(string_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, string_val
+                    )));
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
+                }
+                MatchCondition::Float(id_val) => {
+                    query = query.filter(sql::<Bool>(&format!(
+                        "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
+                        key, id_val
+                    )));
                 }
             }
         }
@@ -710,7 +828,7 @@ pub async fn get_group_tag_set_filter_condition(
             .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .into_boxed();
 
-    if let Some(matches) = &filter.r#match {
+    if let Some(matches) = &filter.match_any {
         if let Some(first_val) = matches.get(0) {
             match first_val {
                 MatchCondition::Text(string_val) => {
@@ -746,7 +864,41 @@ pub async fn get_group_tag_set_filter_condition(
                 }
             }
         }
-    };
+    } else if let Some(matches) = &filter.match_all {
+        if let Some(first_val) = matches.get(0) {
+            match first_val {
+                MatchCondition::Text(string_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.contains(vec![string_val.clone()]));
+                }
+                MatchCondition::Integer(int_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.contains(vec![int_val.to_string()]));
+                }
+                MatchCondition::Float(float_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.contains(vec![float_val.to_string()]));
+                }
+            }
+        }
+
+        for match_condition in matches.iter().skip(1) {
+            match match_condition {
+                MatchCondition::Text(string_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.contains(vec![string_val.clone()]));
+                }
+                MatchCondition::Integer(int_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.contains(vec![int_val.to_string()]));
+                }
+                MatchCondition::Float(float_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.contains(vec![float_val.to_string()]));
+                }
+            }
+        }
+    }
 
     if filter.range.is_some() {
         "Range filter not supported for group_tag_set".to_string();
