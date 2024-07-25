@@ -864,7 +864,7 @@ checksum = "44e3c638c759172f7aea176217b5cc1e5a5a414955207509bcb9644bf0179be0"
 dependencies = [
  "chrono",
  "clap",
- "clickhouse 0.11.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clickhouse 0.11.6",
  "derive_more",
  "dotenvy",
  "serde",
@@ -956,7 +956,7 @@ checksum = "a0875e527e299fc5f4faba42870bf199a39ab0bb2dbba1b8aef0a2151451130f"
 dependencies = [
  "bstr",
  "bytes",
- "clickhouse-derive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clickhouse-derive 0.1.1",
  "clickhouse-rs-cityhash-sys",
  "futures",
  "hyper 0.14.30",
@@ -973,16 +973,19 @@ dependencies = [
 
 [[package]]
 name = "clickhouse"
-version = "0.11.6"
-source = "git+https://github.com/loyd/clickhouse.rs#24b39c76bc1fc89ee9303223438983dc9ea6fa0e"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eab6d70c534d5e54680aae99712800fca8d048cdfad3fbd154daf823d444f08b"
 dependencies = [
  "bstr",
  "bytes",
- "clickhouse-derive 0.1.1 (git+https://github.com/loyd/clickhouse.rs)",
+ "clickhouse-derive 0.2.0",
  "clickhouse-rs-cityhash-sys",
  "futures",
- "hyper 0.14.30",
- "hyper-tls 0.5.0",
+ "futures-channel",
+ "http-body-util",
+ "hyper 1.4.1",
+ "hyper-util",
  "lz4",
  "sealed 0.5.0",
  "serde",
@@ -1008,8 +1011,9 @@ dependencies = [
 
 [[package]]
 name = "clickhouse-derive"
-version = "0.1.1"
-source = "git+https://github.com/loyd/clickhouse.rs#24b39c76bc1fc89ee9303223438983dc9ea6fa0e"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d70f3e2893f7d3e017eeacdc9a708fbc29a10488e3ebca21f9df6a5d2b616dbb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5678,7 +5682,7 @@ dependencies = [
  "cfg-if",
  "chm",
  "chrono",
- "clickhouse 0.11.6 (git+https://github.com/loyd/clickhouse.rs)",
+ "clickhouse 0.12.0",
  "crossbeam-channel",
  "dateparser",
  "derive_more",

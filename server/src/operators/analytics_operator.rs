@@ -7,9 +7,14 @@ use crate::{
     data::models::{
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, Granularity,
         HeadQueries, Pool, RAGAnalyticsFilter, RAGUsageResponse, RagQueryEvent,
-        RagQueryEventClickhouse, RecommendationAnalyticsFilter, RecommendationEvent,
-        RecommendationEventClickhouse, SearchAnalyticsFilter, SearchClusterTopics,
-        SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueryEvent,
+        RagQueryEventClickhouse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
+        RecommendationEvent, RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
+        RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
+        RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
+        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
+        SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
+        SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
+        SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse, SearchTypeCount,
         SortBy, SortOrder,
     },
@@ -792,10 +797,11 @@ pub async fn send_ctr_data_query(
 
     clickhouse_client
         .query(
-            "INSERT INTO default.ctr_data (id, request_id, chunk_id, dataset_id, position, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, now())",
+            "INSERT INTO default.ctr_data (id, request_id, type, chunk_id, dataset_id, position, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, now())",
         )
         .bind(uuid::Uuid::new_v4())
         .bind(data.reqeust_id)
+        .bind(data.ctr_type)
         .bind(chunk_id)
         .bind(dataset_id)
         .bind(data.position)
@@ -809,4 +815,294 @@ pub async fn send_ctr_data_query(
         })?;
 
     Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct CTRSearchQueryWithClicksResponse {
+    pub queries: Vec<SearchQueriesWithClicksCTRResponse>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct CTRSearchQueryWithoutClicksResponse {
+    pub queries: Vec<SearchQueriesWithoutClicksCTRResponse>,
+}
+
+pub async fn get_search_ctr_metrics_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<SearchAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<SearchCTRMetrics, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            COUNT(*) AS searches_with_clicks,
+            (COUNT(*)  / (
+                SELECT COUNT(*) 
+                FROM default.search_queries 
+                WHERE dataset_id = ? AND is_duplicate = 0
+            )) * 100.0 AS percent_searches_with_click,
+            AVG(ctr_data.`position`) AS avg_position_of_click
+        FROM default.ctr_data 
+        JOIN default.search_queries ON ctr_data.request_id = search_queries.id 
+        WHERE search_queries.dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .fetch_one::<SearchCTRMetricsClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    Ok(clickhouse_query.into())
+}
+
+pub async fn get_searches_with_clicks_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<SearchAnalyticsFilter>,
+    pool: web::Data<Pool>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<CTRSearchQueryWithClicksResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            search_queries.query,
+            ctr_data.chunk_id,
+            ctr_data.dataset_id,
+            ctr_data.position,
+            ctr_data.created_at
+        FROM default.ctr_data 
+        JOIN default.search_queries ON ctr_data.request_id = search_queries.id 
+        WHERE search_queries.dataset_id = ? AND search_queries.is_duplicate = 0",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        ORDER BY 
+            ctr_data.created_at DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<SearchQueriesWithClicksCTRResponseClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let queries: Vec<SearchQueriesWithClicksCTRResponse> = join_all(
+        clickhouse_query
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
+
+    Ok(CTRSearchQueryWithClicksResponse { queries })
+}
+
+pub async fn get_searches_without_clicks_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<SearchAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<CTRSearchQueryWithoutClicksResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT search_queries.query, search_queries.created_at
+        FROM default.search_queries sq
+        LEFT JOIN default.ctr_data cd ON sq.id = cd.request_id
+        WHERE cd.request_id = '00000000-0000-0000-0000-000000000000' AND search_queries.dataset_id = ? AND search_queries.is_duplicate = 0",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        ORDER BY 
+            search_queries.created_at DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let queries = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<SearchQueriesWithoutClicksCTRResponseClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let queries: Vec<SearchQueriesWithoutClicksCTRResponse> =
+        queries.into_iter().map(|q| q.into()).collect::<Vec<_>>();
+
+    Ok(CTRSearchQueryWithoutClicksResponse { queries })
+}
+
+pub async fn get_recommendation_ctr_metrics_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RecommendationAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RecommendationCTRMetrics, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            COUNT(*) AS recommendations_with_clicks,
+            (COUNT(*)  / (
+                SELECT COUNT(*) 
+                FROM default.recommendations 
+                WHERE dataset_id = ?SearchQueryResponse
+            )) * 100.0 AS percent_recommendations_with_clicks,
+            AVG(ctr_data.`position`) AS avg_position_of_click
+        FROM default.ctr_data 
+        JOIN default.recommendations ON ctr_data.request_id = recommendations.id 
+        WHERE recommendations.dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .fetch_one::<RecommendationCTRMetrics>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    Ok(clickhouse_query)
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct CTRRecommendationsWithClicksResponse {
+    pub recommendations: Vec<RecommendationsWithClicksCTRResponse>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct CTRRecommendationsWithoutClicksResponse {
+    pub recommendations: Vec<RecommendationsWithoutClicksCTRResponse>,
+}
+
+pub async fn get_recommendations_with_clicks_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<RecommendationAnalyticsFilter>,
+    pool: web::Data<Pool>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<CTRRecommendationsWithClicksResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            recommendations.positive_ids,
+            recommendations.negative_ids,
+            recommendations.positive_tracking_ids,
+            recommendations.negative_tracking_ids,
+            ctr_data.chunk_id,
+            ctr_data.dataset_id,
+            ctr_data.position,
+            ctr_data.created_at
+        FROM default.ctr_data 
+        JOIN default.recommendations ON ctr_data.request_id = recommendations.id 
+        WHERE recommendations.dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        ORDER BY 
+            ctr_data.created_at DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<RecommendationsWithClicksCTRResponseClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let recommendations: Vec<RecommendationsWithClicksCTRResponse> = join_all(
+        clickhouse_query
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
+
+    Ok(CTRRecommendationsWithClicksResponse { recommendations })
+}
+
+pub async fn get_recommendations_without_clicks_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<RecommendationAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<CTRRecommendationsWithoutClicksResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT   
+            recommendations.positive_ids,
+            recommendations.negative_ids,
+            recommendations.positive_tracking_ids,
+            recommendations.negative_tracking_ids,
+            recommendations.created_at
+        FROM default.recommendations r
+        LEFT JOIN default.ctr_data cd ON r.id = cd.request_id
+        WHERE cd.request_id = '00000000-0000-0000-0000-000000000000' AND recommendations.dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        ORDER BY 
+            recommendations.created_at DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<RecommendationsWithoutClicksCTRResponseClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let recommendations: Vec<RecommendationsWithoutClicksCTRResponse> =
+        clickhouse_query.into_iter().map(|q| q.into()).collect();
+
+    Ok(CTRRecommendationsWithoutClicksResponse { recommendations })
 }

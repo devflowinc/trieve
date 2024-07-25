@@ -139,10 +139,7 @@ bb8-redis = "0.15.0"
 signal-hook = "0.3.17"
 blake3 = "1.5.1"
 actix-http = "3.7.0"
-clickhouse = { git = "https://github.com/loyd/clickhouse.rs", features = [
-    "time",
-    "uuid",
-] }
+clickhouse = { version = "0.12.0", features = ["time", "uuid"] }
 prometheus = "0.13.4"
 chm = "0.1.8"
 murmur3 = "0.5.2"

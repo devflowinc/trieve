@@ -1,0 +1,1 @@
+ALTER TABLE ctr_data DROP COLUMN IF EXISTS type;

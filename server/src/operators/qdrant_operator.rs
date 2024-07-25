@@ -1002,13 +1002,13 @@ pub async fn search_qdrant_query(
 
             let offset = query.limit * page.saturating_sub(1);
             if let Some(prefetch) = prefetch.get_mut(0) {
-                let new_page = if offset / prefetch.limit.unwrap_or(0) > 0 {
-                    (offset / prefetch.limit.unwrap_or(0)) + 1
+                let new_page = if offset / prefetch.limit.unwrap_or(1) > 0 {
+                    (offset / prefetch.limit.unwrap_or(1)) + 1
                 } else {
                     1
                 };
 
-                prefetch.limit = Some(prefetch.limit.unwrap_or(0) * new_page);
+                prefetch.limit = Some(prefetch.limit.unwrap_or(1) * new_page);
             }
 
             QueryPoints {
