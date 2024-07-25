@@ -3079,7 +3079,6 @@ pub fn get_range(range: Range) -> Result<qdrant::Range, ServiceError> {
 impl FieldCondition {
     pub async fn convert_to_qdrant_condition(
         &self,
-        condition_type: &str,
         jsonb_prefilter: Option<bool>,
         dataset_id: uuid::Uuid,
         pool: web::Data<Pool>,
