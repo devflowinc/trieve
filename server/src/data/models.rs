@@ -4235,13 +4235,22 @@ pub enum Granularity {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
-pub enum SortBy {
+pub enum SearchSortBy {
     #[display(fmt = "created_at")]
     CreatedAt,
     #[display(fmt = "latency")]
     Latency,
     #[display(fmt = "top_score")]
     TopScore,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum RAGSortBy {
+    #[display(fmt = "created_at")]
+    CreatedAt,
+    #[display(fmt = "latency")]
+    Latency,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq, Eq)]
@@ -4301,7 +4310,7 @@ pub enum SearchAnalytics {
     SearchQueries {
         filter: Option<SearchAnalyticsFilter>,
         page: Option<u32>,
-        sort_by: Option<SortBy>,
+        sort_by: Option<SearchSortBy>,
         sort_order: Option<SortOrder>,
     },
     #[schema(title = "CountQueries")]
@@ -4321,7 +4330,7 @@ pub enum RAGAnalytics {
     RAGQueries {
         filter: Option<RAGAnalyticsFilter>,
         page: Option<u32>,
-        sort_by: Option<SortBy>,
+        sort_by: Option<RAGSortBy>,
         sort_order: Option<SortOrder>,
     },
     #[schema(title = "RAGUsage")]
@@ -4343,7 +4352,7 @@ pub enum RecommendationAnalytics {
     RecommendationQueries {
         filter: Option<RecommendationAnalyticsFilter>,
         page: Option<u32>,
-        sort_by: Option<SortBy>,
+        sort_by: Option<SearchSortBy>,
         sort_order: Option<SortOrder>,
     },
 }
