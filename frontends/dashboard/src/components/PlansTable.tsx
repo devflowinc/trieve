@@ -44,8 +44,6 @@ export const PlansTable = (props: PlansTableProps) => {
   const [canceling, setCanceling] = createSignal(false);
 
   createEffect(() => {
-    console.log("props.currentOrgSubPlan", props.currentOrgSubPlan);
-
     setCurrentPlan(props.currentOrgSubPlan?.plan ?? null);
     setCurrentSubscription(props.currentOrgSubPlan?.subscription ?? null);
   });

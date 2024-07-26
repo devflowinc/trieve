@@ -73,7 +73,9 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     if (organizationId == null) {
       const path = window.location.pathname;
       const pathParts = path.split("/");
-      const orgId = pathParts[2];
+      const urlParams = new URLSearchParams(window.location.search);
+      const orgId = urlParams.get("org") ?? pathParts[2];
+
       if (user()?.user_orgs) {
         const org = user()?.user_orgs.find(
           (org) => org.organization_id === orgId,

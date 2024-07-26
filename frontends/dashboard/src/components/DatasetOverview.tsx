@@ -354,7 +354,9 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                         class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium"
                         onClick={() => {
                           navigate(
-                            `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
+                            `/dashboard/dataset/${
+                              datasetAndUsage.dataset.id
+                            }/start?org=${props.selectedOrganization()?.id}`,
                           );
                         }}
                       >
@@ -366,7 +368,9 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                         class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium"
                         onClick={() => {
                           navigate(
-                            `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
+                            `/dashboard/dataset/${
+                              datasetAndUsage.dataset.id
+                            }/start?org=${props.selectedOrganization()?.id}`,
                           );
                         }}
                       >
@@ -422,7 +426,9 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                         class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600"
                         onClick={() => {
                           navigate(
-                            `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
+                            `/dashboard/dataset/${
+                              datasetAndUsage.dataset.id
+                            }/start?org=${props.selectedOrganization()?.id}`,
                           );
                         }}
                       >
@@ -447,7 +453,9 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                         class="hidden whitespace-nowrap px-3 py-4 text-sm text-neutral-600 lg:block"
                         onClick={() => {
                           navigate(
-                            `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
+                            `/dashboard/dataset/${
+                              datasetAndUsage.dataset.id
+                            }/start?org=${props.selectedOrganization()?.id}`,
                           );
                         }}
                       >

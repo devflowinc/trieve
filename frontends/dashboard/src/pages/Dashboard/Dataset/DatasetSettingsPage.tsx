@@ -84,6 +84,22 @@ export const ServerSettingsForm = () => {
       }),
     })
       .then((resp) => {
+        if (resp.ok) {
+          createToast({
+            title: "Success",
+            type: "success",
+            message: "Dataset Server Configuration Saved",
+          });
+          setServerConfig((prev) => ({ ...prev, LLM_API_KEY: "" }));
+
+          setSaved(true);
+          void new Promise((r) => setTimeout(r, 1000)).then(() =>
+            setSaved(false),
+          );
+
+          return;
+        }
+
         if (!resp.ok) {
           let message = "Error Saving Dataset Server Configuration";
           if (resp.status === 403) {
@@ -97,11 +113,6 @@ export const ServerSettingsForm = () => {
             message: message,
           });
         }
-
-        setSaved(true);
-        void new Promise((r) => setTimeout(r, 1000)).then(() =>
-          setSaved(false),
-        );
       })
       .catch((err) => {
         console.log(err);
@@ -165,7 +176,7 @@ export const ServerSettingsForm = () => {
                 name="llmAPIURL"
                 id="llmAPIURL"
                 class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={""}
+                value={serverConfig().LLM_API_KEY ?? ""}
                 onInput={(e) =>
                   setServerConfig((prev) => {
                     return {
@@ -664,7 +675,7 @@ export const ServerSettingsForm = () => {
                   name="bm25K"
                   id="bm25K"
                   class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                  value={serverConfig().BM25_K ?? 0}
+                  value={serverConfig().BM25_K.toFixed(2) ?? 0}
                   onChange={(e) =>
                     setServerConfig((prev) => {
                       return {
