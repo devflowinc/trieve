@@ -90,9 +90,9 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         organization_id -> Uuid,
-        server_configuration -> Jsonb,
         tracking_id -> Nullable<Text>,
         deleted -> Int4,
+        server_configuration -> Jsonb,
     }
 }
 
