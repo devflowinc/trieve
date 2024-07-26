@@ -268,7 +268,6 @@ pub async fn stream_response(
         .into()
     };
 
-
     let client = Client {
         project: None,
         api_key: llm_api_key,
