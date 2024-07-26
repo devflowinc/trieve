@@ -1370,27 +1370,21 @@ pub fn get_highlights_with_exact_match(
         |c: char| delimiters.contains(&c.to_string()) && c != ' ',
         "",
     );
-    let query_parts_split_by_stop_words: Vec<String> = query
-        .split(' ')
-        .collect_vec()
-        .chunk_by(|a, b| {
-            !stop_words.contains(&a.to_lowercase()) && !stop_words.contains(&b.to_lowercase())
-        })
-        .map(|chunk| {
-            chunk
-                .iter()
-                .filter_map(|word| match stop_words.contains(&word.to_lowercase()) {
-                    true => None,
-                    false => Some(word.to_string()),
-                })
-                .collect_vec()
-        })
-        .filter_map(|chunk| match chunk.is_empty() {
-            true => None,
-            false => Some(chunk.join(" ")),
-        })
-        .collect_vec();
+    let mut query_parts_split_by_stop_words: Vec<String> = Vec::new();
+    let mut current_chunk: Vec<String> = Vec::new();
 
+    for word in query.split(' ') {
+        if !stop_words.contains(&word.to_lowercase()) {
+            current_chunk.push(word.to_string());
+        } else if !current_chunk.is_empty() {
+            query_parts_split_by_stop_words.push(current_chunk.join(" "));
+            current_chunk.clear();
+        }
+    }
+
+    if !current_chunk.is_empty() {
+        query_parts_split_by_stop_words.push(current_chunk.join(" "));
+    }
     let mut matching_parts: Vec<String> = Vec::new();
 
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
