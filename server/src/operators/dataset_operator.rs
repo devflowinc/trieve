@@ -465,7 +465,7 @@ pub async fn delete_dataset_by_id_query(
 pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
-    server_configuration: serde_json::Value,
+    server_configuration: DatasetConfiguration,
     new_tracking_id: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
@@ -476,6 +476,11 @@ pub async fn update_dataset_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
+    let configuration = serde_json::to_value(server_configuration.clone()).map_err(|err| {
+        log::error!("Could not serialize server configuration: {}", err);
+        ServiceError::BadRequest("Could not serialize server configuration".to_string())
+    })?;
+
     let new_dataset: Dataset = diesel::update(
         datasets_columns::datasets
             .filter(datasets_columns::id.eq(id))
@@ -485,7 +490,7 @@ pub async fn update_dataset_query(
         new_tracking_id.map(|id| datasets_columns::tracking_id.eq(id)),
         datasets_columns::name.eq(name),
         datasets_columns::updated_at.eq(diesel::dsl::now),
-        datasets_columns::server_configuration.eq(server_configuration),
+        datasets_columns::server_configuration.eq(configuration),
     ))
     .get_result(&mut conn)
     .await
