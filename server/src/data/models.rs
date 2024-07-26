@@ -1821,9 +1821,9 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
-    pub server_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
+    pub server_configuration: serde_json::Value,
 }
 
 impl Dataset {
@@ -1831,14 +1831,14 @@ impl Dataset {
         name: String,
         organization_id: uuid::Uuid,
         tracking_id: Option<String>,
-        server_configuration: serde_json::Value,
+        server_configuration: DatasetConfiguration,
     ) -> Self {
         Dataset {
             id: uuid::Uuid::new_v4(),
             name,
             organization_id,
             tracking_id,
-            server_configuration,
+            server_configuration: serde_json::to_value(server_configuration).unwrap(),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             deleted: 0,
@@ -1976,6 +1976,163 @@ pub struct DatasetConfiguration {
     pub LOCKED: bool,
     pub SYSTEM_PROMPT: String,
     pub MAX_LIMIT: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example=json!({
+    "LLM_BASE_URL": "https://api.openai.com/v1",
+    "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+    "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+    "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+    "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+    "N_RETRIEVALS_TO_INCLUDE": 8,
+    "EMBEDDING_SIZE": 1536,
+    "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+    "BM25_ENABLED": true,
+    "BM25_B": 0.75,
+    "BM25_K": 0.75,
+    "BM25_AVG_LEN": 256.0,
+    "FULLTEXT_ENABLED": true,
+    "SEMANTIC_ENABLED": true,
+    "EMBEDDING_QUERY_PREFIX": "",
+    "USE_MESSAGE_TO_QUERY_PROMPT": false,
+    "FREQUENCY_PENALTY": 0.0,
+    "TEMPERATURE": 0.5,
+    "PRESENCE_PENALTY": 0.0,
+    "STOP_TOKENS": ["\n\n", "\n"],
+    "INDEXED_ONLY": false,
+    "LOCKED": false,
+    "SYSTEM_PROMPT": "You are a helpful assistant",
+    "MAX_LIMIT": 10000
+}))]
+#[allow(non_snake_case)]
+pub struct DatasetConfigurationDTO {
+    pub LLM_BASE_URL: Option<String>,
+    #[serde(skip_serializing)]
+    pub LLM_API_KEY: Option<String>,
+    pub EMBEDDING_BASE_URL: Option<String>,
+    pub EMBEDDING_MODEL_NAME: Option<String>,
+    pub RERANKER_BASE_URL: Option<String>,
+    pub MESSAGE_TO_QUERY_PROMPT: Option<String>,
+    pub RAG_PROMPT: Option<String>,
+    pub N_RETRIEVALS_TO_INCLUDE: Option<usize>,
+    pub EMBEDDING_SIZE: Option<usize>,
+    pub LLM_DEFAULT_MODEL: Option<String>,
+    pub BM25_ENABLED: Option<bool>,
+    pub BM25_B: Option<f32>,
+    pub BM25_K: Option<f32>,
+    pub BM25_AVG_LEN: Option<f32>,
+    pub FULLTEXT_ENABLED: Option<bool>,
+    pub SEMANTIC_ENABLED: Option<bool>,
+    pub EMBEDDING_QUERY_PREFIX: Option<String>,
+    pub USE_MESSAGE_TO_QUERY_PROMPT: Option<bool>,
+    pub FREQUENCY_PENALTY: Option<f64>,
+    pub TEMPERATURE: Option<f64>,
+    pub PRESENCE_PENALTY: Option<f64>,
+    pub STOP_TOKENS: Option<Vec<String>>,
+    pub INDEXED_ONLY: Option<bool>,
+    pub LOCKED: Option<bool>,
+    pub SYSTEM_PROMPT: Option<String>,
+    pub MAX_LIMIT: Option<u64>,
+}
+
+impl From<DatasetConfigurationDTO> for DatasetConfiguration {
+    fn from(dto: DatasetConfigurationDTO) -> Self {
+        DatasetConfiguration {
+            LLM_BASE_URL: dto.LLM_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string()),
+            LLM_API_KEY: dto.LLM_API_KEY.unwrap_or("".to_string()),
+            EMBEDDING_BASE_URL: dto.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string()),
+            EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.unwrap_or("text-embedding-3-small".to_string()),
+            RERANKER_BASE_URL: dto.RERANKER_BASE_URL.unwrap_or("".to_string()),
+            MESSAGE_TO_QUERY_PROMPT: dto.MESSAGE_TO_QUERY_PROMPT.unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
+            RAG_PROMPT: dto.RAG_PROMPT.unwrap_or("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()),
+            N_RETRIEVALS_TO_INCLUDE: dto.N_RETRIEVALS_TO_INCLUDE.unwrap_or(8),
+            EMBEDDING_SIZE: dto.EMBEDDING_SIZE.unwrap_or(1536),
+            LLM_DEFAULT_MODEL: dto.LLM_DEFAULT_MODEL.unwrap_or("gpt-3.5-turbo-1106".to_string()),
+            BM25_ENABLED: dto.BM25_ENABLED.unwrap_or(true),
+            BM25_B: dto.BM25_B.unwrap_or(0.75),
+            BM25_K: dto.BM25_K.unwrap_or(0.75),
+            BM25_AVG_LEN: dto.BM25_AVG_LEN.unwrap_or(256.0),
+            FULLTEXT_ENABLED: dto.FULLTEXT_ENABLED.unwrap_or(true),
+            SEMANTIC_ENABLED: dto.SEMANTIC_ENABLED.unwrap_or(true),
+            EMBEDDING_QUERY_PREFIX: dto.EMBEDDING_QUERY_PREFIX.unwrap_or("".to_string()),
+            USE_MESSAGE_TO_QUERY_PROMPT: dto.USE_MESSAGE_TO_QUERY_PROMPT.unwrap_or(false),
+            FREQUENCY_PENALTY: dto.FREQUENCY_PENALTY,
+            TEMPERATURE: dto.TEMPERATURE,
+            PRESENCE_PENALTY: dto.PRESENCE_PENALTY,
+            STOP_TOKENS: dto.STOP_TOKENS,
+            INDEXED_ONLY: dto.INDEXED_ONLY.unwrap_or(false),
+            LOCKED: dto.LOCKED.unwrap_or(false),
+            SYSTEM_PROMPT: dto.SYSTEM_PROMPT.unwrap_or("You are a helpful assistant".to_string()),
+            MAX_LIMIT: dto.MAX_LIMIT.unwrap_or(10000),
+        }
+    }
+}
+
+impl From<DatasetConfiguration> for DatasetConfigurationDTO {
+    fn from(config: DatasetConfiguration) -> Self {
+        DatasetConfigurationDTO {
+            LLM_BASE_URL: Some(config.LLM_BASE_URL),
+            LLM_API_KEY: Some(config.LLM_API_KEY),
+            EMBEDDING_BASE_URL: Some(config.EMBEDDING_BASE_URL),
+            EMBEDDING_MODEL_NAME: Some(config.EMBEDDING_MODEL_NAME),
+            RERANKER_BASE_URL: Some(config.RERANKER_BASE_URL),
+            MESSAGE_TO_QUERY_PROMPT: Some(config.MESSAGE_TO_QUERY_PROMPT),
+            RAG_PROMPT: Some(config.RAG_PROMPT),
+            N_RETRIEVALS_TO_INCLUDE: Some(config.N_RETRIEVALS_TO_INCLUDE),
+            EMBEDDING_SIZE: Some(config.EMBEDDING_SIZE),
+            LLM_DEFAULT_MODEL: Some(config.LLM_DEFAULT_MODEL),
+            BM25_ENABLED: Some(config.BM25_ENABLED),
+            BM25_B: Some(config.BM25_B),
+            BM25_K: Some(config.BM25_K),
+            BM25_AVG_LEN: Some(config.BM25_AVG_LEN),
+            FULLTEXT_ENABLED: Some(config.FULLTEXT_ENABLED),
+            SEMANTIC_ENABLED: Some(config.SEMANTIC_ENABLED),
+            EMBEDDING_QUERY_PREFIX: Some(config.EMBEDDING_QUERY_PREFIX),
+            USE_MESSAGE_TO_QUERY_PROMPT: Some(config.USE_MESSAGE_TO_QUERY_PROMPT),
+            FREQUENCY_PENALTY: config.FREQUENCY_PENALTY,
+            TEMPERATURE: config.TEMPERATURE,
+            PRESENCE_PENALTY: config.PRESENCE_PENALTY,
+            STOP_TOKENS: config.STOP_TOKENS,
+            INDEXED_ONLY: Some(config.INDEXED_ONLY),
+            LOCKED: Some(config.LOCKED),
+            SYSTEM_PROMPT: Some(config.SYSTEM_PROMPT),
+            MAX_LIMIT: Some(config.MAX_LIMIT),
+        }
+    }
+}
+
+impl Default for DatasetConfiguration {
+    fn default() -> Self {
+        DatasetConfiguration {
+            LLM_BASE_URL: "https://api.openai.com/v1".to_string(),
+            LLM_API_KEY: "".to_string(),
+            EMBEDDING_BASE_URL: "https://api.openai.com/v1".to_string(),
+            EMBEDDING_MODEL_NAME: "text-embedding-3-small".to_string(),
+            RERANKER_BASE_URL: "".to_string(),
+            MESSAGE_TO_QUERY_PROMPT: "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string(),
+            RAG_PROMPT: "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string(),
+            N_RETRIEVALS_TO_INCLUDE: 8,
+            EMBEDDING_SIZE: 1536,
+            LLM_DEFAULT_MODEL: "gpt-3.5-turbo-1106".to_string(),
+            BM25_ENABLED: true,
+            BM25_B: 0.75,
+            BM25_K: 0.75,
+            BM25_AVG_LEN: 256.0,
+            FULLTEXT_ENABLED: true,
+            SEMANTIC_ENABLED: true,
+            EMBEDDING_QUERY_PREFIX: "".to_string(),
+            USE_MESSAGE_TO_QUERY_PROMPT: false,
+            FREQUENCY_PENALTY: None,
+            TEMPERATURE: None,
+            PRESENCE_PENALTY: None,
+            STOP_TOKENS: None,
+            INDEXED_ONLY: false,
+            LOCKED: false,
+            SYSTEM_PROMPT: "You are a helpful assistant".to_string(),
+            MAX_LIMIT: 10000,
+        }
+    }
 }
 
 impl DatasetConfiguration {
