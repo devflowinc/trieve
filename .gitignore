@@ -82,3 +82,5 @@ data/*
 
 server/src/trieve_protobufs/*
 server/proto/*
+server/migrations/2024-07-26-165058_move_config_to_table/down.sql
+server/migrations/2024-07-26-165058_move_config_to_table/up.sql

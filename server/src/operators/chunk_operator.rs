@@ -1660,7 +1660,6 @@ pub async fn create_chunk_metadata(
                 id: chunk_metadata.id,
                 qdrant_point_id: chunk_metadata.qdrant_point_id,
                 dataset_id: dataset_uuid,
-                dataset_config: dataset_configuration.clone(),
             },
             dataset_id: dataset_uuid,
             chunk: chunk_only_group_ids.clone(),

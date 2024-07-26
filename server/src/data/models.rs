@@ -674,7 +674,6 @@ impl From<ContentChunkMetadata> for ChunkMetadata {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
-    pub dataset_config: DatasetConfiguration,
     pub dataset_id: uuid::Uuid,
     pub qdrant_point_id: uuid::Uuid,
 }
