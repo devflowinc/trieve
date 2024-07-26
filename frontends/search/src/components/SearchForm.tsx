@@ -779,7 +779,36 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 const newSearchValues = tempSearchValues();
                 newSearchValues.version = props.search.state.version + 1;
 
+                newSearchValues.sort_by = props.search.state.sort_by;
+                newSearchValues.searchType = props.search.state.searchType;
+                newSearchValues.groupUniqueSearch =
+                  props.search.state.groupUniqueSearch;
+                newSearchValues.query = props.search.state.query;
+
                 props.search.setSearch(newSearchValues);
+
+                const searchTextarea = document.getElementById(
+                  "search-query-textarea",
+                );
+                searchTextarea?.focus();
+                setTimeout(() => {
+                  searchTextarea?.focus();
+                }, 50);
+                setTimeout(() => {
+                  searchTextarea?.focus();
+                }, 100);
+                setTimeout(() => {
+                  searchTextarea?.focus();
+                }, 200);
+                setTimeout(() => {
+                  searchTextarea?.focus();
+                }, 300);
+                setTimeout(() => {
+                  searchTextarea?.focus();
+                }, 400);
+                setTimeout(() => {
+                  searchTextarea?.focus();
+                }, 500);
               }}
             >
               {({ isOpen }) => (
@@ -811,22 +840,26 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                             class="rounded-md border border-neutral-400 bg-neutral-100 px-2 py-1 dark:border-neutral-900 dark:bg-neutral-800"
                             onClick={(e) => {
                               e.preventDefault();
-                              setTempSearchValues({
-                                scoreThreshold: 0.0,
-                                extendResults: false,
-                                slimChunks: false,
-                                sort_by: {
-                                  field: "",
-                                },
-                                pageSize: 10,
-                                getTotalPages: false,
-                                highlightResults: true,
-                                highlightDelimiters: ["?", ".", "!"],
-                                highlightMaxLength: 8,
-                                highlightMaxNum: 3,
-                                highlightWindow: 0,
-                                group_size: 3,
-                              } as SearchOptions);
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...props.search.state,
+                                  ...prev,
+                                  scoreThreshold: 0.0,
+                                  extendResults: false,
+                                  slimChunks: false,
+                                  sort_by: {
+                                    field: "",
+                                  },
+                                  pageSize: 10,
+                                  getTotalPages: false,
+                                  highlightResults: true,
+                                  highlightDelimiters: ["?", ".", "!"],
+                                  highlightMaxLength: 8,
+                                  highlightMaxNum: 3,
+                                  highlightWindow: 0,
+                                  group_size: 3,
+                                } as SearchOptions;
+                              });
                             }}
                           >
                             Reset
