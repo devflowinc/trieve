@@ -6,7 +6,7 @@ use utoipa::ToSchema;
 use crate::{
     data::models::{
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, Granularity,
-        HeadQueries, Pool, RAGAnalyticsFilter, RAGUsageResponse, RagQueryEvent,
+        HeadQueries, Pool, RAGAnalyticsFilter, RAGSortBy, RAGUsageResponse, RagQueryEvent,
         RagQueryEventClickhouse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
         RecommendationEvent, RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
         RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
@@ -15,8 +15,8 @@ use crate::{
         SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
-        SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse, SearchTypeCount,
-        SortBy, SortOrder,
+        SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse, SearchSortBy,
+        SearchTypeCount, SortOrder,
     },
     errors::ServiceError,
     handlers::analytics_handler::CTRDataRequestBody,
@@ -336,7 +336,7 @@ pub async fn get_no_result_queries_query(
 pub async fn get_all_queries_query(
     dataset_id: uuid::Uuid,
     filter: Option<SearchAnalyticsFilter>,
-    sort_by: Option<SortBy>,
+    sort_by: Option<SearchSortBy>,
     sort_order: Option<SortOrder>,
     page: Option<u32>,
     pool: web::Data<Pool>,
@@ -360,7 +360,7 @@ pub async fn get_all_queries_query(
         {} {}
         LIMIT 10
         OFFSET ?",
-        sort_by.clone().unwrap_or(SortBy::CreatedAt),
+        sort_by.clone().unwrap_or(SearchSortBy::CreatedAt),
         sort_order.clone().unwrap_or(SortOrder::Desc)
     ));
 
@@ -586,7 +586,7 @@ pub struct RagQueryResponse {
 pub async fn get_rag_queries_query(
     dataset_id: uuid::Uuid,
     filter: Option<RAGAnalyticsFilter>,
-    sort_by: Option<SortBy>,
+    sort_by: Option<RAGSortBy>,
     sort_order: Option<SortOrder>,
     page: Option<u32>,
     pool: web::Data<Pool>,
@@ -610,7 +610,7 @@ pub async fn get_rag_queries_query(
         {} {}
         LIMIT 10
         OFFSET ?",
-        sort_by.clone().unwrap_or(SortBy::CreatedAt),
+        sort_by.clone().unwrap_or(RAGSortBy::CreatedAt),
         sort_order.clone().unwrap_or(SortOrder::Desc)
     ));
 
@@ -734,7 +734,7 @@ pub async fn get_low_confidence_recommendations_query(
 pub async fn get_recommendation_queries_query(
     dataset_id: uuid::Uuid,
     filter: Option<RecommendationAnalyticsFilter>,
-    sort_by: Option<SortBy>,
+    sort_by: Option<SearchSortBy>,
     sort_order: Option<SortOrder>,
     page: Option<u32>,
     pool: web::Data<Pool>,
@@ -758,7 +758,7 @@ pub async fn get_recommendation_queries_query(
         {} {}
         LIMIT 10
         OFFSET ?",
-        sort_by.clone().unwrap_or(SortBy::CreatedAt),
+        sort_by.clone().unwrap_or(SearchSortBy::CreatedAt),
         sort_order.clone().unwrap_or(SortOrder::Desc)
     ));
 
