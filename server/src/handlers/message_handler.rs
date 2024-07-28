@@ -723,7 +723,7 @@ pub struct SuggestedQueriesResponse {
 /// This endpoint will generate 3 suggested queries based off a hybrid search using RAG with the query provided in the request body and return them as a JSON object.
 #[utoipa::path(
     post,
-    path = "/chunk/gen_suggestions",
+    path = "/chunk/suggestions",
     context_path = "/api",
     tag = "Chunk",
     request_body(content = SuggestedQueriesReqPayload, description = "JSON request payload to get alternative suggested queries", content_type = "application/json"),
