@@ -18,7 +18,7 @@ export const ApiRoutes = {
     "PUT /api/chunk",
     "POST /api/chunk/autocomplete",
     "POST /api/chunk/count",
-    "POST /api/chunk/gen_suggestions",
+    "POST /api/chunk/suggestions",
     "POST /api/chunk/generate",
     "POST /api/chunk/recommend",
     "POST /api/chunk/search",
