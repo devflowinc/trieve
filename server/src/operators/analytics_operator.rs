@@ -859,13 +859,21 @@ pub async fn get_search_ctr_metrics_query(
             FROM default.ctr_data
             JOIN default.search_queries ON ctr_data.request_id = search_queries.id
             WHERE search_queries.dataset_id = ?
-        ) subquery
-        CROSS JOIN total_searches",
+        ",
     );
 
     if let Some(filter) = filter {
         query_string = filter.add_to_query(query_string);
     }
+
+    query_string.push_str(
+        "
+        ) subquery
+        CROSS JOIN total_searches
+        ",
+    );
+
+    dbg!(&query_string);
 
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
@@ -997,13 +1005,19 @@ pub async fn get_recommendation_ctr_metrics_query(
             FROM default.ctr_data
             JOIN default.recommendations ON ctr_data.request_id = recommendations.id
             WHERE recommendations.dataset_id = ?
-        ) subquery
-        CROSS JOIN total_recommendations",
+        ",
     );
 
     if let Some(filter) = filter {
         query_string = filter.add_to_query(query_string);
     }
+
+    query_string.push_str(
+        "
+        ) subquery
+        CROSS JOIN total_recommendations
+        ",
+    );
 
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
