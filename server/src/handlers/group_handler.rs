@@ -1,6 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{parse_query, ChunkFilter, ParsedQuery, SearchChunksReqPayload},
+    chunk_handler::{parse_query, ChunkFilter, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{
@@ -1411,6 +1411,9 @@ pub struct SearchWithinGroupReqPayload {
     pub rerank_by: Option<ReRankOptions>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words (sepcified in stop-words.txt )will be removed. Queries that are entirely stop words will be
+    /// preserved.
+    pub remove_stop_words: Option<bool>,
 }
 
 impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
@@ -1437,6 +1440,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             slim_chunks: search_within_group_data.slim_chunks,
             content_only: search_within_group_data.content_only,
             use_quote_negated_terms: search_within_group_data.use_quote_negated_terms,
+            remove_stop_words: search_within_group_data.remove_stop_words,
         }
     }
 }
@@ -1532,15 +1536,11 @@ pub async fn search_within_group(
         }
     };
 
-    let parsed_query = if data.use_quote_negated_terms.unwrap_or(false) {
-        parse_query(data.query.clone())
-    } else {
-        ParsedQuery {
-            query: data.query.clone(),
-            quote_words: None,
-            negated_words: None,
-        }
-    };
+    let parsed_query = parse_query(
+        data.query.clone(),
+        data.use_quote_negated_terms,
+        data.remove_stop_words,
+    );
 
     let result_chunks = match data.search_type {
         SearchMethod::Hybrid => {
@@ -1636,6 +1636,9 @@ pub struct SearchOverGroupsReqPayload {
     pub slim_chunks: Option<bool>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words (sepcified in stop-words.txt )will be removed. Queries that are entirely stop words will be
+    /// preserved.
+    pub remove_stop_words: Option<bool>,
 }
 
 /// Search Over Groups
@@ -1671,15 +1674,11 @@ pub async fn search_over_groups(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = if data.use_quote_negated_terms.unwrap_or(false) {
-        parse_query(data.query.clone())
-    } else {
-        ParsedQuery {
-            query: data.query.clone(),
-            quote_words: None,
-            negated_words: None,
-        }
-    };
+    let parsed_query = parse_query(
+        data.query.clone(),
+        data.use_quote_negated_terms,
+        data.remove_stop_words,
+    );
 
     let mut timer = Timer::new();
 
