@@ -989,6 +989,9 @@ pub struct SearchChunksReqPayload {
     pub content_only: Option<bool>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words (sepcified in stop-words.txt )will be removed. Queries that are entirely stop words will be
+    /// preserved.
+    pub remove_stop_words: Option<bool>,
 }
 
 impl Default for SearchChunksReqPayload {
@@ -1015,6 +1018,7 @@ impl Default for SearchChunksReqPayload {
             slim_chunks: None,
             content_only: None,
             use_quote_negated_terms: None,
+            remove_stop_words: None,
         }
     }
 }
@@ -1063,36 +1067,74 @@ pub struct ParsedQuery {
     pub quote_words: Option<Vec<String>>,
     pub negated_words: Option<Vec<String>>,
 }
-pub fn parse_query(query: String) -> ParsedQuery {
-    let re = Regex::new(r#""(?:[^"\\]|\\.)*""#).expect("Regex pattern is always valid");
-    let quote_words: Vec<String> = re
-        .captures_iter(&query)
-        .map(|capture| capture[0].to_string())
-        .filter(|word| !word.is_empty())
-        .collect::<Vec<String>>();
-
-    let quote_words = if quote_words.is_empty() {
-        None
-    } else {
-        Some(quote_words)
+pub fn parse_query(
+    query: String,
+    use_quote_negated_terms: Option<bool>,
+    remove_stop_words: Option<bool>,
+) -> ParsedQuery {
+    let stop_words = get_stop_words();
+    let query = match remove_stop_words {
+        Some(true) => {
+            let mut query_parts_split_by_stop_words: Vec<String> = Vec::new();
+            let mut current_chunk: Vec<String> = Vec::new();
+            for word in query.split(' ') {
+                if !stop_words.contains(&word.to_lowercase()) {
+                    current_chunk.push(word.to_string());
+                } else if !current_chunk.is_empty() {
+                    query_parts_split_by_stop_words.push(current_chunk.join(" "));
+                    current_chunk.clear();
+                }
+            }
+            if !current_chunk.is_empty() {
+                query_parts_split_by_stop_words.push(current_chunk.join(" "));
+            }
+            let new_query = query_parts_split_by_stop_words.join(" ");
+            match new_query.is_empty() {
+                true => query,
+                false => new_query,
+            }
+        }
+        _ => query,
     };
 
-    let negated_words: Vec<String> = query
-        .split_whitespace()
-        .filter(|word| word.starts_with('-'))
-        .map(|word| word.strip_prefix('-').unwrap().to_string())
-        .collect::<Vec<String>>();
+    match use_quote_negated_terms {
+        Some(true) => {
+            let re = Regex::new(r#""(?:[^"\\]|\\.)*""#).expect("Regex pattern is always valid");
+            let quote_words: Vec<String> = re
+                .captures_iter(&query)
+                .map(|capture| capture[0].to_string())
+                .filter(|word| !word.is_empty())
+                .collect::<Vec<String>>();
 
-    let negated_words = if negated_words.is_empty() {
-        None
-    } else {
-        Some(negated_words)
-    };
+            let quote_words = if quote_words.is_empty() {
+                None
+            } else {
+                Some(quote_words)
+            };
 
-    ParsedQuery {
-        query,
-        quote_words,
-        negated_words,
+            let negated_words: Vec<String> = query
+                .split_whitespace()
+                .filter(|word| word.starts_with('-'))
+                .map(|word| word.strip_prefix('-').unwrap().to_string())
+                .collect::<Vec<String>>();
+
+            let negated_words = if negated_words.is_empty() {
+                None
+            } else {
+                Some(negated_words)
+            };
+
+            ParsedQuery {
+                query,
+                quote_words,
+                negated_words,
+            }
+        }
+        _ => ParsedQuery {
+            query,
+            quote_words: None,
+            negated_words: None,
+        },
     }
 }
 
@@ -1129,15 +1171,11 @@ pub async fn search_chunks(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = if data.use_quote_negated_terms.unwrap_or(false) {
-        parse_query(data.query.clone())
-    } else {
-        ParsedQuery {
-            query: data.query.clone(),
-            quote_words: None,
-            negated_words: None,
-        }
-    };
+    let parsed_query = parse_query(
+        data.query.clone(),
+        data.use_quote_negated_terms,
+        data.remove_stop_words,
+    );
 
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
@@ -1302,6 +1340,9 @@ pub struct AutocompleteReqPayload {
     pub rerank_by: Option<ReRankOptions>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words (sepcified in stop-words.txt )will be removed. Queries that are entirely stop words will be
+    /// preserved.
+    pub remove_stop_words: Option<bool>,
 }
 
 impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
@@ -1332,6 +1373,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             slim_chunks: autocomplete_data.slim_chunks,
             content_only: autocomplete_data.content_only,
             use_quote_negated_terms: autocomplete_data.use_quote_negated_terms,
+            remove_stop_words: autocomplete_data.remove_stop_words,
         }
     }
 }
@@ -1370,15 +1412,11 @@ pub async fn autocomplete(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = if data.use_quote_negated_terms.unwrap_or(false) {
-        parse_query(data.query.clone())
-    } else {
-        ParsedQuery {
-            query: data.query.clone(),
-            quote_words: None,
-            negated_words: None,
-        }
-    };
+    let parsed_query = parse_query(
+        data.query.clone(),
+        data.use_quote_negated_terms,
+        data.remove_stop_words,
+    );
 
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
@@ -1607,6 +1645,7 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             content_only: None,
             location_bias: None,
             use_quote_negated_terms: None,
+            remove_stop_words: None,
         }
     }
 }
@@ -1645,7 +1684,8 @@ pub async fn count_chunks(
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
-    let parsed_query = parse_query(data.query.clone());
+
+    let parsed_query = parse_query(data.query.clone(), None, None);
 
     let limit = match data.limit {
         Some(limit) => limit,

@@ -1340,7 +1340,7 @@ pub fn get_slice_from_vec_string(vec: Vec<String>, index: usize) -> Result<Strin
     }
 }
 
-fn get_stop_words() -> Vec<String> {
+pub fn get_stop_words() -> Vec<String> {
     include_str!("../stop-words.txt")
         .lines()
         .map(|x| x.to_string())
