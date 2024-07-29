@@ -932,7 +932,6 @@ fn get_prefetch_query(
                 query: Some(Query::new_nearest(vector)),
                 limit: Some(rerank_query.limit),
                 using: Some(name),
-                score_threshold: query.score_threshold,
                 filter: Some(query.filter.clone()),
                 ..Default::default()
             }],
@@ -952,7 +951,6 @@ fn get_prefetch_query(
                 query: Some(Query::new_nearest(vector)),
                 limit: Some(prefetch_amount),
                 using: Some(name),
-                score_threshold: query.score_threshold,
                 filter: Some(query.filter.clone()),
                 ..Default::default()
             }],
@@ -1018,6 +1016,7 @@ pub async fn search_qdrant_query(
                 prefetch,
                 using: vector_name,
                 query: Some(qdrant_query),
+                score_threshold: query.score_threshold,
                 with_payload: Some(WithPayloadSelector::from(false)),
                 with_vectors: Some(WithVectorsSelector::from(false)),
                 timeout: Some(60),
