@@ -810,7 +810,7 @@ pub async fn send_ctr_data_query(
             "INSERT INTO default.ctr_data (id, request_id, type, chunk_id, dataset_id, position, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, now())",
         )
         .bind(uuid::Uuid::new_v4())
-        .bind(data.reqeust_id)
+        .bind(data.request_id)
         .bind(data.ctr_type)
         .bind(chunk_id)
         .bind(dataset_id)
