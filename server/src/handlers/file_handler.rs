@@ -19,10 +19,6 @@ use base64::{
     engine::{self, general_purpose},
     Engine as _,
 };
-#[cfg(feature = "ocr")]
-use magick_rust::MagickWand;
-#[cfg(feature = "ocr")]
-use pyo3::{types::PyDict, Python};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
