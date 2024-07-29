@@ -234,107 +234,107 @@ pub async fn create_new_qdrant_collection_query(
                 ))
                 .await
                 .map_err(|_| ServiceError::BadRequest("Failed to delete index".into()))?;
-        }
 
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "link",
-                FieldType::Keyword,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "tag_set",
-                FieldType::Keyword,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "dataset_id",
-                FieldType::Keyword,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "metadata",
-                FieldType::Keyword,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "time_stamp",
-                FieldType::Integer,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "group_ids",
-                FieldType::Keyword,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "location",
-                FieldType::Geo,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-        qdrant_client
-            .create_field_index(
-                CreateFieldIndexCollectionBuilder::new(
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
                     qdrant_collection.clone(),
-                    "content",
-                    FieldType::Text,
+                    "link",
+                    FieldType::Keyword,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "tag_set",
+                    FieldType::Keyword,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "dataset_id",
+                    FieldType::Keyword,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "metadata",
+                    FieldType::Keyword,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "time_stamp",
+                    FieldType::Integer,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "group_ids",
+                    FieldType::Keyword,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "location",
+                    FieldType::Geo,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+            qdrant_client
+                .create_field_index(
+                    CreateFieldIndexCollectionBuilder::new(
+                        qdrant_collection.clone(),
+                        "content",
+                        FieldType::Text,
+                    )
+                    .field_index_params(PayloadIndexParams {
+                        index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
+                            tokenizer: TokenizerType::Prefix as i32,
+                            min_token_len: Some(2),
+                            max_token_len: Some(10),
+                            lowercase: Some(true),
+                        })),
+                    }),
                 )
-                .field_index_params(PayloadIndexParams {
-                    index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
-                        tokenizer: TokenizerType::Prefix as i32,
-                        min_token_len: Some(2),
-                        max_token_len: Some(10),
-                        lowercase: Some(true),
-                    })),
-                }),
-            )
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "num_value",
-                FieldType::Float,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "num_value",
+                    FieldType::Float,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
-        qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
-                "group_tag_set",
-                FieldType::Keyword,
-            ))
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+            qdrant_client
+                .create_field_index(CreateFieldIndexCollectionBuilder::new(
+                    qdrant_collection.clone(),
+                    "group_tag_set",
+                    FieldType::Keyword,
+                ))
+                .await
+                .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+        }
     }
 
     Ok(())

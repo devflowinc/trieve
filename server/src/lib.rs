@@ -540,6 +540,11 @@ pub fn main() -> std::io::Result<()> {
             .parse()
             .unwrap_or(false);
 
+        let recreate_indexes = std::env::var("RECREATE_INDEXES")
+            .unwrap_or("true".to_string())
+            .parse()
+            .unwrap_or(true);
+
         let replication_factor: u32 = std::env::var("REPLICATION_FACTOR")
             .unwrap_or("2".to_string())
             .parse()
@@ -558,7 +563,7 @@ pub fn main() -> std::io::Result<()> {
 
         if std::env::var("CREATE_QDRANT_COLLECTIONS").unwrap_or("true".to_string()) != "false" {
             log::info!("Creating qdrant collections");
-            let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes)
+            let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, recreate_indexes, replication_factor, vector_sizes)
                 .await
                 .map_err(|err| {
                     log::error!("Failed to create new qdrant collection: {:?}", err);
