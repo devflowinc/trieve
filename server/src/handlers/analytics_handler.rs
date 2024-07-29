@@ -353,7 +353,7 @@ pub async fn get_recommendation_analytics(
 #[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
 pub struct CTRDataRequestBody {
     /// The request id for the CTR data
-    pub reqeust_id: uuid::Uuid,
+    pub request_id: uuid::Uuid,
     /// The type of CTR data being sent e.g. search or recommendation
     pub ctr_type: CTRType,
     /// The ID of chunk that was clicked
