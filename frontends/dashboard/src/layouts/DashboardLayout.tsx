@@ -72,6 +72,11 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
         <div class="flex">
           <Sidebar />
           <Switch>
+            <Match when={userContext.loading?.()}>
+              <div class="mt-4 flex min-h-full w-full items-center justify-center">
+                <div class="mb-28 h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
+              </div>
+            </Match>
             <Match when={userContext.user?.()?.orgs.length === 0}>
               <div class="flex flex-1 items-center justify-center">
                 <div class="flex flex-col items-center">
