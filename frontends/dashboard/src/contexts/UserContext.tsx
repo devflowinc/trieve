@@ -25,6 +25,7 @@ export interface UserStore {
   setSelectedOrganizationId: (id: string | null) => void;
   login: () => void;
   logout: () => void;
+  loading: Accessor<boolean> | null;
 }
 
 export const UserContext = createContext<UserStore>({
@@ -32,6 +33,7 @@ export const UserContext = createContext<UserStore>({
   setUser: () => {},
   selectedOrganizationId: null,
   setSelectedOrganizationId: () => {},
+  loading: null,
   login: () => {},
   logout: () => {},
 });
@@ -43,8 +45,10 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   const [selectedOrganizationId, setSelectedOrganizationId] = createSignal<
     string | null
   >(null);
+  const [isLoading, setIsLoading] = createSignal(false);
 
   const login = () => {
+    setIsLoading(true);
     fetch(`${apiHost}/auth/me`, {
       credentials: "include",
     })
@@ -64,7 +68,8 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
           type: "error",
           message: "Error logging in",
         });
-      });
+      })
+      .finally(() => setIsLoading(false));
   };
 
   createEffect((prev) => {
@@ -111,6 +116,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     setUser: setUser,
     selectedOrganizationId: selectedOrganizationId,
     setSelectedOrganizationId: setSelectedOrganizationId,
+    loading: isLoading,
     login: login,
     logout: () => {},
   };
