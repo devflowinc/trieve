@@ -3,6 +3,7 @@ import { SetStoreFunction } from "solid-js/store";
 import { DateRangePicker, Select } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
+import { cn } from "shared/utils";
 
 const ALL_SEARCH_METHODS: RequiredAnalyticsFilter["search_method"][] = [
   "hybrid",
@@ -20,6 +21,7 @@ const ALL_SEARCH_TYPES: RequiredAnalyticsFilter["search_type"][] = [
 interface FilterBarProps {
   filters: AnalyticsParams;
   setFilters: SetStoreFunction<AnalyticsParams>;
+  noPadding?: boolean;
 }
 
 export const timeFrameOptions: AnalyticsParams["granularity"][] = [
@@ -51,7 +53,12 @@ export const dateRanges: DateRangeOption[] = [
 
 export const FilterBar = (props: FilterBarProps) => {
   return (
-    <div class="flex justify-between border-neutral-400 px-3 py-2">
+    <div
+      class={cn(
+        "flex justify-between border-neutral-400",
+        !props.noPadding && "px-3 py-2",
+      )}
+    >
       <div class="flex items-center gap-2">
         <div>
           <Select

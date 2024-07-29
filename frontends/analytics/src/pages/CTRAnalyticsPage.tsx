@@ -27,8 +27,12 @@ export const SearchCTRAnalytics = () => {
 
   return (
     <div>
-      <FilterBar filters={searchCtrFilter} setFilters={setSearchCtrFilter} />
-      <div class="flex gap-2 overflow-x-auto">
+      <FilterBar
+        noPadding
+        filters={searchCtrFilter}
+        setFilters={setSearchCtrFilter}
+      />
+      <div class="flex gap-2 overflow-x-auto py-4">
         <SearchCTRStats />
       </div>
     </div>
