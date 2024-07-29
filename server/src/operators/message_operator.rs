@@ -356,8 +356,7 @@ pub async fn stream_response(
                 .page_size
                 .unwrap_or(n_retrievals_to_include.try_into().unwrap_or(8)),
         ),
-        highlight_results: create_message_req_payload.highlight_results,
-        highlight_delimiters: create_message_req_payload.highlight_delimiters,
+        highlight_options: create_message_req_payload.highlight_options,
         filters: create_message_req_payload.filters,
         ..Default::default()
     };
@@ -480,38 +479,44 @@ pub async fn stream_response(
         })
         .collect();
 
-    let parameters = ChatCompletionParameters {
+    let mut parameters = ChatCompletionParameters {
         model: chosen_model,
         messages: open_ai_messages,
-        top_p: None,
-        n: None,
-        stream: Some(create_message_req_payload.stream_response.unwrap_or(true)),
-        temperature: Some(create_message_req_payload.temperature.unwrap_or(0.5)),
-        frequency_penalty: Some(create_message_req_payload.frequency_penalty.unwrap_or(0.7)),
-        presence_penalty: Some(create_message_req_payload.presence_penalty.unwrap_or(0.7)),
-        max_tokens: create_message_req_payload.max_tokens,
-        stop: create_message_req_payload.stop_tokens.map(StopToken::Array),
-        logit_bias: None,
-        user: None,
-        response_format: None,
-        tools: None,
-        tool_choice: None,
-        logprobs: None,
-        top_logprobs: None,
-        seed: None,
+        ..Default::default()
     };
 
+    if let Some(llm_options) = create_message_req_payload.llm_options.clone() {
+        parameters.stream = llm_options.stream_response;
+        parameters.temperature = llm_options.temperature;
+        parameters.frequency_penalty = llm_options.frequency_penalty;
+        parameters.presence_penalty = llm_options.presence_penalty;
+        parameters.max_tokens = llm_options.max_tokens;
+        parameters.stop = llm_options.stop_tokens.map(StopToken::Array);
+        parameters.max_tokens = llm_options.max_tokens;
+    }
+
     if !chunk_metadatas_stringified.is_empty() {
-        chunk_metadatas_stringified =
-            if create_message_req_payload.completion_first.unwrap_or(false) {
-                format!("||{}", chunk_metadatas_stringified.replace("||", ""))
-            } else {
-                format!("{}||", chunk_metadatas_stringified.replace("||", ""))
-            };
+        chunk_metadatas_stringified = if create_message_req_payload
+            .llm_options
+            .as_ref()
+            .map(|x| x.completion_first)
+            .unwrap_or(Some(false))
+            .unwrap_or(false)
+        {
+            format!("||{}", chunk_metadatas_stringified.replace("||", ""))
+        } else {
+            format!("{}||", chunk_metadatas_stringified.replace("||", ""))
+        };
         chunk_metadatas_stringified1.clone_from(&chunk_metadatas_stringified);
     }
 
-    if !create_message_req_payload.stream_response.unwrap_or(true) {
+    if !create_message_req_payload
+        .llm_options
+        .as_ref()
+        .map(|x| x.stream_response)
+        .unwrap_or(Some(true))
+        .unwrap_or(true)
+    {
         let assistant_completion =
             client
                 .chat()
@@ -632,7 +637,13 @@ pub async fn stream_response(
         .into())
     });
 
-    if create_message_req_payload.completion_first.unwrap_or(false) {
+    if create_message_req_payload
+        .llm_options
+        .as_ref()
+        .map(|x| x.completion_first)
+        .unwrap_or(Some(false))
+        .unwrap_or(false)
+    {
         return Ok(HttpResponse::Ok().streaming(completion_stream.chain(chunk_stream)));
     }
 

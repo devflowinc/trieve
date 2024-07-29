@@ -181,21 +181,26 @@ const ResultsPage = (props: ResultsPageProps) => {
           ? props.search.debounced.searchType.replace("autocomplete-", "")
           : props.search.debounced.searchType,
         score_threshold: props.search.debounced.scoreThreshold,
-        sort_by: sort_by,
+        sort_options: {
+          sort_by: sort_by,
+        },
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
         get_total_pages: props.search.debounced.getTotalPages ?? false,
-        highlight_results: props.search.debounced.highlightResults ?? true,
-        highlight_strategy: props.search.debounced.highlightStrategy ?? "v1",
-        highlight_threshold: props.search.debounced.highlightThreshold,
-        highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
-          "?",
-          ".",
-          "!",
-        ],
-        highlight_max_length: props.search.debounced.highlightMaxLength ?? 8,
-        highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
-        highlight_window: props.search.debounced.highlightWindow ?? 0,
+        highlight_options: {
+          highlight_results: props.search.debounced.highlightResults ?? true,
+          highlight_strategy: props.search.debounced.highlightStrategy ?? "v1",
+          highlight_threshold: props.search.debounced.highlightThreshold,
+          highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
+            "?",
+            ".",
+            "!",
+          ],
+          highlight_max_length: props.search.debounced.highlightMaxLength ?? 8,
+          highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
+          highlight_window: props.search.debounced.highlightWindow ?? 0,
+        },
+
         group_size: props.search.debounced.group_size ?? 3,
         use_quote_negated_terms: props.search.debounced.useQuoteNegatedTerms,
         remove_stop_words: props.search.debounced.removeStopWords,
