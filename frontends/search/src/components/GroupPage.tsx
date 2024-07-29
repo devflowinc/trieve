@@ -232,6 +232,7 @@ export const GroupPage = (props: GroupPageProps) => {
             highlight_window: search.debounced.highlightWindow,
             sort_by: sort_by,
             use_quote_negated_terms: search.debounced.useQuoteNegatedTerms,
+            remove_stop_words: search.debounced.removeStopWords,
           }),
         }).then((response) => {
           if (response.ok) {

@@ -51,6 +51,7 @@ export interface SearchOptions {
   highlightWindow: number;
   group_size: number;
   useQuoteNegatedTerms: boolean;
+  removeStopWords: boolean;
 }
 
 const initalState: SearchOptions = {
@@ -75,6 +76,7 @@ const initalState: SearchOptions = {
   highlightWindow: 0,
   group_size: 3,
   useQuoteNegatedTerms: false,
+  removeStopWords: false,
 };
 
 const fromStateToParams = (state: SearchOptions): Params => {
@@ -98,6 +100,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     highlightWindow: state.highlightWindow.toString(),
     group_size: state.group_size?.toString(),
     useQuoteNegatedTerms: state.useQuoteNegatedTerms.toString(),
+    removeStopWords: state.removeStopWords.toString(),
   };
 };
 
@@ -128,6 +131,7 @@ const fromParamsToState = (
     highlightWindow: parseInt(params.highlightWindow ?? "0"),
     group_size: parseInt(params.group_size ?? "3"),
     useQuoteNegatedTerms: (params.useQuoteNegatedTerms ?? "false") === "true",
+    removeStopWords: (params.removeStopWords ?? "false") === "true",
   };
 };
 
