@@ -89,6 +89,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     sort_by: JSON.stringify(state.sort_by),
     pageSize: state.pageSize.toString(),
     getTotalPages: state.getTotalPages.toString(),
+    highlightStrategy: state.highlightStrategy,
     highlightResults: state.highlightResults.toString(),
     highlightThreshold: state.highlightThreshold.toString(),
     highlightDelimiters: state.highlightDelimiters.join(","),
