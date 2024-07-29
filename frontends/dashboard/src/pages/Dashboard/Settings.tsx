@@ -175,6 +175,7 @@ export const OrgDangerZoneForm = () => {
               .user?.()
               ?.user_orgs.find((org) => org.organization_id !== orgId)
               ?.organization_id ?? "";
+          userContext.login();
           userContext.setSelectedOrganizationId(newSelectedOrgId);
 
           if (newSelectedOrgId !== "") {
