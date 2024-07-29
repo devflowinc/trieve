@@ -754,16 +754,13 @@ export const DangerZoneForm = () => {
     if (!confirmBox) return;
 
     setDeleting(true);
-    fetch(`${import.meta.env.VITE_API_HOST}/dataset`, {
+    fetch(`${import.meta.env.VITE_API_HOST}/dataset/${dataset_id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        "TR-Organization": organization_id,
+        "TR-Dataset": dataset_id,
       },
       credentials: "include",
-      body: JSON.stringify({
-        dataset_id: dataset_id,
-      }),
     })
       .then((res) => {
         setDeleting(false);
