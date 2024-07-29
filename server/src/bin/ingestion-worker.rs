@@ -14,7 +14,7 @@ use trieve_server::data::models::{
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
-    BoostPhrase, BulkUploadIngestionMessage, DistancePhrase, UpdateIngestionMessage,
+    BulkUploadIngestionMessage, FullTextBoost, SemanticBoost, UpdateIngestionMessage,
     UploadIngestionMessage,
 };
 use trieve_server::handlers::group_handler::dataset_owns_group;
@@ -462,10 +462,10 @@ pub async fn bulk_upload_chunks(
                 num_value: message.chunk.num_value,
             };
 
-            let boost_phrase = if message.chunk.boost_phrase.is_some()
+            let boost_phrase = if message.chunk.fulltext_boost.is_some()
                 && message
                     .chunk
-                    .boost_phrase
+                    .fulltext_boost
                     .as_ref()
                     .unwrap()
                     .phrase
@@ -473,7 +473,7 @@ pub async fn bulk_upload_chunks(
             {
                 None
             } else {
-                message.chunk.boost_phrase.clone()
+                message.chunk.fulltext_boost.clone()
             };
 
             ChunkData {
@@ -482,7 +482,7 @@ pub async fn bulk_upload_chunks(
                 group_ids: message.chunk.group_ids.clone(),
                 upsert_by_tracking_id: message.upsert_by_tracking_id,
                 boost_phrase,
-                distance_phrase: message.chunk.distance_phrase.clone(),
+                distance_phrase: message.chunk.semantic_boost.clone(),
             }
         })
         .filter(|data| !data.content.is_empty())
@@ -533,7 +533,7 @@ pub async fn bulk_upload_chunks(
     }
 
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
-    let content_and_boosts: Vec<(String, Option<BoostPhrase>, Option<DistancePhrase>)> =
+    let content_and_boosts: Vec<(String, Option<FullTextBoost>, Option<SemanticBoost>)> =
         ingestion_data
             .iter()
             .map(|data| {
@@ -778,7 +778,7 @@ async fn upload_chunk(
     };
 
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
-    let content_and_boosts: Vec<(String, Option<BoostPhrase>)> = vec![(
+    let content_and_boosts: Vec<(String, Option<FullTextBoost>)> = vec![(
         ingestion_data.content.clone(),
         ingestion_data.boost_phrase.clone(),
     )];
@@ -848,7 +848,7 @@ async fn upload_chunk(
                     let embeddings = get_dense_vectors(
                         chunks
                             .iter()
-                            .map(|chunk| (chunk.clone(), payload.chunk.distance_phrase.clone()))
+                            .map(|chunk| (chunk.clone(), payload.chunk.semantic_boost.clone()))
                             .collect(),
                         "doc",
                         dataset_config.clone(),
@@ -860,7 +860,7 @@ async fn upload_chunk(
                 }
                 false => {
                     let embedding_vectors = get_dense_vectors(
-                        vec![(content.clone(), payload.chunk.distance_phrase.clone())],
+                        vec![(content.clone(), payload.chunk.semantic_boost.clone())],
                         "doc",
                         dataset_config.clone(),
                         reqwest_client.clone(),
@@ -887,7 +887,7 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        let content_and_boosts: Vec<(String, Option<BoostPhrase>)> = content_and_boosts
+        let content_and_boosts: Vec<(String, Option<FullTextBoost>)> = content_and_boosts
             .clone()
             .into_iter()
             .map(|(content, boost)| {

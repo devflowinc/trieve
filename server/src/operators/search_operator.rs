@@ -1144,62 +1144,64 @@ pub async fn retrieve_chunks_for_groups(
                         };
 
                     let mut highlights: Option<Vec<String>> = None;
-                    if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
-                        let (highlighted_chunk, highlighted_snippets) = match data.highlight_strategy {
-                            Some(HighlightStrategy::ExactMatch) => {
-                                   get_highlights_with_exact_match(
-                                        chunk.clone().into(),
-                                        data.query.clone(),
-                                        data.highlight_threshold,
-                                        data.highlight_delimiters.clone().unwrap_or(vec![
-                                            ".".to_string(),
-                                            "!".to_string(),
-                                            "?".to_string(),
-                                            "\n".to_string(),
-                                            "\t".to_string(),
-                                            ",".to_string(),
-                                        ]),
-                                        data.highlight_max_length,
-                                        data.highlight_max_num,
-                                        data.highlight_window
-                                    )
-                                    .unwrap_or((chunk.clone().into(), vec![]))
-                            },
-                            _ => {
-                                   get_highlights(
-                                        chunk.clone().into(),
-                                        data.query.clone(),
-                                        data.highlight_threshold,
-                                        data.highlight_delimiters.clone().unwrap_or(vec![
-                                            ".".to_string(),
-                                            "!".to_string(),
-                                            "?".to_string(),
-                                            "\n".to_string(),
-                                            "\t".to_string(),
-                                            ",".to_string(),
-                                        ]),
-                                        data.highlight_max_length,
-                                        data.highlight_max_num,
-                                        data.highlight_window,
-                                    )
-                                    .unwrap_or((chunk.clone().into(), vec![]))
-                            },
-                        };
+                    if let Some(highlight_options)  = &data.highlight_options {
+                        if highlight_options.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
+                            let (highlighted_chunk, highlighted_snippets) = match highlight_options.highlight_strategy {
+                                Some(HighlightStrategy::ExactMatch) => {
+                                    get_highlights_with_exact_match(
+                                            chunk.clone().into(),
+                                            data.query.clone(),
+                                            highlight_options.highlight_threshold,
+                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                                ".".to_string(),
+                                                "!".to_string(),
+                                                "?".to_string(),
+                                                "\n".to_string(),
+                                                "\t".to_string(),
+                                                ",".to_string(),
+                                            ]),
+                                            highlight_options.highlight_max_length,
+                                            highlight_options.highlight_max_num,
+                                            highlight_options.highlight_window
+                                        )
+                                        .unwrap_or((chunk.clone().into(), vec![]))
+                                },
+                                _ => {
+                                    get_highlights(
+                                            chunk.clone().into(),
+                                            data.query.clone(),
+                                            highlight_options.highlight_threshold,
+                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                                ".".to_string(),
+                                                "!".to_string(),
+                                                "?".to_string(),
+                                                "\n".to_string(),
+                                                "\t".to_string(),
+                                                ",".to_string(),
+                                            ]),
+                                            highlight_options.highlight_max_length,
+                                            highlight_options.highlight_max_num,
+                                            highlight_options.highlight_window,
+                                        )
+                                        .unwrap_or((chunk.clone().into(), vec![]))
+                                },
+                            };
 
-                        highlights = Some(highlighted_snippets);
+                            highlights = Some(highlighted_snippets);
 
-                        match chunk {
-                            ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
-                            ChunkMetadataTypes::Content(_) => {
-                                chunk =
-                                    <ChunkMetadata as Into<ContentChunkMetadata>>::into(highlighted_chunk)
-                                        .into()
+                            match chunk {
+                                ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
+                                ChunkMetadataTypes::Content(_) => {
+                                    chunk =
+                                        <ChunkMetadata as Into<ContentChunkMetadata>>::into(highlighted_chunk)
+                                            .into()
+                                }
+                                _ => unreachable!(
+                                    "If slim_chunks is false, then chunk must be either Metadata or Content"
+                                ),
                             }
-                            _ => unreachable!(
-                                "If slim_chunks is false, then chunk must be either Metadata or Content"
-                            ),
                         }
-                    }
+                }
 
 
                     ScoreChunkDTO {
@@ -1422,58 +1424,64 @@ pub async fn retrieve_chunks_from_point_ids(
                 };
 
             let mut highlights: Option<Vec<String>> = None;
-            if data.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
-                let (highlighted_chunk, highlighted_snippets) = match data.highlight_strategy {
-                    Some(HighlightStrategy::ExactMatch) => get_highlights_with_exact_match(
-                        chunk.clone().into(),
-                        data.query.clone(),
-                        data.highlight_threshold,
-                        data.highlight_delimiters.clone().unwrap_or(vec![
-                            ".".to_string(),
-                            "!".to_string(),
-                            "?".to_string(),
-                            "\n".to_string(),
-                            "\t".to_string(),
-                            ",".to_string(),
-                        ]),
-                        data.highlight_max_length,
-                        data.highlight_max_num,
-                        data.highlight_window,
-                    )
-                    .unwrap_or((chunk.clone().into(), vec![])),
-                    _ => get_highlights(
-                        chunk.clone().into(),
-                        data.query.clone(),
-                        data.highlight_threshold,
-                        data.highlight_delimiters.clone().unwrap_or(vec![
-                            ".".to_string(),
-                            "!".to_string(),
-                            "?".to_string(),
-                            "\n".to_string(),
-                            "\t".to_string(),
-                            ",".to_string(),
-                        ]),
-                        data.highlight_max_length,
-                        data.highlight_max_num,
-                        data.highlight_window,
-                    )
-                    .unwrap_or((chunk.clone().into(), vec![])),
-                };
+                if let Some(highlight_options)  = &data.highlight_options {
+                        if highlight_options.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
+                            let (highlighted_chunk, highlighted_snippets) = match highlight_options.highlight_strategy {
+                                Some(HighlightStrategy::ExactMatch) => {
+                                    get_highlights_with_exact_match(
+                                            chunk.clone().into(),
+                                            data.query.clone(),
+                                            highlight_options.highlight_threshold,
+                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                                ".".to_string(),
+                                                "!".to_string(),
+                                                "?".to_string(),
+                                                "\n".to_string(),
+                                                "\t".to_string(),
+                                                ",".to_string(),
+                                            ]),
+                                            highlight_options.highlight_max_length,
+                                            highlight_options.highlight_max_num,
+                                            highlight_options.highlight_window
+                                        )
+                                        .unwrap_or((chunk.clone().into(), vec![]))
+                                },
+                                _ => {
+                                    get_highlights(
+                                            chunk.clone().into(),
+                                            data.query.clone(),
+                                            highlight_options.highlight_threshold,
+                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                                ".".to_string(),
+                                                "!".to_string(),
+                                                "?".to_string(),
+                                                "\n".to_string(),
+                                                "\t".to_string(),
+                                                ",".to_string(),
+                                            ]),
+                                            highlight_options.highlight_max_length,
+                                            highlight_options.highlight_max_num,
+                                            highlight_options.highlight_window,
+                                        )
+                                        .unwrap_or((chunk.clone().into(), vec![]))
+                                },
+                            };
 
-                highlights = Some(highlighted_snippets);
+                            highlights = Some(highlighted_snippets);
 
-                match chunk {
-                    ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
-                    ChunkMetadataTypes::Content(_) => {
-                        chunk =
-                            <ChunkMetadata as Into<ContentChunkMetadata>>::into(highlighted_chunk)
-                                .into()
-                    }
-                    _ => unreachable!(
-                        "If slim_chunks is false, then chunk must be either Metadata or Content"
-                    ),
+                            match chunk {
+                                ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
+                                ChunkMetadataTypes::Content(_) => {
+                                    chunk =
+                                        <ChunkMetadata as Into<ContentChunkMetadata>>::into(highlighted_chunk)
+                                            .into()
+                                }
+                                _ => unreachable!(
+                                    "If slim_chunks is false, then chunk must be either Metadata or Content"
+                                ),
+                            }
+                        }
                 }
-            }
 
             ScoreChunkDTO {
                 metadata: vec![chunk],
@@ -1704,12 +1712,12 @@ pub async fn search_chunks_query(
 
     let vector = get_qdrant_vector(data.clone(), parsed_query.clone(), config).await?;
 
-    let (sort_by, rerank_by) = match data.sort_by.clone() {
-        Some(sort_by) => match sort_by {
+    let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
             QdrantSortBy::Field(field) => (Some(field.clone()), None),
             QdrantSortBy::SearchType(search_type) => (None, Some(search_type)),
         },
-        None => (None, None),
+        _ => (None, None),
     };
 
     let qdrant_query = RetrievePointQuery {
@@ -1770,9 +1778,18 @@ pub async fn search_chunks_query(
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
         sort_by,
-        data.tag_weights,
-        data.use_weights,
-        data.location_bias,
+        data.sort_options
+            .as_ref()
+            .map(|d| d.tag_weights.clone())
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.use_weights)
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.location_bias)
+            .unwrap_or_default(),
     );
 
     timer.add("reranking");
@@ -1815,12 +1832,12 @@ pub async fn search_hybrid_chunks(
 
     timer.add("computed sparse and dense embeddings");
 
-    let (sort_by, rerank_by) = match data.sort_by.clone() {
-        Some(sort_by) => match sort_by {
+    let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
             QdrantSortBy::Field(field) => (Some(field.clone()), None),
             QdrantSortBy::SearchType(search_type) => (None, Some(search_type)),
         },
-        None => (None, None),
+        _ => (None, None),
     };
 
     let qdrant_queries = vec![
@@ -1878,9 +1895,18 @@ pub async fn search_hybrid_chunks(
             rerank_chunks(
                 cross_encoder_results,
                 sort_by,
-                data.tag_weights,
-                data.use_weights,
-                data.location_bias,
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.tag_weights.clone())
+                    .unwrap_or_default(),
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.use_weights)
+                    .unwrap_or_default(),
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.location_bias)
+                    .unwrap_or_default(),
             )
         };
 
@@ -1934,12 +1960,12 @@ pub async fn search_groups_query(
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let vector = get_qdrant_vector(data.clone().into(), parsed_query.clone(), config).await?;
 
-    let (sort_by, rerank_by) = match data.sort_by.clone() {
-        Some(sort_by) => match sort_by {
+    let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
             QdrantSortBy::Field(field) => (Some(field.clone()), None),
             QdrantSortBy::SearchType(search_type) => (None, Some(search_type)),
         },
-        None => (None, None),
+        _ => (None, None),
     };
 
     let qdrant_query = RetrievePointQuery {
@@ -1973,31 +1999,45 @@ pub async fn search_groups_query(
         pool.clone(),
     )
     .await?;
-    let rerank_chunks_input = match data.rerank_by {
-        Some(ReRankOptions::CrossEncoder) => {
-            let mut cross_encoder_results = cross_encoder(
-                data.query.clone(),
-                data.page_size.unwrap_or(10),
-                result_chunks.score_chunks,
-                config,
-            )
-            .await?;
 
-            if let Some(score_threshold) = data.score_threshold {
-                cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
+    let rerank_chunks_input = if let Some(rerank_by) = rerank_by {
+        match rerank_by.rerank_type {
+            ReRankOptions::CrossEncoder => {
+                let mut cross_encoder_results = cross_encoder(
+                    data.query.clone(),
+                    data.page_size.unwrap_or(10),
+                    result_chunks.score_chunks,
+                    config,
+                )
+                .await?;
+
+                if let Some(score_threshold) = data.score_threshold {
+                    cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
+                }
+
+                cross_encoder_results
             }
-
-            cross_encoder_results
+            _ => result_chunks.score_chunks,
         }
-        _ => result_chunks.score_chunks,
+    } else {
+        result_chunks.score_chunks
     };
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
         sort_by,
-        data.tag_weights,
-        data.use_weights,
-        data.location_bias,
+        data.sort_options
+            .as_ref()
+            .map(|d| d.tag_weights.clone())
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.use_weights)
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.location_bias)
+            .unwrap_or_default(),
     );
 
     Ok(SearchWithinGroupResults {
@@ -2027,12 +2067,12 @@ pub async fn search_hybrid_groups(
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
 
-    let (sort_by, rerank_by) = match data.sort_by.clone() {
-        Some(sort_by) => match sort_by {
+    let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
             QdrantSortBy::Field(field) => (Some(field.clone()), None),
             QdrantSortBy::SearchType(search_type) => (None, Some(search_type)),
         },
-        None => (None, None),
+        _ => (None, None),
     };
 
     let qdrant_queries = vec![
@@ -2113,9 +2153,18 @@ pub async fn search_hybrid_groups(
             let score_chunks = rerank_chunks(
                 cross_encoder_results,
                 sort_by,
-                data.tag_weights,
-                data.use_weights,
-                data.location_bias,
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.tag_weights.clone())
+                    .unwrap_or_default(),
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.use_weights)
+                    .unwrap_or_default(),
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.location_bias)
+                    .unwrap_or_default(),
             );
 
             score_chunks
@@ -2135,9 +2184,18 @@ pub async fn search_hybrid_groups(
             rerank_chunks(
                 cross_encoder_results,
                 sort_by,
-                data.tag_weights,
-                data.use_weights,
-                data.location_bias,
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.tag_weights.clone())
+                    .unwrap_or_default(),
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.use_weights)
+                    .unwrap_or_default(),
+                data.sort_options
+                    .as_ref()
+                    .map(|d| d.location_bias)
+                    .unwrap_or_default(),
             )
         };
 
@@ -2479,7 +2537,7 @@ pub async fn hybrid_search_over_groups(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn autocomplete_chunks_query(
-    mut data: AutocompleteReqPayload,
+    data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -2502,12 +2560,12 @@ pub async fn autocomplete_chunks_query(
 
     timer.add("computed dense embedding");
 
-    let (sort_by, rerank_by) = match data.sort_by.clone() {
-        Some(sort_by) => match sort_by {
+    let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
             QdrantSortBy::Field(field) => (Some(field.clone()), None),
             QdrantSortBy::SearchType(search_type) => (None, Some(search_type)),
         },
-        None => (None, None),
+        _ => (None, None),
     };
 
     let vector = get_qdrant_vector(data.clone().into(), parsed_query.clone(), config).await?;
@@ -2550,10 +2608,6 @@ pub async fn autocomplete_chunks_query(
 
     timer.add("fetching from qdrant");
 
-    if data.highlight_delimiters.is_none() {
-        data.highlight_delimiters = Some(vec![" ".to_string()]);
-    }
-
     let mut result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results.clone(),
         &data.clone().into(),
@@ -2572,16 +2626,34 @@ pub async fn autocomplete_chunks_query(
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),
         sort_by.clone(),
-        data.tag_weights.clone(),
-        data.use_weights,
-        data.location_bias,
+        data.sort_options
+            .as_ref()
+            .map(|d| d.tag_weights.clone())
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.use_weights)
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.location_bias)
+            .unwrap_or_default(),
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
         sort_by,
-        data.tag_weights,
-        data.use_weights,
-        data.location_bias,
+        data.sort_options
+            .as_ref()
+            .map(|d| d.tag_weights.clone())
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.use_weights)
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.location_bias)
+            .unwrap_or_default(),
     ));
 
     result_chunks.score_chunks = reranked_chunks;

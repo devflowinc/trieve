@@ -2,7 +2,7 @@ use crate::{
     data::models::{ChunkMetadataTypes, DatasetConfiguration, ScoreChunkDTO},
     errors::ServiceError,
     get_env,
-    handlers::chunk_handler::{BoostPhrase, DistancePhrase},
+    handlers::chunk_handler::{FullTextBoost, SemanticBoost},
 };
 use murmur3::murmur3_32;
 use openai_dive::v1::{
@@ -28,7 +28,7 @@ pub struct EmbeddingParameters {
 #[tracing::instrument]
 pub async fn get_dense_vector(
     message: String,
-    distance_phrase: Option<DistancePhrase>,
+    distance_phrase: Option<SemanticBoost>,
     embed_type: &str,
     dataset_config: DatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
@@ -267,7 +267,7 @@ pub async fn get_sparse_vector(
 
 #[tracing::instrument]
 pub async fn get_dense_vectors(
-    content_and_distances: Vec<(String, Option<DistancePhrase>)>,
+    content_and_distances: Vec<(String, Option<SemanticBoost>)>,
     embed_type: &str,
     dataset_config: DatasetConfiguration,
     reqwest_client: reqwest::Client,
@@ -336,7 +336,7 @@ pub async fn get_dense_vectors(
                 .clone()
                 .map(|distance_phrase| (index, distance_phrase))
         })
-        .collect::<Vec<(usize, DistancePhrase)>>();
+        .collect::<Vec<(usize, SemanticBoost)>>();
     let thirty_filterted_distances_with_indices = filtered_distances_with_index.chunks(30);
 
     let vec_distance_futures: Vec<_> = thirty_filterted_distances_with_indices
@@ -406,7 +406,7 @@ pub async fn get_dense_vectors(
                         )
                     })?;
 
-                let vectors_and_boosts: Vec<(Vec<f32>, &(usize, DistancePhrase))> = embeddings
+                let vectors_and_boosts: Vec<(Vec<f32>, &(usize, SemanticBoost))> = embeddings
                     .data
                     .into_iter()
                     .map(|x| match x.embedding {
@@ -589,7 +589,7 @@ pub struct CustomSparseEmbedData {
 
 #[tracing::instrument]
 pub async fn get_sparse_vectors(
-    content_and_boosts: Vec<(String, Option<BoostPhrase>)>,
+    content_and_boosts: Vec<(String, Option<FullTextBoost>)>,
     embed_type: &str,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
@@ -610,7 +610,7 @@ pub async fn get_sparse_vectors(
         .into_iter()
         .enumerate()
         .filter_map(|(i, (_, y))| y.map(|boost_phrase| (i, boost_phrase)))
-        .collect::<Vec<(usize, BoostPhrase)>>();
+        .collect::<Vec<(usize, FullTextBoost)>>();
     let thirty_filtered_boosts_with_indices = filtered_boosts_with_index.chunks(30);
 
     let vec_boost_futures: Vec<_> = thirty_filtered_boosts_with_indices
@@ -1043,7 +1043,7 @@ pub async fn cross_encoder(
 }
 
 pub fn get_bm25_embeddings(
-    chunks_and_boost: Vec<(String, Option<BoostPhrase>)>,
+    chunks_and_boost: Vec<(String, Option<FullTextBoost>)>,
     avg_len: f32,
     b: f32,
     k: f32,
@@ -1071,8 +1071,8 @@ fn tokenize(text: String) -> Vec<String> {
 }
 
 pub fn tokenize_batch(
-    chunks: Vec<(String, Option<BoostPhrase>)>,
-) -> Vec<(Vec<String>, Option<BoostPhrase>)> {
+    chunks: Vec<(String, Option<FullTextBoost>)>,
+) -> Vec<(Vec<String>, Option<FullTextBoost>)> {
     chunks
         .into_iter()
         .map(|(chunk, boost)| (tokenize(chunk), boost))
@@ -1080,7 +1080,7 @@ pub fn tokenize_batch(
 }
 
 pub fn term_frequency(
-    batched_tokens: Vec<(Vec<String>, Option<BoostPhrase>)>,
+    batched_tokens: Vec<(Vec<String>, Option<FullTextBoost>)>,
     avg_len: f32,
     b: f32,
     k: f32,

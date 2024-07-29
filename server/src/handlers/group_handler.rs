@@ -6,14 +6,14 @@ use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
         ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        GeoInfoWithBias, Pool, QdrantSortBy, ReRankOptions, RecommendType,
-        RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
-        ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, UnifiedId,
+        HighlightOptions, Pool, RecommendType, RecommendationEventClickhouse,
+        RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
+        SearchQueryEventClickhouse, SortOptions, UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
     operators::{
-        chunk_operator::{get_metadata_from_tracking_id_query, HighlightStrategy},
+        chunk_operator::get_metadata_from_tracking_id_query,
         clickhouse_operator::{get_latency_from_header, send_to_clickhouse, ClickHouseEvent},
         group_operator::*,
         qdrant_operator::{
@@ -30,7 +30,6 @@ use crate::{
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
-use std::collections::HashMap;
 use utoipa::{IntoParams, ToSchema};
 
 #[tracing::instrument(skip(pool))]
@@ -1360,7 +1359,7 @@ pub async fn get_recommended_groups(
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, IntoParams)]
+#[derive(Serialize, Clone, Debug, ToSchema, IntoParams)]
 #[into_params(style = Form, parameter_in = Query)]
 pub struct SearchWithinGroupReqPayload {
     /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
@@ -1379,40 +1378,19 @@ pub struct SearchWithinGroupReqPayload {
     pub group_tracking_id: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,
-    /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
-    pub location_bias: Option<GeoInfoWithBias>,
-    /// Sort by lets you specify a key to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
-    pub sort_by: Option<QdrantSortBy>,
-    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
-    pub use_weights: Option<bool>,
-    /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
-    pub tag_weights: Option<HashMap<String, f32>>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
-    pub highlight_results: Option<bool>,
-    /// Set highlight_exact_match to true to highlight exact matches from your query.
-    pub highlight_strategy: Option<HighlightStrategy>,
-    /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
-    pub highlight_threshold: Option<f64>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting.
-    pub highlight_delimiters: Option<Vec<String>>,
-    /// Set highlight_max_length to control the maximum number of tokens (typically whitespace separated strings, but sometimes also word stems) which can be present within a single highlight. If not specified, this defaults to 8. This is useful to shorten large splits which may have low scores due to length compared to the query. Set to something very large like 100 to highlight entire splits.
-    pub highlight_max_length: Option<u32>,
-    /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
-    pub highlight_max_num: Option<u32>,
-    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
-    pub highlight_window: Option<u32>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub highlight_options: Option<HighlightOptions>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
-    /// Rerank_by lets you choose the method to use to rerank. If not specified, this defaults to None. You can use this param to rerank your original query by another search method. Hybrid search will automatically rerank using the cross encoder.
-    pub rerank_by: Option<ReRankOptions>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
-    /// If true, stop words (sepcified in stop-words.txt )will be removed. Queries that are entirely stop words will be
-    /// preserved.
+    /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
 }
 
@@ -1425,17 +1403,8 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             get_total_pages: search_within_group_data.get_total_pages,
             filters: search_within_group_data.filters,
             search_type: search_within_group_data.search_type,
-            sort_by: search_within_group_data.sort_by,
-            location_bias: search_within_group_data.location_bias,
-            use_weights: search_within_group_data.use_weights,
-            tag_weights: search_within_group_data.tag_weights,
-            highlight_results: search_within_group_data.highlight_results,
-            highlight_strategy: search_within_group_data.highlight_strategy,
-            highlight_threshold: search_within_group_data.highlight_threshold,
-            highlight_delimiters: search_within_group_data.highlight_delimiters,
-            highlight_max_length: search_within_group_data.highlight_max_length,
-            highlight_max_num: search_within_group_data.highlight_max_num,
-            highlight_window: search_within_group_data.highlight_window,
+            sort_options: search_within_group_data.sort_options,
+            highlight_options: search_within_group_data.highlight_options,
             score_threshold: search_within_group_data.score_threshold,
             slim_chunks: search_within_group_data.slim_chunks,
             content_only: search_within_group_data.content_only,
@@ -1600,7 +1569,7 @@ pub async fn search_within_group(
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Debug, Clone, ToSchema)]
 pub struct SearchOverGroupsReqPayload {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,
@@ -1614,20 +1583,8 @@ pub struct SearchOverGroupsReqPayload {
     pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
-    pub highlight_results: Option<bool>,
-    /// Set highlight_exact_match to true to highlight exact matches from your query.
-    pub highlight_strategy: Option<HighlightStrategy>,
-    /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
-    pub highlight_threshold: Option<f64>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting.
-    pub highlight_delimiters: Option<Vec<String>>,
-    /// Set highlight_max_length to control the maximum number of tokens (typically whitespace separated strings, but sometimes also word stems) which can be present within a single highlight. If not specified, this defaults to 8. This is useful to shorten large splits which may have low scores due to length compared to the query. Set to something very large like 100 to highlight entire splits.
-    pub highlight_max_length: Option<u32>,
-    /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
-    pub highlight_max_num: Option<u32>,
-    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
-    pub highlight_window: Option<u32>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub highlight_options: Option<HighlightOptions>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.
@@ -1636,7 +1593,7 @@ pub struct SearchOverGroupsReqPayload {
     pub slim_chunks: Option<bool>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
-    /// If true, stop words (sepcified in stop-words.txt )will be removed. Queries that are entirely stop words will be
+    /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be
     /// preserved.
     pub remove_stop_words: Option<bool>,
 }

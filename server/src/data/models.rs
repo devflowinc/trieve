@@ -3,15 +3,23 @@
 use super::schema::*;
 use crate::errors::ServiceError;
 use crate::get_env;
-use crate::handlers::chunk_handler::{BoostPhrase, DistancePhrase};
+use crate::handlers::chunk_handler::{
+    AutocompleteReqPayload, ChunkFilter, FullTextBoost, SearchChunksReqPayload, SemanticBoost,
+};
 use crate::handlers::file_handler::UploadFileReqPayload;
+use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload};
+use crate::handlers::message_handler::{
+    CreateMessageReqPayload, EditMessageReqPayload, RegenerateMessageReqPayload,
+};
 use crate::operators::analytics_operator::{
     CTRRecommendationsWithClicksResponse, CTRRecommendationsWithoutClicksResponse,
     CTRSearchQueryWithClicksResponse, CTRSearchQueryWithoutClicksResponse, HeadQueryResponse,
     LatencyGraphResponse, QueryCountResponse, RPSGraphResponse, RagQueryResponse,
     RecommendationsEventResponse, SearchClusterResponse, SearchQueryResponse,
 };
-use crate::operators::chunk_operator::{get_metadata_from_id_query, get_metadata_from_ids_query};
+use crate::operators::chunk_operator::{
+    get_metadata_from_id_query, get_metadata_from_ids_query, HighlightStrategy,
+};
 use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::search_operator::{
@@ -36,7 +44,8 @@ use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
 use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon, GeoRadius};
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::io::Write;
 use time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -4172,8 +4181,8 @@ pub struct ChunkData {
     pub content: String,
     pub group_ids: Option<Vec<uuid::Uuid>>,
     pub upsert_by_tracking_id: bool,
-    pub boost_phrase: Option<BoostPhrase>,
-    pub distance_phrase: Option<DistancePhrase>,
+    pub boost_phrase: Option<FullTextBoost>,
+    pub distance_phrase: Option<SemanticBoost>,
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
@@ -4574,4 +4583,521 @@ pub enum ReRankOptions {
 pub enum CTRType {
     Search,
     Recommendation,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+/// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+pub struct SortOptions {
+    /// Sort by lets you specify a method to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
+    pub sort_by: Option<QdrantSortBy>,
+    /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
+    pub location_bias: Option<GeoInfoWithBias>,
+    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
+    pub use_weights: Option<bool>,
+    /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
+    pub tag_weights: Option<HashMap<String, f32>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+/// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+pub struct HighlightOptions {
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
+    pub highlight_results: Option<bool>,
+    /// Set highlight_exact_match to true to highlight exact matches from your query.
+    pub highlight_strategy: Option<HighlightStrategy>,
+    /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
+    pub highlight_threshold: Option<f64>,
+    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting. These are the characters that will be used to split the chunk_html into splits for highlighting.
+    pub highlight_delimiters: Option<Vec<String>>,
+    /// Set highlight_max_length to control the maximum number of tokens (typically whitespace separated strings, but sometimes also word stems) which can be present within a single highlight. If not specified, this defaults to 8. This is useful to shorten large splits which may have low scores due to length compared to the query. Set to something very large like 100 to highlight entire splits.
+    pub highlight_max_length: Option<u32>,
+    /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
+    pub highlight_max_num: Option<u32>,
+    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
+    pub highlight_window: Option<u32>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
+/// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
+pub struct LLMOptions {
+    /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
+    pub completion_first: Option<bool>,
+    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream_response: Option<bool>,
+    /// What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.5.
+    pub temperature: Option<f32>,
+    /// Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
+    pub frequency_penalty: Option<f32>,
+    /// Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Default is 0.7.
+    pub presence_penalty: Option<f32>,
+    /// The maximum number of tokens to generate in the chat completion. Default is None.
+    pub max_tokens: Option<u32>,
+    /// Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
+    pub stop_tokens: Option<Vec<String>>,
+    /// Optionally, override the system prompt in dataset server settings.
+    pub system_prompt: Option<String>,
+}
+
+// Helper function to extract SortOptions and HighlightOptions
+fn extract_sort_highlight_options(
+    other: &mut HashMap<String, Value>,
+) -> (Option<SortOptions>, Option<HighlightOptions>) {
+    let mut sort_options = SortOptions::default();
+    let mut highlight_options = HighlightOptions::default();
+
+    // Extract sort options
+    if let Some(value) = other.remove("sort_by") {
+        sort_options.sort_by = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("location_bias") {
+        sort_options.location_bias = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("use_weights") {
+        sort_options.use_weights = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("tag_weights") {
+        sort_options.tag_weights = serde_json::from_value(value).ok();
+    }
+
+    // Extract highlight options
+    if let Some(value) = other.remove("highlight_results") {
+        highlight_options.highlight_results = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("highlight_strategy") {
+        highlight_options.highlight_strategy = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("highlight_threshold") {
+        highlight_options.highlight_threshold = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("highlight_delimiters") {
+        highlight_options.highlight_delimiters = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("highlight_max_length") {
+        highlight_options.highlight_max_length = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("highlight_max_num") {
+        highlight_options.highlight_max_num = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("highlight_window") {
+        highlight_options.highlight_window = serde_json::from_value(value).ok();
+    }
+
+    let sort_options = if sort_options.sort_by.is_none()
+        && sort_options.location_bias.is_none()
+        && sort_options.use_weights.is_none()
+        && sort_options.tag_weights.is_none()
+    {
+        None
+    } else {
+        Some(sort_options)
+    };
+
+    let highlight_options = if highlight_options.highlight_results.is_none()
+        && highlight_options.highlight_strategy.is_none()
+        && highlight_options.highlight_threshold.is_none()
+        && highlight_options.highlight_delimiters.is_none()
+        && highlight_options.highlight_max_length.is_none()
+        && highlight_options.highlight_max_num.is_none()
+        && highlight_options.highlight_window.is_none()
+    {
+        None
+    } else {
+        Some(highlight_options)
+    };
+
+    (sort_options, highlight_options)
+}
+
+fn extract_llm_options(other: &mut HashMap<String, Value>) -> Option<LLMOptions> {
+    let mut llm_options = LLMOptions::default();
+
+    if let Some(value) = other.remove("completion_first") {
+        llm_options.completion_first = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("stream_response") {
+        llm_options.stream_response = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("temperature") {
+        llm_options.temperature = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("frequency_penalty") {
+        llm_options.frequency_penalty = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("presence_penalty") {
+        llm_options.presence_penalty = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("max_tokens") {
+        llm_options.max_tokens = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("stop_tokens") {
+        llm_options.stop_tokens = serde_json::from_value(value).ok();
+    }
+    if let Some(value) = other.remove("system_prompt") {
+        llm_options.system_prompt = serde_json::from_value(value).ok();
+    }
+
+    if llm_options.completion_first.is_none()
+        && llm_options.stream_response.is_none()
+        && llm_options.temperature.is_none()
+        && llm_options.frequency_penalty.is_none()
+        && llm_options.presence_penalty.is_none()
+        && llm_options.max_tokens.is_none()
+        && llm_options.stop_tokens.is_none()
+        && llm_options.system_prompt.is_none()
+    {
+        None
+    } else {
+        Some(llm_options)
+    }
+}
+
+impl<'de> Deserialize<'de> for SearchChunksReqPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            search_type: SearchMethod,
+            query: String,
+            page: Option<u64>,
+            page_size: Option<u64>,
+            get_total_pages: Option<bool>,
+            filters: Option<ChunkFilter>,
+            sort_options: Option<SortOptions>,
+            highlight_options: Option<HighlightOptions>,
+            score_threshold: Option<f32>,
+            slim_chunks: Option<bool>,
+            content_only: Option<bool>,
+            use_quote_negated_terms: Option<bool>,
+            remove_stop_words: Option<bool>,
+            #[serde(flatten)]
+            other: std::collections::HashMap<String, serde_json::Value>,
+        }
+
+        let mut helper = Helper::deserialize(deserializer)?;
+
+        let (extracted_sort_options, extracted_highlight_options) = if !helper.other.is_empty() {
+            extract_sort_highlight_options(&mut helper.other)
+        } else {
+            (None, None)
+        };
+
+        let sort_options = helper.sort_options.or(extracted_sort_options);
+        let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+
+        Ok(SearchChunksReqPayload {
+            search_type: helper.search_type,
+            query: helper.query,
+            page: helper.page,
+            page_size: helper.page_size,
+            get_total_pages: helper.get_total_pages,
+            filters: helper.filters,
+            sort_options,
+            highlight_options,
+            score_threshold: helper.score_threshold,
+            slim_chunks: helper.slim_chunks,
+            content_only: helper.content_only,
+            use_quote_negated_terms: helper.use_quote_negated_terms,
+            remove_stop_words: helper.remove_stop_words,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for AutocompleteReqPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            search_type: SearchMethod,
+            extend_results: Option<bool>,
+            query: String,
+            page_size: Option<u64>,
+            filters: Option<ChunkFilter>,
+            sort_options: Option<SortOptions>,
+            highlight_options: Option<HighlightOptions>,
+            score_threshold: Option<f32>,
+            slim_chunks: Option<bool>,
+            content_only: Option<bool>,
+            use_quote_negated_terms: Option<bool>,
+            remove_stop_words: Option<bool>,
+            #[serde(flatten)]
+            other: std::collections::HashMap<String, serde_json::Value>,
+        }
+
+        let mut helper = Helper::deserialize(deserializer)?;
+
+        let (extracted_sort_options, extracted_highlight_options) = if !helper.other.is_empty() {
+            extract_sort_highlight_options(&mut helper.other)
+        } else {
+            (None, None)
+        };
+
+        let sort_options = helper.sort_options.or(extracted_sort_options);
+        let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+
+        Ok(AutocompleteReqPayload {
+            search_type: helper.search_type,
+            extend_results: helper.extend_results,
+            query: helper.query,
+            page_size: helper.page_size,
+            filters: helper.filters,
+            sort_options,
+            highlight_options,
+            score_threshold: helper.score_threshold,
+            slim_chunks: helper.slim_chunks,
+            content_only: helper.content_only,
+            use_quote_negated_terms: helper.use_quote_negated_terms,
+            remove_stop_words: helper.remove_stop_words,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            search_type: SearchMethod,
+            query: String,
+            page: Option<u64>,
+            page_size: Option<u64>,
+            group_id: Option<uuid::Uuid>,
+            group_tracking_id: Option<String>,
+            get_total_pages: Option<bool>,
+            filters: Option<ChunkFilter>,
+            sort_options: Option<SortOptions>,
+            highlight_options: Option<HighlightOptions>,
+            score_threshold: Option<f32>,
+            slim_chunks: Option<bool>,
+            content_only: Option<bool>,
+            use_quote_negated_terms: Option<bool>,
+            remove_stop_words: Option<bool>,
+            #[serde(flatten)]
+            other: std::collections::HashMap<String, serde_json::Value>,
+        }
+
+        let mut helper = Helper::deserialize(deserializer)?;
+
+        let (extracted_sort_options, extracted_highlight_options) = if !helper.other.is_empty() {
+            extract_sort_highlight_options(&mut helper.other)
+        } else {
+            (None, None)
+        };
+
+        let sort_options = helper.sort_options.or(extracted_sort_options);
+        let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+
+        Ok(SearchWithinGroupReqPayload {
+            search_type: helper.search_type,
+            query: helper.query,
+            page: helper.page,
+            page_size: helper.page_size,
+            group_id: helper.group_id,
+            group_tracking_id: helper.group_tracking_id,
+            get_total_pages: helper.get_total_pages,
+            filters: helper.filters,
+            sort_options,
+            highlight_options,
+            score_threshold: helper.score_threshold,
+            slim_chunks: helper.slim_chunks,
+            content_only: helper.content_only,
+            use_quote_negated_terms: helper.use_quote_negated_terms,
+            remove_stop_words: helper.remove_stop_words,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            search_type: SearchMethod,
+            query: String,
+            page: Option<u64>,
+            page_size: Option<u64>,
+            get_total_pages: Option<bool>,
+            filters: Option<ChunkFilter>,
+            group_size: Option<u32>,
+            highlight_options: Option<HighlightOptions>,
+            score_threshold: Option<f32>,
+            slim_chunks: Option<bool>,
+            use_quote_negated_terms: Option<bool>,
+            remove_stop_words: Option<bool>,
+            #[serde(flatten)]
+            other: std::collections::HashMap<String, serde_json::Value>,
+        }
+
+        let mut helper = Helper::deserialize(deserializer)?;
+
+        let (_, extracted_highlight_options) = if !helper.other.is_empty() {
+            extract_sort_highlight_options(&mut helper.other)
+        } else {
+            (None, None)
+        };
+        let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+
+        Ok(SearchOverGroupsReqPayload {
+            search_type: helper.search_type,
+            query: helper.query,
+            page: helper.page,
+            page_size: helper.page_size,
+            get_total_pages: helper.get_total_pages,
+            filters: helper.filters,
+            highlight_options,
+            group_size: helper.group_size,
+            score_threshold: helper.score_threshold,
+            slim_chunks: helper.slim_chunks,
+            use_quote_negated_terms: helper.use_quote_negated_terms,
+            remove_stop_words: helper.remove_stop_words,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for CreateMessageReqPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            pub new_message_content: String,
+            pub topic_id: uuid::Uuid,
+            pub highlight_options: Option<HighlightOptions>,
+            pub search_type: Option<SearchMethod>,
+            pub concat_user_messages_query: Option<bool>,
+            pub search_query: Option<String>,
+            pub page_size: Option<u64>,
+            pub filters: Option<ChunkFilter>,
+            pub score_threshold: Option<f32>,
+            pub llm_options: Option<LLMOptions>,
+            #[serde(flatten)]
+            other: std::collections::HashMap<String, serde_json::Value>,
+        }
+
+        let mut helper = Helper::deserialize(deserializer)?;
+
+        let (_, extracted_highlight_options) = if !helper.other.is_empty() {
+            extract_sort_highlight_options(&mut helper.other)
+        } else {
+            (None, None)
+        };
+        let llm_options = extract_llm_options(&mut helper.other);
+        let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+        let llm_options = helper.llm_options.or(llm_options);
+
+        Ok(CreateMessageReqPayload {
+            new_message_content: helper.new_message_content,
+            topic_id: helper.topic_id,
+            highlight_options,
+            search_type: helper.search_type,
+            concat_user_messages_query: helper.concat_user_messages_query,
+            search_query: helper.search_query,
+            page_size: helper.page_size,
+            filters: helper.filters,
+            score_threshold: helper.score_threshold,
+            llm_options,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            pub topic_id: uuid::Uuid,
+            pub highlight_options: Option<HighlightOptions>,
+            pub search_type: Option<SearchMethod>,
+            pub concat_user_messages_query: Option<bool>,
+            pub search_query: Option<String>,
+            pub page_size: Option<u64>,
+            pub filters: Option<ChunkFilter>,
+            pub score_threshold: Option<f32>,
+            pub llm_options: Option<LLMOptions>,
+            #[serde(flatten)]
+            other: std::collections::HashMap<String, serde_json::Value>,
+        }
+
+        let mut helper = Helper::deserialize(deserializer)?;
+
+        let (_, extracted_highlight_options) = if !helper.other.is_empty() {
+            extract_sort_highlight_options(&mut helper.other)
+        } else {
+            (None, None)
+        };
+        let llm_options = extract_llm_options(&mut helper.other);
+        let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+        let llm_options = helper.llm_options.or(llm_options);
+
+        Ok(RegenerateMessageReqPayload {
+            topic_id: helper.topic_id,
+            highlight_options,
+            search_type: helper.search_type,
+            concat_user_messages_query: helper.concat_user_messages_query,
+            search_query: helper.search_query,
+            page_size: helper.page_size,
+            filters: helper.filters,
+            score_threshold: helper.score_threshold,
+            llm_options,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for EditMessageReqPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            pub topic_id: uuid::Uuid,
+            pub message_sort_order: i32,
+            pub new_message_content: String,
+            pub highlight_options: Option<HighlightOptions>,
+            pub search_type: Option<SearchMethod>,
+            pub concat_user_messages_query: Option<bool>,
+            pub search_query: Option<String>,
+            pub page_size: Option<u64>,
+            pub filters: Option<ChunkFilter>,
+            pub score_threshold: Option<f32>,
+            pub llm_options: Option<LLMOptions>,
+            #[serde(flatten)]
+            other: std::collections::HashMap<String, serde_json::Value>,
+        }
+
+        let mut helper = Helper::deserialize(deserializer)?;
+
+        let (_, extracted_highlight_options) = if !helper.other.is_empty() {
+            extract_sort_highlight_options(&mut helper.other)
+        } else {
+            (None, None)
+        };
+        let llm_options = extract_llm_options(&mut helper.other);
+        let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+        let llm_options = helper.llm_options.or(llm_options);
+
+        Ok(EditMessageReqPayload {
+            topic_id: helper.topic_id,
+            message_sort_order: helper.message_sort_order,
+            new_message_content: helper.new_message_content,
+            highlight_options,
+            search_type: helper.search_type,
+            concat_user_messages_query: helper.concat_user_messages_query,
+            search_query: helper.search_query,
+            page_size: helper.page_size,
+            filters: helper.filters,
+            score_threshold: helper.score_threshold,
+            llm_options,
+        })
+    }
 }

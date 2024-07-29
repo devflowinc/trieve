@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo,
-    GeoInfoWithBias, IngestSpecificChunkMetadata, Pool, QdrantSortBy, RagQueryEventClickhouse,
-    ReRankOptions, RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool,
-    ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
-    SlimChunkMetadataWithScore, SortByField, UnifiedId, UpdateSpecificChunkMetadata,
+    HighlightOptions, IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RecommendType,
+    RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO,
+    SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore, SortByField, SortOptions,
+    UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -47,7 +45,7 @@ use utoipa::ToSchema;
 
 /// Boost phrase is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct BoostPhrase {
+pub struct FullTextBoost {
     /// The phrase to boost in the fulltext document frequency index
     pub phrase: String,
     /// Amount to multiplicatevly increase the frequency of the tokens in the phrase by
@@ -56,7 +54,7 @@ pub struct BoostPhrase {
 
 /// Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct DistancePhrase {
+pub struct SemanticBoost {
     /// The phrase to boost in the fulltext document frequency index
     pub phrase: String,
     /// Amount to multiplicatevly increase the frequency of the tokens in the phrase by
@@ -112,10 +110,12 @@ pub struct ChunkReqPayload {
     pub split_avg: Option<bool>,
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
     pub convert_html_to_text: Option<bool>,
-    /// Boost phrase is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
-    pub boost_phrase: Option<BoostPhrase>,
-    /// Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
-    pub distance_phrase: Option<DistancePhrase>,
+    ///  Full text boost is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
+    #[serde(alias = "boost_phrase")]
+    pub fulltext_boost: Option<FullTextBoost>,
+    /// Semantic boost is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
+    #[serde(alias = "distance_phrase")]
+    pub semantic_boost: Option<SemanticBoost>,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -553,9 +553,9 @@ pub struct UpdateChunkReqPayload {
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
     convert_html_to_text: Option<bool>,
     /// Boost phrase is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
-    pub boost_phrase: Option<BoostPhrase>,
+    pub boost_phrase: Option<FullTextBoost>,
     /// Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
-    pub distance_phrase: Option<DistancePhrase>,
+    pub distance_phrase: Option<SemanticBoost>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -564,8 +564,8 @@ pub struct UpdateIngestionMessage {
     pub dataset_id: uuid::Uuid,
     pub group_ids: Option<Vec<UnifiedId>>,
     pub convert_html_to_text: Option<bool>,
-    pub boost_phrase: Option<BoostPhrase>,
-    pub distance_phrase: Option<DistancePhrase>,
+    pub boost_phrase: Option<FullTextBoost>,
+    pub distance_phrase: Option<SemanticBoost>,
 }
 
 /// Update Chunk
@@ -861,43 +861,21 @@ pub async fn update_chunk_by_tracking_id(
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
-    "should": [
-        {
-            "field": "metadata.key1",
-            "match": ["value1", "value2"],
-            "range": {
-                "gte": 0.0,
-                "lte": 1.0,
-                "gt": 0.0,
-                "lt": 1.0
-            }
-        }
-    ],
     "must": [
         {
-            "field": "metadata.key2",
-            "match": ["value3", "value4"],
-            "range": {
-                "gte": 0.0,
-                "lte": 1.0,
-                "gt": 0.0,
-                "lt": 1.0
-            }
-        }
-    ],
-    "must_not": [
+            "field": "tag_set",
+            "match_all": ["A", "B"],
+        },
         {
-            "field": "metadata.key3",
-            "match": ["value5", "value6"],
+            "field": "num_value",
             "range": {
-                "gte": 0.0,
-                "lte": 1.0,
-                "gt": 0.0,
-                "lt": 1.0
+                "gte": 10,
+                "lte": 25,
             }
         }
     ]
 }))]
+/// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
 pub struct ChunkFilter {
     /// Only one of these field conditions has to match for the chunk to be included in the result set.
     pub should: Option<Vec<ConditionType>>,
@@ -909,7 +887,7 @@ pub struct ChunkFilter {
     pub jsonb_prefilter: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Clone, Debug, ToSchema)]
 #[schema(example = json!({
     "search_type": "semantic",
     "query": "Some search query",
@@ -940,7 +918,6 @@ pub struct ChunkFilter {
             }
         ]
     },
-    "recency_bias": 1.0,
     "use_weights": true,
     "highlight_results": true,
     "highlight_delimiters": ["?", ",", ".", "!"],
@@ -959,28 +936,10 @@ pub struct SearchChunksReqPayload {
     pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-    /// Sort by lets you specify a method to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
-    pub sort_by: Option<QdrantSortBy>,
-    /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
-    pub location_bias: Option<GeoInfoWithBias>,
-    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
-    pub use_weights: Option<bool>,
-    /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
-    pub tag_weights: Option<HashMap<String, f32>>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
-    pub highlight_results: Option<bool>,
-    /// Set highlight_exact_match to true to highlight exact matches from your query.
-    pub highlight_strategy: Option<HighlightStrategy>,
-    /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
-    pub highlight_threshold: Option<f64>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting. These are the characters that will be used to split the chunk_html into splits for highlighting.
-    pub highlight_delimiters: Option<Vec<String>>,
-    /// Set highlight_max_length to control the maximum number of tokens (typically whitespace separated strings, but sometimes also word stems) which can be present within a single highlight. If not specified, this defaults to 8. This is useful to shorten large splits which may have low scores due to length compared to the query. Set to something very large like 100 to highlight entire splits.
-    pub highlight_max_length: Option<u32>,
-    /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
-    pub highlight_max_num: Option<u32>,
-    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
-    pub highlight_window: Option<u32>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub highlight_options: Option<HighlightOptions>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
@@ -989,8 +948,7 @@ pub struct SearchChunksReqPayload {
     pub content_only: Option<bool>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
-    /// If true, stop words (sepcified in stop-words.txt )will be removed. Queries that are entirely stop words will be
-    /// preserved.
+    /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
 }
 
@@ -1002,18 +960,9 @@ impl Default for SearchChunksReqPayload {
             page: Some(1),
             get_total_pages: None,
             page_size: Some(10),
-            sort_by: None,
             filters: None,
-            location_bias: None,
-            use_weights: None,
-            tag_weights: None,
-            highlight_results: None,
-            highlight_strategy: None,
-            highlight_threshold: None,
-            highlight_delimiters: None,
-            highlight_max_length: None,
-            highlight_max_num: None,
-            highlight_window: None,
+            sort_options: None,
+            highlight_options: None,
             score_threshold: None,
             slim_chunks: None,
             content_only: None,
@@ -1247,7 +1196,7 @@ pub async fn search_chunks(
         .json(result_chunks))
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Clone, Debug, ToSchema)]
 #[schema(example = json!({
     "search_type": "semantic",
     "query": "Some search query",
@@ -1308,40 +1257,19 @@ pub struct AutocompleteReqPayload {
     pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-    /// Location lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
-    pub location_bias: Option<GeoInfoWithBias>,
-    /// Sort by lets you specify a key to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
-    pub sort_by: Option<QdrantSortBy>,
-    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
-    pub use_weights: Option<bool>,
-    /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
-    pub tag_weights: Option<HashMap<String, f32>>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
-    pub highlight_results: Option<bool>,
-    /// Set highlight_exact_match to true to highlight exact matches from your query.
-    pub highlight_strategy: Option<HighlightStrategy>,
-    /// Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
-    pub highlight_threshold: Option<f64>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"]. These are the characters that will be used to split the chunk_html into splits for highlighting.
-    pub highlight_delimiters: Option<Vec<String>>,
-    /// Set highlight_max_length to control the maximum number of tokens (typically whitespace separated strings, but sometimes also word stems) which can be present within a single highlight. If not specified, this defaults to 8. This is useful to shorten large splits which may have low scores due to length compared to the query. Set to something very large like 100 to highlight entire splits.
-    pub highlight_max_length: Option<u32>,
-    /// Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
-    pub highlight_max_num: Option<u32>,
-    /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once.
-    pub highlight_window: Option<u32>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub highlight_options: Option<HighlightOptions>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
     /// Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub content_only: Option<bool>,
-    /// Rerank_by lets you choose the method to use to rerank. If not specified, this defaults to None. You can use this param to rerank your original query by another search method. Hybrid search will automatically rerank using the cross encoder.
-    pub rerank_by: Option<ReRankOptions>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
-    /// If true, stop words (sepcified in stop-words.txt )will be removed. Queries that are entirely stop words will be
-    /// preserved.
+    /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
 }
 
@@ -1354,21 +1282,8 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             get_total_pages: None,
             page_size: autocomplete_data.page_size,
             filters: autocomplete_data.filters,
-            sort_by: autocomplete_data.sort_by,
-            use_weights: autocomplete_data.use_weights,
-            tag_weights: autocomplete_data.tag_weights,
-            highlight_results: autocomplete_data.highlight_results,
-            highlight_strategy: autocomplete_data.highlight_strategy,
-            highlight_threshold: autocomplete_data.highlight_threshold,
-            highlight_delimiters: Some(
-                autocomplete_data
-                    .highlight_delimiters
-                    .unwrap_or(vec![" ".to_string()]),
-            ),
-            location_bias: autocomplete_data.location_bias,
-            highlight_max_length: autocomplete_data.highlight_max_length,
-            highlight_max_num: autocomplete_data.highlight_max_num,
-            highlight_window: autocomplete_data.highlight_window,
+            sort_options: autocomplete_data.sort_options,
+            highlight_options: autocomplete_data.highlight_options,
             score_threshold: autocomplete_data.score_threshold,
             slim_chunks: autocomplete_data.slim_chunks,
             content_only: autocomplete_data.content_only,
@@ -1630,20 +1545,11 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             get_total_pages: None,
             page_size: count_data.limit,
             filters: count_data.filters,
-            sort_by: None,
-            use_weights: None,
-            tag_weights: None,
-            highlight_results: None,
-            highlight_strategy: None,
-            highlight_threshold: None,
-            highlight_delimiters: None,
-            highlight_max_length: None,
-            highlight_max_num: None,
-            highlight_window: None,
+            sort_options: None,
+            highlight_options: None,
             score_threshold: count_data.score_threshold,
             slim_chunks: None,
             content_only: None,
-            location_bias: None,
             use_quote_negated_terms: None,
             remove_stop_words: None,
         }
