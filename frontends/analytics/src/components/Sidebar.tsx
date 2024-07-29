@@ -8,7 +8,12 @@ import { Select } from "shared/ui";
 import { AiOutlineLineChart, AiOutlineUser } from "solid-icons/ai";
 import { apiHost } from "../utils/apiHost";
 import { IoChatboxOutline, IoLogOutOutline } from "solid-icons/io";
-import { HiOutlineMagnifyingGlass, HiOutlineNewspaper } from "solid-icons/hi";
+import {
+  HiOutlineMagnifyingGlass,
+  HiOutlineNewspaper,
+  HiSolidCursorArrowRays,
+} from "solid-icons/hi";
+
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
   selectedDataset: DatasetAndUsage | null;
@@ -30,6 +35,11 @@ const navbarRoutes = [
     href: "/rag",
     label: "RAG Analytics",
     icon: IoChatboxOutline,
+  },
+  {
+    href: "/ctr",
+    label: "Click-through Rate",
+    icon: HiSolidCursorArrowRays,
   },
   {
     href: "/trends",

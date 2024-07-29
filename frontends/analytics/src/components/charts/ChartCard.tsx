@@ -3,7 +3,7 @@ import { JSX, Show, splitProps } from "solid-js";
 interface ChartCardProps extends JSX.HTMLAttributes<HTMLDivElement> {
   title?: string;
   subtitle?: string;
-  width: number;
+  width?: number;
   children: JSX.Element;
   controller?: JSX.Element;
 }
