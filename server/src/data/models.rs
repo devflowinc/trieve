@@ -265,13 +265,16 @@ impl From<GeoTypes> for f64 {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, ToSchema, AsExpression)]
 #[diesel(sql_type = Jsonb)]
+/// Location bias lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
 pub struct GeoInfoWithBias {
     pub location: GeoInfo,
+    /// Bias lets you specify how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
     pub bias: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, ToSchema, AsExpression)]
 #[diesel(sql_type = Jsonb)]
+/// Location that you want to use as the center of the search.
 pub struct GeoInfo {
     pub lat: GeoTypes,
     pub lon: GeoTypes,
@@ -4565,6 +4568,7 @@ pub struct SortBySearchType {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 #[serde(untagged)]
+/// Sort by lets you specify a method to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
 pub enum QdrantSortBy {
     Field(SortByField),
     SearchType(SortBySearchType),
