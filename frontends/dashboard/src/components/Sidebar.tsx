@@ -1,8 +1,16 @@
-import { For, createMemo, createSignal, useContext } from "solid-js";
+import {
+  For,
+  createMemo,
+  createSignal,
+  useContext,
+  Show,
+  createEffect,
+} from "solid-js";
 import { UserContext } from "../contexts/UserContext";
 import { useNavigate } from "@solidjs/router";
 import { IoLogOutOutline, IoOpenOutline } from "solid-icons/io";
 import { AiOutlinePlus, AiOutlineUser } from "solid-icons/ai";
+import { FaSolidAngleDown, FaSolidAngleRight } from "solid-icons/fa";
 import CreateNewOrgModal from "./CreateNewOrgModal";
 import { DatasetContext } from "../contexts/DatasetContext";
 
@@ -18,6 +26,16 @@ export const Sidebar = () => {
   const datasetContext = useContext(DatasetContext);
 
   const [showNewOrgModal, setShowNewOrgModal] = createSignal(false);
+  const [showSubMenu, setShowSubMenu] = createSignal(
+    localStorage.getItem("showSubMenu") !== "false",
+  );
+
+  createEffect(() => {
+    return localStorage.setItem(
+      "showSubMenu",
+      showSubMenu() ? "true" : "false",
+    );
+  });
 
   const sortedOrgs = createMemo(
     () =>
@@ -74,31 +92,71 @@ export const Sidebar = () => {
           <div class="border-b px-4 py-3">
             <h5 class="font-semibold text-neutral-600">Admin Tools</h5>
             <div class="flex flex-col items-start space-y-1 py-2">
-              <div class="flex items-center text-neutral-800 hover:text-fuchsia-800">
-                <a
-                  href={`${searchUiURL}${orgDatasetParams()}`}
-                  target="_blank"
-                  class="flex items-center"
-                >
-                  Search playground{" "}
-                  <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
-                </a>
+              <div class="flex flex-col items-center text-neutral-800">
+                <div class="flex items-center gap-2">
+                  <button
+                    class="hover:text-fuchsia-800"
+                    onClick={() => setShowSubMenu(!showSubMenu())}
+                  >
+                    {showSubMenu() ? (
+                      <FaSolidAngleDown />
+                    ) : (
+                      <FaSolidAngleRight />
+                    )}
+                  </button>
+                  <a
+                    href={`${searchUiURL}${orgDatasetParams()}`}
+                    target="_blank"
+                    class="flex w-full items-center hover:text-fuchsia-800"
+                  >
+                    <span>Search playground</span>
+                    <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
+                  </a>
+                </div>
+                <Show when={showSubMenu()}>
+                  <div class="space-y-1 pb-1 pl-4 pt-1">
+                    <a
+                      href={`${searchUiURL}/group${orgDatasetParams()}`}
+                      target="_blank"
+                      class="flex items-center hover:text-fuchsia-800"
+                    >
+                      View Groups{" "}
+                      <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
+                    </a>
+                    <a
+                      href={`${searchUiURL}/create${orgDatasetParams()}`}
+                      target="_blank"
+                      class="flex items-center hover:text-fuchsia-800"
+                    >
+                      Create Chunk{" "}
+                      <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
+                    </a>
+                    <a
+                      href={`${searchUiURL}/upload${orgDatasetParams()}`}
+                      target="_blank"
+                      class="flex items-center hover:text-fuchsia-800"
+                    >
+                      Upload File{" "}
+                      <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
+                    </a>
+                  </div>
+                </Show>
               </div>
-              <div class="flex items-center text-neutral-800 hover:text-fuchsia-800">
+              <div class="flex w-full items-center pl-6 text-neutral-800 hover:text-fuchsia-800">
                 <a
                   href={`${chatUiURL}${orgDatasetParams()}`}
                   target="_blank"
-                  class="flex items-center"
+                  class="flex w-full items-center"
                 >
-                  <span>RAG playground</span>{" "}
+                  <span>RAG playground</span>
                   <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
                 </a>
               </div>
-              <div class="flex items-center text-neutral-800 hover:text-fuchsia-800">
+              <div class="flex w-full items-center pl-6 text-neutral-800 hover:text-fuchsia-800">
                 <a
                   href={`${analyticsUiURL}${orgDatasetParams()}`}
                   target="_blank"
-                  class="flex items-center"
+                  class="flex w-full items-center"
                 >
                   Analytics playground{" "}
                   <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
