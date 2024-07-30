@@ -193,11 +193,15 @@ We reccomend using `kind`
 
 5) Install the helm chart into kubernetes cluster
 
-`helm install -f helm/local-values.yaml local helm/`
+```sh
+helm install -f helm/local-values.yaml local helm/
+```
 
 6) Edit the coredns entry for auth.localtrieve.com to work as an alias within kubernetes.
 
-`kubectl edit -n kube-system configmaps/coredns`
+```sh
+kubectl edit -n kube-system configmaps/coredns
+```
 
 Add in the following rule within the coredns settings. `rewrite name auth.localtrieve.com keycloak.default.svc.cluster.local`
 
@@ -263,6 +267,12 @@ config:
     clientId: trieve
     issuerUrl: http://auth.localtrieve.com/realms/trieve
     authRedirectUrl: http://auth.localtrieve.com/realms/trieve/protocol/openid-connect/auth
+```
+
+After you set that, upgrade the helm chart with
+
+```sh
+helm upgrade -f helm/local-values.yaml local helm/
 ```
 
 
