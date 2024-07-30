@@ -101,6 +101,12 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
       }
     }
 
+    const userOrgIds = user()?.user_orgs.map((org) => org.organization_id);
+
+    if (!userOrgIds?.includes(organizationId ?? "")) {
+      login();
+    }
+
     return organizationId;
   }, null);
 
