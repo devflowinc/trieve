@@ -1064,7 +1064,7 @@ async fn update_chunk(
         true => {
             let embedding = get_dense_vector(
                 content.to_string(),
-                payload.distance_phrase,
+                payload.semantic_boost,
                 "doc",
                 dataset_config.clone(),
             )
@@ -1079,7 +1079,7 @@ async fn update_chunk(
         let reqwest_client = reqwest::Client::new();
 
         match get_sparse_vectors(
-            vec![(content.clone(), payload.boost_phrase.clone())],
+            vec![(content.clone(), payload.fulltext_boost.clone())],
             "doc",
             reqwest_client,
         )
@@ -1096,7 +1096,7 @@ async fn update_chunk(
         && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true"
     {
         let vecs = get_bm25_embeddings(
-            vec![(content, payload.boost_phrase)],
+            vec![(content, payload.fulltext_boost)],
             dataset_config.BM25_AVG_LEN,
             dataset_config.BM25_B,
             dataset_config.BM25_K,

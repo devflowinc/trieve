@@ -552,10 +552,12 @@ pub struct UpdateChunkReqPayload {
     image_urls: Option<Vec<String>>,
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
     convert_html_to_text: Option<bool>,
-    /// Boost phrase is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
-    pub boost_phrase: Option<FullTextBoost>,
-    /// Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
-    pub distance_phrase: Option<SemanticBoost>,
+    ///  Full text boost is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
+    #[serde(alias = "boost_phrase")]
+    pub fulltext_boost: Option<FullTextBoost>,
+    /// Semantic boost is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
+    #[serde(alias = "distance_phrase")]
+    pub semantic_boost: Option<SemanticBoost>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -564,8 +566,8 @@ pub struct UpdateIngestionMessage {
     pub dataset_id: uuid::Uuid,
     pub group_ids: Option<Vec<UnifiedId>>,
     pub convert_html_to_text: Option<bool>,
-    pub boost_phrase: Option<FullTextBoost>,
-    pub distance_phrase: Option<SemanticBoost>,
+    pub fulltext_boost: Option<FullTextBoost>,
+    pub semantic_boost: Option<SemanticBoost>,
 }
 
 /// Update Chunk
@@ -694,8 +696,8 @@ pub async fn update_chunk(
         dataset_id,
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,
-        boost_phrase: update_chunk_data.boost_phrase.clone(),
-        distance_phrase: update_chunk_data.distance_phrase.clone(),
+        fulltext_boost: update_chunk_data.fulltext_boost.clone(),
+        semantic_boost: update_chunk_data.semantic_boost.clone(),
     };
 
     let mut redis_conn = redis_pool
@@ -840,8 +842,8 @@ pub async fn update_chunk_by_tracking_id(
         dataset_id,
         group_ids,
         convert_html_to_text: update_chunk_data.convert_html_to_text,
-        boost_phrase: None,
-        distance_phrase: None,
+        fulltext_boost: None,
+        semantic_boost: None,
     };
 
     let mut redis_conn = redis_pool
