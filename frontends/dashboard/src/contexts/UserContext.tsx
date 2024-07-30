@@ -1,6 +1,7 @@
 import {
   Accessor,
   JSX,
+  Show,
   createContext,
   createEffect,
   createSignal,
@@ -122,8 +123,17 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   };
 
   return (
-    <UserContext.Provider value={userStore}>
-      {props.children}
-    </UserContext.Provider>
+    <>
+      <Show when={!isLoading()}>
+        <UserContext.Provider value={userStore}>
+          {props.children}
+        </UserContext.Provider>
+      </Show>
+      <Show when={isLoading()}>
+        <div class="mt-4 flex min-h-full w-full items-center justify-center">
+          <div class="mb-28 h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
+        </div>
+      </Show>
+    </>
   );
 };
