@@ -39,7 +39,6 @@ config:
   vite:
     apiHost: http://api.localtrieve.com/api
     searchUiUrl: http://search.localtrieve.com
-    frontmatterVals: "link,tag_set,time_stamp"
     sentryChatDsn: https://********************************@sentry.trieve.ai/6
     dashboardUrl: http://dashboard.localtrieve.com
   redis:
