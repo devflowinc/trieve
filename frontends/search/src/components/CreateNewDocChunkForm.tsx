@@ -54,7 +54,9 @@ export const CreateNewDocChunkForm = () => {
   const [distanceBoostFactor, setDistanceBoostFactor] = createSignal<
     number | undefined
   >(undefined);
-
+  const [semanticContent, setSemanticContent] = createSignal<
+    string | undefined
+  >();
   const [editorHtmlContent, setEditorHtmlContent] = createSignal("");
   const [editorTextContent, setEditorTextContent] = createSignal("");
 
@@ -119,6 +121,10 @@ export const CreateNewDocChunkForm = () => {
 
     if (trackingID()) {
       requestBody.tracking_id = trackingID();
+    }
+
+    if (semanticContent()) {
+      requestBody.semantic_content = semanticContent();
     }
 
     void fetch(`${apiHost}/chunk`, {
@@ -335,13 +341,33 @@ export const CreateNewDocChunkForm = () => {
         </div>
         <div class="flex flex-col space-y-2">
           <div class="flex items-center space-x-2">
+            <div>Semantic Content</div>
+            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+              <Tooltip
+                body={
+                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                }
+                tooltipText="Use this to add separate text that you want to be used for semantic search. If not provided, the innerText of the chunk_html will be used. The innerText of the chunk_html will always be used for fulltext search."
+              />
+            </div>
+          </div>
+          <input
+            type="text"
+            placeholder="optional - text for semantic search"
+            value={semanticContent() ?? ""}
+            onInput={(e) => setSemanticContent(e.target.value)}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+        </div>
+        <div class="flex flex-col space-y-2">
+          <div class="flex items-center space-x-2">
             <div>Chunk Content*</div>
             <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
               <Tooltip
                 body={
                   <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
                 }
-                tooltipText="Ctrl+Shift+1 thru 5 to change font size. ctrl+Shift+h to highlight."
+                tooltipText="The innerText of this editor will be used for search indexing. Use this to add text that you want to be searchable."
               />
             </div>
           </div>
