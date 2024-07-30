@@ -1444,7 +1444,12 @@ pub fn get_highlights_with_exact_match(
         )
         .collect_vec();
 
-    let results: Vec<usize> = engine.search(&query);
+    let results: Vec<usize> = query_parts_split_by_stop_words
+        .clone()
+        .iter()
+        .flat_map(|part| engine.search(part))
+        .collect_vec();
+
     let matched_indexes_check = matched_idxs.clone();
     for i in results.iter().filter(|i| {
         !matched_indexes_check
@@ -1574,9 +1579,7 @@ pub fn get_highlights_with_exact_match(
         if let Some((_, _, phrases_to_highlight)) = merged_results.get(current_window_index) {
             let mut phrase = current_phrase.join("");
             for highlight in phrases_to_highlight {
-                phrase = phrase
-                    .replace(highlight, &format!("<mark><b>{}</b></mark>", highlight))
-                    .replace("</b></mark><mark><b>", "");
+                phrase = phrase.replace(highlight, &format!("<mark><b>{}</b></mark>", highlight))
             }
             phrases.push(phrase);
         }
