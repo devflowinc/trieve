@@ -32,6 +32,7 @@ export const SearchCTRAnalytics = () => {
         filters={searchCtrFilter}
         setFilters={setSearchCtrFilter}
       />
+      Unused page!!!
       <div class="flex gap-2 overflow-x-auto py-4">
         <CTRSummary params={searchCtrFilter} />
       </div>

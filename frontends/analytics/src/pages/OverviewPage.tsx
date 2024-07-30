@@ -1,4 +1,5 @@
 import { ChartCard } from "../components/charts/ChartCard";
+import { CTRSummary } from "../components/charts/CTRSummary";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { QueryCounts } from "../components/charts/QueryCounts";
 import { RpsGraph } from "../components/charts/RpsGraph";
@@ -10,6 +11,7 @@ import {
 export const OverviewPage = () => {
   const rpsDate = useSimpleTimeRange();
   const headQueriesDate = useSimpleTimeRange();
+  const ctrDate = useSimpleTimeRange();
   return (
     <div class="grid grid-cols-2 items-start gap-2 p-8">
       <ChartCard class="flex flex-col justify-between px-4" width={2}>
@@ -50,6 +52,18 @@ export const OverviewPage = () => {
             filter: headQueriesDate.filter(),
           }}
         />
+      </ChartCard>
+      <ChartCard
+        controller={
+          <SimpleTimeRangeSelector
+            setDateOption={ctrDate.setDateOption}
+            dateOption={ctrDate.dateOption()}
+          />
+        }
+        title="Click-through Rate"
+        class="px-4"
+      >
+        <CTRSummary filter={ctrDate.filter()} />
       </ChartCard>
     </div>
   );
