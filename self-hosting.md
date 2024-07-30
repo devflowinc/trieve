@@ -193,7 +193,7 @@ We reccomend using `kind`
 
 5) Install the helm chart into kubernetes cluster
 
-helm install -f helm/local-values.yaml local helm/
+`helm install -f helm/local-values.yaml local helm/`
 
 6) Edit the coredns entry for auth.localtrieve.com to work as an alias within kubernetes.
 
