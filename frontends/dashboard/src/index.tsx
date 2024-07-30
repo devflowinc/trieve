@@ -54,7 +54,7 @@ render(
           <Route path="/overview" component={Overview} />
           <Route path="/users" component={UserManagement} />
           <Route path="/billing" component={Billing} />
-          <Route path="/settings" component={Settings} />
+          <Route path="/settings" component={Settings} />`
           <Route path="/api-keys" component={ApiKeys} />
         </Route>
         <Route path="/dashboard/:id/:id" component={DashboardLayout} />
