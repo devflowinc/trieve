@@ -34,10 +34,6 @@ const routes: RouteDefinition[] = [
         path: "/rag",
         component: RagAnalyticsPage,
       },
-      // {
-      //   path: "/ctr",
-      //   component: CTRAnalyticsPage,
-      // },
       {
         path: "/trends",
         component: TrendExplorer,
