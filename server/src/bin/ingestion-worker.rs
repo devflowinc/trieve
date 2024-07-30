@@ -385,15 +385,15 @@ pub struct ChunkDataWithEmbeddingText {
     pub distance_phrase: Option<SemanticBoost>,
 }
 
-impl Into<models::ChunkData> for ChunkDataWithEmbeddingText {
-    fn into(self) -> models::ChunkData {
+impl From<ChunkDataWithEmbeddingText> for models::ChunkData {
+    fn from(data: ChunkDataWithEmbeddingText) -> Self {
         models::ChunkData {
-            chunk_metadata: self.chunk_metadata,
-            content: self.content,
-            group_ids: self.group_ids,
-            upsert_by_tracking_id: self.upsert_by_tracking_id,
-            boost_phrase: self.boost_phrase,
-            distance_phrase: self.distance_phrase,
+            chunk_metadata: data.chunk_metadata,
+            content: data.content,
+            group_ids: data.group_ids,
+            upsert_by_tracking_id: data.upsert_by_tracking_id,
+            boost_phrase: data.boost_phrase,
+            distance_phrase: data.distance_phrase,
         }
     }
 }
@@ -586,10 +586,6 @@ pub async fn bulk_upload_chunks(
 
     let embedding_vectors = match dataset_config.SEMANTIC_ENABLED {
         true => {
-            println!(
-                "Getting dense vectors for: {:?}",
-                embedding_content_and_boosts
-            );
             let vectors = match get_dense_vectors(
                 embedding_content_and_boosts
                     .iter()
