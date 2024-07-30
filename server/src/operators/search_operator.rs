@@ -1147,8 +1147,8 @@ pub async fn retrieve_chunks_for_groups(
                     if let Some(highlight_options)  = &data.highlight_options {
                         if highlight_options.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
                             let (highlighted_chunk, highlighted_snippets) = match highlight_options.highlight_strategy {
-                                Some(HighlightStrategy::ExactMatch) => {
-                                    get_highlights_with_exact_match(
+                                Some(HighlightStrategy::V1) => {
+                                    get_highlights(
                                             chunk.clone().into(),
                                             data.query.clone(),
                                             highlight_options.highlight_threshold,
@@ -1167,7 +1167,7 @@ pub async fn retrieve_chunks_for_groups(
                                         .unwrap_or((chunk.clone().into(), vec![]))
                                 },
                                 _ => {
-                                    get_highlights(
+                                    get_highlights_with_exact_match(
                                             chunk.clone().into(),
                                             data.query.clone(),
                                             highlight_options.highlight_threshold,
@@ -1427,8 +1427,8 @@ pub async fn retrieve_chunks_from_point_ids(
                 if let Some(highlight_options)  = &data.highlight_options {
                         if highlight_options.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) {
                             let (highlighted_chunk, highlighted_snippets) = match highlight_options.highlight_strategy {
-                                Some(HighlightStrategy::ExactMatch) => {
-                                    get_highlights_with_exact_match(
+                                Some(HighlightStrategy::V1) => {
+                                    get_highlights(
                                             chunk.clone().into(),
                                             data.query.clone(),
                                             highlight_options.highlight_threshold,
@@ -1447,7 +1447,7 @@ pub async fn retrieve_chunks_from_point_ids(
                                         .unwrap_or((chunk.clone().into(), vec![]))
                                 },
                                 _ => {
-                                    get_highlights(
+                                    get_highlights_with_exact_match(
                                             chunk.clone().into(),
                                             data.query.clone(),
                                             highlight_options.highlight_threshold,
