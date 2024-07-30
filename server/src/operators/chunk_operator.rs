@@ -1488,7 +1488,7 @@ pub fn get_highlights_with_exact_match(
         .collect::<Vec<String>>();
 
     let new_output = apply_highlights_to_html(
-        input,
+        input.clone(),
         phrases
             .clone()
             .into_iter()
@@ -1549,6 +1549,7 @@ pub fn get_highlights_with_exact_match(
     let mut current_phrase = Vec::new();
     let mut word_count = 0;
     let mut current_window_index = 0;
+    let mut phrases_to_highlight_in_content = Vec::new();
 
     for split in &split_content {
         let split_words = split.split_inclusive(' ');
@@ -1564,6 +1565,7 @@ pub fn get_highlights_with_exact_match(
                         phrase = phrase
                             .replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
                     }
+                    phrases_to_highlight_in_content.push(phrases_to_highlight.clone());
                     phrases.push(phrase);
                     current_phrase.clear();
                     current_window_index += 1;
@@ -1579,11 +1581,22 @@ pub fn get_highlights_with_exact_match(
         if let Some((_, _, phrases_to_highlight)) = merged_results.get(current_window_index) {
             let mut phrase = current_phrase.join("");
             for highlight in phrases_to_highlight {
-                phrase = phrase.replace(highlight, &format!("<mark><b>{}</b></mark>", highlight))
+                phrase = phrase.replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
             }
+            phrases_to_highlight_in_content.push(phrases_to_highlight.clone());
             phrases.push(phrase);
         }
     }
+
+    let new_output = apply_highlights_to_html(
+        input.clone(),
+        phrases_to_highlight_in_content
+            .into_iter()
+            .take(max_num.unwrap_or(3) as usize)
+            .flatten()
+            .unique()
+            .collect_vec(),
+    );
 
     Ok((
         new_output,
