@@ -247,7 +247,8 @@ The last step is to setup `keycloak` for authentication and get an `issuerUrl` a
 
 A) Navigate to `auth.localtrieve.com` if you set /etc/hosts properly you should be able to login. Defaul username and password are both admin
 B) Create a new realm called `trieve`
-C) Go into Clients and create a new client called `trieve`.
+C) Navigate to `Realm settings` > `Login` and enable User Registration
+D) Go into `Clients` and create a new client called `trieve`.
 
 Enable client authentication and set the following allowed redirect url's
 
@@ -258,7 +259,7 @@ Enable client authentication and set the following allowed redirect url's
 
 You will get the client secret in the `Credentials` tab.
 
-You will need to set the following values in the `helm/values.yaml` file, it should be prefilled already with default values
+You will need to set the following values in the `helm/local-values.yaml` file, it should be prefilled already with default values
 
 ```
 config:
