@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use crate::data::models::{
@@ -1404,25 +1405,29 @@ pub fn get_highlights_with_exact_match(
         ),
     };
 
-    let split_content = content
-        .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
+    let mut content_split_by_query = vec![content.clone()];
+
+    if let Some(re) = &query_parts_as_regex {
+        content_split_by_query = split_keep(re, &content)
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect_vec();
+    }
+
+    let split_content = content_split_by_query
+        .into_iter()
         .flat_map(|x| {
-            x.to_string()
-                .split_inclusive(' ')
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>()
-                .chunks(max_length.unwrap_or(5) as usize)
-                .map(|x| x.join(""))
-                .collect::<Vec<String>>()
-        })
-        .flat_map(|x| {
-            if let Some(re) = &query_parts_as_regex {
-                return split_keep(re, &x)
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect_vec();
-            };
-            vec![x]
+            x.split_inclusive(|c: char| delimiters.contains(&c.to_string()))
+                .flat_map(|y| {
+                    y.to_string()
+                        .split_inclusive(' ')
+                        .map(|y| y.to_string())
+                        .collect::<Vec<String>>()
+                        .chunks(max_length.unwrap_or(5) as usize)
+                        .map(|y| y.join(""))
+                        .collect::<Vec<String>>()
+                })
+                .collect_vec()
         })
         .collect::<Vec<String>>();
 
@@ -1443,6 +1448,8 @@ pub fn get_highlights_with_exact_match(
             },
         )
         .collect_vec();
+
+    let exact_matches = matched_idxs.clone();
 
     let results: Vec<usize> = query_parts_split_by_stop_words
         .clone()
@@ -1482,10 +1489,21 @@ pub fn get_highlights_with_exact_match(
         })
         .collect_vec();
 
-    let phrases = matched_idxs
+    let mut phrases = matched_idxs
         .iter()
         .map(|(_, _, x)| x.to_string())
         .collect::<Vec<String>>();
+
+    phrases.sort_by(|a, b| {
+        let a_contains_exact = exact_matches.iter().any(|(_, e)| a.contains(e));
+        let b_contains_exact = exact_matches.iter().any(|(_, e)| b.contains(e));
+        match (a_contains_exact, b_contains_exact) {
+            (true, true) => Ordering::Equal,
+            (true, false) => Ordering::Less,
+            (false, true) => Ordering::Greater,
+            (false, false) => Ordering::Equal,
+        }
+    });
 
     let new_output = apply_highlights_to_html(
         input.clone(),
@@ -1545,11 +1563,10 @@ pub fn get_highlights_with_exact_match(
         })
         .collect_vec();
 
-    let mut phrases = Vec::new();
+    let mut phrases: Vec<(String, Vec<String>)> = Vec::new();
     let mut current_phrase = Vec::new();
     let mut word_count = 0;
     let mut current_window_index = 0;
-    let mut phrases_to_highlight_in_content = Vec::new();
 
     for split in &split_content {
         let split_words = split.split_inclusive(' ');
@@ -1565,8 +1582,7 @@ pub fn get_highlights_with_exact_match(
                         phrase = phrase
                             .replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
                     }
-                    phrases_to_highlight_in_content.push(phrases_to_highlight.clone());
-                    phrases.push(phrase);
+                    phrases.push((phrase, phrases_to_highlight.clone()));
                     current_phrase.clear();
                     current_window_index += 1;
                 }
@@ -1583,10 +1599,23 @@ pub fn get_highlights_with_exact_match(
             for highlight in phrases_to_highlight {
                 phrase = phrase.replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
             }
-            phrases_to_highlight_in_content.push(phrases_to_highlight.clone());
-            phrases.push(phrase);
+            phrases.push((phrase, phrases_to_highlight.clone()));
         }
     }
+
+    phrases.sort_by(|(phrase_a, _), (phrase_b, _)| {
+        let a_is_exact = exact_matches.iter().any(|(_, s)| phrase_a.contains(s));
+        let b_is_exact = exact_matches.iter().any(|(_, s)| phrase_b.contains(s));
+        match (a_is_exact, b_is_exact) {
+            (true, true) => Ordering::Equal,
+            (true, false) => Ordering::Less,
+            (false, true) => Ordering::Greater,
+            (false, false) => Ordering::Equal,
+        }
+    });
+
+    let (phrases, phrases_to_highlight_in_content): (Vec<String>, Vec<Vec<String>>) =
+        phrases.into_iter().unzip();
 
     let new_output = apply_highlights_to_html(
         input.clone(),
