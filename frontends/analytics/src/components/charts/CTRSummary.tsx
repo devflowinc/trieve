@@ -24,19 +24,28 @@ export const CTRSummary = (props: SearchCTRStatsProps) => {
     <ChartCard title="Summary" class="min-w-[300px]">
       <Show fallback={<div>Loading...</div>} when={searchSummaryQuery.data}>
         {(data) => (
-          <div>
-            <div>
-              Searches With Clicks: {data().searches_with_clicks.toString()}
-            </div>
-            <div>
-              Percent Searches With Clicks:{" "}
-              {Math.round(data().percent_searches_with_clicks).toString()}%
-            </div>
-            <div>
-              Average Click Positition:{" "}
-              {data().avg_position_of_click || "No Data"}
-            </div>
-          </div>
+          <table class="w-full">
+            <tbody>
+              <tr>
+                <td>Searches With Clicks</td>
+                <td class="text-right font-semibold">
+                  {data().searches_with_clicks.toString()}
+                </td>
+              </tr>
+              <tr>
+                <td>Percent Searches With Clicks</td>
+                <td class="text-right font-semibold">
+                  {Math.round(data().percent_searches_with_clicks).toString()}
+                </td>
+              </tr>
+              <tr>
+                <td>Average Click Position</td>
+                <td class="text-right font-semibold">
+                  {data().avg_position_of_click || "No Data"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         )}
       </Show>
     </ChartCard>

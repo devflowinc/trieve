@@ -28,7 +28,7 @@ export const getSearchCTRSummary = async (
   const data = (await response.json()) as unknown as {
     searches_with_clicks: number;
     percent_searches_with_clicks: number;
-    avg_position_of_click: number;
+    avg_position_of_click: number | null;
   };
   return data;
 };
