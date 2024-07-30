@@ -1363,59 +1363,48 @@ pub fn get_highlights_with_exact_match(
     max_num: Option<u32>,
     window_size: Option<u32>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
-    let stop_words: HashSet<String> = HashSet::from_iter(get_stop_words().iter().cloned());
-
-    // remove delimiters from query except ' '
     let query = query.replace(
         |c: char| delimiters.contains(&c.to_string()) && c != ' ',
         "",
     );
-    let mut query_parts_split_by_stop_words: Vec<String> = Vec::new();
-    let mut current_chunk: Vec<String> = Vec::new();
 
-    for word in query.split(' ') {
-        if !stop_words.contains(&word.to_lowercase()) {
-            current_chunk.push(word.to_string());
-        } else if !current_chunk.is_empty() {
-            query_parts_split_by_stop_words.push(current_chunk.join(" "));
-            current_chunk.clear();
-        }
-    }
-
-    if !current_chunk.is_empty() {
-        query_parts_split_by_stop_words.push(current_chunk.join(" "));
-    }
-    let mut matching_parts: Vec<String> = Vec::new();
+    let stop_words = get_stop_words();
+    let query_parts_split_by_stop_words: Vec<String> = query
+        .split(' ')
+        .collect_vec()
+        .chunk_by(|a, b| {
+            !stop_words.contains(&a.to_lowercase()) && !stop_words.contains(&b.to_lowercase())
+        })
+        .map(|chunk| {
+            chunk
+                .iter()
+                .filter_map(|word| match stop_words.contains(&word.to_lowercase()) {
+                    true => None,
+                    false => Some(word.to_string()),
+                })
+                .collect_vec()
+        })
+        .filter_map(|chunk| match chunk.is_empty() {
+            true => None,
+            false => Some(chunk.join(" ")),
+        })
+        .filter(|x| !x.is_empty())
+        .collect_vec();
 
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
+    let query_parts_as_regex = match query_parts_split_by_stop_words.is_empty() {
+        true => None,
+        false => Some(
+            regex::RegexBuilder::new(&query_parts_split_by_stop_words.join("|"))
+                .case_insensitive(true)
+                .build()
+                .map_err(|_| {
+                    ServiceError::InternalServerError("Failed to compile query regex".to_string())
+                })?,
+        ),
+    };
 
-    let (parts_in_content, parts_not_in_content): (Vec<_>, Vec<_>) =
-        query_parts_split_by_stop_words
-            .iter()
-            .cloned()
-            .map(|x| {
-                let lowercase_content = content.to_lowercase();
-                let x_lower = x.to_lowercase();
-                if let Some(found_idx) = lowercase_content.find(&x_lower) {
-                    content[found_idx..(found_idx + x_lower.len())].to_string()
-                } else {
-                    x
-                }
-            })
-            .partition(|x| content.contains(x));
-
-    matching_parts.extend(
-        parts_in_content
-            .into_iter()
-            .take(max_num.unwrap_or(3) as usize),
-    );
-
-    // run old algorithm for parts not in content
-
-    let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
-    let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
-
-    let mut split_content = content
+    let split_content = content
         .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
         .flat_map(|x| {
             x.to_string()
@@ -1426,225 +1415,180 @@ pub fn get_highlights_with_exact_match(
                 .map(|x| x.join(""))
                 .collect::<Vec<String>>()
         })
+        .flat_map(|x| {
+            if let Some(re) = &query_parts_as_regex {
+                return split_keep(re, &x)
+                    .into_iter()
+                    .map(|x| x.to_string())
+                    .collect_vec();
+            };
+            vec![x]
+        })
         .collect::<Vec<String>>();
+
+    let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
+    let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
 
     split_content.iter().enumerate().for_each(|(i, x)| {
         engine.insert(i, x);
     });
 
-    let new_output = input;
-    let results: Vec<usize> = parts_not_in_content
-        .into_iter()
-        .flat_map(|part| engine.search(&part))
-        .collect();
+    let mut matched_idxs = split_content
+        .iter()
+        .enumerate()
+        .filter_map(
+            |(i, split)| match query_parts_split_by_stop_words.contains(split) {
+                true => Some((i, split.clone())),
+                false => None,
+            },
+        )
+        .take(max_num.unwrap_or(3) as usize)
+        .collect_vec();
 
-    let mut matched_idxs = vec![];
-    let mut matched_idxs_set = HashSet::new();
-
-    for x in results.iter().take(
-        max_num
-            .unwrap_or(3)
-            .saturating_sub(matching_parts.len() as u32) as usize,
-    ) {
-        matched_idxs_set.insert(*x);
-        matched_idxs.push(*x);
+    let results: Vec<usize> = engine.search(&query);
+    let matched_indexes_check = matched_idxs.clone();
+    for i in results
+        .iter()
+        .filter(|i| {
+            !matched_indexes_check
+                .iter()
+                .any(|(matched_idx, _)| **i == *matched_idx)
+        })
+        .take((max_num.unwrap_or(3) as usize).saturating_sub(matched_idxs.len()))
+    {
+        let phrase = get_slice_from_vec_string(split_content.clone(), *i)?;
+        matched_idxs.push((*i, phrase));
     }
-    matched_idxs.sort();
 
-    // sort parts by when they occur in content
-    matching_parts.sort_by(|a, b| {
-        let a_idx = content.find(a).unwrap_or(usize::MAX);
-        let b_idx = content.find(b).unwrap_or(usize::MAX);
-        a_idx.cmp(&b_idx)
-    });
+    matched_idxs.sort_by(|a, b| a.0.cmp(&b.0));
 
-    // hack split_content to accept matching_parts as if it were a result.
-    for part in &matching_parts {
-        let start_index_in_content = content.find(part).ok_or(
-            ServiceError::InternalServerError("Part not in content".to_string()),
-        )?;
+    let matched_idxs: Vec<(usize, usize, String)> = split_content
+        .iter()
+        .cloned()
+        .enumerate()
+        .scan(0_usize, |acc, (i, split)| {
+            let start_idx = *acc;
+            *acc += split
+                .split(' ')
+                .filter(|s| !s.trim().is_empty())
+                .collect_vec()
+                .len();
+            Some((i, start_idx, split))
+        })
+        .filter(|(idx, _, _)| {
+            matched_idxs
+                .iter()
+                .any(|(matched_idx, _)| *idx == *matched_idx)
+        })
+        .collect_vec();
 
-        let end_index_in_content = (start_index_in_content + part.len()).saturating_sub(1);
-        let mut idx_of_first_split_containing_part = 0;
-        let mut idx_of_last_split_containing_part = 0;
-        let mut curr_length = 0;
+    let phrases = matched_idxs
+        .iter()
+        .map(|(_, _, x)| x.to_string())
+        .collect::<Vec<String>>();
 
-        for (i, split_part) in split_content.iter().enumerate() {
-            if start_index_in_content < curr_length + split_part.len() {
-                idx_of_first_split_containing_part = i;
-                break;
-            }
-            curr_length += split_part.len();
-        }
-
-        curr_length = 0;
-        for (i, split_part) in split_content.iter().enumerate() {
-            if end_index_in_content < curr_length + split_part.len() {
-                idx_of_last_split_containing_part = i;
-                break;
-            }
-            curr_length += split_part.len();
-        }
-
-        // part found across multiple splits, merge the splits
-        if idx_of_first_split_containing_part <= idx_of_last_split_containing_part {
-            // remove them from matched_idxs
-            matched_idxs.retain(|x| {
-                *x < idx_of_first_split_containing_part || *x > idx_of_last_split_containing_part
-            });
-            matched_idxs_set = HashSet::from_iter(matched_idxs.clone());
-
-            let merged_split = split_content
-                [idx_of_first_split_containing_part..=idx_of_last_split_containing_part]
-                .join("");
-
-            let (prefix, suffix) =
-                merged_split
-                    .split_once(part)
-                    .ok_or(ServiceError::InternalServerError(
-                        "Part not in split".to_string(),
-                    ))?;
-
-            let mut new_splits = vec![];
-            if !prefix.is_empty() {
-                new_splits.push(prefix.to_string());
-            }
-            new_splits.push(part.to_string());
-            if !suffix.is_empty() {
-                new_splits.push(suffix.to_string());
-            }
-            split_content.splice(
-                idx_of_first_split_containing_part..=idx_of_last_split_containing_part,
-                new_splits.clone().into_iter(),
-            );
-
-            // add new matched_idx
-            if prefix.is_empty() {
-                matched_idxs.push(idx_of_first_split_containing_part);
-                matched_idxs_set.insert(idx_of_first_split_containing_part);
-            } else {
-                matched_idxs.push(idx_of_first_split_containing_part + 1);
-                matched_idxs_set.insert(idx_of_first_split_containing_part + 1);
-            }
-            matched_idxs.sort();
-        }
-    }
+    let new_output = apply_highlights_to_html(input, phrases.clone());
 
     let window = window_size.unwrap_or(0);
     if window == 0 {
-        let phrases = matched_idxs
-            .iter()
-            .map(|x| split_content.get(*x))
-            .filter_map(|x| x.map(|x| x.to_string()))
-            .collect::<Vec<String>>();
-
-        return Ok((
-            apply_highlights_to_html(new_output, phrases.clone()),
-            phrases.clone(),
-        ));
+        return Ok((new_output, phrases.clone()));
     }
 
     let half_window = std::cmp::max(window / 2, 1);
-    // edge case 1: When the half window size is greater than the length of left or right phrase,
-    // we need to search further to get the correct windowed phrase
-    // edge case 2: When two windowed phrases overlap, we need to trim the first one.
-    let mut windowed_phrases = vec![];
-    // Used to keep track of the number of words used in the phrase
-    let mut used_phrases: HashMap<usize, usize> = HashMap::new();
-    for idx in matched_idxs.clone() {
-        let phrase = get_slice_from_vec_string(split_content.clone(), idx)?;
-        let mut next_phrase = String::new();
-        if idx < split_content.len() - 1 {
-            let mut start = idx + 1;
-            let mut count: usize = 0;
-            while (count as u32) < half_window {
-                if start >= split_content.len() || matched_idxs_set.contains(&start) {
-                    break;
-                }
-                let slice = get_slice_from_vec_string(split_content.clone(), start)?;
-                let candidate_words = slice
-                    .split_inclusive(' ')
-                    .take(half_window as usize - count)
-                    .collect::<Vec<&str>>();
-                used_phrases.insert(
-                    start,
-                    std::cmp::min(candidate_words.len(), half_window as usize - count),
-                );
-                count += candidate_words.len();
-                next_phrase.push_str(&candidate_words.join(""));
-                start += 1;
-            }
-        }
-        let mut prev_phrase = String::new();
-        if idx > 0 {
-            let mut start = idx - 1;
-            let mut count: usize = 0;
-            while (count as u32) < half_window {
-                let slice = get_slice_from_vec_string(split_content.clone(), start)?;
-                let split_words = slice.split_inclusive(' ').collect::<Vec<&str>>();
-                if matched_idxs_set.contains(&start) {
-                    break;
-                }
-                if used_phrases.contains_key(&start)
-                    && split_words.len()
-                        > *used_phrases
-                            .get(&start)
-                            .ok_or(ServiceError::BadRequest("Index out of bounds".to_string()))?
-                {
-                    let remaining_count = half_window as usize - count;
-                    let available_word_len = split_words.len()
-                        - *used_phrases
-                            .get(&start)
-                            .ok_or(ServiceError::BadRequest("Index out of bounds".to_string()))?;
-                    if remaining_count > available_word_len {
-                        count += remaining_count - available_word_len;
-                    } else {
-                        break;
-                    }
-                }
-                if used_phrases.contains_key(&start)
-                    && split_words.len()
-                        <= *used_phrases
-                            .get(&start)
-                            .ok_or(ServiceError::BadRequest("Index out of bounds".to_string()))?
-                {
-                    break;
-                }
-                let candidate_words = split_words
-                    .into_iter()
-                    .rev()
-                    .take(half_window as usize - count)
-                    .collect::<Vec<&str>>();
-                count += candidate_words.len();
-                prev_phrase = format!("{}{}", candidate_words.iter().rev().join(""), prev_phrase);
-                if start == 0 {
-                    break;
-                }
-                start -= 1;
-            }
-        }
-        let highlighted_phrase = phrase.replace(
-            phrase.trim(),
-            &format!("<mark><b>{}</b></mark>", phrase.trim()),
-        );
-        let windowed_phrase = format!("{}{}{}", prev_phrase, highlighted_phrase, next_phrase);
-        windowed_phrases.push(windowed_phrase);
-    }
-    let matched_phrases = matched_idxs
-        .clone()
-        .iter()
-        .filter_map(|x| split_content.get(*x).cloned())
-        .collect::<Vec<String>>();
-    let result_matches = if windowed_phrases.is_empty() {
-        matched_phrases.clone()
-    } else {
-        windowed_phrases.clone()
-    };
 
-    Ok((
-        apply_highlights_to_html(new_output, matched_phrases),
-        result_matches,
-    ))
+    let matched_idxs_with_windows = matched_idxs
+        .iter()
+        .map(|(split_idx, start_idx, phrase)| {
+            (
+                *split_idx,
+                *start_idx,
+                phrase,
+                start_idx.saturating_sub(half_window as usize),
+                start_idx
+                    + phrase
+                        .clone()
+                        .split(' ')
+                        .filter(|s| !s.trim().is_empty())
+                        .collect_vec()
+                        .len()
+                    + half_window as usize,
+            )
+        })
+        .collect_vec();
+
+    let merged_results = matched_idxs_with_windows
+        .chunk_by(|(_, _, _, _, a_w_end), (_, _, _, b_w_start, _)| a_w_end >= b_w_start)
+        .map(|merged_run| {
+            let first_window = merged_run.first().unwrap();
+            let last_window = merged_run.last().unwrap();
+            let combined_phrases = merged_run
+                .iter()
+                .map(|(_, _, phrase, _, _)| phrase.to_string())
+                .unique()
+                .collect_vec();
+            (first_window.3, last_window.4, combined_phrases)
+        })
+        .collect_vec();
+
+    let mut phrases = Vec::new();
+    let mut current_phrase = Vec::new();
+    let mut word_count = 0;
+    let mut current_window_index = 0;
+
+    for split in &split_content {
+        let split_words = split.split_inclusive(' ');
+        for word in split_words {
+            if let Some((w_start, w_end, phrases_to_highlight)) =
+                merged_results.get(current_window_index)
+            {
+                if word_count >= *w_start && word_count <= *w_end {
+                    current_phrase.push(word);
+                } else if !current_phrase.is_empty() {
+                    let mut phrase = current_phrase.join("");
+                    for highlight in phrases_to_highlight {
+                        phrase = phrase
+                            .replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
+                    }
+                    phrases.push(phrase);
+                    current_phrase.clear();
+                    current_window_index += 1;
+                }
+            }
+            if !word.trim().is_empty() {
+                word_count += 1;
+            }
+        }
+    }
+
+    if !current_phrase.is_empty() {
+        if let Some((_, _, phrases_to_highlight)) = merged_results.get(current_window_index) {
+            let mut phrase = current_phrase.join("");
+            for highlight in phrases_to_highlight {
+                phrase = phrase.replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
+            }
+            phrases.push(phrase);
+        }
+    }
+
+    Ok((new_output, phrases))
+}
+
+fn split_keep<'a>(r: &regex::Regex, text: &'a str) -> Vec<&'a str> {
+    let mut result = Vec::new();
+    let mut last = 0;
+    for mat in r.find_iter(text) {
+        let index = mat.start();
+        let matched = mat.as_str();
+        if last != index {
+            result.push(&text[last..index]);
+        }
+        result.push(matched);
+        last = index + matched.len();
+    }
+    if last < text.len() {
+        result.push(&text[last..]);
+    }
+    result
 }
 
 #[allow(clippy::too_many_arguments)]
