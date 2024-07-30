@@ -5,7 +5,6 @@ metadata:
   labels:
     app.kubernetes.io/name: group-worker
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: Helm
 spec:
   selector:
     matchLabels:
@@ -16,7 +15,6 @@ spec:
       labels:
         app.kubernetes.io/name: group-worker
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/managed-by: Helm
     spec:
       serviceAccountName: cloud-postgres-service-account
       containers:

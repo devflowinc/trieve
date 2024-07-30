@@ -22,13 +22,7 @@ metadata:
   annotations:
     cloud.google.com/backend-config: '{"ports": {"80":"server-backend-config"}}'
   labels:
-    app.kubernetes.io/instance: trieve
-    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: {{ $name }}
-    app.kubernetes.io/version: 1.16.0
-    helm.sh/chart: trieve-0.1.0
-    meta.helm.sh/release-name: trieve
-    meta.helm.sh/release-namespace: default
 spec:
   type: ClusterIP
   ports:
@@ -38,4 +32,4 @@ spec:
       name: server
   selector:
     app.kubernetes.io/name: {{ $selector }}
-    app.kubernetes.io/instance: trieve
+    app.kubernetes.io/instance: {{ .Release.Name }}

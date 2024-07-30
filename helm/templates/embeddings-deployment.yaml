@@ -13,7 +13,6 @@ metadata:
   labels:
     app.kubernetes.io/name: embedding-{{ $name }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
-    app.kubernetes.io/managed-by: Helm
 spec:
   selector:
     matchLabels:
@@ -24,7 +23,6 @@ spec:
       labels:
         app.kubernetes.io/name: embedding-{{ $name }}
         app.kubernetes.io/instance: {{ $.Release.Name }}
-        app.kubernetes.io/managed-by: Helm
     spec:
       {{- if eq $.Values.environment "gcloud" }}
       nodeSelector:

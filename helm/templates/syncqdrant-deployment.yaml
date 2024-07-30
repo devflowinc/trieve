@@ -5,7 +5,6 @@ metadata:
   labels:
     app.kubernetes.io/name: sync-qdrant
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 0 # Set to 0 by default
   selector:
@@ -17,7 +16,6 @@ spec:
       labels:
         app.kubernetes.io/name: sync-qdrant
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/managed-by: Helm
     spec:
       serviceAccountName: cloud-postgres-service-account
       containers:
