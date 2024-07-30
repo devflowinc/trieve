@@ -381,8 +381,8 @@ pub struct ChunkDataWithEmbeddingText {
     pub embedding_content: String,
     pub group_ids: Option<Vec<uuid::Uuid>>,
     pub upsert_by_tracking_id: bool,
-    pub boost_phrase: Option<FullTextBoost>,
-    pub distance_phrase: Option<SemanticBoost>,
+    pub fulltext_boost: Option<FullTextBoost>,
+    pub semantic_boost: Option<SemanticBoost>,
 }
 
 impl From<ChunkDataWithEmbeddingText> for models::ChunkData {
@@ -392,8 +392,8 @@ impl From<ChunkDataWithEmbeddingText> for models::ChunkData {
             content: data.content,
             group_ids: data.group_ids,
             upsert_by_tracking_id: data.upsert_by_tracking_id,
-            boost_phrase: data.boost_phrase,
-            distance_phrase: data.distance_phrase,
+            fulltext_boost: data.fulltext_boost,
+            semantic_boost: data.semantic_boost,
         }
     }
 }
@@ -486,28 +486,22 @@ pub async fn bulk_upload_chunks(
                 num_value: message.chunk.num_value,
             };
 
-            let boost_phrase = if message.chunk.fulltext_boost.is_some()
-                && message
-                    .chunk
-                    .fulltext_boost
-                    .as_ref()
-                    .unwrap()
-                    .phrase
-                    .is_empty()
-            {
-                None
-            } else {
-                message.chunk.fulltext_boost.clone()
-            };
-
             ChunkDataWithEmbeddingText {
                 chunk_metadata,
                 content: content.clone(),
                 embedding_content: message.chunk.semantic_content.clone().unwrap_or(content),
                 group_ids: message.chunk.group_ids.clone(),
                 upsert_by_tracking_id: message.upsert_by_tracking_id,
-                boost_phrase,
-                distance_phrase: message.chunk.semantic_boost.clone(),
+                fulltext_boost: message
+                    .chunk
+                    .fulltext_boost
+                    .clone()
+                    .filter(|boost| !boost.phrase.is_empty()),
+                semantic_boost: message
+                    .chunk
+                    .semantic_boost
+                    .clone()
+                    .filter(|boost| !boost.phrase.is_empty()),
             }
         })
         .filter(|data| !data.content.is_empty())
@@ -568,8 +562,8 @@ pub async fn bulk_upload_chunks(
             .map(|data| {
                 (
                     data.embedding_content.clone(),
-                    data.boost_phrase.clone(),
-                    data.distance_phrase.clone(),
+                    data.fulltext_boost.clone(),
+                    data.semantic_boost.clone(),
                 )
             })
             .collect();
@@ -589,7 +583,7 @@ pub async fn bulk_upload_chunks(
             let vectors = match get_dense_vectors(
                 embedding_content_and_boosts
                     .iter()
-                    .map(|(content, _, distance_boost)| (content.clone(), distance_boost.clone()))
+                    .map(|(content, _, semantic_boost)| (content.clone(), semantic_boost.clone()))
                     .collect(),
                 "doc",
                 dataset_config.clone(),
@@ -631,8 +625,8 @@ pub async fn bulk_upload_chunks(
             .map(|data| {
                 (
                     data.content.clone(),
-                    data.boost_phrase.clone(),
-                    data.distance_phrase.clone(),
+                    data.fulltext_boost.clone(),
+                    data.semantic_boost.clone(),
                 )
             })
             .collect();
@@ -827,7 +821,7 @@ async fn upload_chunk(
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
     let content_and_boosts: Vec<(String, Option<FullTextBoost>)> = vec![(
         ingestion_data.content.clone(),
-        ingestion_data.boost_phrase.clone(),
+        ingestion_data.fulltext_boost.clone(),
     )];
 
     let chunk_tag_set = payload.chunk.tag_set.clone().map(|tag_set| {

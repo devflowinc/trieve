@@ -4184,8 +4184,8 @@ pub struct ChunkData {
     pub content: String,
     pub group_ids: Option<Vec<uuid::Uuid>>,
     pub upsert_by_tracking_id: bool,
-    pub boost_phrase: Option<FullTextBoost>,
-    pub distance_phrase: Option<SemanticBoost>,
+    pub fulltext_boost: Option<FullTextBoost>,
+    pub semantic_boost: Option<SemanticBoost>,
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row)]

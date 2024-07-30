@@ -638,8 +638,8 @@ pub async fn bulk_insert_chunk_metadata_query(
                 content: chunk_data.content,
                 group_ids: chunk_data.group_ids,
                 upsert_by_tracking_id: chunk_data.upsert_by_tracking_id,
-                boost_phrase: chunk_data.boost_phrase,
-                distance_phrase: chunk_data.distance_phrase,
+                fulltext_boost: chunk_data.fulltext_boost,
+                semantic_boost: chunk_data.semantic_boost,
             }
         })
         .collect::<Vec<ChunkData>>();

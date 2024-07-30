@@ -76,8 +76,8 @@ pub struct SemanticBoost {
         "lon": 151
     },
     "image_urls": ["https://example.com/red", "https://example.com/blue"],
-    "boost_phrase": {"phrase": "foo", "boost_factor": 5.0},
-    "distance_phrase": {"phrase": "flagship", "distance_factor": 0.5}
+    "fulltext_boost": {"phrase": "foo", "boost_factor": 5.0},
+    "semantic_boost": {"phrase": "flagship", "distance_factor": 0.5}
 }))]
 pub struct ChunkReqPayload {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
