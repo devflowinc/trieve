@@ -10,10 +10,10 @@ metadata:
     app: trieve
   annotations:
     kubernetes.io/ingress.class: gce
-    external-dns.alpha.kubernetes.io/hostname: "dashboard.{{ $externalDomain }}"
+    external-dns.alpha.kubernetes.io/hostname: "dashboard.{{ $domain }}"
 spec:
   rules:
-    - host: "dashboard.{{ $externalDomain }}"
+    - host: "dashboard.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -32,10 +32,10 @@ metadata:
     app: trieve
   annotations:
     kubernetes.io/ingress.class: gce
-    external-dns.alpha.kubernetes.io/hostname: "chat.{{ $externalDomain }}"
+    external-dns.alpha.kubernetes.io/hostname: "chat.{{ $domain }}"
 spec:
   rules:
-    - host: "chat.{{ $externalDomain }}"
+    - host: "chat.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -54,10 +54,10 @@ metadata:
     app: trieve
   annotations:
     kubernetes.io/ingress.class: gce
-    external-dns.alpha.kubernetes.io/hostname: "api.{{ $externalDomain }}"
+    external-dns.alpha.kubernetes.io/hostname: "api.{{ $domain }}"
 spec:
   rules:
-    - host: "api.{{ $externalDomain }}"
+    - host: "api.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -76,10 +76,10 @@ metadata:
     app: trieve
   annotations:
     kubernetes.io/ingress.class: gce
-    external-dns.alpha.kubernetes.io/hostname: "search.{{ $externalDomain }}"
+    external-dns.alpha.kubernetes.io/hostname: "search.{{ $domain }}"
 spec:
   rules:
-    - host: "search.{{ $externalDomain }}"
+    - host: "search.{{ $domain }}"
       http:
         paths:
           - path: /

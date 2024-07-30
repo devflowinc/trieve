@@ -185,42 +185,85 @@ We reccomend using `kind`
 ./scripts/pull-and-push.sh
 ```
 
-4) Setup `values.yaml` file
+4) Install clickhouse operator
 
-```
-export SENTRY_CHAT_DSN=https://********************************@sentry.trieve.ai/6
-export ENVIRONMENT=aws
-export DOMAIN=example.com # Only used for local
-export EXTERNAL_DOMAIN=example.com
-export DASHBOARD_URL=https://dashboard.example.com
-export SALT=goodsaltisveryyummy
-export SECRET_KEY=1234512345123451234512345123451234512345123451234512345123451234512345123451234h
-export ADMIN_API_KEY=asdasdasdasdasd
-export OIDC_CLIENT_SECRET=YllmLDTy67MbsUBrUAWvQ7z9aMq0QcKx
-export ISSUER_URL=https://oidc.example.com
-export AUTH_REDIRECT_URL=https://oidc.example.com/realms/trieve/protocol/openid-connect/auth
-export REDIRECT_URL=https://oidc.example.com/realms/trieve/protocol/openid-connect/auth
-export SMTP_RELAY=smtp.gmail.com
-export SMTP_USERNAME=trieve@gmail.com
-export SMTP_PASSWORD=pass************
-export SMTP_EMAIL_ADDRESS=triever@gmail.com
-export LLM_API_KEY=sk-or-v1-**************************************************************** # Open Router API KEY
-export OPENAI_API_KEY=sk-************************************************ # OPENAI API KEY
-export OPENAI_BASE_URL=https://api.openai.com/v1
-export S3_ENDPOINT=https://<bucket>.s3.amazonaws.com
-export S3_ACCESS_KEY=ZaaZZaaZZaaZZaaZZaaZ
-export S3_SECRET_KEY=ssssssssssssssssssssTTTTTTTTTTTTTTTTTTTT
-export S3_BUCKET=trieve
-export AWS_REGION=us-east-1
-export STRIPE_API_KEY=sk_test_***************************************************************************************************
-export STRIPE_WEBHOOK_SECRET=sk_test_***************************************************************************************************
-
-helm/from-env.sh
+```sh
+./helm/install-clickhouse-operator.sh
 ```
 
 5) Install the helm chart into kubernetes cluster
 
-helm install -f helm/values.yaml trieve helm/
+helm install -f helm/local-values.yaml local helm/
+
+6) Edit the coredns entry for auth.localtrieve.com to work as an alias within kubernetes.
+
+`kubectl edit -n kube-system configmaps/coredns`
+
+Add in the following rule within the coredns settings. `rewrite name auth.localtrieve.com keycloak.default.svc.cluster.local`
+
+It should look something like this.
+
+```
+.:53 {
+    errors
+    health {
+       lameduck 5s
+    }
+    ready
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+       pods insecure
+       fallthrough in-addr.arpa ip6.arpa
+       ttl 30
+    }
+    prometheus :9153
+    forward . /etc/resolv.conf {
+       max_concurrent 1000
+    }
+    rewrite name auth.localtrieve.com keycloak.default.svc.cluster.local
+    cache 30
+    loop
+    reload
+    loadbalance
+}
+```
+
+8) Edit `/etc/hosts` and add the following entries here.
+
+```
+127.0.0.1  api.localtrieve.com
+127.0.0.1  search.localtrieve.com
+127.0.0.1  dashboard.localtrieve.com
+127.0.0.1  chat.localtrieve.com
+127.0.0.1  auth.localtrieve.com
+```
+
+9) Setup/OIDC provider and Authorized Redirect URL'S
+
+The last step is to setup `keycloak` for authentication and get an `issuerUrl` and `clientSecret`.
+
+A) Navigate to `auth.localtrieve.com` if you set /etc/hosts properly you should be able to login. Defaul username and password are both admin
+B) Create a new realm called `trieve`
+C) Go into Clients and create a new client called `trieve`.
+
+Enable client authentication and set the following allowed redirect url's
+
+- http://api.localtrieve.com/*
+- http://search.localtrieve.com/*
+- http://chat.localtrieve.com/*
+- http://dashboard.localtrieve.com/*
+
+You will get the client secret in the `Credentials` tab.
+
+You will need to set the following values in the `helm/values.yaml` file, it should be prefilled already with default values
+
+```
+config:
+  oidc:
+    clientSecret: $OIDC_CLIENT_SECRET
+    clientId: trieve
+    issuerUrl: http://auth.localtrieve.com/realms/trieve
+    authRedirectUrl: http://auth.localtrieve.com/realms/trieve/protocol/openid-connect/auth
+```
 
 
 ## AWS EKS
