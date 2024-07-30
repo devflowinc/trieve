@@ -32,11 +32,6 @@ const navbarRoutes = [
     label: "RAG Analytics",
     icon: IoChatboxOutline,
   },
-  // {
-  //   href: "/ctr",
-  //   label: "Click-through Rate",
-  //   icon: HiSolidCursorArrowRays,
-  // },
   {
     href: "/trends",
     label: "Trend Explorer",

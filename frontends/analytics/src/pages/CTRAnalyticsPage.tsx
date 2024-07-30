@@ -2,7 +2,6 @@ import { subDays } from "date-fns";
 import { AnalyticsParams } from "shared/types";
 import { createStore } from "solid-js/store";
 import { FilterBar } from "../components/FilterBar";
-import { CTRSummary } from "../components/charts/CTRSummary";
 
 export const CTRAnalyticsPage = () => {
   return (
@@ -33,9 +32,6 @@ export const SearchCTRAnalytics = () => {
         setFilters={setSearchCtrFilter}
       />
       Unused page!!!
-      <div class="flex gap-2 overflow-x-auto py-4">
-        <CTRSummary params={searchCtrFilter} />
-      </div>
     </div>
   );
 };
