@@ -189,7 +189,8 @@ const ResultsPage = (props: ResultsPageProps) => {
         get_total_pages: props.search.debounced.getTotalPages ?? false,
         highlight_options: {
           highlight_results: props.search.debounced.highlightResults ?? true,
-          highlight_strategy: props.search.debounced.highlightStrategy ?? "v1",
+          highlight_strategy:
+            props.search.debounced.highlightStrategy ?? "exactmatch",
           highlight_threshold: props.search.debounced.highlightThreshold,
           highlight_delimiters: props.search.debounced.highlightDelimiters ?? [
             "?",

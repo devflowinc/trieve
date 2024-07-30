@@ -68,7 +68,7 @@ const initalState: SearchOptions = {
   pageSize: 10,
   getTotalPages: false,
   highlightResults: true,
-  highlightStrategy: "v1",
+  highlightStrategy: "exactmatch",
   highlightThreshold: 0.8,
   highlightDelimiters: ["?", ".", "!"],
   highlightMaxLength: 8,
@@ -122,7 +122,7 @@ const fromParamsToState = (
     highlightResults: (params.highlightResults ?? "true") === "true",
     highlightStrategy: isHighlightStrategy(params.highlightStrategy)
       ? params.highlightStrategy
-      : "v1",
+      : "exactmatch",
     highlightThreshold: parseFloat(params.highlightThreshold ?? "0.8"),
     highlightDelimiters:
       params.highlightDelimiters?.split(",") ?? initalState.highlightDelimiters,

@@ -853,7 +853,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                   },
                                   pageSize: 10,
                                   getTotalPages: false,
-                                  highlightStrategy: "v1",
+                                  highlightStrategy: "exactmatch",
                                   highlightResults: true,
                                   highlightDelimiters: ["?", ".", "!"],
                                   highlightMaxLength: 8,
