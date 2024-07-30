@@ -95,14 +95,14 @@ export const CreateNewDocChunkForm = () => {
     }
 
     if (boostPhrase() && boostFactor()) {
-      requestBody.boost_phrase = {
+      requestBody.fulltext_boost = {
         phrase: boostPhrase(),
         boost_factor: boostFactor(),
       };
     }
 
     if (distanceBoostFactor() && distanceBoostPhrase()) {
-      requestBody.distance_phrase = {
+      requestBody.semantic_boost = {
         phrase: distanceBoostPhrase(),
         distance_factor: distanceBoostFactor(),
       };
@@ -275,7 +275,7 @@ export const CreateNewDocChunkForm = () => {
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
           />
           <div class="flex items-center gap-x-2">
-            <div>IDF Boost</div>
+            <div>Fulltext Boost</div>
             <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
               <Tooltip
                 body={
@@ -303,7 +303,7 @@ export const CreateNewDocChunkForm = () => {
             />
           </div>
           <div class="flex items-center gap-x-2">
-            <div>Distance Boost</div>
+            <div>Semantic Boost</div>
             <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
               <Tooltip
                 body={
