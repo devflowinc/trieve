@@ -72,7 +72,7 @@ export const Sidebar = (props: NavbarProps) => {
   };
 
   return (
-    <div class="relative flex h-screen flex-col justify-start overflow-y-auto border border-r-neutral-300 bg-neutral-100 p-4">
+    <div class="relative hidden h-screen flex-col justify-start overflow-y-auto border border-r-neutral-300 bg-neutral-100 p-4 lg:flex">
       <div class="flex items-center gap-1">
         <img
           class="h-12 w-12 cursor-pointer"
