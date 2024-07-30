@@ -73,7 +73,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
       .finally(() => setIsLoading(false));
   };
 
-  createEffect((prev) => {
+  createEffect(() => {
     let organizationId = selectedOrganizationId();
 
     if (organizationId == null) {
@@ -99,10 +99,6 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
           setSelectedOrganizationId(organizationId);
         }
       }
-    }
-
-    if (prev !== organizationId) {
-      login();
     }
 
     return organizationId;
