@@ -3,12 +3,12 @@ replicaCount: 4
 image:
   repository: docker.io/qdrant/qdrant
   pullPolicy: IfNotPresent
-  tag: ""
+  tag: "v1.10.1"
   useUnprivilegedImage: false
 
 imagePullSecrets: []
 nameOverride: ""
-fullnameOverride: ""
+fullnameOverride: "trieve-qdrant"
 args: ["./config/initialize.sh"]
 env: {}
   # - name: QDRANT_ALLOW_RECOVERY_MODE

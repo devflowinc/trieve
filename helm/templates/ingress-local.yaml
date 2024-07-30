@@ -1,5 +1,4 @@
 {{- $domain := .Values.domain }}
-{{- $externalDomain := .Values.externalDomain }}
 {{- if eq .Values.environment "local" }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress

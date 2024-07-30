@@ -1,5 +1,4 @@
 {{- $domain := .Values.domain }}
-{{- $externalDomain := .Values.externalDomain }}
 {{- if (eq .Values.environment "aws") }}
 ---
 apiVersion: networking.k8s.io/v1
@@ -12,11 +11,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "dashboard.{{ $externalDomain }}"
+    external-dns.alpha.kubernetes.io/hostname: "dashboard.{{ $domain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "dashboard.{{ $externalDomain }}"
+    - host: "dashboard.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -37,11 +36,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "chat.{{ $externalDomain }}"
+    external-dns.alpha.kubernetes.io/hostname: "chat.{{ $domain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "chat.{{ $externalDomain }}"
+    - host: "chat.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -64,11 +63,11 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/healthcheck-path: "/api/health"
     alb.ingress.kubernetes.io/healthcheck-port: "8090"
-    external-dns.alpha.kubernetes.io/hostname: "api.{{ $externalDomain }}"
+    external-dns.alpha.kubernetes.io/hostname: "api.{{ $domain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "api.{{ $externalDomain }}"
+    - host: "api.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -89,11 +88,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "search.{{ $externalDomain }}"
+    external-dns.alpha.kubernetes.io/hostname: "search.{{ $domain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "search.{{ $externalDomain }}"
+    - host: "search.{{ $domain }}"
       http:
         paths:
           - path: /
