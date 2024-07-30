@@ -4494,6 +4494,7 @@ pub enum CTRAnalyticsResponse {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
+/// Strategy to use for recommendations, either "average_vector" or "best_score". The default is "average_vector". The "average_vector" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search. The "best_score" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives.
 pub enum RecommendationStrategy {
     AverageVector,
     BestScore,
@@ -4501,8 +4502,10 @@ pub enum RecommendationStrategy {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
+/// The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.
 pub enum RecommendType {
     Semantic,
+    #[serde(rename = "fulltext", alias = "full_text")]
     FullText,
 }
 
