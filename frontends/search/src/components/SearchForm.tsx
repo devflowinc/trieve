@@ -860,7 +860,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                                   highlightMaxNum: 3,
                                   highlightWindow: 0,
                                   group_size: 3,
-								  removeStopWords: false,
+                                  removeStopWords: false,
                                 } as SearchOptions;
                               });
                             }}

@@ -43,7 +43,7 @@ export const Sidebar = () => {
         <div class="sticky top-0 flex flex-col">
           <div class="border-b px-4 py-3">
             <h5 class="font-semibold text-neutral-600">Organizations</h5>
-            <div class="flex flex-col items-start space-y-1 py-2">
+            <div class="flex flex-col items-start py-2">
               <For each={sortedOrgs()}>
                 {(org) => (
                   <button
@@ -52,8 +52,9 @@ export const Sidebar = () => {
                       navigate(`/dashboard/${org.id}/overview`);
                     }}
                     classList={{
-                      "block hover:text-fuchsia-800": true,
-                      "text-magenta":
+                      "block hover:text-fuchsia-800 min-w-full items-start text-left pl-2 p-1 rounded-md":
+                        true,
+                      "bg-fuchsia-200":
                         userContext.selectedOrganizationId?.() === org.id,
                     }}
                   >
@@ -67,7 +68,7 @@ export const Sidebar = () => {
               onClick={() => setShowNewOrgModal(true)}
             >
               <AiOutlinePlus class="inline-block h-4 w-4" />{" "}
-              <p>New Organization</p>
+              <p class="text-left">New Organization</p>
             </button>
           </div>
           <div class="border-b px-4 py-3">
