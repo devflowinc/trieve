@@ -609,7 +609,7 @@ pub async fn get_sparse_vectors(
     let filtered_boosts_with_index = content_and_boosts
         .into_iter()
         .enumerate()
-        .filter_map(|(i, (_, y))| y.map(|boost_phrase| (i, boost_phrase)))
+        .filter_map(|(i, (_, y))| y.map(|fulltext_boost| (i, fulltext_boost)))
         .collect::<Vec<(usize, FullTextBoost)>>();
     let thirty_filtered_boosts_with_indices = filtered_boosts_with_index.chunks(30);
 
@@ -1087,7 +1087,7 @@ pub fn term_frequency(
 ) -> Vec<Vec<(u32, f32)>> {
     batched_tokens
         .iter()
-        .map(|(batch, boost_phrase)| {
+        .map(|(batch, fulltext_boost_option)| {
             // Get Full Counts
             let mut raw_freqs = HashMap::new();
             batch.iter().for_each(|token| {
@@ -1112,14 +1112,14 @@ pub fn term_frequency(
                 tf_map.insert(token_id, top / bottom);
             }
 
-            if let Some(boost_phrase) = boost_phrase {
-                let tokenized_phrase = tokenize(boost_phrase.phrase.clone());
+            if let Some(fulltext_boost) = fulltext_boost_option {
+                let tokenized_phrase = tokenize(fulltext_boost.phrase.clone());
                 for token in tokenized_phrase {
                     let token_id =
                         (murmur3_32(&mut Cursor::new(token), 0).unwrap() as i32).unsigned_abs();
 
                     let value = tf_map[&token_id];
-                    tf_map.insert(token_id, boost_phrase.boost_factor as f32 * value);
+                    tf_map.insert(token_id, fulltext_boost.boost_factor as f32 * value);
                 }
             }
 
