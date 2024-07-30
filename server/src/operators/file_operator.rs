@@ -178,6 +178,7 @@ pub async fn create_file_chunks(
     for (i, chunk_html) in chunk_htmls.iter().enumerate() {
         let create_chunk_data = ChunkReqPayload {
             chunk_html: Some(chunk_html.clone()),
+            semantic_content: None,
             link: upload_file_data.link.clone(),
             tag_set: upload_file_data.tag_set.clone(),
             metadata: upload_file_data.metadata.clone(),

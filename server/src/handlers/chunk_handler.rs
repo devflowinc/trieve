@@ -82,6 +82,8 @@ pub struct SemanticBoost {
 pub struct ChunkReqPayload {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
     pub chunk_html: Option<String>,
+    /// If semantic_content is present, it will be used for semantic embeddings instead of `chunk_html`. `chunk_html` will always be used for fulltext functionality.
+    pub semantic_content: Option<String>,
     /// Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.
     pub link: Option<String>,
     /// Tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.

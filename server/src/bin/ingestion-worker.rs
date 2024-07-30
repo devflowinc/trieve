@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{
-    self, ChunkData, ChunkMetadata, DatasetConfiguration, Event, QdrantPayload, UnifiedId,
+    self, ChunkMetadata, DatasetConfiguration, Event, QdrantPayload, UnifiedId,
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -374,6 +374,30 @@ async fn ingestion_worker(
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ChunkDataWithEmbeddingText {
+    pub chunk_metadata: ChunkMetadata,
+    pub content: String,
+    pub embedding_content: String,
+    pub group_ids: Option<Vec<uuid::Uuid>>,
+    pub upsert_by_tracking_id: bool,
+    pub boost_phrase: Option<FullTextBoost>,
+    pub distance_phrase: Option<SemanticBoost>,
+}
+
+impl Into<models::ChunkData> for ChunkDataWithEmbeddingText {
+    fn into(self) -> models::ChunkData {
+        models::ChunkData {
+            chunk_metadata: self.chunk_metadata,
+            content: self.content,
+            group_ids: self.group_ids,
+            upsert_by_tracking_id: self.upsert_by_tracking_id,
+            boost_phrase: self.boost_phrase,
+            distance_phrase: self.distance_phrase,
+        }
+    }
+}
+
 #[tracing::instrument(skip(payload, web_pool))]
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
@@ -403,7 +427,7 @@ pub async fn bulk_upload_chunks(
         .iter()
         .any(|message| message.upsert_by_tracking_id);
 
-    let ingestion_data: Vec<ChunkData> = payload
+    let ingestion_data: Vec<ChunkDataWithEmbeddingText> = payload
         .ingestion_messages
         .iter()
         .map(|message| {
@@ -476,9 +500,10 @@ pub async fn bulk_upload_chunks(
                 message.chunk.fulltext_boost.clone()
             };
 
-            ChunkData {
+            ChunkDataWithEmbeddingText {
                 chunk_metadata,
-                content,
+                content: content.clone(),
+                embedding_content: message.chunk.semantic_content.clone().unwrap_or(content),
                 group_ids: message.chunk.group_ids.clone(),
                 upsert_by_tracking_id: message.upsert_by_tracking_id,
                 boost_phrase,
@@ -518,7 +543,11 @@ pub async fn bulk_upload_chunks(
     );
 
     let inserted_chunk_metadatas = bulk_insert_chunk_metadata_query(
-        ingestion_data.clone(),
+        ingestion_data
+            .clone()
+            .into_iter()
+            .map(|data| data.into())
+            .collect_vec(),
         payload.dataset_id,
         upsert_by_tracking_id_being_used,
         web_pool.clone(),
@@ -533,12 +562,12 @@ pub async fn bulk_upload_chunks(
     }
 
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
-    let content_and_boosts: Vec<(String, Option<FullTextBoost>, Option<SemanticBoost>)> =
+    let embedding_content_and_boosts: Vec<(String, Option<FullTextBoost>, Option<SemanticBoost>)> =
         ingestion_data
             .iter()
             .map(|data| {
                 (
-                    data.content.clone(),
+                    data.embedding_content.clone(),
                     data.boost_phrase.clone(),
                     data.distance_phrase.clone(),
                 )
@@ -557,8 +586,12 @@ pub async fn bulk_upload_chunks(
 
     let embedding_vectors = match dataset_config.SEMANTIC_ENABLED {
         true => {
+            println!(
+                "Getting dense vectors for: {:?}",
+                embedding_content_and_boosts
+            );
             let vectors = match get_dense_vectors(
-                content_and_boosts
+                embedding_content_and_boosts
                     .iter()
                     .map(|(content, _, distance_boost)| (content.clone(), distance_boost.clone()))
                     .collect(),
@@ -585,7 +618,7 @@ pub async fn bulk_upload_chunks(
             }?;
             vectors.into_iter().map(Some).collect()
         }
-        false => vec![None; content_and_boosts.len()],
+        false => vec![None; embedding_content_and_boosts.len()],
     };
 
     // Assuming split average is false, Assume Explicit Vectors don't exist
@@ -595,6 +628,18 @@ pub async fn bulk_upload_chunks(
         "calling_create_SPLADE_embeddings",
         "calling_create_SPLADE_embeddings",
     );
+
+    let content_and_boosts: Vec<(String, Option<FullTextBoost>, Option<SemanticBoost>)> =
+        ingestion_data
+            .iter()
+            .map(|data| {
+                (
+                    data.content.clone(),
+                    data.boost_phrase.clone(),
+                    data.distance_phrase.clone(),
+                )
+            })
+            .collect();
 
     let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
         match get_sparse_vectors(
@@ -760,7 +805,7 @@ pub async fn bulk_upload_chunks(
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     dataset_config: DatasetConfiguration,
-    ingestion_data: ChunkData,
+    ingestion_data: ChunkDataWithEmbeddingText,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
 ) -> Result<uuid::Uuid, ServiceError> {
@@ -775,6 +820,12 @@ async fn upload_chunk(
     let content = match payload.chunk.convert_html_to_text.unwrap_or(true) {
         true => convert_html_to_text(&(payload.chunk.chunk_html.clone().unwrap_or_default())),
         false => payload.chunk.chunk_html.clone().unwrap_or_default(),
+    };
+
+    let pre_parsed_content = ingestion_data.embedding_content;
+    let semantic_content = match payload.chunk.convert_html_to_text.unwrap_or(true) {
+        true => convert_html_to_text(&pre_parsed_content),
+        false => pre_parsed_content.clone(),
     };
 
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
@@ -843,7 +894,7 @@ async fn upload_chunk(
         true => {
             let embedding = match payload.chunk.split_avg.unwrap_or(false) {
                 true => {
-                    let chunks = coarse_doc_chunker(content.clone(), None, false, 20);
+                    let chunks = coarse_doc_chunker(semantic_content.clone(), None, false, 20);
 
                     let embeddings = get_dense_vectors(
                         chunks
@@ -860,7 +911,10 @@ async fn upload_chunk(
                 }
                 false => {
                     let embedding_vectors = get_dense_vectors(
-                        vec![(content.clone(), payload.chunk.semantic_boost.clone())],
+                        vec![(
+                            semantic_content.clone(),
+                            payload.chunk.semantic_boost.clone(),
+                        )],
                         "doc",
                         dataset_config.clone(),
                         reqwest_client.clone(),
