@@ -16,7 +16,6 @@ spec:
       labels:
         app.kubernetes.io/name: file-worker
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/managed-by: Helm
     spec:
       {{- if eq $.Values.environment "gcloud" }}
       serviceAccountName: cloud-postgres-service-account

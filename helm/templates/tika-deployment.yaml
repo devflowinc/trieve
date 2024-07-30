@@ -16,7 +16,6 @@ spec:
       labels:
         app.kubernetes.io/name: tika
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/managed-by: Helm
     spec:
       containers:
       - name: tika

@@ -81,7 +81,7 @@ config:
     adminApiKey: admin 
     anthropicAPIKey: sk-ant-***************************************
   oidc:
-    clientSecret: mdSYIT3KX5cvlRjIaMnYLSWjXibTMC8w
+    clientSecret: n1mWNdG0MzOf1goYbBiTtci35lLxIdnQ
     clientId: trieve
     issuerUrl: http://auth.localtrieve.com/realms/trieve
     authRedirectUrl: http://auth.localtrieve.com/realms/trieve/protocol/openid-connect/auth
