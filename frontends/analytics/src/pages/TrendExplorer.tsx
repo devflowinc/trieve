@@ -7,6 +7,26 @@ import { toTitleCase } from "../utils/titleCase";
 import { parseCustomDateString } from "../components/charts/LatencyGraph";
 import { FullScreenModal } from "shared/ui";
 
+const WIPWarning = () => {
+  return (
+    <div class="rounded border border-blue-200 bg-blue-100/60 p-3 text-blue-900">
+      <div>
+        Note: The Trend Explorer is a Work In Progress. We are working hard to
+        help you visualize trends in your searches over time. For questions or
+        suggestions, please reach out to us at{" "}
+        <a class="underline" href="mailto:humans@trieve.ai">
+          humans@trieve.ai
+        </a>{" "}
+        or{" "}
+        <a href="https://cal.com/nick.k/meet" class="underline">
+          schedule a meeting
+        </a>
+        .
+      </div>
+    </div>
+  );
+};
+
 export const TrendExplorer = () => {
   const dataset = useContext(DatasetContext);
 
@@ -19,7 +39,9 @@ export const TrendExplorer = () => {
 
   return (
     <div class="p-8">
-      <div class="mx-auto max-w-xl rounded-md border border-neutral-200 bg-white">
+      <WIPWarning />
+      <div class="h-8" />
+      <div class="rounded-md border border-neutral-200 bg-white">
         <table class="mt-2 w-full">
           <thead>
             <tr>
@@ -30,11 +52,7 @@ export const TrendExplorer = () => {
           </thead>
           <tbody>
             <For
-              fallback={
-                <div class="py-4 text-center opacity-40">
-                  Select a topic to view searches for.
-                </div>
-              }
+              fallback={<div class="px-2 py-4 opacity-40" />}
               each={trendsQuery.data}
             >
               {(topic) => (
