@@ -100,7 +100,7 @@ pub struct CreateMessageReqPayload {
 
 /// Create message
 ///
-/// Messages are attached to topics in order to coordinate memory of gen-AI chat sessions.Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Create message. Messages are attached to topics in order to coordinate memory of gen-AI chat sessions.Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
     path = "/message",
@@ -217,7 +217,7 @@ pub async fn create_message(
 
 /// Get all messages for a given topic
 ///
-/// If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
+/// Get all messages for a given topic. If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
 #[utoipa::path(
     get,
     path = "/messages/{messages_topic_id}",
