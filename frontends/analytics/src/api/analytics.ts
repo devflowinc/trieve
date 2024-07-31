@@ -177,7 +177,7 @@ export const getRagUsageGraph = async (
     body: JSON.stringify({
       filter: transformAnalyticsFilter(filters),
       granularity,
-      type: "search_usage_graph",
+      type: "rag_usage_graph",
     }),
     headers: {
       "TR-Dataset": datasetId,

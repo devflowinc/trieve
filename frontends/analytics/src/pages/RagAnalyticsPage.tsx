@@ -3,7 +3,6 @@ import { createStore } from "solid-js/store";
 import { createEffect, createSignal } from "solid-js";
 import { DateRangePicker, Select } from "shared/ui";
 import { RagQueries } from "../components/charts/RagQueries";
-import { RagUsage } from "../components/charts/RagUsage";
 import { subDays } from "date-fns";
 import { RAGUsageGraph } from "../components/charts/RAGUsageGraph";
 
@@ -68,14 +67,13 @@ export const RagAnalyticsPage = () => {
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4 p-2 pt-3">
-        <RagQueries filter={filter} />
-        <RagUsage filter={filter} />
         <RAGUsageGraph
           params={{
             filter,
             granularity: filter.granularity,
           }}
         />
+        <RagQueries filter={filter} />
       </div>
     </div>
   );

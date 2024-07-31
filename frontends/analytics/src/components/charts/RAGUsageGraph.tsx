@@ -1,9 +1,15 @@
 import { createQuery } from "@tanstack/solid-query";
 import { enUS } from "date-fns/locale";
 import { AnalyticsParams, RAGAnalyticsFilter } from "shared/types";
-import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  onCleanup,
+  Show,
+  useContext,
+} from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
-import { getRagUsageGraph } from "../../api/analytics";
+import { getRAGUsage, getRagUsageGraph } from "../../api/analytics";
 import { Chart } from "chart.js";
 import { parseCustomDateString } from "./LatencyGraph";
 
@@ -15,6 +21,7 @@ interface RAGUsageProps {
 }
 
 import "chartjs-adapter-date-fns";
+import { ChartCard } from "./ChartCard";
 
 export const RAGUsageGraph = (props: RAGUsageProps) => {
   const dataset = useContext(DatasetContext);
@@ -22,7 +29,7 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
   let chartInstance: Chart | null = null;
   const usageQuery = createQuery(() => ({
     queryKey: [
-      "rag-usage",
+      "rag-usage-graph",
       { params: props.params, dataset: dataset().dataset.id },
     ],
     queryFn: async () => {
@@ -31,6 +38,13 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
         props.params.granularity,
         dataset().dataset.id,
       );
+    },
+  }));
+
+  const ragTotalQuery = createQuery(() => ({
+    queryKey: ["rag-usage", { filter: props.params }],
+    queryFn: () => {
+      return getRAGUsage(dataset().dataset.id, props.params.filter);
     },
   }));
 
@@ -57,9 +71,11 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
           ],
         },
         options: {
+          responsive: true,
           plugins: {
             legend: { display: false },
           },
+          aspectRatio: 3,
           scales: {
             y: {
               grid: { color: "rgba(128, 0, 128, 0.1)" }, // Light purple grid
@@ -130,5 +146,19 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
     }
   });
 
-  return <canvas ref={setCanvasElement} class="h-full w-full" />;
+  return (
+    <ChartCard
+      width={2}
+      controller={
+        <Show when={ragTotalQuery.data}>
+          {(total) => (
+            <div class="text-sm">{total().total_queries} Total Queries</div>
+          )}
+        </Show>
+      }
+      title="RAG Usage"
+    >
+      <canvas ref={setCanvasElement} class="h-full w-full" />
+    </ChartCard>
+  );
 };
