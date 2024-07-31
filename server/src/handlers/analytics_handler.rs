@@ -13,8 +13,6 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Get Cluster Analytics
-///
 /// This route allows you to view the cluster analytics for a dataset.
 #[utoipa::path(
     post,
@@ -67,8 +65,6 @@ pub async fn get_cluster_analytics(
     Ok(HttpResponse::Ok().json(response))
 }
 
-/// Get Search Analytics
-///
 /// This route allows you to view the search analytics for a dataset.
 #[utoipa::path(
     post,
@@ -219,8 +215,6 @@ pub async fn get_search_analytics(
     Ok(HttpResponse::Ok().json(response))
 }
 
-/// Get RAG Analytics
-///
 /// This route allows you to view the RAG analytics for a dataset.
 #[utoipa::path(
     post,
@@ -280,8 +274,6 @@ pub async fn get_rag_analytics(
     Ok(HttpResponse::Ok().json(response))
 }
 
-/// Get Recommendation Analytics
-///
 /// This route allows you to view the recommendation analytics for a dataset.
 #[utoipa::path(
     post,
@@ -366,8 +358,6 @@ pub struct CTRDataRequestBody {
     pub metadata: Option<serde_json::Value>,
 }
 
-/// Send CTR Data
-///
 /// This route allows you to send CTR data to the system.
 #[utoipa::path(
     put,
@@ -405,8 +395,6 @@ pub async fn send_ctr_data(
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// Get CTR Analytics
-///
 /// This route allows you to view the CTR analytics for a dataset.
 #[utoipa::path(
     post,

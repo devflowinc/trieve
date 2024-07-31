@@ -264,8 +264,6 @@ pub enum CreateChunkReqPayloadEnum {
     Batch(CreateBatchChunkReqPayload),
 }
 
-/// Create or Upsert Chunk or Chunks
-///
 /// If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
 /// If uploading in bulk, the maximum amount of chunks that can be uploaded at once is 120 chunks. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
@@ -426,8 +424,6 @@ pub async fn create_chunk(
         .json(response))
 }
 
-/// Delete Chunk
-///
 /// Delete a chunk by its id. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
@@ -469,8 +465,6 @@ pub async fn delete_chunk(
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// Delete Chunk By Tracking Id
-///
 /// This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
@@ -572,8 +566,6 @@ pub struct UpdateIngestionMessage {
     pub semantic_boost: Option<SemanticBoost>,
 }
 
-/// Update Chunk
-///
 /// If you try to change the tracking_id of the chunk to have the same tracking_id as an existing chunk, the request will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
@@ -739,8 +731,6 @@ pub struct UpdateChunkByTrackingIdData {
     pub convert_html_to_text: Option<bool>,
 }
 
-/// Update Chunk By Tracking Id
-///
 /// This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
@@ -1091,8 +1081,6 @@ pub fn parse_query(
     }
 }
 
-/// Search
-///
 /// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<b><mark>` tags for sub-sentence highlighting.
 #[utoipa::path(
     post,
@@ -1297,8 +1285,6 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     }
 }
 
-/// Autocomplete
-///
 /// This route provides the primary autocomplete functionality for the API. This prioritize prefix matching with semantic or full-text search.
 #[utoipa::path(
     post,
@@ -1417,8 +1403,6 @@ pub struct ScrollChunksReqPayload {
     pub sort_by: Option<SortByField>,
 }
 
-/// Scroll Chunks
-///
 /// Get paginated chunks from your dataset with filters and custom sorting. If sort by is not specified, the results will sort by the id's of the chunks in ascending order.
 #[utoipa::path(
     post,
@@ -1470,8 +1454,6 @@ pub async fn scroll_dataset_chunks(
     Ok(HttpResponse::Ok().json(resp))
 }
 
-/// Get Chunk By Id
-///
 /// Get a singular chunk by id.
 #[utoipa::path(
     get,
@@ -1565,8 +1547,6 @@ pub struct CountChunkQueryResponseBody {
     pub count: u32,
 }
 
-/// Count chunks above threshold
-///
 /// This route can be used to determine the number of chunk results that match a search query including score threshold and filters. It may be high latency for large limits. There is a dataset configuration imposed restriction on the maximum limit value (default 10,000) which is used to prevent DDOS attacks. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
@@ -1631,8 +1611,6 @@ pub async fn count_chunks(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
-/// Get Chunk By Tracking Id
-///
 /// Get a singular chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use your own id as the primary reference for a chunk.
 #[utoipa::path(
     get,
@@ -1691,8 +1669,6 @@ pub struct GetChunksData {
     pub ids: Vec<uuid::Uuid>,
 }
 
-/// Get Chunks By Ids
-///
 /// Get multiple chunks by multiple ids.
 #[utoipa::path(
     post,
@@ -1764,8 +1740,6 @@ pub struct GetTrackingChunksData {
     pub tracking_ids: Vec<String>,
 }
 
-/// Get Chunks By Tracking Ids
-///
 /// Get multiple chunks by ids.
 #[utoipa::path(
     post,
@@ -1869,8 +1843,6 @@ pub enum RecommendResponseTypes {
     V1(Vec<ChunkMetadataWithScore>),
 }
 
-/// Get Recommended Chunks
-///
 /// Get recommendations of chunks similar to the positive samples in the request and dissimilar to the negative. You must provide at least one of either positive_chunk_ids or positive_tracking_ids.
 #[utoipa::path(
     post,
@@ -2184,8 +2156,6 @@ pub struct GenerateChunksRequest {
     pub stop_tokens: Option<Vec<String>>,
 }
 
-/// RAG on Specified Chunks
-///
 /// This endpoint exists as an alternative to the topic+message concept where our API handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt. See more in the "search before generate" page at docs.trieve.ai.
 #[utoipa::path(
     post,

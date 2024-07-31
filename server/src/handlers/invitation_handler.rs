@@ -42,8 +42,6 @@ pub struct InvitationData {
     pub redirect_uri: String,
 }
 
-/// Send Invitation
-///
 /// Invitations act as a way to invite users to join an organization. After a user is invited, they will automatically be added to the organization with the role specified in the invitation once they set their. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
@@ -158,8 +156,6 @@ pub async fn create_invitation(
     })
 }
 
-/// Get Invitations
-///
 /// Get all invitations for the organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
@@ -187,8 +183,6 @@ pub async fn get_invitations(
     Ok(HttpResponse::Ok().json(invitations))
 }
 
-/// Delete Invitation
-///
 /// Delete an invitation by id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,

@@ -16,8 +16,6 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Get Organization
-///
 /// Fetch the details of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
@@ -53,8 +51,6 @@ pub async fn get_organization(
     Ok(HttpResponse::Ok().json(org_plan_sub.with_defaults()))
 }
 
-/// Delete Organization
-///
 /// Delete an organization by its id. The auth'ed user must be an owner of the organization to delete it.
 #[utoipa::path(
     delete,
@@ -107,8 +103,6 @@ pub struct UpdateOrganizationReqPayload {
     name: Option<String>,
 }
 
-/// Update Organization
-///
 /// Update an organization. Only the owner of the organization can update it.
 #[utoipa::path(
     put,
@@ -161,8 +155,6 @@ pub struct CreateOrganizationReqPayload {
     name: String,
 }
 
-/// Create Organization
-///
 /// Create a new organization. The auth'ed user who creates the organization will be the default owner of the organization.
 #[utoipa::path(
     post,
@@ -203,8 +195,6 @@ pub async fn create_organization(
     Ok(HttpResponse::Ok().json(created_organization))
 }
 
-/// Get Organization Usage
-///
 /// Fetch the current usage specification of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
@@ -240,8 +230,6 @@ pub async fn get_organization_usage(
     Ok(HttpResponse::Ok().json(usage))
 }
 
-/// Get Organization Users
-///
 /// Fetch the users of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
@@ -285,8 +273,6 @@ pub struct RemoveUserFromOrgPathParams {
     user_id: uuid::Uuid,
 }
 
-/// Remove User From Organization
-///
 /// Remove a user from an organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization..
 #[utoipa::path(
     delete,
@@ -364,8 +350,6 @@ pub struct UpdateAllOrgDatasetConfigsReqPayload {
     pub dataset_config: serde_json::Value,
 }
 
-/// Update All Dataset Configurations
-///
 /// Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values. Auth'ed user or api key must have an owner role for the specified organization.
 #[utoipa::path(
     post,
