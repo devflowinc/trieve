@@ -219,6 +219,8 @@ pub struct LogoutRequest {
     pub redirect_uri: Option<String>,
 }
 
+/// Logout
+///
 /// Invalidate your current auth credential stored typically stored in a cookie. This does not invalidate your API key.
 #[utoipa::path(
     delete,
@@ -295,6 +297,8 @@ pub struct LoginState {
     pub inv_code: Option<uuid::Uuid>,
 }
 
+/// Login
+///
 /// This will redirect you to the OAuth provider for authentication with email/pass, SSO, Google, Github, etc.
 #[utoipa::path(
     get,
@@ -362,6 +366,8 @@ pub async fn login(
         .finish())
 }
 
+/// OpenID Connect callback
+///
 /// This is the callback route for the OAuth provider, it should not be called directly. Redirects to browser with set-cookie header.
 #[utoipa::path(
     get,
@@ -529,6 +535,8 @@ pub async fn callback(
         .finish())
 }
 
+/// Get Me
+///
 /// Get the user corresponding to your current auth credentials.
 #[utoipa::path(
     get,
@@ -555,6 +563,8 @@ pub async fn get_me(
     Ok(HttpResponse::Ok().json(SlimUser::from_details(user.0, user.1, user.2)))
 }
 
+/// Health Check
+///
 /// Confirmation that the service is healthy and can make embedding vectors
 #[utoipa::path(
     get,
