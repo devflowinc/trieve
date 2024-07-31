@@ -443,7 +443,7 @@ export interface LatencyDatapoint {
   time_stamp: string;
 }
 
-export interface SearchUsageDatapoint {
+export interface UsageDatapoint {
   requests: number;
   time_stamp: string;
 }
@@ -474,6 +474,7 @@ export interface SearchTypeCount {
 export interface RequiredRAGAnalyticsFilter {
   rag_type?: "chosen_chunks" | "all_chunks"; // Optional because that means "BOTH"
   date_range: DateRangeFilter;
+  granularity: "minute" | "second" | "hour" | "day";
 }
 
 export interface RAGAnalyticsFilter {
@@ -515,8 +516,8 @@ export interface SearchClusterResponse {
   clusters: SearchClusterTopics[];
 }
 
-export interface SearchUsageGraphResponse {
-  usage_points: SearchUsageDatapoint[];
+export interface UsageGraphResponse {
+  usage_points: UsageDatapoint[];
 }
 
 export interface LatencyGraphResponse {

@@ -356,6 +356,7 @@ impl Modify for SecurityAddon {
             data::models::SearchResultType,
             data::models::RoleProxy,
             data::models::RAGUsageResponse,
+            data::models::RAGUsageGraphResponse,
             data::models::ClusterAnalytics,
             data::models::RAGAnalytics,
             data::models::SearchAnalytics,

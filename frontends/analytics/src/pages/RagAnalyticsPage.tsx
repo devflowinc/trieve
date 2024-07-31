@@ -5,6 +5,7 @@ import { DateRangePicker, Select } from "shared/ui";
 import { RagQueries } from "../components/charts/RagQueries";
 import { RagUsage } from "../components/charts/RagUsage";
 import { subDays } from "date-fns";
+import { RAGUsageGraph } from "../components/charts/RAGUsageGraph";
 
 type FakeRAGType = "chosen_chunks" | "all_chunks" | "both";
 type FakeRAGOption = {
@@ -23,6 +24,7 @@ export const RagAnalyticsPage = () => {
       gt: subDays(new Date(), 7),
     },
     rag_type: undefined,
+    granularity: "day",
   });
 
   const [fakeType, setFakeType] = createSignal<FakeRAGOption>(
@@ -59,12 +61,21 @@ export const RagAnalyticsPage = () => {
             label="Date Range"
             value={filter.date_range}
             onChange={(e) => setFilter("date_range", e)}
+            onGranularitySuggestion={(granularity) =>
+              setFilter("granularity", granularity)
+            }
           />
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4 p-2 pt-3">
         <RagQueries filter={filter} />
         <RagUsage filter={filter} />
+        <RAGUsageGraph
+          params={{
+            filter,
+            granularity: filter.granularity,
+          }}
+        />
       </div>
     </div>
   );
