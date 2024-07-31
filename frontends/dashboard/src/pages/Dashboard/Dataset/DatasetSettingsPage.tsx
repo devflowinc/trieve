@@ -450,7 +450,7 @@ export const ServerSettingsForm = (props: {
                       name="bm25K"
                       id="bm25K"
                       class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                      value={props.serverConfig().BM25_K.toFixed(2) ?? 0}
+                      value={props.serverConfig().BM25_K?.toFixed(2) ?? 0}
                       onChange={(e) =>
                         props.setServerConfig((prev) => {
                           return {
@@ -950,21 +950,59 @@ export const DatasetSettingsSidebar = (props: { onSave: () => void }) => {
 export const DatasetSettingsPage = () => {
   const datasetContext = useContext(DatasetContext);
 
+  const [originalConfig, setOriginalConfig] =
+    createSignal<ServerEnvsConfiguration>(
+      datasetContext.dataset?.()?.server_configuration ??
+        defaultServerEnvsConfiguration,
+    );
+
   const [serverConfig, setServerConfig] = createSignal<ServerEnvsConfiguration>(
     datasetContext.dataset?.()?.server_configuration ??
       defaultServerEnvsConfiguration,
   );
 
   createEffect(() => {
-    setServerConfig(
+    const newConfig =
       datasetContext.dataset?.()?.server_configuration ??
-        defaultServerEnvsConfiguration,
-    );
+      defaultServerEnvsConfiguration;
+    setOriginalConfig(newConfig);
+    setServerConfig(newConfig);
   });
+
+  const getModifiedFields = () => {
+    const modified: Partial<ServerEnvsConfiguration> = {};
+    const original = originalConfig();
+    const current = serverConfig();
+
+    Object.keys(current).forEach((key) => {
+      if (
+        JSON.stringify(current[key as keyof ServerEnvsConfiguration]) !==
+        JSON.stringify(original[key as keyof ServerEnvsConfiguration])
+      ) {
+        modified[key as keyof ServerEnvsConfiguration] = current[
+          key as keyof ServerEnvsConfiguration
+        ] as undefined;
+      }
+    });
+
+    return modified;
+  };
 
   const onSave = () => {
     const datasetId = datasetContext.dataset?.()?.id;
     if (!datasetId) return;
+
+    const modifiedFields = getModifiedFields();
+    console.log(modifiedFields);
+
+    if (Object.keys(modifiedFields).length === 0) {
+      createToast({
+        title: "Info",
+        type: "info",
+        message: "No changes to save",
+      });
+      return;
+    }
 
     void fetch(`${import.meta.env.VITE_API_HOST}/dataset`, {
       method: "PUT",
@@ -975,7 +1013,7 @@ export const DatasetSettingsPage = () => {
       credentials: "include",
       body: JSON.stringify({
         dataset_id: datasetContext.dataset?.()?.id,
-        server_configuration: serverConfig(),
+        server_configuration: modifiedFields,
       }),
     })
       .then((resp) => {
@@ -985,8 +1023,10 @@ export const DatasetSettingsPage = () => {
             type: "success",
             message: "Dataset Configuration Saved",
           });
-          setServerConfig((prev) => ({ ...prev, LLM_API_KEY: "" }));
-
+          setOriginalConfig(serverConfig());
+          if (modifiedFields.LLM_API_KEY) {
+            setServerConfig((prev) => ({ ...prev, LLM_API_KEY: "" }));
+          }
           return;
         }
 

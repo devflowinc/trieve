@@ -476,10 +476,7 @@ pub async fn update_dataset_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let configuration = serde_json::to_value(server_configuration.clone()).map_err(|err| {
-        log::error!("Could not serialize server configuration: {}", err);
-        ServiceError::BadRequest("Could not serialize server configuration".to_string())
-    })?;
+    let configuration = server_configuration.clone().to_json();
 
     let new_dataset: Dataset = diesel::update(
         datasets_columns::datasets

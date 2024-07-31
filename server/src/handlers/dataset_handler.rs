@@ -225,13 +225,15 @@ pub async fn update_dataset(
         return Err(ServiceError::Forbidden);
     }
 
+    let curr_dataset_config = DatasetConfiguration::from_json(curr_dataset.server_configuration);
+
     let d = update_dataset_query(
         curr_dataset.id,
         data.dataset_name.clone().unwrap_or(curr_dataset.name),
         data.server_configuration
             .clone()
-            .unwrap_or(DatasetConfiguration::from_json(curr_dataset.server_configuration).into())
-            .into(),
+            .map(|c| c.from_curr_dataset(curr_dataset_config.clone()))
+            .unwrap_or(curr_dataset_config),
         data.new_tracking_id.clone(),
         pool.clone(),
     )
