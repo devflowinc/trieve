@@ -4,13 +4,14 @@ import {
   BiRegularQuestionMark,
   BiRegularXCircle,
 } from "solid-icons/bi";
-import { JSX, Show, createSignal, useContext } from "solid-js";
+import { JSX, Match, Show, Switch, createSignal, useContext } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { CreateChunkDTO, isActixApiDefaultError } from "../utils/apiTypes";
-import { Tooltip } from "shared/ui";
+import { JsonInput, Tooltip } from "shared/ui";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { TinyEditor } from "./TinyEditor";
 import { useNavigate } from "@solidjs/router";
+import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 
 export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
@@ -20,9 +21,12 @@ export const CreateNewDocChunkForm = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $dataset = datasetAndUserContext.currentDataset;
+  const [showAdvanced, setShowAdvanced] = createSignal(false);
   const [docChunkLink, setDocChunkLink] = createSignal<string | undefined>(
     undefined,
   );
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any*/
+  const [metadata, setMetadata] = createSignal<any>(undefined);
   const [trackingID, setTrackingID] = createSignal<string | undefined>(
     undefined,
   );
@@ -94,6 +98,11 @@ export const CreateNewDocChunkForm = () => {
         lat: locationLat(),
         lon: locationLon(),
       };
+    }
+
+    if (metadata()) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      requestBody.metadata = metadata();
     }
 
     if (boostPhrase() && boostFactor()) {
@@ -202,163 +211,192 @@ export const CreateNewDocChunkForm = () => {
             onInput={(e) => setTagSet(e.target.value)}
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
           />
-          <div>Date</div>
-          <input
-            type="date"
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-            placeholder="optional - date of the document chunk for filtering"
-            value={timestamp() ?? ""}
-            onInput={(e) => {
-              setTimestamp(e.currentTarget.value);
-            }}
-          />
-          <div class="flex items-center gap-x-2">
-            <div>Number Value</div>
-            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
-              <Tooltip
-                body={
-                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
-                }
-                tooltipText="Optional. If you have a number value for this chunk, enter it here. This may be price, quantity, or any other numerical value."
-              />
+        </div>
+        <button
+          class="flex flex-row items-center gap-2"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowAdvanced(!showAdvanced());
+          }}
+        >
+          <Switch>
+            <Match when={!showAdvanced()}>
+              <FiChevronDown />
+            </Match>
+            <Match when={showAdvanced()}>
+              <FiChevronUp />
+            </Match>
+          </Switch>
+          Advanced options
+        </button>
+        <Show when={showAdvanced()}>
+          <div class="ml-4 flex flex-col space-y-2">
+            <div>Metadata</div>
+            <JsonInput
+              onValueChange={(j) => {
+                setErrorText("");
+                setMetadata(j);
+              }}
+              value={metadata}
+              onError={(e) => setErrorText(`Error in Metadata: ${e}`)}
+            />
+            <div>Date</div>
+            <input
+              type="date"
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+              placeholder="optional - date of the document chunk for filtering"
+              value={timestamp() ?? ""}
+              onInput={(e) => {
+                setTimestamp(e.currentTarget.value);
+              }}
+            />
+            <div class="flex items-center gap-x-2">
+              <div>Number Value</div>
+              <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                <Tooltip
+                  body={
+                    <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                  }
+                  tooltipText="Optional. If you have a number value for this chunk, enter it here. This may be price, quantity, or any other numerical value."
+                />
+              </div>
             </div>
-          </div>
-          <input
-            type="number"
-            value={numValue()}
-            placeholder="optional - price, quantity, or some other numeric for filtering"
-            onChange={(e) => setNumValue(Number(e.currentTarget.value))}
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-          <div class="flex items-center gap-x-2">
-            <div>Location (Lat, Lon)</div>
-            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
-              <Tooltip
-                body={
-                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
-                }
-                tooltipText="Optional. This is a coordinate value."
-              />
-            </div>
-          </div>
-          <div class="flex space-x-2">
             <input
               type="number"
-              step="0.00000001"
-              placeholder="Latitude"
-              value={locationLat()}
-              onChange={(e) =>
-                setLocationLat(() => Number(e.currentTarget.value))
-              }
+              value={numValue()}
+              placeholder="optional - price, quantity, or some other numeric for filtering"
+              onChange={(e) => setNumValue(Number(e.currentTarget.value))}
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
+            <div class="flex items-center gap-x-2">
+              <div>Location (Lat, Lon)</div>
+              <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                <Tooltip
+                  body={
+                    <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                  }
+                  tooltipText="Optional. This is a coordinate value."
+                />
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <input
+                type="number"
+                step="0.00000001"
+                placeholder="Latitude"
+                value={locationLat()}
+                onChange={(e) =>
+                  setLocationLat(() => Number(e.currentTarget.value))
+                }
+                class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+              />
+              <input
+                type="number"
+                step="0.00000001"
+                placeholder="Longitude"
+                value={locationLon()}
+                onChange={(e) => setLocationLon(Number(e.currentTarget.value))}
+                class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+              />
+            </div>
+            <div class="flex items-center gap-x-2">
+              <div>Weight</div>
+              <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                <Tooltip
+                  body={
+                    <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                  }
+                  tooltipText="Optional. Weight is applied as a linear factor to score on search results. If you have something likeclickthrough data, you can use it to incrementally increase the boost of a chunk."
+                />
+              </div>
+            </div>
             <input
               type="number"
-              step="0.00000001"
-              placeholder="Longitude"
-              value={locationLon()}
-              onChange={(e) => setLocationLon(Number(e.currentTarget.value))}
+              step="0.000001"
+              placeholder="optional - weight is applied as linear boost to score for search"
+              value={weight()}
+              onChange={(e) => setWeight(Number(e.currentTarget.value))}
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
-          </div>
-          <div class="flex items-center gap-x-2">
-            <div>Weight</div>
-            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
-              <Tooltip
-                body={
-                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
-                }
-                tooltipText="Optional. Weight is applied as a linear factor to score on search results. If you have something likeclickthrough data, you can use it to incrementally increase the boost of a chunk."
+            <div class="flex items-center gap-x-2">
+              <div>Fulltext Boost</div>
+              <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                <Tooltip
+                  body={
+                    <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                  }
+                  tooltipText="Optional. Boost terms will multiplicatively increase the presence of terms in the fulltext document frequency index by the boost value."
+                />
+              </div>
+            </div>
+            <div class="flex gap-x-2">
+              <input
+                type="text"
+                placeholder="optional - terms to boost in search results"
+                value={boostPhrase() ?? ""}
+                onInput={(e) => setBoostPhrase(e.target.value)}
+                class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+              />
+              <input
+                type="number"
+                step="any"
+                placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
+                value={boostFactor()}
+                onChange={(e) => setBoostFactor(Number(e.currentTarget.value))}
+                class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
               />
             </div>
-          </div>
-          <input
-            type="number"
-            step="0.000001"
-            placeholder="optional - weight is applied as linear boost to score for search"
-            value={weight()}
-            onChange={(e) => setWeight(Number(e.currentTarget.value))}
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-          <div class="flex items-center gap-x-2">
-            <div>Fulltext Boost</div>
-            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
-              <Tooltip
-                body={
-                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+            <div class="flex items-center gap-x-2">
+              <div>Semantic Boost</div>
+              <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                <Tooltip
+                  body={
+                    <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                  }
+                  tooltipText="Optional. Boost terms will multiplicatively increase the presence of terms in the fulltext document frequency index by the boost value."
+                />
+              </div>
+            </div>
+            <div class="flex gap-x-2">
+              <input
+                type="text"
+                placeholder="optional - terms to move the embedding vector to in search results"
+                value={distanceBoostPhrase() ?? ""}
+                onInput={(e) => setDistanceBoostPhrase(e.target.value)}
+                class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+              />
+              <input
+                type="number"
+                step="any"
+                placeholder="optional - boost factor to move the embedding vector to in search results"
+                value={distanceBoostFactor()}
+                onChange={(e) =>
+                  setDistanceBoostFactor(Number(e.currentTarget.value))
                 }
-                tooltipText="Optional. Boost terms will multiplicatively increase the presence of terms in the fulltext document frequency index by the boost value."
+                class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
               />
             </div>
-          </div>
-          <div class="flex gap-x-2">
+            <div class="flex items-center space-x-2">
+              <div>Semantic Content</div>
+              <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
+                <Tooltip
+                  body={
+                    <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
+                  }
+                  tooltipText="Use this to add separate text that you want to be used for semantic search. If not provided, the innerText of the chunk_html will be used. The innerText of the chunk_html will always be used for fulltext search."
+                />
+              </div>
+            </div>
             <input
               type="text"
-              placeholder="optional - terms to boost in search results"
-              value={boostPhrase() ?? ""}
-              onInput={(e) => setBoostPhrase(e.target.value)}
-              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-            />
-            <input
-              type="number"
-              step="any"
-              placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
-              value={boostFactor()}
-              onChange={(e) => setBoostFactor(Number(e.currentTarget.value))}
+              placeholder="optional - text for semantic search"
+              value={semanticContent() ?? ""}
+              onInput={(e) => setSemanticContent(e.target.value)}
               class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
           </div>
-          <div class="flex items-center gap-x-2">
-            <div>Semantic Boost</div>
-            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
-              <Tooltip
-                body={
-                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
-                }
-                tooltipText="Optional. Boost terms will multiplicatively increase the presence of terms in the fulltext document frequency index by the boost value."
-              />
-            </div>
-          </div>
-          <div class="flex gap-x-2">
-            <input
-              type="text"
-              placeholder="optional - terms to move the embedding vector to in search results"
-              value={distanceBoostPhrase() ?? ""}
-              onInput={(e) => setDistanceBoostPhrase(e.target.value)}
-              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-            />
-            <input
-              type="number"
-              step="any"
-              placeholder="optional - boost factor to move the embedding vector to in search results"
-              value={distanceBoostFactor()}
-              onChange={(e) =>
-                setDistanceBoostFactor(Number(e.currentTarget.value))
-              }
-              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-            />
-          </div>
-        </div>
-        <div class="flex flex-col space-y-2">
-          <div class="flex items-center space-x-2">
-            <div>Semantic Content</div>
-            <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
-              <Tooltip
-                body={
-                  <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
-                }
-                tooltipText="Use this to add separate text that you want to be used for semantic search. If not provided, the innerText of the chunk_html will be used. The innerText of the chunk_html will always be used for fulltext search."
-              />
-            </div>
-          </div>
-          <input
-            type="text"
-            placeholder="optional - text for semantic search"
-            value={semanticContent() ?? ""}
-            onInput={(e) => setSemanticContent(e.target.value)}
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-        </div>
+        </Show>
         <div class="flex flex-col space-y-2">
           <div class="flex items-center space-x-2">
             <div>Chunk Content*</div>
