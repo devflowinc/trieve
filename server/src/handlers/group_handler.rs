@@ -631,7 +631,7 @@ pub struct UpdateChunkGroupReqPayload {
 
 /// Update Group
 ///
-/// Update a chunk_group. One of group_id or tracking_id must be provided. If you try to change the tracking_id to one that already exists, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// One of group_id or tracking_id must be provided. If you try to change the tracking_id to one that already exists, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
     path = "/chunk_group",
@@ -1130,7 +1130,7 @@ pub enum RecommendGroupsResponse {
 
 /// Get Recommended Groups
 ///
-/// Route to get recommended groups. This route will return groups which are similar to the groups in the request body. You must provide at least one positive group id or group tracking id.
+/// This route will return groups which are similar to the groups in the request body. You must provide at least one positive group id or group tracking id.
 #[utoipa::path(
     post,
     path = "/chunk_group/recommend",
