@@ -24,8 +24,6 @@ pub struct CreateTopicReqPayload {
     pub owner_id: String,
 }
 
-/// Create Topic
-///
 /// Create a new chat topic. Topics are attached to a owner_id's and act as a coordinator for conversation message history of gen-AI chat sessions. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
@@ -95,8 +93,6 @@ pub struct DeleteTopicData {
     pub topic_id: uuid::Uuid,
 }
 
-/// Delete Topic
-///
 /// Delete an existing chat topic. When a topic is deleted, all associated chat messages are also deleted. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
@@ -137,8 +133,6 @@ pub struct UpdateTopicReqPayload {
     pub name: String,
 }
 
-/// Update Topic
-///
 /// Update an existing chat topic. Currently, only the name of the topic can be updated. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
@@ -177,8 +171,6 @@ pub async fn update_topic(
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// Get All Topics for Owner ID
-///
 /// Get all topics belonging to an arbitary owner_id. This is useful for managing message history and chat sessions. It is common to use a browser fingerprint or your user's id as the owner_id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
