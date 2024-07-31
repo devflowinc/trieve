@@ -443,8 +443,8 @@ export interface LatencyDatapoint {
   time_stamp: string;
 }
 
-export interface RpsDatapoint {
-  average_rps: number;
+export interface SearchUsageDatapoint {
+  requests: number;
   time_stamp: string;
 }
 
@@ -515,8 +515,8 @@ export interface SearchClusterResponse {
   clusters: SearchClusterTopics[];
 }
 
-export interface RPSGraphResponse {
-  rps_points: RpsDatapoint[];
+export interface SearchUsageGraphResponse {
+  usage_points: SearchUsageDatapoint[];
 }
 
 export interface LatencyGraphResponse {

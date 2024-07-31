@@ -4,7 +4,6 @@ import {
   LatencyDatapoint,
   RagQueryEvent,
   RAGUsageResponse,
-  RpsDatapoint,
   SearchQueryEvent,
   SearchTypeCount,
   LatencyGraphResponse,
@@ -12,11 +11,12 @@ import {
   RagQueryResponse,
   SearchQueryResponse,
   QueryCountResponse,
-  RPSGraphResponse,
   AnalyticsFilter,
   RAGAnalyticsFilter,
   RAGSortBy,
   SortOrder,
+  SearchUsageGraphResponse,
+  SearchUsageDatapoint,
 } from "shared/types";
 import { apiHost } from "../utils/apiHost";
 import { transformAnalyticsFilter } from "../utils/formatDate";
@@ -54,14 +54,14 @@ export const getRps = async (
   filters: AnalyticsFilter,
   granularity: AnalyticsParams["granularity"],
   datasetId: string,
-): Promise<RpsDatapoint[]> => {
+): Promise<SearchUsageDatapoint[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
       filter: transformAnalyticsFilter(filters),
       granularity,
-      type: "rps_graph",
+      type: "search_usage_graph",
     }),
     headers: {
       "TR-Dataset": datasetId,
@@ -73,8 +73,8 @@ export const getRps = async (
     throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as unknown as RPSGraphResponse;
-  return data.rps_points;
+  const data = (await response.json()) as unknown as SearchUsageGraphResponse;
+  return data.usage_points;
 };
 
 export const getHeadQueries = async (
