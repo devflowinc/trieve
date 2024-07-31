@@ -2,7 +2,7 @@ import { ChartCard } from "../components/charts/ChartCard";
 import { CTRSummary } from "../components/charts/CTRSummary";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { QueryCounts } from "../components/charts/QueryCounts";
-import { RpsGraph } from "../components/charts/RpsGraph";
+import { SearchUsageGraph } from "../components/charts/SearchUsageGraph";
 import {
   SimpleTimeRangeSelector,
   useSimpleTimeRange,
@@ -28,7 +28,7 @@ export const OverviewPage = () => {
         class="flex flex-col justify-between px-4"
         width={1}
       >
-        <RpsGraph
+        <SearchUsageGraph
           params={{
             filter: rpsDate.filter(),
             granularity: rpsDate.granularity(),

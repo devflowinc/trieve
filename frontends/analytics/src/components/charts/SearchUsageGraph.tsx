@@ -7,7 +7,7 @@ import { getRps } from "../../api/analytics";
 import { Chart } from "chart.js";
 import { parseCustomDateString } from "./LatencyGraph";
 
-interface RpsGraphProps {
+interface SearchUsageProps {
   params: {
     filter: AnalyticsFilter;
     granularity: AnalyticsParams["granularity"];
@@ -16,12 +16,15 @@ interface RpsGraphProps {
 
 import "chartjs-adapter-date-fns";
 
-export const RpsGraph = (props: RpsGraphProps) => {
+export const SearchUsageGraph = (props: SearchUsageProps) => {
   const dataset = useContext(DatasetContext);
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
   let chartInstance: Chart | null = null;
-  const rpsQuery = createQuery(() => ({
-    queryKey: ["rps", { params: props.params, dataset: dataset().dataset.id }],
+  const usageQuery = createQuery(() => ({
+    queryKey: [
+      "search-usage",
+      { params: props.params, dataset: dataset().dataset.id },
+    ],
     queryFn: async () => {
       return await getRps(
         props.params.filter,
@@ -33,23 +36,21 @@ export const RpsGraph = (props: RpsGraphProps) => {
 
   createEffect(() => {
     const canvas = canvasElement();
-    const data = rpsQuery.data;
+    const data = usageQuery.data;
 
     if (!canvas || !data) return;
 
     if (!chartInstance) {
       // Create the chart only if it doesn't exist
       chartInstance = new Chart(canvas, {
-        type: "line",
+        type: "bar",
         data: {
           labels: [],
           datasets: [
             {
               label: "Requests",
               data: [],
-              borderColor: "purple",
-              pointBackgroundColor: "purple",
-              backgroundColor: "rgba(128, 0, 128, 0.1)", // Light purple background
+              backgroundColor: "rgba(128, 0, 128, 0.9)", // Light purple background
               borderWidth: 1,
             },
           ],
@@ -62,7 +63,7 @@ export const RpsGraph = (props: RpsGraphProps) => {
             y: {
               grid: { color: "rgba(128, 0, 128, 0.1)" }, // Light purple grid
               title: {
-                text: "Rps",
+                text: "Requests",
                 display: true,
               },
               beginAtZero: true,
@@ -78,7 +79,7 @@ export const RpsGraph = (props: RpsGraphProps) => {
                 text: "Timestamp",
                 display: true,
               },
-              offset: data.length <= 1,
+              offset: false,
             },
           },
           animation: {
@@ -111,9 +112,7 @@ export const RpsGraph = (props: RpsGraphProps) => {
     chartInstance.data.labels = data.map(
       (point) => new Date(parseCustomDateString(point.time_stamp)),
     );
-    chartInstance.data.datasets[0].data = data.map(
-      (point) => point.average_rps,
-    );
+    chartInstance.data.datasets[0].data = data.map((point) => point.requests);
     chartInstance.update();
   });
 

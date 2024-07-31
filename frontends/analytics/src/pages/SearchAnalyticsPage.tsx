@@ -3,7 +3,7 @@ import { createStore } from "solid-js/store";
 import { AnalyticsParams } from "shared/types";
 import { subDays } from "date-fns";
 import { LatencyGraph } from "../components/charts/LatencyGraph";
-import { RpsGraph } from "../components/charts/RpsGraph";
+import { SearchUsageGraph } from "../components/charts/SearchUsageGraph";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries";
 import { NoResultQueries } from "../components/charts/NoResultQueries";
@@ -25,12 +25,11 @@ export const SearchAnalyticsPage = () => {
     <>
       <FilterBar filters={analyticsFilters} setFilters={setAnalyticsFilters} />
       <div class="grid grid-cols-10 items-start gap-2 p-2 pt-3">
+        <ChartCard title="Search Usage" width={5}>
+          <SearchUsageGraph params={analyticsFilters} />
+        </ChartCard>
         <ChartCard title="Search Latency" width={5}>
           <LatencyGraph params={analyticsFilters} />
-        </ChartCard>
-
-        <ChartCard title="Search Requests/Second" width={5}>
-          <RpsGraph params={analyticsFilters} />
         </ChartCard>
 
         <ChartCard

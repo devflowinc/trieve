@@ -134,8 +134,11 @@ export const DateRangePicker = (props: DateRangePickerProps) => {
         );
 
         props.onChange(transformed);
+        console.log("post transform");
         if (props.onGranularitySuggestion) {
-          props.onGranularitySuggestion(getGranularitySuggestion(transformed));
+          const newGranularity = getGranularitySuggestion(transformed);
+          console.log("Granularity suggestion", newGranularity);
+          props.onGranularitySuggestion(newGranularity);
         }
       }
     } else {
@@ -162,6 +165,7 @@ export const DateRangePicker = (props: DateRangePickerProps) => {
         maxDate={utils().convertDateToDateObject(new Date())}
         calendarLeftAreaJSX={
           <Presets
+            onGranularitySuggestion={props.onGranularitySuggestion}
             presets={props.presets}
             onChange={(range) => {
               props.onChange(range);
@@ -208,6 +212,7 @@ type DatePreset = {
   id?: number;
   label: string;
   range: DateRangeFilter;
+  granularity: AnalyticsParams["granularity"];
 };
 
 const defaultDatePresets: DatePreset[] = [
@@ -220,6 +225,7 @@ const defaultDatePresets: DatePreset[] = [
       lte: undefined,
       gte: subMinutes(new Date(), 15),
     },
+    granularity: "minute",
   },
   {
     id: 2,
@@ -230,6 +236,7 @@ const defaultDatePresets: DatePreset[] = [
       lte: undefined,
       gte: subMinutes(new Date(), 30),
     },
+    granularity: "minute",
   },
   {
     id: 3,
@@ -240,6 +247,7 @@ const defaultDatePresets: DatePreset[] = [
       lte: undefined,
       gte: subHours(new Date(), 1),
     },
+    granularity: "minute",
   },
   {
     id: 4,
@@ -250,6 +258,7 @@ const defaultDatePresets: DatePreset[] = [
       lte: undefined,
       gte: subHours(new Date(), 3),
     },
+    granularity: "hour",
   },
   {
     id: 5,
@@ -260,6 +269,7 @@ const defaultDatePresets: DatePreset[] = [
       lte: undefined,
       gte: subHours(new Date(), 12),
     },
+    granularity: "hour",
   },
   {
     id: 6,
@@ -270,6 +280,7 @@ const defaultDatePresets: DatePreset[] = [
       lte: undefined,
       gte: subHours(new Date(), 24),
     },
+    granularity: "hour",
   },
 ];
 
@@ -279,6 +290,9 @@ interface PresetsProps {
   onChange: (value: DateRangeFilter) => void;
   selectedPresetId: number;
   setSelectedPresetId: (id: number) => void;
+  onGranularitySuggestion?: (
+    granularity: AnalyticsParams["granularity"],
+  ) => void;
 }
 
 const Presets = (props: PresetsProps) => {
@@ -299,6 +313,9 @@ const Presets = (props: PresetsProps) => {
                   props.setSelectedPresetId(preset.id);
                 }
                 props.onChange(preset.range);
+                if (props.onGranularitySuggestion) {
+                  props.onGranularitySuggestion(preset.granularity);
+                }
               }}
             >
               {preset.label}
