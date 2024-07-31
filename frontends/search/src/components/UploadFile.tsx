@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Show, createSignal, useContext } from "solid-js";
+import { Match, Show, Switch, createSignal, useContext } from "solid-js";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { BiSolidFile } from "solid-icons/bi";
-import { Tooltip } from "shared/ui";
+import { JsonInput, Tooltip } from "shared/ui";
 import { BsInfoCircle } from "solid-icons/bs";
+import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 
 export const UploadFile = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -11,7 +12,10 @@ export const UploadFile = () => {
   const $dataset = datasetAndUserContext.currentDataset;
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const [file, setFile] = createSignal<File | undefined>();
+  const [showAdvanced, setShowAdvanced] = createSignal(false);
   const [link, setLink] = createSignal("");
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any*/
+  const [metadata, setMetadata] = createSignal<any>(undefined);
   const [tagSet, setTagSet] = createSignal("");
   const [isSubmitting, setIsSubmitting] = createSignal(false);
   const [errorText, setErrorText] = createSignal("");
@@ -72,6 +76,8 @@ export const UploadFile = () => {
       target_splits_per_chunk: targetSplitsPerChunk(),
       rebalance_chunks: rebalanceChunks(),
       group_tracking_id: groupTrackingId(),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      metadata: metadata(),
     };
 
     if (timestamp()) {
@@ -95,6 +101,7 @@ export const UploadFile = () => {
         return;
       }
       void response.json().then(() => {
+        setMetadata(undefined);
         setFile(undefined);
         setLink("");
         setTagSet("");
@@ -103,6 +110,7 @@ export const UploadFile = () => {
       });
     });
   };
+
   return (
     <>
       <div class="text-center text-red-500">{errorText()}</div>
@@ -113,91 +121,115 @@ export const UploadFile = () => {
         </div>
       </Show>
       <div class="my-4 flex w-full flex-col gap-y-3">
-        <div class="flex flex-col space-y-2">
-          <div>Group tracking_id</div>
-          <input
-            type="url"
-            placeholder="optional"
-            value={groupTrackingId()}
-            onInput={(e) => setGroupTrackingId(e.target.value)}
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-        </div>
-        <div class="flex flex-col space-y-2">
-          <div>Link to file</div>
-          <input
-            type="url"
-            placeholder="optional"
-            value={link()}
-            onInput={(e) => setLink(e.target.value)}
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-        </div>
-        <div class="flex flex-col space-y-2">
-          <div>Tag Set</div>
-          <input
-            type="text"
-            placeholder="optional - separate with commas"
-            value={tagSet()}
-            onInput={(e) => setTagSet(e.target.value)}
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-          <div>Date</div>
-          <input
-            type="date"
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-            onInput={(e) => {
-              setTimestamp(e.currentTarget.value);
-            }}
-          />
-        </div>
-        <div class="flex flex-col space-y-2">
-          <div class="flex flex-row items-center space-x-2">
-            <div>Split Delimiters</div>
-            <Tooltip
-              body={<BsInfoCircle />}
-              tooltipText="Split delimiters is an optional field which allows you to specify the delimiters to use when splitting the file before chunking the text. If not specified, the default [.!?\n] are used to split into sentences. However, you may want to use spaces or other delimiters."
+        <div>Group tracking_id</div>
+        <input
+          type="url"
+          placeholder="optional"
+          value={groupTrackingId()}
+          onInput={(e) => setGroupTrackingId(e.target.value)}
+          class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+        />
+        <div>Link to file</div>
+        <input
+          type="url"
+          placeholder="optional"
+          value={link()}
+          onInput={(e) => setLink(e.target.value)}
+          class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+        />
+        <div>Tag Set</div>
+        <input
+          type="text"
+          placeholder="optional - separate with commas"
+          value={tagSet()}
+          onInput={(e) => setTagSet(e.target.value)}
+          class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+        />
+        <button
+          class="flex flex-row items-center gap-2"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowAdvanced(!showAdvanced());
+          }}
+        >
+          <Switch>
+            <Match when={!showAdvanced()}>
+              <FiChevronDown />
+            </Match>
+            <Match when={showAdvanced()}>
+              <FiChevronUp />
+            </Match>
+          </Switch>
+          Advanced options
+        </button>
+        <Show when={showAdvanced()}>
+          <div class="ml-4 flex flex-col space-y-2">
+            <div>Metadata </div>
+            <JsonInput
+              onValueChange={(j) => {
+                setErrorText("");
+                setMetadata(j);
+              }}
+              value={metadata}
+              onError={(e) => setErrorText(`Error in Metadata: ${e}`)}
+            />
+            <div>Date</div>
+            <input
+              type="date"
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+              onInput={(e) => {
+                setTimestamp(e.currentTarget.value);
+              }}
+            />
+            <div class="flex flex-col space-y-2">
+              <div class="flex flex-row items-center space-x-2">
+                <div>Split Delimiters</div>
+                <Tooltip
+                  body={<BsInfoCircle />}
+                  tooltipText="Split delimiters is an optional field which allows you to specify the delimiters to use when splitting the file before chunking the text. If not specified, the default [.!?\n] are used to split into sentences. However, you may want to use spaces or other delimiters."
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="optional - separate with commas"
+                value={splitDelimiters().join(",")}
+                onInput={(e) => setSplitDelimiters(e.target.value.split(","))}
+                class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+              />
+            </div>
+            <div class="flex flex-row items-center space-x-2">
+              <div>Target Splits Per Chunk</div>
+              <Tooltip
+                body={<BsInfoCircle />}
+                tooltipText="Target splits per chunk. This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number."
+              />
+            </div>
+            <input
+              type="number"
+              placeholder="optional"
+              value={targetSplitsPerChunk()}
+              onChange={(e) =>
+                setTargetSplitsPerChunk(parseInt(e.target.value))
+              }
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+            <div class="flex flex-row items-center space-x-2">
+              <div>Rebalance Chunks</div>
+              <Tooltip
+                body={<BsInfoCircle />}
+                tooltipText="Balance chunks. If set to true, Trieve will evenly distribute remainder splits across chunks such that 46 splits with a target_splits_per_chunk of 20 will result in 3 chunks with 22 splits each."
+              />
+            </div>
+            <input
+              type="checkbox"
+              checked={rebalanceChunks()}
+              onInput={(e) => setRebalanceChunks(e.currentTarget.checked)}
+              class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
           </div>
-          <input
-            type="text"
-            placeholder="optional - separate with commas"
-            value={splitDelimiters().join(",")}
-            onInput={(e) => setSplitDelimiters(e.target.value.split(","))}
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-        </div>
-        <div class="flex flex-col space-y-2">
-          <div class="flex flex-row items-center space-x-2">
-            <div>Target Splits Per Chunk</div>
-            <Tooltip
-              body={<BsInfoCircle />}
-              tooltipText="Target splits per chunk. This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number."
-            />
-          </div>
-          <input
-            type="number"
-            placeholder="optional"
-            value={targetSplitsPerChunk()}
-            onChange={(e) => setTargetSplitsPerChunk(parseInt(e.target.value))}
-            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-        </div>
-        <div class="flex flex-col space-y-2">
-          <div class="flex flex-row items-center space-x-2">
-            <div>Rebalance Chunks</div>
-            <Tooltip
-              body={<BsInfoCircle />}
-              tooltipText="Balance chunks. If set to true, Trieve will evenly distribute remainder splits across chunks such that 46 splits with a target_splits_per_chunk of 20 will result in 3 chunks with 22 splits each."
-            />
-          </div>
-          <input
-            type="checkbox"
-            checked={rebalanceChunks()}
-            onInput={(e) => setRebalanceChunks(e.currentTarget.checked)}
-            class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
-          />
-        </div>
+        </Show>
+        <div />
         <label
           for="dropzone-file"
           class="dark:hover:bg-bray-800 flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-neutral-100 hover:bg-neutral-200 dark:border-gray-600 dark:bg-neutral-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"
