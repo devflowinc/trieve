@@ -1,32 +1,32 @@
 import { createQuery } from "@tanstack/solid-query";
 import { enUS } from "date-fns/locale";
-import { AnalyticsFilter, AnalyticsParams } from "shared/types";
+import { AnalyticsParams, RAGAnalyticsFilter } from "shared/types";
 import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
-import { getRpsUsageGraph } from "../../api/analytics";
+import { getRagUsageGraph } from "../../api/analytics";
 import { Chart } from "chart.js";
 import { parseCustomDateString } from "./LatencyGraph";
 
-interface SearchUsageProps {
+interface RAGUsageProps {
   params: {
-    filter: AnalyticsFilter;
+    filter: RAGAnalyticsFilter;
     granularity: AnalyticsParams["granularity"];
   };
 }
 
 import "chartjs-adapter-date-fns";
 
-export const SearchUsageGraph = (props: SearchUsageProps) => {
+export const RAGUsageGraph = (props: RAGUsageProps) => {
   const dataset = useContext(DatasetContext);
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
   let chartInstance: Chart | null = null;
   const usageQuery = createQuery(() => ({
     queryKey: [
-      "search-usage",
+      "rag-usage",
       { params: props.params, dataset: dataset().dataset.id },
     ],
     queryFn: async () => {
-      return await getRpsUsageGraph(
+      return await getRagUsageGraph(
         props.params.filter,
         props.params.granularity,
         dataset().dataset.id,

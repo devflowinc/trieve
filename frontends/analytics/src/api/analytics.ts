@@ -15,8 +15,8 @@ import {
   RAGAnalyticsFilter,
   RAGSortBy,
   SortOrder,
-  SearchUsageGraphResponse,
-  SearchUsageDatapoint,
+  UsageDatapoint,
+  UsageGraphResponse,
 } from "shared/types";
 import { apiHost } from "../utils/apiHost";
 import { transformAnalyticsFilter } from "../utils/formatDate";
@@ -50,11 +50,11 @@ export const getLatency = async (
   return data.latency_points;
 };
 
-export const getRps = async (
+export const getRpsUsageGraph = async (
   filters: AnalyticsFilter,
   granularity: AnalyticsParams["granularity"],
   datasetId: string,
-): Promise<SearchUsageDatapoint[]> => {
+): Promise<UsageDatapoint[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
@@ -73,7 +73,7 @@ export const getRps = async (
     throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as unknown as SearchUsageGraphResponse;
+  const data = (await response.json()) as unknown as UsageGraphResponse;
   return data.usage_points;
 };
 
@@ -164,6 +164,33 @@ export const getRAGUsage = async (
 
   const data = (await response.json()) as unknown as RAGUsageResponse;
   return data;
+};
+
+export const getRagUsageGraph = async (
+  filters: RAGAnalyticsFilter,
+  granularity: AnalyticsParams["granularity"],
+  datasetId: string,
+): Promise<UsageDatapoint[]> => {
+  const response = await fetch(`${apiHost}/analytics/rag`, {
+    credentials: "include",
+    method: "POST",
+    body: JSON.stringify({
+      filter: transformAnalyticsFilter(filters),
+      granularity,
+      type: "search_usage_graph",
+    }),
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch trends bubbles: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as unknown as UsageGraphResponse;
+  return data.usage_points;
 };
 
 export const getLowConfidenceQueries = async (
