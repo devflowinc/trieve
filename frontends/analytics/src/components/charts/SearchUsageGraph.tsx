@@ -52,6 +52,7 @@ export const SearchUsageGraph = (props: SearchUsageProps) => {
               data: [],
               backgroundColor: "rgba(128, 0, 128, 0.9)", // Light purple background
               borderWidth: 1,
+              barThickness: data.length === 1 ? 40 : undefined,
             },
           ],
         },
@@ -92,6 +93,12 @@ export const SearchUsageGraph = (props: SearchUsageProps) => {
     if (data.length <= 1) {
       // @ts-expect-error library types not updated
       chartInstance.options.scales["x"].offset = true;
+      // Set the bar thickness to 40 if there is only one data point
+      // @ts-expect-error library types not updated
+      chartInstance.data.datasets[0].barThickness = 40;
+    } else {
+      // @ts-expect-error library types not updated
+      chartInstance.data.datasets[0].barThickness = undefined;
     }
 
     if (props.params.granularity === "day") {
