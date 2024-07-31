@@ -107,32 +107,32 @@ export interface DatasetAndUsage {
 }
 
 export interface ServerEnvsConfiguration {
-  LLM_BASE_URL: string;
-  LLM_DEFAULT_MODEL: string;
-  LLM_API_KEY: string;
-  EMBEDDING_BASE_URL: string;
-  EMBEDDING_MODEL_NAME: string;
-  MESSAGE_TO_QUERY_PROMPT: string;
-  RAG_PROMPT: string;
-  N_RETRIEVALS_TO_INCLUDE: number;
-  EMBEDDING_SIZE: number;
-  FULLTEXT_ENABLED: boolean;
-  SEMANTIC_ENABLED: boolean;
-  QDRANT_COLLECTION_NAME: string | null;
-  EMBEDDING_QUERY_PREFIX: string;
-  TEMPERATURE: number | null;
-  PRESENCE_PENALTY: number | null;
-  FREQUENCY_PENALTY: number | null;
-  STOP_TOKENS: string | null;
-  USE_MESSAGE_TO_QUERY_PROMPT: boolean;
-  INDEXED_ONLY: boolean;
-  LOCKED: boolean;
-  SYSTEM_PROMPT: string | null;
-  MAX_LIMIT: number;
-  BM25_ENABLED: boolean;
-  BM25_B: number;
-  BM25_K: number;
-  BM25_AVG_LEN: number;
+  LLM_BASE_URL?: string;
+  LLM_DEFAULT_MODEL?: string;
+  LLM_API_KEY?: string;
+  EMBEDDING_BASE_URL?: string;
+  EMBEDDING_MODEL_NAME?: string;
+  MESSAGE_TO_QUERY_PROMPT?: string;
+  RAG_PROMPT?: string;
+  N_RETRIEVALS_TO_INCLUDE?: number;
+  EMBEDDING_SIZE?: number;
+  FULLTEXT_ENABLED?: boolean;
+  SEMANTIC_ENABLED?: boolean;
+  QDRANT_COLLECTION_NAME?: string | null;
+  EMBEDDING_QUERY_PREFIX?: string;
+  TEMPERATURE?: number | null;
+  PRESENCE_PENALTY?: number | null;
+  FREQUENCY_PENALTY?: number | null;
+  STOP_TOKENS?: string | null;
+  USE_MESSAGE_TO_QUERY_PROMPT?: boolean;
+  INDEXED_ONLY?: boolean;
+  LOCKED?: boolean;
+  SYSTEM_PROMPT?: string | null;
+  MAX_LIMIT?: number;
+  BM25_ENABLED?: boolean;
+  BM25_B?: number;
+  BM25_K?: number;
+  BM25_AVG_LEN?: number;
 }
 
 export interface DefaultError {

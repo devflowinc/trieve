@@ -2386,6 +2386,122 @@ impl DatasetConfiguration {
                 .unwrap_or(10_000),
         }
     }
+
+    pub fn to_json(&self) -> serde_json::Value {
+        json!({
+            "LLM_BASE_URL": self.LLM_BASE_URL,
+            "LLM_API_KEY": self.LLM_API_KEY,
+            "EMBEDDING_BASE_URL": self.EMBEDDING_BASE_URL,
+            "EMBEDDING_MODEL_NAME": self.EMBEDDING_MODEL_NAME,
+            "MESSAGE_TO_QUERY_PROMPT": self.MESSAGE_TO_QUERY_PROMPT,
+            "RAG_PROMPT": self.RAG_PROMPT,
+            "N_RETRIEVALS_TO_INCLUDE": self.N_RETRIEVALS_TO_INCLUDE,
+            "EMBEDDING_SIZE": self.EMBEDDING_SIZE,
+            "LLM_DEFAULT_MODEL": self.LLM_DEFAULT_MODEL,
+            "BM25_ENABLED": self.BM25_ENABLED,
+            "BM25_B": self.BM25_B,
+            "BM25_K": self.BM25_K,
+            "BM25_AVG_LEN": self.BM25_AVG_LEN,
+            "FULLTEXT_ENABLED": self.FULLTEXT_ENABLED,
+            "SEMANTIC_ENABLED": self.SEMANTIC_ENABLED,
+            "EMBEDDING_QUERY_PREFIX": self.EMBEDDING_QUERY_PREFIX,
+            "USE_MESSAGE_TO_QUERY_PROMPT": self.USE_MESSAGE_TO_QUERY_PROMPT,
+            "FREQUENCY_PENALTY": self.FREQUENCY_PENALTY,
+            "TEMPERATURE": self.TEMPERATURE,
+            "PRESENCE_PENALTY": self.PRESENCE_PENALTY,
+            "STOP_TOKENS": self.STOP_TOKENS,
+            "INDEXED_ONLY": self.INDEXED_ONLY,
+            "LOCKED": self.LOCKED,
+            "SYSTEM_PROMPT": self.SYSTEM_PROMPT,
+            "MAX_LIMIT": self.MAX_LIMIT,
+        })
+    }
+}
+
+impl DatasetConfigurationDTO {
+    pub fn from_curr_dataset(
+        &self,
+        curr_dataset_config: DatasetConfiguration,
+    ) -> DatasetConfiguration {
+        DatasetConfiguration {
+            LLM_BASE_URL: self
+                .LLM_BASE_URL
+                .clone()
+                .unwrap_or(curr_dataset_config.LLM_BASE_URL),
+            LLM_API_KEY: self
+                .LLM_API_KEY
+                .clone()
+                .unwrap_or(curr_dataset_config.LLM_API_KEY),
+            EMBEDDING_BASE_URL: self
+                .EMBEDDING_BASE_URL
+                .clone()
+                .unwrap_or(curr_dataset_config.EMBEDDING_BASE_URL),
+            EMBEDDING_MODEL_NAME: self
+                .EMBEDDING_MODEL_NAME
+                .clone()
+                .unwrap_or(curr_dataset_config.EMBEDDING_MODEL_NAME),
+            RERANKER_BASE_URL: self
+                .RERANKER_BASE_URL
+                .clone()
+                .unwrap_or(curr_dataset_config.RERANKER_BASE_URL),
+            MESSAGE_TO_QUERY_PROMPT: self
+                .MESSAGE_TO_QUERY_PROMPT
+                .clone()
+                .unwrap_or(curr_dataset_config.MESSAGE_TO_QUERY_PROMPT),
+            RAG_PROMPT: self
+                .RAG_PROMPT
+                .clone()
+                .unwrap_or(curr_dataset_config.RAG_PROMPT),
+            N_RETRIEVALS_TO_INCLUDE: self
+                .N_RETRIEVALS_TO_INCLUDE
+                .unwrap_or(curr_dataset_config.N_RETRIEVALS_TO_INCLUDE),
+            EMBEDDING_SIZE: self
+                .EMBEDDING_SIZE
+                .unwrap_or(curr_dataset_config.EMBEDDING_SIZE),
+            LLM_DEFAULT_MODEL: self
+                .LLM_DEFAULT_MODEL
+                .clone()
+                .unwrap_or(curr_dataset_config.LLM_DEFAULT_MODEL),
+            BM25_ENABLED: self
+                .BM25_ENABLED
+                .unwrap_or(curr_dataset_config.BM25_ENABLED),
+            BM25_B: self.BM25_B.unwrap_or(curr_dataset_config.BM25_B),
+            BM25_K: self.BM25_K.unwrap_or(curr_dataset_config.BM25_K),
+            BM25_AVG_LEN: self
+                .BM25_AVG_LEN
+                .unwrap_or(curr_dataset_config.BM25_AVG_LEN),
+            FULLTEXT_ENABLED: self
+                .FULLTEXT_ENABLED
+                .unwrap_or(curr_dataset_config.FULLTEXT_ENABLED),
+            SEMANTIC_ENABLED: self
+                .SEMANTIC_ENABLED
+                .unwrap_or(curr_dataset_config.SEMANTIC_ENABLED),
+            EMBEDDING_QUERY_PREFIX: self
+                .EMBEDDING_QUERY_PREFIX
+                .clone()
+                .unwrap_or(curr_dataset_config.EMBEDDING_QUERY_PREFIX),
+            USE_MESSAGE_TO_QUERY_PROMPT: self
+                .USE_MESSAGE_TO_QUERY_PROMPT
+                .unwrap_or(curr_dataset_config.USE_MESSAGE_TO_QUERY_PROMPT),
+            FREQUENCY_PENALTY: self
+                .FREQUENCY_PENALTY
+                .or(curr_dataset_config.FREQUENCY_PENALTY),
+            TEMPERATURE: self.TEMPERATURE.or(curr_dataset_config.TEMPERATURE),
+            PRESENCE_PENALTY: self
+                .PRESENCE_PENALTY
+                .or(curr_dataset_config.PRESENCE_PENALTY),
+            STOP_TOKENS: self.STOP_TOKENS.clone().or(curr_dataset_config.STOP_TOKENS),
+            INDEXED_ONLY: self
+                .INDEXED_ONLY
+                .unwrap_or(curr_dataset_config.INDEXED_ONLY),
+            LOCKED: self.LOCKED.unwrap_or(curr_dataset_config.LOCKED),
+            SYSTEM_PROMPT: self
+                .SYSTEM_PROMPT
+                .clone()
+                .unwrap_or(curr_dataset_config.SYSTEM_PROMPT),
+            MAX_LIMIT: self.MAX_LIMIT.unwrap_or(curr_dataset_config.MAX_LIMIT),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
