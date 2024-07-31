@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::cmp::{max, min_by_key, Ordering};
 use std::collections::{HashMap, HashSet};
 
 use crate::data::models::{
@@ -1390,6 +1390,7 @@ pub fn get_highlights_with_exact_match(
             false => Some(chunk.join(" ")),
         })
         .filter(|x| !x.is_empty())
+        .map(|p| p.to_lowercase())
         .collect_vec();
 
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
@@ -1438,15 +1439,20 @@ pub fn get_highlights_with_exact_match(
         engine.insert(i, x);
     });
 
+    let mut query_parts_used = HashSet::new();
+
     let mut matched_idxs = split_content
         .iter()
         .enumerate()
-        .filter_map(
-            |(i, split)| match query_parts_split_by_stop_words.contains(split) {
-                true => Some((i, split.clone())),
+        .filter_map(|(i, split)| {
+            match query_parts_split_by_stop_words.contains(&split.to_lowercase()) {
+                true => {
+                    query_parts_used.insert(split.clone());
+                    Some((i, split.clone()))
+                },
                 false => None,
-            },
-        )
+            }
+        })
         .collect_vec();
 
     let exact_matches = matched_idxs.clone();
@@ -1454,6 +1460,7 @@ pub fn get_highlights_with_exact_match(
     let results: Vec<usize> = query_parts_split_by_stop_words
         .clone()
         .iter()
+        .filter(|p| !query_parts_used.contains(&p.to_string()))
         .flat_map(|part| engine.search(part))
         .collect_vec();
 
@@ -1548,20 +1555,59 @@ pub fn get_highlights_with_exact_match(
         })
         .collect_vec();
 
+    let mut exact_match_idx_set = HashSet::new();
+    for (idx, _) in &exact_matches {
+        exact_match_idx_set.insert(idx);
+    }
+
+    dbg!(&exact_matches);
+
+    dbg!(&matched_idxs_with_windows);
+
     let merged_results = matched_idxs_with_windows
         .chunk_by(|(_, _, _, _, a_w_end), (_, _, _, b_w_start, _)| a_w_end >= b_w_start)
-        .filter_map(|merged_run| match (merged_run.first(), merged_run.last()) {
-            (Some((_, _, _, first_start, _)), Some((_, _, _, _, last_end))) => {
-                let combined_phrases = merged_run
-                    .iter()
-                    .map(|(_, _, phrase, _, _)| phrase.to_string())
-                    .unique()
-                    .collect_vec();
-                Some((first_start, last_end, combined_phrases))
+        .flat_map(|merged_run| {
+            let mut result = Vec::new();
+            let mut prev_was_exact = exact_match_idx_set.contains(&merged_run[0].0);
+            let mut prev_w_start = merged_run[0].3;
+            let mut prev_w_end = merged_run[0].4;
+            let mut combined_phrases = vec![merged_run[0].2.to_string()];
+            for run in merged_run.iter().skip(1) {
+                let is_exact = exact_match_idx_set.contains(&run.0);
+                if is_exact == prev_was_exact && is_exact {
+                    // prev_w_end = run.w_end;
+                    prev_w_end = run.4;
+                    combined_phrases.push(run.2.to_string());
+                } else {
+                    if prev_was_exact {
+                        result.push((
+                            prev_w_start,
+                            prev_w_end,
+                            combined_phrases.clone().into_iter().unique().collect_vec(),
+                        ));
+                    } else {
+                        result.push((
+                            prev_w_start,
+                            run.1.saturating_sub(1).min(prev_w_end),
+                            combined_phrases.clone().into_iter().unique().collect_vec(),
+                        ))
+                    }
+                    prev_w_start = run.3.max(prev_w_end).min(run.1);
+                    prev_w_end = run.4;
+                    combined_phrases = vec![run.2.to_string()];
+                }
+                prev_was_exact = is_exact;
             }
-            _ => None,
+            result.push((
+                prev_w_start,
+                prev_w_end,
+                combined_phrases.clone().into_iter().unique().collect_vec(),
+            ));
+            result
         })
         .collect_vec();
+
+    dbg!(&merged_results);
 
     let mut phrases: Vec<(String, Vec<String>)> = Vec::new();
     let mut current_phrase = Vec::new();
@@ -1574,7 +1620,7 @@ pub fn get_highlights_with_exact_match(
             if let Some((w_start, w_end, phrases_to_highlight)) =
                 merged_results.get(current_window_index)
             {
-                if word_count >= **w_start && word_count <= **w_end {
+                if word_count >= *w_start && word_count <= *w_end {
                     current_phrase.push(word);
                 } else if !current_phrase.is_empty() {
                     let mut phrase = current_phrase.join("");
@@ -1582,6 +1628,7 @@ pub fn get_highlights_with_exact_match(
                         phrase = phrase
                             .replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
                     }
+                    dbg!(&phrase, &phrases_to_highlight);
                     phrases.push((phrase, phrases_to_highlight.clone()));
                     current_phrase.clear();
                     current_window_index += 1;
@@ -1613,6 +1660,8 @@ pub fn get_highlights_with_exact_match(
             (false, false) => Ordering::Equal,
         }
     });
+
+    dbg!(&phrases, max_num);
 
     let (phrases, phrases_to_highlight_in_content): (Vec<String>, Vec<Vec<String>>) =
         phrases.into_iter().unzip();
