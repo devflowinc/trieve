@@ -14,6 +14,7 @@ import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { IoOpenOutline } from "solid-icons/io";
 import { OrgContext } from "../../contexts/OrgContext";
 import { ChartCard } from "./ChartCard";
+import { BiRegularExpand } from "solid-icons/bi";
 
 interface LowConfidenceQueriesProps {
   params: AnalyticsParams;
@@ -121,6 +122,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
               <Tr>
                 <Th>Query</Th>
                 <Th class="text-right">Score</Th>
+                <Th class="text-right" />
               </Tr>
             }
           >
@@ -171,6 +173,11 @@ export const QueryCard = (props: QueryCardProps) => {
       >
         <Td class="truncate">{props.query.query}</Td>
         <Td class="truncate text-right">{props.query.top_score.toFixed(5)}</Td>
+        <Td>
+          <span class="hover:text-fuchsia-500">
+            <BiRegularExpand />
+          </span>
+        </Td>
       </Tr>
       <FullScreenModal
         title={props.query.query}
