@@ -275,6 +275,20 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::RAGQueries(rag_queries)
         }
+
+        RAGAnalytics::RAGUsageGraph {
+            filter,
+            granularity,
+        } => {
+            let rag = get_rag_usage_graph_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::RAGUsageGraph(rag)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

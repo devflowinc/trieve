@@ -4405,21 +4405,21 @@ pub struct HeadQueries {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct SearchUsageGraphClickhouse {
+pub struct UsageGraphPointClickhouse {
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub time_stamp: OffsetDateTime,
     pub requests: i64,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct SearchUsageGraph {
+pub struct UsageGraphPoint {
     pub time_stamp: String,
     pub requests: i64,
 }
 
-impl From<SearchUsageGraphClickhouse> for SearchUsageGraph {
-    fn from(graph: SearchUsageGraphClickhouse) -> Self {
-        SearchUsageGraph {
+impl From<UsageGraphPointClickhouse> for UsageGraphPoint {
+    fn from(graph: UsageGraphPointClickhouse) -> Self {
+        UsageGraphPoint {
             time_stamp: graph.time_stamp.to_string(),
             requests: graph.requests,
         }
@@ -4651,6 +4651,12 @@ pub enum RAGAnalytics {
     #[schema(title = "RAGUsage")]
     #[serde(rename = "rag_usage")]
     RAGUsage { filter: Option<RAGAnalyticsFilter> },
+    #[schema(title = "RAGUsageGraph")]
+    #[serde(rename = "rag_usage_graph")]
+    RAGUsageGraph {
+        filter: Option<RAGAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -4729,6 +4735,11 @@ pub struct RAGUsageResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RAGUsageGraphResponse {
+    pub usage_points: Vec<UsageGraphPoint>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum SearchAnalyticsResponse {
     #[schema(title = "LatencyGraph")]
@@ -4758,6 +4769,8 @@ pub enum RAGAnalyticsResponse {
     RAGQueries(RagQueryResponse),
     #[schema(title = "RAGUsage")]
     RAGUsage(RAGUsageResponse),
+    #[schema(title = "RAGUsageGraph")]
+    RAGUsageGraph(RAGUsageGraphResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

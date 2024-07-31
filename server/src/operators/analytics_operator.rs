@@ -6,17 +6,17 @@ use utoipa::ToSchema;
 use crate::{
     data::models::{
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, Granularity,
-        HeadQueries, Pool, RAGAnalyticsFilter, RAGSortBy, RAGUsageResponse, RagQueryEvent,
-        RagQueryEventClickhouse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
-        RecommendationEvent, RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
-        RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
-        RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
-        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
-        SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
+        HeadQueries, Pool, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse,
+        RagQueryEvent, RagQueryEventClickhouse, RecommendationAnalyticsFilter,
+        RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
+        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
+        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
+        SearchAnalyticsFilter, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics,
+        SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
-        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SearchUsageGraph,
-        SearchUsageGraphClickhouse, SortOrder,
+        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, UsageGraphPoint,
+        UsageGraphPointClickhouse,
     },
     errors::ServiceError,
     handlers::analytics_handler::CTRDataRequestBody,
@@ -434,7 +434,7 @@ pub async fn get_query_counts_query(
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SearchUsageGraphResponse {
-    pub usage_points: Vec<SearchUsageGraph>,
+    pub usage_points: Vec<UsageGraphPoint>,
 }
 
 pub async fn get_search_usage_graph_query(
@@ -481,14 +481,14 @@ pub async fn get_search_usage_graph_query(
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<SearchUsageGraphClickhouse>()
+        .fetch_all::<UsageGraphPointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let rps_graph: Vec<SearchUsageGraph> = clickhouse_query
+    let rps_graph: Vec<UsageGraphPoint> = clickhouse_query
         .into_iter()
         .map(|q| q.into())
         .collect::<Vec<_>>();
@@ -656,6 +656,66 @@ pub async fn get_rag_usage_query(
         })?;
 
     Ok(clickhouse_query)
+}
+
+pub async fn get_rag_usage_graph_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RAGUsageGraphResponse, ServiceError> {
+    let granularity = granularity.unwrap_or(Granularity::Hour);
+    let interval = match granularity {
+        Granularity::Second => "1 SECOND",
+        Granularity::Minute => "1 MINUTE",
+        Granularity::Hour => "1 HOUR",
+        Granularity::Day => "1 DAY",
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+            toStartOfInterval(created_at, INTERVAL {}) AS time_stamp,
+            count(*) AS requests
+        FROM 
+            default.rag_queries
+        WHERE 
+            dataset_id = ?
+        ",
+        interval
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT
+            1000",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<UsageGraphPointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let rps_graph: Vec<UsageGraphPoint> = clickhouse_query
+        .into_iter()
+        .map(|q| q.into())
+        .collect::<Vec<_>>();
+
+    Ok(RAGUsageGraphResponse {
+        usage_points: rps_graph,
+    })
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

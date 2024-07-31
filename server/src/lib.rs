@@ -352,7 +352,7 @@ impl Modify for SecurityAddon {
             data::models::SearchMethod,
             data::models::SearchType,
             data::models::ApiKeyRespBody,
-            data::models::SearchUsageGraph,
+            data::models::UsageGraphPoint,
             data::models::SearchResultType,
             data::models::RoleProxy,
             data::models::RAGUsageResponse,
