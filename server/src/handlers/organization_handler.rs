@@ -366,7 +366,7 @@ pub struct UpdateAllOrgDatasetConfigsReqPayload {
 
 /// Update All Dataset Configurations
 ///
-/// Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values. Auth'ed user or api key must have an owner role for the specified organization.
+/// Update the configurations for all datasets in an organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values. Auth'ed user or api key must have an owner role for the specified organization.
 #[utoipa::path(
     post,
     path = "/organization/update_dataset_configs",
