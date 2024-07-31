@@ -155,6 +155,8 @@ impl From<Vec<ChunkGroup>> for CreateChunkGroupResponseEnum {
     }
 }
 
+/// Create or Upsert Group or Groups
+///
 /// Create new chunk_group(s). This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Only 1000 chunk groups can be created at a time. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
@@ -291,6 +293,8 @@ pub struct DatasetGroupQuery {
     pub page: u64,
 }
 
+/// Get Groups for Dataset
+///
 /// Fetch the groups which belong to a dataset specified by its id.
 #[utoipa::path(
     get,
@@ -332,6 +336,8 @@ pub struct GetGroupByTrackingIDData {
     pub tracking_id: String,
 }
 
+/// Get Group by Tracking ID
+///
 /// Fetch the group with the given tracking id.
 
 #[utoipa::path(
@@ -376,7 +382,10 @@ pub struct GetGroupData {
     pub tracking_id: Option<String>,
 }
 
+/// Get Group
+///
 /// Fetch the group with the given id.
+
 #[utoipa::path(
     get,
     path = "/chunk_group/{group_id}",
@@ -427,6 +436,8 @@ pub struct UpdateGroupByTrackingIDReqPayload {
     pub tag_set: Option<Vec<String>>,
 }
 
+/// Update Group by Tracking ID
+///
 /// Update a chunk_group with the given tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
@@ -487,6 +498,8 @@ pub struct DeleteGroupByTrackingIDData {
     pub delete_chunks: Option<bool>,
 }
 
+/// Delete Group by Tracking ID
+///
 /// Delete a chunk_group with the given tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
@@ -543,6 +556,8 @@ pub struct DeleteGroupData {
     pub delete_chunks: Option<bool>,
 }
 
+/// Delete Group
+///
 /// This will delete a chunk_group. If you set delete_chunks to true, it will also delete the chunks within the group. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
@@ -614,6 +629,8 @@ pub struct UpdateChunkGroupReqPayload {
     pub update_chunks: Option<bool>,
 }
 
+/// Update Group
+///
 /// One of group_id or tracking_id must be provided. If you try to change the tracking_id to one that already exists, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     put,
@@ -703,6 +720,8 @@ pub struct AddChunkToGroupReqPayload {
     pub chunk_tracking_id: Option<String>,
 }
 
+/// Add Chunk to Group
+///
 /// Route to add a chunk to a group. One of chunk_id or chunk_tracking_id must be provided. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
@@ -756,6 +775,8 @@ pub async fn add_chunk_to_group(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// Add Chunk to Group by Tracking ID
+///
 /// Route to add a chunk to a group by tracking id. One of chunk_id or chunk_tracking_id must be provided. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     post,
@@ -853,6 +874,8 @@ pub enum GetChunksInGroupResponse {
     V1(GroupsBookmarkQueryResult),
 }
 
+/// Get Chunks in Group
+///
 /// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Page is 1-indexed.
 #[utoipa::path(
     get,
@@ -909,6 +932,8 @@ pub struct GetChunksInGroupByTrackingIdReqPayload {
     pub page: Option<u64>,
 }
 
+/// Get Chunks in Group by Tracking ID
+///
 /// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon. Page is 1-indexed.
 #[utoipa::path(
     get,
@@ -965,7 +990,10 @@ pub struct GetGroupsForChunksReqPayload {
     pub chunk_ids: Vec<uuid::Uuid>,
 }
 
+/// Get Groups for Chunks
+///
 /// Route to get the groups that a chunk is in.
+
 #[utoipa::path(
     post,
     path = "/chunk_group/chunks",
@@ -1005,6 +1033,8 @@ pub struct RemoveChunkFromGroupReqPayload {
     pub chunk_id: uuid::Uuid,
 }
 
+/// Remove Chunk from Group
+///
 /// Route to remove a chunk from a group. Auth'ed user or api key must be an admin or owner of the dataset's organization to remove a chunk from a group.
 #[utoipa::path(
     delete,
@@ -1098,6 +1128,8 @@ pub enum RecommendGroupsResponse {
     V1(GroupScoreChunk),
 }
 
+/// Get Recommended Groups
+///
 /// This route will return groups which are similar to the groups in the request body. You must provide at least one positive group id or group tracking id.
 #[utoipa::path(
     post,
@@ -1421,6 +1453,8 @@ impl SearchWithinGroupResults {
     }
 }
 
+/// Search Within Group
+///
 /// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model.
 #[utoipa::path(
     post,
@@ -1564,6 +1598,8 @@ pub struct SearchOverGroupsReqPayload {
     pub remove_stop_words: Option<bool>,
 }
 
+/// Search Over Groups
+///
 /// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model. Compatible with semantic, fulltext, or hybrid search modes.
 #[utoipa::path(
     post,

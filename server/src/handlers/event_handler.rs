@@ -23,6 +23,8 @@ pub struct GetEventsData {
     pub event_types: Option<Vec<EventTypeRequest>>,
 }
 
+/// Get events for the dataset
+///
 /// Get events for the dataset specified by the TR-Dataset header.
 #[utoipa::path(
     post,

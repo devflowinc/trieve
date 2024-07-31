@@ -86,6 +86,8 @@ pub struct UploadFileResult {
     pub file_metadata: File,
 }
 
+/// Upload File
+///
 /// Upload a file to S3 attached to the server. The file will be converted to HTML with tika and chunked algorithmically, images will be OCR'ed with tesseract. The resulting chunks will be indexed and searchable. Optionally, you can only upload the file and manually create chunks associated to the file after. See docs.trieve.ai and/or contact us for more details and tips. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
 #[utoipa::path(
     post,
@@ -217,6 +219,8 @@ pub async fn upload_file_handler(
     Ok(HttpResponse::Ok().json(result))
 }
 
+/// Get File
+///
 /// Download a file based on its id.
 #[utoipa::path(
     get,
@@ -259,6 +263,8 @@ pub struct FileData {
     pub total_pages: i64,
 }
 
+/// Get Files for Dataset
+///
 /// Get all files which belong to a given dataset specified by the dataset_id parameter. 10 files are returned per page.
 #[utoipa::path(
     get,
@@ -315,6 +321,8 @@ pub async fn get_dataset_files_handler(
             .unwrap_or(1),
     }))
 }
+/// Delete File
+///
 /// Delete a file from S3 attached to the server based on its id. This will disassociate chunks from the file, but only delete them all together if you specify delete_chunks to be true. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,

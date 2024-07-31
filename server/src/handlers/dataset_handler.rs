@@ -82,6 +82,8 @@ pub struct CreateDatasetRequest {
     pub server_configuration: Option<serde_json::Value>,
 }
 
+/// Create dataset
+///
 /// Create a new dataset. The auth'ed user must be an owner of the organization to create a dataset.
 #[utoipa::path(
     post,
@@ -179,6 +181,8 @@ pub struct UpdateDatasetRequest {
     pub new_tracking_id: Option<String>,
 }
 
+/// Update Dataset
+///
 /// Update a dataset by id or tracking_id. One of id or tracking_id must be provided. The auth'ed user must be an owner of the organization to update a dataset.
 #[utoipa::path(
     put,
@@ -232,6 +236,8 @@ pub async fn update_dataset(
     Ok(HttpResponse::Ok().json(d))
 }
 
+/// Delete Dataset
+///
 /// Delete a dataset. The auth'ed user must be an owner of the organization to delete a dataset.
 #[utoipa::path(
     delete,
@@ -276,6 +282,8 @@ pub async fn delete_dataset(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// Clear Dataset
+///
 /// Clears a dataset. The auth'ed user must be an owner of the organization to clear a dataset.
 #[utoipa::path(
     put,
@@ -317,6 +325,8 @@ pub async fn clear_dataset(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// Delete Dataset by Tracking ID
+///
 /// Delete a dataset by its tracking id. The auth'ed user must be an owner of the organization to delete a dataset.
 #[utoipa::path(
     delete,
@@ -361,6 +371,8 @@ pub async fn delete_dataset_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// Get Dataset
+///
 /// Get a dataset by id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
@@ -398,6 +410,8 @@ pub async fn get_dataset(
     Ok(HttpResponse::Ok().json(d))
 }
 
+/// Get Usage By Dataset ID
+///
 /// Get the usage for a dataset by its id.
 #[utoipa::path(
     get,
@@ -430,6 +444,8 @@ pub async fn get_usage_by_dataset_id(
     Ok(HttpResponse::Ok().json(usage))
 }
 
+/// Get Dataset by Tracking ID
+///
 /// Get a dataset by its tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
@@ -474,6 +490,8 @@ pub struct GetDatasetsPagination {
     pub offset: Option<i64>,
 }
 
+/// Get Datasets from Organization
+///
 /// Get all datasets for an organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
