@@ -269,7 +269,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
               </button>
             </div>
           </div>
-          <div class="flex space-x-3">
+          <div class="flex flex-wrap space-x-3">
             <Popover
               defaultOpen={false}
               class="relative"
@@ -833,7 +833,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                     <PopoverPanel
                       unmount={false}
                       tabIndex={0}
-                      class="absolute z-10 mt-2 h-fit w-[480px] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-700"
+                      class="absolute z-10 mt-2 h-fit w-[80vw] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-700 sm:w-[300px] md:w-[400px]"
                     >
                       <div class="items flex flex-col space-y-1">
                         <div class="mt-1">
