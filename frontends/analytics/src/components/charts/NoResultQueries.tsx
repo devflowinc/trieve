@@ -7,6 +7,7 @@ import { PaginationButtons } from "../PaginationButtons";
 import { FullScreenModal, Table, Td, Th, Tr } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { getNoResultQueries } from "../../api/analytics";
+import { BiRegularExpand } from "solid-icons/bi";
 
 interface NoResultQueriesProps {
   params: {
@@ -91,6 +92,7 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
               headers={
                 <Tr>
                   <Th>Query</Th>
+                  <Th />
                 </Tr>
               }
               class="mt-2 w-full py-2"
@@ -122,6 +124,11 @@ const QueryCard = (props: QueryCardProps) => {
         class="cursor-pointer odd:bg-white even:bg-neutral-100 hover:underline hover:odd:bg-neutral-100/80 hover:even:bg-neutral-200/80"
       >
         <Td class="truncate">{props.query.query}</Td>
+        <Td class="w-4 truncate text-right">
+          <span class="hover:text-fuchsia-500">
+            <BiRegularExpand />
+          </span>
+        </Td>
       </Tr>
       <FullScreenModal title={props.query.query} show={open} setShow={setOpen}>
         <SearchQueryEventModal searchEvent={props.query} />

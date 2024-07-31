@@ -70,7 +70,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
             headers={
               <Tr>
                 <Th>Query</Th>
-                <Th class="text-right">Score</Th>
+                <Th class="text-right">Frequency</Th>
               </Tr>
             }
             // headerz={["Query", "Count"]}
