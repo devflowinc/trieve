@@ -320,6 +320,7 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::CreateDatasetRequest,
             handlers::dataset_handler::UpdateDatasetRequest,
             handlers::dataset_handler::GetDatasetsPagination,
+            data::models::DatasetConfigurationDTO,
             operators::analytics_operator::HeadQueryResponse,
             operators::analytics_operator::LatencyGraphResponse,
             operators::analytics_operator::RPSGraphResponse,

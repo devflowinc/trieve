@@ -2017,33 +2017,60 @@ pub struct DatasetConfiguration {
     "MAX_LIMIT": 10000
 }))]
 #[allow(non_snake_case)]
+/// Lets you specify the configuration for a dataset
 pub struct DatasetConfigurationDTO {
+    /// The base URL for the LLM API
     pub LLM_BASE_URL: Option<String>,
     #[serde(skip_serializing)]
+    /// The API key for the LLM API
     pub LLM_API_KEY: Option<String>,
+    /// The base URL for the embedding API
     pub EMBEDDING_BASE_URL: Option<String>,
+    /// The name of the embedding model to use
     pub EMBEDDING_MODEL_NAME: Option<String>,
+    /// The base URL for the reranker API
     pub RERANKER_BASE_URL: Option<String>,
+    /// The prompt to use for converting a message to a query
     pub MESSAGE_TO_QUERY_PROMPT: Option<String>,
+    /// The prompt to use for the RAG model
     pub RAG_PROMPT: Option<String>,
+    /// The number of retrievals to include with the RAG model
     pub N_RETRIEVALS_TO_INCLUDE: Option<usize>,
+    /// The size of the embeddings
     pub EMBEDDING_SIZE: Option<usize>,
+    /// The default model to use for the LLM
     pub LLM_DEFAULT_MODEL: Option<String>,
+    /// Whether to use BM25
     pub BM25_ENABLED: Option<bool>,
+    /// The BM25 B parameter
     pub BM25_B: Option<f32>,
+    /// The BM25 K parameter
     pub BM25_K: Option<f32>,
+    /// The average length of the chunks in the index for BM25
     pub BM25_AVG_LEN: Option<f32>,
+    /// Whether to use fulltext search
     pub FULLTEXT_ENABLED: Option<bool>,
+    /// Whether to use semantic search
     pub SEMANTIC_ENABLED: Option<bool>,
+    /// The prefix to use for the embedding query
     pub EMBEDDING_QUERY_PREFIX: Option<String>,
+    /// Whether to use the message to query prompt
     pub USE_MESSAGE_TO_QUERY_PROMPT: Option<bool>,
+    /// The frequency penalty to use
     pub FREQUENCY_PENALTY: Option<f64>,
+    /// The temperature to use
     pub TEMPERATURE: Option<f64>,
+    /// The presence penalty to use
     pub PRESENCE_PENALTY: Option<f64>,
+    /// The stop tokens to use
     pub STOP_TOKENS: Option<Vec<String>>,
+    /// Whether to only use indexed chunks
     pub INDEXED_ONLY: Option<bool>,
+    /// Whether the dataset is locked to prevent changes or deletion
     pub LOCKED: Option<bool>,
+    /// The system prompt to use for the LLM
     pub SYSTEM_PROMPT: Option<String>,
+    /// The maximum limit for the number of chunks for counting
     pub MAX_LIMIT: Option<u64>,
 }
 
