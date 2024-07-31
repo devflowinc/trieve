@@ -78,14 +78,14 @@ export const Select = <T,>(props: SelectProps<T>) => {
                     <input
                       id={`${props.id}-search`}
                       placeholder="Search..."
-                      class="mb-2 flex mx-auto items-center justify-between rounded bg-neutral-200 p-1 mt-2 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
+                      class="mb-2 flex mx-auto items-center rounded bg-neutral-200 p-1 mt-2 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
                       onInput={(e) => {
                         setSearchTerm(e.target.value);
                       }}
                       value={searchTerm()}
                     />
                   </Show>
-                  <For each={searchResults()}>
+                  <For each={searchResults().slice(0, 500)}>
                     {(option): JSX.Element => (
                       <ListboxOption
                         class="group min-w-full w-[max-content] rounded-md focus:outline-none"
