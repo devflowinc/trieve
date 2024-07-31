@@ -4408,20 +4408,20 @@ pub struct HeadQueries {
 pub struct SearchRPSGraphClickhouse {
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub time_stamp: OffsetDateTime,
-    pub average_rps: f64,
+    pub requests: i64,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct SearchRPSGraph {
     pub time_stamp: String,
-    pub average_rps: f64,
+    pub requests: i64,
 }
 
 impl From<SearchRPSGraphClickhouse> for SearchRPSGraph {
     fn from(graph: SearchRPSGraphClickhouse) -> Self {
         SearchRPSGraph {
             time_stamp: graph.time_stamp.to_string(),
-            average_rps: graph.average_rps,
+            requests: graph.requests,
         }
     }
 }

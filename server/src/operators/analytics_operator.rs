@@ -443,47 +443,42 @@ pub async fn get_rps_graph_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RPSGraphResponse, ServiceError> {
-    let mut query_string = String::from(
-        "WITH per_second_rps AS (
-            SELECT 
-                toDateTime(toUnixTimestamp(created_at) - (toUnixTimestamp(created_at) % 1)) AS second,
-                count(*) AS requests_per_second
-            FROM 
-                default.search_queries
-            WHERE 
-                dataset_id = ?
+    let granularity = granularity.unwrap_or(Granularity::Hour);
+    let interval = match granularity {
+        Granularity::Second => "1 SECOND",
+        Granularity::Minute => "1 MINUTE",
+        Granularity::Hour => "1 HOUR",
+        Granularity::Day => "1 DAY",
+        // Add other granularities as needed
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+            toStartOfInterval(created_at, INTERVAL {}) AS time_stamp,
+            count(*) AS requests
+        FROM 
+            default.search_queries
+        WHERE 
+            dataset_id = ?
         ",
+        interval
     );
 
     if let Some(filter) = filter {
         query_string = filter.add_to_query(query_string);
     }
 
-    query_string.push_str(&format!(
+    query_string.push_str(
         "
-            GROUP BY 
-                second
-        ),
-        per_interval_rps AS (
-            SELECT 
-                toStartOfInterval(second, INTERVAL '1 {}') AS time_stamp,
-                avg(requests_per_second) AS average_rps
-            FROM 
-                per_second_rps
-            GROUP BY 
-                time_stamp
-        )
-        SELECT 
-            time_stamp,
-            average_rps
-        FROM 
-            per_interval_rps
+        GROUP BY 
+            time_stamp
         ORDER BY 
             time_stamp
         LIMIT
             1000",
-        granularity.clone().unwrap_or(Granularity::Hour)
-    ));
+    );
+
+    println!("{query_string}");
 
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
