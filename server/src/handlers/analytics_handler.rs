@@ -110,11 +110,11 @@ pub async fn get_search_analytics(
 
             SearchAnalyticsResponse::LatencyGraph(latency_graph)
         }
-        SearchAnalytics::RPSGraph {
+        SearchAnalytics::SearchUsageGraph {
             filter,
             granularity,
         } => {
-            let rps_graph = get_rps_graph_query(
+            let search_frequency_graph = get_search_usage_graph_query(
                 dataset_org_plan_sub.dataset.id,
                 filter,
                 granularity,
@@ -122,7 +122,7 @@ pub async fn get_search_analytics(
             )
             .await?;
 
-            SearchAnalyticsResponse::RPSGraph(rps_graph)
+            SearchAnalyticsResponse::SearchUsageGraph(search_frequency_graph)
         }
         SearchAnalytics::SearchMetrics { filter } => {
             let search_metrics = get_search_metrics_query(

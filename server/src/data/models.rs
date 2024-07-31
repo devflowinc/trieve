@@ -14,8 +14,8 @@ use crate::handlers::message_handler::{
 use crate::operators::analytics_operator::{
     CTRRecommendationsWithClicksResponse, CTRRecommendationsWithoutClicksResponse,
     CTRSearchQueryWithClicksResponse, CTRSearchQueryWithoutClicksResponse, HeadQueryResponse,
-    LatencyGraphResponse, QueryCountResponse, RPSGraphResponse, RagQueryResponse,
-    RecommendationsEventResponse, SearchClusterResponse, SearchQueryResponse,
+    LatencyGraphResponse, QueryCountResponse, RagQueryResponse, RecommendationsEventResponse,
+    SearchClusterResponse, SearchQueryResponse, SearchUsageGraphResponse,
 };
 use crate::operators::chunk_operator::{
     get_metadata_from_id_query, get_metadata_from_ids_query, HighlightStrategy,
@@ -4405,21 +4405,21 @@ pub struct HeadQueries {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct SearchRPSGraphClickhouse {
+pub struct SearchUsageGraphClickhouse {
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub time_stamp: OffsetDateTime,
     pub requests: i64,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct SearchRPSGraph {
+pub struct SearchUsageGraph {
     pub time_stamp: String,
     pub requests: i64,
 }
 
-impl From<SearchRPSGraphClickhouse> for SearchRPSGraph {
-    fn from(graph: SearchRPSGraphClickhouse) -> Self {
-        SearchRPSGraph {
+impl From<SearchUsageGraphClickhouse> for SearchUsageGraph {
+    fn from(graph: SearchUsageGraphClickhouse) -> Self {
+        SearchUsageGraph {
             time_stamp: graph.time_stamp.to_string(),
             requests: graph.requests,
         }
@@ -4595,9 +4595,9 @@ pub enum SearchAnalytics {
         filter: Option<SearchAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
-    #[serde(rename = "rps_graph")]
-    #[schema(title = "RPSGraph")]
-    RPSGraph {
+    #[serde(rename = "search_usage_graph")]
+    #[schema(title = "SearchUsageGraph")]
+    SearchUsageGraph {
         filter: Option<SearchAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
@@ -4733,8 +4733,8 @@ pub struct RAGUsageResponse {
 pub enum SearchAnalyticsResponse {
     #[schema(title = "LatencyGraph")]
     LatencyGraph(LatencyGraphResponse),
-    #[schema(title = "RPSGraph")]
-    RPSGraph(RPSGraphResponse),
+    #[schema(title = "SearchUsageGraph")]
+    SearchUsageGraph(SearchUsageGraphResponse),
     #[schema(title = "SearchMetrics")]
     SearchMetrics(DatasetAnalytics),
     #[schema(title = "HeadQueries")]
