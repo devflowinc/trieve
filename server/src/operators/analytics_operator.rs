@@ -478,8 +478,6 @@ pub async fn get_rps_graph_query(
             1000",
     );
 
-    println!("{query_string}");
-
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
