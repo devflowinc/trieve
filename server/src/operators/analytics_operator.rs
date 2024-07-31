@@ -15,8 +15,8 @@ use crate::{
         SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
-        SearchQueryEventClickhouse, SearchRPSGraph, SearchRPSGraphClickhouse, SearchSortBy,
-        SearchTypeCount, SortOrder,
+        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SearchUsageGraph,
+        SearchUsageGraphClickhouse, SortOrder,
     },
     errors::ServiceError,
     handlers::analytics_handler::CTRDataRequestBody,
@@ -433,16 +433,16 @@ pub async fn get_query_counts_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct RPSGraphResponse {
-    pub rps_points: Vec<SearchRPSGraph>,
+pub struct SearchUsageGraphResponse {
+    pub usage_points: Vec<SearchUsageGraph>,
 }
 
-pub async fn get_rps_graph_query(
+pub async fn get_search_usage_graph_query(
     dataset_id: uuid::Uuid,
     filter: Option<SearchAnalyticsFilter>,
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
-) -> Result<RPSGraphResponse, ServiceError> {
+) -> Result<SearchUsageGraphResponse, ServiceError> {
     let granularity = granularity.unwrap_or(Granularity::Hour);
     let interval = match granularity {
         Granularity::Second => "1 SECOND",
@@ -481,20 +481,20 @@ pub async fn get_rps_graph_query(
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<SearchRPSGraphClickhouse>()
+        .fetch_all::<SearchUsageGraphClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let rps_graph: Vec<SearchRPSGraph> = clickhouse_query
+    let rps_graph: Vec<SearchUsageGraph> = clickhouse_query
         .into_iter()
         .map(|q| q.into())
         .collect::<Vec<_>>();
 
-    Ok(RPSGraphResponse {
-        rps_points: rps_graph,
+    Ok(SearchUsageGraphResponse {
+        usage_points: rps_graph,
     })
 }
 
