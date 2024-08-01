@@ -25,6 +25,7 @@ export const UploadFile = () => {
   const [targetSplitsPerChunk, setTargetSplitsPerChunk] = createSignal(20);
   const [rebalanceChunks, setRebalanceChunks] = createSignal(false);
   const [groupTrackingId, setGroupTrackingId] = createSignal("");
+  const [chunkingMethod, setChunkingMethod] = createSignal("tika");
 
   const handleDragUpload = (e: DragEvent) => {
     e.preventDefault();
@@ -70,12 +71,15 @@ export const UploadFile = () => {
     const requestBody: any = {
       base64_file: base64File,
       file_name: file_name,
-      link: link(),
-      tag_set: tagSet().split(","),
+      link: link() === "" ? undefined : link(),
+      tag_set: tagSet().split(",").includes("")
+        ? undefined
+        : tagSet().split(","),
       split_delimiters: splitDelimiters(),
       target_splits_per_chunk: targetSplitsPerChunk(),
       rebalance_chunks: rebalanceChunks(),
       group_tracking_id: groupTrackingId(),
+      chunking_strategy: chunkingMethod(),
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       metadata: metadata(),
     };
@@ -227,6 +231,20 @@ export const UploadFile = () => {
               onInput={(e) => setRebalanceChunks(e.currentTarget.checked)}
               class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
+            <div class="flex flex-row items-center space-x-2">
+              <div>Chunking Method</div>
+              <Tooltip
+                body={<BsInfoCircle />}
+                tooltipText="Chunking method. If set to 'tika', Trieve will use Apache Tika and split on sentences. If set to 'aryn', Trieve with use the Aryn service to chunk. (Only works with PDFs) "
+              />
+            </div>
+            <select
+              onChange={(e) => setChunkingMethod(e.currentTarget.value)}
+              class="rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            >
+              <option value="tika">Tika</option>
+              <option value="aryn">Aryn</option>
+            </select>
           </div>
         </Show>
         <div />

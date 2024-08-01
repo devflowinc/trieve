@@ -5424,3 +5424,10 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
         })
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ChunkingMethod {
+    Tika,
+    Aryn,
+}

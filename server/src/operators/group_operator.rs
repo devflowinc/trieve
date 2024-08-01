@@ -566,19 +566,16 @@ pub async fn delete_chunk_from_group_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn create_group_from_file_query(
-    group_id: uuid::Uuid,
-    file_id: uuid::Uuid,
+pub async fn create_groups_from_file_query(
+    file_groups: Vec<FileGroup>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
-    let file_group = FileGroup::from_details(file_id, group_id);
-
     let mut conn = pool.get().await.unwrap();
 
     diesel::insert_into(groups_from_files_columns::groups_from_files)
-        .values(&file_group)
+        .values(&file_groups)
         .execute(&mut conn)
         .await
         .map_err(|_err| {

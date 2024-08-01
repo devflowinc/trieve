@@ -387,6 +387,7 @@ impl Modify for SecurityAddon {
             data::models::RAGSortBy,
             data::models::SearchSortBy,
             data::models::SortOrder,
+            data::models::ChunkingMethod,
             data::models::SearchAnalyticsResponse,
             data::models::DatasetAnalytics,
             data::models::HeadQueries,

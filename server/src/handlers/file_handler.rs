@@ -1,8 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
-        DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, FileAndGroupId, FileWorkerMessage,
-        Pool, RedisPool,
+        ChunkingMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, FileAndGroupId,
+        FileWorkerMessage, Pool, RedisPool,
     },
     errors::ServiceError,
     middleware::auth_middleware::verify_member,
@@ -79,6 +79,8 @@ pub struct UploadFileReqPayload {
     pub target_splits_per_chunk: Option<usize>,
     /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
     pub group_tracking_id: Option<String>,
+    /// Chunking strategy is an optional field which allows you to specify the chunking strategy to use when chunking the file. If not specified, the default "sentence" is used.
+    pub chunking_strategy: Option<ChunkingMethod>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]

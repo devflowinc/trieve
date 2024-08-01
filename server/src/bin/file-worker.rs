@@ -8,12 +8,15 @@ use std::sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
-    data::models::{self, FileWorkerMessage},
+    data::models::{self, ChunkingMethod, FileWorkerMessage},
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
-        file_operator::{create_file_chunks, create_file_query, get_aws_bucket},
+        file_operator::{
+            create_file_chunks, create_file_query, create_groups_and_chunks_from_chunks,
+            get_aws_bucket, get_chunks_from_pdf,
+        },
     },
 };
 
@@ -278,40 +281,57 @@ async fn upload_file(
 
     get_file_span.finish();
 
-    let tika_url = std::env::var("TIKA_URL")
-        .expect("TIKA_URL must be set")
-        .to_string();
+    let file_extension = file_worker_message
+        .upload_file_data
+        .file_name
+        .split('.')
+        .last()
+        .unwrap_or_else(|| {
+            log::error!("Could not get file extension");
+            "txt"
+        });
 
-    let tika_client = reqwest::Client::new();
-    let tika_html_parse_span = transaction.start_child("tika_html_parse", "Parse tika html");
+    let html_content = if file_extension != "pdf"
+        || file_worker_message.upload_file_data.chunking_strategy == Some(ChunkingMethod::Tika)
+    {
+        let tika_url = std::env::var("TIKA_URL")
+            .expect("TIKA_URL must be set")
+            .to_string();
 
-    let tika_response = tika_client
-        .put(&format!("{}/tika", tika_url))
-        .header("Accept", "text/html")
-        .body(file_data.clone())
-        .send()
-        .await
-        .map_err(|err| {
-            log::error!("Could not send file to tika {:?}", err);
-            ServiceError::BadRequest("Could not send file to tika".to_string())
-        })?;
+        let tika_client = reqwest::Client::new();
+        let tika_html_parse_span = transaction.start_child("tika_html_parse", "Parse tika html");
 
-    let tike_html_converted_file_bytes = tika_response
-        .bytes()
-        .await
-        .map_err(|err| {
-            log::error!("Could not get tika response bytes {:?}", err);
-            ServiceError::BadRequest("Could not get tika response bytes".to_string())
-        })?
-        .to_vec();
-    tika_html_parse_span.finish();
+        let tika_response = tika_client
+            .put(&format!("{}/tika", tika_url))
+            .header("Accept", "text/html")
+            .body(file_data.clone())
+            .send()
+            .await
+            .map_err(|err| {
+                log::error!("Could not send file to tika {:?}", err);
+                ServiceError::BadRequest("Could not send file to tika".to_string())
+            })?;
 
-    let html_content = String::from_utf8_lossy(&tike_html_converted_file_bytes).to_string();
-    if html_content.is_empty() {
-        return Err(ServiceError::BadRequest(
-            "Could not parse file with tika".to_string(),
-        ));
-    }
+        let tike_html_converted_file_bytes = tika_response
+            .bytes()
+            .await
+            .map_err(|err| {
+                log::error!("Could not get tika response bytes {:?}", err);
+                ServiceError::BadRequest("Could not get tika response bytes".to_string())
+            })?
+            .to_vec();
+        tika_html_parse_span.finish();
+
+        let html_content = String::from_utf8_lossy(&tike_html_converted_file_bytes).to_string();
+        if html_content.is_empty() {
+            return Err(ServiceError::BadRequest(
+                "Could not parse file with tika".to_string(),
+            ));
+        }
+        html_content
+    } else {
+        "".to_string()
+    };
 
     let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
 
@@ -344,16 +364,44 @@ async fn upload_file(
     )
     .await?;
 
-    create_file_chunks(
-        created_file.id,
-        file_worker_message.upload_file_data,
-        html_content,
-        dataset_org_plan_sub,
-        web_pool.clone(),
-        clickhouse_client.clone(),
-        redis_conn,
-    )
-    .await?;
+    if !html_content.is_empty() {
+        create_file_chunks(
+            created_file.id,
+            file_worker_message.upload_file_data,
+            html_content,
+            dataset_org_plan_sub,
+            web_pool.clone(),
+            clickhouse_client.clone(),
+            redis_conn,
+        )
+        .await?;
+    } else {
+        let aryn_token = std::env::var("ARYN_TOKEN").ok();
+
+        if aryn_token.is_none() {
+            return Err(ServiceError::BadRequest(
+                "ARYN_TOKEN must be set to create chunks".to_string(),
+            ));
+        }
+
+        let chunks = get_chunks_from_pdf(file_data.clone(), aryn_token.unwrap())
+            .await
+            .map_err(|err| {
+                log::error!("Failed to get chunks from pdf {:?}", err);
+                ServiceError::BadRequest("Failed to get chunks from pdf".to_string())
+            })?;
+
+        create_groups_and_chunks_from_chunks(
+            chunks.elements,
+            created_file.id,
+            file_worker_message.upload_file_data,
+            dataset_org_plan_sub,
+            web_pool.clone(),
+            clickhouse_client.clone(),
+            redis_conn,
+        )
+        .await?;
+    }
 
     create_file_chunks_span.finish();
 
