@@ -107,6 +107,16 @@ spec:
             value: {{ .Values.config.redis.connections | quote }}
           - name: BULK_PG_QUEUE
             value: {{ .Values.config.trieve.bulkPgQueue }}
+          - name: CLICKHOUSE_URL
+            value: {{ .Values.config.analytics.clickhouseUrl | quote }}
+          - name: CLICKHOUSE_DB
+            value: {{ .Values.config.analytics.clickhouseDB | quote }}
+          - name: CLICKHOUSE_USER
+            value: {{ .Values.config.analytics.clickhouseUser | quote }}
+          - name: CLICKHOUSE_PASSWORD
+            value: {{ .Values.config.analytics.clickhousePassword | quote }}
+          - name: USE_ANALYTICS
+            value: {{ .Values.config.analytics.enabled | quote }}
       {{- if eq $.Values.environment "gcloud" }}
       - name: cloud-sql-proxy
         # It is recommended to use the latest version of the Cloud SQL Auth Proxy
