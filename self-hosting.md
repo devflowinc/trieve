@@ -241,42 +241,6 @@ It should look something like this.
 127.0.0.1  auth.localtrieve.com
 ```
 
-9) Setup/OIDC provider and Authorized Redirect URL'S
-
-The last step is to setup `keycloak` for authentication and get an `issuerUrl` and `clientSecret`.
-
-A) Navigate to `auth.localtrieve.com` if you set /etc/hosts properly you should be able to login. Defaul username and password are both admin
-B) Create a new realm called `trieve`
-C) Navigate to `Realm settings` > `Login` and enable User Registration
-D) Go into `Clients` and create a new client called `trieve`.
-
-Enable client authentication and set the following allowed redirect url's
-
-- http://api.localtrieve.com/*
-- http://search.localtrieve.com/*
-- http://chat.localtrieve.com/*
-- http://dashboard.localtrieve.com/*
-
-You will get the client secret in the `Credentials` tab.
-
-You will need to set the following values in the `helm/local-values.yaml` file, it should be prefilled already with default values
-
-```
-config:
-  oidc:
-    clientSecret: $OIDC_CLIENT_SECRET
-    clientId: trieve
-    issuerUrl: http://auth.localtrieve.com/realms/trieve
-    authRedirectUrl: http://auth.localtrieve.com/realms/trieve/protocol/openid-connect/auth
-```
-
-After you set that, upgrade the helm chart with
-
-```sh
-helm upgrade -f helm/local-values.yaml local helm/
-```
-
-
 ## AWS EKS
 
 Things you need
