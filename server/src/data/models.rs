@@ -764,9 +764,12 @@ impl From<ChunkMetadataWithScore> for ChunkMetadata {
             qdrant_point_id: val.qdrant_point_id,
             created_at: val.created_at,
             updated_at: val.updated_at,
-            tag_set: val
-                .tag_set
-                .map(|tags| tags.split(',').map(|tag| Some(tag.to_string())).collect()),
+            tag_set: val.tag_set.map(|tags| {
+                tags.split(',')
+                    .filter(|tag| !tag.is_empty()) // Filter out empty strings
+                    .map(|tag| Some(tag.to_string()))
+                    .collect()
+            }),
             chunk_html: val.chunk_html,
             metadata: val.metadata,
             tracking_id: val.tracking_id,
