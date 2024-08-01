@@ -24,12 +24,12 @@ export function isSortBySearchType(
   return (sortBy as SortBySearchType).rerank_type !== undefined;
 }
 
-export type HighlightStrategy = "v1" | "exactmatch";
+export type HighlightStrategy = "v1" | "exactmatch" | "exactonly";
 
 export function isHighlightStrategy(
   value: string | undefined,
 ): value is HighlightStrategy {
-  return value === "v1" || value === "exactmatch";
+  return value === "v1" || value === "exactmatch" || value === "exactonly";
 }
 
 export interface SearchOptions {

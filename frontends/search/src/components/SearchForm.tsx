@@ -883,6 +883,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                           >
                             <option value="v1">V1</option>
                             <option value="exactmatch">Exact match</option>
+                            <option value="exactonly">Exact only</option>
                           </select>
                         </div>
                         <Show

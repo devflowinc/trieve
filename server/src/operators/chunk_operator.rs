@@ -1360,8 +1360,8 @@ pub fn get_highlights_with_exact_only(
     input: ChunkMetadata,
     query: String,
     _threshold: Option<f64>,
-    delimiters: Vec<String>,
-    max_length: Option<u32>,
+    _delimiters: Vec<String>,
+    _max_length: Option<u32>,
     max_num: Option<u32>,
     window_size: Option<u32>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
