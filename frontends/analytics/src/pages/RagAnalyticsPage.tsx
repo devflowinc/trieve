@@ -42,7 +42,7 @@ export const RagAnalyticsPage = () => {
   });
 
   return (
-    <div class="min-h-screen bg-neutral-200/60 p-4">
+    <>
       <div class="flex justify-between border-neutral-400 px-3 py-2">
         <div>
           <Select
@@ -66,6 +66,6 @@ export const RagAnalyticsPage = () => {
         <RagQueries filter={filter} />
         <RagUsage filter={filter} />
       </div>
-    </div>
+    </>
   );
 };

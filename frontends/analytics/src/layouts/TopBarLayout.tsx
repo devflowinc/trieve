@@ -98,7 +98,11 @@ export const TopBarLayout: ParentComponent = (props) => {
           <DatasetContext.Provider
             value={selectedDataset as Accessor<DatasetAndUsage>}
           >
-            <div class="h-full overflow-auto">{props.children}</div>
+            <div class="h-full overflow-auto">
+              <div class="min-h-screen bg-neutral-200/60 p-4">
+                {props.children}
+              </div>
+            </div>
           </DatasetContext.Provider>
         </Show>
       </div>

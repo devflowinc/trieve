@@ -13,7 +13,7 @@ export const OverviewPage = () => {
   const headQueriesDate = useSimpleTimeRange();
   const ctrDate = useSimpleTimeRange();
   return (
-    <div class="grid grid-cols-2 items-start gap-2 p-8">
+    <div class="grid grid-cols-2 items-start gap-2">
       <ChartCard class="flex flex-col justify-between px-4" width={2}>
         <QueryCounts />
       </ChartCard>

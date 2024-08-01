@@ -5,11 +5,11 @@ import { createSignal, For, Show, useContext } from "solid-js";
 import { SearchClusterTopics, SearchQueryEvent } from "shared/types";
 import { toTitleCase } from "../utils/titleCase";
 import { parseCustomDateString } from "../components/charts/LatencyGraph";
-import { FullScreenModal } from "shared/ui";
+import { FullScreenModal, Table, Tr } from "shared/ui";
 
 const WIPWarning = () => {
   return (
-    <div class="rounded border border-blue-200 bg-blue-100/60 p-3 text-blue-900">
+    <div class="rounded border border-blue-300 bg-blue-100/60 p-4 text-blue-900">
       <div>
         Note: The Trend Explorer is a Work In Progress. We are working hard to
         help you visualize trends in your searches over time. For questions or
@@ -38,22 +38,27 @@ export const TrendExplorer = () => {
   }));
 
   return (
-    <div class="p-8">
+    <>
       <WIPWarning />
-      <div class="h-8" />
-      <div class="rounded-md border border-neutral-200 bg-white">
-        <table class="mt-2 w-full">
-          <thead>
-            <tr>
-              <th class="p-2 text-left font-semibold">Topic</th>
-              <th class="p-2 text-right font-semibold">Density</th>
-              <th class="p-2 text-right font-semibold">Average Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            <For
-              fallback={<div class="px-2 py-4 opacity-40" />}
-              each={trendsQuery.data}
+      <div class="h-4" />
+      <div class="rounded-md border border-neutral-300 bg-white p-2">
+        <Show fallback={<div>Loading...</div>} when={trendsQuery.data}>
+          {(data) => (
+            <Table
+              data={data()}
+              fallback={
+                <div class="py-4 text-center opacity-70">
+                  No trends found for this dataset.
+                </div>
+              }
+              headers={
+                <Tr>
+                  <th class="p-2 text-left font-semibold">Topic</th>
+                  <th class="p-2 text-right font-semibold">Density</th>
+                  <th class="p-2 text-right font-semibold">Average Score</th>
+                </Tr>
+              }
+              class="mt-2 w-full"
             >
               {(topic) => (
                 <TopicRow
@@ -61,11 +66,11 @@ export const TrendExplorer = () => {
                   topic={topic}
                 />
               )}
-            </For>
-          </tbody>
-        </table>
+            </Table>
+          )}
+        </Show>
       </div>
-    </div>
+    </>
   );
 };
 
