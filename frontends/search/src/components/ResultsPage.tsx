@@ -35,7 +35,6 @@ import {
   FaSolidChevronUp,
   FaSolidDownload,
 } from "solid-icons/fa";
-import { Filters } from "./FilterModal";
 import { createToast } from "./ShowToasts";
 import {
   isSortByField,
@@ -78,7 +77,6 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [noResults, setNoResults] = createSignal(false);
-  const [filters, setFilters] = createSignal<Filters>({} as Filters);
   const [totalPages, setTotalPages] = createSignal(0);
 
   const fetchChunkCollections = () => {
@@ -111,10 +109,6 @@ const ResultsPage = (props: ResultsPageProps) => {
     }
   };
 
-  createEffect(() => {
-    fetchChunkCollections();
-  });
-
   const fetchBookmarks = () => {
     const dataset = $dataset?.();
     if (!dataset) return;
@@ -142,10 +136,10 @@ const ResultsPage = (props: ResultsPageProps) => {
     });
   };
 
-  const curDatasetFiltersKey = createMemo(
-    () =>
-      `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
-  );
+  createEffect(() => {
+    fetchChunkCollections();
+    fetchBookmarks();
+  });
 
   const dataset = createMemo(() => {
     if ($dataset) {
@@ -176,7 +170,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       const requestBody: any = {
         query: props.search.debounced.query,
         page: page(),
-        filters: filters(),
+        filters: props.search.debounced.filters ?? undefined,
         search_type: props.search.debounced.searchType.includes("autocomplete")
           ? props.search.debounced.searchType.replace("autocomplete-", "")
           : props.search.debounced.searchType,
@@ -310,30 +304,6 @@ const ResultsPage = (props: ResultsPageProps) => {
       });
     }),
   );
-
-  createEffect((prevFiltersKey) => {
-    const filtersKey = curDatasetFiltersKey();
-    if (prevFiltersKey === filtersKey) {
-      return filtersKey;
-    }
-
-    fetchBookmarks();
-
-    const filters = localStorage.getItem(filtersKey);
-    if (filters) {
-      setFilters(JSON.parse(filters));
-    }
-
-    window.addEventListener("filtersUpdated", () => {
-      const filters = JSON.parse(
-        localStorage.getItem(filtersKey) ?? "{}",
-      ) as Filters;
-      props.search.setSearch("version", (prev) => prev + 1);
-      setFilters(filters);
-    });
-
-    return filtersKey;
-  }, "");
 
   createEffect(() => {
     if (!openChat()) {

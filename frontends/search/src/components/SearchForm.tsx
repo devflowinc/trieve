@@ -8,7 +8,6 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  useContext,
 } from "solid-js";
 import {
   Menu,
@@ -18,8 +17,7 @@ import {
   PopoverPanel,
 } from "solid-headless";
 import { FaSolidCheck } from "solid-icons/fa";
-import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
-import { Filter, FilterItem, Filters } from "./FilterModal";
+import { Filter, FilterItem } from "./FilterModal";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import {
   HighlightStrategy,
@@ -37,22 +35,28 @@ const defaultFilter = {
 
 const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
   const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
-
-  const datasetAndUserContext = useContext(DatasetAndUserContext);
   const [tempSearchValues, setTempSearchValues] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.search.state,
   );
   const [tempFilterType, setTempFilterType] = createSignal<string>("must");
-  const [mustFilters, setMustFilters] = createSignal<Filter[]>([]);
-  const [mustNotFilters, setMustNotFilters] = createSignal<Filter[]>([]);
-  const [shouldFilters, setShouldFilters] = createSignal<Filter[]>([]);
-  const [jsonbPrefilter, setJsonbPrefilter] = createSignal<boolean>(true);
-  const [rerankQuery, setRerankQuery] = createSignal<string>("");
-  const curDatasetFiltersKey = createMemo(
-    () =>
-      `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
+  const [mustFilters, setMustFilters] = createSignal<Filter[]>(
+    // eslint-disable-next-line solid/reactivity
+    tempSearchValues().filters?.must ?? [],
   );
+  const [mustNotFilters, setMustNotFilters] = createSignal<Filter[]>(
+    // eslint-disable-next-line solid/reactivity
+    tempSearchValues().filters?.must_not ?? [],
+  );
+  const [shouldFilters, setShouldFilters] = createSignal<Filter[]>(
+    // eslint-disable-next-line solid/reactivity
+    tempSearchValues().filters?.should ?? [],
+  );
+  const [jsonbPrefilter, setJsonbPrefilter] = createSignal<boolean>(
+    // eslint-disable-next-line solid/reactivity
+    tempSearchValues().filters?.jsonb_prefilter ?? true,
+  );
+  const [rerankQuery, setRerankQuery] = createSignal<string>("");
 
   const saveFilters = (setShowFilterModal: (filter: boolean) => void) => {
     const filters = {
@@ -61,26 +65,9 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
       should: shouldFilters(),
       jsonb_prefilter: jsonbPrefilter(),
     };
-    localStorage.setItem(curDatasetFiltersKey(), JSON.stringify(filters));
-    window.dispatchEvent(new Event("filtersUpdated"));
+    props.search.setSearch("filters", filters);
     setShowFilterModal(false);
   };
-
-  createEffect((prevFiltersKey) => {
-    const filtersKey = curDatasetFiltersKey();
-    if (prevFiltersKey === filtersKey) {
-      return filtersKey;
-    }
-
-    const savedFilters = localStorage.getItem(filtersKey);
-    if (savedFilters) {
-      const parsedFilters = JSON.parse(savedFilters) as Filters;
-      setMustFilters(parsedFilters.must);
-      setMustNotFilters(parsedFilters.must_not);
-      setShouldFilters(parsedFilters.should);
-      setJsonbPrefilter(parsedFilters.jsonb_prefilter ?? true);
-    }
-  }, "");
 
   const default_settings = [
     { name: "Hybrid", isSelected: false, route: "hybrid" },
@@ -276,17 +263,6 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
             <Popover
               defaultOpen={false}
               class="relative"
-              onOpen={() => {
-                const filtersKey = curDatasetFiltersKey();
-                const savedFilters = localStorage.getItem(filtersKey);
-                if (savedFilters) {
-                  const parsedFilters = JSON.parse(savedFilters) as Filters;
-                  setMustFilters(parsedFilters.must);
-                  setMustNotFilters(parsedFilters.must_not);
-                  setShouldFilters(parsedFilters.should);
-                  setJsonbPrefilter(parsedFilters.jsonb_prefilter ?? true);
-                }
-              }}
               onClose={() => {
                 saveFilters(() => {});
               }}
@@ -781,8 +757,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
               class="relative"
               onClose={() => {
                 const newSearchValues = tempSearchValues();
-                newSearchValues.version = props.search.state.version + 1;
-
+                newSearchValues.version += 1;
                 newSearchValues.sort_by = props.search.state.sort_by;
                 newSearchValues.searchType = props.search.state.searchType;
                 newSearchValues.groupUniqueSearch =
@@ -794,6 +769,7 @@ const SearchForm = (props: { search: SearchStore; groupID?: string }) => {
                 const searchTextarea = document.getElementById(
                   "search-query-textarea",
                 );
+
                 searchTextarea?.focus();
                 setTimeout(() => {
                   searchTextarea?.focus();

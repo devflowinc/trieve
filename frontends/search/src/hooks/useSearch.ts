@@ -1,6 +1,7 @@
 import { Params, useSearchParams } from "@solidjs/router";
 import { createEffect, on } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
+import { Filters } from "../components/FilterModal";
 
 export interface SortByField {
   field: string;
@@ -52,6 +53,7 @@ export interface SearchOptions {
   group_size: number;
   useQuoteNegatedTerms: boolean;
   removeStopWords: boolean;
+  filters: Filters | null;
 }
 
 const initalState: SearchOptions = {
@@ -77,6 +79,7 @@ const initalState: SearchOptions = {
   group_size: 3,
   useQuoteNegatedTerms: false,
   removeStopWords: false,
+  filters: { must: [], must_not: [], should: [], jsonb_prefilter: true },
 };
 
 const fromStateToParams = (state: SearchOptions): Params => {
@@ -101,6 +104,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     group_size: state.group_size?.toString(),
     useQuoteNegatedTerms: state.useQuoteNegatedTerms.toString(),
     removeStopWords: state.removeStopWords.toString(),
+    filters: JSON.stringify(state.filters),
   };
 };
 
@@ -132,10 +136,9 @@ const fromParamsToState = (
     group_size: parseInt(params.group_size ?? "3"),
     useQuoteNegatedTerms: (params.useQuoteNegatedTerms ?? "false") === "true",
     removeStopWords: (params.removeStopWords ?? "false") === "true",
+    filters: JSON.parse(params.filters ?? "null") as Filters | null,
   };
 };
-
-let readFromLocation = false;
 
 export const useSearch = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -170,17 +173,10 @@ export const useSearch = () => {
   const proxiedSet: typeof setSearch = (
     ...args: Parameters<typeof setSearch>
   ) => {
-    if (!readFromLocation) return;
     // @ts-expect-error args are passed to setSearch
     setSearch(...args);
     setSearch("version", (prev) => prev + 1);
   };
-
-  createEffect(() => {
-    const locationState = fromParamsToState(searchParams);
-    readFromLocation = true;
-    setSearch("searchType", locationState.searchType);
-  });
 
   return {
     debounced,
