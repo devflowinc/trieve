@@ -107,6 +107,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [groupRecommendedChunks, setGroupRecommendedChunks] = createSignal<
     GroupScoreChunkDTO[]
   >([]);
+  const [searchID, setSearchID] = createSignal("");
 
   onMount(() => {
     fetchBookmarks();
@@ -241,6 +242,7 @@ export const GroupPage = (props: GroupPageProps) => {
         }).then((response) => {
           if (response.ok) {
             void response.json().then((data) => {
+              setSearchID(data.id);
               setTotalPages(data.total_pages);
               setSearchWithinGroupResults(data.chunks);
             });
@@ -580,7 +582,11 @@ export const GroupPage = (props: GroupPageProps) => {
         <div class="flex w-full max-w-screen-2xl flex-col space-y-4 border-t border-neutral-500">
           <div class="mx-auto w-full">
             <div class="mx-auto my-4 w-full">
-              <SearchForm search={search} groupID={props.groupID} />
+              <SearchForm
+                search={search}
+                groupID={props.groupID}
+                searchID={searchID()}
+              />
             </div>
           </div>
           <Switch>
