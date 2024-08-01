@@ -62,7 +62,7 @@ config:
     enabled: true
     clickhouseDB: default
     clickhouseUser: default
-    clickhousePassword: cywtKFfCdRYq7H
+    clickhousePassword: password
     clickhouseUrl: http://chi-trieve-clickhouse-cluster1-0-0.clickhouse.svc.cluster.local:8123
   trieve:
     unlimited: true
