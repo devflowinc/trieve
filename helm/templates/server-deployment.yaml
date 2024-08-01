@@ -47,7 +47,7 @@ spec:
           - name: VECTOR_SIZES
             value: {{ join "," .Values.config.qdrant.vectorSizes | quote }}
           - name: DATABASE_URL
-            value: {{ ( ternary "postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432" .Values.postgres.dbURI (eq .Values.postgres.useSubchart true)) }}
+            value: {{ ( ternary "postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432/trieve" .Values.postgres.dbURI (eq .Values.postgres.useSubchart true)) }}
           - name: SMTP_RELAY
             value: {{ .Values.config.smtp.relay }}
           - name: SMTP_USERNAME
