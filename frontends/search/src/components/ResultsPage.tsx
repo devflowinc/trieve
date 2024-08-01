@@ -15,6 +15,7 @@ import {
   onCleanup,
   createMemo,
   on,
+  Setter,
 } from "solid-js";
 import {
   type ChunkGroupDTO,
@@ -47,6 +48,7 @@ import { VsFileSymlinkFile } from "solid-icons/vs";
 
 export interface ResultsPageProps {
   search: SearchStore;
+  setSearchID: Setter<string>;
 }
 
 const ResultsPage = (props: ResultsPageProps) => {
@@ -248,7 +250,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             if (groupUnique) {
               const groupResult = data.results as GroupScoreChunkDTO[];
               setTotalPages(data.total_pages);
-
+              props.setSearchID(data.id);
               setGroupResultChunks(groupResult);
 
               resultingChunks = groupResult.flatMap((groupChunkDTO) => {
@@ -266,7 +268,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                   return chunk;
                 }
               });
-
+              props.setSearchID(data.id);
               setResultChunks(resultingChunks);
               setTotalPages(data.total_pages);
             }

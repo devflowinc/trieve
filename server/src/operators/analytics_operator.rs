@@ -1144,3 +1144,32 @@ pub async fn get_recommendations_without_clicks_query(
 
     Ok(CTRRecommendationsWithoutClicksResponse { recommendations })
 }
+
+pub async fn set_query_flag_query(
+    query_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
+    flag: i32,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<(), ServiceError> {
+    clickhouse_client
+        .query(
+            "ALTER TABLE default.search_queries
+        UPDATE flag = ?
+        WHERE id = ? AND dataset_id = ?",
+        )
+        .bind(flag)
+        .bind(query_id)
+        .bind(dataset_id)
+        .execute()
+        .await
+        .map_err(|err| {
+            log::error!("Error writing to ClickHouse: {:?}", err);
+            sentry::capture_message(
+                &format!("Error writing to ClickHouse: {:?}", err),
+                sentry::Level::Error,
+            );
+            ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
+        })?;
+
+    Ok(())
+}
