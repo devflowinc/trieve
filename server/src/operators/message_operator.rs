@@ -392,6 +392,7 @@ pub async fn stream_response(
         latency: get_latency_from_header(search_timer.header_value()),
         results: result_chunks.into_response_payload(),
         created_at: time::OffsetDateTime::now_utc(),
+        flag: 0,
     };
 
     let _ = send_to_clickhouse(

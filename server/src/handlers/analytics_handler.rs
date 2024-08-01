@@ -67,6 +67,51 @@ pub async fn get_cluster_analytics(
     Ok(HttpResponse::Ok().json(response))
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
+pub struct FlagQueryRequest {
+    pub query_id: uuid::Uuid,
+    pub flag: i32,
+}
+
+/// Flag Query
+///
+/// This route allows you to flag a query.
+#[utoipa::path(
+    put,
+    path = "/analytics/search",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = FlagQueryRequest, description = "JSON request payload to flag a query", content_type = "application/json"),
+    responses(
+        (status = 204, description = "The query was successfully flagged"),
+
+        (status = 400, description = "Service error relating to flagging a query", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn set_query_flag(
+    data: web::Json<FlagQueryRequest>,
+    _user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let data = data.into_inner();
+    set_query_flag_query(
+        data.query_id,
+        dataset_org_plan_sub.dataset.id,
+        data.flag,
+        clickhouse_client.get_ref(),
+    )
+    .await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
 /// Get Search Analytics
 ///
 /// This route allows you to view the search analytics for a dataset.
