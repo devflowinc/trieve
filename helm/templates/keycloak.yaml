@@ -30,10 +30,14 @@ spec:
       labels:
         app: keycloak
     spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: keycloak-realm-export
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:25.0.2
-          args: ["start-dev"]
+          args: ["start-dev", "--import-realm"]
           env:
             - name: KEYCLOAK_ADMIN
               value: "admin"
@@ -47,6 +51,17 @@ spec:
               value: "hostname:v2"
             - name: KC_HOSTNAME_DEBUG
               value: "true"
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://trieve-postgresql.default.svc.cluster.local:5432/keycloak
+            - name: KC_DB_USERNAME
+              value: postgres
+            - name: KC_DB_PASSWORD
+              value: password
+          volumeMounts:
+            - name: config-volume
+              mountPath: /opt/keycloak/data/import
           ports:
             - name: http
               containerPort: 8080
