@@ -34,18 +34,12 @@ export interface Filters {
 }
 
 export interface FilterItemProps {
-  initialFilter?: Filter;
+  initialFilter: Filter;
   onFilterChange: (filter: Filter) => void;
 }
 
-const defaultFilter = {
-  field: "",
-};
-
 export const FilterItem = (props: FilterItemProps) => {
-  const [curFilter, setCurFilter] = createSignal<Filter>(
-    props.initialFilter ?? defaultFilter,
-  );
+  const [curFilter, setCurFilter] = createSignal<Filter>(props.initialFilter);
   const [tempFilterMode, setTempFilterMode] = createSignal<string>(
     props.initialFilter?.geo_radius
       ? "geo_radius"

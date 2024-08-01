@@ -42,10 +42,16 @@ export const Navbar = () => {
 
           <div class="flex items-center justify-end space-x-1 sm:space-x-4">
             <a
-              href={`${dashboardUrl}`}
+              href={dashboardUrl}
               class="hidden text-center min-[420px]:text-lg min-[920px]:block"
             >
               Dashboard
+            </a>
+            <a
+              href="https://docs.trieve.ai/api-reference"
+              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+            >
+              API Docs
             </a>
             <a
               href={`/?dataset=${datasetAndUserContext.currentDataset?.()
@@ -124,10 +130,16 @@ export const Navbar = () => {
         >
           <div class="space-y-1 px-2 pb-3 pt-2">
             <a
-              href={`${dashboardUrl}`}
+              href={dashboardUrl}
               class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             >
               Dashboard
+            </a>
+            <a
+              href="https://docs.trieve.ai/api-reference"
+              class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+            >
+              API Docs
             </a>
             <a
               href={`/?dataset=${datasetAndUserContext.currentDataset?.()
