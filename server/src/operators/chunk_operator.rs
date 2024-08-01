@@ -1352,7 +1352,266 @@ pub fn get_stop_words() -> Vec<String> {
 #[serde(rename_all = "lowercase")]
 pub enum HighlightStrategy {
     ExactMatch,
+    ExactOnly,
     V1,
+}
+
+pub fn get_highlights_with_exact_only(
+    input: ChunkMetadata,
+    query: String,
+    _threshold: Option<f64>,
+    delimiters: Vec<String>,
+    max_length: Option<u32>,
+    max_num: Option<u32>,
+    window_size: Option<u32>,
+) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
+    let stop_words = get_stop_words();
+    let mut query_parts_split_by_stop_words: Vec<String> = query
+        .split(' ')
+        .collect_vec()
+        .chunk_by(|a, b| {
+            !stop_words.contains(&a.to_lowercase()) && !stop_words.contains(&b.to_lowercase())
+        })
+        .map(|chunk| {
+            chunk
+                .iter()
+                .filter_map(|word| match stop_words.contains(&word.to_lowercase()) {
+                    true => None,
+                    false => Some(word.to_string()),
+                })
+                .collect_vec()
+        })
+        .filter_map(|chunk| match chunk.is_empty() {
+            true => None,
+            false => Some(chunk.join(" ")),
+        })
+        .filter(|x| !x.is_empty())
+        .collect_vec();
+
+    if query_parts_split_by_stop_words.len() == 1 {
+        let parts_clone = query_parts_split_by_stop_words.clone();
+        let query_string = parts_clone.last();
+        query_parts_split_by_stop_words = query_parts_split_by_stop_words
+            .into_iter()
+            .flat_map(|s| s.split_whitespace().map(|x| x.to_string()).collect_vec())
+            .collect_vec();
+        if let Some(q) = query_string {
+            query_parts_split_by_stop_words.insert(0, q.to_string());
+        }
+    }
+
+    let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
+    let query_parts_as_regex = match query_parts_split_by_stop_words.is_empty() {
+        true => None,
+        false => Some(
+            regex::RegexBuilder::new(&query_parts_split_by_stop_words.join("|"))
+                .case_insensitive(true)
+                .build()
+                .map_err(|_| {
+                    ServiceError::InternalServerError("Failed to compile query regex".to_string())
+                })?,
+        ),
+    };
+
+    let mut content_split_by_query = vec![content.clone()];
+
+    if let Some(re) = &query_parts_as_regex {
+        content_split_by_query = split_keep(re, &content)
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect_vec();
+    }
+
+    let lowercase_query_parts = query_parts_split_by_stop_words
+        .clone()
+        .into_iter()
+        .map(|p| p.to_lowercase())
+        .collect_vec();
+
+    let mut matched_idxs = content_split_by_query
+        .iter()
+        .enumerate()
+        .filter_map(
+            |(i, split)| match lowercase_query_parts.contains(&split.to_lowercase()) {
+                true => Some((i, split.clone())),
+                false => None,
+            },
+        )
+        .collect_vec();
+
+    let exact_matches = matched_idxs.clone();
+
+    matched_idxs.sort_by(|a, b| a.0.cmp(&b.0));
+
+    let matched_idxs: Vec<(usize, usize, String)> = content_split_by_query
+        .iter()
+        .cloned()
+        .enumerate()
+        .scan(0_usize, |acc, (i, split)| {
+            let start_idx = *acc;
+            *acc += split
+                .split(' ')
+                .filter(|s| !s.trim().is_empty())
+                .collect_vec()
+                .len();
+            Some((i, start_idx, split))
+        })
+        .filter(|(idx, _, _)| {
+            matched_idxs
+                .iter()
+                .any(|(matched_idx, _)| *idx == *matched_idx)
+        })
+        .collect_vec();
+
+    let mut phrases = matched_idxs
+        .iter()
+        .map(|(_, _, x)| x.to_string())
+        .collect::<Vec<String>>();
+
+    phrases.sort_by(|a, b| {
+        let a_contains_exact = exact_matches.iter().any(|(_, e)| a.contains(e));
+        let b_contains_exact = exact_matches.iter().any(|(_, e)| b.contains(e));
+        match (a_contains_exact, b_contains_exact) {
+            (true, true) => Ordering::Equal,
+            (true, false) => Ordering::Less,
+            (false, true) => Ordering::Greater,
+            (false, false) => Ordering::Equal,
+        }
+    });
+
+    let new_output = apply_highlights_to_html(
+        input.clone(),
+        phrases
+            .clone()
+            .into_iter()
+            .take(max_num.unwrap_or(3) as usize)
+            .collect_vec(),
+    );
+
+    let window = window_size.unwrap_or(0);
+    if window == 0 {
+        return Ok((
+            new_output,
+            phrases
+                .clone()
+                .into_iter()
+                .take(max_num.unwrap_or(3) as usize)
+                .collect_vec(),
+        ));
+    }
+
+    let half_window = std::cmp::max(window / 2, 1);
+
+    let matched_idxs_with_windows = matched_idxs
+        .iter()
+        .map(|(split_idx, start_idx, phrase)| {
+            (
+                *split_idx,
+                *start_idx,
+                phrase,
+                start_idx.saturating_sub(half_window as usize),
+                start_idx
+                    + phrase
+                        .clone()
+                        .split(' ')
+                        .filter(|s| !s.trim().is_empty())
+                        .collect_vec()
+                        .len()
+                    + half_window as usize,
+            )
+        })
+        .collect_vec();
+
+    let merged_results = matched_idxs_with_windows
+        .chunk_by(|(_, _, _, _, a_w_end), (_, _, _, b_w_start, _)| a_w_end >= b_w_start)
+        .filter_map(|merged_run| match (merged_run.first(), merged_run.last()) {
+            (Some((_, _, _, first_start, _)), Some((_, _, _, _, last_end))) => {
+                let mut combined_phrases = merged_run
+                    .iter()
+                    .map(|(_, _, phrase, _, _)| phrase.to_string())
+                    .unique()
+                    .collect_vec();
+                if combined_phrases.contains(&query) {
+                    combined_phrases = vec![query.clone()];
+                }
+                Some((first_start, last_end, combined_phrases))
+            }
+            _ => None,
+        })
+        .collect_vec();
+
+    let mut phrases: Vec<(String, Vec<String>)> = Vec::new();
+    let mut current_phrase = Vec::new();
+    let mut word_count = 0;
+    let mut current_window_index = 0;
+
+    for split in &content_split_by_query {
+        let split_words = split.split_inclusive(' ');
+        for word in split_words {
+            if let Some((w_start, w_end, phrases_to_highlight)) =
+                merged_results.get(current_window_index)
+            {
+                if word_count >= **w_start && word_count <= **w_end {
+                    current_phrase.push(word);
+                } else if !current_phrase.is_empty() {
+                    let mut phrase = current_phrase.join("");
+                    for highlight in phrases_to_highlight {
+                        phrase = phrase
+                            .replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
+                    }
+                    phrases.push((phrase, phrases_to_highlight.clone()));
+                    current_phrase.clear();
+                    current_window_index += 1;
+                }
+            }
+            if !word.trim().is_empty() {
+                word_count += 1;
+            }
+        }
+    }
+
+    if !current_phrase.is_empty() {
+        if let Some((_, _, phrases_to_highlight)) = merged_results.get(current_window_index) {
+            let mut phrase = current_phrase.join("");
+            for highlight in phrases_to_highlight {
+                phrase = phrase.replace(highlight, &format!("<mark><b>{}</b></mark>", highlight));
+            }
+            phrases.push((phrase, phrases_to_highlight.clone()));
+        }
+    }
+
+    phrases.sort_by(|(phrase_a, _), (phrase_b, _)| {
+        let a_is_exact = exact_matches.iter().any(|(_, s)| phrase_a.contains(s));
+        let b_is_exact = exact_matches.iter().any(|(_, s)| phrase_b.contains(s));
+        match (a_is_exact, b_is_exact) {
+            (true, true) => Ordering::Equal,
+            (true, false) => Ordering::Less,
+            (false, true) => Ordering::Greater,
+            (false, false) => Ordering::Equal,
+        }
+    });
+
+    let (phrases, phrases_to_highlight_in_content): (Vec<String>, Vec<Vec<String>>) =
+        phrases.into_iter().unzip();
+
+    let new_output = apply_highlights_to_html(
+        input.clone(),
+        phrases_to_highlight_in_content
+            .into_iter()
+            .take(max_num.unwrap_or(3) as usize)
+            .flatten()
+            .unique()
+            .collect_vec(),
+    );
+
+    Ok((
+        new_output,
+        phrases
+            .clone()
+            .into_iter()
+            .take(max_num.unwrap_or(3) as usize)
+            .collect_vec(),
+    ))
 }
 
 pub fn get_highlights_with_exact_match(
@@ -1438,11 +1697,17 @@ pub fn get_highlights_with_exact_match(
         engine.insert(i, x);
     });
 
+    let lowercase_query_parts = query_parts_split_by_stop_words
+        .clone()
+        .into_iter()
+        .map(|p| p.to_lowercase())
+        .collect_vec();
+
     let mut matched_idxs = split_content
         .iter()
         .enumerate()
         .filter_map(
-            |(i, split)| match query_parts_split_by_stop_words.contains(split) {
+            |(i, split)| match lowercase_query_parts.contains(&split.to_lowercase()) {
                 true => Some((i, split.clone())),
                 false => None,
             },
@@ -1552,11 +1817,14 @@ pub fn get_highlights_with_exact_match(
         .chunk_by(|(_, _, _, _, a_w_end), (_, _, _, b_w_start, _)| a_w_end >= b_w_start)
         .filter_map(|merged_run| match (merged_run.first(), merged_run.last()) {
             (Some((_, _, _, first_start, _)), Some((_, _, _, _, last_end))) => {
-                let combined_phrases = merged_run
+                let mut combined_phrases = merged_run
                     .iter()
                     .map(|(_, _, phrase, _, _)| phrase.to_string())
                     .unique()
                     .collect_vec();
+                if combined_phrases.contains(&query) {
+                    combined_phrases = vec![query.clone()];
+                }
                 Some((first_start, last_end, combined_phrases))
             }
             _ => None,

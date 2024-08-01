@@ -1,7 +1,8 @@
 use super::chunk_operator::{
     get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
     get_content_chunk_from_point_ids_query, get_highlights, get_highlights_with_exact_match,
-    get_qdrant_ids_from_chunk_ids_query, get_slim_chunks_from_point_ids_query, HighlightStrategy,
+    get_highlights_with_exact_only, get_qdrant_ids_from_chunk_ids_query,
+    get_slim_chunks_from_point_ids_query, HighlightStrategy,
 };
 use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
@@ -1166,6 +1167,25 @@ pub async fn retrieve_chunks_for_groups(
                                         )
                                         .unwrap_or((chunk.clone().into(), vec![]))
                                 },
+                                Some(HighlightStrategy::ExactOnly) => {
+                                    get_highlights_with_exact_only(
+                                            chunk.clone().into(),
+                                            data.query.clone(),
+                                            highlight_options.highlight_threshold,
+                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                                ".".to_string(),
+                                                "!".to_string(),
+                                                "?".to_string(),
+                                                "\n".to_string(),
+                                                "\t".to_string(),
+                                                ",".to_string(),
+                                            ]),
+                                            highlight_options.highlight_max_length,
+                                            highlight_options.highlight_max_num,
+                                            highlight_options.highlight_window,
+                                        )
+                                        .unwrap_or((chunk.clone().into(), vec![]))
+                                },
                                 _ => {
                                     get_highlights_with_exact_match(
                                             chunk.clone().into(),
@@ -1443,6 +1463,25 @@ pub async fn retrieve_chunks_from_point_ids(
                                             highlight_options.highlight_max_length,
                                             highlight_options.highlight_max_num,
                                             highlight_options.highlight_window
+                                        )
+                                        .unwrap_or((chunk.clone().into(), vec![]))
+                                },
+                                Some(HighlightStrategy::ExactOnly) => {
+                                    get_highlights_with_exact_only(
+                                            chunk.clone().into(),
+                                            data.query.clone(),
+                                            highlight_options.highlight_threshold,
+                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                                ".".to_string(),
+                                                "!".to_string(),
+                                                "?".to_string(),
+                                                "\n".to_string(),
+                                                "\t".to_string(),
+                                                ",".to_string(),
+                                            ]),
+                                            highlight_options.highlight_max_length,
+                                            highlight_options.highlight_max_num,
+                                            highlight_options.highlight_window,
                                         )
                                         .unwrap_or((chunk.clone().into(), vec![]))
                                 },
