@@ -1456,6 +1456,22 @@ pub fn get_highlights_with_exact_match(
         .iter()
         .flat_map(|part| engine.search(part))
         .collect_vec();
+    let results = results
+        .into_iter()
+        .filter(|idx| {
+            if let Some(split) = split_content.get(*idx) {
+                let words_in_split = split.split_whitespace();
+                if words_in_split
+                    .into_iter()
+                    .all(|word| stop_words.contains(&word.to_lowercase().to_string()))
+                {
+                    return false;
+                }
+                return true;
+            }
+            false
+        })
+        .collect_vec();
 
     let matched_indexes_check = matched_idxs.clone();
     for i in results.iter().filter(|i| {
