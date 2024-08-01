@@ -601,8 +601,12 @@ pub async fn get_point_ids_from_unified_group_ids(
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_point_ids: Vec<uuid::Uuid> = match group_ids[0] {
-        UnifiedId::TrieveUuid(_) => chunk_group_columns::chunk_group
+    if group_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let qdrant_point_ids: Vec<uuid::Uuid> = match group_ids.get(0) {
+        Some(UnifiedId::TrieveUuid(_)) => chunk_group_columns::chunk_group
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks)
             .inner_join(chunk_metadata_columns::chunk_metadata.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
@@ -620,7 +624,7 @@ pub async fn get_point_ids_from_unified_group_ids(
             .load::<uuid::Uuid>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
-        UnifiedId::TrackingId(_) => chunk_group_columns::chunk_group
+        Some(UnifiedId::TrackingId(_)) => chunk_group_columns::chunk_group
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks)
             .inner_join(chunk_metadata_columns::chunk_metadata.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
@@ -638,6 +642,7 @@ pub async fn get_point_ids_from_unified_group_ids(
             .load::<uuid::Uuid>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
+        _ => vec![],
     };
 
     Ok(qdrant_point_ids)
