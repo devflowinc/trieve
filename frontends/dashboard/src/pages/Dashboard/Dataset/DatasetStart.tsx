@@ -300,7 +300,7 @@ export const DatasetStart = () => {
                   )}`}
                   target="_blank"
                 >
-                  <p>Upload file</p>
+                  <p>Upload file(s)</p>
                   <BsUpload class="h-4 w-4" />
                 </a>
                 <button

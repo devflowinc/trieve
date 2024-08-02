@@ -490,7 +490,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                               class="text-lg text-red-500 hover:text-neutral-900"
                               onClick={() => {
                                 confirm(
-                                  "Are you sure you want to delete this dataset?",
+                                  `This operation will remove all chunks, groups, and files associated with this dataset along with the dataset itself.\n\nAre you sure you want to delete this dataset named ${datasetAndUsage.dataset.name} with id ${datasetAndUsage.dataset.id}?`,
                                 ) &&
                                   void deleteDataset(
                                     datasetAndUsage.dataset.id,
@@ -509,7 +509,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                               class="text-lg text-red-500 hover:text-neutral-900"
                               onClick={() => {
                                 confirm(
-                                  "Are you sure you want to clear this dataset?",
+                                  `This operation will remove all chunks, groups, and files associated with this dataset, but NOT the dataset itself.\n\nAre you sure you want to clear this dataset named ${datasetAndUsage.dataset.name} with id ${datasetAndUsage.dataset.id}?`,
                                 ) &&
                                   void clearDataset(datasetAndUsage.dataset.id);
                               }}

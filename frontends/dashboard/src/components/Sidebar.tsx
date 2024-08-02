@@ -136,7 +136,7 @@ export const Sidebar = () => {
                       target="_blank"
                       class="flex items-center hover:text-fuchsia-800"
                     >
-                      Upload File{" "}
+                      Upload file(s){" "}
                       <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
                     </a>
                   </div>
