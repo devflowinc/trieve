@@ -76,7 +76,7 @@ export const Navbar = () => {
               href={`/upload?dataset=${currentDatasetId()}`}
               class="hidden text-center min-[420px]:text-lg min-[920px]:block"
             >
-              Upload File
+              Upload file(s)
             </a>
           </div>
         </div>
@@ -164,7 +164,7 @@ export const Navbar = () => {
               href={`/upload?dataset=${currentDatasetId()}`}
               class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             >
-              Upload File
+              Upload file(s)
             </a>
           </div>
         </div>
