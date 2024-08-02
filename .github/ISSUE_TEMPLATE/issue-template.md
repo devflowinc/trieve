@@ -24,4 +24,4 @@ assignees: ''
 Matrix is preferred. Reach out on discord or Matrix for further assistance. 
 
 - [discord](https://discord.gg/CuJVfgZf54)
-- [matrix](https://matrix.to/#/#trieve-general:matrix.zerodao.gg)
+- [matrix](https://matrix.to/#/#trieve-general:trieve.ai)

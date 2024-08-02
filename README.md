@@ -2,7 +2,7 @@
   <img height="100" src="https://cdn.trieve.ai/trieve-logo.png" alt="Trieve Logo">
 </p>
 <p align="center">
-<strong><a href="https://dashboard.trieve.ai">Sign Up (1k chunks free)</a> | <a href="https://docs.trieve.ai">Documentation</a> | <a href="https://cal.com/nick.k/meet">Meeting Link</a> | <a href="https://discord.gg/eBJXXZDB8z">Discord</a> | <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">Matrix</a>
+<strong><a href="https://dashboard.trieve.ai">Sign Up (1k chunks free)</a> | <a href="https://docs.trieve.ai">Documentation</a> | <a href="https://cal.com/nick.k/meet">Meeting Link</a> | <a href="https://discord.gg/eBJXXZDB8z">Discord</a> | <a href="https://matrix.to/#/#trieve-general:trieve.ai">Matrix</a>
 </strong>
 </p>
 
@@ -16,7 +16,7 @@
     <a href="https://discord.gg/CuJVfgZf54">
         <img src="https://img.shields.io/discord/1130153053056684123.svg?label=Discord&logo=Discord&colorB=7289da&style=flat" alt="Join Discord"/>
     </a>
-    <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">
+    <a href="https://matrix.to/#/#trieve-general:trieve.ai">
         <img src="https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white" alt="Join Matrix"/>
     </a>
 </p>
@@ -49,7 +49,7 @@
 - **🧐 Duplicate Detection**: Check out our docs on [collision-based dup detection](https://docs.trieve.ai/duplicate_detection) to learn about how we handle duplicates. This is a setting you can turn on or off.
 - **👥 Grouping**: Mark multiple chunks as being part of the same file and search on the file-level such that the same top-level result never appears twice
 
-**Are we missing a feature that your use case would need?** - call us at [628-222-4090](mailto:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:matrix.zerodao.gg) and tell us! We are a small company who is still very hands-on and eager to build what you need; professional services are available.
+**Are we missing a feature that your use case would need?** - call us at [628-222-4090](mailto:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:trieve.ai) and tell us! We are a small company who is still very hands-on and eager to build what you need; professional services are available.
 
 ## Roadmap
 
