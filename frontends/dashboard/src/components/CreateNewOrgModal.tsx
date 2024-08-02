@@ -120,13 +120,13 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
                     </DialogTitle>
 
                     <p class="mt-1 max-w-2xl text-sm leading-6 text-neutral-600">
-                      If the name is already taken, a random name will be used
-                      instead.
+                      <span class="font-semibold">
+                        You will be the owner of this organization.
+                      </span>
                     </p>
                     <p class="mt-1 max-w-2xl text-sm leading-6 text-neutral-600">
-                      You will be the owner of this organization and can invite
-                      others to join. You can also create datasets within this
-                      organization and manage its settings.
+                      Owners can invite others to join, create datasets within
+                      this organization, and manage its settings.
                     </p>
 
                     <div class="mt-4 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
