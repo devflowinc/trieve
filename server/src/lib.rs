@@ -371,6 +371,8 @@ impl Modify for SecurityAddon {
             data::models::RecommendationAnalyticsFilter,
             data::models::RecommendationAnalytics,
             data::models::RecommendationType,
+            data::models::QueryTypes,
+            data::models::MultiQuery,
             data::models::RecommendType,
             data::models::SlimChunkMetadataWithArrayTagSet,
             data::models::NewChunkMetadataTypes,

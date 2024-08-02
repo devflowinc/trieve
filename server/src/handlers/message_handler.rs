@@ -692,7 +692,7 @@ pub async fn get_suggested_queries(
     let chunk_metadatas = search_hybrid_chunks(
         SearchChunksReqPayload {
             search_type: SearchMethod::Hybrid,
-            query: data.query.clone(),
+            query: models::QueryTypes::Single(data.query.clone()),
             page_size: Some(10),
             ..Default::default()
         },

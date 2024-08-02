@@ -1,5 +1,5 @@
 use crate::data::models::{
-    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetConfiguration,
+    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetConfiguration, QueryTypes,
     RagQueryEventClickhouse, SearchMethod,
 };
 use crate::diesel::prelude::*;
@@ -350,7 +350,7 @@ pub async fn stream_response(
         search_type: create_message_req_payload
             .search_type
             .unwrap_or(SearchMethod::Hybrid),
-        query: query.clone(),
+        query: QueryTypes::Single(query.clone()),
         score_threshold: create_message_req_payload.score_threshold,
         page_size: Some(
             create_message_req_payload
