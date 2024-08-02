@@ -90,26 +90,18 @@ pub async fn get_dense_vector(
             embedding_api_key.to_string()
         };
 
-    let clipped_message = if message.len() > 7000 {
-        message.chars().take(20000).collect()
-    } else {
-        message.clone()
-    };
+    let clipped_message: String = message.chars().take(20000).collect();
 
     let mut messages = vec![clipped_message.clone()];
 
     if distance_phrase.is_some() {
-        let clipped_boost = if distance_phrase.as_ref().unwrap().phrase.len() > 7000 {
-            distance_phrase
-                .as_ref()
-                .unwrap()
-                .phrase
-                .chars()
-                .take(20000)
-                .collect()
-        } else {
-            distance_phrase.as_ref().unwrap().phrase.clone()
-        };
+        let clipped_boost: String = distance_phrase
+            .as_ref()
+            .unwrap()
+            .phrase
+            .chars()
+            .take(20000)
+            .collect();
         messages.push(clipped_boost);
     }
 
@@ -214,11 +206,7 @@ pub async fn get_sparse_vector(
             origin_key
         )))?;
 
-    let clipped_message = if message.len() > 5000 {
-        message.chars().take(128000).collect()
-    } else {
-        message.clone()
-    };
+    let clipped_message = message.chars().take(128000).collect();
 
     let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
@@ -349,11 +337,7 @@ pub async fn get_dense_vectors(
             let clipped_messages = distance_phrases
                 .iter()
                 .map(|message| {
-                    if message.len() > 5000 {
                         message.chars().take(12000).collect()
-                    } else {
-                        message.clone()
-                    }
                 })
                 .collect::<Vec<String>>();
 
@@ -437,11 +421,7 @@ pub async fn get_dense_vectors(
             let clipped_messages = messages
                 .iter()
                 .map(|message| {
-                    if message.len() > 5000 {
                         message.chars().take(12000).collect()
-                    } else {
-                        message.clone()
-                    }
                 })
                 .collect::<Vec<String>>();
 
@@ -636,13 +616,7 @@ pub async fn get_sparse_vectors(
 
                 let clipped_messages = thirty_boosts
                     .iter()
-                    .map(|(_, message)| {
-                        if message.phrase.len() > 5000 {
-                            message.phrase.chars().take(50000).collect()
-                        } else {
-                            message.phrase.clone()
-                        }
-                    })
+                    .map(|(_, message)| message.phrase.chars().take(50000).collect())
                     .collect::<Vec<String>>();
 
                 let sparse_embed_req = CustomSparseEmbedData {
@@ -732,13 +706,7 @@ pub async fn get_sparse_vectors(
 
                 let clipped_messages = thirty_messages
                     .iter()
-                    .map(|message| {
-                        if message.len() > 5000 {
-                            message.chars().take(50000).collect()
-                        } else {
-                            message.clone()
-                        }
-                    })
+                    .map(|message| message.chars().take(50000).collect())
                     .collect::<Vec<String>>();
 
                 let sparse_embed_req = CustomSparseEmbedData {
