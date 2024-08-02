@@ -993,7 +993,7 @@ export const DatasetSettingsPage = () => {
     if (!datasetId) return;
 
     const modifiedFields = getModifiedFields();
-    console.log(modifiedFields);
+    const originalServerConfig = serverConfig();
 
     if (Object.keys(modifiedFields).length === 0) {
       createToast({
@@ -1023,7 +1023,7 @@ export const DatasetSettingsPage = () => {
             type: "success",
             message: "Dataset Configuration Saved",
           });
-          setOriginalConfig(serverConfig());
+          setOriginalConfig(originalServerConfig);
           if (modifiedFields.LLM_API_KEY) {
             setServerConfig((prev) => ({ ...prev, LLM_API_KEY: "" }));
           }

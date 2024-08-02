@@ -8,11 +8,10 @@ import {
   type ChunkMetadataWithVotes,
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
-import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
 import { Tooltip } from "shared/ui";
 import { AiOutlineCopy } from "solid-icons/ai";
-import { FiCheck, FiGlobe } from "solid-icons/fi";
+import { FiCheck, FiExternalLink, FiGlobe } from "solid-icons/fi";
 
 export const sanitzerOptions = {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -121,11 +120,11 @@ const ScoreChunk = (props: ScoreChunkProps) => {
             <FiCheck class="text-green-500" />
           </Show>
           <a
-            title="Open"
-            href={`${searchURL}/chunk/${props.chunk.id}`}
+            title="Open in Search Playground to edit or get recommendations"
+            href={`${searchURL}/chunk/${props.chunk.id}?dataset=${props.chunk.dataset_id}`}
             target="_blank"
           >
-            <VsFileSymlinkFile class="h-5 w-5 fill-current opacity-50" />
+            <FiExternalLink class="h-5 w-5 fill-current opacity-50" />
           </a>
         </div>
         <div class="flex w-full flex-col">

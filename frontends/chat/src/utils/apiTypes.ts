@@ -17,6 +17,7 @@ export interface ChunkMetadata {
     lon: number;
   } | null;
   num_value: number | null;
+  dataset_id: string;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {

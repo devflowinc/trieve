@@ -51,7 +51,7 @@ import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
 import { BiRegularXCircle } from "solid-icons/bi";
 import { createToast } from "./ShowToasts";
-import { VsFileSymlinkFile } from "solid-icons/vs";
+import { FiEye } from "solid-icons/fi";
 
 export interface GroupPageProps {
   groupID: string;
@@ -594,11 +594,10 @@ export const GroupPage = (props: GroupPageProps) => {
               }}
             />
           </div>
-          <div class="mt-4 flex w-full max-w-screen-2xl justify-end">
+          <div class="mt-4 flex w-full max-w-screen-2xl justify-end gap-x-2">
             <button
               classList={{
-                "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
-                  true,
+                "flex space-x-2 rounded bg-neutral-500 p-2 text-white": true,
                 "animate-pulse": fetchingGroups(),
               }}
               onClick={() => setEditing(false)}
@@ -607,8 +606,7 @@ export const GroupPage = (props: GroupPageProps) => {
             </button>
             <button
               classList={{
-                "!pointer-events-auto relative max-h-10 mt-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
-                  true,
+                "rounded bg-magenta-500 p-2 text-white": true,
                 "animate-pulse": fetchingGroups(),
               }}
               onClick={() => updateGroup()}
@@ -757,12 +755,12 @@ export const GroupPage = (props: GroupPageProps) => {
                             </Show>
                           </div>
                           <a
-                            title="View group"
+                            title="Open group to edit, view its chunks, or test group recommendations"
                             href={`/group/${
                               groupResult.group.id
                             }?dataset=${dataset()?.dataset.id}`}
                           >
-                            <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+                            <FiEye class="h-5 w-5" />
                           </a>
                         </div>
                       </div>

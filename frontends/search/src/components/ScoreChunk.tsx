@@ -23,7 +23,7 @@ import {
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import BookmarkPopover from "./BookmarkPopover";
-import { VsFileSymlinkFile } from "solid-icons/vs";
+import { FiEye } from "solid-icons/fi";
 import sanitizeHtml from "sanitize-html";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { Tooltip } from "shared/ui";
@@ -249,10 +249,10 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                       props.chunk.id
                     }?dataset=${$currentDataset?.()?.dataset.id}`}
                   >
-                    <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+                    <FiEye class="h-5 w-5" />
                   </A>
                 }
-                tooltipText="Open in new tab"
+                tooltipText="Open chunk to test recommendations for similar chunks"
                 direction="left"
               />
               <Show when={currentUserRole() > 0}>

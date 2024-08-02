@@ -76,7 +76,7 @@ pub async fn get_dataset_by_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_deleted_dataset_by_id_query(
+pub async fn get_deleted_dataset_by_unifiedid_query(
     id: UnifiedId,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
@@ -277,7 +277,7 @@ pub async fn clear_dataset_by_dataset_id_query(
     Ok(())
 }
 
-pub async fn delete_items_in_dataset(
+pub async fn clear_dataset_query(
     id: uuid::Uuid,
     deleted_at: chrono::NaiveDateTime,
     pool: web::Data<Pool>,
@@ -305,19 +305,20 @@ pub async fn delete_items_in_dataset(
 
     diesel::delete(
         chunk_group_bookmarks_columns::chunk_group_bookmarks
-            .filter(chunk_group_bookmarks_columns::group_id.eq_any(chunk_groups)),
+            .filter(chunk_group_bookmarks_columns::group_id.eq_any(chunk_groups))
+            .filter(chunk_group_bookmarks_columns::created_at.le(deleted_at)),
     )
     .execute(&mut conn)
     .await
     .map_err(|err| {
-        log::error!("Could not delete groups: {}", err);
-        ServiceError::BadRequest("Could not delete groups".to_string())
+        log::error!("Could not delete chunk_group_bookmarks: {}", err);
+        ServiceError::BadRequest("Could not delete chunk_group_bookmarks".to_string())
     })?;
 
     diesel::delete(
         chunk_group::chunk_group
             .filter(chunk_group::dataset_id.eq(id))
-            .filter(chunk_group::created_at.lt(deleted_at)),
+            .filter(chunk_group::created_at.le(deleted_at)),
     )
     .execute(&mut conn)
     .await
@@ -329,24 +330,23 @@ pub async fn delete_items_in_dataset(
     diesel::delete(
         files_column::files
             .filter(files_column::dataset_id.eq(id))
-            .filter(files_column::created_at.lt(deleted_at)),
+            .filter(files_column::created_at.le(deleted_at)),
     )
     .execute(&mut conn)
     .await
     .map_err(|err| {
-        log::error!("Could not delete groups: {}", err);
-        ServiceError::BadRequest("Could not delete groups".to_string())
+        log::error!("Could not delete files: {}", err);
+        ServiceError::BadRequest("Could not delete files".to_string())
     })?;
 
     let mut last_offset_id = uuid::Uuid::nil();
 
     loop {
-        // Fetch a batch of chunk IDs
         let chunk_and_qdrant_ids: Vec<(uuid::Uuid, uuid::Uuid)> =
             chunk_metadata_columns::chunk_metadata
                 .filter(chunk_metadata_columns::dataset_id.eq(id))
                 .filter(chunk_metadata_columns::id.gt(last_offset_id))
-                .filter(chunk_metadata_columns::created_at.lt(deleted_at))
+                .filter(chunk_metadata_columns::created_at.le(deleted_at))
                 .select((
                     chunk_metadata_columns::id,
                     chunk_metadata_columns::qdrant_point_id,
@@ -362,7 +362,7 @@ pub async fn delete_items_in_dataset(
                 .await
                 .map_err(|err| {
                     log::error!("Could not fetch chunk IDs: {}", err);
-                    ServiceError::BadRequest("Could not fetch chunk IDs".to_string())
+                    ServiceError::BadRequest("Could not fetch chunk IDs to delete".to_string())
                 })?;
 
         let chunk_ids = chunk_and_qdrant_ids
@@ -378,7 +378,6 @@ pub async fn delete_items_in_dataset(
             break;
         }
 
-        // Delete the chunks in the current batch
         diesel::delete(
             chunk_metadata_columns::chunk_metadata
                 .filter(chunk_metadata_columns::id.eq_any(&chunk_ids)),
@@ -386,14 +385,17 @@ pub async fn delete_items_in_dataset(
         .execute(&mut conn)
         .await
         .map_err(|err| {
-            log::error!("Could not delete chunks: {}", err);
-            ServiceError::BadRequest("Could not delete chunks".to_string())
+            log::error!("Could not delete chunks in current batch: {}", err);
+            ServiceError::BadRequest("Could not delete chunks in current batch".to_string())
         })?;
 
         delete_points_from_qdrant(qdrant_point_ids, qdrant_collection.clone())
             .await
             .map_err(|err| {
-                ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))
+                ServiceError::BadRequest(format!(
+                    "Could not delete points in current batch from qdrant: {}",
+                    err
+                ))
             })?;
 
         let _ = create_event_query(
@@ -412,7 +414,6 @@ pub async fn delete_items_in_dataset(
 
         log::info!("Deleted {} chunks from {}", chunk_ids.len(), id);
 
-        // Move to the next batch
         last_offset_id = *chunk_ids.last().unwrap();
     }
 
@@ -431,7 +432,7 @@ pub async fn delete_dataset_by_id_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    delete_items_in_dataset(
+    clear_dataset_query(
         id,
         deleted_at,
         pool.clone(),

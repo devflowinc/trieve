@@ -21,9 +21,10 @@ import {
   type ChunkMetadata,
 } from "../utils/apiTypes";
 import InputRowsForm from "./Atoms/InputRowsForm";
-import { VsBookmark } from "solid-icons/vs";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { AiOutlineGroup } from "solid-icons/ai";
+import { Tooltip } from "shared/ui";
 
 export interface BookmarkPopoverProps {
   chunkMetadata: ChunkMetadata;
@@ -240,18 +241,23 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       {({ isOpen, setState }) => (
         <div>
           <div class="flex items-center">
-            <PopoverButton
-              title="Bookmark"
-              onClick={() => {
-                if (notLoggedIn() || $currentUser?.()?.id === undefined) {
-                  props.setLoginModal?.(true);
-                  return;
-                }
-                refetchBookmarks(localGroupPage());
-              }}
-            >
-              <VsBookmark class="z-0 h-5 w-5 fill-current" />
-            </PopoverButton>
+            <Tooltip
+              body={
+                <PopoverButton
+                  onClick={() => {
+                    if (notLoggedIn() || $currentUser?.()?.id === undefined) {
+                      props.setLoginModal?.(true);
+                      return;
+                    }
+                    refetchBookmarks(localGroupPage());
+                  }}
+                >
+                  <AiOutlineGroup class="z-0 h-5 w-5 fill-current" />
+                </PopoverButton>
+              }
+              tooltipText="Manage Groups For This Chunk"
+              direction="left"
+            />
           </div>
           <Show
             when={
