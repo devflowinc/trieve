@@ -13,8 +13,8 @@ use trieve_server::{
     establish_connection, get_env,
     operators::{
         dataset_operator::{
-            delete_dataset_by_id_query, delete_items_in_dataset, get_deleted_dataset_by_id_query,
-            DeleteMessage,
+            clear_dataset_query, delete_dataset_by_id_query,
+            get_deleted_dataset_by_unifiedid_query, DeleteMessage,
         },
         event_operator::create_event_query,
         organization_operator::{
@@ -219,7 +219,7 @@ async fn delete_worker(
         let delete_worker_message: DeleteMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
-        let dataset_result = get_deleted_dataset_by_id_query(
+        let dataset_result = get_deleted_dataset_by_unifiedid_query(
             models::UnifiedId::TrieveUuid(delete_worker_message.dataset_id),
             web_pool.clone(),
         )
@@ -238,8 +238,8 @@ async fn delete_worker(
         let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
 
         if delete_worker_message.empty_dataset {
-            log::info!("Cleaning dataset {:?}", delete_worker_message.dataset_id);
-            match delete_items_in_dataset(
+            log::info!("Clearing dataset {:?}", delete_worker_message.dataset_id);
+            match clear_dataset_query(
                 delete_worker_message.dataset_id,
                 delete_worker_message.deleted_at,
                 web_pool.clone(),
@@ -250,7 +250,7 @@ async fn delete_worker(
             {
                 Ok(_) => {
                     log::info!(
-                        "Deleted all chunks for dataset: {:?}",
+                        "Cleared all chunks for dataset: {:?}",
                         delete_worker_message.dataset_id
                     );
                     let _ = redis::cmd("LREM")
@@ -265,7 +265,7 @@ async fn delete_worker(
                     continue;
                 }
                 Err(err) => {
-                    log::error!("Failed to delete all chunks for dataset: {:?}", err);
+                    log::error!("Failed to clear all chunks for dataset: {:?}", err);
                     let _ = create_event_query(
                         models::Event::from_details(
                             delete_worker_message.dataset_id,
@@ -277,7 +277,7 @@ async fn delete_worker(
                     )
                     .await
                     .map_err(|err| {
-                        log::error!("Failed to create event: {:?}", err);
+                        log::error!("Failed to clear chunks for dataset event: {:?}", err);
                     });
                     let _ =
                         readd_error_to_queue(delete_worker_message, err, redis_pool.clone()).await;

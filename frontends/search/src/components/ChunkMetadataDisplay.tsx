@@ -18,7 +18,7 @@ import {
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
-import { VsFileSymlinkFile } from "solid-icons/vs";
+import { FiEye } from "solid-icons/fi";
 import BookmarkPopover from "./BookmarkPopover";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { formatDate, sanitzerOptions } from "./ScoreChunk";
@@ -148,15 +148,15 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Tooltip
                 body={
                   <a
-                    title="Open"
+                    title="Open chunk to test recommendations for similar chunks"
                     href={`/chunk/${props.chunk.id}?dataset=${
                       $currentDataset?.()?.dataset.id ?? ""
                     }`}
                   >
-                    <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+                    <FiEye class="h-5 w-5" />
                   </a>
                 }
-                tooltipText="Open in new tab"
+                tooltipText="Open to test recommendations for similar chunks"
               />
 
               <BookmarkPopover

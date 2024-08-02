@@ -290,7 +290,7 @@ pub async fn delete_dataset(
 
 /// Clear Dataset
 ///
-/// Clears a dataset. The auth'ed user must be an owner of the organization to clear a dataset.
+/// Removes all chunks, files, and groups from the dataset while retaining the analytics and dataset itself. The auth'ed user must be an owner of the organization to clear a dataset.
 #[utoipa::path(
     put,
     path = "/dataset/clear/{dataset_id}",
@@ -328,6 +328,7 @@ pub async fn clear_dataset(
     let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     clear_dataset_by_dataset_id_query(data.into_inner(), config, redis_pool).await?;
+
     Ok(HttpResponse::NoContent().finish())
 }
 

@@ -500,7 +500,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                               <FiTrash />
                             </button>
                           }
-                          tooltipText="Delete Dataset - This will fully delete the dataset and make it no longer accessible. All chunks, groups, files , and the dataset itself will be fully removed."
+                          tooltipText="Delete Dataset - This will fully delete all chunks, groups, files, and the dataset itself."
                         />
                         <Tooltip
                           direction="left"
@@ -517,7 +517,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                               <AiOutlineClear />
                             </button>
                           }
-                          tooltipText="Clear Dataset - This will remove all chunks from the dataset, but not groups, files, or the dataset itself."
+                          tooltipText="Clear Dataset - This will delete all chunks, groups, and files in the dataset, but not the analytics or dataset itself."
                         />
                       </td>
                     </tr>

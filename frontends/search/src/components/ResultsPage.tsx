@@ -45,7 +45,7 @@ import {
 } from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
-import { VsFileSymlinkFile } from "solid-icons/vs";
+import { FiEye } from "solid-icons/fi";
 
 export interface ResultsPageProps {
   search: SearchStore;
@@ -561,12 +561,12 @@ const ResultsPage = (props: ResultsPageProps) => {
                             )}
                           </Show>
                           <a
-                            title="View group"
+                            title="Open group to edit, view its chunks, or test group recommendations"
                             href={`/group/${
                               groupResult.group.id
                             }?dataset=${dataset()?.dataset.id}`}
                           >
-                            <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+                            <FiEye class="h-5 w-5" />
                           </a>
                         </div>
                       </div>
