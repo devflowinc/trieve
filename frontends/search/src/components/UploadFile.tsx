@@ -9,12 +9,12 @@ import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 interface RequestBody {
   base64_file: string;
   file_name: string;
-  link: string;
-  tag_set: string[];
+  link?: string;
+  tag_set?: string[];
   split_delimiters: string[];
   target_splits_per_chunk: number;
   rebalance_chunks: boolean;
-  group_tracking_id: string;
+  group_tracking_id?: string;
   metadata: any;
   time_stamp?: string;
 }
@@ -137,12 +137,14 @@ export const UploadFile = () => {
 
     const requestBodyTemplate: Omit<RequestBody, "base64_file" | "file_name"> =
       {
-        link: link(),
-        tag_set: tagSet().split(","),
+        link: link() === "" ? undefined : link(),
+        tag_set:
+          tagSet().split(",").length > 0 ? undefined : tagSet().split(","),
         split_delimiters: splitDelimiters(),
         target_splits_per_chunk: targetSplitsPerChunk(),
         rebalance_chunks: rebalanceChunks(),
-        group_tracking_id: groupTrackingId(),
+        group_tracking_id:
+          groupTrackingId() === "" ? undefined : groupTrackingId(),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         metadata: metadata(),
         time_stamp: timestamp() ? timestamp() + " 00:00:00" : undefined,
