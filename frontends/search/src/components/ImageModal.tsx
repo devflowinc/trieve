@@ -39,8 +39,6 @@ export const ImageModal = (props: ImageModalProps) => {
     });
 
     rangeArray.forEach((_, i) => {
-      console.log("fetching image", i);
-
       const fileName = `${props.imgInformation()?.imgRangePrefix ?? ""}${
         (props.imgInformation()?.imgRangeStart ?? 0) + i
       }`;

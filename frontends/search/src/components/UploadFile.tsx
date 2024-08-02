@@ -31,11 +31,13 @@ export const UploadFile = () => {
     e.stopPropagation();
     setFile(e.dataTransfer?.files[0] as any);
   };
+
   const handleDirectUpload = (e: Event & { target: HTMLInputElement }) => {
     e.preventDefault();
     e.stopPropagation();
     setFile(e.target.files ? (e.target.files[0] as any) : undefined);
   };
+
   const uploadFile = async (e: Event) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;

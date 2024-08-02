@@ -54,7 +54,6 @@ export const InvoicesTable = () => {
         return res.json();
       })
       .then((data) => {
-        console.log(data);
         setOrgInvoices(data);
       });
 

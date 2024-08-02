@@ -43,10 +43,7 @@ export const Chat = () => {
       const topics = data as Topic[];
       setTopics(topics);
       return topics;
-    } else {
-      console.log("bye");
     }
-
     return [];
   };
 

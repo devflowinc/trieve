@@ -7,7 +7,7 @@ export const Footer = () => {
     <div class="mt-12 flex w-full flex-col items-center space-y-2 py-4">
       <div class="flex w-full justify-center space-x-3">
         <a
-          href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg"
+          href="https://matrix.to/#/#trieve-general:trieve.ai"
           target="_blank"
           class="hover:text-turquoise-500 dark:hover:text-acid-500"
         >

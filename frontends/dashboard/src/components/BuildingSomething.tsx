@@ -12,7 +12,7 @@ export const BuildingSomething = () => {
         or{" "}
         <a
           class="underline"
-          href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg"
+          href="https://matrix.to/#/#trieve-general:trieve.ai"
         >
           Matrix
         </a>
