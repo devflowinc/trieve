@@ -97,18 +97,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    events (id) {
-        id -> Uuid,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-        dataset_id -> Uuid,
-        #[max_length = 255]
-        event_type -> Varchar,
-        event_data -> Jsonb,
-    }
-}
-
-diesel::table! {
     files (id) {
         id -> Uuid,
         file_name -> Text,
@@ -285,7 +273,6 @@ diesel::joinable!(dataset_event_counts -> datasets (dataset_uuid));
 diesel::joinable!(dataset_tags -> datasets (dataset_id));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
-diesel::joinable!(events -> datasets (dataset_id));
 diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(groups_from_files -> chunk_group (group_id));
 diesel::joinable!(groups_from_files -> files (file_id));
@@ -310,7 +297,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     dataset_tags,
     dataset_usage_counts,
     datasets,
-    events,
     files,
     groups_from_files,
     invitations,

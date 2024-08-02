@@ -13,7 +13,7 @@ use trieve_server::{
     establish_connection, get_env,
     operators::{
         dataset_operator::{
-            delete_chunks_in_dataset, delete_dataset_by_id_query, get_deleted_dataset_by_id_query,
+            delete_dataset_by_id_query, delete_items_in_dataset, get_deleted_dataset_by_id_query,
             DeleteMessage,
         },
         event_operator::create_event_query,
@@ -239,8 +239,9 @@ async fn delete_worker(
 
         if delete_worker_message.empty_dataset {
             log::info!("Cleaning dataset {:?}", delete_worker_message.dataset_id);
-            match delete_chunks_in_dataset(
+            match delete_items_in_dataset(
                 delete_worker_message.dataset_id,
+                delete_worker_message.deleted_at,
                 web_pool.clone(),
                 clickhouse_client.clone(),
                 dataset_config.clone(),
@@ -289,6 +290,7 @@ async fn delete_worker(
 
         match delete_dataset_by_id_query(
             delete_worker_message.dataset_id,
+            delete_worker_message.deleted_at,
             web_pool.clone(),
             clickhouse_client.clone(),
             dataset_config.clone(),
