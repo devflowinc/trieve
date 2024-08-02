@@ -29,7 +29,7 @@ export const Tooltip = (props: TooltipProps) => {
       <Show when={show()}>
         <div
           classList={{
-            "absolute z-10 inline-block w-[300px] rounded bg-white p-2 text-center shadow-lg dark:bg-black text-wrap":
+            "absolute z-10 inline-block w-[300px] rounded bg-[#fffee6] p-2 text-center shadow-lg dark:bg-black text-wrap":
               true,
             "bottom-full left-1/2 -translate-x-1/2 translate-y-3":
               direction() === "top",
@@ -38,7 +38,7 @@ export const Tooltip = (props: TooltipProps) => {
             "left-full top-1/2 -translate-y-1/2 translate-x-3":
               direction() === "right",
             "top-full left-1/2 -translate-x-1/2 translate-y-3":
-              direction() === "bottom",
+              direction() === "bottom"
           }}
         >
           {props.tooltipText}
