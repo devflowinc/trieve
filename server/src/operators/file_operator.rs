@@ -7,7 +7,7 @@ use super::parse_operator::{build_chunking_regex, coarse_doc_chunker, convert_ht
 use crate::data::models::ChunkGroup;
 use crate::data::models::{Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, EventType};
 use crate::data::models::{FileDTO, FileGroup};
-use crate::handlers::chunk_handler::ChunkReqPayload;
+use crate::handlers::chunk_handler::{ChunkReqPayload, FullTextBoost, SemanticBoost};
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::{data::models::Event, get_env};
 use crate::{
@@ -20,11 +20,9 @@ use diesel::prelude::*;
 use diesel::sql_types::BigInt;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
-use itertools::Itertools;
 use redis::aio::MultiplexedConnection;
 use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
-use ureq::json;
 
 #[tracing::instrument]
 pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
@@ -465,113 +463,142 @@ pub async fn create_groups_and_chunks_from_chunks(
     clickhouse_client: web::Data<clickhouse::Client>,
     mut redis_conn: MultiplexedConnection,
 ) -> Result<(), ServiceError> {
-    let mut groups_and_chunks: Vec<(ChunkGroup, Vec<ChunkReqPayload>)> = Vec::new();
-    let mut current_group: Option<ChunkGroup> = None;
-    let mut current_payloads: Vec<ChunkReqPayload> = Vec::new();
+    let mut chunks: Vec<ChunkReqPayload> = Vec::new();
+    let mut current_header = String::new();
+    let mut current_chunk_html: Vec<String> = Vec::new();
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
+    let doc_title = document_chunks
+        .iter()
+        .find(|chunk| chunk.r#type == "Title")
+        .and_then(|chunk| chunk.text_representation.clone())
+        .unwrap_or_default();
+
     for chunk in document_chunks.iter() {
         if chunk.r#type == "Section-header" {
-            if let Some(ref group) = current_group {
-                groups_and_chunks.push((group.clone(), current_payloads));
-                current_payloads = Vec::new();
-            }
-            if let Some(ref text_representation) = chunk.text_representation.clone() {
-                current_group = Some(ChunkGroup::from_details(
-                    Some(text_representation.clone()),
-                    Some(text_representation.clone()),
-                    dataset_id,
-                    None,
-                    None,
-                    None,
-                ));
-                current_payloads.push(ChunkReqPayload {
-                    chunk_html: Some(text_representation.clone().replace('\n', "")),
+            if !current_chunk_html.is_empty() {
+                current_chunk_html.insert(0, current_header.clone());
+                let create_chunk_data = ChunkReqPayload {
+                    chunk_html: Some(current_chunk_html.join(" ")),
                     semantic_content: None,
-                    link: None,
-                    tag_set: None,
-                    metadata: Some(json!({
-                        "bbox": chunk.bbox,
-                        "properties": chunk.properties,
-                        "type": chunk.r#type
-                    })),
-                    group_ids: Some(vec![current_group.clone().unwrap().id]),
+                    link: upload_file_data.link.clone(),
+                    tag_set: upload_file_data.tag_set.clone(),
+                    metadata: upload_file_data.metadata.clone(),
+                    group_ids: None,
                     group_tracking_ids: None,
                     location: None,
-                    tracking_id: None,
+                    tracking_id: upload_file_data.group_tracking_id.clone(),
                     upsert_by_tracking_id: None,
-                    time_stamp: None,
+                    time_stamp: upload_file_data.time_stamp.clone(),
                     weight: None,
                     split_avg: None,
                     convert_html_to_text: None,
                     image_urls: None,
                     num_value: None,
-                    fulltext_boost: None,
-                    semantic_boost: None,
-                });
+                    fulltext_boost: Some(FullTextBoost {
+                        phrase: current_header.clone(),
+                        boost_factor: 3.0,
+                    }),
+                    semantic_boost: Some(SemanticBoost {
+                        phrase: format!("{} {}", doc_title.clone(), current_header.clone()),
+                        distance_factor: 0.5,
+                    }),
+                };
+
+                current_header = chunk.text_representation.clone().unwrap_or_default();
+
+                chunks.push(create_chunk_data);
+                current_chunk_html = Vec::new();
+            }
+
+            if let Some(ref text_representation) = chunk.text_representation.clone() {
+                current_chunk_html.push(text_representation.clone().replace('\n', ""));
             }
         } else if chunk.r#type == "Text" {
-            if let Some(ref group) = current_group {
-                if let Some(text_representation) = chunk.text_representation.clone() {
-                    current_payloads.push(ChunkReqPayload {
-                        chunk_html: Some(text_representation.clone().replace('\n', "")),
-                        semantic_content: None,
-                        link: None,
-                        tag_set: None,
-                        metadata: Some(json!({
-                            "bbox": chunk.bbox,
-                            "properties": chunk.properties,
-                            "type": chunk.r#type
-                        })),
-                        group_ids: Some(vec![group.clone().id]),
-                        group_tracking_ids: None,
-                        location: None,
-                        tracking_id: None,
-                        upsert_by_tracking_id: None,
-                        time_stamp: None,
-                        weight: None,
-                        split_avg: None,
-                        convert_html_to_text: None,
-                        image_urls: None,
-                        num_value: None,
-                        fulltext_boost: None,
-                        semantic_boost: None,
-                    });
-                }
+            if let Some(text_representation) = chunk.text_representation.clone() {
+                current_chunk_html.push(text_representation.clone().replace('\n', ""));
             }
         }
     }
 
-    if let Some(group) = current_group {
-        groups_and_chunks.push((group, current_payloads));
+    if !current_chunk_html.is_empty() {
+        let create_chunk_data = ChunkReqPayload {
+            chunk_html: Some(current_chunk_html.join(" ")),
+            semantic_content: None,
+            link: upload_file_data.link.clone(),
+            tag_set: upload_file_data.tag_set.clone(),
+            metadata: upload_file_data.metadata.clone(),
+            group_ids: None,
+            group_tracking_ids: None,
+            location: None,
+            tracking_id: upload_file_data.group_tracking_id.clone(),
+            upsert_by_tracking_id: None,
+            time_stamp: upload_file_data.time_stamp.clone(),
+            weight: None,
+            split_avg: None,
+            convert_html_to_text: None,
+            image_urls: None,
+            num_value: None,
+            fulltext_boost: Some(FullTextBoost {
+                phrase: current_header.clone(),
+                boost_factor: 3.0,
+            }),
+            semantic_boost: Some(SemanticBoost {
+                phrase: format!("{} {}", doc_title.clone(), current_header.clone()),
+                distance_factor: 0.5,
+            }),
+        };
+
+        chunks.push(create_chunk_data);
     }
 
-    let groups = groups_and_chunks
-        .iter()
-        .map(|(group, _)| group.clone())
-        .dedup_by(|a, b| a.id == b.id)
-        .collect::<Vec<ChunkGroup>>();
+    let name = format!("Group for file {}", upload_file_data.file_name);
 
-    create_groups_query(groups, true, pool.clone())
+    let chunk_group = ChunkGroup::from_details(
+        Some(name.clone()),
+        upload_file_data.description.clone(),
+        dataset_org_plan_sub.dataset.id,
+        upload_file_data.group_tracking_id.clone(),
+        None,
+        upload_file_data
+            .tag_set
+            .clone()
+            .map(|tag_set| tag_set.into_iter().map(Some).collect()),
+    );
+
+    let chunk_group_option = create_groups_query(vec![chunk_group], true, pool.clone())
         .await
         .map_err(|e| {
             log::error!("Could not create group {:?}", e);
             ServiceError::BadRequest("Could not create group".to_string())
-        })?;
+        })?
+        .pop();
 
-    let file_groups = groups_and_chunks
-        .iter()
-        .map(|(group, _)| FileGroup::from_details(created_file_id, group.id))
-        .collect::<Vec<FileGroup>>();
+    let chunk_group = match chunk_group_option {
+        Some(group) => group,
+        None => {
+            return Err(ServiceError::BadRequest(
+                "Could not create group from file".to_string(),
+            ));
+        }
+    };
 
-    create_groups_from_file_query(file_groups, pool.clone())
+    let group_id = chunk_group.id;
+
+    let file_group = FileGroup::from_details(created_file_id, group_id);
+
+    create_groups_from_file_query(vec![file_group], pool.clone())
         .await
         .map_err(|e| {
             log::error!("Could not create group from file {:?}", e);
             e
         })?;
+
+    chunks.iter_mut().for_each(|chunk| {
+        chunk.group_ids = Some(vec![group_id]);
+    });
 
     let chunk_count = get_row_count_for_organization_id_query(
         dataset_org_plan_sub.organization.organization.id,
@@ -579,12 +606,7 @@ pub async fn create_groups_and_chunks_from_chunks(
     )
     .await?;
 
-    let chunk_len = groups_and_chunks
-        .iter()
-        .map(|(_, chunks)| chunks.len())
-        .sum::<usize>();
-
-    if chunk_count + chunk_len
+    if chunk_count + chunks.len()
         > dataset_org_plan_sub
             .organization
             .plan
@@ -596,10 +618,7 @@ pub async fn create_groups_and_chunks_from_chunks(
         ));
     }
 
-    let segmented_chunks = groups_and_chunks
-        .into_iter()
-        .flat_map(|(_, chunks)| chunks)
-        .collect::<Vec<ChunkReqPayload>>()
+    let segmented_chunks = chunks
         .chunks(120)
         .map(|chunk_segment| chunk_segment.to_vec())
         .collect::<Vec<Vec<ChunkReqPayload>>>();
