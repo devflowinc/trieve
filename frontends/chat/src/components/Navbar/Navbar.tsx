@@ -175,7 +175,6 @@ export const Navbar = (props: NavbarProps) => {
             props.setSideBarOpen(false);
             props.setIsCreatingTopic(true);
             props.setSelectedNewTopic(true);
-            console.log("setting new topic");
           }}
           class="fill-current text-4xl"
         />

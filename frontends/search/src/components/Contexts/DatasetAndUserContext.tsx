@@ -213,7 +213,7 @@ export const DatasetAndUserContextWrapper = (props: RouteSectionProps) => {
           setDatasetsAndUsages(data);
         })
         .catch((err) => {
-          console.log(err);
+          console.error(err);
         });
     });
   });

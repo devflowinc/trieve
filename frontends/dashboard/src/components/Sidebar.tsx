@@ -183,8 +183,8 @@ export const Sidebar = () => {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                     window.location.href = res.logout_url;
                   })
-                  .catch(() => {
-                    console.log("error");
+                  .catch((error) => {
+                    console.error(error);
                   });
               });
             }}

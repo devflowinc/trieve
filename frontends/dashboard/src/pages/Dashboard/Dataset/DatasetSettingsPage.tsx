@@ -992,8 +992,8 @@ export const DatasetSettingsPage = () => {
     const datasetId = datasetContext.dataset?.()?.id;
     if (!datasetId) return;
 
+    const originalServerConfig = serverConfig();
     const modifiedFields = getModifiedFields();
-    console.log(modifiedFields);
 
     if (Object.keys(modifiedFields).length === 0) {
       createToast({
@@ -1023,7 +1023,7 @@ export const DatasetSettingsPage = () => {
             type: "success",
             message: "Dataset Configuration Saved",
           });
-          setOriginalConfig(serverConfig());
+          setOriginalConfig(originalServerConfig);
           if (modifiedFields.LLM_API_KEY) {
             setServerConfig((prev) => ({ ...prev, LLM_API_KEY: "" }));
           }
@@ -1045,7 +1045,7 @@ export const DatasetSettingsPage = () => {
         }
       })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
       });
   };
 
