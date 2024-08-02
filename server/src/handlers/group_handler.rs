@@ -1,12 +1,14 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{parse_query, ChunkFilter, SearchChunksReqPayload},
+    chunk_handler::{
+        parse_query, ChunkFilter, ParsedQuery, ParsedQueryTypes, SearchChunksReqPayload,
+    },
 };
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
         ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        HighlightOptions, Pool, RecommendType, RecommendationEventClickhouse,
+        HighlightOptions, Pool, QueryTypes, RecommendType, RecommendationEventClickhouse,
         RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
         SearchQueryEventClickhouse, SortOptions, UnifiedId,
     },
@@ -1361,7 +1363,7 @@ pub async fn get_recommended_groups(
 #[into_params(style = Form, parameter_in = Query)]
 pub struct SearchWithinGroupReqPayload {
     /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
+    pub query: QueryTypes,
     /// The page of chunks to fetch. Page is 1-indexed.
     pub page: Option<u64>,
     /// The page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
@@ -1503,17 +1505,32 @@ pub async fn search_within_group(
         }
     };
 
-    let parsed_query = parse_query(
-        data.query.clone(),
-        data.use_quote_negated_terms,
-        data.remove_stop_words,
-    );
+    let parsed_query = match data.query.clone() {
+        QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
+            query.clone(),
+            data.use_quote_negated_terms,
+            data.remove_stop_words,
+        )),
+        QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
+            query
+                .into_iter()
+                .map(|multi_query| {
+                    let parsed_query = parse_query(
+                        multi_query.query.clone(),
+                        data.use_quote_negated_terms,
+                        data.remove_stop_words,
+                    );
+                    (parsed_query, multi_query.weight)
+                })
+                .collect::<Vec<(ParsedQuery, f32)>>(),
+        ),
+    };
 
     let result_chunks = match data.search_type {
         SearchMethod::Hybrid => {
             search_hybrid_groups(
                 data.clone(),
-                parsed_query,
+                parsed_query.to_parsed_query()?,
                 group,
                 search_pool,
                 dataset_org_plan_sub.dataset.clone(),
@@ -1537,10 +1554,15 @@ pub async fn search_within_group(
 
     let search_id = uuid::Uuid::new_v4();
 
+    let query = match &data.query {
+        QueryTypes::Single(query) => query.clone(),
+        QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
+    };
+
     let clickhouse_event = SearchQueryEventClickhouse {
         id: search_id,
         search_type: String::from("search_within_groups"),
-        query: data.query.clone(),
+        query: query.clone(),
         request_params: serde_json::to_string(&data.clone()).unwrap(),
         latency: get_latency_from_header(timer.header_value()),
         top_score: result_chunks
@@ -1577,7 +1599,7 @@ pub struct SearchOverGroupsReqPayload {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
+    pub query: QueryTypes,
     /// Page of group results to fetch. Page is 1-indexed.
     pub page: Option<u64>,
     /// Page size is the number of group results to fetch. The default is 10.
@@ -1634,11 +1656,26 @@ pub async fn search_over_groups(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = parse_query(
-        data.query.clone(),
-        data.use_quote_negated_terms,
-        data.remove_stop_words,
-    );
+    let parsed_query = match data.query.clone() {
+        QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
+            query.clone(),
+            data.use_quote_negated_terms,
+            data.remove_stop_words,
+        )),
+        QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
+            query
+                .into_iter()
+                .map(|multi_query| {
+                    let parsed_query = parse_query(
+                        multi_query.query.clone(),
+                        data.use_quote_negated_terms,
+                        data.remove_stop_words,
+                    );
+                    (parsed_query, multi_query.weight)
+                })
+                .collect::<Vec<(ParsedQuery, f32)>>(),
+        ),
+    };
 
     let mut timer = Timer::new();
 
@@ -1664,7 +1701,7 @@ pub async fn search_over_groups(
         SearchMethod::Hybrid => {
             hybrid_search_over_groups(
                 data.clone(),
-                parsed_query,
+                parsed_query.to_parsed_query()?,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
@@ -1694,10 +1731,15 @@ pub async fn search_over_groups(
 
     let search_id = uuid::Uuid::new_v4();
 
+    let query = match &data.query {
+        QueryTypes::Single(query) => query.clone(),
+        QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
+    };
+
     let clickhouse_event = SearchQueryEventClickhouse {
         id: search_id,
         search_type: String::from("search_over_groups"),
-        query: data.query.clone(),
+        query: query.clone(),
         request_params: serde_json::to_string(&data.clone()).unwrap(),
         latency: get_latency_from_header(timer.header_value()),
         top_score: result_chunks

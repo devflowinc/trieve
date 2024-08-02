@@ -3587,7 +3587,7 @@ impl FieldCondition {
             }
         } else {
             Err(ServiceError::BadRequest(
-                "Should have either match_all or match_any".to_string(),
+                "No filter condition provided".to_string(),
             ))
         }
     }
@@ -4921,7 +4921,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
         #[derive(Deserialize)]
         struct Helper {
             search_type: SearchMethod,
-            query: String,
+            query: QueryTypes,
             page: Option<u64>,
             page_size: Option<u64>,
             get_total_pages: Option<bool>,
@@ -5025,7 +5025,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
         #[derive(Deserialize)]
         struct Helper {
             search_type: SearchMethod,
-            query: String,
+            query: QueryTypes,
             page: Option<u64>,
             page_size: Option<u64>,
             group_id: Option<uuid::Uuid>,
@@ -5082,7 +5082,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
         #[derive(Deserialize)]
         struct Helper {
             search_type: SearchMethod,
-            query: String,
+            query: QueryTypes,
             page: Option<u64>,
             page_size: Option<u64>,
             get_total_pages: Option<bool>,
@@ -5261,5 +5261,30 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             score_threshold: helper.score_threshold,
             llm_options,
         })
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
+pub struct MultiQuery {
+    pub query: String,
+    pub weight: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
+#[serde(untagged)]
+/// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search.
+pub enum QueryTypes {
+    Single(String),
+    Multi(Vec<MultiQuery>),
+}
+
+impl QueryTypes {
+    pub fn to_single_query(&self) -> Result<String, ServiceError> {
+        match self {
+            QueryTypes::Single(query) => Ok(query.clone()),
+            QueryTypes::Multi(_) => Err(ServiceError::BadRequest(
+                "Cannot use Multi Query with cross encoder or highlights".to_string(),
+            )),
+        }
     }
 }

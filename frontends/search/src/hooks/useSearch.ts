@@ -12,6 +12,11 @@ export interface SortBySearchType {
   rerank_query: string;
 }
 
+export interface MultiQuery {
+  query: string;
+  weight: number;
+}
+
 export function isSortByField(
   sortBy: SortByField | SortBySearchType,
 ): sortBy is SortByField {
@@ -54,6 +59,7 @@ export interface SearchOptions {
   useQuoteNegatedTerms: boolean;
   removeStopWords: boolean;
   filters: Filters | null;
+  multiQueries: MultiQuery[];
 }
 
 const initalState: SearchOptions = {
@@ -80,6 +86,7 @@ const initalState: SearchOptions = {
   useQuoteNegatedTerms: false,
   removeStopWords: false,
   filters: { must: [], must_not: [], should: [], jsonb_prefilter: true },
+  multiQueries: [],
 };
 
 const fromStateToParams = (state: SearchOptions): Params => {
@@ -105,6 +112,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     useQuoteNegatedTerms: state.useQuoteNegatedTerms.toString(),
     removeStopWords: state.removeStopWords.toString(),
     filters: JSON.stringify(state.filters),
+    multiQueries: JSON.stringify(state.multiQueries),
   };
 };
 
@@ -137,6 +145,7 @@ const fromParamsToState = (
     useQuoteNegatedTerms: (params.useQuoteNegatedTerms ?? "false") === "true",
     removeStopWords: (params.removeStopWords ?? "false") === "true",
     filters: JSON.parse(params.filters ?? "null") as Filters | null,
+    multiQueries: JSON.parse(params.multiQueries ?? "[]") as MultiQuery[],
   };
 };
 

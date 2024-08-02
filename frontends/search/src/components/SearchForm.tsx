@@ -30,6 +30,7 @@ import {
 } from "../hooks/useSearch";
 import { Tooltip } from "shared/ui";
 import { BsQuestionCircle } from "solid-icons/bs";
+import { AiOutlinePlus } from "solid-icons/ai";
 
 const defaultFilter = {
   field: "",
@@ -210,61 +211,224 @@ const SearchForm = (props: {
       <div class="w-full">
         <form class="w-full space-y-4 dark:text-white">
           <div class="relative flex">
-            <div
-              classList={{
-                "flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700":
-                  true,
-              }}
-            >
-              <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
-              <textarea
-                id="search-query-textarea"
+            <Show when={props.search.state.multiQueries.length == 0}>
+              <div
                 classList={{
-                  "scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 text-wrap":
+                  "flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700":
                     true,
                 }}
-                value={props.search.state.query}
-                onInput={(e) => {
-                  props.search.setSearch("query", e.currentTarget.value);
-                  e.currentTarget.style.height = "auto";
-                  e.currentTarget.style.height =
-                    e.currentTarget.scrollHeight + "px";
-                }}
-                onKeyDown={(e) => {
-                  if (
-                    ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
-                    (!e.shiftKey && e.key === "Enter")
-                  ) {
-                    props.search.setSearch("version", (prev) => prev + 1);
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
-                placeholder="Search for chunks..."
-                rows={props.search.state.query.split("\n").length}
-              />
-              <button
-                classList={{
-                  "pt-[2px]": !!props.search.state.query,
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  props.search.setSearch("query", "");
-                }}
-              >
-                <BiRegularX class="h-7 w-7 fill-current" />
-              </button>
-              <button
-                classList={{
-                  "border-l border-neutral-600 pl-[10px] dark:border-neutral-200":
-                    !!props.search.state.query,
-                }}
-                type="submit"
               >
                 <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
+                <textarea
+                  id="search-query-textarea"
+                  classList={{
+                    "scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 text-wrap":
+                      true,
+                  }}
+                  value={props.search.state.query}
+                  onInput={(e) => {
+                    props.search.setSearch("query", e.currentTarget.value);
+
+                    e.currentTarget.style.height = "auto";
+                    e.currentTarget.style.height =
+                      e.currentTarget.scrollHeight + "px";
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
+                      (!e.shiftKey && e.key === "Enter")
+                    ) {
+                      props.search.setSearch("version", (prev) => prev + 1);
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
+                  placeholder="Search for chunks..."
+                  rows={props.search.state.query.split("\n").length}
+                />
+                <button
+                  classList={{
+                    "pt-[2px]": !!props.search.state.query,
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    props.search.setSearch("query", "");
+                  }}
+                >
+                  <BiRegularX class="h-7 w-7 fill-current" />
+                </button>
+                <button
+                  classList={{
+                    "border-l border-neutral-600 pl-[10px] dark:border-neutral-200":
+                      !!props.search.state.query,
+                  }}
+                  type="submit"
+                >
+                  <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
+                </button>
+              </div>
+            </Show>
+            <Show when={props.search.state.multiQueries.length > 0}>
+              <div class="flex w-full flex-col space-y-2">
+                <For each={props.search.state.multiQueries}>
+                  {(multiQuery, index) => (
+                    <div
+                      classList={{
+                        "flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700":
+                          true,
+                      }}
+                    >
+                      <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
+                      <textarea
+                        id={`search-query-textarea-${index()}`}
+                        classList={{
+                          "scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 text-wrap":
+                            true,
+                        }}
+                        value={multiQuery.query}
+                        onInput={(e) => {
+                          props.search.setSearch(
+                            "multiQueries",
+                            props.search.debounced.multiQueries.map((query) => {
+                              if (query === multiQuery) {
+                                return {
+                                  ...query,
+                                  query: e.currentTarget.value,
+                                };
+                              } else {
+                                return query;
+                              }
+                            }),
+                          );
+
+                          const searchTextarea = document.getElementById(
+                            `search-query-textarea-${index()}`,
+                          );
+
+                          searchTextarea?.focus();
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 50);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 100);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 200);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 300);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 400);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 500);
+                          e.currentTarget.style.height = "auto";
+                          e.currentTarget.style.height =
+                            e.currentTarget.scrollHeight + "px";
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
+                            (!e.shiftKey && e.key === "Enter")
+                          ) {
+                            props.search.setSearch(
+                              "version",
+                              (prev) => prev + 1,
+                            );
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                        placeholder="Search for chunks..."
+                        rows={props.search.state.query.split("\n").length}
+                      />
+                      <input
+                        id="search-query-weight"
+                        type="number"
+                        step="0.1"
+                        classList={{
+                          "scrollbar-track-rounded-md scrollbar-thumb-rounded-md h-fit max-h-[240px] max-w-[10vw] resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 text-wrap border-l border-neutral-600 pl-2":
+                            true,
+                        }}
+                        value={multiQuery.weight}
+                        onInput={(e) => {
+                          props.search.setSearch(
+                            "multiQueries",
+                            props.search.debounced.multiQueries.map((query) => {
+                              if (query === multiQuery) {
+                                return {
+                                  ...query,
+                                  weight: parseFloat(e.currentTarget.value),
+                                };
+                              } else {
+                                return query;
+                              }
+                            }),
+                          );
+                          e.currentTarget.style.height = "auto";
+                          e.currentTarget.style.height =
+                            e.currentTarget.scrollHeight + "px";
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
+                            (!e.shiftKey && e.key === "Enter")
+                          ) {
+                            props.search.setSearch(
+                              "version",
+                              (prev) => prev + 1,
+                            );
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                        placeholder="Add weight..."
+                      />
+                      <button
+                        classList={{
+                          "pt-[2px]": true,
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          props.search.setSearch(
+                            "multiQueries",
+                            props.search.state.multiQueries.filter(
+                              (query) => query !== multiQuery,
+                            ),
+                          );
+                        }}
+                      >
+                        <BiRegularX class="h-7 w-7 fill-current" />
+                      </button>
+                    </div>
+                  )}
+                </For>
+              </div>
+            </Show>
+          </div>
+          <Show when={props.search.state.multiQueries.length > 0}>
+            <div class="flex items-center justify-self-end">
+              <div class="flex-1" />
+              <button
+                class="flex w-fit items-center rounded bg-neutral-100 p-1 text-sm hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+                onClick={(e) => {
+                  e.preventDefault();
+                  props.search.setSearch("multiQueries", [
+                    ...props.search.state.multiQueries,
+                    {
+                      query: "",
+                      weight: 1,
+                    },
+                  ]);
+                }}
+              >
+                <AiOutlinePlus class="mr-2" />
+                <span>Add Query</span>
               </button>
             </div>
-          </div>
+          </Show>
           <div class="flex flex-wrap space-x-3">
             <Popover
               defaultOpen={false}
@@ -1137,6 +1301,32 @@ const SearchForm = (props: {
                 </>
               )}
             </Popover>
+            <div class="flex items-center space-x-1 pb-3 text-sm">
+              <Tooltip
+                body={
+                  <BsQuestionCircle class="h-3.5 w-3.5 rounded-full fill-current" />
+                }
+                tooltipText="Use multiple queries to search for chunks. (Only works with Semantic Search)"
+              />
+              <span>Multi Query</span>
+              <input
+                class="h-4 w-4"
+                type="checkbox"
+                checked={props.search.state.multiQueries.length > 0}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    props.search.setSearch("multiQueries", [
+                      {
+                        query: props.search.state.query,
+                        weight: 0.5,
+                      },
+                    ]);
+                  } else {
+                    props.search.setSearch("multiQueries", []);
+                  }
+                }}
+              />
+            </div>
             <Show when={props.search.debounced.query !== ""}>
               <div class="flex-1" />
               <div class="flex items-center justify-self-end">

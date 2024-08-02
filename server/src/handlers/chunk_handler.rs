@@ -2,10 +2,10 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo,
-    HighlightOptions, IngestSpecificChunkMetadata, Pool, RagQueryEventClickhouse, RecommendType,
-    RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO,
-    SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore, SortByField, SortOptions,
-    UnifiedId, UpdateSpecificChunkMetadata,
+    HighlightOptions, IngestSpecificChunkMetadata, Pool, QueryTypes, RagQueryEventClickhouse,
+    RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
+    ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore,
+    SortByField, SortOptions, UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -928,8 +928,8 @@ pub struct ChunkFilter {
 pub struct SearchChunksReqPayload {
     /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid", it will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,
-    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
+    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search.
+    pub query: QueryTypes,
     /// Page of chunks to fetch. Page is 1-indexed.
     pub page: Option<u64>,
     /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
@@ -958,7 +958,7 @@ impl Default for SearchChunksReqPayload {
     fn default() -> Self {
         SearchChunksReqPayload {
             search_type: SearchMethod::Hybrid,
-            query: "".to_string(),
+            query: QueryTypes::Single("".to_string()),
             page: Some(1),
             get_total_pages: None,
             page_size: Some(10),
@@ -1018,6 +1018,24 @@ pub struct ParsedQuery {
     pub quote_words: Option<Vec<String>>,
     pub negated_words: Option<Vec<String>>,
 }
+
+#[derive(Clone, Debug)]
+pub enum ParsedQueryTypes {
+    Single(ParsedQuery),
+    Multi(Vec<(ParsedQuery, f32)>),
+}
+
+impl ParsedQueryTypes {
+    pub fn to_parsed_query(&self) -> Result<ParsedQuery, ServiceError> {
+        match self {
+            ParsedQueryTypes::Single(query) => Ok(query.clone()),
+            ParsedQueryTypes::Multi(_) => Err(ServiceError::BadRequest(
+                "Cannot use Multi Query with cross encoder or highlights".to_string(),
+            )),
+        }
+    }
+}
+
 pub fn parse_query(
     query: String,
     use_quote_negated_terms: Option<bool>,
@@ -1122,11 +1140,26 @@ pub async fn search_chunks(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = parse_query(
-        data.query.clone(),
-        data.use_quote_negated_terms,
-        data.remove_stop_words,
-    );
+    let parsed_query = match data.query.clone() {
+        QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
+            query.clone(),
+            data.use_quote_negated_terms,
+            data.remove_stop_words,
+        )),
+        QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
+            query
+                .into_iter()
+                .map(|multi_query| {
+                    let parsed_query = parse_query(
+                        multi_query.query.clone(),
+                        data.use_quote_negated_terms,
+                        data.remove_stop_words,
+                    );
+                    (parsed_query, multi_query.weight)
+                })
+                .collect::<Vec<(ParsedQuery, f32)>>(),
+        ),
+    };
 
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
@@ -1137,7 +1170,7 @@ pub async fn search_chunks(
         SearchMethod::Hybrid => {
             search_hybrid_chunks(
                 data.clone(),
-                parsed_query,
+                parsed_query.to_parsed_query()?,
                 pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
@@ -1161,10 +1194,15 @@ pub async fn search_chunks(
 
     let search_id = uuid::Uuid::new_v4();
 
+    let query = match &data.query {
+        QueryTypes::Single(query) => query.clone(),
+        QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
+    };
+
     let clickhouse_event = SearchQueryEventClickhouse {
         id: search_id,
         search_type: String::from("search"),
-        query: data.query.clone(),
+        query,
         request_params: serde_json::to_string(&data.clone()).unwrap(),
         latency: get_latency_from_header(timer.header_value()),
         top_score: result_chunks
@@ -1283,7 +1321,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     fn from(autocomplete_data: AutocompleteReqPayload) -> Self {
         SearchChunksReqPayload {
             search_type: autocomplete_data.search_type,
-            query: autocomplete_data.query,
+            query: QueryTypes::Single(autocomplete_data.query),
             page: Some(1),
             get_total_pages: None,
             page_size: autocomplete_data.page_size,
@@ -1538,7 +1576,7 @@ pub struct CountChunksReqPayload {
     /// Can be either "semantic", "fulltext", or "bm25". "hybrid" is not supported due to latency limitations with using the reranker. These search types are applied without the reranker cross-encoder model, so if you are using it be aware that the count may not directly correlate with an actual search query.
     pub search_type: CountSearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
+    pub query: QueryTypes,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
@@ -1602,7 +1640,20 @@ pub async fn count_chunks(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = parse_query(data.query.clone(), None, None);
+    let parsed_query = match data.query.clone() {
+        QueryTypes::Single(query) => {
+            ParsedQueryTypes::Single(parse_query(query.clone(), None, None))
+        }
+        QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
+            query
+                .into_iter()
+                .map(|multi_query| {
+                    let parsed_query = parse_query(multi_query.query.clone(), None, None);
+                    (parsed_query, multi_query.weight)
+                })
+                .collect::<Vec<(ParsedQuery, f32)>>(),
+        ),
+    };
 
     let limit = match data.limit {
         Some(limit) => limit,
