@@ -79,7 +79,7 @@ export const NavBar = () => {
                     </p>
                     <div class="my-2 flex items-center space-x-2 text-sm">
                       <a
-                        href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg"
+                        href="https://matrix.to/#/#trieve-general:trieve.ai"
                         class="flex w-fit items-center space-x-1 rounded-md border-[0.5px] border-green-100 bg-green-50 px-2 py-1 text-sm font-medium text-green-900"
                       >
                         <BsSunglasses class="h-3 w-3" />

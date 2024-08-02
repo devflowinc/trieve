@@ -57,7 +57,7 @@ export const Sidebar = (props: NavbarProps) => {
           window.location.href = res.logout_url;
         })
         .catch(() => {
-          console.log("error");
+          console.error("error");
         });
     });
   };

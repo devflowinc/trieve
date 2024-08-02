@@ -992,8 +992,8 @@ export const DatasetSettingsPage = () => {
     const datasetId = datasetContext.dataset?.()?.id;
     if (!datasetId) return;
 
-    const modifiedFields = getModifiedFields();
     const originalServerConfig = serverConfig();
+    const modifiedFields = getModifiedFields();
 
     if (Object.keys(modifiedFields).length === 0) {
       createToast({
@@ -1045,7 +1045,7 @@ export const DatasetSettingsPage = () => {
         }
       })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
       });
   };
 

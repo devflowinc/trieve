@@ -20,7 +20,7 @@ import {
 import { differenceInMinutes } from "date-fns/fp";
 
 const getGranularitySuggestion = (
-  range: DateRangeFilter,
+  range: DateRangeFilter
 ): AnalyticsParams["granularity"] => {
   const startDate = range.gt || range.gte;
   const endDate = range.lt || range.lte || new Date();
@@ -61,7 +61,7 @@ const transformOurTypeToTheirs = (value: DateRangeFilter): PickerAloneValue => {
 
 const transformTheirTypeToOurs = (
   startDate: DateObjectUnits,
-  endDate: DateObjectUnits,
+  endDate: DateObjectUnits
 ): DateRangeFilter => {
   const actuallyNow = unitIsToday(endDate);
   return {
@@ -103,7 +103,7 @@ interface DateRangePickerProps {
   value: DateRangeFilter;
   onChange: (value: DateRangeFilter) => void;
   onGranularitySuggestion?: (
-    granularity: AnalyticsParams["granularity"],
+    granularity: AnalyticsParams["granularity"]
   ) => void;
   initialSelectedPresetId?: number;
   presets?: DatePreset[];
@@ -111,7 +111,7 @@ interface DateRangePickerProps {
 
 export const DateRangePicker = (props: DateRangePickerProps) => {
   const [selectedPresetId, setSelectedPresetId] = createSignal<number>(
-    props.initialSelectedPresetId || 0,
+    props.initialSelectedPresetId || 0
   );
 
   const dateRangeValue = createMemo(() => {
@@ -123,26 +123,24 @@ export const DateRangePicker = (props: DateRangePickerProps) => {
   });
 
   const handleChange: ((data: DatePickerOnChange) => void) | undefined = (
-    data,
+    data
   ) => {
     if (data.type === "range") {
       if (data.startDate && data.endDate) {
         setSelectedPresetId(0);
         const transformed = transformTheirTypeToOurs(
           data.startDate,
-          data.endDate,
+          data.endDate
         );
 
         props.onChange(transformed);
-        console.log("post transform");
         if (props.onGranularitySuggestion) {
           const newGranularity = getGranularitySuggestion(transformed);
-          console.log("Granularity suggestion", newGranularity);
           props.onGranularitySuggestion(newGranularity);
         }
       }
     } else {
-      console.log("Impossible date range change selected");
+      console.error("Impossible date range change selected");
       return;
     }
   };
@@ -291,7 +289,7 @@ interface PresetsProps {
   selectedPresetId: number;
   setSelectedPresetId: (id: number) => void;
   onGranularitySuggestion?: (
-    granularity: AnalyticsParams["granularity"],
+    granularity: AnalyticsParams["granularity"]
   ) => void;
 }
 
