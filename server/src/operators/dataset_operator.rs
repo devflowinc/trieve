@@ -184,6 +184,7 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
 pub struct DeleteMessage {
     pub dataset_id: uuid::Uuid,
     pub attempt_number: usize,
+    pub deleted_at: chrono::NaiveDateTime,
     pub empty_dataset: bool,
 }
 
@@ -224,6 +225,7 @@ pub async fn soft_delete_dataset_by_id_query(
     let message = DeleteMessage {
         dataset_id: id,
         attempt_number: 0,
+        deleted_at: chrono::Utc::now().naive_utc(),
         empty_dataset: false,
     };
 
@@ -258,6 +260,7 @@ pub async fn clear_dataset_by_dataset_id_query(
     let message = DeleteMessage {
         dataset_id: id,
         attempt_number: 0,
+        deleted_at: chrono::Utc::now().naive_utc(),
         empty_dataset: true,
     };
 
@@ -274,17 +277,66 @@ pub async fn clear_dataset_by_dataset_id_query(
     Ok(())
 }
 
-pub async fn delete_chunks_in_dataset(
+pub async fn delete_items_in_dataset(
     id: uuid::Uuid,
+    deleted_at: chrono::NaiveDateTime,
     pool: web::Data<Pool>,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::files::dsl as files_column;
 
     let mut conn = pool.get().await.unwrap();
 
     let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+
+    let chunk_groups = chunk_group::chunk_group
+        .filter(chunk_group::dataset_id.eq(id))
+        .select(chunk_group::id)
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|err| {
+            log::error!("Could not fetch groups: {}", err);
+            ServiceError::BadRequest("Could not fetch groups".to_string())
+        })?;
+
+    diesel::delete(
+        chunk_group_bookmarks_columns::chunk_group_bookmarks
+            .filter(chunk_group_bookmarks_columns::group_id.eq_any(chunk_groups)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|err| {
+        log::error!("Could not delete groups: {}", err);
+        ServiceError::BadRequest("Could not delete groups".to_string())
+    })?;
+
+    diesel::delete(
+        chunk_group::chunk_group
+            .filter(chunk_group::dataset_id.eq(id))
+            .filter(chunk_group::created_at.lt(deleted_at)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|err| {
+        log::error!("Could not delete groups: {}", err);
+        ServiceError::BadRequest("Could not delete groups".to_string())
+    })?;
+
+    diesel::delete(
+        files_column::files
+            .filter(files_column::dataset_id.eq(id))
+            .filter(files_column::created_at.lt(deleted_at)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|err| {
+        log::error!("Could not delete groups: {}", err);
+        ServiceError::BadRequest("Could not delete groups".to_string())
+    })?;
 
     let mut last_offset_id = uuid::Uuid::nil();
 
@@ -294,6 +346,7 @@ pub async fn delete_chunks_in_dataset(
             chunk_metadata_columns::chunk_metadata
                 .filter(chunk_metadata_columns::dataset_id.eq(id))
                 .filter(chunk_metadata_columns::id.gt(last_offset_id))
+                .filter(chunk_metadata_columns::created_at.lt(deleted_at))
                 .select((
                     chunk_metadata_columns::id,
                     chunk_metadata_columns::qdrant_point_id,
@@ -369,6 +422,7 @@ pub async fn delete_chunks_in_dataset(
 #[tracing::instrument(skip_all)]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
+    deleted_at: chrono::NaiveDateTime,
     pool: web::Data<Pool>,
     clickhouse_client: actix_web::web::Data<clickhouse::Client>,
     dataset_config: DatasetConfiguration,
@@ -377,8 +431,9 @@ pub async fn delete_dataset_by_id_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    delete_chunks_in_dataset(
+    delete_items_in_dataset(
         id,
+        deleted_at,
         pool.clone(),
         clickhouse_client.clone(),
         dataset_config.clone(),

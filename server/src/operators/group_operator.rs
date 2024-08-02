@@ -12,7 +12,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::prelude::*;
-use diesel::{dsl::sql, sql_types::Text, upsert::excluded};
+use diesel::upsert::excluded;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
@@ -258,7 +258,6 @@ pub async fn delete_group_by_id_query(
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    use crate::data::schema::events::dsl as events_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -275,17 +274,6 @@ pub async fn delete_group_by_id_query(
     let transaction_result = conn
         .transaction::<_, diesel::result::Error, _>(|conn| {
             async move {
-                diesel::delete(
-                    events_columns::events
-                        .filter(events_columns::event_type.eq("file_uploaded"))
-                        .filter(
-                            sql::<Text>(&format!("events.event_data->>'{}'", "group_id"))
-                                .eq(group_id.to_string()),
-                        ),
-                )
-                .execute(conn)
-                .await?;
-
                 diesel::delete(
                     groups_from_files_columns::groups_from_files
                         .filter(groups_from_files_columns::group_id.eq(group_id)),
