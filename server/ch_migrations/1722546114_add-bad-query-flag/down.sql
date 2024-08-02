@@ -1,1 +1,1 @@
-ALTER TABLE search_queries DROP COLUMN IF EXISTS bad_query;
+ALTER TABLE search_queries DROP COLUMN IF EXISTS query_rating;

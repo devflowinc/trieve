@@ -1553,7 +1553,7 @@ pub async fn search_within_group(
         results: result_chunks.into_response_payload(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
-        flag: 0,
+        query_rating: String::from(""),
     };
 
     let _ = send_to_clickhouse(
@@ -1706,7 +1706,7 @@ pub async fn search_over_groups(
         results: result_chunks.into_response_payload(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
-        flag: 0,
+        query_rating: String::from(""),
     };
 
     let _ = send_to_clickhouse(

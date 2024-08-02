@@ -23,7 +23,6 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
           class="overflow-none z-100 fixed inset-0"
           onClose={() => {
             props.setIsOpen(false);
-            localStorage.setItem("notFirstVisit", "true");
           }}
         >
           <div class="flex h-screen items-center justify-center px-4">

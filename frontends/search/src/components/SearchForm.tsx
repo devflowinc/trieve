@@ -4,12 +4,12 @@ import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
 import {
   For,
   Match,
+  Setter,
   Show,
   Switch,
   createEffect,
   createMemo,
   createSignal,
-  useContext,
 } from "solid-js";
 import {
   Menu,
@@ -30,7 +30,6 @@ import {
 } from "../hooks/useSearch";
 import { Tooltip } from "shared/ui";
 import { BsQuestionCircle } from "solid-icons/bs";
-import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 const defaultFilter = {
   field: "",
@@ -39,10 +38,8 @@ const defaultFilter = {
 const SearchForm = (props: {
   search: SearchStore;
   groupID?: string;
-  searchID: string;
+  openRateQueryModal: Setter<boolean>;
 }) => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
-
   const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
   const [tempSearchValues, setTempSearchValues] = createSignal(
     // eslint-disable-next-line solid/reactivity
@@ -78,8 +75,6 @@ const SearchForm = (props: {
     setShowFilterModal(false);
   };
 
-  const datasetContext = useContext(DatasetAndUserContext);
-
   const default_settings = [
     { name: "Hybrid", isSelected: false, route: "hybrid" },
     {
@@ -107,28 +102,6 @@ const SearchForm = (props: {
   if (bm25Active) {
     default_settings.push({ name: "BM25", isSelected: false, route: "BM25" });
   }
-
-  const flagQuery = () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const id = props.searchID;
-    void fetch(`${api_host}/analytics/search`, {
-      method: "PUT",
-      headers: {
-        "X-API-version": "2.0",
-        "Content-Type": "application/json",
-        "TR-Dataset": datasetContext.currentDataset?.()?.dataset.id ?? "",
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        query_id: id,
-        flag: 1,
-      }),
-    }).then((res) => {
-      if (res.ok) {
-        console.log("Flagged query");
-      }
-    });
-  };
 
   const [searchTypes, setSearchTypes] = createSignal(default_settings);
   const [sortTypes, setSortTypes] = createSignal([
@@ -1164,21 +1137,25 @@ const SearchForm = (props: {
                 </>
               )}
             </Popover>
-            <div class="flex-1" />
-            <div class="flex items-center justify-self-end">
-              <button
-                class="flex w-fit items-center rounded bg-neutral-100 p-1 text-sm hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-                onClick={(e) => {
-                  console.log("Flagged query");
-                  e.preventDefault();
-                  flagQuery();
-                }}
-              >
-                <FaRegularFlag class="mr-2" />
-                Flag Search
-              </button>
-            </div>
+            <Show when={props.search.debounced.query !== ""}>
+              <div class="flex-1" />
+              <div class="flex items-center justify-self-end">
+                <button
+                  class="flex w-fit items-center rounded bg-neutral-100 p-1 text-sm hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    props.openRateQueryModal(true);
+                  }}
+                >
+                  <FaRegularFlag class="mr-2" />
+                  Rate This Search
+                </button>
+              </div>
+            </Show>
             <Show when={!props.groupID}>
+              <Show when={props.search.debounced.query === ""}>
+                <div class="flex-1" />
+              </Show>
               <div class="flex items-center space-x-2 justify-self-center">
                 <label class="text-sm">Group Search</label>
                 <input

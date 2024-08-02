@@ -108,6 +108,11 @@ export const GroupPage = (props: GroupPageProps) => {
     GroupScoreChunkDTO[]
   >([]);
   const [searchID, setSearchID] = createSignal("");
+  const [openRateQueryModal, setOpenRateQueryModal] = createSignal(false);
+  const [rating, setRating] = createSignal({
+    rating: 5,
+    note: "",
+  });
 
   onMount(() => {
     fetchBookmarks();
@@ -127,6 +132,39 @@ export const GroupPage = (props: GroupPageProps) => {
 
     return curGroupId;
   }, "");
+
+  const sendRating = () => {
+    const dataset = $dataset?.();
+    if (!dataset) return;
+    void fetch(`${apiHost}/analytics/search`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "X-API-version": "2.0",
+        "Content-Type": "application/json",
+        "TR-Dataset": dataset.dataset.id,
+      },
+      body: JSON.stringify({
+        query_id: searchID(),
+        rating: rating().rating,
+        note: rating().note,
+      }),
+    }).then((response) => {
+      if (response.ok) {
+        createToast({
+          type: "success",
+          message: "Query rated successfully",
+        });
+      } else {
+        void response.json().then((data) => {
+          createToast({
+            type: "error",
+            message: data.message,
+          });
+        });
+      }
+    });
+  };
 
   createEffect(() => {
     const resultsLength = chunkMetadatas().length;
@@ -585,7 +623,7 @@ export const GroupPage = (props: GroupPageProps) => {
               <SearchForm
                 search={search}
                 groupID={props.groupID}
-                searchID={searchID()}
+                openRateQueryModal={setOpenRateQueryModal}
               />
             </div>
           </div>
@@ -891,6 +929,68 @@ export const GroupPage = (props: GroupPageProps) => {
         onConfirm={onDelete}
         message="Are you sure you want to delete this chunk?"
       />
+      <FullScreenModal
+        isOpen={openRateQueryModal}
+        setIsOpen={setOpenRateQueryModal}
+      >
+        <div class="min-w-[250px] sm:min-w-[300px]">
+          <div class="mb-4 text-center text-xl font-bold text-black dark:text-white">
+            Rate query:
+          </div>
+          <div>
+            <label class="block text-lg font-medium text-black dark:text-white">
+              Rating: {rating().rating}
+            </label>
+            <input
+              type="range"
+              class="min-w-full"
+              value={rating().rating}
+              min="0"
+              max="10"
+              onInput={(e) => {
+                setRating({
+                  rating: parseInt(e.target.value),
+                  note: rating().note,
+                });
+              }}
+            />
+            <div class="flex justify-between space-x-1">
+              <label class="block text-sm font-medium text-black dark:text-white">
+                0
+              </label>
+              <label class="block items-end text-sm font-medium text-black dark:text-white">
+                10
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-lg font-medium text-black dark:text-white">
+              Note:
+            </label>
+            <textarea
+              class="max-md w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700 dark:text-white"
+              value={rating().note}
+              onInput={(e) => {
+                setRating({
+                  rating: rating().rating,
+                  note: (e.target as HTMLTextAreaElement).value,
+                });
+              }}
+            />
+          </div>
+          <div class="mx-auto flex w-fit flex-col space-y-3 pt-2">
+            <button
+              class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
+              onClick={() => {
+                sendRating();
+                setOpenRateQueryModal(false);
+              }}
+            >
+              Submit Rating
+            </button>
+          </div>
+        </div>
+      </FullScreenModal>
       <Show when={showConfirmGroupDeleteModal()}>
         <FullScreenModal
           isOpen={showConfirmGroupDeleteModal}

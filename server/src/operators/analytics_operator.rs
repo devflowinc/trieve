@@ -1,6 +1,7 @@
 use actix_web::web;
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
+use ureq::json;
 use utoipa::ToSchema;
 
 use crate::{
@@ -19,7 +20,7 @@ use crate::{
         SearchTypeCount, SortOrder,
     },
     errors::ServiceError,
-    handlers::analytics_handler::CTRDataRequestBody,
+    handlers::analytics_handler::{CTRDataRequestBody, RateQueryRequest},
 };
 
 use super::chunk_operator::get_metadata_from_tracking_id_query;
@@ -1145,20 +1146,26 @@ pub async fn get_recommendations_without_clicks_query(
     Ok(CTRRecommendationsWithoutClicksResponse { recommendations })
 }
 
-pub async fn set_query_flag_query(
-    query_id: uuid::Uuid,
+pub async fn set_query_rating_query(
+    data: RateQueryRequest,
     dataset_id: uuid::Uuid,
-    flag: i32,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<(), ServiceError> {
+    let json_data = json!({
+        "rating": data.rating,
+        "comment": data.note
+    });
+
+    let stringified_data = serde_json::to_string(&json_data).unwrap_or_default();
+
     clickhouse_client
         .query(
             "ALTER TABLE default.search_queries
-        UPDATE flag = ?
+        UPDATE query_rating = ?
         WHERE id = ? AND dataset_id = ?",
         )
-        .bind(flag)
-        .bind(query_id)
+        .bind(stringified_data)
+        .bind(data.query_id)
         .bind(dataset_id)
         .execute()
         .await

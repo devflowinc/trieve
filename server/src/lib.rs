@@ -233,7 +233,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_recommendation_analytics,
         handlers::analytics_handler::send_ctr_data,
         handlers::analytics_handler::get_ctr_analytics,
-        handlers::analytics_handler::set_query_flag,
+        handlers::analytics_handler::set_query_rating,
         handlers::metrics_handler::get_metrics,
     ),
     components(
@@ -298,7 +298,7 @@ impl Modify for SecurityAddon {
             handlers::group_handler::GetChunksInGroupResponse,
             handlers::group_handler::RemoveChunkFromGroupReqPayload,
             handlers::group_handler::UpdateGroupByTrackingIDReqPayload,
-            handlers::analytics_handler::FlagQueryRequest,
+            handlers::analytics_handler::RateQueryRequest,
             handlers::group_handler::AddChunkToGroupReqPayload,
             handlers::group_handler::RecommendGroupsResponseBody,
             handlers::user_handler::UpdateUserOrgRoleData,
@@ -1090,7 +1090,7 @@ pub fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/search")
                                 .route(web::post().to(handlers::analytics_handler::get_search_analytics))
-                                .route(web::put().to(handlers::analytics_handler::set_query_flag)),
+                                .route(web::put().to(handlers::analytics_handler::set_query_rating)),
                             )
                             .service(
                                 web::resource("/search/clusters")
