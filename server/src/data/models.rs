@@ -3593,7 +3593,7 @@ pub struct SearchQueryEvent {
     pub results: Vec<SearchResultType>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
-    pub flag: i32,
+    pub query_rating: String,
 }
 
 impl Default for SearchQueryEvent {
@@ -3608,7 +3608,7 @@ impl Default for SearchQueryEvent {
             results: vec![],
             dataset_id: uuid::Uuid::new_v4(),
             created_at: chrono::Utc::now().to_string(),
-            flag: 0,
+            query_rating: String::from(""),
         }
     }
 }
@@ -3819,7 +3819,7 @@ pub struct SearchQueryEventClickhouse {
     pub dataset_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
-    pub flag: i32,
+    pub query_rating: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -3869,7 +3869,7 @@ impl SearchQueryEventClickhouse {
                 results,
                 dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
                 created_at: self.created_at.to_string(),
-                flag: self.flag,
+                query_rating: self.query_rating,
             }
         } else if let Ok(group_results) = self
             .results
@@ -3927,7 +3927,7 @@ impl SearchQueryEventClickhouse {
                 results,
                 dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
                 created_at: self.created_at.to_string(),
-                flag: self.flag,
+                query_rating: self.query_rating,
             }
         } else {
             SearchQueryEvent::default()

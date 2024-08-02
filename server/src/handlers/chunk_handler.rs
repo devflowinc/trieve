@@ -1177,7 +1177,7 @@ pub async fn search_chunks(
         results: result_chunks.into_response_payload(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
-        flag: 0,
+        query_rating: String::from(""),
     };
 
     let _ = send_to_clickhouse(
@@ -1372,7 +1372,7 @@ pub async fn autocomplete(
         results: result_chunks.into_response_payload(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
-        flag: 0,
+        query_rating: String::from(""),
     };
 
     let _ = send_to_clickhouse(

@@ -68,24 +68,25 @@ pub async fn get_cluster_analytics(
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
-pub struct FlagQueryRequest {
+pub struct RateQueryRequest {
     pub query_id: uuid::Uuid,
-    pub flag: i32,
+    pub rating: i32,
+    pub note: Option<String>,
 }
 
-/// Flag Query
+/// Rate Query
 ///
-/// This route allows you to flag a query.
+/// This route allows you to Rate a query.
 #[utoipa::path(
     put,
     path = "/analytics/search",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = FlagQueryRequest, description = "JSON request payload to flag a query", content_type = "application/json"),
+    request_body(content = RateQueryRequest, description = "JSON request payload to rate a query", content_type = "application/json"),
     responses(
-        (status = 204, description = "The query was successfully flagged"),
+        (status = 204, description = "The query was successfully rated"),
 
-        (status = 400, description = "Service error relating to flagging a query", body = ErrorResponseBody),
+        (status = 400, description = "Service error relating to rating a query", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
@@ -94,17 +95,16 @@ pub struct FlagQueryRequest {
         ("ApiKey" = ["admin"]),
     )
 )]
-pub async fn set_query_flag(
-    data: web::Json<FlagQueryRequest>,
+pub async fn set_query_rating(
+    data: web::Json<RateQueryRequest>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let data = data.into_inner();
-    set_query_flag_query(
-        data.query_id,
+    set_query_rating_query(
+        data,
         dataset_org_plan_sub.dataset.id,
-        data.flag,
         clickhouse_client.get_ref(),
     )
     .await?;

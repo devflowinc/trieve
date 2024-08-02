@@ -1,1 +1,2 @@
-ALTER TABLE search_queries ADD COLUMN IF NOT EXISTS flag INT DEFAULT 0;
+ALTER TABLE search_queries ADD COLUMN IF NOT EXISTS query_rating String DEFAULT 0;
+
