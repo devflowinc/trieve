@@ -1623,13 +1623,169 @@ pub fn get_highlights_with_exact_match(
     max_num: Option<u32>,
     window_size: Option<u32>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
-    let query = query.replace(
+    let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
+    let idxs_of_query_count_in_content = content
+        .to_lowercase()
+        .match_indices(&query.to_lowercase())
+        .map(|(i, _)| i)
+        .collect_vec();
+    let mut phrases = idxs_of_query_count_in_content
+        .iter()
+        .map(|i| content[*i..*i + query.len()].to_string())
+        .collect_vec();
+    phrases.truncate(max_num.unwrap_or(3) as usize);
+
+    if !phrases.is_empty() {
+        let new_output = apply_highlights_to_html(
+            input.clone(),
+            phrases
+                .clone()
+                .into_iter()
+                .take(max_num.unwrap_or(3) as usize)
+                .collect_vec(),
+        );
+
+        let window = window_size.unwrap_or(0);
+        if window == 0 {
+            return Ok((
+                new_output,
+                phrases
+                    .clone()
+                    .into_iter()
+                    .take(max_num.unwrap_or(3) as usize)
+                    .collect_vec(),
+            ));
+        }
+        let half_window = std::cmp::max(window / 2, 1);
+
+        let mut matched_idxs: Vec<usize> = content
+            .to_lowercase()
+            .match_indices(&query.to_lowercase())
+            .map(|(i, _)| i)
+            .collect_vec();
+        matched_idxs.truncate(max_num.unwrap_or(3) as usize);
+
+        let mut grouped_idxs = if matched_idxs.len() == 1 {
+            vec![(0, content.len())]
+        } else {
+            let tweens = matched_idxs
+                .iter()
+                .zip(matched_idxs.iter().skip(1))
+                .map(|(a, b)| (*a, *b))
+                .collect_vec();
+
+            let mut start_index = 0;
+            let mut splits = vec![];
+            for (start, end) in tweens {
+                splits.push((start_index, end));
+                start_index = start + query.len();
+            }
+            splits.push((start_index, content.len()));
+
+            splits
+        };
+        let grouped_idxs_len = grouped_idxs.len();
+        if let Some((start, end)) = grouped_idxs.last() {
+            if *end != content.len() {
+                grouped_idxs[grouped_idxs_len - 1] = (*start, content.len());
+            }
+        }
+
+        let content_splits: Vec<String> = grouped_idxs
+            .iter()
+            .map(|(start, end)| content[*start..*end].to_string())
+            .collect_vec();
+
+        let highlights_with_window: Vec<(String, String)> = content_splits
+            .iter()
+            .map(|split| {
+                let idx_of_query = split
+                    .to_lowercase()
+                    .find(&query.to_lowercase())
+                    .unwrap_or(0);
+                let first_split = split.chars().take(idx_of_query).collect::<String>();
+                let last_split = split
+                    .chars()
+                    .skip(idx_of_query + query.len())
+                    .collect::<String>();
+                let text_between_splits = split
+                    .chars()
+                    .skip(idx_of_query)
+                    .take(query.len())
+                    .collect::<String>();
+
+                let first_expansion = first_split
+                    .split_inclusive(' ')
+                    .rev()
+                    .take(half_window as usize)
+                    .collect::<Vec<&str>>()
+                    .iter()
+                    .rev()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join("");
+
+                let last_expansion = last_split
+                    .split_inclusive(' ')
+                    .take(half_window as usize)
+                    .collect::<Vec<&str>>()
+                    .join("");
+
+                (
+                    format!(
+                        "{}<mark><b>{}</b></mark>{}",
+                        first_expansion, text_between_splits, last_expansion
+                    ),
+                    format!(
+                        "{}{}{}",
+                        first_expansion, text_between_splits, last_expansion
+                    ),
+                )
+            })
+            .collect_vec();
+
+        let idxs_of_highlights_with_window = highlights_with_window
+            .iter()
+            .map(|(_, original_text_for_highlight)| {
+                content
+                    .find(original_text_for_highlight)
+                    .unwrap_or_default()
+            })
+            .collect_vec();
+        let mut final_highlights_with_window = highlights_with_window
+            .iter()
+            .map(|x| x.0.clone())
+            .collect_vec();
+        for i in 1..idxs_of_highlights_with_window.len() {
+            let current_start = idxs_of_highlights_with_window[i];
+            let prev_end =
+                idxs_of_highlights_with_window[i - 1] + highlights_with_window[i - 1].1.len();
+
+            if current_start < prev_end {
+                let overlap = prev_end - current_start;
+                final_highlights_with_window[i] = final_highlights_with_window[i]
+                    .chars()
+                    .skip(overlap)
+                    .collect::<String>();
+            }
+        }
+
+        return Ok((
+            new_output,
+            final_highlights_with_window
+                .into_iter()
+                .take(max_num.unwrap_or(3) as usize)
+                .collect_vec(),
+        ));
+    }
+
+    let cleaned_query = query.replace(
         |c: char| delimiters.contains(&c.to_string()) && c != ' ',
         "",
     );
 
     let stop_words = get_stop_words();
-    let query_parts_split_by_stop_words: Vec<String> = query
+    let query_parts_split_by_stop_words: Vec<String> = cleaned_query
         .split(' ')
         .collect_vec()
         .chunk_by(|a, b| {
@@ -1651,7 +1807,6 @@ pub fn get_highlights_with_exact_match(
         .filter(|x| !x.is_empty())
         .collect_vec();
 
-    let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
     let query_parts_as_regex = match query_parts_split_by_stop_words.is_empty() {
         true => None,
         false => Some(
@@ -1716,14 +1871,14 @@ pub fn get_highlights_with_exact_match(
 
     let exact_matches = matched_idxs.clone();
 
-    let results: Vec<usize> = query_parts_split_by_stop_words
+    let simsearch_results: Vec<usize> = query_parts_split_by_stop_words
         .clone()
         .iter()
         .flat_map(|part| engine.search(part))
         .collect_vec();
 
     let matched_indexes_check = matched_idxs.clone();
-    for i in results.iter().filter(|i| {
+    for i in simsearch_results.iter().filter(|i| {
         !matched_indexes_check
             .iter()
             .any(|(matched_idx, _)| **i == *matched_idx)
@@ -1757,13 +1912,16 @@ pub fn get_highlights_with_exact_match(
     let mut phrases = matched_idxs
         .iter()
         .map(|(_, _, x)| x.to_string())
-        .collect::<Vec<String>>();
+        .collect::<Vec<String>>()
+        .into_iter()
+        .unique()
+        .collect_vec();
 
     phrases.sort_by(|a, b| {
         let a_contains_exact = exact_matches.iter().any(|(_, e)| a.contains(e));
         let b_contains_exact = exact_matches.iter().any(|(_, e)| b.contains(e));
         match (a_contains_exact, b_contains_exact) {
-            (true, true) => Ordering::Equal,
+            (true, true) => b.len().cmp(&a.len()),
             (true, false) => Ordering::Less,
             (false, true) => Ordering::Greater,
             (false, false) => Ordering::Equal,
@@ -1790,7 +1948,6 @@ pub fn get_highlights_with_exact_match(
                 .collect_vec(),
         ));
     }
-
     let half_window = std::cmp::max(window / 2, 1);
 
     let matched_idxs_with_windows = matched_idxs
@@ -1822,8 +1979,8 @@ pub fn get_highlights_with_exact_match(
                     .map(|(_, _, phrase, _, _)| phrase.to_string())
                     .unique()
                     .collect_vec();
-                if combined_phrases.contains(&query) {
-                    combined_phrases = vec![query.clone()];
+                if combined_phrases.contains(&cleaned_query) {
+                    combined_phrases = vec![cleaned_query.clone()];
                 }
                 Some((first_start, last_end, combined_phrases))
             }
@@ -1872,10 +2029,24 @@ pub fn get_highlights_with_exact_match(
     }
 
     phrases.sort_by(|(phrase_a, _), (phrase_b, _)| {
-        let a_is_exact = exact_matches.iter().any(|(_, s)| phrase_a.contains(s));
-        let b_is_exact = exact_matches.iter().any(|(_, s)| phrase_b.contains(s));
+        let (a_is_exact, exact_a) = exact_matches
+            .iter()
+            .filter_map(|(_, s)| match phrase_a.contains(s) {
+                true => Some((true, s.clone())),
+                false => None,
+            })
+            .next()
+            .unwrap_or((false, "".to_string()));
+        let (b_is_exact, exact_b) = exact_matches
+            .iter()
+            .filter_map(|(_, s)| match phrase_b.contains(s) {
+                true => Some((true, s.clone())),
+                false => None,
+            })
+            .next()
+            .unwrap_or((false, "".to_string()));
         match (a_is_exact, b_is_exact) {
-            (true, true) => Ordering::Equal,
+            (true, true) => exact_b.len().cmp(&exact_a.len()),
             (true, false) => Ordering::Less,
             (false, true) => Ordering::Greater,
             (false, false) => Ordering::Equal,

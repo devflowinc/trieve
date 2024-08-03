@@ -79,7 +79,17 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [noResults, setNoResults] = createSignal(false);
   const [totalPages, setTotalPages] = createSignal(0);
 
-  const fetchChunkCollections = () => {
+  const handleDownloadFile = (file_id?: string) => {
+    const datasetId = $dataset?.()?.dataset.id;
+    if (file_id && datasetId) {
+      void downloadFile(file_id, datasetId);
+    }
+  };
+
+  createEffect(() => {
+    const groupsAbortController = new AbortController();
+    const chunksAbortController = new AbortController();
+
     if (!$currentUser?.()) return;
     const dataset = $dataset?.();
     if (!dataset) return;
@@ -90,6 +100,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         "X-API-version": "2.0",
         "TR-Dataset": dataset.dataset.id,
       },
+      signal: groupsAbortController.signal,
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
@@ -100,18 +111,6 @@ const ResultsPage = (props: ResultsPageProps) => {
         });
       }
     });
-  };
-
-  const handleDownloadFile = (file_id?: string) => {
-    const datasetId = $dataset?.()?.dataset.id;
-    if (file_id && datasetId) {
-      void downloadFile(file_id, datasetId);
-    }
-  };
-
-  const fetchBookmarks = () => {
-    const dataset = $dataset?.();
-    if (!dataset) return;
 
     void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
@@ -121,6 +120,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         "Content-Type": "application/json",
         "TR-Dataset": dataset.dataset.id,
       },
+      signal: chunksAbortController.signal,
       body: JSON.stringify({
         chunk_ids: resultChunks().flatMap((c) => {
           return c.chunk.id;
@@ -134,11 +134,11 @@ const ResultsPage = (props: ResultsPageProps) => {
         });
       }
     });
-  };
 
-  createEffect(() => {
-    fetchChunkCollections();
-    fetchBookmarks();
+    onCleanup(() => {
+      groupsAbortController.abort("cleanup");
+      chunksAbortController.abort("cleanup");
+    });
   });
 
   const dataset = createMemo(() => {
