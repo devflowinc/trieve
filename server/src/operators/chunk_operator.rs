@@ -1365,18 +1365,147 @@ pub fn get_highlights_with_exact_match(
     window_size: Option<u32>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
-    let idxs_of_query_count_in_content = content
-        .to_lowercase()
-        .match_indices(&query.to_lowercase())
-        .map(|(i, _)| i)
-        .collect_vec();
-    let mut phrases = idxs_of_query_count_in_content
-        .iter()
-        .map(|i| content[*i..*i + query.len()].to_string())
-        .collect_vec();
-    phrases.truncate(max_num.unwrap_or(3) as usize);
+    let cleaned_query = query.replace(
+        |c: char| delimiters.contains(&c.to_string()) && c != ' ',
+        "",
+    );
 
-    if !phrases.is_empty() {
+    let stop_words = get_stop_words();
+    let query_parts_split_by_stop_words: Vec<String> = cleaned_query
+        .split(' ')
+        .collect_vec()
+        .chunk_by(|a, b| {
+            !stop_words.contains(&a.to_lowercase()) && !stop_words.contains(&b.to_lowercase())
+        })
+        .map(|chunk| {
+            chunk
+                .iter()
+                .filter_map(|word| match stop_words.contains(&word.to_lowercase()) {
+                    true => None,
+                    false => Some(word.to_string()),
+                })
+                .collect_vec()
+        })
+        .filter_map(|chunk| match chunk.is_empty() {
+            true => None,
+            false => Some(chunk.join(" ")),
+        })
+        .filter(|x| !x.is_empty())
+        .collect_vec();
+    let mut additional_multi_token_queries = query_parts_split_by_stop_words
+        .clone()
+        .into_iter()
+        .filter_map(|part| {
+            if part.split(' ').count() > 1 {
+                Some(part)
+            } else {
+                None
+            }
+        })
+        .collect_vec();
+    let idxs_of_non_stop_words = query_parts_split_by_stop_words
+        .iter()
+        .filter_map(|part| cleaned_query.find(part))
+        .collect_vec();
+    let tweens = idxs_of_non_stop_words
+        .iter()
+        .zip(idxs_of_non_stop_words.iter().skip(1))
+        .map(|(a, b)| (*a, *b))
+        .collect_vec();
+    let mut start_index = 0;
+    for (start, end) in tweens {
+        let query_split = cleaned_query[start_index..end].trim().to_string();
+        additional_multi_token_queries.push(query_split);
+        start_index = start;
+    }
+    additional_multi_token_queries.push(cleaned_query[start_index..].trim().to_string());
+    let query_split = cleaned_query.split(' ').collect_vec();
+    let mut starting_length = query_split.len() - 1;
+    while starting_length > 2 {
+        let mut current_skip = 0;
+        while current_skip <= query_split.len() - starting_length {
+            let split_skip = query_split
+                .iter()
+                .skip(current_skip)
+                .take(starting_length)
+                .map(|x| x.to_string())
+                .collect_vec()
+                .join(" ");
+            additional_multi_token_queries.push(split_skip);
+            current_skip += 1;
+        }
+        starting_length -= 1;
+    }
+    additional_multi_token_queries.retain(|x| x.split(' ').count() > 1);
+    additional_multi_token_queries.insert(0, cleaned_query.clone());
+    additional_multi_token_queries.insert(0, query.clone());
+    additional_multi_token_queries = additional_multi_token_queries
+        .into_iter()
+        .map(|x| x.trim().to_string())
+        .unique()
+        .collect_vec();
+    additional_multi_token_queries.sort_by(|a, b| {
+        let a_len = a.split(' ').count();
+        let b_len: usize = b.split(' ').count();
+        match b_len.cmp(&a_len) {
+            std::cmp::Ordering::Equal => a.len().cmp(&b.len()),
+            other => other,
+        }
+    });
+
+    for potential_query in additional_multi_token_queries {
+        let idxs_of_query_count_in_content = content
+            .to_lowercase()
+            .match_indices(&potential_query.to_lowercase())
+            .map(|(i, _)| i)
+            .collect_vec();
+        let mut phrases = idxs_of_query_count_in_content
+            .iter()
+            .map(|i| content[*i..*i + potential_query.len()].to_string())
+            .collect_vec();
+
+        // TODO: latency optimize this so it can be uncommented
+        // if phrases.is_empty() {
+        //     let potential_query_split_whitespace = potential_query.split_whitespace().collect_vec();
+        //     if potential_query_split_whitespace.len() > 5 {
+        //         continue;
+        //     }
+        //     let query_without_stop_words = potential_query
+        //         .split_whitespace()
+        //         .filter(|word| !stop_words.contains(&word.to_lowercase()))
+        //         .collect::<Vec<&str>>();
+        //     if query_without_stop_words.len() < 2
+        //         || (potential_query_split_whitespace.len() - query_without_stop_words.len() < 1)
+        //     {
+        //         continue;
+        //     }
+
+        //     // \b(?:word1\W+(?:\w+\W+){0,3}?word2|word2\W+(?:\w+\W+){0,3}?word1)\b
+        //     let query_regex = format!(
+        //         "\\b(?:{}|{})\\b",
+        //         query_without_stop_words.join("\\W+(?:\\w+\\W+){0,2}?"),
+        //         query_without_stop_words
+        //             .iter()
+        //             .rev()
+        //             .join("\\W+(?i:\\w+\\W+){0,2}?")
+        //     );
+        //     if let Ok(re) = regex::Regex::new(&query_regex) {
+        //         let matched_idxs: Vec<(usize, usize)> = re
+        //             .find_iter(&content)
+        //             .map(|x| (x.start(), x.as_str().len()))
+        //             .collect();
+
+        //         phrases = matched_idxs
+        //             .iter()
+        //             .map(|(index, length)| content[*index..*index + length].to_string())
+        //             .collect_vec();
+        //     }
+        // }
+        phrases.truncate(max_num.unwrap_or(3) as usize);
+        if phrases.is_empty() {
+            continue;
+        }
+
         let new_output = apply_highlights_to_html(
             input.clone(),
             phrases
@@ -1401,7 +1530,7 @@ pub fn get_highlights_with_exact_match(
 
         let mut matched_idxs: Vec<usize> = content
             .to_lowercase()
-            .match_indices(&query.to_lowercase())
+            .match_indices(&potential_query.to_lowercase())
             .map(|(i, _)| i)
             .collect_vec();
         matched_idxs.truncate(max_num.unwrap_or(3) as usize);
@@ -1419,7 +1548,7 @@ pub fn get_highlights_with_exact_match(
             let mut splits = vec![];
             for (start, end) in tweens {
                 splits.push((start_index, end));
-                start_index = start + query.len();
+                start_index = start + potential_query.len();
             }
             splits.push((start_index, content.len()));
 
@@ -1442,17 +1571,17 @@ pub fn get_highlights_with_exact_match(
             .map(|split| {
                 let idx_of_query = split
                     .to_lowercase()
-                    .find(&query.to_lowercase())
+                    .find(&potential_query.to_lowercase())
                     .unwrap_or(0);
                 let first_split = split.chars().take(idx_of_query).collect::<String>();
                 let last_split = split
                     .chars()
-                    .skip(idx_of_query + query.len())
+                    .skip(idx_of_query + potential_query.len())
                     .collect::<String>();
                 let text_between_splits = split
                     .chars()
                     .skip(idx_of_query)
-                    .take(query.len())
+                    .take(potential_query.len())
                     .collect::<String>();
 
                 let first_expansion = first_split
@@ -1520,33 +1649,9 @@ pub fn get_highlights_with_exact_match(
         ));
     }
 
-    let cleaned_query = query.replace(
-        |c: char| delimiters.contains(&c.to_string()) && c != ' ',
-        "",
-    );
-
-    let stop_words = get_stop_words();
-    let query_parts_split_by_stop_words: Vec<String> = cleaned_query
-        .split(' ')
-        .collect_vec()
-        .chunk_by(|a, b| {
-            !stop_words.contains(&a.to_lowercase()) && !stop_words.contains(&b.to_lowercase())
-        })
-        .map(|chunk| {
-            chunk
-                .iter()
-                .filter_map(|word| match stop_words.contains(&word.to_lowercase()) {
-                    true => None,
-                    false => Some(word.to_string()),
-                })
-                .collect_vec()
-        })
-        .filter_map(|chunk| match chunk.is_empty() {
-            true => None,
-            false => Some(chunk.join(" ")),
-        })
-        .filter(|x| !x.is_empty())
-        .collect_vec();
+    if threshold.unwrap_or(0.8) >= 1.0 {
+        return Ok((input, vec![]));
+    }
 
     let query_parts_as_regex = match query_parts_split_by_stop_words.is_empty() {
         true => None,
