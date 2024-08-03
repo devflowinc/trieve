@@ -1,6 +1,3 @@
-use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
-
 use crate::data::models::{
     ChunkData, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes,
     ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags, IngestSpecificChunkMetadata,
@@ -29,6 +26,7 @@ use diesel_async::{AsyncConnection, RunQueryDsl};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use simsearch::{SearchOptions, SimSearch};
+use std::collections::{HashMap, HashSet};
 use utoipa::ToSchema;
 
 #[tracing::instrument(skip(pool))]
@@ -1520,6 +1518,13 @@ pub fn get_highlights_with_exact_match(
         ));
     }
 
+    let query_lower_case_words = query
+        .to_lowercase()
+        .split_whitespace()
+        .map(|x| x.to_string())
+        .into_iter()
+        .unique()
+        .collect_vec();
     let cleaned_query = query.replace(
         |c: char| delimiters.contains(&c.to_string()) && c != ' ',
         "",
@@ -1610,12 +1615,26 @@ pub fn get_highlights_with_exact_match(
         )
         .collect_vec();
 
-    let exact_matches = matched_idxs.clone();
-
     let simsearch_results: Vec<usize> = query_parts_split_by_stop_words
         .clone()
         .iter()
         .flat_map(|part| engine.search(part))
+        .collect_vec();
+    let simsearch_results = simsearch_results
+        .into_iter()
+        .filter(|idx| {
+            if let Some(split) = split_content.get(*idx) {
+                let words_in_split = split.split_whitespace();
+                if words_in_split
+                    .into_iter()
+                    .all(|word| stop_words.contains(&word.to_lowercase().to_string()))
+                {
+                    return false;
+                }
+                return true;
+            }
+            false
+        })
         .collect_vec();
 
     let matched_indexes_check = matched_idxs.clone();
@@ -1659,14 +1678,25 @@ pub fn get_highlights_with_exact_match(
         .collect_vec();
 
     phrases.sort_by(|a, b| {
-        let a_contains_exact = exact_matches.iter().any(|(_, e)| a.contains(e));
-        let b_contains_exact = exact_matches.iter().any(|(_, e)| b.contains(e));
-        match (a_contains_exact, b_contains_exact) {
-            (true, true) => b.len().cmp(&a.len()),
-            (true, false) => Ordering::Less,
-            (false, true) => Ordering::Greater,
-            (false, false) => Ordering::Equal,
-        }
+        let a_lowercase_words = a
+            .to_lowercase()
+            .split_whitespace()
+            .map(|x| x.to_string())
+            .collect_vec();
+        let b_lowercase_words = b
+            .to_lowercase()
+            .split_whitespace()
+            .map(|x| x.to_string())
+            .collect_vec();
+        let a_num_words_in_query = a_lowercase_words
+            .iter()
+            .filter(|word| query_lower_case_words.contains(&word))
+            .count();
+        let b_num_words_in_query = b_lowercase_words
+            .iter()
+            .filter(|word| query_lower_case_words.contains(&word))
+            .count();
+        b_num_words_in_query.cmp(&a_num_words_in_query)
     });
 
     let new_output = apply_highlights_to_html(
@@ -1770,28 +1800,25 @@ pub fn get_highlights_with_exact_match(
     }
 
     phrases.sort_by(|(phrase_a, _), (phrase_b, _)| {
-        let (a_is_exact, exact_a) = exact_matches
+        let a_lowercase_words = phrase_a
+            .to_lowercase()
+            .split_whitespace()
+            .map(|x| x.to_string())
+            .collect_vec();
+        let b_lowercase_words = phrase_b
+            .to_lowercase()
+            .split_whitespace()
+            .map(|x| x.to_string())
+            .collect_vec();
+        let a_num_words_in_query = a_lowercase_words
             .iter()
-            .filter_map(|(_, s)| match phrase_a.contains(s) {
-                true => Some((true, s.clone())),
-                false => None,
-            })
-            .next()
-            .unwrap_or((false, "".to_string()));
-        let (b_is_exact, exact_b) = exact_matches
+            .filter(|word| query_lower_case_words.contains(&word))
+            .count();
+        let b_num_words_in_query = b_lowercase_words
             .iter()
-            .filter_map(|(_, s)| match phrase_b.contains(s) {
-                true => Some((true, s.clone())),
-                false => None,
-            })
-            .next()
-            .unwrap_or((false, "".to_string()));
-        match (a_is_exact, b_is_exact) {
-            (true, true) => exact_b.len().cmp(&exact_a.len()),
-            (true, false) => Ordering::Less,
-            (false, true) => Ordering::Greater,
-            (false, false) => Ordering::Equal,
-        }
+            .filter(|word| query_lower_case_words.contains(&word))
+            .count();
+        b_num_words_in_query.cmp(&a_num_words_in_query)
     });
 
     let (phrases, phrases_to_highlight_in_content): (Vec<String>, Vec<Vec<String>>) =
