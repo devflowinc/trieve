@@ -2258,6 +2258,7 @@ pub async fn generate_off_chunks(
     };
 
     let client = Client {
+        headers: None,
         project: None,
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),

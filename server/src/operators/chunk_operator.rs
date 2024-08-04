@@ -1434,7 +1434,7 @@ pub fn get_highlights_with_exact_match(
                     .split_whitespace()
                     .filter(|x| !stop_words.contains(&x.to_lowercase()))
                     .count()
-                    >= 2
+                    >= 1
             {
                 additional_multi_token_queries.push(split_skip);
             }

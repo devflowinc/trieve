@@ -121,7 +121,7 @@ pub async fn create_new_qdrant_collection_query(
                         VectorParams {
                             size: *vector,
                             distance: Distance::Cosine.into(),
-                            quantization_config: quantization_config.clone(),
+                            quantization_config,
                             on_disk,
                             ..Default::default()
                         },
