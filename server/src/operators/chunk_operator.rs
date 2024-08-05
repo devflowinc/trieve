@@ -1425,7 +1425,9 @@ pub fn get_highlights_with_exact_match(
         {
             valid_end_char_boundary += 1;
         }
-        let query_split = cleaned_query[valid_start_char_boundary..valid_end_char_boundary]
+        let query_split = cleaned_query
+            .get(valid_start_char_boundary..valid_end_char_boundary)
+            .unwrap_or_default()
             .trim()
             .to_string();
         if query_split
@@ -1438,7 +1440,13 @@ pub fn get_highlights_with_exact_match(
         }
         start_index = valid_start_char_boundary;
     }
-    additional_multi_token_queries.push(cleaned_query[start_index..].trim().to_string());
+    additional_multi_token_queries.push(
+        cleaned_query
+            .get(start_index..)
+            .unwrap_or_default()
+            .trim()
+            .to_string(),
+    );
     let query_split = cleaned_query.split_whitespace().collect_vec();
     let mut starting_length = query_split.len() - 1;
     while starting_length > 0 {
@@ -1490,7 +1498,7 @@ pub fn get_highlights_with_exact_match(
     for potential_query in additional_multi_token_queries {
         if cumulative_phrases
             .iter()
-            .any(|(cumulative_query, _)| cumulative_query.contains(&potential_query))
+            .any(|(cumulative_query, _)| cumulative_query.contains(potential_query.trim()))
         {
             continue;
         }
@@ -1514,7 +1522,10 @@ pub fn get_highlights_with_exact_match(
                     end_valid_boundary += 1;
                 }
 
-                content[start_valid_boundary..end_valid_boundary].to_string()
+                content
+                    .get(start_valid_boundary..end_valid_boundary)
+                    .unwrap_or_default()
+                    .to_string()
             })
             .collect_vec();
         phrases.truncate(max_num.unwrap_or(3) as usize);
@@ -1531,7 +1542,12 @@ pub fn get_highlights_with_exact_match(
             .collect_vec();
         let new_output = apply_highlights_to_html(
             input.clone(),
-            phrases.clone().into_iter().unique().collect_vec(),
+            phrases
+                .clone()
+                .into_iter()
+                .unique()
+                .map(|x| x.trim().to_string())
+                .collect_vec(),
         );
 
         let window = window_size.unwrap_or(0);
@@ -1550,12 +1566,12 @@ pub fn get_highlights_with_exact_match(
         let half_window = std::cmp::max(window / 2, 1);
         let mut highlights_with_window = vec![];
 
-        let potential_queries = cumulative_phrases
+        let matched_potential_queries = cumulative_phrases
             .iter()
             .take(max_num.unwrap_or(3) as usize)
             .map(|(x, _)| x.clone())
             .collect_vec();
-        for potential_query in potential_queries.clone() {
+        for potential_query in matched_potential_queries.clone() {
             let mut matched_idxs: Vec<usize> = content
                 .to_lowercase()
                 .match_indices(&potential_query.to_lowercase())
@@ -1605,7 +1621,10 @@ pub fn get_highlights_with_exact_match(
                         end_valid_boundary += 1;
                     }
 
-                    content[start_valid_boundary..end_valid_boundary].to_string()
+                    content
+                        .get(start_valid_boundary..end_valid_boundary)
+                        .unwrap_or_default()
+                        .to_string()
                 })
                 .collect_vec();
 
@@ -1749,20 +1768,16 @@ pub fn get_highlights_with_exact_match(
             }
         }
 
-        result_highlights_with_window.sort_by(|a, b| match (a.1, b.1) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.0.len().cmp(&b.0.len()),
-        });
         let final_highlights_with_window = result_highlights_with_window
             .into_iter()
-            .map(|(x, _)| {
+            .filter_map(|(x, _)| {
                 let mut new_x = x.clone();
-                for potential_query in potential_queries.clone() {
-                    let mut query_idx = new_x
-                        .to_lowercase()
-                        .find(&potential_query.to_lowercase())
-                        .unwrap_or_default();
+                for potential_query in matched_potential_queries.clone() {
+                    let mut query_idx =
+                        match new_x.to_lowercase().find(&potential_query.to_lowercase()) {
+                            Some(x) => x,
+                            None => continue,
+                        };
                     while !new_x.is_char_boundary(query_idx) && query_idx > 0 {
                         query_idx -= 1;
                     }
@@ -1771,19 +1786,31 @@ pub fn get_highlights_with_exact_match(
                         query_end += 1;
                     }
 
+                    if !new_x.is_char_boundary(query_idx) || !new_x.is_char_boundary(query_end) {
+                        continue;
+                    }
+
                     new_x = format!(
                         "{}<mark><b>{}</b></mark>{}",
-                        &new_x[..query_idx],
-                        &new_x[query_idx..query_end],
-                        &new_x[query_end..]
+                        &new_x.get(0..query_idx).unwrap_or_default(),
+                        &new_x.get(query_idx..query_end).unwrap_or_default(),
+                        &new_x.get(query_end..).unwrap_or_default()
                     );
                 }
-                new_x.replace("<mark><b></b></mark>", "")
+                new_x = new_x.replace("<mark><b></b></mark>", "");
+
+                if new_x != x {
+                    Some(new_x)
+                } else {
+                    None
+                }
             })
             .take(max_num.unwrap_or(3) as usize)
             .collect_vec();
 
-        return Ok((new_output, final_highlights_with_window));
+        if !final_highlights_with_window.is_empty() {
+            return Ok((new_output, final_highlights_with_window));
+        }
     }
 
     if threshold.unwrap_or(0.8) >= 1.0 {
