@@ -14,7 +14,7 @@ use crate::{
     middleware::api_version::APIVersion,
     operators::{
         chunk_operator::get_metadata_from_tracking_id_query,
-        clickhouse_operator::{get_latency_from_header, send_to_clickhouse, ClickHouseEvent},
+        clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue},
         group_operator::*,
         qdrant_operator::{
             add_bookmark_to_qdrant_query, recommend_qdrant_groups_query,
@@ -1149,11 +1149,11 @@ pub enum RecommendGroupsResponse {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip(pool, event_queue))]
 pub async fn get_recommended_groups(
     data: web::Json<RecommendGroupsReqPayload>,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     api_version: APIVersion,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1332,11 +1332,9 @@ pub async fn get_recommended_groups(
         created_at: time::OffsetDateTime::now_utc(),
     };
 
-    let _ = send_to_clickhouse(
-        ClickHouseEvent::RecommendationEvent(clickhouse_event),
-        &clickhouse_client,
-    )
-    .await;
+    event_queue
+        .send(ClickHouseEvent::RecommendationEvent(clickhouse_event))
+        .await;
 
     timer.add("sent to clickhouse");
 
@@ -1474,11 +1472,11 @@ impl SearchWithinGroupResults {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip(pool, event_queue))]
 pub async fn search_within_group(
     data: web::Json<SearchWithinGroupReqPayload>,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     api_version: APIVersion,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1561,11 +1559,10 @@ pub async fn search_within_group(
         query_rating: String::from(""),
     };
 
-    let _ = send_to_clickhouse(
-        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
-        &clickhouse_client,
-    )
-    .await;
+    event_queue
+        .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+        .await;
+
     timer.add("send_to_clickhouse");
 
     if api_version == APIVersion::V1 {
@@ -1625,11 +1622,11 @@ pub struct SearchOverGroupsReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip(pool, event_queue))]
 pub async fn search_over_groups(
     data: web::Json<SearchOverGroupsReqPayload>,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     api_version: APIVersion,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1719,11 +1716,10 @@ pub async fn search_over_groups(
         query_rating: String::from(""),
     };
 
-    let _ = send_to_clickhouse(
-        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
-        &clickhouse_client,
-    )
-    .await;
+    event_queue
+        .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+        .await;
+
     timer.add("send_to_clickhouse");
 
     if api_version == APIVersion::V1 {

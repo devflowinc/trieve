@@ -6,7 +6,7 @@ use crate::diesel::prelude::*;
 use crate::get_env;
 use crate::handlers::chunk_handler::{ParsedQuery, SearchChunksReqPayload};
 use crate::handlers::message_handler::CreateMessageReqPayload;
-use crate::operators::clickhouse_operator::{send_to_clickhouse, ClickHouseEvent};
+use crate::operators::clickhouse_operator::ClickHouseEvent;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::{
     data::models::{Message, Pool, SearchQueryEventClickhouse},
@@ -29,7 +29,7 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 
-use super::clickhouse_operator::get_latency_from_header;
+use super::clickhouse_operator::{get_latency_from_header, EventQueue};
 use super::search_operator::search_hybrid_chunks;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -219,13 +219,13 @@ pub async fn delete_message_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip(pool, event_queue))]
 pub async fn stream_response(
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     dataset_config: DatasetConfiguration,
     create_message_req_payload: CreateMessageReqPayload,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -401,11 +401,11 @@ pub async fn stream_response(
         query_rating: String::from(""),
     };
 
-    let _ = send_to_clickhouse(
-        ClickHouseEvent::SearchQueryEvent(clickhouse_search_event.clone()),
-        &clickhouse_client,
-    )
-    .await;
+    event_queue
+        .send(ClickHouseEvent::SearchQueryEvent(
+            clickhouse_search_event.clone(),
+        ))
+        .await;
 
     let chunk_metadatas = result_chunks
         .score_chunks
@@ -577,11 +577,9 @@ pub async fn stream_response(
             llm_response: completion_content.clone(),
         };
 
-        let _ = send_to_clickhouse(
-            ClickHouseEvent::RagQueryEvent(clickhouse_rag_event),
-            &clickhouse_client,
-        )
-        .await;
+        event_queue
+            .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
+            .await;
 
         create_message_query(new_message, &pool).await?;
 
@@ -620,11 +618,9 @@ pub async fn stream_response(
             llm_response: completion.clone(),
         };
 
-        let _ = send_to_clickhouse(
-            ClickHouseEvent::RagQueryEvent(clickhouse_rag_event),
-            &clickhouse_client,
-        )
-        .await;
+        event_queue
+            .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
+            .await;
 
         let _ = create_message_query(new_message, &pool).await;
     });

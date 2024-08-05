@@ -1658,7 +1658,7 @@ impl From<File> for FileDTO {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Row, ToSchema)]
-pub struct ClickhouseEvent {
+pub struct WorkerEventClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::uuid")]
@@ -1678,7 +1678,7 @@ pub struct ClickhouseEvent {
     "event_type": "file_uploaded",
     "event_data": {"group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3", "file_name": "file.txt"},
 }))]
-pub struct Event {
+pub struct WorkerEvent {
     pub id: uuid::Uuid,
     pub created_at: String,
     pub dataset_id: uuid::Uuid,
@@ -1686,14 +1686,26 @@ pub struct Event {
     pub event_data: String,
 }
 
-impl From<ClickhouseEvent> for Event {
-    fn from(clickhouse_event: ClickhouseEvent) -> Self {
-        Event {
+impl From<WorkerEventClickhouse> for WorkerEvent {
+    fn from(clickhouse_event: WorkerEventClickhouse) -> Self {
+        WorkerEvent {
             id: uuid::Uuid::from_bytes(*clickhouse_event.id.as_bytes()),
             created_at: clickhouse_event.created_at.to_string(),
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_event.dataset_id.as_bytes()),
             event_type: clickhouse_event.event_type,
             event_data: clickhouse_event.event_data,
+        }
+    }
+}
+
+impl From<WorkerEvent> for WorkerEventClickhouse {
+    fn from(event: WorkerEvent) -> Self {
+        WorkerEventClickhouse {
+            id: event.id,
+            created_at: OffsetDateTime::now_utc(),
+            dataset_id: event.dataset_id,
+            event_type: event.event_type,
+            event_data: event.event_data,
         }
     }
 }
@@ -1753,9 +1765,9 @@ impl EventType {
     }
 }
 
-impl Event {
+impl WorkerEvent {
     pub fn from_details(dataset_id: uuid::Uuid, event_type: EventType) -> Self {
-        Event {
+        WorkerEvent {
             id: uuid::Uuid::new_v4(),
             created_at: chrono::Utc::now().naive_local().to_string(),
             dataset_id,
@@ -3889,7 +3901,7 @@ impl RagQueryEventClickhouse {
     }
 }
 
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema, Clone)]
 pub struct RagQueryEventClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub id: uuid::Uuid,
@@ -3931,7 +3943,7 @@ impl From<ClusterTopicsClickhouse> for SearchClusterTopics {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row, Clone)]
 pub struct RecommendationEventClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub id: uuid::Uuid,

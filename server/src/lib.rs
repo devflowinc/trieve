@@ -6,10 +6,10 @@ extern crate diesel;
 
 use crate::{
     errors::{custom_json_error_handler, ServiceError},
-    handlers::auth_handler::build_oidc_client,
-    handlers::metrics_handler::Metrics,
+    handlers::{auth_handler::build_oidc_client, metrics_handler::Metrics},
     operators::{
-        qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
+        clickhouse_operator::EventQueue, qdrant_operator::create_new_qdrant_collection_query,
+        user_operator::create_default_user,
     },
 };
 use actix_cors::Cors;
@@ -405,7 +405,7 @@ impl Modify for SecurityAddon {
             data::models::Message,
             data::models::ChunkMetadata,
             data::models::ChatMessageProxy,
-            data::models::Event,
+            data::models::WorkerEvent,
             data::models::File,
             data::models::ChunkGroup,
             data::models::ChunkGroupAndFileId,
@@ -584,7 +584,7 @@ pub fn main() -> std::io::Result<()> {
         }
 
 
-        let clickhouse_client = if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()).parse().unwrap_or(false) {
+        let event_queue = if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()).parse().unwrap_or(false) {
             log::info!("Analytics enabled");
 
             let args  = SetupArgs {
@@ -606,10 +606,13 @@ pub fn main() -> std::io::Result<()> {
             let _ = run_pending_migrations(args.clone()).await.map_err(|err| {
                 log::error!("Failed to run clickhouse migrations: {:?}", err);
             });
-            clickhouse_client
+
+            let mut event_queue = EventQueue::new(clickhouse_client.clone());
+            event_queue.start_service();
+            event_queue
         } else {
             log::info!("Analytics disabled");
-            clickhouse::Client::default()
+            EventQueue::default()
         };
 
 
@@ -630,7 +633,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(pool.clone()))
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
-                .app_data(web::Data::new(clickhouse_client.clone()))
+                .app_data(web::Data::new(event_queue.clone()))
                 .app_data(web::Data::new(metrics.clone()))
                 .wrap(sentry_actix::Sentry::new())
                 .wrap(middleware::api_version::ApiVersionCheckFactory)

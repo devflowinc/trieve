@@ -12,11 +12,11 @@ use trieve_server::{
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
+        clickhouse_operator::{ClickHouseEvent, EventQueue},
         dataset_operator::{
             clear_dataset_query, delete_dataset_by_id_query,
             get_deleted_dataset_by_unifiedid_query, DeleteMessage,
         },
-        event_operator::create_event_query,
         organization_operator::{
             delete_actual_organization_query, get_soft_deleted_datasets_for_organization,
         },
@@ -78,29 +78,6 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let clickhouse_client = if std::env::var("USE_ANALYTICS")
-        .unwrap_or("false".to_string())
-        .parse()
-        .unwrap_or(false)
-    {
-        log::info!("Analytics enabled");
-
-        clickhouse::Client::default()
-            .with_url(
-                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
-            )
-            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
-            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
-            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
-            .with_option("async_insert", "1")
-            .with_option("wait_for_async_insert", "0")
-    } else {
-        log::info!("Analytics disabled");
-        clickhouse::Client::default()
-    };
-
-    let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
-
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -129,11 +106,47 @@ fn main() {
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
 
+                let (clickhouse_client, event_queue) = if std::env::var("USE_ANALYTICS")
+                    .unwrap_or("false".to_string())
+                    .parse()
+                    .unwrap_or(false)
+                {
+                    log::info!("Analytics enabled");
+
+                    let clickhouse_client = clickhouse::Client::default()
+                        .with_url(
+                            std::env::var("CLICKHOUSE_URL")
+                                .unwrap_or("http://localhost:8123".to_string()),
+                        )
+                        .with_user(
+                            std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()),
+                        )
+                        .with_password(
+                            std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()),
+                        )
+                        .with_database(
+                            std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
+                        )
+                        .with_option("async_insert", "1")
+                        .with_option("wait_for_async_insert", "0");
+
+                    let mut event_queue = EventQueue::new(clickhouse_client.clone());
+                    event_queue.start_service();
+                    (clickhouse_client, event_queue)
+                } else {
+                    log::info!("Analytics disabled");
+                    (clickhouse::Client::default(), EventQueue::default())
+                };
+
+                let web_event_queue = actix_web::web::Data::new(event_queue);
+                let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
+
                 delete_worker(
                     should_terminate,
                     web_redis_pool,
                     web_pool,
                     web_clickhouse_client,
+                    web_event_queue,
                 )
                 .await
             }
@@ -146,6 +159,7 @@ async fn delete_worker(
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
     clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    event_queue: actix_web::web::Data<EventQueue>,
 ) {
     log::info!("Starting delete worker service thread");
 
@@ -227,9 +241,13 @@ async fn delete_worker(
         let dataset = match dataset_result {
             Ok(dataset) => dataset,
             Err(err) => {
-                let _ =
-                    readd_error_to_queue(delete_worker_message, err.clone(), redis_pool.clone())
-                        .await;
+                let _ = readd_error_to_queue(
+                    delete_worker_message,
+                    err.clone(),
+                    event_queue.clone(),
+                    redis_pool.clone(),
+                )
+                .await;
                 log::error!("Failed to get dataset; likely does not exist: {:?}", err);
                 transaction.finish();
                 continue;
@@ -243,7 +261,7 @@ async fn delete_worker(
                 delete_worker_message.dataset_id,
                 delete_worker_message.deleted_at,
                 web_pool.clone(),
-                clickhouse_client.clone(),
+                event_queue.clone(),
                 dataset_config.clone(),
             )
             .await
@@ -266,21 +284,14 @@ async fn delete_worker(
                 }
                 Err(err) => {
                     log::error!("Failed to clear all chunks for dataset: {:?}", err);
-                    let _ = create_event_query(
-                        models::Event::from_details(
-                            delete_worker_message.dataset_id,
-                            models::EventType::DatasetDeleteFailed {
-                                error: err.to_string(),
-                            },
-                        ),
-                        clickhouse_client.clone(),
+
+                    let _ = readd_error_to_queue(
+                        delete_worker_message,
+                        err,
+                        event_queue.clone(),
+                        redis_pool.clone(),
                     )
-                    .await
-                    .map_err(|err| {
-                        log::error!("Failed to clear chunks for dataset event: {:?}", err);
-                    });
-                    let _ =
-                        readd_error_to_queue(delete_worker_message, err, redis_pool.clone()).await;
+                    .await;
                     continue;
                 }
             }
@@ -293,6 +304,7 @@ async fn delete_worker(
             delete_worker_message.deleted_at,
             web_pool.clone(),
             clickhouse_client.clone(),
+            event_queue.clone(),
             dataset_config.clone(),
         )
         .await
@@ -354,7 +366,13 @@ async fn delete_worker(
             Err(err) => {
                 log::error!("Failed to delete dataset: {:?}", err);
 
-                let _ = readd_error_to_queue(delete_worker_message, err, redis_pool.clone()).await;
+                let _ = readd_error_to_queue(
+                    delete_worker_message,
+                    err,
+                    event_queue.clone(),
+                    redis_pool.clone(),
+                )
+                .await;
             }
         };
 
@@ -362,10 +380,11 @@ async fn delete_worker(
     }
 }
 
-#[tracing::instrument(skip(redis_pool))]
+#[tracing::instrument(skip(redis_pool, event_queue))]
 pub async fn readd_error_to_queue(
     mut payload: DeleteMessage,
     error: ServiceError,
+    event_queue: actix_web::web::Data<EventQueue>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
 ) -> Result<(), ServiceError> {
     let old_payload_message = serde_json::to_string(&payload).map_err(|_| {
@@ -400,6 +419,18 @@ pub async fn readd_error_to_queue(
             .query_async(&mut *redis_conn)
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        event_queue
+            .send(ClickHouseEvent::WorkerEvent(
+                models::WorkerEvent::from_details(
+                    payload.dataset_id,
+                    models::EventType::DatasetDeleteFailed {
+                        error: error.to_string(),
+                    },
+                )
+                .into(),
+            ))
+            .await;
 
         return Err(ServiceError::InternalServerError(format!(
             "Failed to create new qdrant point: {:?}",
