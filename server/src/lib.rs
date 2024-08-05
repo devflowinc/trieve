@@ -411,6 +411,7 @@ impl Modify for SecurityAddon {
             data::models::SortOptions,
             data::models::LLMOptions,
             data::models::HighlightOptions,
+            data::models::TypoOptions,
             data::models::SortByField,
             data::models::SortBySearchType,
             data::models::ReRankOptions,

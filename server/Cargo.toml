@@ -18,8 +18,20 @@ name = "trieve-server"
 path = "src/main.rs"
 
 [[bin]]
+name = "id-worker"
+path = "src/bin/id-worker.rs"
+
+[[bin]]
 name = "ingestion-worker"
 path = "src/bin/ingestion-worker.rs"
+
+[[bin]]
+name = "bktree-worker"
+path = "src/bin/bktree-worker.rs"
+
+[[bin]]
+name = "word-worker"
+path = "src/bin/word-worker.rs"
 
 [[bin]]
 name = "file-worker"
@@ -106,7 +118,7 @@ reqwest = { version = "0.12.2", features = ["json"] }
 rand = "0.8.5"
 dotenvy = "0.15.7"
 simsearch = "0.2.4"
-lazy_static = { version = "1.4.0" }
+lazy_static = "1.4.0"
 actix-files = "0.6.2"
 utoipa = { version = "4.2", features = [
     "actix_extras",
@@ -148,6 +160,10 @@ prometheus = "0.13.4"
 chm = "0.1.16"
 murmur3 = "0.5.2"
 tantivy = "0.22.0"
+strsim = "0.11.1"
+levenshtein_automata = "0.2.1"
+bktree = "1.0.1"
+rmp-serde = "1.3.0"
 
 [build-dependencies]
 dotenvy = "0.15.7"
