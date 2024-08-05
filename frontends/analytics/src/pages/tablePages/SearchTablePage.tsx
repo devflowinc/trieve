@@ -176,7 +176,7 @@ const SearchRow = (props: SearchRowProps) => {
         <Td>{searchMethod()}</Td>
       </Show>
       <Td class="text-right">{props.event.latency}ms</Td>
-      <Td class="truncate text-right">{props.event.top_score}</Td>
+      <Td class="truncate text-left">{props.event.top_score}</Td>
     </Tr>
   );
 };
