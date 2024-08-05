@@ -98,7 +98,6 @@ export const SearchTablePage = () => {
 
   return (
     <div>
-      <div>{sortOrder()}</div>
       <FilterBar
         noPadding
         filters={analyticsFilters}
