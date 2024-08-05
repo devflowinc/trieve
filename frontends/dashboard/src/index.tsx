@@ -56,8 +56,9 @@ render(
           <Route path="/billing" component={Billing} />
           <Route path="/settings" component={Settings} />
           <Route path="/api-keys" component={ApiKeys} />
+          <Route path="*404" component={Overview} />
         </Route>
-        <Route path="/dashboard/:id/:id" component={DashboardLayout} />
+        <Route path="*404" component={Home} />
       </Route>
     </Router>
   ),

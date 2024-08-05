@@ -1466,12 +1466,13 @@ pub fn get_highlights_with_exact_match(
                     .count()
                     >= 1
             {
-                let additional_query = if split_skip.split_whitespace().count() > 1 {
-                    split_skip
+                if split_skip.split_whitespace().count() > 1 {
+                    additional_multi_token_queries.push(split_skip);
                 } else {
-                    format!(" {} ", split_skip)
+                    additional_multi_token_queries.push(format!("{} ", split_skip));
+                    additional_multi_token_queries.push(format!(" {}", split_skip));
+                    additional_multi_token_queries.push(format!(" {} ", split_skip));
                 };
-                additional_multi_token_queries.push(additional_query);
             }
             current_skip += 1;
         }
@@ -1658,25 +1659,12 @@ pub fn get_highlights_with_exact_match(
                         .take(end_valid_boundary - start_valid_boundary)
                         .collect::<String>();
 
-                    let text_between_splits_word_count =
-                        text_between_splits.split_whitespace().count() as u32;
-                    let mut half_window_respecting_max_length = if (half_window * 2)
-                        + text_between_splits_word_count
-                        > max_length.unwrap_or(8)
-                    {
-                        let max_window = std::cmp::max(
-                            1,
-                            max_length.unwrap_or(8) as i32 - text_between_splits_word_count as i32,
-                        ) as u32;
-                        (max_window / 2) as usize
-                    } else {
-                        half_window as usize
-                    };
+                    let mut half_window_usize = half_window as usize;
 
                     let mut first_expansion = first_split
                         .split_inclusive(' ')
                         .rev()
-                        .take(half_window_respecting_max_length)
+                        .take(half_window_usize)
                         .collect::<Vec<&str>>()
                         .iter()
                         .rev()
@@ -1684,27 +1672,24 @@ pub fn get_highlights_with_exact_match(
                         .collect::<Vec<String>>()
                         .join("");
 
-                    if first_expansion.split_whitespace().count()
-                        < half_window_respecting_max_length
-                    {
-                        half_window_respecting_max_length += half_window_respecting_max_length
-                            - first_expansion.split_whitespace().count();
+                    if first_expansion.split_whitespace().count() < half_window_usize {
+                        half_window_usize +=
+                            half_window_usize - first_expansion.split_whitespace().count();
                     }
 
                     let last_expansion = last_split
                         .split_inclusive(' ')
-                        .take(half_window_respecting_max_length)
+                        .take(half_window_usize)
                         .collect::<Vec<&str>>()
                         .join("");
 
-                    if last_expansion.split_whitespace().count() < half_window_respecting_max_length
-                    {
-                        half_window_respecting_max_length += half_window_respecting_max_length
-                            - last_expansion.split_whitespace().count();
+                    if last_expansion.split_whitespace().count() < half_window_usize {
+                        half_window_usize +=
+                            half_window_usize - last_expansion.split_whitespace().count();
                         first_expansion = first_split
                             .split_inclusive(' ')
                             .rev()
-                            .take(half_window_respecting_max_length)
+                            .take(half_window_usize)
                             .collect::<Vec<&str>>()
                             .iter()
                             .rev()
@@ -2126,18 +2111,42 @@ fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> Chunk
     let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();
     let mut replaced_phrases = HashSet::new();
     for phrase in phrases.clone() {
-        if replaced_phrases.contains(&phrase) {
+        let lower_case_trimmed_phrase = phrase.to_lowercase().trim().to_string();
+        if replaced_phrases.contains(&lower_case_trimmed_phrase) {
             continue;
         }
         let replace_phrase = phrase.clone();
-        chunk_html = chunk_html
-            .replace(
-                &replace_phrase,
-                &format!("<mark><b>{}</b></mark>", replace_phrase),
-            )
-            .replace("</b></mark><mark><b>", "")
-            .replace("<mark><b></b></mark>", "");
-        replaced_phrases.insert(phrase);
+        let idxs_of_query_count_in_content = chunk_html
+            .to_lowercase()
+            .match_indices(&replace_phrase.to_lowercase())
+            .map(|(i, _)| i)
+            .collect_vec();
+        let mut all_case_matches = vec![];
+        for i in idxs_of_query_count_in_content {
+            let mut start_valid_boundary = i;
+            while !chunk_html.is_char_boundary(start_valid_boundary) && start_valid_boundary > 0 {
+                start_valid_boundary -= 1;
+            }
+            let mut end_valid_boundary = i + replace_phrase.len();
+            while !chunk_html.is_char_boundary(end_valid_boundary)
+                && end_valid_boundary < chunk_html.len()
+            {
+                end_valid_boundary += 1;
+            }
+            if let Some(chunk_html_slice_to_replace) =
+                &chunk_html.get(start_valid_boundary..end_valid_boundary)
+            {
+                all_case_matches.push(chunk_html_slice_to_replace.to_string());
+            }
+        }
+        all_case_matches.iter().unique().for_each(|all_case_match| {
+            chunk_html = chunk_html.replace(
+                all_case_match,
+                &format!("<mark><b>{}</b></mark>", all_case_match),
+            );
+        });
+
+        replaced_phrases.insert(lower_case_trimmed_phrase);
     }
     meta_data.chunk_html = Some(chunk_html);
     meta_data
