@@ -1641,7 +1641,7 @@ pub fn get_highlights_with_exact_match(
 
                     let text_between_splits_word_count =
                         text_between_splits.split_whitespace().count() as u32;
-                    let half_window_respecting_max_length = if (half_window * 2)
+                    let mut half_window_respecting_max_length = if (half_window * 2)
                         + text_between_splits_word_count
                         > max_length.unwrap_or(8)
                     {
@@ -1654,7 +1654,7 @@ pub fn get_highlights_with_exact_match(
                         half_window as usize
                     };
 
-                    let first_expansion = first_split
+                    let mut first_expansion = first_split
                         .split_inclusive(' ')
                         .rev()
                         .take(half_window_respecting_max_length)
@@ -1665,11 +1665,34 @@ pub fn get_highlights_with_exact_match(
                         .collect::<Vec<String>>()
                         .join("");
 
+                    if first_expansion.split_whitespace().count()
+                        < half_window_respecting_max_length
+                    {
+                        half_window_respecting_max_length += half_window_respecting_max_length
+                            - first_expansion.split_whitespace().count();
+                    }
+
                     let last_expansion = last_split
                         .split_inclusive(' ')
                         .take(half_window_respecting_max_length)
                         .collect::<Vec<&str>>()
                         .join("");
+
+                    if last_expansion.split_whitespace().count() < half_window_respecting_max_length
+                    {
+                        half_window_respecting_max_length += half_window_respecting_max_length
+                            - last_expansion.split_whitespace().count();
+                        first_expansion = first_split
+                            .split_inclusive(' ')
+                            .rev()
+                            .take(half_window_respecting_max_length)
+                            .collect::<Vec<&str>>()
+                            .iter()
+                            .rev()
+                            .map(|x| x.to_string())
+                            .collect::<Vec<String>>()
+                            .join("");
+                    }
 
                     format!(
                         "{}{}{}",
