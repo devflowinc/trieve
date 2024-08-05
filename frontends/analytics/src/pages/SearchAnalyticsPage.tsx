@@ -15,8 +15,8 @@ export const SearchAnalyticsPage = () => {
       date_range: {
         gt: subDays(new Date(), 7),
       },
-      search_method: "hybrid",
-      search_type: "search",
+      search_method: undefined, // All search types and methods
+      search_type: undefined,
     },
     granularity: "day",
   });
