@@ -30,7 +30,10 @@ impl FromRequest for APIVersion {
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         ready(
             req.extensions().get::<APIVersion>().cloned().ok_or(
-                ServiceError::InternalServerError("API version not found".to_string()).into(),
+                ServiceError::InternalServerError(
+                    "Dataset not found; likely TR-Dataset header was not provided".to_string(),
+                )
+                .into(),
             ),
         )
     }
