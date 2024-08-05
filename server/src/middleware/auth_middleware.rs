@@ -213,8 +213,7 @@ async fn get_user(
 
                 let mut redis_conn = redis_pool.get().await.ok()?;
 
-                let slim_user_string: Result<String, _> =
-                    redis_conn.get(&user.id.to_string()).await;
+                let slim_user_string: Result<String, _> = redis_conn.get(user.id.to_string()).await;
 
                 match slim_user_string {
                     Ok(slim_user_string) => {
@@ -229,7 +228,7 @@ async fn get_user(
 
                         let slim_user_string = serde_json::to_string(&slim_user).ok()?;
                         redis_conn
-                            .set(&slim_user.id.to_string(), slim_user_string)
+                            .set(slim_user.id.to_string(), slim_user_string)
                             .await
                             .ok()?;
 

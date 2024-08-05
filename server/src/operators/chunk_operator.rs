@@ -1526,16 +1526,12 @@ pub fn get_highlights_with_exact_match(
     if !cumulative_phrases.is_empty() {
         let phrases = cumulative_phrases
             .iter()
+            .take(max_num.unwrap_or(3) as usize)
             .flat_map(|(_, phrases)| phrases.clone())
             .collect_vec();
         let new_output = apply_highlights_to_html(
             input.clone(),
-            phrases
-                .clone()
-                .into_iter()
-                .unique()
-                .take(max_num.unwrap_or(3) as usize)
-                .collect_vec(),
+            phrases.clone().into_iter().unique().collect_vec(),
         );
 
         let window = window_size.unwrap_or(0);
@@ -1545,15 +1541,18 @@ pub fn get_highlights_with_exact_match(
                 phrases
                     .clone()
                     .into_iter()
+                    .unique()
                     .take(max_num.unwrap_or(3) as usize)
                     .collect_vec(),
             ));
         }
+
         let half_window = std::cmp::max(window / 2, 1);
         let mut highlights_with_window = vec![];
 
         let potential_queries = cumulative_phrases
             .iter()
+            .take(max_num.unwrap_or(3) as usize)
             .map(|(x, _)| x.clone())
             .collect_vec();
         for potential_query in potential_queries.clone() {
@@ -1562,7 +1561,6 @@ pub fn get_highlights_with_exact_match(
                 .match_indices(&potential_query.to_lowercase())
                 .map(|(i, _)| i)
                 .collect_vec();
-            matched_idxs.truncate(max_num.unwrap_or(3) as usize);
             matched_idxs.sort();
 
             let mut grouped_idxs = if matched_idxs.len() == 1 {
@@ -1618,21 +1616,48 @@ pub fn get_highlights_with_exact_match(
                         .to_lowercase()
                         .find(&potential_query.to_lowercase())
                         .unwrap_or(0);
-                    let first_split = split.chars().take(idx_of_query).collect::<String>();
+                    let mut start_valid_boundary = idx_of_query;
+                    while !split.is_char_boundary(start_valid_boundary) && start_valid_boundary > 0
+                    {
+                        start_valid_boundary -= 1;
+                    }
+                    let first_split = split.chars().take(start_valid_boundary).collect::<String>();
+
+                    let mut end_valid_boundary = idx_of_query + potential_query.len();
+                    while !split.is_char_boundary(end_valid_boundary)
+                        && end_valid_boundary < split.len()
+                    {
+                        end_valid_boundary += 1;
+                    }
                     let last_split = split
                         .chars()
                         .skip(idx_of_query + potential_query.len())
                         .collect::<String>();
                     let text_between_splits = split
                         .chars()
-                        .skip(idx_of_query)
-                        .take(potential_query.len())
+                        .skip(start_valid_boundary)
+                        .take(end_valid_boundary - start_valid_boundary)
                         .collect::<String>();
+
+                    let text_between_splits_word_count =
+                        text_between_splits.split_whitespace().count() as u32;
+                    let half_window_respecting_max_length = if (half_window * 2)
+                        + text_between_splits_word_count
+                        > max_length.unwrap_or(8)
+                    {
+                        let max_window = std::cmp::max(
+                            1,
+                            max_length.unwrap_or(8) as i32 - text_between_splits_word_count as i32,
+                        ) as u32;
+                        (max_window / 2) as usize
+                    } else {
+                        half_window as usize
+                    };
 
                     let first_expansion = first_split
                         .split_inclusive(' ')
                         .rev()
-                        .take(half_window as usize)
+                        .take(half_window_respecting_max_length)
                         .collect::<Vec<&str>>()
                         .iter()
                         .rev()
@@ -1642,7 +1667,7 @@ pub fn get_highlights_with_exact_match(
 
                     let last_expansion = last_split
                         .split_inclusive(' ')
-                        .take(half_window as usize)
+                        .take(half_window_respecting_max_length)
                         .collect::<Vec<&str>>()
                         .join("");
 
@@ -1730,7 +1755,7 @@ pub fn get_highlights_with_exact_match(
                         &new_x[query_end..]
                     );
                 }
-                new_x
+                new_x.replace("<mark><b></b></mark>", "")
             })
             .take(max_num.unwrap_or(3) as usize)
             .collect_vec();
@@ -2060,7 +2085,8 @@ fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> Chunk
                 &replace_phrase,
                 &format!("<mark><b>{}</b></mark>", replace_phrase),
             )
-            .replace("</b></mark><mark><b>", "");
+            .replace("</b></mark><mark><b>", "")
+            .replace("<mark><b></b></mark>", "");
         replaced_phrases.insert(phrase);
     }
     meta_data.chunk_html = Some(chunk_html);
