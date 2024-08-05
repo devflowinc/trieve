@@ -21,6 +21,14 @@ const table = cva(["w-full"], {
       true: "debug",
       false: "undefined",
     },
+    fixed: {
+      true: "table-fixed",
+      false: "undefined",
+    },
+  },
+  defaultVariants: {
+    debug: false,
+    fixed: false,
   },
 });
 
@@ -51,16 +59,19 @@ export const td = cva([], {
   },
 });
 
-export const th = cva(["text-left"], {
-  variants: {
-    spacing: {
-      md: ["p-1", "px-2"],
+export const th = cva(
+  ["text-left", "bg-neutral-200", "border border-b-neutral-300"],
+  {
+    variants: {
+      spacing: {
+        md: ["p-1", "px-2"],
+      },
+    },
+    defaultVariants: {
+      spacing: "md",
     },
   },
-  defaultVariants: {
-    spacing: "md",
-  },
-});
+);
 
 export const Table = <D,>(props: TableProps<D>) => {
   return (
@@ -96,7 +107,7 @@ export const Td = (props: TdProps) => {
   const [className, styleProps, rest] = splitProps(
     props,
     ["class"],
-    ["spacing", "border", "borderStyle", "fullWidth"]
+    ["spacing", "border", "borderStyle", "fullWidth"],
   );
 
   return (
@@ -118,7 +129,7 @@ export const Th = (props: ThProps) => {
   const [className, styleProps, rest] = splitProps(
     props,
     ["class"],
-    ["spacing"]
+    ["spacing"],
   );
 
   return (

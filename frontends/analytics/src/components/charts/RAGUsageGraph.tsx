@@ -11,7 +11,6 @@ import {
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getRAGUsage, getRagUsageGraph } from "../../api/analytics";
 import { Chart } from "chart.js";
-import { parseCustomDateString } from "./LatencyGraph";
 
 interface RAGUsageProps {
   params: {
@@ -22,6 +21,7 @@ interface RAGUsageProps {
 
 import "chartjs-adapter-date-fns";
 import { ChartCard } from "./ChartCard";
+import { parseCustomDateString } from "../../utils/formatDate";
 
 export const RAGUsageGraph = (props: RAGUsageProps) => {
   const dataset = useContext(DatasetContext);

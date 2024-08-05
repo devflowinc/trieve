@@ -8,23 +8,7 @@ import { getLatency } from "../../api/analytics";
 import { Chart } from "chart.js";
 
 import "chartjs-adapter-date-fns";
-
-export const parseCustomDateString = (dateString: string) => {
-  const [datePart, timePart] = dateString.split(" ");
-  let [year, month, day] = datePart.split("-");
-  let [hour, minute, second] = timePart.split(":");
-  let [wholeSec] = second.split(".");
-
-  month = month.padStart(2, "0");
-  day = day.padStart(2, "0");
-  hour = hour.padStart(2, "0");
-  minute = minute.padStart(2, "0");
-  wholeSec = wholeSec.padStart(2, "0");
-
-  const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}Z`;
-
-  return new Date(isoString);
-};
+import { parseCustomDateString } from "../../utils/formatDate";
 
 interface LatencyGraphProps {
   params: {

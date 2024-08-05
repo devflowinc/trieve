@@ -4,8 +4,8 @@ import { getQueriesForTopic, getTrendsBubbles } from "../api/trends";
 import { createSignal, For, Show, useContext } from "solid-js";
 import { SearchClusterTopics, SearchQueryEvent } from "shared/types";
 import { toTitleCase } from "../utils/titleCase";
-import { parseCustomDateString } from "../components/charts/LatencyGraph";
 import { FullScreenModal, Table, Tr } from "shared/ui";
+import { parseCustomDateString } from "../utils/formatDate";
 
 const WIPWarning = () => {
   return (

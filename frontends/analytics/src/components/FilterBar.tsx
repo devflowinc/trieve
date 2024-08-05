@@ -6,7 +6,7 @@ import { subDays, subHours } from "date-fns";
 import { cn } from "shared/utils";
 
 const ALL_SEARCH_METHODS: (RequiredAnalyticsFilter["search_method"] | "all")[] =
-  ["hybrid", "fulltext", "semantic"];
+  ["all", "hybrid", "fulltext", "semantic"];
 
 const ALL_SEARCH_TYPES: (RequiredAnalyticsFilter["search_type"] | "all")[] = [
   "all",
@@ -60,7 +60,7 @@ export const FilterBar = (props: FilterBarProps) => {
       <div class="flex items-center gap-2">
         <div>
           <Select
-            label={<div class="text-sm text-neutral-600">Search Type</div>}
+            label={<div class="text-sm text-neutral-600">Search Method</div>}
             class="min-w-[200px] !bg-white"
             display={(s) => (s ? toTitleCase(s) : "All")}
             selected={props.filters.filter.search_method}
@@ -76,7 +76,7 @@ export const FilterBar = (props: FilterBarProps) => {
 
         <div>
           <Select
-            label={<div class="text-sm text-neutral-600">Search Method</div>}
+            label={<div class="text-sm text-neutral-600">Search Type</div>}
             class="min-w-[180px] !bg-white"
             display={(s) => (s ? toTitleCase(s) : "All")}
             selected={props.filters.filter.search_type}
