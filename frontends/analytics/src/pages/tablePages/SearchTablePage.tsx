@@ -3,6 +3,7 @@ import { AnalyticsParams, SearchQueryEvent } from "shared/types";
 import { createStore } from "solid-js/store";
 import { FilterBar } from "../../components/FilterBar";
 import {
+  createEffect,
   createMemo,
   createSignal,
   JSX,
@@ -11,7 +12,7 @@ import {
   Switch,
   useContext,
 } from "solid-js";
-import { createQuery } from "@tanstack/solid-query";
+import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { getSearchQueries } from "../../api/tables";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { Table, Td, Th, Tr } from "shared/ui";
@@ -21,7 +22,8 @@ import { parseCustomDateString } from "../../utils/formatDate";
 import { AiFillCaretDown } from "solid-icons/ai";
 
 export const SearchTablePage = () => {
-  const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = createStore<AnalyticsParams>({
     filter: {
       date_range: {
         gt: subDays(new Date(), 7),
@@ -42,11 +44,42 @@ export const SearchTablePage = () => {
 
   const dataset = useContext(DatasetContext);
 
+  // Get query data for next page
+  createEffect(() => {
+    void queryClient.prefetchQuery({
+      queryKey: [
+        "search-query-table",
+        {
+          filter: filters.filter,
+          page: pages.page() + 1,
+          sortBy: sortBy(),
+          sortOrder: sortOrder(),
+          datasetId: dataset().dataset.id,
+        },
+      ],
+      queryFn: async () => {
+        const results = await getSearchQueries(
+          {
+            filter: filters.filter,
+            page: pages.page() + 1,
+            sortBy: sortBy(),
+            sortOrder: sortOrder(),
+          },
+          dataset().dataset.id,
+        );
+        if (results.length === 0) {
+          pages.setMaxPageDiscovered(pages.page());
+        }
+        return results;
+      },
+    });
+  });
+
   const searchTableQuery = createQuery(() => ({
     queryKey: [
       "search-query-table",
       {
-        filter: analyticsFilters.filter,
+        filter: filters.filter,
         page: pages.page(),
         sortBy: sortBy(),
         sortOrder: sortOrder(),
@@ -57,7 +90,7 @@ export const SearchTablePage = () => {
     queryFn: () => {
       return getSearchQueries(
         {
-          filter: analyticsFilters.filter,
+          filter: filters.filter,
           page: pages.page(),
           sortBy: sortBy(),
           sortOrder: sortOrder(),
@@ -98,11 +131,7 @@ export const SearchTablePage = () => {
 
   return (
     <div>
-      <FilterBar
-        noPadding
-        filters={analyticsFilters}
-        setFilters={setAnalyticsFilters}
-      />
+      <FilterBar noPadding filters={filters} setFilters={setFilters} />
       <div class="py-4">
         <Show
           fallback={<div class="py-8 text-center">Loading...</div>}
@@ -121,10 +150,7 @@ export const SearchTablePage = () => {
                       </SortableHeader>
                     </Th>
                     <Show
-                      when={
-                        typeof analyticsFilters.filter.search_method ===
-                        "undefined"
-                      }
+                      when={typeof filters.filter.search_method === "undefined"}
                     >
                       <Th>Search Method</Th>
                     </Show>
@@ -141,9 +167,7 @@ export const SearchTablePage = () => {
                 fallback={<div class="py-8 text-center">No Data</div>}
                 data={data()}
               >
-                {(row) => (
-                  <SearchRow event={row} filter={analyticsFilters.filter} />
-                )}
+                {(row) => <SearchRow event={row} filter={filters.filter} />}
               </Table>
               <div class="flex justify-end px-2 py-1">
                 <PaginationButtons size={14} pages={pages} />
@@ -175,7 +199,7 @@ const SearchRow = (props: SearchRowProps) => {
       <Show when={typeof props.filter.search_method === "undefined"}>
         <Td>{searchMethod()}</Td>
       </Show>
-      <Td class="text-right">{props.event.latency}ms</Td>
+      <Td class="text-right">{props.event.latency} ms</Td>
       <Td class="truncate text-left">{props.event.top_score}</Td>
     </Tr>
   );
