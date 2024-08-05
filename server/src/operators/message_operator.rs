@@ -1,6 +1,6 @@
 use crate::data::models::{
     self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetConfiguration, QueryTypes,
-    RagQueryEventClickhouse, SearchMethod,
+    RagQueryEventClickhouse, RedisPool, SearchMethod,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -219,13 +219,14 @@ pub async fn delete_message_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, redis_pool, event_queue))]
 pub async fn stream_response(
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
     dataset: Dataset,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
     dataset_config: DatasetConfiguration,
     create_message_req_payload: CreateMessageReqPayload,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -371,6 +372,7 @@ pub async fn stream_response(
         search_chunk_data.clone(),
         parsed_query,
         pool.clone(),
+        redis_pool,
         dataset.clone(),
         &dataset_config,
         &mut search_timer,

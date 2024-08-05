@@ -12,10 +12,11 @@ use super::model_operator::{
 use super::qdrant_operator::{
     count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
 };
+use super::words_operator::correct_query;
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
     ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
-    HasIDCondition, QdrantSortBy, QueryTypes, ReRankOptions, ScoreChunk, ScoreChunkDTO,
+    HasIDCondition, QdrantSortBy, QueryTypes, ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO,
     SearchMethod, SlimChunkMetadata, SortByField, SortBySearchType, SortOrder, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
@@ -1780,11 +1781,12 @@ async fn get_qdrant_vector(
     }
 }
 
-#[tracing::instrument(skip(timer, pool))]
+#[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn search_chunks_query(
     data: SearchChunksReqPayload,
     parsed_query: ParsedQueryTypes,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset: Dataset,
     config: &DatasetConfiguration,
     timer: &mut Timer,
@@ -1800,6 +1802,15 @@ pub async fn search_chunks_query(
         }
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    let mut parsed_query = parsed_query.clone();
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        parsed_query.query =
+            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        timer.add("corrected query");
+    }
 
     timer.add("start to create dense embedding vector");
 
@@ -1897,11 +1908,12 @@ pub async fn search_chunks_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(timer, pool))]
+#[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn search_hybrid_chunks(
     data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset: Dataset,
     config: &DatasetConfiguration,
     timer: &mut Timer,
@@ -1917,6 +1929,15 @@ pub async fn search_hybrid_chunks(
         }
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    let mut parsed_query = parsed_query.clone();
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        parsed_query.query =
+            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        timer.add("corrected query");
+    }
 
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -2066,16 +2087,27 @@ pub async fn search_hybrid_chunks(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, timer, redis_pool))]
 pub async fn search_groups_query(
     data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQueryTypes,
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset: Dataset,
     config: &DatasetConfiguration,
+    timer: &mut Timer,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let vector = get_qdrant_vector(data.clone().search_type, parsed_query.clone(), config).await?;
+
+    let mut parsed_query = parsed_query.clone();
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        parsed_query.query =
+            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        timer.add("corrected query");
+    }
 
     let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
         Some(Some(sort_by)) => match sort_by {
@@ -2166,19 +2198,30 @@ pub async fn search_groups_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, timer, redis_pool))]
 pub async fn search_hybrid_groups(
     data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQuery,
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset: Dataset,
     config: &DatasetConfiguration,
+    timer: &mut Timer,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
+    let mut parsed_query = parsed_query.clone();
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        parsed_query.query =
+            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        timer.add("corrected query");
+    }
+
     let dense_vector_future = get_dense_vector(
-        data.query.clone().to_single_query()?,
+        parsed_query.query.clone().to_single_query()?,
         None,
         "query",
         dataset_config.clone(),
@@ -2339,16 +2382,26 @@ pub async fn search_hybrid_groups(
     })
 }
 
-#[tracing::instrument(skip(timer, pool))]
+#[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn semantic_search_over_groups(
     data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQueryTypes,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset: Dataset,
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
+
+    let mut parsed_query = parsed_query.clone();
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        parsed_query.query =
+            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        timer.add("corrected query");
+    }
 
     timer.add("start to create dense embedding vector");
 
@@ -2404,11 +2457,12 @@ pub async fn semantic_search_over_groups(
     Ok(result_chunks)
 }
 
-#[tracing::instrument(skip(timer, pool))]
+#[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn full_text_search_over_groups(
     data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQueryTypes,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset: Dataset,
     config: &DatasetConfiguration,
     timer: &mut Timer,
@@ -2423,6 +2477,15 @@ pub async fn full_text_search_over_groups(
     .await?;
 
     timer.add("computed sparse vector");
+
+    let mut parsed_query = parsed_query.clone();
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        parsed_query.query =
+            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        timer.add("corrected query");
+    }
 
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         embedding_vector,
@@ -2527,16 +2590,26 @@ async fn cross_encoder_for_groups(
     Ok(group_results)
 }
 
-#[tracing::instrument(skip(timer, pool))]
+#[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn hybrid_search_over_groups(
     data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset: Dataset,
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
+
+    let mut parsed_query = parsed_query.clone();
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        parsed_query.query =
+            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        timer.add("corrected query");
+    }
 
     timer.add("start to create dense embedding vector and sparse vector");
 
@@ -2670,16 +2743,27 @@ pub async fn hybrid_search_over_groups(
     Ok(result_chunks)
 }
 
-#[tracing::instrument(skip(timer, pool))]
+#[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn autocomplete_chunks_query(
     data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset: Dataset,
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
+
+    let mut parsed_query = parsed_query.clone();
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        parsed_query.query =
+            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        timer.add("corrected query");
+    }
+
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
             .start_child("semantic search", "Search Semantic Chunks")

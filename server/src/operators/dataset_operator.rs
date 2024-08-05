@@ -1,6 +1,9 @@
+use std::ops::Add;
+
 use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetConfiguration, DatasetUsageCount,
-    Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
+    DatasetWordsLastProcessed, Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan,
+    StripeSubscription, UnifiedId, WordDataset, WordInDataset,
 };
 use crate::handlers::dataset_handler::{GetDatasetsPagination, TagsWithCount};
 use crate::operators::clickhouse_operator::ClickHouseEvent;
@@ -15,7 +18,9 @@ use actix_web::web;
 use diesel::dsl::count;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
-use diesel_async::RunQueryDsl;
+use diesel::upsert::excluded;
+use diesel_async::{AsyncConnection, RunQueryDsl};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use super::clickhouse_operator::EventQueue;
@@ -667,4 +672,177 @@ pub async fn get_tags_in_dataset_query(
         .map_err(|err| ServiceError::BadRequest(format!("Failed to get count of tags {}", err)))?;
 
     Ok((items, total_count))
+}
+
+pub async fn scroll_dataset_ids_query(
+    offset: uuid::Uuid,
+    limit: i64,
+    pool: web::Data<Pool>,
+) -> Result<Option<Vec<uuid::Uuid>>, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let datasets = datasets_columns::datasets
+        .select(datasets_columns::id)
+        .filter(datasets_columns::id.gt(offset))
+        .order_by(datasets_columns::id)
+        .limit(limit)
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Failed to get datasets".to_string()))?;
+
+    if datasets.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(datasets))
+}
+
+pub async fn scroll_dataset_ids_for_dictionary_query(
+    offset: uuid::Uuid,
+    limit: i64,
+    pool: web::Data<Pool>,
+) -> Result<Option<Vec<uuid::Uuid>>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::dataset_words_last_processed::dsl as last_processed_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let dataset_ids = chunk_metadata_columns::chunk_metadata
+        .left_join(
+            last_processed_columns::dataset_words_last_processed
+                .on(last_processed_columns::dataset_id.eq(chunk_metadata_columns::dataset_id)),
+        )
+        .filter(
+            (chunk_metadata_columns::updated_at
+                .nullable()
+                .gt(last_processed_columns::last_processed))
+            .or(last_processed_columns::last_processed.is_null()),
+        )
+        .filter(chunk_metadata_columns::dataset_id.gt(offset))
+        .order_by(chunk_metadata_columns::dataset_id)
+        .limit(limit)
+        .group_by(chunk_metadata_columns::dataset_id)
+        .select(chunk_metadata_columns::dataset_id)
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError(
+                "Failed to scroll dataset ids for dictionary".to_string(),
+            )
+        })?;
+
+    if dataset_ids.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(dataset_ids))
+}
+
+pub async fn add_words_to_dataset(
+    words: Vec<WordInDataset>,
+    counts: Vec<i32>,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::words_datasets::dsl as words_datasets;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    conn.transaction(|mut conn| {
+        Box::pin(async move {
+            diesel::insert_into(words_datasets::words_datasets)
+                .values(
+                    &words
+                        .into_iter()
+                        .zip(counts)
+                        .map(|(w, count)| WordDataset::from_details(w.id, dataset_id, count))
+                        .collect_vec(),
+                )
+                .on_conflict((words_datasets::dataset_id, words_datasets::word_id))
+                .do_update()
+                .set(
+                    words_datasets::count
+                        .eq(words_datasets::count.add(excluded(words_datasets::count))),
+                )
+                .execute(&mut conn)
+                .await
+                .map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Failed to insert words in dataset".to_string(),
+                    )
+                })
+        })
+    })
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_words_from_dataset(
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<(String, i32)>, ServiceError> {
+    use crate::data::schema::words_datasets::dsl as words_datasets;
+    use crate::data::schema::words_in_datasets::dsl as words_in_datasets;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let words = words_datasets::words_datasets
+        .inner_join(
+            words_in_datasets::words_in_datasets
+                .on(words_in_datasets::id.eq(words_datasets::word_id)),
+        )
+        .select((words_in_datasets::word, words_datasets::count))
+        .filter(words_datasets::dataset_id.eq(dataset_id))
+        .load::<(String, i32)>(&mut conn)
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to get words from dataset".to_string())
+        })?;
+
+    Ok(words)
+}
+
+pub async fn update_dataset_last_processed_query(
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::dataset_words_last_processed::dsl as last_processed_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    conn.transaction(|mut conn| {
+        Box::pin(async move {
+            diesel::insert_into(last_processed_columns::dataset_words_last_processed)
+                .values(&DatasetWordsLastProcessed::from_details(dataset_id))
+                .on_conflict(last_processed_columns::dataset_id)
+                .do_update()
+                .set(last_processed_columns::last_processed.eq(&chrono::Utc::now().naive_local()))
+                .execute(&mut conn)
+                .await
+                .map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Failed to update last processed time of dataset".to_string(),
+                    )
+                })
+        })
+    })
+    .await?;
+
+    Ok(())
 }

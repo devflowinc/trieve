@@ -2333,3 +2333,30 @@ pub async fn get_pg_point_ids_from_qdrant_point_ids(
 
     Ok(chunk_ids)
 }
+
+#[tracing::instrument(skip(pool))]
+pub async fn scroll_chunk_metadatas_query(
+    dataset_id: uuid::Uuid,
+    offset: uuid::Uuid,
+    limit: i64,
+    pool: web::Data<Pool>,
+) -> Result<Option<Vec<ChunkMetadataTable>>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    let mut conn = pool.get().await.unwrap();
+
+    let chunk_htmls = chunk_metadata_columns::chunk_metadata
+        .select(ChunkMetadataTable::as_select())
+        .filter(chunk_metadata_columns::id.gt(offset))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(chunk_metadata_columns::chunk_html.is_not_null())
+        .order_by(chunk_metadata_columns::id)
+        .limit(limit)
+        .load::<ChunkMetadataTable>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Failed to get chunk_htmls".to_string()))?;
+
+    if chunk_htmls.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(chunk_htmls))
+}

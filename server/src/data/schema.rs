@@ -84,6 +84,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    dataset_words_last_processed (id) {
+        id -> Uuid,
+        last_processed -> Nullable<Timestamp>,
+        dataset_id -> Uuid,
+    }
+}
+
+diesel::table! {
     datasets (id) {
         id -> Uuid,
         name -> Text,
@@ -268,6 +276,7 @@ diesel::table! {
         id -> Uuid,
         dataset_id -> Uuid,
         word_id -> Uuid,
+        count -> Int4,
     }
 }
 
@@ -287,6 +296,7 @@ diesel::joinable!(chunk_metadata_tags -> dataset_tags (tag_id));
 diesel::joinable!(dataset_event_counts -> datasets (dataset_uuid));
 diesel::joinable!(dataset_tags -> datasets (dataset_id));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
+diesel::joinable!(dataset_words_last_processed -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(groups_from_files -> chunk_group (group_id));
@@ -313,6 +323,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     dataset_group_counts,
     dataset_tags,
     dataset_usage_counts,
+    dataset_words_last_processed,
     datasets,
     files,
     groups_from_files,
