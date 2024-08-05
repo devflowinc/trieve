@@ -391,7 +391,12 @@ pub async fn stream_response(
             .unwrap_or(0.0),
 
         latency: get_latency_from_header(search_timer.header_value()),
-        results: result_chunks.into_response_payload(),
+        results: result_chunks
+            .score_chunks
+            .clone()
+            .into_iter()
+            .map(|x| serde_json::to_string(&x).unwrap())
+            .collect(),
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
     };

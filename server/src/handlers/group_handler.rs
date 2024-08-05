@@ -1326,7 +1326,7 @@ pub async fn get_recommended_groups(
             .unwrap_or(0.0) as f32,
         results: recommended_chunk_metadatas
             .iter()
-            .map(|x| x.clone().into_response_payload())
+            .map(|x| serde_json::to_string(x).unwrap())
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -1550,7 +1550,12 @@ pub async fn search_within_group(
             .first()
             .map(|x| x.score as f32)
             .unwrap_or(0.0),
-        results: result_chunks.into_response_payload(),
+        results: result_chunks
+            .bookmarks
+            .clone()
+            .into_iter()
+            .map(|x| serde_json::to_string(&x).unwrap())
+            .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
@@ -1703,7 +1708,12 @@ pub async fn search_over_groups(
             .first()
             .map(|x| x.metadata.first().map(|y| y.score as f32).unwrap_or(0.0))
             .unwrap_or(0.0),
-        results: result_chunks.into_response_payload(),
+        results: result_chunks
+            .group_chunks
+            .clone()
+            .into_iter()
+            .map(|x| serde_json::to_string(&x).unwrap())
+            .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),

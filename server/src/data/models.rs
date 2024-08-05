@@ -20,7 +20,6 @@ use crate::operators::analytics_operator::{
 use crate::operators::chunk_operator::{
     get_metadata_from_id_query, get_metadata_from_ids_query, HighlightStrategy,
 };
-use crate::operators::clickhouse_operator::{CHSlimResponse, CHSlimResponseGroup};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
@@ -3587,10 +3586,10 @@ pub struct SearchQueryEvent {
     pub id: uuid::Uuid,
     pub search_type: String,
     pub query: String,
-    pub request_params: String,
+    pub request_params: serde_json::Value,
     pub latency: f32,
     pub top_score: f32,
-    pub results: Vec<SearchResultType>,
+    pub results: Vec<serde_json::Value>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
     pub query_rating: String,
@@ -3602,7 +3601,7 @@ impl Default for SearchQueryEvent {
             id: uuid::Uuid::new_v4(),
             search_type: "search".to_string(),
             query: "".to_string(),
-            request_params: "".to_string(),
+            request_params: serde_json::Value::String("".to_string()),
             latency: 0.0,
             top_score: 0.0,
             results: vec![],
@@ -3829,108 +3828,23 @@ pub enum SearchResultType {
     GroupSearch(GroupScoreChunk),
 }
 
-impl SearchQueryEventClickhouse {
-    pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> SearchQueryEvent {
-        if let Ok(chunk_results) = self
-            .results
-            .iter()
-            .map(|r| serde_json::from_str::<CHSlimResponse>(r))
-            .collect::<Result<Vec<CHSlimResponse>, _>>()
-        {
-            let chunk_ids = chunk_results
+impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
+    fn from(clickhouse_response: SearchQueryEventClickhouse) -> SearchQueryEvent {
+        SearchQueryEvent {
+            id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
+            search_type: clickhouse_response.search_type,
+            query: clickhouse_response.query,
+            request_params: serde_json::from_str(&clickhouse_response.request_params).unwrap(),
+            latency: clickhouse_response.latency,
+            top_score: clickhouse_response.top_score,
+            results: clickhouse_response
+                .results
                 .iter()
-                .map(|r| r.id)
-                .collect::<Vec<uuid::Uuid>>();
-
-            let chunks = get_metadata_from_ids_query(chunk_ids.clone(), self.dataset_id, pool)
-                .await
-                .unwrap_or(vec![]);
-
-            let results = chunk_results
-                .iter()
-                .map(|r| {
-                    let default = ChunkMetadata::default();
-                    let chunk = chunks.iter().find(|c| c.id == r.id).unwrap_or(&default);
-                    SearchResultType::Search(ScoreChunkDTO {
-                        score: r.score,
-                        highlights: None,
-                        metadata: vec![ChunkMetadataTypes::Metadata(chunk.clone().into())],
-                    })
-                })
-                .collect::<Vec<SearchResultType>>();
-
-            SearchQueryEvent {
-                id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
-                search_type: self.search_type,
-                query: self.query,
-                request_params: self.request_params,
-                latency: self.latency,
-                top_score: self.top_score,
-                results,
-                dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
-                created_at: self.created_at.to_string(),
-                query_rating: self.query_rating,
-            }
-        } else if let Ok(group_results) = self
-            .results
-            .iter()
-            .map(|r| serde_json::from_str::<CHSlimResponseGroup>(r))
-            .collect::<Result<Vec<CHSlimResponseGroup>, _>>()
-        {
-            let chunk_ids = group_results
-                .iter()
-                .flat_map(|groups| {
-                    groups
-                        .chunks
-                        .iter()
-                        .map(|r| r.id)
-                        .collect::<Vec<uuid::Uuid>>()
-                })
-                .collect::<Vec<uuid::Uuid>>();
-
-            let chunks = get_metadata_from_ids_query(chunk_ids.clone(), self.dataset_id, pool)
-                .await
-                .unwrap_or(vec![]);
-
-            let results = group_results
-                .iter()
-                .map(|group| {
-                    let group_chunks = group
-                        .chunks
-                        .iter()
-                        .map(|r| {
-                            let default = ChunkMetadata::default();
-                            let chunk = chunks.iter().find(|c| c.id == r.id).unwrap_or(&default);
-                            ScoreChunkDTO {
-                                score: r.score,
-                                highlights: None,
-                                metadata: vec![ChunkMetadataTypes::Metadata(chunk.clone().into())],
-                            }
-                        })
-                        .collect::<Vec<ScoreChunkDTO>>();
-
-                    SearchResultType::GroupSearch(GroupScoreChunk {
-                        group_id: group.group_id,
-                        metadata: group_chunks,
-                        ..Default::default()
-                    })
-                })
-                .collect::<Vec<SearchResultType>>();
-
-            SearchQueryEvent {
-                id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
-                search_type: self.search_type,
-                query: self.query,
-                request_params: self.request_params,
-                latency: self.latency,
-                top_score: self.top_score,
-                results,
-                dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
-                created_at: self.created_at.to_string(),
-                query_rating: self.query_rating,
-            }
-        } else {
-            SearchQueryEvent::default()
+                .map(|r| serde_json::from_str(r).unwrap())
+                .collect::<Vec<serde_json::Value>>(),
+            dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
+            created_at: clickhouse_response.created_at.to_string(),
+            query_rating: clickhouse_response.query_rating,
         }
     }
 }
@@ -4043,135 +3957,40 @@ pub struct RecommendationEvent {
     pub negative_ids: Vec<uuid::Uuid>,
     pub positive_tracking_ids: Vec<String>,
     pub negative_tracking_ids: Vec<String>,
-    pub request_params: String,
-    pub results: Vec<SearchResultType>,
+    pub request_params: serde_json::Value,
+    pub results: Vec<serde_json::Value>,
     pub top_score: f32,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
 }
 
-impl RecommendationEventClickhouse {
-    pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> RecommendationEvent {
-        if let Ok(chunk_results) = self
-            .results
-            .iter()
-            .map(|r| serde_json::from_str::<CHSlimResponse>(r))
-            .collect::<Result<Vec<CHSlimResponse>, _>>()
-        {
-            let chunk_ids = chunk_results
+impl From<RecommendationEventClickhouse> for RecommendationEvent {
+    fn from(clickhouse_response: RecommendationEventClickhouse) -> RecommendationEvent {
+        RecommendationEvent {
+            id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
+            recommendation_type: clickhouse_response.recommendation_type,
+            positive_ids: clickhouse_response
+                .positive_ids
                 .iter()
-                .map(|r| r.id)
-                .collect::<Vec<uuid::Uuid>>();
-
-            let chunks = get_metadata_from_ids_query(chunk_ids.clone(), self.dataset_id, pool)
-                .await
-                .unwrap_or(vec![]);
-
-            let results = chunk_results
+                .map(|id| uuid::Uuid::parse_str(id).unwrap())
+                .collect(),
+            negative_ids: clickhouse_response
+                .negative_ids
                 .iter()
-                .map(|r| {
-                    let default = ChunkMetadata::default();
-                    let chunk = chunks.iter().find(|c| c.id == r.id).unwrap_or(&default);
-                    SearchResultType::Search(ScoreChunkDTO {
-                        score: r.score,
-                        highlights: None,
-                        metadata: vec![ChunkMetadataTypes::Metadata(chunk.clone().into())],
-                    })
-                })
-                .collect::<Vec<SearchResultType>>();
+                .map(|id| uuid::Uuid::parse_str(id).unwrap())
+                .collect(),
 
-            RecommendationEvent {
-                id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
-                recommendation_type: self.recommendation_type,
-                positive_ids: self
-                    .positive_ids
-                    .iter()
-                    .map(|id| uuid::Uuid::parse_str(id).unwrap())
-                    .collect(),
-                negative_ids: self
-                    .negative_ids
-                    .iter()
-                    .map(|id| uuid::Uuid::parse_str(id).unwrap())
-                    .collect(),
-
-                positive_tracking_ids: self.positive_tracking_ids.clone(),
-                negative_tracking_ids: self.negative_tracking_ids.clone(),
-                request_params: self.request_params,
-                results,
-                top_score: self.top_score,
-                dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
-                created_at: self.created_at.to_string(),
-            }
-        } else if let Ok(group_results) = self
-            .results
-            .iter()
-            .map(|r| serde_json::from_str::<CHSlimResponseGroup>(r))
-            .collect::<Result<Vec<CHSlimResponseGroup>, _>>()
-        {
-            let chunk_ids = group_results
+            positive_tracking_ids: clickhouse_response.positive_tracking_ids.clone(),
+            negative_tracking_ids: clickhouse_response.negative_tracking_ids.clone(),
+            request_params: serde_json::from_str(&clickhouse_response.request_params).unwrap(),
+            results: clickhouse_response
+                .results
                 .iter()
-                .flat_map(|groups| {
-                    groups
-                        .chunks
-                        .iter()
-                        .map(|r| r.id)
-                        .collect::<Vec<uuid::Uuid>>()
-                })
-                .collect::<Vec<uuid::Uuid>>();
-
-            let chunks = get_metadata_from_ids_query(chunk_ids.clone(), self.dataset_id, pool)
-                .await
-                .unwrap_or(vec![]);
-
-            let results = group_results
-                .iter()
-                .map(|group| {
-                    let group_chunks = group
-                        .chunks
-                        .iter()
-                        .map(|r| {
-                            let default = ChunkMetadata::default();
-                            let chunk = chunks.iter().find(|c| c.id == r.id).unwrap_or(&default);
-                            ScoreChunkDTO {
-                                score: r.score,
-                                highlights: None,
-                                metadata: vec![ChunkMetadataTypes::Metadata(chunk.clone().into())],
-                            }
-                        })
-                        .collect::<Vec<ScoreChunkDTO>>();
-
-                    SearchResultType::GroupSearch(GroupScoreChunk {
-                        group_id: group.group_id,
-                        metadata: group_chunks,
-                        ..Default::default()
-                    })
-                })
-                .collect::<Vec<SearchResultType>>();
-
-            RecommendationEvent {
-                id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
-                recommendation_type: self.recommendation_type,
-                positive_ids: self
-                    .positive_ids
-                    .iter()
-                    .map(|id| uuid::Uuid::parse_str(id).unwrap())
-                    .collect(),
-                negative_ids: self
-                    .negative_ids
-                    .iter()
-                    .map(|id| uuid::Uuid::parse_str(id).unwrap())
-                    .collect(),
-
-                positive_tracking_ids: self.positive_tracking_ids.clone(),
-                negative_tracking_ids: self.negative_tracking_ids.clone(),
-                request_params: self.request_params,
-                results,
-                top_score: self.top_score,
-                dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
-                created_at: self.created_at.to_string(),
-            }
-        } else {
-            RecommendationEvent::default()
+                .map(|r| serde_json::from_str(r).unwrap())
+                .collect::<Vec<serde_json::Value>>(),
+            top_score: clickhouse_response.top_score,
+            dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
+            created_at: clickhouse_response.created_at.to_string(),
         }
     }
 }

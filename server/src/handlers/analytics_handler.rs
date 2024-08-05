@@ -38,7 +38,6 @@ pub async fn get_cluster_analytics(
     data: web::Json<ClusterAnalytics>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
-    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let response = match data.into_inner() {
@@ -56,7 +55,6 @@ pub async fn get_cluster_analytics(
                 dataset_org_plan_sub.dataset.id,
                 cluster_id,
                 page,
-                pool,
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -137,7 +135,6 @@ pub async fn get_search_analytics(
     data: web::Json<SearchAnalytics>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
-    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let response = match data.into_inner() {
@@ -200,7 +197,6 @@ pub async fn get_search_analytics(
                 filter,
                 threshold,
                 page,
-                pool.clone(),
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -212,7 +208,6 @@ pub async fn get_search_analytics(
                 dataset_org_plan_sub.dataset.id,
                 filter,
                 page,
-                pool.clone(),
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -231,7 +226,6 @@ pub async fn get_search_analytics(
                 sort_by,
                 sort_order,
                 page,
-                pool.clone(),
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -242,7 +236,6 @@ pub async fn get_search_analytics(
             let query = get_search_query(
                 dataset_org_plan_sub.dataset.id,
                 search_id,
-                pool.clone(),
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -364,7 +357,6 @@ pub async fn get_recommendation_analytics(
     data: web::Json<RecommendationAnalytics>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
-    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let response = match data.into_inner() {
@@ -378,7 +370,6 @@ pub async fn get_recommendation_analytics(
                 filter,
                 threshold,
                 page,
-                pool.clone(),
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -398,7 +389,6 @@ pub async fn get_recommendation_analytics(
                 sort_by,
                 sort_order,
                 page,
-                pool.clone(),
                 clickhouse_client.get_ref(),
             )
             .await?;
