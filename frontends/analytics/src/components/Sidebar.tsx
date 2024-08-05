@@ -43,7 +43,7 @@ const navbarRoutes = [
   },
   {
     href: "/data/searches",
-    label: "All Searches",
+    label: "Data Explorer",
     icon: AiOutlineTable,
   },
 ];
