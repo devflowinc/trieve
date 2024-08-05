@@ -1835,9 +1835,9 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
+    pub server_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
-    pub server_configuration: serde_json::Value,
 }
 
 impl Dataset {
@@ -5427,5 +5427,43 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             score_threshold: helper.score_threshold,
             llm_options,
         })
+    }
+}
+
+#[derive(
+    Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, ValidGrouping, Clone, ToSchema,
+)]
+#[diesel(table_name=words_in_datasets)]
+pub struct WordInDataset {
+    pub id: uuid::Uuid,
+    pub word: String,
+}
+
+impl WordInDataset {
+    pub fn from_word(word: String) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4(),
+            word,
+        }
+    }
+}
+
+#[derive(
+    Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, ValidGrouping, Clone, ToSchema,
+)]
+#[diesel(table_name=words_datasets)]
+pub struct WordDataset {
+    pub id: uuid::Uuid,
+    pub word_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+}
+
+impl WordDataset {
+    pub fn from_details(word_id: uuid::Uuid, dataset_id: uuid::Uuid) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4(),
+            word_id,
+            dataset_id,
+        }
     }
 }
