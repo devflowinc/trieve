@@ -90,9 +90,9 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         organization_id -> Uuid,
+        server_configuration -> Jsonb,
         tracking_id -> Nullable<Text>,
         deleted -> Int4,
-        server_configuration -> Jsonb,
     }
 }
 
@@ -263,6 +263,21 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    words_datasets (id) {
+        id -> Uuid,
+        dataset_id -> Uuid,
+        word_id -> Uuid,
+    }
+}
+
+diesel::table! {
+    words_in_datasets (id) {
+        id -> Uuid,
+        word -> Text,
+    }
+}
+
 diesel::joinable!(chunk_group -> datasets (dataset_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_group (group_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
@@ -286,6 +301,8 @@ diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(user_api_key -> users (user_id));
 diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));
+diesel::joinable!(words_datasets -> datasets (dataset_id));
+diesel::joinable!(words_datasets -> words_in_datasets (word_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     chunk_group,
@@ -310,4 +327,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     user_api_key,
     user_organizations,
     users,
+    words_datasets,
+    words_in_datasets,
 );

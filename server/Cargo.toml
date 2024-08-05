@@ -22,6 +22,10 @@ name = "ingestion-worker"
 path = "src/bin/ingestion-worker.rs"
 
 [[bin]]
+name = "word-worker"
+path = "src/bin/word-worker.rs"
+
+[[bin]]
 name = "file-worker"
 path = "src/bin/file-worker.rs"
 

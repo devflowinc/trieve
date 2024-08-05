@@ -1,6 +1,7 @@
 use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetConfiguration, DatasetUsageCount,
     Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
+    WordDataset, WordInDataset,
 };
 use crate::handlers::dataset_handler::GetDatasetsPagination;
 use crate::operators::event_operator::create_event_query;
@@ -13,6 +14,7 @@ use actix_web::web;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use diesel_async::RunQueryDsl;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 #[tracing::instrument(skip(pool))]
@@ -625,4 +627,58 @@ pub async fn get_dataset_usage_query(
         .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
 
     Ok(dataset_usage)
+}
+
+pub async fn scroll_dataset_ids_query(
+    offset: uuid::Uuid,
+    limit: i64,
+    pool: web::Data<Pool>,
+) -> Result<Option<Vec<uuid::Uuid>>, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let datasets = datasets_columns::datasets
+        .select(datasets_columns::id)
+        .filter(datasets_columns::id.gt(offset))
+        .order_by(datasets_columns::id)
+        .limit(limit)
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Failed to get datasets".to_string()))?;
+
+    if datasets.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(datasets))
+}
+
+pub async fn add_words_to_dataset(
+    words: Vec<WordInDataset>,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::words_datasets::dsl as words_datasets;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    diesel::insert_into(words_datasets::words_datasets)
+        .values(
+            &words
+                .into_iter()
+                .map(|w| WordDataset::from_details(w.id, dataset_id))
+                .collect_vec(),
+        )
+        .on_conflict_do_nothing()
+        .execute(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Failed to insert words in dataset".to_string()))?;
+
+    Ok(())
 }
