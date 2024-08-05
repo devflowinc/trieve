@@ -1174,7 +1174,12 @@ pub async fn search_chunks(
             .first()
             .map(|x| x.score as f32)
             .unwrap_or(0.0),
-        results: result_chunks.into_response_payload(),
+        results: result_chunks
+            .score_chunks
+            .clone()
+            .into_iter()
+            .map(|x| serde_json::to_string(&x).unwrap())
+            .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
@@ -1369,7 +1374,12 @@ pub async fn autocomplete(
             .first()
             .map(|x| x.score as f32)
             .unwrap_or(0.0),
-        results: result_chunks.into_response_payload(),
+        results: result_chunks
+            .score_chunks
+            .clone()
+            .into_iter()
+            .map(|x| serde_json::to_string(&x).unwrap())
+            .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
@@ -2109,7 +2119,7 @@ pub async fn get_recommended_chunks(
             .unwrap_or(0.0),
         results: recommended_chunk_metadatas_with_score
             .iter()
-            .map(|x| x.clone().into_response_payload())
+            .map(|x| serde_json::to_string(x).unwrap())
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),

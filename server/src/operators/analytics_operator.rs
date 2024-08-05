@@ -1,5 +1,6 @@
 use actix_web::web;
 use futures::future::join_all;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ureq::json;
 use utoipa::ToSchema;
@@ -70,7 +71,6 @@ pub async fn get_queries_for_cluster_query(
     dataset_id: uuid::Uuid,
     cluster_id: uuid::Uuid,
     page: Option<u32>,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryResponse, ServiceError> {
     let query_string = String::from(
@@ -99,12 +99,10 @@ pub async fn get_queries_for_cluster_query(
             ServiceError::InternalServerError("Error fetching queries".to_string())
         })?;
 
-    let queries: Vec<SearchQueryEvent> = join_all(
-        clickhouse_queries
-            .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
-    )
-    .await;
+    let queries: Vec<SearchQueryEvent> = clickhouse_queries
+        .into_iter()
+        .map(|q| q.into())
+        .collect_vec();
 
     Ok(SearchQueryResponse { queries })
 }
@@ -112,7 +110,6 @@ pub async fn get_queries_for_cluster_query(
 pub async fn get_search_query(
     dataset_id: uuid::Uuid,
     search_id: uuid::Uuid,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryEvent, ServiceError> {
     let clickhouse_query = clickhouse_client
@@ -126,7 +123,7 @@ pub async fn get_search_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let query: SearchQueryEvent = clickhouse_query.from_clickhouse(pool.clone()).await;
+    let query: SearchQueryEvent = clickhouse_query.into();
 
     Ok(query)
 }
@@ -229,7 +226,6 @@ pub async fn get_low_confidence_queries_query(
     filter: Option<SearchAnalyticsFilter>,
     threshold: Option<f32>,
     page: Option<u32>,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryResponse, ServiceError> {
     let mut query_string = String::from(
@@ -275,12 +271,8 @@ pub async fn get_low_confidence_queries_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<SearchQueryEvent> = join_all(
-        clickhouse_query
-            .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
-    )
-    .await;
+    let queries: Vec<SearchQueryEvent> =
+        clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
 
     Ok(SearchQueryResponse { queries })
 }
@@ -289,7 +281,6 @@ pub async fn get_no_result_queries_query(
     dataset_id: uuid::Uuid,
     filter: Option<SearchAnalyticsFilter>,
     page: Option<u32>,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryResponse, ServiceError> {
     let mut query_string = String::from(
@@ -324,12 +315,8 @@ pub async fn get_no_result_queries_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<SearchQueryEvent> = join_all(
-        clickhouse_query
-            .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
-    )
-    .await;
+    let queries: Vec<SearchQueryEvent> =
+        clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
 
     Ok(SearchQueryResponse { queries })
 }
@@ -340,7 +327,6 @@ pub async fn get_all_queries_query(
     sort_by: Option<SearchSortBy>,
     sort_order: Option<SortOrder>,
     page: Option<u32>,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryResponse, ServiceError> {
     let mut query_string = String::from(
@@ -376,12 +362,8 @@ pub async fn get_all_queries_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<SearchQueryEvent> = join_all(
-        clickhouse_query
-            .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
-    )
-    .await;
+    let queries: Vec<SearchQueryEvent> =
+        clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
 
     Ok(SearchQueryResponse { queries })
 }
@@ -729,7 +711,6 @@ pub async fn get_low_confidence_recommendations_query(
     filter: Option<RecommendationAnalyticsFilter>,
     threshold: Option<f32>,
     page: Option<u32>,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RecommendationsEventResponse, ServiceError> {
     let mut query_string = String::from(
@@ -775,12 +756,8 @@ pub async fn get_low_confidence_recommendations_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<RecommendationEvent> = join_all(
-        clickhouse_query
-            .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
-    )
-    .await;
+    let queries: Vec<RecommendationEvent> =
+        clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
 
     Ok(RecommendationsEventResponse { queries })
 }
@@ -791,7 +768,6 @@ pub async fn get_recommendation_queries_query(
     sort_by: Option<SearchSortBy>,
     sort_order: Option<SortOrder>,
     page: Option<u32>,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RecommendationsEventResponse, ServiceError> {
     let mut query_string = String::from(
@@ -827,12 +803,8 @@ pub async fn get_recommendation_queries_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<RecommendationEvent> = join_all(
-        clickhouse_query
-            .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
-    )
-    .await;
+    let queries: Vec<RecommendationEvent> =
+        clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
 
     Ok(RecommendationsEventResponse { queries })
 }
