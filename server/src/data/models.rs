@@ -4849,6 +4849,20 @@ pub struct HighlightOptions {
     pub highlight_window: Option<u32>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+pub struct TypoOptions {
+    pub correct_typos: Option<bool>,
+    pub one_typo_word_range: Option<TypoRange>,
+    pub two_typo_word_range: Option<TypoRange>,
+    pub disable_on_word: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+pub struct TypoRange {
+    pub min: u32,
+    pub max: Option<u32>,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
 /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
 pub struct LLMOptions {
@@ -5003,6 +5017,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            typo_options: Option<TypoOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5032,6 +5047,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            typo_options: helper.typo_options,
         })
     }
 }
@@ -5055,6 +5071,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            typo_options: Option<TypoOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5083,6 +5100,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            typo_options: helper.typo_options,
         })
     }
 }
@@ -5109,6 +5127,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            typo_options: Option<TypoOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5140,6 +5159,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            typo_options: helper.typo_options,
         })
     }
 }
@@ -5163,6 +5183,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             slim_chunks: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            typo_options: Option<TypoOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5188,6 +5209,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,
             use_quote_negated_terms: helper.use_quote_negated_terms,
+            typo_options: helper.typo_options,
             remove_stop_words: helper.remove_stop_words,
         })
     }
@@ -5334,7 +5356,6 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
     }
 }
 
-<<<<<<< HEAD
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 /// MultiQuery allows you to construct a dense vector from multiple queries with a weighted sum. This is useful for when you want to emphasize certain features of the query. This only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
 pub struct MultiQuery {
@@ -5359,7 +5380,9 @@ impl QueryTypes {
             QueryTypes::Multi(_) => Err(ServiceError::BadRequest(
                 "Cannot use Multi Query with cross encoder or highlights".to_string(),
             )),
-=======
+        }
+    }
+}
 #[derive(
     Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, ValidGrouping, Clone, ToSchema,
 )]
@@ -5386,15 +5409,36 @@ pub struct WordDataset {
     pub id: uuid::Uuid,
     pub word_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
+    pub count: i32,
 }
 
 impl WordDataset {
-    pub fn from_details(word_id: uuid::Uuid, dataset_id: uuid::Uuid) -> Self {
+    pub fn from_details(word_id: uuid::Uuid, dataset_id: uuid::Uuid, count: i32) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
             word_id,
             dataset_id,
->>>>>>> 726cf3a8 (feature: new words and words datasets tables)
+            count,
+        }
+    }
+}
+
+#[derive(
+    Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, ValidGrouping, Clone, ToSchema,
+)]
+#[diesel(table_name=dataset_words_last_processed)]
+pub struct DatasetWordsLastProcessed {
+    pub id: uuid::Uuid,
+    pub last_processed: chrono::NaiveDateTime,
+    pub dataset_id: uuid::Uuid,
+}
+
+impl DatasetWordsLastProcessed {
+    pub fn from_details(dataset_id: uuid::Uuid) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4(),
+            dataset_id,
+            last_processed: chrono::Utc::now().naive_local(),
         }
     }
 }
