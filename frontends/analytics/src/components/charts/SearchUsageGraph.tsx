@@ -5,7 +5,6 @@ import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getRpsUsageGraph } from "../../api/analytics";
 import { Chart } from "chart.js";
-import { parseCustomDateString } from "./LatencyGraph";
 
 interface SearchUsageProps {
   params: {
@@ -15,6 +14,7 @@ interface SearchUsageProps {
 }
 
 import "chartjs-adapter-date-fns";
+import { parseCustomDateString } from "../../utils/formatDate";
 
 export const SearchUsageGraph = (props: SearchUsageProps) => {
   const dataset = useContext(DatasetContext);

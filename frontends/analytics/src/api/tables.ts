@@ -27,6 +27,7 @@ export const getSearchQueries = async (
         : undefined,
       page: params.page,
       sort_by: params.sortBy,
+      sort_order: params.sortOrder,
       type: "search_queries",
     }),
     headers: {

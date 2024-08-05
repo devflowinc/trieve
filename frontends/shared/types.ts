@@ -453,7 +453,7 @@ export interface SearchQueryEvent {
   id: string;
   search_type: string;
   query: string;
-  request_params: string;
+  request_params: Record<string, unknown>;
   latency: number;
   top_score: number;
   results: string[];
