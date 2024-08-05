@@ -43,17 +43,16 @@ export const SearchUsageGraph = (props: SearchUsageProps) => {
     if (!chartInstance) {
       // Create the chart only if it doesn't exist
       chartInstance = new Chart(canvas, {
-        type: "line",
+        type: "bar",
         data: {
           labels: [],
           datasets: [
             {
               label: "Requests",
               data: [],
-              borderWidth: 1,
               borderColor: "purple",
-              pointBackgroundColor: "purple",
-              backgroundColor: "rgba(128, 0, 128, 0.1)", // Light purple background
+              backgroundColor: "rgba(128, 0, 128, 0.9)", // Light purple background
+              barThickness: data.length === 1 ? 40 : undefined,
             },
           ],
         },
