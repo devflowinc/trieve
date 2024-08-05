@@ -1370,7 +1370,7 @@ pub fn get_highlights_with_exact_match(
 
     let stop_words = get_stop_words();
     let query_parts_split_by_stop_words: Vec<String> = cleaned_query
-        .split(' ')
+        .split_whitespace()
         .collect_vec()
         .chunk_by(|a, b| {
             !stop_words.contains(&a.to_lowercase()) && !stop_words.contains(&b.to_lowercase())
@@ -1394,17 +1394,18 @@ pub fn get_highlights_with_exact_match(
         .clone()
         .into_iter()
         .filter_map(|part| {
-            if part.split(' ').count() > 1 {
+            if part.split_whitespace().count() > 1 {
                 Some(part)
             } else {
                 None
             }
         })
         .collect_vec();
-    let idxs_of_non_stop_words = query_parts_split_by_stop_words
+    let mut idxs_of_non_stop_words = query_parts_split_by_stop_words
         .iter()
         .filter_map(|part| cleaned_query.find(part))
         .collect_vec();
+    idxs_of_non_stop_words.sort();
     let tweens = idxs_of_non_stop_words
         .iter()
         .zip(idxs_of_non_stop_words.iter().skip(1))
@@ -1427,11 +1428,18 @@ pub fn get_highlights_with_exact_match(
         let query_split = cleaned_query[valid_start_char_boundary..valid_end_char_boundary]
             .trim()
             .to_string();
-        additional_multi_token_queries.push(query_split);
+        if query_split
+            .split_whitespace()
+            .filter(|x| !stop_words.contains(&x.to_lowercase()))
+            .count()
+            > 1
+        {
+            additional_multi_token_queries.push(query_split);
+        }
         start_index = valid_start_char_boundary;
     }
     additional_multi_token_queries.push(cleaned_query[start_index..].trim().to_string());
-    let query_split = cleaned_query.split(' ').collect_vec();
+    let query_split = cleaned_query.split_whitespace().collect_vec();
     let mut starting_length = query_split.len() - 1;
     while starting_length > 0 {
         let mut current_skip = 0;
@@ -1440,17 +1448,22 @@ pub fn get_highlights_with_exact_match(
                 .iter()
                 .skip(current_skip)
                 .take(starting_length)
-                .map(|x| x.to_string())
+                .map(|x| x.trim().to_string())
                 .collect_vec()
                 .join(" ");
-            if starting_length != 2
+            if starting_length > 2
                 || split_skip
                     .split_whitespace()
                     .filter(|x| !stop_words.contains(&x.to_lowercase()))
                     .count()
                     >= 1
             {
-                additional_multi_token_queries.push(split_skip);
+                let additional_query = if split_skip.split_whitespace().count() > 1 {
+                    split_skip
+                } else {
+                    format!(" {} ", split_skip)
+                };
+                additional_multi_token_queries.push(additional_query);
             }
             current_skip += 1;
         }
@@ -1461,14 +1474,14 @@ pub fn get_highlights_with_exact_match(
     additional_multi_token_queries.insert(0, query.clone());
     additional_multi_token_queries = additional_multi_token_queries
         .into_iter()
-        .map(|x| x.trim().to_string())
+        .map(|x| x.to_string())
         .unique()
         .collect_vec();
     additional_multi_token_queries.sort_by(|a, b| {
-        let a_len = a.split(' ').count();
-        let b_len: usize = b.split(' ').count();
+        let a_len = a.split_whitespace().count();
+        let b_len: usize = b.split_whitespace().count();
         match b_len.cmp(&a_len) {
-            std::cmp::Ordering::Equal => a.len().cmp(&b.len()),
+            std::cmp::Ordering::Equal => b.trim().len().cmp(&a.trim().len()),
             other => other,
         }
     });
@@ -1550,6 +1563,7 @@ pub fn get_highlights_with_exact_match(
                 .map(|(i, _)| i)
                 .collect_vec();
             matched_idxs.truncate(max_num.unwrap_or(3) as usize);
+            matched_idxs.sort();
 
             let mut grouped_idxs = if matched_idxs.len() == 1 {
                 vec![(0, content.len())]
