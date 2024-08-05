@@ -289,7 +289,7 @@ const SearchForm = (props: {
                         onInput={(e) => {
                           props.search.setSearch(
                             "multiQueries",
-                            props.search.debounced.multiQueries.map((query) => {
+                            props.search.state.multiQueries.map((query) => {
                               if (query === multiQuery) {
                                 return {
                                   ...query,
@@ -345,18 +345,20 @@ const SearchForm = (props: {
                         rows={props.search.state.query.split("\n").length}
                       />
                       <input
-                        id="search-query-weight"
+                        id={`search-query-weight-${index()}`}
                         type="number"
+                        inputmode="decimal"
                         step="0.1"
+                        min="0"
                         classList={{
                           "scrollbar-track-rounded-md scrollbar-thumb-rounded-md h-fit max-h-[240px] max-w-[10vw] resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 text-wrap border-l border-neutral-600 pl-2":
                             true,
                         }}
                         value={multiQuery.weight}
-                        onInput={(e) => {
+                        onChange={(e) => {
                           props.search.setSearch(
                             "multiQueries",
-                            props.search.debounced.multiQueries.map((query) => {
+                            props.search.state.multiQueries.map((query) => {
                               if (query === multiQuery) {
                                 return {
                                   ...query,
@@ -367,6 +369,30 @@ const SearchForm = (props: {
                               }
                             }),
                           );
+
+                          const searchTextarea = document.getElementById(
+                            `search-query-weight-${index()}`,
+                          );
+
+                          searchTextarea?.focus();
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 50);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 100);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 200);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 300);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 400);
+                          setTimeout(() => {
+                            searchTextarea?.focus();
+                          }, 500);
                           e.currentTarget.style.height = "auto";
                           e.currentTarget.style.height =
                             e.currentTarget.scrollHeight + "px";
@@ -1306,7 +1332,7 @@ const SearchForm = (props: {
                 body={
                   <BsQuestionCircle class="h-3.5 w-3.5 rounded-full fill-current" />
                 }
-                tooltipText="Use multiple queries to search for chunks. (Only works with Semantic Search)"
+                tooltipText="Use multiple queries with different weights to search for chunks. Only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights."
               />
               <span>Multi Query</span>
               <input
@@ -1321,13 +1347,15 @@ const SearchForm = (props: {
                         weight: 0.5,
                       },
                     ]);
+                    props.search.setSearch("searchType", "semantic");
+                    props.search.setSearch("sort_by", {});
                   } else {
                     props.search.setSearch("multiQueries", []);
                   }
                 }}
               />
             </div>
-            <Show when={props.search.debounced.query !== ""}>
+            <Show when={props.search.state.query !== ""}>
               <div class="flex-1" />
               <div class="flex items-center justify-self-end">
                 <button
@@ -1343,7 +1371,7 @@ const SearchForm = (props: {
               </div>
             </Show>
             <Show when={!props.groupID}>
-              <Show when={props.search.debounced.query === ""}>
+              <Show when={props.search.state.query === ""}>
                 <div class="flex-1" />
               </Show>
               <div class="flex items-center space-x-2 justify-self-center">
