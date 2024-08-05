@@ -1412,14 +1412,28 @@ pub fn get_highlights_with_exact_match(
         .collect_vec();
     let mut start_index = 0;
     for (start, end) in tweens {
-        let query_split = cleaned_query[start_index..end].trim().to_string();
+        let mut valid_start_char_boundary = start;
+        while !cleaned_query.is_char_boundary(valid_start_char_boundary)
+            && valid_start_char_boundary > 0
+        {
+            valid_start_char_boundary -= 1;
+        }
+        let mut valid_end_char_boundary = end;
+        while !cleaned_query.is_char_boundary(valid_end_char_boundary)
+            && valid_end_char_boundary < cleaned_query.len()
+        {
+            valid_end_char_boundary += 1;
+        }
+        let query_split = cleaned_query[valid_start_char_boundary..valid_end_char_boundary]
+            .trim()
+            .to_string();
         additional_multi_token_queries.push(query_split);
-        start_index = start;
+        start_index = valid_start_char_boundary;
     }
     additional_multi_token_queries.push(cleaned_query[start_index..].trim().to_string());
     let query_split = cleaned_query.split(' ').collect_vec();
     let mut starting_length = query_split.len() - 1;
-    while starting_length > 1 {
+    while starting_length > 0 {
         let mut current_skip = 0;
         while current_skip <= query_split.len() - starting_length {
             let split_skip = query_split
@@ -1442,7 +1456,7 @@ pub fn get_highlights_with_exact_match(
         }
         starting_length -= 1;
     }
-    additional_multi_token_queries.retain(|x| x.split(' ').count() > 1);
+    additional_multi_token_queries.retain(|x| !x.trim().is_empty());
     additional_multi_token_queries.insert(0, cleaned_query.clone());
     additional_multi_token_queries.insert(0, query.clone());
     additional_multi_token_queries = additional_multi_token_queries
@@ -1475,7 +1489,20 @@ pub fn get_highlights_with_exact_match(
             .collect_vec();
         let mut phrases = idxs_of_query_count_in_content
             .iter()
-            .map(|i| content[*i..*i + potential_query.len()].to_string())
+            .map(|i| {
+                let mut start_valid_boundary = *i;
+                while !content.is_char_boundary(start_valid_boundary) && start_valid_boundary > 0 {
+                    start_valid_boundary -= 1;
+                }
+                let mut end_valid_boundary = *i + potential_query.len();
+                while !content.is_char_boundary(end_valid_boundary)
+                    && end_valid_boundary < content.len()
+                {
+                    end_valid_boundary += 1;
+                }
+
+                content[start_valid_boundary..end_valid_boundary].to_string()
+            })
             .collect_vec();
         phrases.truncate(max_num.unwrap_or(3) as usize);
         if !phrases.is_empty() {
@@ -1552,7 +1579,22 @@ pub fn get_highlights_with_exact_match(
 
             let content_splits: Vec<String> = grouped_idxs
                 .iter()
-                .map(|(start, end)| content[*start..*end].to_string())
+                .map(|(start, end)| {
+                    let mut start_valid_boundary = *start;
+                    while !content.is_char_boundary(start_valid_boundary)
+                        && start_valid_boundary > 0
+                    {
+                        start_valid_boundary -= 1;
+                    }
+                    let mut end_valid_boundary = *end;
+                    while !content.is_char_boundary(end_valid_boundary)
+                        && end_valid_boundary < content.len()
+                    {
+                        end_valid_boundary += 1;
+                    }
+
+                    content[start_valid_boundary..end_valid_boundary].to_string()
+                })
                 .collect_vec();
 
             let cur_highlights_with_window: Vec<String> = content_splits
@@ -1655,11 +1697,18 @@ pub fn get_highlights_with_exact_match(
             .map(|(x, _)| {
                 let mut new_x = x.clone();
                 for potential_query in potential_queries.clone() {
-                    let query_idx = new_x
+                    let mut query_idx = new_x
                         .to_lowercase()
                         .find(&potential_query.to_lowercase())
                         .unwrap_or_default();
-                    let query_end = query_idx + potential_query.len();
+                    while !new_x.is_char_boundary(query_idx) && query_idx > 0 {
+                        query_idx -= 1;
+                    }
+                    let mut query_end = query_idx + potential_query.len();
+                    while !new_x.is_char_boundary(query_end) && query_end < new_x.len() {
+                        query_end += 1;
+                    }
+
                     new_x = format!(
                         "{}<mark><b>{}</b></mark>{}",
                         &new_x[..query_idx],
