@@ -845,9 +845,9 @@ pub async fn send_ctr_data_query(
         .execute()
         .await
         .map_err(|err| {
-            log::error!("Error writing to ClickHouse: {:?}", err);
-            sentry::capture_message(&format!("Error writing to ClickHouse: {:?}", err), sentry::Level::Error);
-            ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
+            log::error!("Error writing to ClickHouse default.ctr_data: {:?}", err);
+            sentry::capture_message(&format!("Error writing to ClickHouse default.ctr_data: {:?}", err), sentry::Level::Error);
+            ServiceError::InternalServerError("Error writing to ClickHouse default.ctr_data".to_string())
         })?;
 
     Ok(())
@@ -1195,12 +1195,12 @@ pub async fn set_query_rating_query(
         .execute()
         .await
         .map_err(|err| {
-            log::error!("Error writing to ClickHouse: {:?}", err);
+            log::error!("Error altering to ClickHouse default.search_queries: {:?}", err);
             sentry::capture_message(
-                &format!("Error writing to ClickHouse: {:?}", err),
+                &format!("Error altering to ClickHouse default.search_queries: {:?}", err),
                 sentry::Level::Error,
             );
-            ServiceError::InternalServerError("Error writing to ClickHouse".to_string())
+            ServiceError::InternalServerError("Error altering to ClickHouse default.search_queries".to_string())
         })?;
 
     Ok(())

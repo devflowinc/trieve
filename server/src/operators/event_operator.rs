@@ -1,40 +1,14 @@
 use crate::{
-    data::models::{ClickhouseEvent, Event, EventTypeRequest},
+    data::models::{EventTypeRequest, WorkerEvent, WorkerEventClickhouse},
     errors::ServiceError,
 };
 use actix_web::web;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[tracing::instrument(skip(client))]
-pub async fn create_event_query(
-    event: Event,
-    client: web::Data<clickhouse::Client>,
-) -> Result<(), ServiceError> {
-    if std::env::var("USE_ANALYTICS")
-        .unwrap_or("false".to_string())
-        .parse()
-        .unwrap_or(false)
-    {
-        client
-            .query("INSERT INTO default.dataset_events (id, dataset_id, event_type, event_data, created_at) VALUES (?, ?, ?, ?, now())")
-            .bind(event.id)
-            .bind(event.dataset_id)
-            .bind(event.event_type)
-            .bind(event.event_data)
-            .execute()
-            .await
-            .map_err(|err| {
-                log::error!("Failed to create event {:?}", err);
-                ServiceError::BadRequest("Failed to create event".to_string())
-            })?;
-    }
-
-    Ok(())
-}
 #[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
 pub struct EventReturn {
-    pub events: Vec<Event>,
+    pub events: Vec<WorkerEvent>,
     pub page_count: i32,
 }
 #[tracing::instrument(skip(clickhouse_client))]
@@ -68,7 +42,7 @@ pub async fn get_events_query(
         offset = (page - 1) * page_size,
     );
 
-    let events_and_count: Vec<ClickhouseEvent> = clickhouse_client
+    let events_and_count: Vec<WorkerEventClickhouse> = clickhouse_client
         .query(&query)
         .fetch_all()
         .await

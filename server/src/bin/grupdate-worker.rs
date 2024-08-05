@@ -11,12 +11,12 @@ use trieve_server::{
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
-        event_operator::create_event_query,
+        clickhouse_operator::{ClickHouseEvent, EventQueue},
         group_operator::{update_grouped_chunks_query, GroupUpdateMessage},
     },
 };
 use trieve_server::{
-    data::models::{DatasetConfiguration, Event},
+    data::models::{DatasetConfiguration, WorkerEvent},
     operators::dataset_operator::get_dataset_by_id_query,
 };
 
@@ -75,29 +75,6 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let clickhouse_client = if std::env::var("USE_ANALYTICS")
-        .unwrap_or("false".to_string())
-        .parse()
-        .unwrap_or(false)
-    {
-        log::info!("Analytics enabled");
-
-        clickhouse::Client::default()
-            .with_url(
-                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
-            )
-            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
-            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
-            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
-            .with_option("async_insert", "1")
-            .with_option("wait_for_async_insert", "0")
-    } else {
-        log::info!("Analytics disabled");
-        clickhouse::Client::default()
-    };
-
-    let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
-
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -122,17 +99,45 @@ fn main() {
 
                 let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
+                let event_queue = if std::env::var("USE_ANALYTICS")
+                    .unwrap_or("false".to_string())
+                    .parse()
+                    .unwrap_or(false)
+                {
+                    log::info!("Analytics enabled");
+
+                    let clickhouse_client = clickhouse::Client::default()
+                        .with_url(
+                            std::env::var("CLICKHOUSE_URL")
+                                .unwrap_or("http://localhost:8123".to_string()),
+                        )
+                        .with_user(
+                            std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()),
+                        )
+                        .with_password(
+                            std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()),
+                        )
+                        .with_database(
+                            std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
+                        )
+                        .with_option("async_insert", "1")
+                        .with_option("wait_for_async_insert", "0");
+
+                    let mut event_queue = EventQueue::new(clickhouse_client.clone());
+                    event_queue.start_service();
+                    event_queue
+                } else {
+                    log::info!("Analytics disabled");
+                    EventQueue::default()
+                };
+
+                let web_event_queue = actix_web::web::Data::new(event_queue);
+
                 let should_terminate = Arc::new(AtomicBool::new(false));
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
                 let web_redis_pool = web_redis_pool.clone();
-                grupdate_worker(
-                    should_terminate,
-                    web_redis_pool,
-                    web_pool,
-                    web_clickhouse_client,
-                )
-                .await;
+                grupdate_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await;
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -142,7 +147,7 @@ async fn grupdate_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
-    web_clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    event_queue: actix_web::web::Data<EventQueue>,
 ) {
     log::info!("Starting grupdate worker service thread");
     let mut redis_conn_sleep = std::time::Duration::from_secs(1);
@@ -228,7 +233,7 @@ async fn grupdate_worker(
                     group_update_msg,
                     err.clone(),
                     redis_pool.clone(),
-                    web_clickhouse_client.clone(),
+                    event_queue.clone(),
                 )
                 .await;
                 log::error!("Failed to get dataset {:?}", err);
@@ -248,20 +253,17 @@ async fn grupdate_worker(
         {
             Ok(_) => {
                 log::info!("Updated group {}", group_update_msg.group.id);
-                let _ = create_event_query(
-                    Event::from_details(
-                        group_update_msg.group.dataset_id,
-                        models::EventType::GroupChunksUpdated {
-                            group_id: group_update_msg.group.id,
-                        },
-                    ),
-                    web_clickhouse_client.clone(),
-                )
-                .await
-                .map_err(|err| {
-                    log::error!("Failed to create event {:?}", err);
-                    err
-                });
+                event_queue
+                    .send(ClickHouseEvent::WorkerEvent(
+                        WorkerEvent::from_details(
+                            group_update_msg.group.dataset_id,
+                            models::EventType::GroupChunksUpdated {
+                                group_id: group_update_msg.group.id,
+                            },
+                        )
+                        .into(),
+                    ))
+                    .await;
 
                 let _ = redis::cmd("LREM")
                     .arg("group_update_processing")
@@ -281,7 +283,7 @@ async fn grupdate_worker(
                     group_update_msg,
                     err,
                     redis_pool.clone(),
-                    web_clickhouse_client.clone(),
+                    event_queue.clone(),
                 )
                 .await;
             }
@@ -291,12 +293,12 @@ async fn grupdate_worker(
     }
 }
 
-#[tracing::instrument(skip(redis_pool, web_clickhouse_client))]
+#[tracing::instrument(skip(redis_pool, event_queue))]
 pub async fn readd_group_error_to_queue(
     mut payload: GroupUpdateMessage,
     error: ServiceError,
     redis_pool: actix_web::web::Data<models::RedisPool>,
-    web_clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    event_queue: actix_web::web::Data<EventQueue>,
 ) -> Result<(), ServiceError> {
     let old_payload_message = serde_json::to_string(&payload).map_err(|_| {
         ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
@@ -318,21 +320,18 @@ pub async fn readd_group_error_to_queue(
 
     if payload.attempt_number == 3 {
         log::error!("Failed to update group 3 times quitting {:?}", error);
-        let _ = create_event_query(
-            Event::from_details(
-                payload.group.dataset_id,
-                models::EventType::GroupChunksActionFailed {
-                    group_id: payload.group.id,
-                    error: error.to_string(),
-                },
-            ),
-            web_clickhouse_client.clone(),
-        )
-        .await
-        .map_err(|err| {
-            log::error!("Failed to create event {:?}", err);
-            err
-        });
+        event_queue
+            .send(ClickHouseEvent::WorkerEvent(
+                WorkerEvent::from_details(
+                    payload.group.dataset_id,
+                    models::EventType::GroupChunksActionFailed {
+                        group_id: payload.group.id,
+                        error: error.to_string(),
+                    },
+                )
+                .into(),
+            ))
+            .await;
 
         let mut redis_conn = redis_pool
             .get()

@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{
-    self, ChunkMetadata, DatasetConfiguration, Event, QdrantPayload, UnifiedId,
+    self, ChunkMetadata, DatasetConfiguration, QdrantPayload, UnifiedId, WorkerEvent,
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -22,8 +22,8 @@ use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
     insert_chunk_metadata_query, update_chunk_metadata_query,
 };
+use trieve_server::operators::clickhouse_operator::{ClickHouseEvent, EventQueue};
 use trieve_server::operators::dataset_operator::get_dataset_by_id_query;
-use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
 use trieve_server::operators::model_operator::{
     get_bm25_embeddings, get_dense_vector, get_dense_vectors, get_sparse_vectors,
@@ -98,29 +98,6 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let clickhouse_client = if std::env::var("USE_ANALYTICS")
-        .unwrap_or("false".to_string())
-        .parse()
-        .unwrap_or(false)
-    {
-        log::info!("Analytics enabled");
-
-        clickhouse::Client::default()
-            .with_url(
-                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
-            )
-            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
-            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
-            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
-            .with_option("async_insert", "1")
-            .with_option("wait_for_async_insert", "0")
-    } else {
-        log::info!("Analytics disabled");
-        clickhouse::Client::default()
-    };
-
-    let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
-
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -145,28 +122,55 @@ fn main() {
 
                 let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
+                let event_queue = if std::env::var("USE_ANALYTICS")
+                    .unwrap_or("false".to_string())
+                    .parse()
+                    .unwrap_or(false)
+                {
+                    log::info!("Analytics enabled");
+
+                    let clickhouse_client = clickhouse::Client::default()
+                        .with_url(
+                            std::env::var("CLICKHOUSE_URL")
+                                .unwrap_or("http://localhost:8123".to_string()),
+                        )
+                        .with_user(
+                            std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()),
+                        )
+                        .with_password(
+                            std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()),
+                        )
+                        .with_database(
+                            std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
+                        )
+                        .with_option("async_insert", "1")
+                        .with_option("wait_for_async_insert", "0");
+
+                    let mut event_queue = EventQueue::new(clickhouse_client.clone());
+                    event_queue.start_service();
+                    event_queue
+                } else {
+                    log::info!("Analytics disabled");
+                    EventQueue::default()
+                };
+                let web_event_queue = actix_web::web::Data::new(event_queue);
+
                 let should_terminate = Arc::new(AtomicBool::new(false));
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
 
-                ingestion_worker(
-                    should_terminate,
-                    web_redis_pool,
-                    web_pool,
-                    web_clickhouse_client,
-                )
-                .await
+                ingestion_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
 }
 
-#[tracing::instrument(skip(should_terminate, web_pool, redis_pool, clickhouse_client))]
+#[tracing::instrument(skip(should_terminate, web_pool, redis_pool, event_queue))]
 async fn ingestion_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
-    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    event_queue: actix_web::web::Data<EventQueue>,
 ) {
     log::info!("Starting ingestion service thread");
 
@@ -273,7 +277,7 @@ async fn ingestion_worker(
                     ingestion_message,
                     err.clone(),
                     redis_pool.clone(),
-                    clickhouse_client.clone(),
+                    event_queue.clone(),
                 )
                 .await;
                 log::error!("Failed to get dataset; likely does not exist: {:?}", err);
@@ -296,17 +300,15 @@ async fn ingestion_worker(
                     Ok(chunk_ids) => {
                         log::info!("Uploaded {:} chunks", chunk_ids.len());
 
-                        let _ = create_event_query(
-                            Event::from_details(
-                                payload.dataset_id,
-                                models::EventType::ChunksUploaded { chunk_ids },
-                            ),
-                            clickhouse_client.clone(),
-                        )
-                        .await
-                        .map_err(|err| {
-                            log::error!("Failed to create event: {:?}", err);
-                        });
+                        event_queue
+                            .send(ClickHouseEvent::WorkerEvent(
+                                WorkerEvent::from_details(
+                                    payload.dataset_id,
+                                    models::EventType::ChunksUploaded { chunk_ids },
+                                )
+                                .into(),
+                            ))
+                            .await;
 
                         let _ = redis::cmd("LREM")
                             .arg("processing")
@@ -324,7 +326,7 @@ async fn ingestion_worker(
                             ingestion_message,
                             err,
                             redis_pool.clone(),
-                            clickhouse_client.clone(),
+                            event_queue.clone(),
                         )
                         .await;
                     }
@@ -335,19 +337,17 @@ async fn ingestion_worker(
                 match update_chunk(payload.clone(), web_pool.clone(), dataset_config).await {
                     Ok(_) => {
                         log::info!("Updated chunk: {:?}", payload.chunk_metadata.id);
-                        let _ = create_event_query(
-                            Event::from_details(
-                                payload.dataset_id,
-                                models::EventType::ChunkUpdated {
-                                    chunk_id: payload.chunk_metadata.id,
-                                },
-                            ),
-                            clickhouse_client.clone(),
-                        )
-                        .await
-                        .map_err(|err| {
-                            log::error!("Failed to create event: {:?}", err);
-                        });
+                        event_queue
+                            .send(ClickHouseEvent::WorkerEvent(
+                                WorkerEvent::from_details(
+                                    payload.dataset_id,
+                                    models::EventType::ChunkUpdated {
+                                        chunk_id: payload.chunk_metadata.id,
+                                    },
+                                )
+                                .into(),
+                            ))
+                            .await;
 
                         let _ = redis::cmd("LREM")
                             .arg("processing")
@@ -363,7 +363,7 @@ async fn ingestion_worker(
                             ingestion_message,
                             err,
                             redis_pool.clone(),
-                            clickhouse_client.clone(),
+                            event_queue.clone(),
                         )
                         .await;
                     }
@@ -1208,12 +1208,12 @@ async fn update_chunk(
     Ok(())
 }
 
-#[tracing::instrument(skip(redis_pool, clickhouse_client))]
+#[tracing::instrument(skip(redis_pool, event_queue))]
 pub async fn readd_error_to_queue(
     message: IngestionMessage,
     error: ServiceError,
     redis_pool: actix_web::web::Data<models::RedisPool>,
-    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    event_queue: actix_web::web::Data<EventQueue>,
 ) -> Result<(), ServiceError> {
     if let ServiceError::DuplicateTrackingId(_) = error {
         log::info!("Duplicate");
@@ -1248,20 +1248,18 @@ pub async fn readd_error_to_queue(
                 .map(|m| m.ingest_specific_chunk_metadata.id)
                 .collect();
 
-            let _ = create_event_query(
-                Event::from_details(
-                    payload.dataset_id,
-                    models::EventType::BulkChunkUploadFailed {
-                        chunk_ids,
-                        error: format!("Failed to upload {:} chunks: {:?}", count, error),
-                    },
-                ),
-                clickhouse_client.clone(),
-            )
-            .await
-            .map_err(|err| {
-                log::error!("Failed to create event: {:?}", err);
-            });
+            event_queue
+                .send(ClickHouseEvent::WorkerEvent(
+                    WorkerEvent::from_details(
+                        payload.dataset_id,
+                        models::EventType::BulkChunkUploadFailed {
+                            chunk_ids,
+                            error: format!("Failed to upload {:} chunks: {:?}", count, error),
+                        },
+                    )
+                    .into(),
+                ))
+                .await;
 
             let mut redis_conn = redis_pool
                 .get()

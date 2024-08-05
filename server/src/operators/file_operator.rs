@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::chunk_operator::{create_chunk_metadata, get_row_count_for_organization_id_query};
-use super::event_operator::create_event_query;
+use super::clickhouse_operator::{ClickHouseEvent, EventQueue};
 use super::group_operator::{create_group_from_file_query, create_groups_query};
 use super::parse_operator::{build_chunking_regex, coarse_doc_chunker, convert_html_to_text};
 use crate::data::models::ChunkGroup;
@@ -9,7 +9,7 @@ use crate::data::models::FileDTO;
 use crate::data::models::{Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, EventType};
 use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::file_handler::UploadFileReqPayload;
-use crate::{data::models::Event, get_env};
+use crate::{data::models::WorkerEvent, get_env};
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -101,14 +101,14 @@ pub async fn create_file_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, redis_conn, clickhouse_client))]
+#[tracing::instrument(skip(pool, redis_conn, event_queue))]
 pub async fn create_file_chunks(
     created_file_id: uuid::Uuid,
     upload_file_data: UploadFileReqPayload,
     html_content: String,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     mut redis_conn: MultiplexedConnection,
 ) -> Result<(), ServiceError> {
     let file_text = convert_html_to_text(&html_content);
@@ -260,18 +260,18 @@ pub async fn create_file_chunks(
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     }
 
-    create_event_query(
-        Event::from_details(
-            dataset_org_plan_sub.dataset.id,
-            EventType::FileUploaded {
-                file_id: created_file_id,
-                file_name: name,
-            },
-        ),
-        clickhouse_client.clone(),
-    )
-    .await
-    .map_err(|_| ServiceError::BadRequest("Thread error creating notification".to_string()))?;
+    event_queue
+        .send(ClickHouseEvent::WorkerEvent(
+            WorkerEvent::from_details(
+                dataset_org_plan_sub.dataset.id,
+                EventType::FileUploaded {
+                    file_id: created_file_id,
+                    file_name: name,
+                },
+            )
+            .into(),
+        ))
+        .await;
 
     Ok(())
 }

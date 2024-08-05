@@ -3,10 +3,10 @@ use crate::data::models::{
     Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
 };
 use crate::handlers::dataset_handler::GetDatasetsPagination;
-use crate::operators::event_operator::create_event_query;
+use crate::operators::clickhouse_operator::ClickHouseEvent;
 use crate::operators::qdrant_operator::delete_points_from_qdrant;
 use crate::{
-    data::models::{Dataset, Event, EventType, Pool},
+    data::models::{Dataset, EventType, Pool, WorkerEvent},
     errors::ServiceError,
 };
 use actix_web::web;
@@ -14,6 +14,8 @@ use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
+
+use super::clickhouse_operator::EventQueue;
 
 #[tracing::instrument(skip(pool))]
 pub async fn create_dataset_query(
@@ -281,7 +283,7 @@ pub async fn clear_dataset_query(
     id: uuid::Uuid,
     deleted_at: chrono::NaiveDateTime,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group;
@@ -398,19 +400,17 @@ pub async fn clear_dataset_query(
                 ))
             })?;
 
-        let _ = create_event_query(
-            Event::from_details(
-                id,
-                EventType::BulkChunksDeleted {
-                    message: format!("Deleted {} chunks", chunk_ids.len()),
-                },
-            ),
-            clickhouse_client.clone(),
-        )
-        .await
-        .map_err(|err| {
-            log::error!("Failed to create event: {:?}", err);
-        });
+        event_queue
+            .send(ClickHouseEvent::WorkerEvent(
+                WorkerEvent::from_details(
+                    id,
+                    EventType::BulkChunksDeleted {
+                        message: format!("Deleted {} chunks", chunk_ids.len()),
+                    },
+                )
+                .into(),
+            ))
+            .await;
 
         log::info!("Deleted {} chunks from {}", chunk_ids.len(), id);
 
@@ -426,6 +426,7 @@ pub async fn delete_dataset_by_id_query(
     deleted_at: chrono::NaiveDateTime,
     pool: web::Data<Pool>,
     clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     dataset_config: DatasetConfiguration,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -436,7 +437,7 @@ pub async fn delete_dataset_by_id_query(
         id,
         deleted_at,
         pool.clone(),
-        clickhouse_client.clone(),
+        event_queue.clone(),
         dataset_config.clone(),
     )
     .await?;

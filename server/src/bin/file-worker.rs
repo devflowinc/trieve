@@ -12,6 +12,7 @@ use trieve_server::{
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
+        clickhouse_operator::{ClickHouseEvent, EventQueue},
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
         file_operator::{create_file_chunks, create_file_query, get_aws_bucket},
     },
@@ -72,29 +73,6 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let clickhouse_client = if std::env::var("USE_ANALYTICS")
-        .unwrap_or("false".to_string())
-        .parse()
-        .unwrap_or(false)
-    {
-        log::info!("Analytics enabled");
-
-        clickhouse::Client::default()
-            .with_url(
-                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
-            )
-            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
-            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
-            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
-            .with_option("async_insert", "1")
-            .with_option("wait_for_async_insert", "0")
-    } else {
-        log::info!("Analytics disabled");
-        clickhouse::Client::default()
-    };
-
-    let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
-
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -119,17 +97,45 @@ fn main() {
 
                 let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
+                let event_queue = if std::env::var("USE_ANALYTICS")
+                    .unwrap_or("false".to_string())
+                    .parse()
+                    .unwrap_or(false)
+                {
+                    log::info!("Analytics enabled");
+
+                    let clickhouse_client = clickhouse::Client::default()
+                        .with_url(
+                            std::env::var("CLICKHOUSE_URL")
+                                .unwrap_or("http://localhost:8123".to_string()),
+                        )
+                        .with_user(
+                            std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()),
+                        )
+                        .with_password(
+                            std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()),
+                        )
+                        .with_database(
+                            std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
+                        )
+                        .with_option("async_insert", "1")
+                        .with_option("wait_for_async_insert", "0");
+
+                    let mut event_queue = EventQueue::new(clickhouse_client.clone());
+                    event_queue.start_service();
+                    event_queue
+                } else {
+                    log::info!("Analytics disabled");
+                    EventQueue::default()
+                };
+
+                let web_event_queue = actix_web::web::Data::new(event_queue);
+
                 let should_terminate = Arc::new(AtomicBool::new(false));
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
 
-                file_worker(
-                    should_terminate,
-                    web_redis_pool,
-                    web_pool,
-                    web_clickhouse_client,
-                )
-                .await
+                file_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -139,7 +145,7 @@ async fn file_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
-    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    event_queue: actix_web::web::Data<EventQueue>,
 ) {
     log::info!("Starting file worker service thread");
 
@@ -218,7 +224,7 @@ async fn file_worker(
         match upload_file(
             file_worker_message.clone(),
             web_pool.clone(),
-            clickhouse_client.clone(),
+            event_queue.clone(),
             redis_connection.clone(),
         )
         .await
@@ -242,7 +248,13 @@ async fn file_worker(
             Err(err) => {
                 log::error!("Failed to upload file: {:?}", err);
 
-                let _ = readd_error_to_queue(file_worker_message, err, redis_pool.clone()).await;
+                let _ = readd_error_to_queue(
+                    file_worker_message,
+                    err,
+                    event_queue.clone(),
+                    redis_pool.clone(),
+                )
+                .await;
             }
         };
 
@@ -253,7 +265,7 @@ async fn file_worker(
 async fn upload_file(
     file_worker_message: FileWorkerMessage,
     web_pool: actix_web::web::Data<models::Pool>,
-    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    event_queue: actix_web::web::Data<EventQueue>,
     redis_conn: MultiplexedConnection,
 ) -> Result<Option<uuid::Uuid>, ServiceError> {
     let file_id = file_worker_message.file_id;
@@ -350,7 +362,7 @@ async fn upload_file(
         html_content,
         dataset_org_plan_sub,
         web_pool.clone(),
-        clickhouse_client.clone(),
+        event_queue.clone(),
         redis_conn,
     )
     .await?;
@@ -360,10 +372,11 @@ async fn upload_file(
     Ok(Some(file_id))
 }
 
-#[tracing::instrument(skip(redis_pool))]
+#[tracing::instrument(skip(redis_pool, event_queue))]
 pub async fn readd_error_to_queue(
     mut payload: FileWorkerMessage,
     error: ServiceError,
+    event_queue: actix_web::web::Data<EventQueue>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
 ) -> Result<(), ServiceError> {
     let old_payload_message = serde_json::to_string(&payload).map_err(|_| {
@@ -386,6 +399,19 @@ pub async fn readd_error_to_queue(
 
     if payload.attempt_number == 3 {
         log::error!("Failed to insert data 3 times quitting {:?}", error);
+
+        event_queue
+            .send(ClickHouseEvent::WorkerEvent(
+                models::WorkerEvent::from_details(
+                    payload.dataset_id,
+                    models::EventType::FileUploadFailed {
+                        file_id: payload.file_id,
+                        error: error.to_string(),
+                    },
+                )
+                .into(),
+            ))
+            .await;
 
         let mut redis_conn = redis_pool
             .get()

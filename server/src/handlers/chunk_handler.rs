@@ -12,9 +12,7 @@ use crate::get_env;
 use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::clickhouse_operator::{
-    get_latency_from_header, send_to_clickhouse, ClickHouseEvent,
-};
+use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue};
 use crate::operators::dataset_operator::get_dataset_usage_query;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
@@ -1112,12 +1110,12 @@ pub fn parse_query(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip(pool, event_queue))]
 pub async fn search_chunks(
     data: web::Json<SearchChunksReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1185,11 +1183,9 @@ pub async fn search_chunks(
         query_rating: String::from(""),
     };
 
-    let _ = send_to_clickhouse(
-        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
-        &clickhouse_client,
-    )
-    .await;
+    event_queue
+        .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+        .await;
 
     timer.add("send_to_clickhouse");
 
@@ -1325,12 +1321,12 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip(pool, event_queue))]
 pub async fn autocomplete(
     data: web::Json<AutocompleteReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1385,11 +1381,10 @@ pub async fn autocomplete(
         query_rating: String::from(""),
     };
 
-    let _ = send_to_clickhouse(
-        ClickHouseEvent::SearchQueryEvent(clickhouse_event),
-        &clickhouse_client,
-    )
-    .await;
+    event_queue
+        .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+        .await;
+
     timer.add("send_to_clickhouse");
 
     transaction.finish();
@@ -1902,12 +1897,12 @@ pub enum RecommendResponseTypes {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip(pool, event_queue))]
 pub async fn get_recommended_chunks(
     data: web::Json<RecommendChunksRequest>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -2125,11 +2120,10 @@ pub async fn get_recommended_chunks(
         created_at: time::OffsetDateTime::now_utc(),
     };
 
-    let _ = send_to_clickhouse(
-        ClickHouseEvent::RecommendationEvent(clickhouse_event),
-        &clickhouse_client,
-    )
-    .await;
+    event_queue
+        .send(ClickHouseEvent::RecommendationEvent(clickhouse_event))
+        .await;
+
     timer.add("send_to_clickhouse");
 
     if data.slim_chunks.unwrap_or(false) {
@@ -2217,11 +2211,11 @@ pub struct GenerateChunksRequest {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, clickhouse_client))]
+#[tracing::instrument(skip(pool, event_queue))]
 pub async fn generate_off_chunks(
     data: web::Json<GenerateChunksRequest>,
     pool: web::Data<Pool>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -2425,11 +2419,9 @@ pub async fn generate_off_chunks(
             llm_response: completion_content.clone(),
         };
 
-        let _ = send_to_clickhouse(
-            ClickHouseEvent::RagQueryEvent(clickhouse_rag_event),
-            &clickhouse_client,
-        )
-        .await;
+        event_queue
+            .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event))
+            .await;
 
         return Ok(HttpResponse::Ok().json(chat_content));
     }
@@ -2461,11 +2453,9 @@ pub async fn generate_off_chunks(
             llm_response: completion,
         };
 
-        let _ = send_to_clickhouse(
-            ClickHouseEvent::RagQueryEvent(clickhouse_rag_event),
-            &clickhouse_client,
-        )
-        .await;
+        event_queue
+            .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event))
+            .await;
     });
 
     let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
