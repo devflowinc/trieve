@@ -435,7 +435,7 @@ export interface RequiredAnalyticsFilter {
 
 // The search analytics params bar conforms to this
 export interface AnalyticsParams {
-  filter: RequiredAnalyticsFilter;
+  filter: AnalyticsFilter;
   granularity: "minute" | "second" | "hour" | "day";
 }
 
@@ -484,6 +484,7 @@ export interface RAGAnalyticsFilter {
 }
 
 export type RAGSortBy = "created_at" | "latency" | "top_score";
+export type SearchSortBy = "created_at" | "latency" | "top_score";
 
 export type SortOrder = "desc" | "asc";
 

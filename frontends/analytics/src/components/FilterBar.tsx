@@ -5,13 +5,11 @@ import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
 import { cn } from "shared/utils";
 
-const ALL_SEARCH_METHODS: RequiredAnalyticsFilter["search_method"][] = [
-  "hybrid",
-  "fulltext",
-  "semantic",
-];
+const ALL_SEARCH_METHODS: (RequiredAnalyticsFilter["search_method"] | "all")[] =
+  ["hybrid", "fulltext", "semantic"];
 
-const ALL_SEARCH_TYPES: RequiredAnalyticsFilter["search_type"][] = [
+const ALL_SEARCH_TYPES: (RequiredAnalyticsFilter["search_type"] | "all")[] = [
+  "all",
   "search",
   "autocomplete",
   "search_over_groups",
@@ -64,12 +62,12 @@ export const FilterBar = (props: FilterBarProps) => {
           <Select
             label={<div class="text-sm text-neutral-600">Search Type</div>}
             class="min-w-[200px] !bg-white"
-            display={(s) => toTitleCase(s)}
+            display={(s) => (s ? toTitleCase(s) : "All")}
             selected={props.filters.filter.search_method}
             onSelected={(e) =>
               props.setFilters("filter", {
                 ...props.filters.filter,
-                search_method: e,
+                search_method: e === "all" ? undefined : e,
               })
             }
             options={ALL_SEARCH_METHODS}
@@ -80,12 +78,12 @@ export const FilterBar = (props: FilterBarProps) => {
           <Select
             label={<div class="text-sm text-neutral-600">Search Method</div>}
             class="min-w-[180px] !bg-white"
-            display={(s) => toTitleCase(s)}
+            display={(s) => (s ? toTitleCase(s) : "All")}
             selected={props.filters.filter.search_type}
             onSelected={(e) =>
               props.setFilters("filter", {
                 ...props.filters.filter,
-                search_type: e,
+                search_type: e === "all" ? undefined : e,
               })
             }
             options={ALL_SEARCH_TYPES}

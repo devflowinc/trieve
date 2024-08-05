@@ -5,7 +5,11 @@ import { DatasetAndUsage } from "shared/types";
 import { usePathname } from "../hooks/usePathname";
 import { useBetterNav } from "../utils/useBetterNav";
 import { Select } from "shared/ui";
-import { AiOutlineLineChart, AiOutlineUser } from "solid-icons/ai";
+import {
+  AiOutlineLineChart,
+  AiOutlineTable,
+  AiOutlineUser,
+} from "solid-icons/ai";
 import { apiHost } from "../utils/apiHost";
 import { IoChatboxOutline, IoLogOutOutline } from "solid-icons/io";
 import { HiOutlineMagnifyingGlass, HiOutlineNewspaper } from "solid-icons/hi";
@@ -36,6 +40,11 @@ const navbarRoutes = [
     href: "/trends",
     label: "Trend Explorer",
     icon: HiOutlineMagnifyingGlass,
+  },
+  {
+    href: "/data/searches",
+    label: "All Searches",
+    icon: AiOutlineTable,
   },
 ];
 

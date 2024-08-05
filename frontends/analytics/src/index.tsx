@@ -12,6 +12,9 @@ import { Chart, registerables } from "chart.js";
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 import { OverviewPage } from "./pages/OverviewPage";
 import { RagAnalyticsPage } from "./pages/RagAnalyticsPage";
+import { DataExplorerTabs } from "./layouts/DataExplorerTabs";
+import { SearchTablePage } from "./pages/tablePages/SearchTablePage";
+import { RAGTablePage } from "./pages/tablePages/RAGTablePage";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +40,20 @@ const routes: RouteDefinition[] = [
       {
         path: "/trends",
         component: TrendExplorer,
+      },
+      {
+        path: "/data",
+        component: DataExplorerTabs,
+        children: [
+          {
+            path: "/searches",
+            component: SearchTablePage,
+          },
+          {
+            path: "/messages",
+            component: RAGTablePage,
+          },
+        ],
       },
     ],
   },
