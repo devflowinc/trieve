@@ -5265,14 +5265,17 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
+/// MultiQuery allows you to construct a dense vector from multiple queries with a weighted sum. This is useful for when you want to emphasize certain features of the query. This only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
 pub struct MultiQuery {
+    /// Query to embed for the final weighted sum vector.
     pub query: String,
+    /// Float value which is applies as a multiplier to the query vector when summing.
     pub weight: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 #[serde(untagged)]
-/// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search.
+/// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
 pub enum QueryTypes {
     Single(String),
     Multi(Vec<MultiQuery>),

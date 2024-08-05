@@ -212,9 +212,16 @@ const ResultsPage = (props: ResultsPageProps) => {
           : (sort_by = undefined);
       }
 
+      const query =
+        props.search.debounced.multiQueries.length > 0
+          ? props.search.debounced.multiQueries
+              .map((q) => [q.query, q.weight])
+              .filter((q) => q[0] != "")
+          : props.search.debounced.query;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const requestBody: any = {
-        query: props.search.debounced.query,
+        query: query,
         page: page(),
         filters: props.search.debounced.filters ?? undefined,
         search_type: props.search.debounced.searchType.includes("autocomplete")
