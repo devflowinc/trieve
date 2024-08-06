@@ -514,8 +514,6 @@ pub async fn set_subscription_payment_method(
     setup_intent: stripe::SetupIntent,
     subscription_id: String,
 ) -> Result<(), ServiceError> {
-    dbg!(setup_intent.status);
-    dbg!(setup_intent.next_action);
     let client = get_stripe_client();
     let subscription_id = stripe::SubscriptionId::from_str(subscription_id.as_str())
         .map_err(|_| ServiceError::BadRequest("Invalid subscription id".to_string()))?;
