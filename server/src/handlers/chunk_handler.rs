@@ -2062,6 +2062,12 @@ pub async fn get_recommended_chunks(
         )
     }
 
+    if positive_qdrant_ids.is_empty() && negative_qdrant_ids.is_empty() {
+        return Err(
+            ServiceError::BadRequest("Positive chunk ids could not be found".to_string()).into(),
+        );
+    }
+
     timer.add("fetched ids from postgres");
 
     let recommended_qdrant_results = recommend_qdrant_query(

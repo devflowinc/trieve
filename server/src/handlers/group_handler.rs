@@ -1263,6 +1263,12 @@ pub async fn get_recommended_groups(
         );
     }
 
+    if positive_qdrant_ids.is_empty() && negative_qdrant_ids.is_empty() {
+        return Err(
+            ServiceError::BadRequest("Positive chunk ids could not be found".to_string()).into(),
+        );
+    }
+
     timer.add("fetched ids from postgres");
 
     let recommended_groups_from_qdrant = recommend_qdrant_groups_query(
