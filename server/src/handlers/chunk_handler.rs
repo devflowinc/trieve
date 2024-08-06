@@ -456,8 +456,11 @@ pub async fn delete_chunk(
 
     let chunk_id = chunk_id.into_inner();
 
+    let deleted_at = chrono::Utc::now().naive_utc();
+
     delete_chunk_metadata_query(
         vec![chunk_id],
+        deleted_at,
         dataset_org_plan_sub.dataset,
         pool,
         dataset_config,
@@ -502,8 +505,11 @@ pub async fn delete_chunk_by_tracking_id(
     let chunk_metadata =
         get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone()).await?;
 
+    let deleted_at = chrono::Utc::now().naive_utc();
+
     delete_chunk_metadata_query(
         vec![chunk_metadata.id],
+        deleted_at,
         dataset_org_plan_sub.dataset,
         pool,
         dataset_config,

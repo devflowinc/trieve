@@ -254,6 +254,7 @@ pub async fn get_group_by_id_query(
 pub async fn delete_group_by_id_query(
     group_id: uuid::Uuid,
     dataset: Dataset,
+    deleted_at: chrono::NaiveDateTime,
     delete_chunks: Option<bool>,
     pool: web::Data<Pool>,
     dataset_config: DatasetConfiguration,
@@ -279,14 +280,16 @@ pub async fn delete_group_by_id_query(
             async move {
                 diesel::delete(
                     groups_from_files_columns::groups_from_files
-                        .filter(groups_from_files_columns::group_id.eq(group_id)),
+                        .filter(groups_from_files_columns::group_id.eq(group_id))
+                        .filter(groups_from_files_columns::created_at.le(deleted_at)),
                 )
                 .execute(conn)
                 .await?;
 
                 diesel::delete(
                     chunk_group_bookmarks_columns::chunk_group_bookmarks
-                        .filter(chunk_group_bookmarks_columns::group_id.eq(group_id)),
+                        .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
+                        .filter(chunk_group_bookmarks_columns::created_at.le(deleted_at)),
                 )
                 .execute(conn)
                 .await?;
@@ -294,7 +297,8 @@ pub async fn delete_group_by_id_query(
                 diesel::delete(
                     chunk_group_columns::chunk_group
                         .filter(chunk_group_columns::id.eq(group_id))
-                        .filter(chunk_group_columns::dataset_id.eq(dataset.id)),
+                        .filter(chunk_group_columns::dataset_id.eq(dataset.id))
+                        .filter(chunk_group_columns::created_at.le(deleted_at)),
                 )
                 .execute(conn)
                 .await?;
@@ -309,6 +313,7 @@ pub async fn delete_group_by_id_query(
         let chunk_ids = chunks.iter().map(|chunk| chunk.id).collect();
         delete_chunk_metadata_query(
             chunk_ids,
+            deleted_at,
             dataset.clone(),
             pool.clone(),
             dataset_config.clone(),
