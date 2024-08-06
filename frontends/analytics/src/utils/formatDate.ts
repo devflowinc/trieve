@@ -18,7 +18,9 @@ export const formatDateForApi = (date: Date) => {
 
 export const parseCustomDateString = (dateString: string) => {
   const [datePart, timePart] = dateString.split(" ");
+  /* eslint-disable prefer-const */
   let [year, month, day] = datePart.split("-");
+  /* eslint-disable prefer-const */
   let [hour, minute, second] = timePart.split(":");
   let [wholeSec] = second.split(".");
 
