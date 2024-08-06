@@ -1,0 +1,5 @@
+ALTER TABLE dataset_events REMOVE TTL;
+ALTER TABLE search_queries REMOVE TTL;
+ALTER TABLE rag_queries REMOVE TTL;
+ALTER TABLE recommendations REMOVE TTL;
+ALTER TABLE ctr_data REMOVE TTL;
