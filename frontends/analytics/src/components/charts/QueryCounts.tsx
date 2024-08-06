@@ -6,6 +6,7 @@ import { getQueryCounts } from "../../api/analytics";
 import { toTitleCase } from "../../utils/titleCase";
 import { Select } from "shared/ui";
 import { DateRangeOption, dateRanges } from "../FilterBar";
+import { CTRSummary } from "./CTRSummary";
 
 const displaySearchType = (type: SearchTypeCount["search_type"]) => {
   switch (type) {
@@ -30,7 +31,7 @@ export const QueryCounts = () => {
     dateRanges[2],
   );
 
-  const headQueriesQuery = createQuery(() => ({
+  const queryCountsQuery = createQuery(() => ({
     queryKey: ["queryCounts", { gt_date: dateSelection().date }],
     queryFn: () => {
       return getQueryCounts(dateSelection().date, dataset().dataset.id);
@@ -60,11 +61,18 @@ export const QueryCounts = () => {
       </div>
       <Show
         fallback={<div class="py-8">Loading...</div>}
-        when={headQueriesQuery.data}
+        when={queryCountsQuery.data}
       >
         {(data) => (
           <div class="flex justify-around gap-2 py-2">
-            <For each={data()}>
+            <For
+              fallback={
+                <div class="py-4 text-sm opacity-60">
+                  No searches found for this time period.
+                </div>
+              }
+              each={data()}
+            >
               {(search) => {
                 return (
                   <div class="text-center">
@@ -84,6 +92,13 @@ export const QueryCounts = () => {
           </div>
         )}
       </Show>
+      <CTRSummary
+        filter={{
+          date_range: {
+            gt: dateSelection().date,
+          },
+        }}
+      />
     </div>
   );
 };
