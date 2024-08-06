@@ -3856,9 +3856,15 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
         SearchQueryEvent {
             id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
             search_type: clickhouse_response.search_type,
-            query: clickhouse_response.query.replace("|q", "?"),
+            query: clickhouse_response
+                .query
+                .replace("|q", "?")
+                .replace('\n', ""),
             request_params: serde_json::from_str(
-                &clickhouse_response.request_params.replace("|q", "?"),
+                &clickhouse_response
+                    .request_params
+                    .replace("|q", "?")
+                    .replace('\n', ""),
             )
             .unwrap_or_default(),
             latency: clickhouse_response.latency,
@@ -3866,7 +3872,10 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
             results: clickhouse_response
                 .results
                 .iter()
-                .map(|r| serde_json::from_str(&r.replace("|q", "?")).unwrap_or_default())
+                .map(|r| {
+                    serde_json::from_str(&r.replace("|q", "?").replace('\n', ""))
+                        .unwrap_or_default()
+                })
                 .collect::<Vec<serde_json::Value>>(),
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),

@@ -72,10 +72,12 @@ pub async fn send_to_clickhouse(
     for event in events {
         match event {
             ClickHouseEvent::SearchQueryEvent(mut event) => {
-                event
-                    .results
-                    .iter_mut()
-                    .for_each(|result| *result = result.replace('\'', "''").replace('?', "|q"));
+                event.results.iter_mut().for_each(|result| {
+                    *result = result
+                        .replace('\'', "''")
+                        .replace('?', "|q")
+                        .replace('\n', "")
+                });
                 search_queries_inserter.push_str(&format!(
                     " ('{}', '{}', '{}', '{}', embed_p('{}'), '{}', '{}', ['{}'], '{}', now()),",
                     event.id,
