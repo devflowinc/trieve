@@ -1195,12 +1195,20 @@ pub async fn set_query_rating_query(
         .execute()
         .await
         .map_err(|err| {
-            log::error!("Error altering to ClickHouse default.search_queries: {:?}", err);
+            log::error!(
+                "Error altering to ClickHouse default.search_queries: {:?}",
+                err
+            );
             sentry::capture_message(
-                &format!("Error altering to ClickHouse default.search_queries: {:?}", err),
+                &format!(
+                    "Error altering to ClickHouse default.search_queries: {:?}",
+                    err
+                ),
                 sentry::Level::Error,
             );
-            ServiceError::InternalServerError("Error altering to ClickHouse default.search_queries".to_string())
+            ServiceError::InternalServerError(
+                "Error altering to ClickHouse default.search_queries".to_string(),
+            )
         })?;
 
     Ok(())
