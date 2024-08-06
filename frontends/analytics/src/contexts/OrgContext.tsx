@@ -26,13 +26,13 @@ export const OrgContextProvider = (props: OrgDatasetContextProps) => {
     if (props.user.orgs.length === 0) {
       throw redirect("/error");
     }
-    if (params.orgId) {
+    if (params.organization) {
       return (
-        props.user.orgs.find((org) => org.id === params.orgId) ||
+        props.user.orgs.find((org) => org.id === params.organization) ||
         props.user.orgs[0]
       );
     }
-    setParams({ orgId: props.user.orgs[0].id });
+    setParams({ organization: props.user.orgs[0].id });
     return props.user.orgs[0];
   };
 
@@ -45,7 +45,7 @@ export const OrgContextProvider = (props: OrgDatasetContextProps) => {
       throw redirect("/error");
     }
     setSelectedOrg(org);
-    setParams({ orgId: org.id });
+    setParams({ organization: org.id });
   };
 
   return (
