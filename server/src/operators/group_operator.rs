@@ -110,7 +110,7 @@ pub async fn create_groups_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let inserted_groups = if upsert_by_tracking_id {
+    let mut inserted_groups = if upsert_by_tracking_id {
         diesel::insert_into(chunk_group_columns::chunk_group)
             .values(&new_groups)
             .on_conflict((
@@ -142,6 +142,9 @@ pub async fn create_groups_query(
                 ServiceError::BadRequest("Error inserting groups".to_string())
             })?
     };
+    if inserted_groups.is_empty() {
+        inserted_groups = new_groups;
+    }
 
     Ok(inserted_groups)
 }
