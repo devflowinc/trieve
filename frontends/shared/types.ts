@@ -125,6 +125,7 @@ export interface ServerEnvsConfiguration {
   FREQUENCY_PENALTY?: number | null;
   STOP_TOKENS?: string | null;
   USE_MESSAGE_TO_QUERY_PROMPT?: boolean;
+  MAX_TOKENS?: number | null;
   INDEXED_ONLY?: boolean;
   LOCKED?: boolean;
   SYSTEM_PROMPT?: string | null;
