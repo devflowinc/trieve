@@ -3,14 +3,14 @@ import { apiHost } from "../utils/apiHost";
 import { transformAnalyticsFilter } from "../utils/formatDate";
 
 export const getSearchCTRSummary = async (
-  filters: AnalyticsFilter,
   datasetId: string,
+  filters?: AnalyticsFilter,
 ) => {
   const response = await fetch(`${apiHost}/analytics/ctr`, {
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
-      filter: transformAnalyticsFilter(filters),
+      filter: filters ? transformAnalyticsFilter(filters) : undefined,
       type: "search_ctr_metrics",
     }),
     headers: {

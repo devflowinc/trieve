@@ -1,8 +1,8 @@
 import { ChartCard } from "../components/charts/ChartCard";
-import { CTRSummary } from "../components/charts/CTRSummary";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { QueryCounts } from "../components/charts/QueryCounts";
 import { SearchUsageGraph } from "../components/charts/SearchUsageGraph";
+import { CTRInfoPanel } from "../components/CTRInfoPanel";
 import {
   SimpleTimeRangeSelector,
   useSimpleTimeRange,
@@ -11,60 +11,52 @@ import {
 export const OverviewPage = () => {
   const rpsDate = useSimpleTimeRange();
   const headQueriesDate = useSimpleTimeRange();
-  const ctrDate = useSimpleTimeRange();
   return (
-    <div class="grid grid-cols-2 items-start gap-2">
-      <ChartCard class="flex flex-col justify-between px-4" width={2}>
-        <QueryCounts />
-      </ChartCard>
-      <ChartCard
-        title="Requests Per Second"
-        controller={
-          <SimpleTimeRangeSelector
-            setDateOption={rpsDate.setDateOption}
-            dateOption={rpsDate.dateOption()}
+    <>
+      <div class="grid grid-cols-2 items-start gap-2">
+        <div class="col-span-2">
+          <CTRInfoPanel />
+        </div>
+        <ChartCard class="flex flex-col justify-between px-4" width={2}>
+          <QueryCounts />
+        </ChartCard>
+        <ChartCard
+          title="Requests Per Second"
+          controller={
+            <SimpleTimeRangeSelector
+              setDateOption={rpsDate.setDateOption}
+              dateOption={rpsDate.dateOption()}
+            />
+          }
+          class="flex flex-col justify-between px-4"
+          width={1}
+        >
+          <SearchUsageGraph
+            params={{
+              filter: rpsDate.filter(),
+              granularity: rpsDate.granularity(),
+            }}
           />
-        }
-        class="flex flex-col justify-between px-4"
-        width={1}
-      >
-        <SearchUsageGraph
-          params={{
-            filter: rpsDate.filter(),
-            granularity: rpsDate.granularity(),
-          }}
-        />
-      </ChartCard>
+        </ChartCard>
 
-      <ChartCard
-        controller={
-          <SimpleTimeRangeSelector
-            setDateOption={headQueriesDate.setDateOption}
-            dateOption={headQueriesDate.dateOption()}
+        <ChartCard
+          controller={
+            <SimpleTimeRangeSelector
+              setDateOption={headQueriesDate.setDateOption}
+              dateOption={headQueriesDate.dateOption()}
+            />
+          }
+          title="Head Queries"
+          class="px-4"
+          width={1}
+        >
+          <HeadQueries
+            params={{
+              filter: headQueriesDate.filter(),
+            }}
           />
-        }
-        title="Head Queries"
-        class="px-4"
-        width={1}
-      >
-        <HeadQueries
-          params={{
-            filter: headQueriesDate.filter(),
-          }}
-        />
-      </ChartCard>
-      <ChartCard
-        controller={
-          <SimpleTimeRangeSelector
-            setDateOption={ctrDate.setDateOption}
-            dateOption={ctrDate.dateOption()}
-          />
-        }
-        title="Click-through Rate"
-        class="px-4"
-      >
-        <CTRSummary filter={ctrDate.filter()} />
-      </ChartCard>
-    </div>
+        </ChartCard>
+      </div>
+    </>
   );
 };
