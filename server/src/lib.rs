@@ -586,7 +586,7 @@ pub fn main() -> std::io::Result<()> {
         }
 
 
-        let event_queue = if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()).parse().unwrap_or(false) {
+        let (clickhouse_client, event_queue) = if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()).parse().unwrap_or(false) {
             log::info!("Analytics enabled");
 
             let args  = SetupArgs {
@@ -611,10 +611,10 @@ pub fn main() -> std::io::Result<()> {
 
             let mut event_queue = EventQueue::new(clickhouse_client.clone());
             event_queue.start_service();
-            event_queue
+            (clickhouse_client, event_queue)
         } else {
             log::info!("Analytics disabled");
-            EventQueue::default()
+            (clickhouse::Client::default(), EventQueue::default())
         };
 
 
@@ -636,6 +636,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
                 .app_data(web::Data::new(event_queue.clone()))
+                .app_data(web::Data::new(clickhouse_client.clone()))
                 .app_data(web::Data::new(metrics.clone()))
                 .wrap(sentry_actix::Sentry::new())
                 .wrap(middleware::api_version::ApiVersionCheckFactory)

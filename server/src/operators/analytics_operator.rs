@@ -899,8 +899,6 @@ pub async fn get_search_ctr_metrics_query(
         ",
     );
 
-    dbg!(&query_string);
-
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
