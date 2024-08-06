@@ -316,7 +316,7 @@ pub async fn stream_response(
             stop: dataset_config.STOP_TOKENS.clone().map(StopToken::Array),
             top_p: None,
             n: None,
-            max_tokens: None,
+            max_tokens: dataset_config.MAX_TOKENS.map(|max| max as u32),
             logit_bias: None,
             user: None,
             response_format: None,
@@ -494,12 +494,27 @@ pub async fn stream_response(
 
     if let Some(llm_options) = create_message_req_payload.llm_options.clone() {
         parameters.stream = llm_options.stream_response;
-        parameters.temperature = llm_options.temperature;
-        parameters.frequency_penalty = llm_options.frequency_penalty;
-        parameters.presence_penalty = llm_options.presence_penalty;
-        parameters.max_tokens = llm_options.max_tokens;
-        parameters.stop = llm_options.stop_tokens.map(StopToken::Array);
-        parameters.max_tokens = llm_options.max_tokens;
+        parameters.temperature = dataset_config
+            .TEMPERATURE
+            .map(|x| x as f32)
+            .or(llm_options.temperature);
+        parameters.frequency_penalty = dataset_config
+            .FREQUENCY_PENALTY
+            .map(|x| x as f32)
+            .or(llm_options.frequency_penalty);
+        parameters.presence_penalty = dataset_config
+            .PRESENCE_PENALTY
+            .map(|x| x as f32)
+            .or(llm_options.presence_penalty);
+        parameters.max_tokens = dataset_config
+            .MAX_TOKENS
+            .map(|x| x as u32)
+            .or(llm_options.max_tokens);
+        parameters.stop = dataset_config
+            .STOP_TOKENS
+            .clone()
+            .map(StopToken::Array)
+            .or(llm_options.stop_tokens.map(StopToken::Array));
     }
 
     if !chunk_metadatas_stringified.is_empty() {

@@ -41,6 +41,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   TEMPERATURE: null,
   PRESENCE_PENALTY: null,
   STOP_TOKENS: null,
+  MAX_TOKENS: null,
   INDEXED_ONLY: false,
   LOCKED: false,
   SYSTEM_PROMPT: null,
@@ -240,6 +241,29 @@ export const ServerSettingsForm = (props: {
                       return {
                         ...prev,
                         FREQUENCY_PENALTY: e.currentTarget.valueAsNumber,
+                      };
+                    })
+                  }
+                />
+              </div>
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="presencePenalty"
+                  class="block text-sm font-medium leading-6"
+                >
+                  Max Tokens
+                </label>
+                <input
+                  type="number"
+                  name="presencePenalty"
+                  id="linesBeforeShowMore"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={props.serverConfig().MAX_TOKENS ?? 0}
+                  onChange={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        MAX_TOKENS: e.currentTarget.valueAsNumber,
                       };
                     })
                   }

@@ -1996,6 +1996,7 @@ pub struct DatasetConfiguration {
     pub FREQUENCY_PENALTY: Option<f64>,
     pub TEMPERATURE: Option<f64>,
     pub PRESENCE_PENALTY: Option<f64>,
+    pub MAX_TOKENS: Option<u64>,
     pub STOP_TOKENS: Option<Vec<String>>,
     pub INDEXED_ONLY: bool,
     pub LOCKED: bool,
@@ -2078,6 +2079,8 @@ pub struct DatasetConfigurationDTO {
     pub PRESENCE_PENALTY: Option<f64>,
     /// The stop tokens to use
     pub STOP_TOKENS: Option<Vec<String>>,
+    /// The maximum number of tokens to use in LLM Response
+    pub MAX_TOKENS: Option<u64>,
     /// Whether to only use indexed chunks
     pub INDEXED_ONLY: Option<bool>,
     /// Whether the dataset is locked to prevent changes or deletion
@@ -2113,6 +2116,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             TEMPERATURE: dto.TEMPERATURE,
             PRESENCE_PENALTY: dto.PRESENCE_PENALTY,
             STOP_TOKENS: dto.STOP_TOKENS,
+            MAX_TOKENS: dto.MAX_TOKENS,
             INDEXED_ONLY: dto.INDEXED_ONLY.unwrap_or(false),
             LOCKED: dto.LOCKED.unwrap_or(false),
             SYSTEM_PROMPT: dto.SYSTEM_PROMPT.unwrap_or("You are a helpful assistant".to_string()),
@@ -2146,6 +2150,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             TEMPERATURE: config.TEMPERATURE,
             PRESENCE_PENALTY: config.PRESENCE_PENALTY,
             STOP_TOKENS: config.STOP_TOKENS,
+            MAX_TOKENS: config.MAX_TOKENS,
             INDEXED_ONLY: Some(config.INDEXED_ONLY),
             LOCKED: Some(config.LOCKED),
             SYSTEM_PROMPT: Some(config.SYSTEM_PROMPT),
@@ -2181,6 +2186,7 @@ impl Default for DatasetConfiguration {
             STOP_TOKENS: None,
             INDEXED_ONLY: false,
             LOCKED: false,
+            MAX_TOKENS: None,
             SYSTEM_PROMPT: "You are a helpful assistant".to_string(),
             MAX_LIMIT: 10000,
         }
@@ -2398,6 +2404,9 @@ impl DatasetConfiguration {
                 .unwrap_or(&json!(10_000))
                 .as_u64()
                 .unwrap_or(10_000),
+            MAX_TOKENS: configuration
+                .get("MAX_TOKENS")
+                .and_then(|v| v.as_u64()),
         }
     }
 
@@ -2428,6 +2437,7 @@ impl DatasetConfiguration {
             "LOCKED": self.LOCKED,
             "SYSTEM_PROMPT": self.SYSTEM_PROMPT,
             "MAX_LIMIT": self.MAX_LIMIT,
+            "MAX_TOKENS": self.MAX_TOKENS,
         })
     }
 }
@@ -2505,6 +2515,7 @@ impl DatasetConfigurationDTO {
                 .PRESENCE_PENALTY
                 .or(curr_dataset_config.PRESENCE_PENALTY),
             STOP_TOKENS: self.STOP_TOKENS.clone().or(curr_dataset_config.STOP_TOKENS),
+            MAX_TOKENS: self.MAX_TOKENS.or(curr_dataset_config.MAX_TOKENS),
             INDEXED_ONLY: self
                 .INDEXED_ONLY
                 .unwrap_or(curr_dataset_config.INDEXED_ONLY),
