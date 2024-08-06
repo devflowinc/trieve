@@ -1203,7 +1203,7 @@ pub async fn search_chunks(
         id: search_id,
         search_type: String::from("search"),
         query,
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
         latency: get_latency_from_header(timer.header_value()),
         top_score: result_chunks
             .score_chunks
@@ -1214,7 +1214,7 @@ pub async fn search_chunks(
             .score_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap())
+            .map(|x| serde_json::to_string(&x).unwrap_or_default())
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -1401,7 +1401,7 @@ pub async fn autocomplete(
         id: search_id,
         search_type: String::from("autocomplete"),
         query: data.query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
         latency: get_latency_from_header(timer.header_value()),
         top_score: result_chunks
             .score_chunks
@@ -1412,7 +1412,7 @@ pub async fn autocomplete(
             .score_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap())
+            .map(|x| serde_json::to_string(&x).unwrap_or_default())
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -2158,14 +2158,14 @@ pub async fn get_recommended_chunks(
             .collect(),
         positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
         negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
         top_score: recommended_chunk_metadatas_with_score
             .first()
             .map(|x| x.score)
             .unwrap_or(0.0),
         results: recommended_chunk_metadatas_with_score
             .iter()
-            .map(|x| serde_json::to_string(x).unwrap())
+            .map(|x| serde_json::to_string(x).unwrap_or_default())
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),

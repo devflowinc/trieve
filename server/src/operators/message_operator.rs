@@ -379,7 +379,7 @@ pub async fn stream_response(
     .await?;
 
     let clickhouse_search_event = SearchQueryEventClickhouse {
-        request_params: serde_json::to_string(&search_chunk_data.clone()).unwrap(),
+        request_params: serde_json::to_string(&search_chunk_data.clone()).unwrap_or_default(),
         id: uuid::Uuid::new_v4(),
         search_type: "rag".to_string(),
         query: query.clone(),
@@ -395,7 +395,7 @@ pub async fn stream_response(
             .score_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap())
+            .map(|x| serde_json::to_string(&x).unwrap_or_default())
             .collect(),
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
