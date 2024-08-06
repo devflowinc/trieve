@@ -1321,14 +1321,14 @@ pub async fn get_recommended_groups(
             .collect(),
         positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
         negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
         top_score: recommended_chunk_metadatas
             .first()
             .map(|x| x.metadata.first().map(|x| x.score).unwrap_or(0.0))
             .unwrap_or(0.0) as f32,
         results: recommended_chunk_metadatas
             .iter()
-            .map(|x| serde_json::to_string(x).unwrap())
+            .map(|x| serde_json::to_string(x).unwrap_or_default())
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -1563,7 +1563,7 @@ pub async fn search_within_group(
         id: search_id,
         search_type: String::from("search_within_groups"),
         query: query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
         latency: get_latency_from_header(timer.header_value()),
         top_score: result_chunks
             .bookmarks
@@ -1574,7 +1574,7 @@ pub async fn search_within_group(
             .bookmarks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap())
+            .map(|x| serde_json::to_string(&x).unwrap_or_default())
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -1740,7 +1740,7 @@ pub async fn search_over_groups(
         id: search_id,
         search_type: String::from("search_over_groups"),
         query: query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap(),
+        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
         latency: get_latency_from_header(timer.header_value()),
         top_score: result_chunks
             .group_chunks
@@ -1751,7 +1751,7 @@ pub async fn search_over_groups(
             .group_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap())
+            .map(|x| serde_json::to_string(&x).unwrap_or_default())
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),

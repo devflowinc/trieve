@@ -75,14 +75,14 @@ pub async fn send_to_clickhouse(
                 event
                     .results
                     .iter_mut()
-                    .for_each(|result| *result = result.replace('\'', "''").replace('?', "\\q"));
+                    .for_each(|result| *result = result.replace('\'', "''").replace('?', "|q"));
                 search_queries_inserter.push_str(&format!(
                     " ('{}', '{}', '{}', '{}', embed_p('{}'), '{}', '{}', ['{}'], '{}', now()),",
                     event.id,
                     event.search_type,
-                    event.query.replace('?', "\\q"),
-                    event.request_params.replace('?', "\\q"),
-                    event.query.replace('?', "\\q"),
+                    event.query.replace('?', "|q"),
+                    event.request_params.replace('?', "|q"),
+                    event.query.replace('?', "|q"),
                     event.latency,
                     event.top_score,
                     event.results.join("','"),
