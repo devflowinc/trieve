@@ -1184,22 +1184,11 @@ pub async fn update_chunk_metadata_query(
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_metadata_query(
     chunk_uuid: Vec<uuid::Uuid>,
+    deleted_at: chrono::NaiveDateTime,
     dataset: Dataset,
     pool: web::Data<Pool>,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let chunk_metadata =
-        get_metadata_from_ids_query(chunk_uuid.clone(), dataset.id, pool.clone()).await?;
-    if let Some(chunk_metadata) = chunk_metadata.get(0) {
-        if chunk_metadata.dataset_id != dataset.id {
-            return Err(ServiceError::BadRequest(
-                "chunk does not belong to dataset".to_string(),
-            ));
-        }
-    } else {
-        return Ok(());
-    }
-
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     let mut conn = pool.get().await.unwrap();
@@ -1208,22 +1197,29 @@ pub async fn delete_chunk_metadata_query(
         .transaction::<_, diesel::result::Error, _>(|conn| {
             async move {
                 {
-                    diesel::delete(chunk_group_bookmarks_columns::chunk_group_bookmarks.filter(
-                        chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(chunk_uuid.clone()),
-                    ))
-                    .execute(conn)
-                    .await?;
-
-                    // if there were no collisions, just delete the chunk_metadata without issue
                     diesel::delete(
-                        chunk_metadata_columns::chunk_metadata
-                            .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
-                            .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
+                        chunk_group_bookmarks_columns::chunk_group_bookmarks
+                            .filter(
+                                chunk_group_bookmarks_columns::chunk_metadata_id
+                                    .eq_any(chunk_uuid.clone()),
+                            )
+                            .filter(chunk_group_bookmarks_columns::created_at.le(deleted_at)),
                     )
                     .execute(conn)
                     .await?;
 
-                    Ok(())
+                    // if there were no collisions, just delete the chunk_metadata without issue
+                    let deleted_points = diesel::delete(
+                        chunk_metadata_columns::chunk_metadata
+                            .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
+                            .filter(chunk_metadata_columns::dataset_id.eq(dataset.id))
+                            .filter(chunk_metadata_columns::created_at.le(deleted_at)),
+                    )
+                    .returning(chunk_metadata_columns::qdrant_point_id)
+                    .get_results::<uuid::Uuid>(conn)
+                    .await?;
+
+                    Ok(deleted_points)
                 }
             }
             .scope_boxed()
@@ -1232,13 +1228,8 @@ pub async fn delete_chunk_metadata_query(
 
     let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
 
-    let point_ids = chunk_metadata
-        .iter()
-        .map(|x| x.qdrant_point_id)
-        .collect::<Vec<uuid::Uuid>>();
-
     match transaction_result {
-        Ok(()) => delete_points_from_qdrant(point_ids, qdrant_collection)
+        Ok(deleted_points) => delete_points_from_qdrant(deleted_points, qdrant_collection)
             .await
             .map_err(|_e| {
                 ServiceError::BadRequest("Failed to delete chunk from qdrant".to_string())
