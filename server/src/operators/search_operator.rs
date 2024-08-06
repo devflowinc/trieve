@@ -1150,7 +1150,7 @@ pub async fn retrieve_chunks_for_groups(
             let score_chunks: Vec<ScoreChunkDTO> = group_search_result
                 .hits
                 .iter()
-                .map(|search_result| {
+                .filter_map(|search_result| {
                     let mut chunk: ChunkMetadataTypes =
                         match metadata_chunks.iter().find(|metadata_chunk| {
                             metadata_chunk.metadata().qdrant_point_id == search_result.point_id
@@ -1158,31 +1158,15 @@ pub async fn retrieve_chunks_for_groups(
                             Some(metadata_chunk) => metadata_chunk.clone(),
                             None => {
                                 log::error!(
-                                    "Failed to find metadata chunk for point id for chunks with groups: {:?}",
+                                    "Failed to find chunk for qdrant_point_id for retrieve_chunks_for_groups: {:?}",
                                     search_result.point_id
                                 );
                                 sentry::capture_message(
-                                    &format!("Failed to find metadata chunk for point id for chunks with groups: {:?}", search_result.point_id),
+                                    &format!("Failed to find chunk for qdrant_point_id for retrieve_chunks_for_groups: {:?}", search_result.point_id),
                                     sentry::Level::Error,
                                 );
 
-                                ChunkMetadata {
-                                    id: uuid::Uuid::default(),
-                                    qdrant_point_id: uuid::Uuid::default(),
-                                    created_at: chrono::Utc::now().naive_local(),
-                                    updated_at: chrono::Utc::now().naive_local(),
-                                    chunk_html: Some("".to_string()),
-                                    link: Some("".to_string()),
-                                    tag_set: None,
-                                    metadata: None,
-                                    tracking_id: None,
-                                    time_stamp: None,
-                                    location: None,
-                                    dataset_id: uuid::Uuid::default(),
-                                    weight: 1.0,
-                                    image_urls: None,
-                                    num_value: None
-                                }.into()
+                                return None;
                             },
                         };
 
@@ -1247,11 +1231,11 @@ pub async fn retrieve_chunks_for_groups(
                 }
 
 
-                    ScoreChunkDTO {
+                    Some(ScoreChunkDTO {
                         metadata: vec![chunk],
                         highlights,
                         score: search_result.score.into(),
-                    }
+                    })
                 })
                 .sorted_by(|a, b| b.score.partial_cmp(&a.score).unwrap())
                 .collect_vec();
@@ -1317,7 +1301,7 @@ pub async fn get_metadata_from_groups(
             let score_chunk: Vec<ScoreChunkDTO> = group_search_result
                 .hits
                 .iter()
-                .map(|search_result| {
+                .filter_map(|search_result| {
                     let chunk: ChunkMetadataTypes =
                         match chunk_metadatas.iter().find(|metadata_chunk| {
                             metadata_chunk.metadata().qdrant_point_id == search_result.point_id
@@ -1325,39 +1309,23 @@ pub async fn get_metadata_from_groups(
                             Some(metadata_chunk) => metadata_chunk.clone(),
                             None => {
                                 log::error!(
-                                    "Failed to find metadata chunk for point id for metadata with groups: {:?}",
+                                    "Failed to find chunk for qdrant_point_id for get_metadata_from_groups: {:?}",
                                     search_result.point_id
                                 );
                                 sentry::capture_message(
-                                    &format!("Failed to find metadata chunk for point id for metadata with groups: {:?}", search_result.point_id),
+                                    &format!("Failed to find chunk for qdrant_point_id for get_metadata_from_groups: {:?}", search_result.point_id),
                                     sentry::Level::Error,
                                 );
 
-                                ChunkMetadata {
-                                    id: uuid::Uuid::default(),
-                                    qdrant_point_id: uuid::Uuid::default(),
-                                    created_at: chrono::Utc::now().naive_local(),
-                                    updated_at: chrono::Utc::now().naive_local(),
-                                    chunk_html: Some("".to_string()),
-                                    link: None,
-                                    tag_set: None,
-                                    metadata: None,
-                                    tracking_id: None,
-                                    time_stamp: None,
-                                    location: None,
-                                    dataset_id: uuid::Uuid::default(),
-                                    weight: 1.0,
-                                    image_urls: None,
-                                    num_value: None
-                                }.into()
+                                return None;
                             },
                         };
 
-                    ScoreChunkDTO {
+                    Some(ScoreChunkDTO {
                         metadata: vec![chunk],
                         highlights: None,
                         score: search_result.score.into(),
-                    }
+                    })
                 })
                 .collect_vec();
 
@@ -1426,7 +1394,7 @@ pub async fn retrieve_chunks_from_point_ids(
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
         .iter()
-        .map(|search_result| {
+        .filter_map(|search_result| {
             let mut chunk: ChunkMetadataTypes =
                 match metadata_chunks.iter().find(|metadata_chunk| {
                     metadata_chunk.metadata().qdrant_point_id == search_result.point_id
@@ -1434,35 +1402,18 @@ pub async fn retrieve_chunks_from_point_ids(
                     Some(metadata_chunk) => metadata_chunk.clone(),
                     None => {
                         log::error!(
-                            "Failed to find metadata chunk from point ids: {:?}",
+                            "Failed to find chunk from qdrant_point_id for retrieve_chunks_from_point_ids: {:?}",
                             search_result.point_id
                         );
                         sentry::capture_message(
                             &format!(
-                                "Failed to find metadata chunk from point ids: {:?}",
+                                "Failed to find chunk from qdrant_point_id for retrieve_chunks_from_point_ids: {:?}",
                                 search_result.point_id
                             ),
                             sentry::Level::Error,
                         );
 
-                        ChunkMetadata {
-                            id: uuid::Uuid::default(),
-                            qdrant_point_id: uuid::Uuid::default(),
-                            created_at: chrono::Utc::now().naive_local(),
-                            updated_at: chrono::Utc::now().naive_local(),
-                            chunk_html: Some("".to_string()),
-                            link: None,
-                            tag_set: None,
-                            metadata: None,
-                            tracking_id: None,
-                            time_stamp: None,
-                            location: None,
-                            dataset_id: uuid::Uuid::default(),
-                            weight: 1.0,
-                            image_urls: None,
-                            num_value: None,
-                        }
-                        .into()
+                        return None;
                     }
                 };
 
@@ -1526,11 +1477,11 @@ pub async fn retrieve_chunks_from_point_ids(
                         }
                 }
 
-            ScoreChunkDTO {
+            Some(ScoreChunkDTO {
                 metadata: vec![chunk],
                 highlights,
                 score: search_result.score.into(),
-            }
+            })
         })
         .collect();
 
