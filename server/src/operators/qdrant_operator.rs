@@ -16,7 +16,7 @@ use itertools::Itertools;
 use qdrant_client::{
     qdrant::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
-        quantization_config::Quantization, BinaryQuantization, CreateCollectionBuilder,
+        quantization_config::Quantization, query, BinaryQuantization, CreateCollectionBuilder,
         CreateFieldIndexCollectionBuilder, DeleteFieldIndexCollectionBuilder, DeletePointsBuilder,
         Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, OrderBy, PayloadIndexParams,
         PointId, PointStruct, PrefetchQuery, QuantizationConfig, Query, QueryBatchPoints,
@@ -952,6 +952,7 @@ fn get_prefetch_query(
                 limit: Some(prefetch_amount),
                 using: Some(name),
                 filter: Some(query.filter.clone()),
+                score_threshold: query.score_threshold,
                 ..Default::default()
             }],
             (
@@ -1009,6 +1010,11 @@ pub async fn search_qdrant_query(
                 prefetch.limit = Some(prefetch.limit.unwrap_or(1) * new_page);
             }
 
+            let score_threshold = match qdrant_query.variant {
+                Some(query::Variant::OrderBy(_)) => None,
+                _ => query.score_threshold,
+            };
+
             QueryPoints {
                 collection_name: qdrant_collection.to_string(),
                 limit: Some(query.limit),
@@ -1016,7 +1022,7 @@ pub async fn search_qdrant_query(
                 prefetch,
                 using: vector_name,
                 query: Some(qdrant_query),
-                score_threshold: query.score_threshold,
+                score_threshold,
                 with_payload: Some(WithPayloadSelector::from(false)),
                 with_vectors: Some(WithVectorsSelector::from(false)),
                 timeout: Some(60),
@@ -1045,7 +1051,7 @@ pub async fn search_qdrant_query(
 
     let search_batch_response = search_batch_response.map_err(|e| {
         log::error!("Failed to search points on Qdrant {:?}", e);
-        ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
+        ServiceError::BadRequest(format!("Failed to search points on Qdrant {:?}", e))
     })?;
 
     let batch_lengths = search_batch_response
