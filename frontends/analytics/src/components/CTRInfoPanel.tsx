@@ -7,7 +7,7 @@ export const CTRInfoPanel = () => {
     <Show when={ctrNeedsSetup()}>
       <div class="rounded border border-blue-300 bg-blue-100/60 p-4 text-blue-900">
         <div>
-          Note: Click-through rate analytics has not been set up for this
+          Note: Click-through rate analytics have not been set up for this
           dataset yet. Data will be viewable as soon as you begin sending
           events. Please visit the{" "}
           <a
