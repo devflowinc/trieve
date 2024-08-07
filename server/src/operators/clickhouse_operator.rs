@@ -78,6 +78,7 @@ pub async fn send_to_clickhouse(
                         .replace('?', "|q")
                         .replace('\n', "")
                 });
+
                 search_queries_inserter.push_str(&format!(
                     " ('{}', '{}', '{}', '{}', embed_p('{}'), '{}', '{}', ['{}'], '{}', now()),",
                     event.id,
@@ -90,6 +91,30 @@ pub async fn send_to_clickhouse(
                     event.results.join("','"),
                     event.dataset_id
                 ));
+
+                if search_queries_inserter.len() > 13000 {
+                    clickhouse_client
+                        .query(&search_queries_inserter[..search_queries_inserter.len() - 1])
+                        .execute()
+                        .await
+                        .map_err(|err| {
+                            log::error!(
+                                "Error writing to ClickHouse default.search_queries: {:?}",
+                                err
+                            );
+                            sentry::capture_message(
+                                &format!(
+                                    "Error writing to ClickHouse default.search_queries: {:?}",
+                                    err
+                                ),
+                                sentry::Level::Error,
+                            );
+                            ServiceError::InternalServerError(
+                                "Error writing to ClickHouse default.search_queries".to_string(),
+                            )
+                        })?;
+                    search_queries_inserter = String::from("INSERT INTO default.search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
+                }
             }
             ClickHouseEvent::RecommendationEvent(event) => {
                 recommendations_inserter.write(&event).await.map_err(|e| {
