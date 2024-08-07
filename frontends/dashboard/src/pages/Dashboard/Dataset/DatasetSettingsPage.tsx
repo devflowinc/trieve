@@ -874,6 +874,9 @@ export const DangerZoneForm = () => {
   const clearDataset = () => {
     if (!dataset_id) return;
 
+    const confirmBox = confirm("This action is not reversible. Proceed?");
+    if (!confirmBox) return;
+
     fetch(`${api_host}/dataset/clear/${dataset_id}`, {
       method: "PUT",
       headers: {
@@ -888,6 +891,8 @@ export const DangerZoneForm = () => {
           message: "Cleared all chunks for this dataset!",
           type: "success",
         });
+
+        setConfirmClearText("");
       })
       .catch(() => {
         createToast({
