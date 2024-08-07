@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     data::models::{
-        ChunkMetadata, DatasetConfiguration, Pool, QdrantPayload, RecommendType,
+        ChunkMetadata, DatasetConfiguration, DistanceMetric, Pool, QdrantPayload, RecommendType,
         RecommendationStrategy, SortByField, SortOrder,
     },
     errors::ServiceError,
@@ -52,6 +52,23 @@ pub async fn get_qdrant_connection(
         .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))
 }
 
+pub fn get_qdrant_collection_from_dataset_config(dataset_config: &DatasetConfiguration) -> String {
+    match dataset_config.DISTANCE_METRIC {
+        DistanceMetric::Euclidean => {
+            format!("{}_vectors_euclidian", dataset_config.EMBEDDING_SIZE)
+        }
+        DistanceMetric::Manhattan => {
+            format!("{}_vectors_manhattan", dataset_config.EMBEDDING_SIZE)
+        }
+        DistanceMetric::Dot => {
+            format!("{}_vectors_dot", dataset_config.EMBEDDING_SIZE)
+        }
+        DistanceMetric::Cosine => {
+            format!("{}_vectors", dataset_config.EMBEDDING_SIZE)
+        }
+    }
+}
+
 /// Create Qdrant collection and indexes needed
 #[tracing::instrument(skip(qdrant_url, qdrant_api_key))]
 pub async fn create_new_qdrant_collection_query(
@@ -63,11 +80,31 @@ pub async fn create_new_qdrant_collection_query(
     accepted_vectors: Vec<u64>,
 ) -> Result<(), ServiceError> {
     let qdrant_client = get_qdrant_connection(qdrant_url, qdrant_api_key).await?;
-    for vector in accepted_vectors.iter() {
-        let qdrant_collection = format!("{}_vectors", vector);
+
+    let qdrant_collections: Vec<(String, u64, Distance)> = accepted_vectors
+        .iter()
+        .flat_map(|size| {
+            vec![
+                (format!("{}_vectors", *size), *size, Distance::Cosine),
+                (
+                    format!("{}_vectors_manhattan", *size),
+                    *size,
+                    Distance::Manhattan,
+                ),
+                (format!("{}_vectors_dot", *size), *size, Distance::Dot),
+                (
+                    format!("{}_vectors_euclidian", *size),
+                    *size,
+                    Distance::Euclid,
+                ),
+            ]
+        })
+        .collect();
+
+    for (collection_name, size, distance) in qdrant_collections {
         // check if collection exists
         let collection = qdrant_client
-            .collection_exists(qdrant_collection.clone())
+            .collection_exists(collection_name.clone())
             .await
             .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
@@ -117,11 +154,11 @@ pub async fn create_new_qdrant_collection_query(
 
                 let vectors_hash_map = HashMap::from_iter(
                     vec![(
-                        qdrant_collection.to_string(),
+                        format!("{}_vectors", size).to_string(),
                         VectorParams {
-                            size: *vector,
-                            distance: Distance::Cosine.into(),
-                            quantization_config,
+                            size,
+                            distance: distance.into(),
+                            quantization_config: quantization_config.clone(),
                             on_disk,
                             ..Default::default()
                         },
@@ -131,7 +168,7 @@ pub async fn create_new_qdrant_collection_query(
 
                 qdrant_client
                     .create_collection(
-                        CreateCollectionBuilder::new(qdrant_collection.clone())
+                        CreateCollectionBuilder::new(collection_name.clone())
                             .vectors_config(VectorsConfig {
                                 config: Some(
                                     qdrant_client::qdrant::vectors_config::Config::ParamsMap(
@@ -165,7 +202,7 @@ pub async fn create_new_qdrant_collection_query(
         if recreate_indexes {
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "link",
                 ))
                 .await
@@ -173,7 +210,7 @@ pub async fn create_new_qdrant_collection_query(
 
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "tag_set",
                 ))
                 .await
@@ -181,7 +218,7 @@ pub async fn create_new_qdrant_collection_query(
 
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "dataset_id",
                 ))
                 .await
@@ -189,7 +226,7 @@ pub async fn create_new_qdrant_collection_query(
 
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "metadata",
                 ))
                 .await
@@ -197,7 +234,7 @@ pub async fn create_new_qdrant_collection_query(
 
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "time_stamp",
                 ))
                 .await
@@ -205,7 +242,7 @@ pub async fn create_new_qdrant_collection_query(
 
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "group_ids",
                 ))
                 .await
@@ -213,7 +250,7 @@ pub async fn create_new_qdrant_collection_query(
 
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "location",
                 ))
                 .await
@@ -221,7 +258,7 @@ pub async fn create_new_qdrant_collection_query(
 
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "content",
                 ))
                 .await
@@ -229,7 +266,7 @@ pub async fn create_new_qdrant_collection_query(
 
             qdrant_client
                 .delete_field_index(DeleteFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "num_value",
                 ))
                 .await
@@ -238,7 +275,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "link",
                 FieldType::Keyword,
             ))
@@ -247,7 +284,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "tag_set",
                 FieldType::Keyword,
             ))
@@ -256,7 +293,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "dataset_id",
                 FieldType::Keyword,
             ))
@@ -265,7 +302,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "metadata",
                 FieldType::Keyword,
             ))
@@ -274,7 +311,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "time_stamp",
                 FieldType::Integer,
             ))
@@ -283,7 +320,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "group_ids",
                 FieldType::Keyword,
             ))
@@ -292,7 +329,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "location",
                 FieldType::Geo,
             ))
@@ -302,7 +339,7 @@ pub async fn create_new_qdrant_collection_query(
         qdrant_client
             .create_field_index(
                 CreateFieldIndexCollectionBuilder::new(
-                    qdrant_collection.clone(),
+                    collection_name.clone(),
                     "content",
                     FieldType::Text,
                 )
@@ -320,7 +357,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "num_value",
                 FieldType::Float,
             ))
@@ -329,7 +366,7 @@ pub async fn create_new_qdrant_collection_query(
 
         qdrant_client
             .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                qdrant_collection.clone(),
+                collection_name.clone(),
                 "group_tag_set",
                 FieldType::Keyword,
             ))
@@ -352,7 +389,8 @@ pub async fn bulk_upsert_qdrant_points_query(
         ));
     }
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
+    println!("Qdrant {}", qdrant_collection);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -379,7 +417,7 @@ pub async fn create_new_qdrant_point_query(
     chunk_metadata: ChunkMetadata,
     splade_vector: Vec<(u32, f32)>,
     group_ids: Option<Vec<uuid::Uuid>>,
-    dataste_config: DatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     let chunk_tags: Option<Vec<Option<String>>> = if let Some(ref group_ids) = group_ids {
@@ -397,7 +435,7 @@ pub async fn create_new_qdrant_point_query(
     };
 
     let payload = QdrantPayload::new(chunk_metadata, group_ids, None, chunk_tags);
-    let qdrant_collection = format!("{}_vectors", dataste_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
@@ -452,7 +490,7 @@ pub async fn update_qdrant_point_query(
 ) -> Result<(), actix_web::Error> {
     let qdrant_point_id: Vec<PointId> = vec![metadata.qdrant_point_id.to_string().clone().into()];
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -570,7 +608,7 @@ pub async fn add_bookmark_to_qdrant_query(
     group_id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -646,7 +684,7 @@ pub async fn remove_bookmark_from_qdrant_query(
     group_id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -751,7 +789,7 @@ pub async fn search_over_groups_query(
     dataset_config: DatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<(Vec<GroupSearchResults>, u64), ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -981,7 +1019,7 @@ pub async fn search_qdrant_query(
         return Ok((vec![], 0, vec![]));
     }
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1036,7 +1074,7 @@ pub async fn search_qdrant_query(
             }
         })
         .collect::<Vec<QueryPoints>>();
-
+    println!("qdrant_collection {:?}", qdrant_collection);
     let batch_points = QueryBatchPoints {
         collection_name: qdrant_collection.to_string(),
         query_points: search_point_req_payloads.clone(),
@@ -1081,6 +1119,8 @@ pub async fn search_qdrant_query(
         .unique_by(|point| point.point_id)
         .collect();
 
+    println!("Results: len {}", search_results.len());
+
     Ok((search_results, count?, batch_lengths))
 }
 
@@ -1103,7 +1143,7 @@ pub async fn recommend_qdrant_query(
     dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<Vec<QdrantRecommendResult>, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let recommend_strategy = match strategy {
         Some(strategy) => match strategy {
@@ -1214,7 +1254,7 @@ pub async fn recommend_qdrant_groups_query(
     dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<Vec<GroupSearchResults>, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let recommend_strategy = match strategy {
         Some(RecommendationStrategy::BestScore) => Some(RecommendStrategy::BestScore.into()),
@@ -1337,9 +1377,9 @@ pub async fn recommend_qdrant_groups_query(
 #[tracing::instrument]
 pub async fn point_ids_exists_in_qdrant(
     point_ids: Vec<uuid::Uuid>,
-    datast_config: DatasetConfiguration,
+    dataset_config: DatasetConfiguration,
 ) -> Result<bool, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", datast_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1485,7 +1525,7 @@ pub async fn count_qdrant_query(
         limit
     };
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1670,7 +1710,7 @@ pub async fn scroll_dataset_points(
     dataset_config: DatasetConfiguration,
     filter: Filter,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
     let mut scroll_points_params = ScrollPointsBuilder::new(qdrant_collection);
 
     scroll_points_params = scroll_points_params.limit(limit as u32);

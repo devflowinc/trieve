@@ -1945,6 +1945,20 @@ impl DatasetAndUsage {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum DistanceMetric {
+    #[serde(alias = "euclid")]
+    #[display(fmt = "euclidean")]
+    Euclidean,
+    #[display(fmt = "cosine")]
+    Cosine,
+    #[display(fmt = "manhattan")]
+    Manhattan,
+    #[display(fmt = "dot")]
+    Dot,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example=json!({
     "LLM_BASE_URL": "https://api.openai.com/v1",
@@ -1954,6 +1968,7 @@ impl DatasetAndUsage {
     "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
     "N_RETRIEVALS_TO_INCLUDE": 8,
     "EMBEDDING_SIZE": 1536,
+    "DISTANCE_METRIC": "cosine",
     "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
     "BM25_ENABLED": true,
     "BM25_B": 0.75,
@@ -1984,6 +1999,7 @@ pub struct DatasetConfiguration {
     pub RAG_PROMPT: String,
     pub N_RETRIEVALS_TO_INCLUDE: usize,
     pub EMBEDDING_SIZE: usize,
+    pub DISTANCE_METRIC: DistanceMetric,
     pub LLM_DEFAULT_MODEL: String,
     pub BM25_ENABLED: bool,
     pub BM25_B: f32,
@@ -2013,6 +2029,7 @@ pub struct DatasetConfiguration {
     "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
     "N_RETRIEVALS_TO_INCLUDE": 8,
     "EMBEDDING_SIZE": 1536,
+    "DISTANCE_METRIC": "cosine",
     "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
     "BM25_ENABLED": true,
     "BM25_B": 0.75,
@@ -2053,6 +2070,8 @@ pub struct DatasetConfigurationDTO {
     pub N_RETRIEVALS_TO_INCLUDE: Option<usize>,
     /// The size of the embeddings
     pub EMBEDDING_SIZE: Option<usize>,
+    /// Distance metric for scoring embeddings
+    pub DISTANCE_METRIC: Option<DistanceMetric>,
     /// The default model to use for the LLM
     pub LLM_DEFAULT_MODEL: Option<String>,
     /// Whether to use BM25
@@ -2103,6 +2122,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             RAG_PROMPT: dto.RAG_PROMPT.unwrap_or("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()),
             N_RETRIEVALS_TO_INCLUDE: dto.N_RETRIEVALS_TO_INCLUDE.unwrap_or(8),
             EMBEDDING_SIZE: dto.EMBEDDING_SIZE.unwrap_or(1536),
+            DISTANCE_METRIC: dto.DISTANCE_METRIC.unwrap_or(DistanceMetric::Cosine),
             LLM_DEFAULT_MODEL: dto.LLM_DEFAULT_MODEL.unwrap_or("gpt-3.5-turbo-1106".to_string()),
             BM25_ENABLED: dto.BM25_ENABLED.unwrap_or(true),
             BM25_B: dto.BM25_B.unwrap_or(0.75),
@@ -2137,6 +2157,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             RAG_PROMPT: Some(config.RAG_PROMPT),
             N_RETRIEVALS_TO_INCLUDE: Some(config.N_RETRIEVALS_TO_INCLUDE),
             EMBEDDING_SIZE: Some(config.EMBEDDING_SIZE),
+            DISTANCE_METRIC: Some(config.DISTANCE_METRIC),
             LLM_DEFAULT_MODEL: Some(config.LLM_DEFAULT_MODEL),
             BM25_ENABLED: Some(config.BM25_ENABLED),
             BM25_B: Some(config.BM25_B),
@@ -2171,6 +2192,7 @@ impl Default for DatasetConfiguration {
             RAG_PROMPT: "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string(),
             N_RETRIEVALS_TO_INCLUDE: 8,
             EMBEDDING_SIZE: 1536,
+            DISTANCE_METRIC: DistanceMetric::Cosine,
             LLM_DEFAULT_MODEL: "gpt-3.5-turbo-1106".to_string(),
             BM25_ENABLED: true,
             BM25_B: 0.75,
@@ -2271,6 +2293,29 @@ impl DatasetConfiguration {
                 .as_u64()
                 .map(|u| u as usize)
                 .unwrap_or(1536),
+            DISTANCE_METRIC: configuration
+                .get("DISTANCE_METRIC")
+                .unwrap_or(&json!("cosine"))
+                .as_str()
+                .map(|s| {
+                    match s {
+                        "cosine" => {
+                            DistanceMetric::Cosine
+                        },
+                        "euclid" | "euclidean" => {
+                            DistanceMetric::Euclidean
+                        },
+                        "dot" => {
+                            DistanceMetric::Dot
+                        },
+                        "manhattan" => {
+                            DistanceMetric::Manhattan
+                        },
+                        _ => {
+                            DistanceMetric::Cosine
+                        }
+                    }
+                }).unwrap_or(DistanceMetric::Cosine),
             EMBEDDING_MODEL_NAME: configuration
                 .get("EMBEDDING_MODEL_NAME")
                 .unwrap_or(&json!("text-embedding-3-small"))
@@ -2482,6 +2527,10 @@ impl DatasetConfigurationDTO {
             EMBEDDING_SIZE: self
                 .EMBEDDING_SIZE
                 .unwrap_or(curr_dataset_config.EMBEDDING_SIZE),
+            DISTANCE_METRIC: self
+                .DISTANCE_METRIC
+                .clone()
+                .unwrap_or(curr_dataset_config.DISTANCE_METRIC),
             LLM_DEFAULT_MODEL: self
                 .LLM_DEFAULT_MODEL
                 .clone()
