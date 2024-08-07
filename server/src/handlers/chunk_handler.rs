@@ -1510,13 +1510,26 @@ pub async fn scroll_dataset_chunks(
     )
     .await?;
 
-    let chunks = get_chunk_metadatas_from_point_ids(qdrant_point_ids, pool)
-        .await?
+    let chunks: Vec<ChunkMetadata> =
+        get_chunk_metadatas_from_point_ids(qdrant_point_ids.clone(), pool)
+            .await?
+            .into_iter()
+            .map(ChunkMetadata::from)
+            .collect();
+
+    let ordered_chunks = qdrant_point_ids
         .into_iter()
-        .map(ChunkMetadata::from)
+        .filter_map(|point_id| {
+            chunks
+                .iter()
+                .find(|chunk| chunk.qdrant_point_id == point_id)
+                .cloned()
+        })
         .collect();
 
-    let resp = ScrollChunksResponseBody { chunks };
+    let resp = ScrollChunksResponseBody {
+        chunks: ordered_chunks,
+    };
 
     Ok(HttpResponse::Ok().json(resp))
 }
