@@ -437,6 +437,7 @@ impl Modify for SecurityAddon {
             data::models::ChunkMetadataStringTagSet,
             data::models::ConditionType,
             data::models::HasIDCondition,
+            data::models::DistanceMetric,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )
