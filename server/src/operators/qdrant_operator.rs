@@ -158,7 +158,7 @@ pub async fn create_new_qdrant_collection_query(
                         VectorParams {
                             size,
                             distance: distance.into(),
-                            quantization_config: quantization_config.clone(),
+                            quantization_config,
                             on_disk,
                             ..Default::default()
                         },
@@ -390,7 +390,6 @@ pub async fn bulk_upsert_qdrant_points_query(
     }
 
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
-    println!("Qdrant {}", qdrant_collection);
 
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1074,7 +1073,7 @@ pub async fn search_qdrant_query(
             }
         })
         .collect::<Vec<QueryPoints>>();
-    println!("qdrant_collection {:?}", qdrant_collection);
+
     let batch_points = QueryBatchPoints {
         collection_name: qdrant_collection.to_string(),
         query_points: search_point_req_payloads.clone(),
@@ -1118,8 +1117,6 @@ pub async fn search_qdrant_query(
         })
         .unique_by(|point| point.point_id)
         .collect();
-
-    println!("Results: len {}", search_results.len());
 
     Ok((search_results, count?, batch_lengths))
 }
