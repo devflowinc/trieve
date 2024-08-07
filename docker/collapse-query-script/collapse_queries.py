@@ -8,7 +8,7 @@ import datetime
 
 
 def get_search_queries(
-    client: clickhouse_connect.driver.client.Client,
+    client,
     dataset_id: uuid.UUID,
     limit=5000,
     offset=Optional[uuid.UUID],
@@ -41,7 +41,7 @@ def get_search_queries(
     return rows
 
 
-def get_datasets(client: clickhouse_connect.driver.client.Client):
+def get_datasets(client):
     query = """
         SELECT DISTINCT dataset_id
         FROM default.search_queries
@@ -52,7 +52,7 @@ def get_datasets(client: clickhouse_connect.driver.client.Client):
 
 
 def get_dataset_last_collapsed(
-    client: clickhouse_connect.driver.client.Client, dataset_id: uuid.UUID
+    client, dataset_id: uuid.UUID
 ):
     query = """
         SELECT last_collapsed
@@ -68,26 +68,13 @@ def get_dataset_last_collapsed(
     return None
 
 
-def delete_dataset_last_collapsed(
-    client: clickhouse_connect.driver.client.Client,
-    dataset_id: uuid.UUID,
-):
-    query = """
-        DELETE FROM default.last_collapsed_dataset
-        WHERE dataset_id = '{}'
-    """.format(
-        str(dataset_id)
-    )
-    client.command(query)
 
 
 def set_dataset_last_collapsed(
-    client: clickhouse_connect.driver.client.Client,
+    client,
     dataset_id: uuid.UUID,
     last_collapsed: datetime.datetime,
 ):
-    delete_dataset_last_collapsed(client, dataset_id)
-
     client.insert(
         "last_collapsed_dataset",
         [
@@ -126,16 +113,18 @@ def collapse_queries(rows):
     return rows_to_be_deleted
 
 
-def delete_queries(client: clickhouse_connect.driver.client.Client, rows):
-    for row in rows:
-        query = """
+def delete_queries(client, rows):
+    query = """
         ALTER TABLE default.search_queries
         UPDATE is_duplicate = 1
         WHERE id = '{}'
         """.format(
-            str(row[0])
-        )
-        client.command(query)
+        str(rows[0][0])
+    )
+    for row in rows:
+        query += " OR id = '{}'".format(str(row[0]))
+
+    client.command(query)
 
 
 def main():
