@@ -2310,14 +2310,17 @@ pub async fn create_chunk_metadata(
 pub async fn get_pg_point_ids_from_qdrant_point_ids(
     qdrant_point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<uuid::Uuid>, ServiceError> {
+) -> Result<Vec<(uuid::Uuid, uuid::Uuid)>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let chunk_ids: Vec<uuid::Uuid> = chunk_metadata_columns::chunk_metadata
+    let chunk_ids: Vec<(uuid::Uuid, uuid::Uuid)> = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::qdrant_point_id.eq_any(qdrant_point_ids))
-        .select(chunk_metadata_columns::qdrant_point_id)
+        .select((
+            chunk_metadata_columns::qdrant_point_id,
+            chunk_metadata_columns::dataset_id,
+        ))
         .load(&mut conn)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get chunk ids".to_string()))?;
