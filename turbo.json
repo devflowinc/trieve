@@ -24,7 +24,15 @@
     },
     "dev": {
       "persistent": true,
-      "cache": false
+      "cache": false,
+      "dependsOn": [
+        "trieve-fetch-client#build"
+      ]
+    },
+    "trieve-fetch-client#build": {
+      "outputs": [
+        "dist"
+      ]
     }
   }
 }

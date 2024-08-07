@@ -3,8 +3,11 @@ FROM node:18 as build
 WORKDIR /app
 
 COPY package*.json ./
+COPY yarn.lock ./
+COPY turbo.json .
 
-COPY . .
+COPY frontends ./frontends
+COPY clients ./clients
 
 RUN yarn install
 RUN yarn run build --filter search
@@ -13,7 +16,7 @@ FROM nginx:1.25.4-alpine-slim
 
 WORKDIR /usr/share/nginx/html
 
-COPY --from=build /app/search/dist /usr/share/nginx/html
+COPY --from=build /app/frontends/search/dist /usr/share/nginx/html
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
