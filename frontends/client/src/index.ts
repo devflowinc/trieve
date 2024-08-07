@@ -18,12 +18,21 @@ type SuccessStatusCode =
   | 208
   | 226;
 
+type RenameFields<T> = {
+  [K in keyof T as K extends "trDataset"
+    ? "datasetId"
+    : K extends "trOrganization"
+      ? "organizationId"
+      : K extends "requestBody"
+        ? "data"
+        : K]: T[K];
+};
+
 type RequestParams<
   P extends Paths,
   M extends MethodsForPath<P>,
-> = $OpenApiTs[P][M] extends { req: infer R } ? R : never;
+> = $OpenApiTs[P][M] extends { req: infer R } ? RenameFields<R> : never;
 
-// Get the request body
 export type RequestBody<
   P extends Paths,
   M extends MethodsForPath<P>,
@@ -47,8 +56,9 @@ export type ResponseBody<
 type EjectOption = "eject" | false;
 
 type EjectedRequestBase<T> = {
-  trDataset?: string;
-  requestBody?: T;
+  datasetId?: string;
+  organizationId?: string;
+  data?: T;
   [key: string]: any;
 };
 
@@ -113,21 +123,21 @@ export class Trieve {
     const pathParams: Record<string, string> = {};
 
     if (isObject(params)) {
-      if ("requestBody" in params && isObject(params.requestBody)) {
-        requestBody = params.requestBody;
+      if ("data" in params && isObject(params.data)) {
+        requestBody = params.data;
       }
 
       for (const [key, value] of Object.entries(params)) {
-        if (key === "trDataset" && typeof value === "string") {
-          if (this.debug) {
-            console.log("trDataset", value);
-          }
+        if (key === "datasetId" && typeof value === "string") {
           headers["TR-Dataset"] = value;
-        } else if (key === "trOrganization" && typeof value === "string") {
+        } else if (key === "organizationId" && typeof value === "string") {
           headers["TR-Organization"] = value;
         } else if (key === "xApiVersion" && typeof value === "string") {
           headers["X-API-VERSION"] = value;
-        } else if (key !== "requestBody" && typeof value === "string") {
+        }
+        // Check if the key is in the path as path params
+        const snakedKey = camelcaseToSnakeCase(key);
+        if (path.includes(`{${snakedKey}}`) && typeof value === "string") {
           pathParams[key] = value;
         }
       }
@@ -136,9 +146,12 @@ export class Trieve {
     const updatedPath = replacePathParams(path, pathParams);
 
     if (this.debug) {
-      console.log("path", updatedPath);
-      console.log("api-key", this.apiKey);
-      console.log("headers", headers);
+      console.info("Sending request: ", {
+        url: this.baseUrl + updatedPath,
+        method,
+        headers,
+        body: requestBody,
+      });
     }
 
     const response = await fetch(this.baseUrl + updatedPath, {
@@ -153,6 +166,10 @@ export class Trieve {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return response.json();
+    const responseObject = await response.json();
+    if (this.debug) {
+      console.info("Response: ", responseObject);
+    }
+    return responseObject;
   }
 }
