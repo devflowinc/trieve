@@ -116,6 +116,7 @@ export interface ServerEnvsConfiguration {
   RAG_PROMPT?: string;
   N_RETRIEVALS_TO_INCLUDE?: number;
   EMBEDDING_SIZE?: number;
+  DISTANCE_METRIC?: string;
   FULLTEXT_ENABLED?: boolean;
   SEMANTIC_ENABLED?: boolean;
   QDRANT_COLLECTION_NAME?: string | null;
@@ -295,6 +296,25 @@ export const availableEmbeddingModels = [
     name: "text-embedding-3-large (hosted by OpenAI)",
     url: "https://api.openai.com/v1",
     dimension: 3072,
+  },
+];
+
+export const availableDistanceMetrics = [
+  {
+    id: "cosine",
+    name: "Cosine Simularity",
+  },
+  {
+    id: "euclidean",
+    name: "Euclidean Distance",
+  },
+  {
+    id: "dot",
+    name: "Dot product",
+  },
+  {
+    id: "manhattan",
+    name: "Manhattan distance",
   },
 ];
 

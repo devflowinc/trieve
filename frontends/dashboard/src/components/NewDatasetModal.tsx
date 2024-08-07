@@ -11,6 +11,7 @@ import { UserContext } from "../contexts/UserContext";
 import { useNavigate } from "@solidjs/router";
 import {
   ServerEnvsConfiguration,
+  availableDistanceMetrics,
   availableEmbeddingModels,
 } from "shared/types";
 import { defaultServerEnvsConfiguration } from "../pages/Dashboard/Dataset/DatasetSettingsPage";
@@ -227,6 +228,49 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                           <For each={availableEmbeddingModels}>
                             {(model) => (
                               <option value={model.name}>{model.name}</option>
+                            )}
+                          </For>
+                        </select>
+                      </div>
+
+                      <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                        <label
+                          for="distanceMetric"
+                          class="block h-full pt-1.5 text-sm font-medium leading-6"
+                        >
+                          Distance Metric
+                        </label>
+                        <select
+                          id="distanceMetric"
+                          name="distanceMetric"
+                          class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                          value={
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                            availableDistanceMetrics.find(
+                              (model) =>
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                                model.id === serverConfig().DISTANCE_METRIC,
+                              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                            )?.name ?? availableDistanceMetrics[0].name
+                          }
+                          onChange={(e) => {
+                            const distanceMetric =
+                              availableDistanceMetrics.find(
+                                (metric) =>
+                                  metric.name === e.currentTarget.value,
+                              );
+
+                            setServerConfig((prev) => {
+                              return {
+                                ...prev,
+                                DISTANCE_METRIC: distanceMetric?.id ?? "cosine",
+                              };
+                            });
+                          }}
+                        >
+                          <For each={availableDistanceMetrics}>
+                            {(metric) => (
+                              <option value={metric.name}>{metric.name}</option>
                             )}
                           </For>
                         </select>

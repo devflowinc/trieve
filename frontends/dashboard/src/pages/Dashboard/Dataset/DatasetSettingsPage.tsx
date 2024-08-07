@@ -13,6 +13,7 @@ import {
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import {
   ServerEnvsConfiguration,
+  availableDistanceMetrics,
   availableEmbeddingModels,
 } from "shared/types";
 import { createToast } from "../../../components/ShowToasts";
@@ -597,6 +598,42 @@ export const ServerSettingsForm = (props: {
                   })
                 }
               />
+            </div>
+
+            <div class="col-span-4 space-y-1 sm:col-span-2">
+              <div class="flex items-center">
+                <label
+                  for="embeddingSize"
+                  class="mr-2 block text-sm font-medium leading-6"
+                >
+                  Distance Metric
+                </label>
+                <Tooltip
+                  direction="right"
+                  body={<AiOutlineInfoCircle />}
+                  tooltipText="Distance Metric is only editable on creation"
+                />
+              </div>
+              <select
+                id="embeddingSize"
+                aria-readonly
+                title="Embedding Model is only editable on creation"
+                disabled
+                name="embeddingSize"
+                class="col-span-2 block w-full cursor-not-allowed rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={
+                  availableDistanceMetrics.find(
+                    (metric) =>
+                      metric.id === props.serverConfig().DISTANCE_METRIC,
+                  )?.name ?? availableEmbeddingModels[0].name
+                }
+              >
+                <For each={availableDistanceMetrics}>
+                  {(metric) => (
+                    <option value={metric.name}>{metric.name}</option>
+                  )}
+                </For>
+              </select>
             </div>
           </div>
         </div>
