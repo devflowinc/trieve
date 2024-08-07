@@ -784,11 +784,17 @@ export const DangerZoneForm = () => {
   const navigate = useNavigate();
 
   const [deleting, setDeleting] = createSignal(false);
+
   const [confirmText, setConfirmText] = createSignal("");
 
+  const datasetName = createMemo(() => datasetContext.dataset?.()?.name || "");
+
+  const dataset_id = datasetContext.dataset?.()?.id;
+  const organization_id = datasetContext.dataset?.()?.organization_id;
+
+  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+
   const deleteDataset = () => {
-    const dataset_id = datasetContext.dataset?.()?.id;
-    const organization_id = datasetContext.dataset?.()?.organization_id;
     if (!dataset_id) return;
     if (!organization_id) return;
 
@@ -798,7 +804,7 @@ export const DangerZoneForm = () => {
     if (!confirmBox) return;
 
     setDeleting(true);
-    fetch(`${import.meta.env.VITE_API_HOST}/dataset/${dataset_id}`, {
+    fetch(`${api_host}/dataset/${dataset_id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -826,67 +832,140 @@ export const DangerZoneForm = () => {
         });
       });
   };
-  const datasetName = createMemo(() => datasetContext.dataset?.()?.name || "");
+
+  const clearDataset = () => {
+    if (!dataset_id) return;
+
+    const confirmBox = confirm(
+      "Clearing this dataset will remove all chunks, groups, and files, but not the analytics or dataset itself. Are you sure you want to clear it?",
+    );
+    if (!confirmBox) return;
+
+    fetch(`${api_host}/dataset/clear/${dataset_id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(dataset_id && { "TR-Dataset": dataset_id }),
+      },
+      credentials: "include",
+    })
+      .then(() => {
+        createToast({
+          title: "Success",
+          message: "Cleared all chunks for this dataset!",
+          type: "success",
+        });
+      })
+      .catch(() => {
+        createToast({
+          title: "Error",
+          type: "error",
+          message: `Failed to clear dataset.`,
+        });
+      });
+  };
 
   return (
-    <Show when={datasetContext.dataset != null}>
-      <form
-        class="rounded-md border border-red-600/20 shadow-sm shadow-red-500/30"
-        id="danger-zone"
-      >
-        <div class="shadow sm:overflow-hidden sm:rounded-md">
-          <div class="space-y-3 bg-white px-3 py-6 sm:p-6">
-            <div>
-              <h2 id="user-details-name" class="text-lg font-medium leading-6">
-                Delete Dataset
-              </h2>
-              <p class="mt-0 text-sm text-red-700">
-                Warning: This action is not reversible. Please be sure before
-                deleting.
-              </p>
-              <div class="mt-3 grid grid-cols-4 gap-0">
-                <div class="col-span-4 sm:col-span-2">
-                  <label
-                    for="dataset-name"
-                    class="block text-sm font-medium leading-6 opacity-70"
+    <>
+      <Show when={datasetContext.dataset != null}>
+        <form
+          class="rounded-md border border-red-600/20 shadow-sm shadow-red-500/30"
+          id="danger-zone"
+        >
+          <div class="shadow sm:overflow-hidden sm:rounded-md">
+            <div class="space-y-4 bg-white px-3 py-6 sm:p-6">
+              <div class="flex flex-col gap-2">
+                <div>
+                  <h2
+                    id="user-details-name"
+                    class="text-xl font-medium leading-6"
                   >
-                    Enter the dataset name
-                    <span class="font-bold"> "{datasetName()}" </span>
-                    to confirm.
-                  </label>
-                  <input
-                    type="text"
-                    name="dataset-name"
-                    id="dataset-name"
-                    class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
-                    value={confirmText()}
-                    onInput={(e) => setConfirmText(e.currentTarget.value)}
-                  />
+                    Dataset Management
+                  </h2>
+                  <p class="mt-1 text-sm text-neutral-600">
+                    Easily clear or delete datasets.
+                  </p>
+                </div>
+                <div class="mt-6 flex flex-col gap-6">
+                  <div>
+                    <h2
+                      id="user-details-name"
+                      class="text-lg font-medium leading-6"
+                    >
+                      Clear Dataset
+                    </h2>
+                    <p class="mt-1 text-sm text-neutral-600">
+                      This will delete all chunks, groups, and files in the
+                      dataset, but not the analytics or dataset itself.
+                    </p>
+                    <button
+                      type="button"
+                      class="pointer:cursor mt-3 w-fit rounded-md border bg-magenta-400 px-4 py-2 text-sm font-bold text-white hover:bg-magenta-600 focus:outline-magenta-500 disabled:opacity-50"
+                      onClick={() => {
+                        void clearDataset();
+                      }}
+                    >
+                      Clear Dataset
+                    </button>
+                  </div>
+                  <div>
+                    <h2
+                      id="user-details-name"
+                      class="text-lg font-medium leading-6"
+                    >
+                      Delete Dataset
+                    </h2>
+                    <p class="mt-1 text-sm text-red-700">
+                      Warning: This action is not reversible. Please be sure
+                      before deleting.
+                    </p>
+                    <div class="mt-2 grid grid-cols-4 gap-0">
+                      <div class="col-span-4 sm:col-span-2">
+                        <label
+                          for="dataset-name"
+                          class="block text-sm font-medium leading-6 opacity-70"
+                        >
+                          Enter the dataset name
+                          <span class="font-bold"> "{datasetName()}" </span>
+                          to confirm.
+                        </label>
+                        <input
+                          type="text"
+                          name="dataset-name"
+                          id="dataset-name"
+                          class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
+                          value={confirmText()}
+                          onInput={(e) => setConfirmText(e.currentTarget.value)}
+                        />
+                        <button
+                          class="mt-3"
+                          onClick={() => {
+                            deleteDataset();
+                          }}
+                          disabled={
+                            deleting() || confirmText() !== datasetName()
+                          }
+                          classList={{
+                            "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
+                              true,
+                            "animate-pulse cursor-not-allowed": deleting(),
+                          }}
+                        >
+                          <Switch>
+                            <Match when={deleting()}>Deleting...</Match>
+                            <Match when={!deleting()}>Delete Dataset</Match>
+                          </Switch>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="border-t border-red-600/20 bg-red-50/40 px-3 py-3 text-right sm:px-3">
-            <button
-              onClick={() => {
-                deleteDataset();
-              }}
-              disabled={deleting() || confirmText() !== datasetName()}
-              classList={{
-                "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
-                  true,
-                "animate-pulse cursor-not-allowed": deleting(),
-              }}
-            >
-              <Switch>
-                <Match when={deleting()}>Deleting...</Match>
-                <Match when={!deleting()}>Delete Dataset</Match>
-              </Switch>
-            </button>
-          </div>
-        </div>
-      </form>
-    </Show>
+        </form>
+      </Show>
+    </>
   );
 };
 
