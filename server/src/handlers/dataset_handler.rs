@@ -52,6 +52,7 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
         "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
         "N_RETRIEVALS_TO_INCLUDE": 8,
         "EMBEDDING_SIZE": 1536,
+        "DISTANCE_METRIC": "cosine",
         "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
         "BM25_ENABLED": true,
         "BM25_B": 0.75,
