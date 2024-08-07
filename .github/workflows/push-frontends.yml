@@ -17,6 +17,7 @@ on:
     - 'frontends/shared/**'
     - 'frontends/config/**'
     - '.github/workflows/**'
+    - 'clients/fetch-client/**'
 
 jobs:
   build_chat:
@@ -56,7 +57,7 @@ jobs:
           cache-from: type=registry,ref=trieve/buildcache:chat
           cache-to: type=registry,ref=trieve/buildcache:chat,mode=max
           file: frontends/chat/Dockerfile
-          context: ./frontends
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -98,7 +99,7 @@ jobs:
           cache-from: type=registry,ref=trieve/buildcache:search
           cache-to: type=registry,ref=trieve/buildcache:search,mode=max
           file: frontends/search/Dockerfile
-          context: ./frontends
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -140,7 +141,7 @@ jobs:
           cache-from: type=registry,ref=trieve/buildcache:dashboard
           cache-to: type=registry,ref=trieve/buildcache:dashboard,mode=max
           file: frontends/dashboard/Dockerfile
-          context: ./frontends
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -180,7 +181,7 @@ jobs:
         with:
           # platforms: linux/amd64,linux/arm64
           file: frontends/analytics/Dockerfile
-          context: ./frontends
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

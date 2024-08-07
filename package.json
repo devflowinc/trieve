@@ -4,17 +4,18 @@
   "private": true,
   "main": "index.js",
   "workspaces": [
-    "search",
-    "dashboard",
-    "chat",
-    "analytics",
-    "shared",
-    "config",
-    "client"
+    "frontends/search",
+    "frontends/dashboard",
+    "frontends/chat",
+    "frontends/analytics",
+    "frontends/shared",
+    "frontends/config",
+    "clients/fetch-client"
   ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "build:clean-client": "./convenience.sh -c",
     "lint": "turbo lint",
     "lint:CI": "turbo lint:CI"
   },
