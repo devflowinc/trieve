@@ -785,7 +785,8 @@ export const DangerZoneForm = () => {
 
   const [deleting, setDeleting] = createSignal(false);
 
-  const [confirmText, setConfirmText] = createSignal("");
+  const [confirmDeleteText, setConfirmDeleteText] = createSignal("");
+  const [confirmClearText, setConfirmClearText] = createSignal("");
 
   const datasetName = createMemo(() => datasetContext.dataset?.()?.name || "");
 
@@ -835,11 +836,6 @@ export const DangerZoneForm = () => {
 
   const clearDataset = () => {
     if (!dataset_id) return;
-
-    const confirmBox = confirm(
-      "Clearing this dataset will remove all chunks, groups, and files, but not the analytics or dataset itself. Are you sure you want to clear it?",
-    );
-    if (!confirmBox) return;
 
     fetch(`${api_host}/dataset/clear/${dataset_id}`, {
       method: "PUT",
@@ -898,15 +894,38 @@ export const DangerZoneForm = () => {
                       This will delete all chunks, groups, and files in the
                       dataset, but not the analytics or dataset itself.
                     </p>
-                    <button
-                      type="button"
-                      class="pointer:cursor mt-3 w-fit rounded-md border bg-magenta-400 px-4 py-2 text-sm font-bold text-white hover:bg-magenta-600 focus:outline-magenta-500 disabled:opacity-50"
-                      onClick={() => {
-                        void clearDataset();
-                      }}
-                    >
-                      Clear Dataset
-                    </button>
+                    <div class="mt-2 grid grid-cols-4 gap-0">
+                      <div class="col-span-3 sm:col-span-2">
+                        <label
+                          for="dataset-name"
+                          class="block text-sm font-medium leading-6 opacity-70"
+                        >
+                          Enter the dataset name
+                          <span class="font-bold"> "{datasetName()}" </span>
+                          to confirm.
+                        </label>
+                        <input
+                          type="text"
+                          name="dataset-name"
+                          id="dataset-name"
+                          class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
+                          value={confirmClearText()}
+                          onInput={(e) =>
+                            setConfirmClearText(e.currentTarget.value)
+                          }
+                        />
+                        <button
+                          type="button"
+                          class="pointer:cursor mt-3 w-fit rounded-md border bg-magenta-400 px-4 py-2 text-sm font-bold text-white hover:bg-magenta-600 focus:outline-magenta-500 disabled:opacity-50"
+                          disabled={confirmClearText() !== datasetName()}
+                          onClick={() => {
+                            void clearDataset();
+                          }}
+                        >
+                          Clear Dataset
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <h2
@@ -934,8 +953,10 @@ export const DangerZoneForm = () => {
                           name="dataset-name"
                           id="dataset-name"
                           class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
-                          value={confirmText()}
-                          onInput={(e) => setConfirmText(e.currentTarget.value)}
+                          value={confirmDeleteText()}
+                          onInput={(e) =>
+                            setConfirmDeleteText(e.currentTarget.value)
+                          }
                         />
                         <button
                           class="mt-3"
@@ -943,7 +964,7 @@ export const DangerZoneForm = () => {
                             deleteDataset();
                           }}
                           disabled={
-                            deleting() || confirmText() !== datasetName()
+                            deleting() || confirmDeleteText() !== datasetName()
                           }
                           classList={{
                             "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
