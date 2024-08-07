@@ -22,8 +22,9 @@ CREATE TABLE IF NOT EXISTS search_queries
     results Array(String),
     query_vector Array(Float32),
     dataset_id UUID,
-    created_at DateTime
-) ENGINE = MergeTree()
+    created_at DateTime,
+    is_duplicate UInt8 DEFAULT 0
+) ENGINE = ReplacingMergeTree(is_duplicate)
 ORDER BY (dataset_id, created_at, top_score, latency, id)
 PARTITION BY
     (toYYYYMM(created_at),
