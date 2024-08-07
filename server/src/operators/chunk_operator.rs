@@ -9,7 +9,9 @@ use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
 use crate::operators::parse_operator::convert_html_to_text;
-use crate::operators::qdrant_operator::delete_points_from_qdrant;
+use crate::operators::qdrant_operator::{
+    delete_points_from_qdrant, get_qdrant_collection_from_dataset_config,
+};
 use crate::{
     data::models::{ChunkMetadata, Pool},
     errors::ServiceError,
@@ -1226,7 +1228,7 @@ pub async fn delete_chunk_metadata_query(
         })
         .await;
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     match transaction_result {
         Ok(deleted_points) => delete_points_from_qdrant(deleted_points, qdrant_collection)

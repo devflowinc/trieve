@@ -4,7 +4,9 @@ use crate::data::models::{
 };
 use crate::handlers::dataset_handler::GetDatasetsPagination;
 use crate::operators::clickhouse_operator::ClickHouseEvent;
-use crate::operators::qdrant_operator::delete_points_from_qdrant;
+use crate::operators::qdrant_operator::{
+    delete_points_from_qdrant, get_qdrant_collection_from_dataset_config,
+};
 use crate::{
     data::models::{Dataset, EventType, Pool, WorkerEvent},
     errors::ServiceError,
@@ -293,7 +295,7 @@ pub async fn clear_dataset_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let chunk_groups = chunk_group::chunk_group
         .filter(chunk_group::dataset_id.eq(id))

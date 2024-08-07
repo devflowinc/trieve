@@ -1,6 +1,7 @@
 use crate::errors::ServiceError;
 use crate::operators::qdrant_operator::{
-    remove_bookmark_from_qdrant_query, update_group_tag_sets_in_qdrant_query,
+    get_qdrant_collection_from_dataset_config, remove_bookmark_from_qdrant_query,
+    update_group_tag_sets_in_qdrant_query,
 };
 use crate::{
     data::models::{
@@ -754,7 +755,7 @@ pub async fn update_grouped_chunks_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let group_id = new_group.id;
     let prev_group_tag_set = prev_group
