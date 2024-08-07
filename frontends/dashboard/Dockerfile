@@ -7,7 +7,7 @@ COPY yarn.lock ./
 COPY turbo.json .
 
 COPY frontends ./frontends
-COPY clients ./clients
+COPY clients/fetch-client ./clients/fetch-client
 
 RUN yarn install
 RUN yarn run build --filter dashboard
