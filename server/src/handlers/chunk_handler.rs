@@ -948,7 +948,10 @@ pub struct SearchChunksReqPayload {
     pub sort_options: Option<SortOptions>,
     /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub highlight_options: Option<HighlightOptions>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric
+    /// For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance
+    /// This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold
+    /// A threshold of 0 will default to no threashold
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
@@ -1136,7 +1139,7 @@ pub fn parse_query(
 )]
 #[tracing::instrument(skip(pool, event_queue))]
 pub async fn search_chunks(
-    data: web::Json<SearchChunksReqPayload>,
+    mut data: web::Json<SearchChunksReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
@@ -1166,6 +1169,8 @@ pub async fn search_chunks(
                 .collect::<Vec<(ParsedQuery, f32)>>(),
         ),
     };
+
+    data.score_threshold = data.score_threshold.filter(|threshold| *threshold != 0.0);
 
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
