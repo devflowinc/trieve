@@ -828,7 +828,7 @@ const SearchForm = (props: {
                                   } else {
                                     return {
                                       ...item,
-                                      isSelected: item.isSelected,
+                                      isSelected: false,
                                     };
                                   }
                                 });
