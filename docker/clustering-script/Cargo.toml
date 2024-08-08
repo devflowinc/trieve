@@ -1,0 +1,13 @@
+[package]
+name = "clustering-script"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+clickhouse = { version = "0.12.0", features = ["time", "uuid"] }
+hdbscan = "0.6.0"
+rayon = "1.10.0"
+serde = {version ="1.0.205", features=['derive']}
+tokio = {version = "1.39.2", features = ["rt-multi-thread"]}
+uuid = {version="1.10.0", features = ["serde"]}
