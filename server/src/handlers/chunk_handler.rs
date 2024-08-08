@@ -53,9 +53,9 @@ pub struct FullTextBoost {
 /// Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct SemanticBoost {
-    /// The phrase to boost in the fulltext document frequency index
+    /// Terms to embed in order to create the vector which is weighted summed with the chunk_html embedding vector
     pub phrase: String,
-    /// Amount to multiplicatevly increase the frequency of the tokens in the phrase by
+    /// Arbitrary float (positive or negative) specifying the multiplicate factor to apply before summing the phrase vector with the chunk_html embedding vector
     pub distance_factor: f32,
 }
 
