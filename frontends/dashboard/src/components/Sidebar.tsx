@@ -57,10 +57,14 @@ export const Sidebar = () => {
 
   return (
     <>
-      <div class="flex min-h-[calc(100vh-65px)] w-full max-w-[280px] flex-col justify-between border-r bg-neutral-100">
-        <div class="sticky top-0 flex flex-col">
-          <div class="border-b px-4 py-3">
-            <h5 class="font-semibold text-neutral-600">Organizations</h5>
+      <div class="flex h-[calc(100vh-65px)] w-full max-w-[280px] flex-col border-r bg-neutral-100">
+        <div class="flex-grow overflow-y-auto">
+          <div class="sticky top-0 z-10 bg-neutral-100">
+            <div class="px-4 pt-3">
+              <h5 class="font-semibold text-neutral-600">Organizations</h5>
+            </div>
+          </div>
+          <div class="px-4">
             <div class="flex flex-col items-start py-2">
               <For each={sortedOrgs()}>
                 {(org) => (
@@ -165,7 +169,7 @@ export const Sidebar = () => {
             </div>
           </div>
         </div>
-        <div class="sticky bottom-0 flex flex-col items-start border-t px-4 py-4">
+        <div class="sticky bottom-0 flex flex-shrink-0 flex-col items-start border-t bg-neutral-100 px-4 py-4">
           <div class="flex items-center gap-2">
             <p>{userContext?.user?.()?.email}</p>
             <AiOutlineUser class="h-4 w-4" />
