@@ -17,28 +17,28 @@ pub struct ErrorResponseBody {
 
 #[derive(Debug, Display, Clone)]
 pub enum ServiceError {
-    #[display(fmt = "Internal Server Error: {_0}")]
+    #[display("Internal Server Error: {_0}")]
     InternalServerError(String),
 
-    #[display(fmt = "BadRequest: {_0}")]
+    #[display("BadRequest: {_0}")]
     BadRequest(String),
 
-    #[display(fmt = "BadRequest: Duplicate Tracking Id Found")]
+    #[display("BadRequest: Duplicate Tracking Id Found")]
     DuplicateTrackingId(String),
 
-    #[display(fmt = "Unauthorized")]
+    #[display("Unauthorized")]
     Unauthorized,
 
-    #[display(fmt = "Forbidden")]
+    #[display("Forbidden")]
     Forbidden,
 
-    #[display(fmt = "Not Found")]
+    #[display("Not Found")]
     NotFound(String),
 
-    #[display(fmt = "Json Deserialization Error: {_0}")]
+    #[display("Json Deserialization Error: {_0}")]
     JsonDeserializeError(String),
 
-    #[display(fmt = "Payload Too Large")]
+    #[display("Payload Too Large")]
     PayloadTooLarge(String),
 }
 

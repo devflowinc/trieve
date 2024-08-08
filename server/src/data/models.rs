@@ -1713,37 +1713,37 @@ impl From<WorkerEvent> for WorkerEventClickhouse {
 #[derive(Debug, Serialize, Deserialize, Clone, Display, ToSchema)]
 #[serde(untagged)]
 pub enum EventType {
-    #[display(fmt = "file_uploaded")]
+    #[display("file_uploaded")]
     FileUploaded {
         file_id: uuid::Uuid,
         file_name: String,
     },
-    #[display(fmt = "file_upload_failed")]
+    #[display("file_upload_failed")]
     FileUploadFailed { file_id: uuid::Uuid, error: String },
-    #[display(fmt = "chunks_uploaded")]
+    #[display("chunks_uploaded")]
     ChunksUploaded { chunk_ids: Vec<uuid::Uuid> },
-    #[display(fmt = "chunk_action_failed")]
+    #[display("chunk_action_failed")]
     ChunkActionFailed { chunk_id: uuid::Uuid, error: String },
-    #[display(fmt = "chunk_updated")]
+    #[display("chunk_updated")]
     ChunkUpdated { chunk_id: uuid::Uuid },
-    #[display(fmt = "bulk_chunks_deleted")]
+    #[display("bulk_chunks_deleted")]
     BulkChunksDeleted { message: String },
-    #[display(fmt = "dataset_delete_failed")]
+    #[display("dataset_delete_failed")]
     DatasetDeleteFailed { error: String },
-    #[display(fmt = "qdrant_index_failed")]
+    #[display("qdrant_index_failed")]
     QdrantUploadFailed {
         chunk_id: uuid::Uuid,
         qdrant_point_id: uuid::Uuid,
         error: String,
     },
-    #[display(fmt = "bulk_chunk_upload_failed")]
+    #[display("bulk_chunk_upload_failed")]
     BulkChunkUploadFailed {
         chunk_ids: Vec<uuid::Uuid>,
         error: String,
     },
-    #[display(fmt = "group_chunks_updated")]
+    #[display("group_chunks_updated")]
     GroupChunksUpdated { group_id: uuid::Uuid },
-    #[display(fmt = "group_chunks_action_failed")]
+    #[display("group_chunks_action_failed")]
     GroupChunksActionFailed { group_id: uuid::Uuid, error: String },
 }
 
@@ -1950,13 +1950,13 @@ impl DatasetAndUsage {
 #[serde(rename_all = "lowercase")]
 pub enum DistanceMetric {
     #[serde(alias = "euclid")]
-    #[display(fmt = "euclidean")]
+    #[display("euclidean")]
     Euclidean,
-    #[display(fmt = "cosine")]
+    #[display("cosine")]
     Cosine,
-    #[display(fmt = "manhattan")]
+    #[display("manhattan")]
     Manhattan,
-    #[display(fmt = "dot")]
+    #[display("dot")]
     Dot,
 }
 
@@ -4103,13 +4103,13 @@ pub struct SearchClusterMembership {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchType {
-    #[display(fmt = "search")]
+    #[display("search")]
     Search,
-    #[display(fmt = "autocomplete")]
+    #[display("autocomplete")]
     Autocomplete,
-    #[display(fmt = "search_over_groups")]
+    #[display("search_over_groups")]
     SearchOverGroups,
-    #[display(fmt = "search_within_groups")]
+    #[display("search_within_groups")]
     SearchWithinGroups,
 }
 
@@ -4117,14 +4117,14 @@ pub enum SearchType {
 #[serde(rename_all = "lowercase")]
 pub enum SearchMethod {
     #[serde(rename = "fulltext", alias = "full_text")]
-    #[display(fmt = "fulltext")]
+    #[display("fulltext")]
     FullText,
-    #[display(fmt = "semantic")]
+    #[display("semantic")]
     Semantic,
-    #[display(fmt = "hybrid")]
+    #[display("hybrid")]
     Hybrid,
     #[serde(rename = "bm25", alias = "BM25")]
-    #[display(fmt = "BM25")]
+    #[display("BM25")]
     BM25,
 }
 
@@ -4132,12 +4132,12 @@ pub enum SearchMethod {
 #[serde(rename_all = "lowercase")]
 pub enum CountSearchMethod {
     #[serde(rename = "fulltext", alias = "full_text")]
-    #[display(fmt = "fulltext")]
+    #[display("fulltext")]
     FullText,
-    #[display(fmt = "semantic")]
+    #[display("semantic")]
     Semantic,
     #[serde(rename = "bm25", alias = "BM25")]
-    #[display(fmt = "BM25")]
+    #[display("BM25")]
     BM25,
 }
 
@@ -4192,9 +4192,9 @@ impl SearchAnalyticsFilter {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum RagTypes {
-    #[display(fmt = "chosen_chunks")]
+    #[display("chosen_chunks")]
     ChosenChunks,
-    #[display(fmt = "all_chunks")]
+    #[display("all_chunks")]
     AllChunks,
 }
 
@@ -4257,9 +4257,9 @@ impl ClusterAnalyticsFilter {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display)]
 pub enum RecommendationType {
-    #[display(fmt = "chunk")]
+    #[display("chunk")]
     Chunk,
-    #[display(fmt = "group")]
+    #[display("group")]
     Group,
 }
 
@@ -4447,42 +4447,42 @@ impl StripeInvoice {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum Granularity {
-    #[display(fmt = "minute")]
+    #[display("minute")]
     Minute,
-    #[display(fmt = "second")]
+    #[display("second")]
     Second,
-    #[display(fmt = "hour")]
+    #[display("hour")]
     Hour,
-    #[display(fmt = "day")]
+    #[display("day")]
     Day,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchSortBy {
-    #[display(fmt = "created_at")]
+    #[display("created_at")]
     CreatedAt,
-    #[display(fmt = "latency")]
+    #[display("latency")]
     Latency,
-    #[display(fmt = "top_score")]
+    #[display("top_score")]
     TopScore,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum RAGSortBy {
-    #[display(fmt = "created_at")]
+    #[display("created_at")]
     CreatedAt,
-    #[display(fmt = "latency")]
+    #[display("latency")]
     Latency,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum SortOrder {
-    #[display(fmt = "DESC")]
+    #[display("DESC")]
     Desc,
-    #[display(fmt = "ASC")]
+    #[display("ASC")]
     Asc,
 }
 
@@ -4737,27 +4737,27 @@ pub enum RecommendType {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum EventTypeRequest {
-    #[display(fmt = "file_uploaded")]
+    #[display("file_uploaded")]
     FileUploaded,
-    #[display(fmt = "file_upload_failed")]
+    #[display("file_upload_failed")]
     FileUploadFailed,
-    #[display(fmt = "chunks_uploaded")]
+    #[display("chunks_uploaded")]
     ChunksUploaded,
-    #[display(fmt = "chunk_action_failed")]
+    #[display("chunk_action_failed")]
     ChunkActionFailed,
-    #[display(fmt = "chunk_updated")]
+    #[display("chunk_updated")]
     ChunkUpdated,
-    #[display(fmt = "bulk_chunks_deleted")]
+    #[display("bulk_chunks_deleted")]
     BulkChunksDeleted,
-    #[display(fmt = "dataset_delete_failed")]
+    #[display("dataset_delete_failed")]
     DatasetDeleteFailed,
-    #[display(fmt = "qdrant_index_failed")]
+    #[display("qdrant_index_failed")]
     QdrantUploadFailed,
-    #[display(fmt = "bulk_chunk_upload_failed")]
+    #[display("bulk_chunk_upload_failed")]
     BulkChunkUploadFailed,
-    #[display(fmt = "group_chunks_updated")]
+    #[display("group_chunks_updated")]
     GroupChunksUpdated,
-    #[display(fmt = "group_chunks_action_failed")]
+    #[display("group_chunks_action_failed")]
     GroupChunksActionFailed,
 }
 
