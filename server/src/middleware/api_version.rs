@@ -16,9 +16,9 @@ use utoipa::ToSchema;
 
 #[derive(Clone, Debug, PartialEq, Eq, ToSchema, Serialize, Deserialize, Display)]
 pub enum APIVersion {
-    #[display(fmt = "1.0")]
+    #[display("1.0")]
     V1,
-    #[display(fmt = "2.0")]
+    #[display("2.0")]
     V2,
 }
 
