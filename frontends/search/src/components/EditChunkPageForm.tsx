@@ -461,14 +461,14 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                           body={
                             <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
                           }
-                          tooltipText="Optional. Boost terms will multiplicatively increase the presence of terms in the fulltext document frequency index by the boost value."
+                          tooltipText="Optional. Semantic boost is applied to the chunk_html embedding vector. This is useful for forcefully clustering data in your vector space."
                         />
                       </div>
                     </div>
                     <div class="flex gap-x-2">
                       <input
                         type="text"
-                        placeholder="optional - space separated terms to boost in search results"
+                        placeholder="optional - terms to embed in order to create the vector which is weighted summed with the chunk_html embedding vector"
                         value={distanceBoostPhrase() ?? ""}
                         onInput={(e) => setDistanceBoostPhrase(e.target.value)}
                         class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
@@ -476,7 +476,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                       <input
                         type="number"
                         step="any"
-                        placeholder="optional - boost value to multiplicatevely increase presence of boost terms in IDF index"
+                        placeholder="optional - arbitrary float (positive or negative) specifying the multiplicate factor to apply before summing the phrase vector with the chunk_html embedding vector"
                         value={distanceBoostFactor()}
                         onChange={(e) =>
                           setDistanceBoostFactor(Number(e.currentTarget.value))
