@@ -6,8 +6,6 @@ import {
   createEffect,
   createSignal,
   useContext,
-  Switch,
-  Match,
   createMemo,
 } from "solid-js";
 import { DatasetContext } from "../../../contexts/DatasetContext";
@@ -18,7 +16,6 @@ import {
 } from "shared/types";
 import { createToast } from "../../../components/ShowToasts";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
-import { useNavigate } from "@solidjs/router";
 import { Tooltip } from "shared/ui";
 
 const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
@@ -818,12 +815,11 @@ export const ServerSettingsForm = (props: {
 export const DangerZoneForm = () => {
   const datasetContext = useContext(DatasetContext);
 
-  const navigate = useNavigate();
-
   const [deleting, setDeleting] = createSignal(false);
 
   const [confirmDeleteText, setConfirmDeleteText] = createSignal("");
   const [confirmClearText, setConfirmClearText] = createSignal("");
+  const [isClearing, setIsClearing] = createSignal(false);
 
   const datasetName = createMemo(() => datasetContext.dataset?.()?.name || "");
 
@@ -851,9 +847,8 @@ export const DangerZoneForm = () => {
       credentials: "include",
     })
       .then((res) => {
-        setDeleting(false);
         if (res.ok) {
-          navigate(`/dashboard/${organization_id}/overview`);
+          window.location.href = `/dashboard/${organization_id}/overview`;
           createToast({
             title: "Success",
             message: "Dataset deleted successfully!",
@@ -938,30 +933,42 @@ export const DangerZoneForm = () => {
                     </p>
                     <div class="mt-2 grid grid-cols-4 gap-0">
                       <div class="col-span-3 sm:col-span-2">
-                        <label
-                          for="dataset-name"
-                          class="block text-sm font-medium leading-6 opacity-70"
-                        >
-                          Enter the dataset name
-                          <span class="font-bold"> "{datasetName()}" </span>
-                          to confirm.
-                        </label>
-                        <input
-                          type="text"
-                          name="dataset-name"
-                          id="dataset-name"
-                          class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
-                          value={confirmClearText()}
-                          onInput={(e) =>
-                            setConfirmClearText(e.currentTarget.value)
-                          }
-                        />
+                        <Show when={isClearing()}>
+                          <label
+                            for="dataset-name"
+                            class="block text-sm font-medium leading-6 opacity-70"
+                          >
+                            Enter the dataset name
+                            <span class="font-bold"> "{datasetName()}" </span>
+                            to confirm.
+                          </label>
+                          <input
+                            type="text"
+                            name="dataset-name"
+                            id="dataset-name"
+                            class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
+                            value={confirmClearText()}
+                            onInput={(e) =>
+                              setConfirmClearText(e.currentTarget.value)
+                            }
+                          />
+                        </Show>
                         <button
                           type="button"
-                          class="pointer:cursor mt-3 w-fit rounded-md border bg-magenta-400 px-4 py-2 text-sm font-bold text-white hover:bg-magenta-600 focus:outline-magenta-500 disabled:opacity-50"
-                          disabled={confirmClearText() !== datasetName()}
+                          class="pointer:cursor w-fit rounded-md border bg-magenta-400 px-4 py-2 text-sm font-bold text-white hover:bg-magenta-600 focus:outline-magenta-500 disabled:opacity-50"
+                          classList={{
+                            "mt-3": isClearing(),
+                          }}
+                          disabled={
+                            confirmClearText() !== datasetName() && isClearing()
+                          }
                           onClick={() => {
-                            void clearDataset();
+                            if (isClearing()) {
+                              void clearDataset();
+                              setIsClearing(false);
+                            } else {
+                              setIsClearing(true);
+                            }
                           }}
                         >
                           Clear Dataset
@@ -976,48 +983,51 @@ export const DangerZoneForm = () => {
                     >
                       Delete Dataset
                     </h2>
-                    <p class="mt-1 text-sm text-red-700">
-                      Warning: This action is not reversible. Please be sure
-                      before deleting.
+                    <p class="mt-1 text-sm text-neutral-600">
+                      This will delete all chunks, groups, and files in the
+                      dataset as well as the dataset itself.
                     </p>
                     <div class="mt-2 grid grid-cols-4 gap-0">
                       <div class="col-span-4 sm:col-span-2">
-                        <label
-                          for="dataset-name"
-                          class="block text-sm font-medium leading-6 opacity-70"
-                        >
-                          Enter the dataset name
-                          <span class="font-bold"> "{datasetName()}" </span>
-                          to confirm.
-                        </label>
-                        <input
-                          type="text"
-                          name="dataset-name"
-                          id="dataset-name"
-                          class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
-                          value={confirmDeleteText()}
-                          onInput={(e) =>
-                            setConfirmDeleteText(e.currentTarget.value)
-                          }
-                        />
+                        <Show when={deleting()}>
+                          <label
+                            for="dataset-name"
+                            class="block text-sm font-medium leading-6 opacity-70"
+                          >
+                            Enter the dataset name
+                            <span class="font-bold"> "{datasetName()}" </span>
+                            to confirm.
+                          </label>
+                          <input
+                            type="text"
+                            name="dataset-name"
+                            id="dataset-name"
+                            class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
+                            value={confirmDeleteText()}
+                            onInput={(e) =>
+                              setConfirmDeleteText(e.currentTarget.value)
+                            }
+                          />
+                        </Show>
                         <button
-                          class="mt-3"
                           onClick={() => {
-                            deleteDataset();
+                            if (deleting()) {
+                              void deleteDataset();
+                              setDeleting(false);
+                            } else {
+                              setDeleting(true);
+                            }
                           }}
                           disabled={
-                            deleting() || confirmDeleteText() !== datasetName()
+                            deleting() && confirmDeleteText() !== datasetName()
                           }
                           classList={{
                             "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
                               true,
-                            "animate-pulse cursor-not-allowed": deleting(),
+                            "mt-3": deleting(),
                           }}
                         >
-                          <Switch>
-                            <Match when={deleting()}>Deleting...</Match>
-                            <Match when={!deleting()}>Delete Dataset</Match>
-                          </Switch>
+                          Delete Dataset
                         </button>
                       </div>
                     </div>
