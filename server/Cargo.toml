@@ -60,21 +60,21 @@ actix-web = { version = "4.3" }
 actix-cors = { version = "0.7" }
 
 
-async-stripe = { version = "0.38.1", features = [
+async-stripe = { version = "0.37.1", features = [
     "runtime-tokio-hyper",
     "checkout",
     "webhook-events",
     "billing",
 ] }
 chrono = { version = "0.4.20", features = ["serde"] }
-derive_more = { version = "1.0", features = ["full"] }
+derive_more = { version = "0.99.7" }
 diesel = { version = "2", features = [
     "uuid",
     "chrono",
     "serde_json",
     "postgres",
 ] }
-diesel-async = { version = "0.5.0", features = ["postgres", "deadpool"] }
+diesel-async = { version = "0.4.1", features = ["postgres", "deadpool"] }
 log = "0.4"
 once_cell = "1"
 rust-argon2 = "2"
@@ -118,12 +118,12 @@ oauth2 = "4.4.2"
 dateparser = "0.2.1"
 cfg-if = "1.0.0"
 lettre = "0.11.3"
-scraper = "0.20.0"
+scraper = "0.19.0"
 sentry = { version = "0.34", features = ["tracing"] }
 sentry-actix = "0.34"
 regex-split = "0.1.0"
 simple-server-timing-header = "0.1.1"
-ndarray = "0.16.0"
+ndarray = "0.15.6"
 ureq = { version = "2.9.6", features = ["json"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = [
@@ -133,7 +133,7 @@ tracing-subscriber = { version = "0.3.18", features = [
 sentry-tracing = "0.34"
 tokio-postgres = "0.7.10"
 postgres-openssl = "0.5.0"
-openssl = "0.10.66"
+openssl = "0.10.64"
 utoipa-swagger-ui = { version = "7.0.1", features = ["actix-web"] }
 bb8-redis = "0.15.0"
 signal-hook = "0.3.17"
