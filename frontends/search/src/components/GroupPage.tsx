@@ -263,6 +263,18 @@ export const GroupPage = (props: GroupPageProps) => {
             slim_chunks: search.debounced.slimChunks,
             page_size: search.debounced.pageSize,
             get_total_pages: search.debounced.getTotalPages,
+            typo_options: {
+              correct_typos: search.debounced.correctTypos,
+              one_typo_word_range: {
+                min: search.debounced.oneTypoWordRangeMin,
+                max: search.debounced.oneTypoWordRangeMax,
+              },
+              two_typo_word_range: {
+                min: search.debounced.twoTypoWordRangeMin,
+                max: search.debounced.twoTypoWordRangeMax,
+              },
+              disable_on_words: search.debounced.disableOnWords,
+            },
             highlight_options: {
               highlight_results: search.debounced.highlightResults,
               highlight_strategy: search.debounced.highlightStrategy,

@@ -4,8 +4,7 @@ use super::{
 };
 use crate::{
     data::models::{
-        self, ChunkMetadata, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions,
-        LLMOptions, Pool, SearchMethod, SuggestType,
+        self, ChunkMetadata, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions, LLMOptions, Pool, RedisPool, SearchMethod, SuggestType
     },
     errors::ServiceError,
     get_env,
@@ -131,6 +130,7 @@ pub async fn create_message(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     event_queue: web::Data<EventQueue>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let message_count_pool = pool.clone();
     let message_count_org_id = dataset_org_plan_sub.organization.organization.id;
@@ -225,6 +225,7 @@ pub async fn create_message(
         dataset_org_plan_sub.dataset,
         stream_response_pool,
         event_queue,
+        redis_pool,
         dataset_config,
         create_message_data,
     )
@@ -389,13 +390,14 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn edit_message(
     data: web::Json<EditMessageReqPayload>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id: uuid::Uuid = data.topic_id;
     let message_sort_order = data.message_sort_order;
@@ -428,6 +430,7 @@ pub async fn edit_message(
         dataset_org_plan_sub,
         event_queue,
         third_pool,
+        redis_pool,
     )
     .await
 }
@@ -453,13 +456,14 @@ pub async fn edit_message(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn regenerate_message_patch(
     data: web::Json<RegenerateMessageReqPayload>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let dataset_config =
@@ -487,6 +491,7 @@ pub async fn regenerate_message_patch(
             dataset_org_plan_sub.dataset,
             create_message_pool,
             event_queue,
+            redis_pool.clone(),
             dataset_config,
             data.into_inner().into(),
         )
@@ -559,6 +564,7 @@ pub async fn regenerate_message_patch(
         dataset_org_plan_sub.dataset,
         create_message_pool,
         event_queue,
+        redis_pool.clone(),
         dataset_config,
         data.into_inner().into(),
     )
@@ -587,15 +593,16 @@ pub async fn regenerate_message_patch(
     )
 )]
 #[deprecated]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn regenerate_message(
     data: web::Json<RegenerateMessageReqPayload>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    regenerate_message_patch(data, user, dataset_org_plan_sub, pool, event_queue).await
+    regenerate_message_patch(data, user, dataset_org_plan_sub, pool, event_queue, redis_pool).await
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -643,6 +650,7 @@ pub async fn get_suggested_queries(
     data: web::Json<SuggestedQueriesReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = dataset_org_plan_sub.dataset.id;
@@ -669,7 +677,6 @@ pub async fn get_suggested_queries(
         )
         .into()
     };
-
     let search_type = data.search_type.clone().unwrap_or(SearchMethod::Hybrid);
     let filters = data.filters.clone();
 
@@ -692,6 +699,7 @@ pub async fn get_suggested_queries(
                     search_req_payload,
                     parsed_query,
                     pool,
+                    redis_pool,
                     dataset_org_plan_sub.dataset.clone(),
                     &dataset_config,
                     &mut Timer::new(),
@@ -702,6 +710,7 @@ pub async fn get_suggested_queries(
                     search_req_payload,
                     ParsedQueryTypes::Single(parsed_query),
                     pool,
+                    redis_pool,
                     dataset_org_plan_sub.dataset.clone(),
                     &dataset_config,
                     &mut Timer::new(),

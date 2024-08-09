@@ -2429,23 +2429,20 @@ pub async fn get_pg_point_ids_from_qdrant_point_ids(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn scroll_chunk_metadatas_query(
-    dataset_id: uuid::Uuid,
-    offset: uuid::Uuid,
-    limit: i64,
+pub async fn get_check_html_from_ids_query(
+    chunk_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Option<Vec<ChunkMetadataTable>>, ServiceError> {
+) -> Result<Option<Vec<(uuid::Uuid, String)>>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     let mut conn = pool.get().await.unwrap();
 
     let chunk_htmls = chunk_metadata_columns::chunk_metadata
-        .select(ChunkMetadataTable::as_select())
-        .filter(chunk_metadata_columns::id.gt(offset))
-        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
-        .filter(chunk_metadata_columns::chunk_html.is_not_null())
-        .order_by(chunk_metadata_columns::id)
-        .limit(limit)
-        .load::<ChunkMetadataTable>(&mut conn)
+        .select((
+            chunk_metadata_columns::id,
+            chunk_metadata_columns::chunk_html.assume_not_null(),
+        ))
+        .filter(chunk_metadata_columns::id.eq_any(chunk_ids))
+        .load::<(uuid::Uuid, String)>(&mut conn)
         .await
         .map_err(|_| ServiceError::NotFound("Failed to get chunk_htmls".to_string()))?;
 
@@ -2453,4 +2450,49 @@ pub async fn scroll_chunk_metadatas_query(
         return Ok(None);
     }
     Ok(Some(chunk_htmls))
+}
+
+pub async fn scroll_chunk_ids_for_dictionary_query(
+    pool: web::Data<Pool>,
+    limit: i64,
+    offset: uuid::Uuid,
+) -> Result<Option<Vec<(uuid::Uuid, uuid::Uuid)>>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::dataset_words_last_processed::dsl as last_processed_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let dataset_ids = chunk_metadata_columns::chunk_metadata
+        .select((
+            chunk_metadata_columns::id,
+            chunk_metadata_columns::dataset_id,
+        ))
+        .left_outer_join(
+            last_processed_columns::dataset_words_last_processed
+                .on(last_processed_columns::dataset_id.eq(chunk_metadata_columns::dataset_id)),
+        )
+        .filter(chunk_metadata_columns::id.gt(offset))
+        .filter(
+            (chunk_metadata_columns::updated_at
+                .nullable()
+                .gt(last_processed_columns::last_processed))
+            .or(last_processed_columns::last_processed.is_null()),
+        )
+        .order_by(chunk_metadata_columns::id)
+        .limit(limit)
+        .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError(
+                "Failed to scroll dataset ids for dictionary".to_string(),
+            )
+        })?;
+
+    if dataset_ids.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(dataset_ids))
 }
