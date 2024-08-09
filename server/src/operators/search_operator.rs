@@ -1767,16 +1767,27 @@ pub async fn search_chunks_query(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        parsed_query.query =
-            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        match parsed_query {
+            ParsedQueryTypes::Single(ref mut query) => {
+                query.query =
+                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
+            }
+            ParsedQueryTypes::Multi(ref mut queries) => {
+                for (query, _) in queries {
+                    query.query =
+                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                            .await?;
+                }
+            }
+        }
         timer.add("corrected query");
     }
 
     timer.add("start to create dense embedding vector");
 
-    timer.add("computed dense embedding");
-
     let vector = get_qdrant_vector(data.clone().search_type, parsed_query.clone(), config).await?;
+
+    timer.add("computed dense embedding");
 
     let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
         Some(Some(sort_by)) => match sort_by {
@@ -2058,8 +2069,19 @@ pub async fn search_groups_query(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        parsed_query.query =
-            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        match parsed_query {
+            ParsedQueryTypes::Single(ref mut query) => {
+                query.query =
+                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
+            }
+            ParsedQueryTypes::Multi(ref mut queries) => {
+                for (query, _) in queries {
+                    query.query =
+                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                            .await?;
+                }
+            }
+        }
         timer.add("corrected query");
     }
 
@@ -2174,7 +2196,7 @@ pub async fn search_hybrid_groups(
     }
 
     let dense_vector_future = get_dense_vector(
-        parsed_query.query.clone().to_single_query()?,
+        parsed_query.query.clone(),
         None,
         "query",
         dataset_config.clone(),
@@ -2350,8 +2372,19 @@ pub async fn semantic_search_over_groups(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        parsed_query.query =
-            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        match parsed_query {
+            ParsedQueryTypes::Single(ref mut query) => {
+                query.query =
+                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
+            }
+            ParsedQueryTypes::Multi(ref mut queries) => {
+                for (query, _) in queries {
+                    query.query =
+                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                            .await?;
+                }
+            }
+        }
         timer.add("corrected query");
     }
 
@@ -2434,8 +2467,19 @@ pub async fn full_text_search_over_groups(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        parsed_query.query =
-            correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        match parsed_query {
+            ParsedQueryTypes::Single(ref mut query) => {
+                query.query =
+                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
+            }
+            ParsedQueryTypes::Multi(ref mut queries) => {
+                for (query, _) in queries {
+                    query.query =
+                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                            .await?;
+                }
+            }
+        }
         timer.add("corrected query");
     }
 

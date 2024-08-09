@@ -6,7 +6,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::prelude::*;
-use diesel_async::{AsyncConnection, RunQueryDsl};
+use diesel_async::RunQueryDsl;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -34,9 +34,7 @@ pub async fn create_words_query(
                     .on_conflict_do_nothing()
                     .execute(&mut conn)
                     .await
-                    .map_err(|_| {
-                        ServiceError::BadRequest("Error inserting words".to_string())
-                    })
+                    .map_err(|_| ServiceError::BadRequest("Error inserting words".to_string()))
             })
         })
         .await?;
@@ -48,9 +46,7 @@ pub async fn create_words_query(
         .select(WordInDataset::as_select())
         .load::<WordInDataset>(&mut conn)
         .await
-        .map_err(|_| {
-            ServiceError::BadRequest("Error getting words".to_string())
-        })?;
+        .map_err(|_| ServiceError::BadRequest("Error getting words".to_string()))?;
 
     Ok(words)
 }
@@ -67,6 +63,12 @@ struct Node {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BkTree {
     root: Option<Box<Node>>,
+}
+
+impl Default for BkTree {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BkTree {
@@ -154,14 +156,6 @@ impl BkTree {
         }
     }
 
-    /// Convert the BK-tree into an iterator over its elements, in no particular order
-    pub fn into_iter(self) -> IntoIter {
-        let mut queue = Vec::new();
-        if let Some(root) = self.root {
-            queue.push(*root);
-        }
-        IntoIter { queue }
-    }
     /// Create an iterator over references of BK-tree elements, in no particular order
     pub fn iter(&self) -> Iter {
         let mut queue = Vec::new();
@@ -169,15 +163,6 @@ impl BkTree {
             queue.push(&**root);
         }
         Iter { queue }
-    }
-}
-
-impl IntoIterator for BkTree {
-    type Item = (String, i32);
-    type IntoIter = IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.into_iter()
     }
 }
 
@@ -232,7 +217,7 @@ pub async fn get_bktree_from_redis_query(
     })?;
 
     let serialized_bk_tree: Option<Vec<u8>> = redis::cmd("GET")
-        .arg(format!("bk_tree_{}", dataset_id.to_string()))
+        .arg(format!("bk_tree_{}", dataset_id))
         .query_async(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
@@ -259,7 +244,7 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
     let excluded_words = options
         .clone()
         .disable_on_word
-        .unwrap_or(vec![])
+        .unwrap_or_default()
         .into_iter()
         .map(|s| s.to_lowercase())
         .collect::<HashSet<String>>();
@@ -335,15 +320,14 @@ pub async fn correct_query(
             Some(tree) => Ok(correct_query_helper(tree, query, options)),
             None => {
                 drop(in_mem_cache);
-                let dataset_id = dataset_id.clone();
+                let dataset_id = dataset_id;
                 let redis_pool = redis_pool.clone();
                 tokio::spawn(async move {
                     if let Ok(mut in_mem_cache) = bktree_cache.try_write() {
-                        match get_bktree_from_redis_query(dataset_id, redis_pool).await {
-                            Ok(Some(bktree)) => {
-                                in_mem_cache.insert(dataset_id, bktree);
-                            }
-                            _ => {}
+                        if let Ok(Some(bktree)) =
+                            get_bktree_from_redis_query(dataset_id, redis_pool).await
+                        {
+                            in_mem_cache.insert(dataset_id, bktree);
                         };
                     }
                 });

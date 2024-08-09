@@ -263,6 +263,7 @@ export const GroupPage = (props: GroupPageProps) => {
             slim_chunks: search.debounced.slimChunks,
             page_size: search.debounced.pageSize,
             get_total_pages: search.debounced.getTotalPages,
+            use_typo_tolerance: search.debounced.typoTolerance,
             highlight_options: {
               highlight_results: search.debounced.highlightResults,
               highlight_strategy: search.debounced.highlightStrategy,
