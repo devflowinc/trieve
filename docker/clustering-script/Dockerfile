@@ -1,15 +1,14 @@
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM rust:1.78
 
 # Set the working directory in the container
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ src/
+COPY Cargo.toml Cargo.toml
+COPY Cargo.lock Cargo.lock
 
-# Copy the current directory contents into the container at /app
-COPY get_clusters.py /app/get_clusters.py
+RUN cargo build --release
 
 # Run script.py when the container launches
-CMD ["python", "get_clusters.py"]
+CMD ["./target/release/clustering-script"]

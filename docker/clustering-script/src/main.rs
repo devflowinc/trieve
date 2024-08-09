@@ -1,5 +1,5 @@
 use core::f32;
-use std::{str::FromStr, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use clickhouse::Row;
@@ -55,29 +55,37 @@ async fn main() -> Result<()> {
         .map(|f| f.dataset_id)
         .collect();
 
-    // Print all the datasets
-    println!("Datasets: {:?}", datasets);
-
-    let fake_datasets = vec![Uuid::from_str("7ab6502e-ac37-435b-ae36-643c488e282d").unwrap()];
-
     let req_client = Arc::new(reqwest::Client::new());
 
-    // Use tokio to parallelize the dataset processing
-    let mut thread_handles = Vec::new();
-    for dataset_id in fake_datasets.clone() {
-        let client = clickhouse_client.clone();
-        let req_client = req_client.clone();
-        let dataset_id = dataset_id.clone();
-        let thread = tokio::spawn(async move {
-            handle_dataset(dataset_id, client, req_client)
-                .await
-                .unwrap();
-        });
-        thread_handles.push(thread);
+    let promises: Vec<tokio::task::JoinHandle<Result<Vec<Topic>>>> = datasets
+        .into_iter()
+        .map(|dataset_id| {
+            tokio::spawn(handle_dataset(
+                dataset_id,
+                clickhouse_client.clone(),
+                req_client.clone(),
+            ))
+        })
+        .collect();
+
+    let mut topics = Vec::new();
+    for thread in promises {
+        let result = thread.await.unwrap();
+        if let Ok(result) = result {
+            topics.extend(result);
+        }
     }
-    for thread in thread_handles {
-        thread.await.unwrap();
-    }
+
+    let to_insert_clusters: Vec<ClusterTopicRow> =
+        topics.iter().map(|topic| topic.topic.clone()).collect();
+
+    let to_insert_memberships: Vec<ClusterMembershipRow> = topics
+        .iter()
+        .flat_map(|topic| topic.memberships.clone())
+        .collect();
+
+    insert_clusters_and_memberships(clickhouse_client, to_insert_clusters, to_insert_memberships)
+        .await?;
 
     Ok(())
 }
@@ -147,16 +155,29 @@ impl Cluster {
 fn hdbscan_clustering(data: Vec<QueryRow>, dataset_id: Uuid) -> Result<Vec<Cluster>> {
     let vectors: Vec<Vec<f32>> = data.iter().map(|row| row.query_vector.clone()).collect();
 
-    let params = HdbscanHyperParams::builder().min_cluster_size(2).build();
+    // Get from env
+    let min_cluster_size = std::env::var("MIN_CLUSTER_SIZE")
+        .unwrap_or("30".to_string())
+        .parse::<usize>()?;
+    let params = HdbscanHyperParams::builder()
+        .min_cluster_size(min_cluster_size)
+        .build();
 
     let clusterer = hdbscan::Hdbscan::new(&vectors, params);
 
     let labels = clusterer.cluster()?;
 
-    let max_cluster_index = labels.iter().max().unwrap().to_owned() as usize;
+    if labels.len() == 0 {
+        return Ok(Vec::new());
+    }
+
+    let max_cluster_index = labels.iter().max().unwrap_or(&0).to_owned();
+    if max_cluster_index == -1 {
+        return Ok(Vec::new());
+    }
 
     let mut clusters: Vec<Cluster> = Vec::new();
-    for i in 0..max_cluster_index + 1 {
+    for _ in 0..max_cluster_index + 1 {
         clusters.push(Cluster::from_dataset_id(dataset_id.clone()));
     }
 
@@ -184,7 +205,7 @@ fn hdbscan_clustering(data: Vec<QueryRow>, dataset_id: Uuid) -> Result<Vec<Clust
     Ok(clusters)
 }
 
-#[derive(Row, Deserialize, Clone)]
+#[derive(Row, Deserialize, Clone, Serialize)]
 struct ClusterTopicRow {
     #[serde(with = "clickhouse::serde::uuid")]
     id: Uuid,
@@ -197,7 +218,7 @@ struct ClusterTopicRow {
     pub created_at: OffsetDateTime,
 }
 
-#[derive(Row, Deserialize, Clone)]
+#[derive(Row, Deserialize, Clone, Serialize)]
 struct ClusterMembershipRow {
     #[serde(with = "clickhouse::serde::uuid")]
     id: Uuid,
@@ -235,7 +256,6 @@ struct AnthropicReponseContent {
 #[derive(Deserialize)]
 struct AnthropicResponse {
     content: Vec<AnthropicReponseContent>,
-    role: Option<String>,
 }
 
 async fn form_topics(mut cluster: Cluster, req_client: Arc<reqwest::Client>) -> Result<Topic> {
@@ -252,8 +272,6 @@ async fn form_topics(mut cluster: Cluster, req_client: Arc<reqwest::Client>) -> 
         .map(|query| query.query.query.clone())
         .collect::<Vec<String>>()
         .join(", ");
-
-    println!("Top 5 queries: {:?}", query_string);
 
     let system_prompt = "You are a data scientist. You have been tasked with clustering search queries into topics. You have just finished clustering a set of queries into a group. You have been asked to generate a 3-5 word topic name for this cluster. ONLY RETURN THE TOPIC AND NO OTHER CONTEXT OR WORDS";
 
@@ -294,7 +312,7 @@ async fn form_topics(mut cluster: Cluster, req_client: Arc<reqwest::Client>) -> 
         dataset_id: cluster.dataset_id,
         topic: topic_name,
         density: cluster.queries.len() as u32,
-        avg_score: avg_score,
+        avg_score,
         created_at: OffsetDateTime::now_utc(),
     };
 
@@ -319,13 +337,11 @@ async fn handle_dataset(
     dataset_id: Uuid,
     client: clickhouse::Client,
     req_client: Arc<reqwest::Client>,
-) -> Result<()> {
+) -> Result<Vec<Topic>> {
     let data = fetch_dataset_queries(client.clone(), dataset_id, None).await?;
 
     // // Perform spherical k-means clustering
     let clusters = hdbscan_clustering(data, dataset_id)?;
-
-    println!("Clusters: {:?}", clusters);
 
     // Process all topic formations in parallel
     let promises: Vec<tokio::task::JoinHandle<Result<Topic>>> = clusters
@@ -338,21 +354,34 @@ async fn handle_dataset(
     for promise in promises {
         match promise.await {
             Ok(result) => match result {
-                // Ok(topic) => topics.push(topic),
-                Ok(topic) => {}
+                Ok(topic) => topics.push(topic),
                 Err(e) => eprintln!("Error forming topic: {:?}", e),
             },
             Err(e) => eprintln!("Task panicked: {:?}", e),
         }
     }
 
-    let to_insert_clusters: Vec<ClusterTopicRow> =
-        topics.iter().map(|topic| topic.topic.clone()).collect();
+    Ok(topics)
+}
 
-    let to_insert_memberships: Vec<ClusterMembershipRow> = topics
-        .iter()
-        .flat_map(|topic| topic.memberships.clone())
-        .collect();
+async fn insert_clusters_and_memberships(
+    client: clickhouse::Client,
+    to_insert_clusters: Vec<ClusterTopicRow>,
+    to_insert_memberships: Vec<ClusterMembershipRow>,
+) -> Result<()> {
+    let mut inserter = client.insert("default.cluster_topics")?;
+
+    for cluster in to_insert_clusters {
+        inserter.write(&cluster).await?;
+    }
+    inserter.end().await?;
+
+    let mut inserter = client.insert("default.search_cluster_memberships")?;
+
+    for membership in to_insert_memberships {
+        inserter.write(&membership).await?;
+    }
+    inserter.end().await?;
 
     Ok(())
 }
