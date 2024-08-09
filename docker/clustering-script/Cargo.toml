@@ -10,4 +10,6 @@ hdbscan = "0.6.0"
 rayon = "1.10.0"
 serde = {version ="1.0.205", features=['derive']}
 tokio = {version = "1.39.2", features = ["rt-multi-thread"]}
-uuid = {version="1.10.0", features = ["serde"]}
+uuid = {version="1.10.0", features = ["serde", "v4"]}
+time = { version = "0.3" }
+reqwest = { version = "0.12.5", features = ["json"] }
