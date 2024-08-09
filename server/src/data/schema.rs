@@ -277,6 +277,7 @@ diesel::table! {
         dataset_id -> Uuid,
         word_id -> Uuid,
         count -> Int4,
+        created_at -> Timestamp,
     }
 }
 

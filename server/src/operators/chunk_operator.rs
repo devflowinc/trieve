@@ -2336,18 +2336,32 @@ pub async fn scroll_chunk_metadatas_query(
     offset: uuid::Uuid,
     limit: i64,
     pool: web::Data<Pool>,
-) -> Result<Option<Vec<ChunkMetadataTable>>, ServiceError> {
+) -> Result<Option<Vec<(uuid::Uuid, String)>>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::dataset_words_last_processed::dsl as dataset_words_last_processed_columns;
     let mut conn = pool.get().await.unwrap();
 
     let chunk_htmls = chunk_metadata_columns::chunk_metadata
-        .select(ChunkMetadataTable::as_select())
+        .select((
+            chunk_metadata_columns::id,
+            chunk_metadata_columns::chunk_html.assume_not_null(),
+        ))
+        .left_outer_join(
+            dataset_words_last_processed_columns::dataset_words_last_processed
+                .on(dataset_words_last_processed_columns::dataset_id
+                    .eq(chunk_metadata_columns::dataset_id)),
+        )
         .filter(chunk_metadata_columns::id.gt(offset))
+        .filter(
+            (dataset_words_last_processed_columns::last_processed
+                .lt(chunk_metadata_columns::updated_at.nullable()))
+            .or(dataset_words_last_processed_columns::last_processed.is_null()),
+        )
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .filter(chunk_metadata_columns::chunk_html.is_not_null())
         .order_by(chunk_metadata_columns::id)
         .limit(limit)
-        .load::<ChunkMetadataTable>(&mut conn)
+        .load::<(uuid::Uuid, String)>(&mut conn)
         .await
         .map_err(|_| ServiceError::NotFound("Failed to get chunk_htmls".to_string()))?;
 

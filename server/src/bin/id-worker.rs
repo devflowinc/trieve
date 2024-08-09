@@ -13,6 +13,7 @@ use trieve_server::{
 #[tokio::main]
 async fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();
+    log::info!("Starting id worker service thread");
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
         let guard = sentry::init((
@@ -84,13 +85,7 @@ async fn main() -> Result<(), ServiceError> {
 
     let pool = actix_web::web::Data::new(pool.clone());
 
-    let mut dataset_offset = uuid::Uuid::nil();
-    while let Some(dataset_ids) =
-        scroll_dataset_ids_for_dictionary_query(dataset_offset, 1000, pool.clone()).await?
-    {
-        if let Some(last_dataset_id) = dataset_ids.last() {
-            dataset_offset = *last_dataset_id;
-        }
+    if let Some(dataset_ids) = scroll_dataset_ids_for_dictionary_query(pool.clone()).await? {
         for dataset_id in &dataset_ids {
             let mut redis_conn = web_redis_pool
                 .get()

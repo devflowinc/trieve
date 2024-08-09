@@ -12,8 +12,8 @@ use trieve_server::{
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
-        dataset_operator::get_words_from_dataset,
-        words_operator::{BkTree, CreateBkTreeMessage},
+        dataset_operator::scroll_words_from_dataset,
+        words_operator::{get_bktree_from_redis_query, BkTree, CreateBkTreeMessage},
     },
 };
 
@@ -195,52 +195,60 @@ async fn bktree_worker(
             }
         };
 
-        match get_words_from_dataset(create_tree_msg.dataset_id, web_pool.clone()).await {
-            Ok(word_and_counts) => {
-                log::info!(
-                    "Processing dataset {} with {} words",
-                    create_tree_msg.dataset_id,
-                    word_and_counts.len()
-                );
-                let mut bk_tree = BkTree::new();
-                bk_tree.insert_all(word_and_counts);
-                match rmp_serde::to_vec(&bk_tree) {
-                    Ok(serialized_tree) => {
-                        match redis::cmd("SET")
-                            .arg(format!("bk_tree_{}", create_tree_msg.dataset_id))
-                            .arg(serialized_tree)
-                            .query_async::<redis::aio::MultiplexedConnection, String>(
+        let mut word_id_offset = uuid::Uuid::nil();
+        log::info!("Processing dataset {}", create_tree_msg.dataset_id);
+        let mut bk_tree = if let Ok(Some(bktree)) =
+            get_bktree_from_redis_query(create_tree_msg.dataset_id, redis_pool.clone()).await
+        {
+            bktree
+        } else {
+            BkTree::new()
+        };
+
+        while let Ok(Some(word_and_counts)) = scroll_words_from_dataset(
+            create_tree_msg.dataset_id,
+            word_id_offset,
+            1000,
+            web_pool.clone(),
+        )
+        .await
+        {
+            if let Some(last_word) = word_and_counts.last() {
+                word_id_offset = last_word.0;
+            }
+
+            let word_and_counts = word_and_counts
+                .into_iter()
+                .map(|(_, word, count)| (word, count))
+                .collect::<Vec<(String, i32)>>();
+
+            bk_tree.insert_all(word_and_counts);
+        }
+
+        match rmp_serde::to_vec(&bk_tree) {
+            Ok(serialized_tree) => {
+                match redis::cmd("SET")
+                    .arg(format!("bk_tree_{}", create_tree_msg.dataset_id))
+                    .arg(serialized_tree)
+                    .query_async::<redis::aio::MultiplexedConnection, String>(
+                        &mut *redis_connection,
+                    )
+                    .await
+                {
+                    Ok(_) => {
+                        let _ = redis::cmd("LREM")
+                            .arg("bktree_processing")
+                            .arg(1)
+                            .arg(serialized_message.clone())
+                            .query_async::<redis::aio::MultiplexedConnection, usize>(
                                 &mut *redis_connection,
                             )
-                            .await
-                        {
-                            Ok(_) => {
-                                let _ = redis::cmd("LREM")
-                                    .arg("bktree_processing")
-                                    .arg(1)
-                                    .arg(serialized_message.clone())
-                                    .query_async::<redis::aio::MultiplexedConnection, usize>(
-                                        &mut *redis_connection,
-                                    )
-                                    .await;
+                            .await;
 
-                                log::info!(
-                                    "Succesfully created bk-tree for {}",
-                                    create_tree_msg.dataset_id
-                                );
-                            }
-                            Err(err) => {
-                                let _ = readd_error_to_queue(
-                                    create_tree_msg,
-                                    ServiceError::InternalServerError(format!(
-                                        "Failed to serialize tree: {:?}",
-                                        err
-                                    )),
-                                    redis_pool.clone(),
-                                )
-                                .await;
-                            }
-                        }
+                        log::info!(
+                            "Succesfully created bk-tree for {}",
+                            create_tree_msg.dataset_id
+                        );
                     }
                     Err(err) => {
                         let _ = readd_error_to_queue(
@@ -256,7 +264,15 @@ async fn bktree_worker(
                 }
             }
             Err(err) => {
-                let _ = readd_error_to_queue(create_tree_msg, err, redis_pool.clone()).await;
+                let _ = readd_error_to_queue(
+                    create_tree_msg,
+                    ServiceError::InternalServerError(format!(
+                        "Failed to serialize tree: {:?}",
+                        err
+                    )),
+                    redis_pool.clone(),
+                )
+                .await;
             }
         }
     }

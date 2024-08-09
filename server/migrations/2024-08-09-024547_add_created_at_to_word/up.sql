@@ -1,0 +1,3 @@
+-- Your SQL goes here
+ALTER TABLE words_datasets
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW();

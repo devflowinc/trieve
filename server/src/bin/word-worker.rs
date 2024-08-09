@@ -1,3 +1,4 @@
+#![allow(clippy::print_stdout)]
 use actix_web::web;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use futures::future::join_all;
@@ -119,6 +120,7 @@ async fn word_worker(
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
+    log::info!("Starting word worker service thread");
     let mut redis_conn_sleep = std::time::Duration::from_secs(1);
 
     #[allow(unused_assignments)]
@@ -220,23 +222,30 @@ async fn process_dataset(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     let mut chunk_id_offset = uuid::Uuid::nil();
     let mut word_count_map: HashMap<String, i32> = HashMap::new();
+    println!("Processing dataset: {}", message.dataset_id);
     while let Some(chunks) =
         scroll_chunk_metadatas_query(message.dataset_id, chunk_id_offset, 1000, pool.clone())
             .await?
     {
+        println!("working on {:?}", chunk_id_offset);
         if let Some(last_chunk) = chunks.last() {
-            chunk_id_offset = last_chunk.id;
+            chunk_id_offset = last_chunk.0;
         }
 
-        for chunk in &chunks {
-            if let Some(html) = chunk.chunk_html.clone() {
-                let content = convert_html_to_text(&html);
-                for word in content.split_whitespace() {
-                    if let Some(count) = word_count_map.get_mut(word) {
-                        *count += 1;
-                    } else {
-                        word_count_map.insert(word.chars().take(50).join(""), 1);
-                    }
+        for (_, chunk) in &chunks {
+            let content = convert_html_to_text(chunk);
+            for word in content
+                .split([' ', '\n', '\t', '\r', ',', '.', ';', ':', '!', '?'].as_ref())
+                .filter(|word| !word.is_empty())
+            {
+                let word = word
+                    .replace(|c: char| !c.is_alphabetic(), "")
+                    .to_lowercase();
+
+                if let Some(count) = word_count_map.get_mut(&word) {
+                    *count += 1;
+                } else {
+                    word_count_map.insert(word.chars().take(50).join(""), 1);
                 }
             }
         }

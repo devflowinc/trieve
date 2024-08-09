@@ -961,6 +961,7 @@ pub struct SearchChunksReqPayload {
     pub use_quote_negated_terms: Option<bool>,
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
+    /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
     pub typo_options: Option<TypoOptions>,
 }
 

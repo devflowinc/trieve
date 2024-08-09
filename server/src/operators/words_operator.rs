@@ -250,11 +250,11 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
         .collect::<HashSet<String>>();
 
     for split in &query_split_by_whitespace {
-        let exact_match = tree.find(split.to_string(), 0);
-
         if excluded_words.contains(&split.to_lowercase()) {
             continue;
         }
+
+        let exact_match = tree.find(split.to_string(), 0);
 
         if !exact_match.is_empty() {
             continue;

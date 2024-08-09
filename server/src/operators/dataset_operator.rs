@@ -663,34 +663,28 @@ pub async fn scroll_dataset_ids_query(
 }
 
 pub async fn scroll_dataset_ids_for_dictionary_query(
-    offset: uuid::Uuid,
-    limit: i64,
     pool: web::Data<Pool>,
 ) -> Result<Option<Vec<uuid::Uuid>>, ServiceError> {
-    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::dataset_words_last_processed::dsl as last_processed_columns;
+    use crate::data::schema::datasets::dsl as datasets_columns;
 
     let mut conn = pool
         .get()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let dataset_ids = chunk_metadata_columns::chunk_metadata
-        .left_join(
+    let dataset_ids = datasets_columns::datasets
+        .select(datasets_columns::id)
+        .left_outer_join(
             last_processed_columns::dataset_words_last_processed
-                .on(last_processed_columns::dataset_id.eq(chunk_metadata_columns::dataset_id)),
+                .on(last_processed_columns::dataset_id.eq(datasets_columns::id)),
         )
         .filter(
-            (chunk_metadata_columns::updated_at
+            (datasets_columns::updated_at
                 .nullable()
                 .gt(last_processed_columns::last_processed))
             .or(last_processed_columns::last_processed.is_null()),
         )
-        .filter(chunk_metadata_columns::dataset_id.gt(offset))
-        .order_by(chunk_metadata_columns::dataset_id)
-        .limit(limit)
-        .group_by(chunk_metadata_columns::dataset_id)
-        .select(chunk_metadata_columns::dataset_id)
         .load::<uuid::Uuid>(&mut conn)
         .await
         .map_err(|_| {
@@ -748,32 +742,58 @@ pub async fn add_words_to_dataset(
     Ok(())
 }
 
-pub async fn get_words_from_dataset(
+#[allow(clippy::type_complexity)]
+#[tracing::instrument(skip(pool))]
+pub async fn scroll_words_from_dataset(
     dataset_id: uuid::Uuid,
+    offset: uuid::Uuid,
+    limit: i64,
     pool: web::Data<Pool>,
-) -> Result<Vec<(String, i32)>, ServiceError> {
-    use crate::data::schema::words_datasets::dsl as words_datasets;
-    use crate::data::schema::words_in_datasets::dsl as words_in_datasets;
+) -> Result<Option<Vec<(uuid::Uuid, String, i32)>>, ServiceError> {
+    use crate::data::schema::dataset_words_last_processed::dsl as last_processed_columns;
+    use crate::data::schema::words_datasets::dsl as words_datasets_columns;
+    use crate::data::schema::words_in_datasets::dsl as words_in_datasets_columns;
 
     let mut conn = pool
         .get()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let words = words_datasets::words_datasets
+    let words = words_datasets_columns::words_datasets
         .inner_join(
-            words_in_datasets::words_in_datasets
-                .on(words_in_datasets::id.eq(words_datasets::word_id)),
+            words_in_datasets_columns::words_in_datasets
+                .on(words_in_datasets_columns::id.eq(words_datasets_columns::word_id)),
         )
-        .select((words_in_datasets::word, words_datasets::count))
-        .filter(words_datasets::dataset_id.eq(dataset_id))
-        .load::<(String, i32)>(&mut conn)
+        .left_outer_join(
+            last_processed_columns::dataset_words_last_processed
+                .on(last_processed_columns::dataset_id.eq(dataset_id)),
+        )
+        .select((
+            words_datasets_columns::word_id,
+            words_in_datasets_columns::word,
+            words_datasets_columns::count,
+        ))
+        .filter(words_datasets_columns::word_id.gt(offset))
+        .filter(
+            (words_datasets_columns::created_at
+                .nullable()
+                .gt(last_processed_columns::last_processed))
+            .or(last_processed_columns::last_processed.is_null()),
+        )
+        .filter(words_datasets_columns::dataset_id.eq(dataset_id))
+        .order_by(words_datasets_columns::word_id)
+        .limit(limit)
+        .load::<(uuid::Uuid, String, i32)>(&mut conn)
         .await
         .map_err(|_| {
             ServiceError::InternalServerError("Failed to get words from dataset".to_string())
         })?;
 
-    Ok(words)
+    if words.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(words))
+    }
 }
 
 pub async fn update_dataset_last_processed_query(
