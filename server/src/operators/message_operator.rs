@@ -219,6 +219,7 @@ pub async fn delete_message_query(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool, redis_pool, event_queue))]
 pub async fn stream_response(
     messages: Vec<models::Message>,

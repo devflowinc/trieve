@@ -405,6 +405,7 @@ impl Modify for SecurityAddon {
             data::models::LLMOptions,
             data::models::HighlightOptions,
             data::models::TypoOptions,
+            data::models::TypoRange,
             data::models::SortByField,
             data::models::SortBySearchType,
             data::models::ReRankOptions,

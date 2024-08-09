@@ -230,6 +230,18 @@ const ResultsPage = (props: ResultsPageProps) => {
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
         get_total_pages: props.search.debounced.getTotalPages ?? false,
+        typo_options: {
+          correct_typos: props.search.debounced.correctTypos,
+          one_typo_word_range: {
+            min: props.search.debounced.oneTypoWordRangeMin,
+            max: props.search.debounced.oneTypoWordRangeMax,
+          },
+          two_typo_word_range: {
+            min: props.search.debounced.twoTypoWordRangeMin,
+            max: props.search.debounced.twoTypoWordRangeMax,
+          },
+          disable_on_word: props.search.debounced.disableOnWords,
+        },
         highlight_options: {
           highlight_results: props.search.debounced.highlightResults ?? true,
           highlight_strategy:

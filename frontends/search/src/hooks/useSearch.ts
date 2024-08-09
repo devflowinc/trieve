@@ -45,6 +45,12 @@ export interface SearchOptions {
   extendResults: boolean;
   slimChunks: boolean;
   groupUniqueSearch: boolean;
+  correctTypos: boolean;
+  oneTypoWordRangeMin: number;
+  oneTypoWordRangeMax: number | null;
+  twoTypoWordRangeMin: number;
+  twoTypoWordRangeMax: number | null;
+  disableOnWords: string[];
   sort_by: SortByField | SortBySearchType;
   pageSize: number;
   getTotalPages: boolean;
@@ -75,6 +81,12 @@ const initalState: SearchOptions = {
   },
   pageSize: 10,
   getTotalPages: false,
+  correctTypos: false,
+  oneTypoWordRangeMin: 5,
+  oneTypoWordRangeMax: 8,
+  twoTypoWordRangeMin: 8,
+  twoTypoWordRangeMax: null,
+  disableOnWords: [],
   highlightResults: true,
   highlightStrategy: "exactmatch",
   highlightThreshold: 0.8,
@@ -101,6 +113,12 @@ const fromStateToParams = (state: SearchOptions): Params => {
     sort_by: JSON.stringify(state.sort_by),
     pageSize: state.pageSize.toString(),
     getTotalPages: state.getTotalPages.toString(),
+    correctTypos: state.correctTypos.toString(),
+    oneTypoWordRangeMin: state.oneTypoWordRangeMin.toString(),
+    oneTypoWordRangeMax: state.oneTypoWordRangeMax?.toString() ?? "8",
+    twoTypoWordRangeMin: state.twoTypoWordRangeMin.toString(),
+    twoTypoWordRangeMax: state.twoTypoWordRangeMax?.toString() ?? "",
+    disableOnWords: state.disableOnWords.join(","),
     highlightStrategy: state.highlightStrategy,
     highlightResults: state.highlightResults.toString(),
     highlightThreshold: state.highlightThreshold.toString(),
@@ -114,6 +132,13 @@ const fromStateToParams = (state: SearchOptions): Params => {
     filters: JSON.stringify(state.filters),
     multiQueries: JSON.stringify(state.multiQueries),
   };
+};
+
+const parseIntOrNull = (str: string | undefined) => {
+  if (!str || str === "") {
+    return null;
+  }
+  return parseInt(str);
 };
 
 const fromParamsToState = (
@@ -131,6 +156,12 @@ const fromParamsToState = (
       initalState.sort_by,
     pageSize: parseInt(params.pageSize ?? "10"),
     getTotalPages: (params.getTotalPages ?? "false") === "true",
+    correctTypos: (params.correctTypos ?? "false") === "true",
+    oneTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "5"),
+    oneTypoWordRangeMax: parseIntOrNull(params.oneTypoWordRangeMax),
+    twoTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "8"),
+    twoTypoWordRangeMax: parseIntOrNull(params.twoTypoWordRangeMax),
+    disableOnWords: params.disableOnWords?.split(",") ?? [],
     highlightResults: (params.highlightResults ?? "true") === "true",
     highlightStrategy: isHighlightStrategy(params.highlightStrategy)
       ? params.highlightStrategy

@@ -4854,16 +4854,24 @@ pub struct HighlightOptions {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+/// Typo Options lets you specify different methods to correct typos in the query. If not specified, typos will not be corrected.
 pub struct TypoOptions {
+    /// Set correct_typos to true to correct typos in the query. If not specified, this defaults to false.
     pub correct_typos: Option<bool>,
+    /// The range of which the query will be corrected if it has one typo. If not specified, this defaults to 5-8.
     pub one_typo_word_range: Option<TypoRange>,
+    /// The range of which the query will be corrected if it has two typos. If not specified, this defaults to 8-inf.
     pub two_typo_word_range: Option<TypoRange>,
+    /// Words that should not be corrected. If not specified, this defaults to an empty list.
     pub disable_on_word: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+/// The TypoRange struct is used to specify the range of which the query will be corrected if it has a typo.
 pub struct TypoRange {
+    /// The minimum number of characters that the query will be corrected if it has a typo. If not specified, this defaults to 5.
     pub min: u32,
+    /// The maximum number of characters that the query will be corrected if it has a typo. If not specified, this defaults to 8.
     pub max: Option<u32>,
 }
 
@@ -5414,6 +5422,7 @@ pub struct WordDataset {
     pub word_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub count: i32,
+    pub created_at: chrono::NaiveDateTime,
 }
 
 impl WordDataset {
@@ -5423,6 +5432,7 @@ impl WordDataset {
             word_id,
             dataset_id,
             count,
+            created_at: chrono::Utc::now().naive_local(),
         }
     }
 }
