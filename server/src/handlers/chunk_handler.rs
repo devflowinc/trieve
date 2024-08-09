@@ -1607,6 +1607,8 @@ pub struct CountChunksReqPayload {
     pub score_threshold: Option<f32>,
     /// Set limit to restrict the maximum number of chunks to count. This is useful for when you want to reduce the latency of the count operation. By default the limit will be the number of chunks in the dataset.
     pub limit: Option<u64>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
 }
 
 impl From<CountChunksReqPayload> for SearchChunksReqPayload {
@@ -1623,7 +1625,7 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             score_threshold: count_data.score_threshold,
             slim_chunks: None,
             content_only: None,
-            use_quote_negated_terms: None,
+            use_quote_negated_terms: count_data.use_quote_negated_terms,
             remove_stop_words: None,
         }
     }
@@ -1665,14 +1667,20 @@ pub async fn count_chunks(
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let parsed_query = match data.query.clone() {
-        QueryTypes::Single(query) => {
-            ParsedQueryTypes::Single(parse_query(query.clone(), None, None))
-        }
+        QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
+            query.clone(),
+            data.use_quote_negated_terms,
+            None,
+        )),
         QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
             query
                 .into_iter()
                 .map(|multi_query| {
-                    let parsed_query = parse_query(multi_query.query.clone(), None, None);
+                    let parsed_query = parse_query(
+                        multi_query.query.clone(),
+                        data.use_quote_negated_terms,
+                        None,
+                    );
                     (parsed_query, multi_query.weight)
                 })
                 .collect::<Vec<(ParsedQuery, f32)>>(),
