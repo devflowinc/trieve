@@ -184,7 +184,7 @@ fn hdbscan_clustering(data: Vec<QueryRow>, dataset_id: Uuid) -> Result<Vec<Clust
     Ok(clusters)
 }
 
-#[derive(Row, Deserialize)]
+#[derive(Row, Deserialize, Clone)]
 struct ClusterTopicRow {
     #[serde(with = "clickhouse::serde::uuid")]
     id: Uuid,
@@ -197,7 +197,7 @@ struct ClusterTopicRow {
     pub created_at: OffsetDateTime,
 }
 
-#[derive(Row, Deserialize)]
+#[derive(Row, Deserialize, Clone)]
 struct ClusterMembershipRow {
     #[serde(with = "clickhouse::serde::uuid")]
     id: Uuid,
@@ -346,13 +346,13 @@ async fn handle_dataset(
         }
     }
 
-    // let topics = create_clusters
+    let to_insert_clusters: Vec<ClusterTopicRow> =
+        topics.iter().map(|topic| topic.topic.clone()).collect();
 
-    // // Find the closest queries to the centroids
-    // let topics = get_topics(hdbscan, clusters, data);
-
-    // // Insert the topics into the database
-    // insert_centroids(client, data, dataset_id, topics, clusters)?;
+    let to_insert_memberships: Vec<ClusterMembershipRow> = topics
+        .iter()
+        .flat_map(|topic| topic.memberships.clone())
+        .collect();
 
     Ok(())
 }
