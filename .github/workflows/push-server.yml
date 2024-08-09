@@ -403,8 +403,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  id-worker:
-    name: Push ID Worker
+  word-id-cronjob:
+    name: Push Word ID cronjob
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -434,7 +434,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            trieve/id-worker
+            trieve/word-id-cronjob
           tags: |
             type=raw,latest
             type=sha
@@ -443,10 +443,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:id-worker-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:id-worker-${{matrix.runner}},mode=max
+          cache-from: type=registry,ref=trieve/buildcache:word-id-cronjob-${{matrix.runner}}
+          cache-to: type=registry,ref=trieve/buildcache:word-id-cronjob-${{matrix.runner}},mode=max
           context: server/
-          file: ./server/Dockerfile.id-worker
+          file: ./server/Dockerfile.word-id-cronjob
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

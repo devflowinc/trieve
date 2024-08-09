@@ -22,6 +22,10 @@ containers:
     tag: latest
   sync_qdrant:
     tag: latest
+  bktree_worker:
+    tag: latest
+  word_worker:
+    tag: latest
   search:
     tag: latest
   chat:

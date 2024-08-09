@@ -18,8 +18,8 @@ name = "trieve-server"
 path = "src/main.rs"
 
 [[bin]]
-name = "id-worker"
-path = "src/bin/id-worker.rs"
+name = "word-id-cronjob"
+path = "src/bin/word-id-cronjob.rs"
 
 [[bin]]
 name = "ingestion-worker"
