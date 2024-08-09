@@ -10,7 +10,7 @@ use crate::{
         ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
         HighlightOptions, Pool, QueryTypes, RecommendType, RecommendationEventClickhouse,
         RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
-        SearchQueryEventClickhouse, SortOptions, UnifiedId,
+        SearchQueryEventClickhouse, SortOptions, TypoOptions, UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
@@ -1404,6 +1404,7 @@ pub struct SearchWithinGroupReqPayload {
     pub use_quote_negated_terms: Option<bool>,
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
+    pub typo_options: Option<TypoOptions>,
 }
 
 impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
@@ -1422,6 +1423,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             content_only: search_within_group_data.content_only,
             use_quote_negated_terms: search_within_group_data.use_quote_negated_terms,
             remove_stop_words: search_within_group_data.remove_stop_words,
+            typo_options: search_within_group_data.typo_options,
         }
     }
 }
@@ -1486,17 +1488,20 @@ impl SearchWithinGroupResults {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn search_within_group(
     data: web::Json<SearchWithinGroupReqPayload>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
     api_version: APIVersion,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
+
+    let data = data.into_inner();
 
     //search over the links as well
     let group_id = data.group_id;
@@ -1545,8 +1550,10 @@ pub async fn search_within_group(
                 parsed_query.to_parsed_query()?,
                 group,
                 search_pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1556,8 +1563,10 @@ pub async fn search_within_group(
                 parsed_query,
                 group,
                 search_pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1633,6 +1642,7 @@ pub struct SearchOverGroupsReqPayload {
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be
     /// preserved.
     pub remove_stop_words: Option<bool>,
+    pub typo_options: Option<TypoOptions>,
 }
 
 /// Search Over Groups
@@ -1656,11 +1666,12 @@ pub struct SearchOverGroupsReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn search_over_groups(
     data: web::Json<SearchOverGroupsReqPayload>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
     api_version: APIVersion,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1704,6 +1715,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
                 &mut timer,
@@ -1715,6 +1727,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query.to_parsed_query()?,
                 pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
                 &mut timer,
@@ -1732,6 +1745,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
                 &mut timer,
