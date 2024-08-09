@@ -976,7 +976,7 @@ fn get_prefetch_query(
         )
     } else if let Some(ref sort_by) = query.sort_by {
         let (name, vector) = get_qdrant_vector(query.clone());
-        let prefetch_amount = sort_by.prefetch_amount.unwrap_or(50);
+        let prefetch_amount = sort_by.prefetch_amount.unwrap_or(1000);
         let prefetch_amount = if prefetch_amount > dataset_config.MAX_LIMIT {
             dataset_config.MAX_LIMIT
         } else {
