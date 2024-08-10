@@ -370,21 +370,23 @@ async fn insert_clusters_and_memberships(
     to_insert_clusters: Vec<ClusterTopicRow>,
     to_insert_memberships: Vec<ClusterMembershipRow>,
 ) -> Result<()> {
-    let mut topic_inserter = client.insert("default.cluster_topics")?;
+    const BATCH_SIZE: usize = 1000;
 
-    for cluster in to_insert_clusters {
-        topic_inserter.write(&cluster).await?;
+    for chunk in to_insert_clusters.chunks(BATCH_SIZE) {
+        let mut topic_inserter = client.insert("default.cluster_topics")?;
+        for cluster in chunk {
+            topic_inserter.write(cluster).await?;
+        }
+        topic_inserter.end().await?;
     }
 
-    topic_inserter.end().await?;
-
-    let mut membership_inserter = client.insert("default.search_cluster_memberships")?;
-
-    for membership in to_insert_memberships {
-        membership_inserter.write(&membership).await?;
+    for chunk in to_insert_memberships.chunks(BATCH_SIZE) {
+        let mut membership_inserter = client.insert("default.search_cluster_memberships")?;
+        for membership in chunk {
+            membership_inserter.write(membership).await?;
+        }
+        membership_inserter.end().await?;
     }
-
-    membership_inserter.end().await?;
 
     Ok(())
 }
