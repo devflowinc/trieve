@@ -1475,7 +1475,7 @@ pub struct ScrollChunksReqPayload {
 
 /// Scroll Chunks
 ///
-/// Get paginated chunks from your dataset with filters and custom sorting. If sort by is not specified, the results will sort by the id's of the chunks in ascending order.
+/// Get paginated chunks from your dataset with filters and custom sorting. If sort by is not specified, the results will sort by the id's of the chunks in ascending order. Sort by and offset_chunk_id cannot be used together; if you want to scroll with a sort by then you need to use a must_not filter with the ids you have already seen. There is a limit of 1000 id's in a must_not filter at a time.
 #[utoipa::path(
     post,
     path = "/chunks/scroll",
