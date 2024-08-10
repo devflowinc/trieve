@@ -1359,7 +1359,6 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     request_body(content = AutocompleteReqPayload, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchResponseTypes),
-
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
@@ -1481,8 +1480,9 @@ pub struct ScrollChunksReqPayload {
     path = "/chunks/scroll",
     context_path = "/api",
     tag = "Chunk",
+    request_body(content = ScrollChunksReqPayload, description = "JSON request payload to scroll through chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "Number of chunks equivalent to page_size starting from offset_chunk_id", body = ScrollChunksReqPayload),
+        (status = 200, description = "Number of chunks equivalent to page_size starting from offset_chunk_id", body = ScrollChunksResponseBody),
         (status = 400, description = "Service error relating to scrolling chunks", body = ErrorResponseBody)
     ),
     params(
@@ -1506,9 +1506,18 @@ pub async fn scroll_dataset_chunks(
 
     let filter = assemble_qdrant_filter(filters, None, None, dataset_id, pool.clone()).await?;
 
+    let qdrant_point_id_of_offset_chunk = match data.offset_chunk_id {
+        Some(offset_chunk_id) => {
+            let chunk =
+                get_metadata_from_id_query(offset_chunk_id, dataset_id, pool.clone()).await?;
+            Some(chunk.qdrant_point_id)
+        }
+        None => None,
+    };
+
     let qdrant_point_ids = scroll_dataset_points(
         data.page_size.unwrap_or(10),
-        data.offset_chunk_id,
+        qdrant_point_id_of_offset_chunk,
         data.sort_by.clone(),
         dataset_config,
         filter,
