@@ -1702,7 +1702,7 @@ pub async fn update_group_tag_sets_in_qdrant_query(
 
 pub async fn scroll_dataset_points(
     limit: u64,
-    offset_id: Option<uuid::Uuid>,
+    qdrant_point_id: Option<uuid::Uuid>,
     sort_by: Option<SortByField>,
     dataset_config: DatasetConfiguration,
     filter: Filter,
@@ -1712,7 +1712,7 @@ pub async fn scroll_dataset_points(
 
     scroll_points_params = scroll_points_params.limit(limit as u32);
 
-    if let Some(offset_id) = offset_id {
+    if let Some(offset_id) = qdrant_point_id {
         scroll_points_params = scroll_points_params.offset(offset_id.to_string());
     };
 
