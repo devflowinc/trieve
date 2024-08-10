@@ -3,16 +3,16 @@ use std::sync::{
     Arc,
 };
 
-use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
+use chm::tools::migrations::SetupArgs;
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::{
-    data::models::{Pool, RedisPool},
+    data::models::RedisPool,
     errors::ServiceError,
-    establish_connection, get_env,
+    get_env,
     operators::{
-        dataset_operator::scroll_words_from_dataset,
+        dataset_operator::{scroll_words_from_dataset, update_dataset_last_processed_query},
         words_operator::{get_bktree_from_redis_query, BkTree, CreateBkTreeMessage},
     },
 };
@@ -56,22 +56,6 @@ fn main() {
         None
     };
 
-    let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
-
-    let mut config = ManagerConfig::default();
-    config.custom_setup = Box::new(establish_connection);
-
-    let mgr = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new_with_config(
-        database_url,
-        config,
-    );
-
-    let pool = diesel_async::pooled_connection::deadpool::Pool::builder(mgr)
-        .max_size(3)
-        .build()
-        .expect("Failed to create diesel_async pool");
-
-    let web_pool = actix_web::web::Data::new(pool.clone());
     let should_terminate = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
         .expect("Failed to register shutdown hook");
@@ -100,11 +84,33 @@ fn main() {
 
                 let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
+                let args = SetupArgs {
+                    url: Some(get_env!("CLICKHOUSE_URL", "CLICKHOUSE_URL is not set").to_string()),
+                    user: Some(
+                        get_env!("CLICKHOUSE_USER", "CLICKHOUSE_USER is not set").to_string(),
+                    ),
+                    password: Some(
+                        get_env!("CLICKHOUSE_PASSWORD", "CLICKHOUSE_PASSWORD is not set")
+                            .to_string(),
+                    ),
+                    database: Some(
+                        get_env!("CLICKHOUSE_DB", "CLICKHOUSE_DB is not set").to_string(),
+                    ),
+                };
+
+                let clickhouse_client = clickhouse::Client::default()
+                    .with_url(args.url.as_ref().unwrap())
+                    .with_user(args.user.as_ref().unwrap())
+                    .with_password(args.password.as_ref().unwrap())
+                    .with_database(args.database.as_ref().unwrap())
+                    .with_option("async_insert", "1")
+                    .with_option("wait_for_async_insert", "0");
+
                 let should_terminate = Arc::new(AtomicBool::new(false));
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
 
-                bktree_worker(should_terminate, web_redis_pool, web_pool).await
+                bktree_worker(should_terminate, web_redis_pool, clickhouse_client).await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -113,7 +119,7 @@ fn main() {
 async fn bktree_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<RedisPool>,
-    web_pool: actix_web::web::Data<Pool>,
+    clickhouse_client: clickhouse::Client,
 ) {
     log::info!("Starting bk tree service thread");
 
@@ -195,8 +201,18 @@ async fn bktree_worker(
             }
         };
 
-        let mut word_id_offset = uuid::Uuid::nil();
+        let mut id_offset = uuid::Uuid::nil();
         log::info!("Processing dataset {}", create_tree_msg.dataset_id);
+
+        match update_dataset_last_processed_query(create_tree_msg.dataset_id, &clickhouse_client)
+            .await
+        {
+            Ok(_) => {}
+            Err(err) => {
+                log::error!("Failed to update last processed {:?}", err);
+            }
+        }
+
         let mut bk_tree = if let Ok(Some(bktree)) =
             get_bktree_from_redis_query(create_tree_msg.dataset_id, redis_pool.clone()).await
         {
@@ -205,24 +221,42 @@ async fn bktree_worker(
             BkTree::new()
         };
 
+        let mut failed = false;
+
         while let Ok(Some(word_and_counts)) = scroll_words_from_dataset(
             create_tree_msg.dataset_id,
-            word_id_offset,
+            id_offset,
             1000,
-            web_pool.clone(),
+            &clickhouse_client,
         )
         .await
-        {
+        .map_err(|err| {
+            let err = err.clone();
+            let redis_pool = redis_pool.clone();
+            let create_tree_msg = create_tree_msg.clone();
+            tokio::spawn(async move {
+                let _ = readd_error_to_queue(create_tree_msg.clone(), &err, redis_pool.clone())
+                    .await
+                    .map_err(|e| {
+                        eprintln!("Failed to readd error to queue: {:?}", e);
+                    });
+            });
+            failed = true;
+        }) {
             if let Some(last_word) = word_and_counts.last() {
-                word_id_offset = last_word.0;
+                id_offset = last_word.id;
             }
 
             let word_and_counts = word_and_counts
                 .into_iter()
-                .map(|(_, word, count)| (word, count))
+                .map(|words| (words.word, words.count))
                 .collect::<Vec<(String, i32)>>();
 
             bk_tree.insert_all(word_and_counts);
+        }
+
+        if failed {
+            continue;
         }
 
         match rmp_serde::to_vec(&bk_tree) {
@@ -252,8 +286,8 @@ async fn bktree_worker(
                     }
                     Err(err) => {
                         let _ = readd_error_to_queue(
-                            create_tree_msg,
-                            ServiceError::InternalServerError(format!(
+                            create_tree_msg.clone(),
+                            &ServiceError::InternalServerError(format!(
                                 "Failed to serialize tree: {:?}",
                                 err
                             )),
@@ -265,8 +299,8 @@ async fn bktree_worker(
             }
             Err(err) => {
                 let _ = readd_error_to_queue(
-                    create_tree_msg,
-                    ServiceError::InternalServerError(format!(
+                    create_tree_msg.clone(),
+                    &ServiceError::InternalServerError(format!(
                         "Failed to serialize tree: {:?}",
                         err
                     )),
@@ -280,7 +314,7 @@ async fn bktree_worker(
 
 pub async fn readd_error_to_queue(
     message: CreateBkTreeMessage,
-    error: ServiceError,
+    error: &ServiceError,
     redis_pool: actix_web::web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
     let mut message = message;

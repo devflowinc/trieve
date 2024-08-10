@@ -1,53 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    data::models::{Pool, RedisPool, TypoOptions, TypoRange, WordInDataset},
+    data::models::{RedisPool, TypoOptions, TypoRange},
     errors::ServiceError,
 };
 use actix_web::web;
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
-
-#[tracing::instrument(skip(pool))]
-pub async fn create_words_query(
-    words: Vec<WordInDataset>,
-    pool: web::Data<Pool>,
-) -> Result<Vec<WordInDataset>, ServiceError> {
-    use crate::data::schema::words_in_datasets::dsl as words_in_datasets_columns;
-    let mut conn = pool
-        .get()
-        .await
-        .expect("Failed to get connection from pool");
-
-    diesel::insert_into(words_in_datasets_columns::words_in_datasets)
-        .values(&words)
-        .on_conflict_do_nothing()
-        .execute(&mut conn)
-        .await
-        .map_err(|e| {
-            dbg!(e);
-            ServiceError::BadRequest("Error inserting new words".to_string())
-        })?;
-
-    let result = words_in_datasets_columns::words_in_datasets
-        .filter(
-            words_in_datasets_columns::word
-                .eq_any(words.iter().map(|x| x.word.clone()).collect_vec()),
-        )
-        .select(WordInDataset::as_select())
-        .load::<WordInDataset>(&mut conn)
-        .await
-        .map_err(|e| {
-            dbg!(e);
-            ServiceError::BadRequest("Error fetching words".to_string())
-        })?;
-
-    Ok(result)
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct Node {
@@ -97,6 +58,7 @@ impl BkTree {
                 loop {
                     let k = bktree::levenshtein_distance(&u.word, &val.0);
                     if k == 0 {
+                        u.count = val.1;
                         return;
                     }
 
@@ -290,6 +252,8 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
             query_split_to_correction.insert(split.to_string(), correction.to_string());
         }
     }
+
+    dbg!(&query_split_to_correction);
 
     let mut corrected_query = query.clone();
 

@@ -18,7 +18,7 @@ BEGIN
         SET chunk_count = dataset_usage_counts.chunk_count + new_count;
 
         -- Update dataset
-        UPDATE dataset
+        UPDATE datasets
         SET updated_at = CURRENT_TIMESTAMP
         WHERE id = d_id;
 
@@ -29,7 +29,7 @@ BEGIN
         WHERE dataset_id = d_id;
 
         -- Update dataset
-        UPDATE dataset
+        UPDATE datasets
         SET updated_at = CURRENT_TIMESTAMP
         WHERE id = d_id;
     END IF;
