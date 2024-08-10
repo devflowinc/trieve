@@ -4,7 +4,8 @@ use super::schema::*;
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::chunk_handler::{
-    AutocompleteReqPayload, ChunkFilter, FullTextBoost, SearchChunksReqPayload, SemanticBoost,
+    AutocompleteReqPayload, ChunkFilter, FullTextBoost, ParsedQuery, SearchChunksReqPayload,
+    SemanticBoost,
 };
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload};
@@ -5377,6 +5378,15 @@ pub struct MultiQuery {
     pub weight: f32,
 }
 
+impl From<(ParsedQuery, f32)> for MultiQuery {
+    fn from((query, weight): (ParsedQuery, f32)) -> Self {
+        Self {
+            query: query.query,
+            weight,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 #[serde(untagged)]
 /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
@@ -5395,64 +5405,27 @@ impl QueryTypes {
         }
     }
 }
-#[derive(
-    Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, ValidGrouping, Clone, ToSchema,
-)]
-#[diesel(table_name=words_in_datasets)]
-pub struct WordInDataset {
-    pub id: uuid::Uuid,
-    pub word: String,
-}
 
-impl WordInDataset {
-    pub fn from_word(word: String) -> Self {
-        Self {
-            id: uuid::Uuid::new_v4(),
-            word,
-        }
-    }
-}
-
-#[derive(
-    Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, ValidGrouping, Clone, ToSchema,
-)]
-#[diesel(table_name=words_datasets)]
+#[derive(Debug, Serialize, Deserialize, Row, Clone, ToSchema)]
 pub struct WordDataset {
+    #[serde(with = "clickhouse::serde::uuid")]
     pub id: uuid::Uuid,
-    pub word_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
+    pub word: String,
     pub count: i32,
-    pub created_at: chrono::NaiveDateTime,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
 }
 
 impl WordDataset {
-    pub fn from_details(word_id: uuid::Uuid, dataset_id: uuid::Uuid, count: i32) -> Self {
+    pub fn from_details(word: String, dataset_id: uuid::Uuid, count: i32) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
-            word_id,
+            word,
             dataset_id,
             count,
-            created_at: chrono::Utc::now().naive_local(),
-        }
-    }
-}
-
-#[derive(
-    Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, ValidGrouping, Clone, ToSchema,
-)]
-#[diesel(table_name=dataset_words_last_processed)]
-pub struct DatasetWordsLastProcessed {
-    pub id: uuid::Uuid,
-    pub last_processed: chrono::NaiveDateTime,
-    pub dataset_id: uuid::Uuid,
-}
-
-impl DatasetWordsLastProcessed {
-    pub fn from_details(dataset_id: uuid::Uuid) -> Self {
-        Self {
-            id: uuid::Uuid::new_v4(),
-            dataset_id,
-            last_processed: chrono::Utc::now().naive_local(),
+            created_at: OffsetDateTime::now_utc(),
         }
     }
 }

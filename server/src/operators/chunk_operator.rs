@@ -18,6 +18,7 @@ use crate::{
 };
 use actix_web::web;
 use chrono::NaiveDateTime;
+use clickhouse::Row;
 use dateparser::DateTimeUtc;
 use diesel::dsl::{not, sql};
 use diesel::prelude::*;
@@ -29,6 +30,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use simsearch::{SearchOptions, SimSearch};
 use std::collections::{HashMap, HashSet};
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 #[tracing::instrument(skip(pool))]
@@ -2360,45 +2362,77 @@ pub async fn get_check_html_from_ids_query(
 
 pub async fn scroll_chunk_ids_for_dictionary_query(
     pool: web::Data<Pool>,
+    dataset_id: uuid::Uuid,
+    last_processed: Option<DatasetLastProcessed>,
     limit: i64,
     offset: uuid::Uuid,
 ) -> Result<Option<Vec<(uuid::Uuid, uuid::Uuid)>>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    use crate::data::schema::dataset_words_last_processed::dsl as last_processed_columns;
 
     let mut conn = pool
         .get()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let dataset_ids = chunk_metadata_columns::chunk_metadata
+    let mut chunk_ids = chunk_metadata_columns::chunk_metadata
         .select((
             chunk_metadata_columns::id,
             chunk_metadata_columns::dataset_id,
         ))
-        .left_outer_join(
-            last_processed_columns::dataset_words_last_processed
-                .on(last_processed_columns::dataset_id.eq(chunk_metadata_columns::dataset_id)),
-        )
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .filter(chunk_metadata_columns::id.gt(offset))
-        .filter(
-            (chunk_metadata_columns::updated_at
-                .nullable()
-                .gt(last_processed_columns::last_processed))
-            .or(last_processed_columns::last_processed.is_null()),
-        )
+        .into_boxed();
+
+    if let Some(last_processed) = last_processed {
+        dbg!(&last_processed.last_processed.unix_timestamp());
+        let last_processed =
+            NaiveDateTime::from_timestamp(last_processed.last_processed.unix_timestamp(), 0);
+
+        chunk_ids = chunk_ids.filter(chunk_metadata_columns::created_at.gt(last_processed));
+    }
+
+    let chunk_ids = chunk_ids
         .order_by(chunk_metadata_columns::id)
         .limit(limit)
         .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
         .await
         .map_err(|_| {
+            log::error!("Failed to scroll dataset ids for dictionary");
             ServiceError::InternalServerError(
                 "Failed to scroll dataset ids for dictionary".to_string(),
             )
         })?;
 
-    if dataset_ids.is_empty() {
+    if chunk_ids.is_empty() {
         return Ok(None);
     }
-    Ok(Some(dataset_ids))
+    Ok(Some(chunk_ids))
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Row)]
+pub struct DatasetLastProcessed {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub last_processed: OffsetDateTime,
+}
+
+pub async fn get_last_processed_from_clickhouse(
+    clickhouse_client: &clickhouse::Client,
+    dataset_id: uuid::Uuid,
+) -> Result<Option<DatasetLastProcessed>, ServiceError> {
+    let query = format!(
+        "SELECT ?fields FROM dataset_words_last_processed WHERE dataset_id = '{}' LIMIT 1",
+        dataset_id
+    );
+
+    let last_processed = clickhouse_client
+        .query(&query)
+        .fetch_optional::<DatasetLastProcessed>()
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to get last processed".to_string())
+        })?;
+
+    Ok(last_processed)
 }

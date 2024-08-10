@@ -1,5 +1,6 @@
 #![allow(clippy::print_stdout)]
 use actix_web::web;
+use chm::tools::migrations::SetupArgs;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use futures::future::join_all;
 use itertools::Itertools;
@@ -14,14 +15,14 @@ use std::{
 };
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::{
-    data::models::{self, WordInDataset},
+    data::models,
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
         chunk_operator::get_check_html_from_ids_query,
-        dataset_operator::{add_words_to_dataset, update_dataset_last_processed_query},
+        dataset_operator::add_words_to_dataset,
         parse_operator::convert_html_to_text,
-        words_operator::{create_words_query, CreateBkTreeMessage, ProcessWordsFromDatasetMessage},
+        words_operator::{CreateBkTreeMessage, ProcessWordsFromDatasetMessage},
     },
 };
 
@@ -87,10 +88,6 @@ fn main() -> Result<(), ServiceError> {
         .block_on(
             async move {
                 let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-                let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-                    .unwrap_or("2".to_string())
-                    .parse()
-                    .unwrap_or(2);
 
                 let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
                     .expect("Failed to connect to redis");
@@ -103,10 +100,38 @@ fn main() -> Result<(), ServiceError> {
 
                 let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
+                let args = SetupArgs {
+                    url: Some(get_env!("CLICKHOUSE_URL", "CLICKHOUSE_URL is not set").to_string()),
+                    user: Some(
+                        get_env!("CLICKHOUSE_USER", "CLICKHOUSE_USER is not set").to_string(),
+                    ),
+                    password: Some(
+                        get_env!("CLICKHOUSE_PASSWORD", "CLICKHOUSE_PASSWORD is not set")
+                            .to_string(),
+                    ),
+                    database: Some(
+                        get_env!("CLICKHOUSE_DB", "CLICKHOUSE_DB is not set").to_string(),
+                    ),
+                };
+
+                let clickhouse_client = clickhouse::Client::default()
+                    .with_url(args.url.as_ref().unwrap())
+                    .with_user(args.user.as_ref().unwrap())
+                    .with_password(args.password.as_ref().unwrap())
+                    .with_database(args.database.as_ref().unwrap())
+                    .with_option("async_insert", "1")
+                    .with_option("wait_for_async_insert", "0");
+
                 let should_terminate = Arc::new(AtomicBool::new(false));
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
-                word_worker(should_terminate, web_redis_pool, web_pool).await
+                word_worker(
+                    should_terminate,
+                    web_redis_pool,
+                    web_pool,
+                    clickhouse_client,
+                )
+                .await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -118,6 +143,7 @@ async fn word_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
+    clickhouse_client: clickhouse::Client,
 ) {
     log::info!("Starting word worker service thread");
     let mut redis_conn_sleep = std::time::Duration::from_secs(1);
@@ -198,7 +224,14 @@ async fn word_worker(
             }
         };
 
-        match process_chunks(msg.clone(), web_pool.clone(), redis_pool.clone()).await {
+        match process_chunks(
+            msg.clone(),
+            web_pool.clone(),
+            redis_pool.clone(),
+            clickhouse_client.clone(),
+        )
+        .await
+        {
             Ok(()) => {
                 log::info!("Processing {} chunks", msg.chunks_to_process.len());
             }
@@ -214,6 +247,7 @@ async fn process_chunks(
     message: ProcessWordsFromDatasetMessage,
     pool: web::Data<models::Pool>,
     redis_pool: web::Data<models::RedisPool>,
+    clickhouse_client: clickhouse::Client,
 ) -> Result<(), ServiceError> {
     let mut word_count_map: HashMap<(uuid::Uuid, String), i32> = HashMap::new();
     if let Some(chunks) = get_check_html_from_ids_query(
@@ -259,43 +293,25 @@ async fn process_chunks(
         .sorted_by_key(|((_, word), _)| word.clone())
         .unzip();
 
-    let word_ids_futs = dataset_id_word
-        .chunks(10000)
-        .map(|words| {
-            create_words_query(
-                words
-                    .iter()
-                    .map(|(_, w)| WordInDataset::from_word(w.to_string()))
-                    .collect_vec(),
-                pool.clone(),
-            )
-        })
+    let words_and_counts = dataset_id_word
+        .into_iter()
+        .zip(counts.into_iter())
+        .dedup_by(|((_, word1), _), ((_, word2), _)| word1 == word2)
         .collect_vec();
 
-    let word_ids_and_counts = join_all(word_ids_futs)
-        .await
-        .into_iter()
-        .collect::<Result<Vec<Vec<WordInDataset>>, ServiceError>>()?
-        .into_iter()
-        .flatten()
-        .sorted_by_key(|w| w.word.clone())
-        .zip(dataset_id_word.iter().map(|(d, _)| d.to_owned()))
-        .zip(counts)
-        .collect_vec();
-
-    let word_dataset_relation_futs = word_ids_and_counts
+    let word_dataset_relation_futs = words_and_counts
         .chunks(5000)
         .map(|ids_counts| {
-            let words = ids_counts.iter().map(|((w, _), _)| w.clone()).collect_vec();
+            let words = ids_counts.iter().map(|((_, w), _)| w.clone()).collect_vec();
             let dataset_ids = ids_counts
                 .iter()
-                .map(|((_, d), _)| d.to_owned())
+                .map(|((d, _), _)| d.to_owned())
                 .collect_vec();
             let counts = ids_counts
                 .iter()
                 .map(|((_, _), c)| c.to_owned())
                 .collect_vec();
-            add_words_to_dataset(words, counts, dataset_ids, pool.clone())
+            add_words_to_dataset(words, counts, dataset_ids, &clickhouse_client)
         })
         .collect_vec();
 
@@ -304,16 +320,6 @@ async fn process_chunks(
         .into_iter()
         .collect::<Result<Vec<()>, ServiceError>>()?;
 
-    let update_dataset_last_processed_futs = dataset_id_word
-        .iter()
-        .map(|(dataset_id, _)| *dataset_id)
-        .unique()
-        .map(|id| update_dataset_last_processed_query(id, pool.clone()));
-
-    join_all(update_dataset_last_processed_futs)
-        .await
-        .into_iter()
-        .collect::<Result<Vec<()>, ServiceError>>()?;
     let serialized_payload = serde_json::to_string(&message).map_err(|_| {
         ServiceError::InternalServerError("Failed to reserialize input".to_string())
     })?;
@@ -330,9 +336,9 @@ async fn process_chunks(
         .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
         .await;
 
-    let create_tree_msgs = dataset_id_word
+    let create_tree_msgs = words_and_counts
         .iter()
-        .map(|(dataset_id, _)| *dataset_id)
+        .map(|((dataset_id, _), _)| *dataset_id)
         .unique()
         .map(|id| {
             let msg = CreateBkTreeMessage {

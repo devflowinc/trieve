@@ -232,6 +232,19 @@ async fn file_worker(
             Ok(Some(file_id)) => {
                 log::info!("Uploaded file: {:?}", file_id);
 
+                event_queue
+                    .send(ClickHouseEvent::WorkerEvent(
+                        models::WorkerEvent::from_details(
+                            file_worker_message.dataset_id,
+                            models::EventType::FileUploaded {
+                                file_id,
+                                file_name: file_worker_message.upload_file_data.file_name.clone(),
+                            },
+                        )
+                        .into(),
+                    ))
+                    .await;
+
                 let _ = redis::cmd("LREM")
                     .arg("file_processing")
                     .arg(1)

@@ -1783,7 +1783,7 @@ async fn get_qdrant_vector(
 
 #[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn search_chunks_query(
-    data: SearchChunksReqPayload,
+    mut data: SearchChunksReqPayload,
     parsed_query: ParsedQueryTypes,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -1811,6 +1811,7 @@ pub async fn search_chunks_query(
             ParsedQueryTypes::Single(ref mut query) => {
                 query.query =
                     correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
+                data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
@@ -1921,7 +1922,7 @@ pub async fn search_chunks_query(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn search_hybrid_chunks(
-    data: SearchChunksReqPayload,
+    mut data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -1947,6 +1948,8 @@ pub async fn search_hybrid_chunks(
         timer.add("start correcting query");
         parsed_query.query =
             correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        data.query = QueryTypes::Single(parsed_query.query.clone());
+
         timer.add("corrected query");
     }
 
@@ -2100,7 +2103,7 @@ pub async fn search_hybrid_chunks(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool, timer, redis_pool))]
 pub async fn search_groups_query(
-    data: SearchWithinGroupReqPayload,
+    mut data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQueryTypes,
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
@@ -2119,6 +2122,7 @@ pub async fn search_groups_query(
             ParsedQueryTypes::Single(ref mut query) => {
                 query.query =
                     correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
+                data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
@@ -2222,7 +2226,7 @@ pub async fn search_groups_query(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool, timer, redis_pool))]
 pub async fn search_hybrid_groups(
-    data: SearchWithinGroupReqPayload,
+    mut data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQuery,
     group: ChunkGroupAndFileId,
     pool: web::Data<Pool>,
@@ -2239,6 +2243,8 @@ pub async fn search_hybrid_groups(
         timer.add("start correcting query");
         parsed_query.query =
             correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        data.query = QueryTypes::Single(parsed_query.query.clone());
+
         timer.add("corrected query");
     }
 
@@ -2406,7 +2412,7 @@ pub async fn search_hybrid_groups(
 
 #[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn semantic_search_over_groups(
-    data: SearchOverGroupsReqPayload,
+    mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQueryTypes,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -2424,6 +2430,7 @@ pub async fn semantic_search_over_groups(
             ParsedQueryTypes::Single(ref mut query) => {
                 query.query =
                     correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
+                data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
@@ -2492,7 +2499,7 @@ pub async fn semantic_search_over_groups(
 
 #[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn full_text_search_over_groups(
-    data: SearchOverGroupsReqPayload,
+    mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQueryTypes,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -2519,6 +2526,7 @@ pub async fn full_text_search_over_groups(
             ParsedQueryTypes::Single(ref mut query) => {
                 query.query =
                     correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
+                data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
@@ -2636,7 +2644,7 @@ async fn cross_encoder_for_groups(
 
 #[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn hybrid_search_over_groups(
-    data: SearchOverGroupsReqPayload,
+    mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -2652,6 +2660,8 @@ pub async fn hybrid_search_over_groups(
         timer.add("start correcting query");
         parsed_query.query =
             correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        data.query = QueryTypes::Single(parsed_query.query.clone());
+
         timer.add("corrected query");
     }
 
@@ -2789,7 +2799,7 @@ pub async fn hybrid_search_over_groups(
 
 #[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn autocomplete_chunks_query(
-    data: AutocompleteReqPayload,
+    mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -2805,6 +2815,8 @@ pub async fn autocomplete_chunks_query(
         timer.add("start correcting query");
         parsed_query.query =
             correct_query(parsed_query.query, dataset.id, redis_pool, options).await?;
+        data.query.clone_from(&parsed_query.query);
+
         timer.add("corrected query");
     }
 
