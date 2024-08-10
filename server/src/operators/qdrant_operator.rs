@@ -1736,8 +1736,8 @@ pub async fn scroll_dataset_points(
         .scroll(scroll_points_params.with_payload(false).with_vectors(false))
         .await
         .map_err(|err| {
-            log::error!("Failed to scroll points from qdrant {:?}", err);
-            ServiceError::BadRequest("Failed to scroll points from qdrant".to_string())
+            log::error!("Failed to scroll points from qdrant: {:?}", err);
+            ServiceError::BadRequest(format!("Failed to scroll points from qdrant: {:?}", err))
         })?;
 
     let point_ids = qdrant_point_ids
