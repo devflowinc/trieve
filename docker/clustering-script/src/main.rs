@@ -1,4 +1,5 @@
 use core::f32;
+use futures::stream::{self, StreamExt};
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -56,29 +57,26 @@ async fn main() -> Result<()> {
         .collect();
 
     let req_client = Arc::new(reqwest::Client::new());
-
-    let promises: Vec<tokio::task::JoinHandle<Result<Vec<Topic>>>> = datasets
-        .into_iter()
-        .map(|dataset_id| {
-            tokio::spawn(handle_dataset(
-                dataset_id,
-                clickhouse_client.clone(),
-                req_client.clone(),
-            ))
-        })
-        .collect();
-
     let mut topics = Vec::new();
-    for thread in promises {
-        let result = thread.await.unwrap();
-        if let Ok(result) = result {
-            topics.extend(result);
+
+    let results = stream::iter(datasets)
+        .map(|dataset_id| {
+            let clickhouse_client = clickhouse_client.clone();
+            let req_client = req_client.clone();
+            async move { handle_dataset(dataset_id, clickhouse_client, req_client).await }
+        })
+        .buffer_unordered(40)
+        .collect::<Vec<Result<Vec<Topic>>>>()
+        .await;
+
+    for result in results {
+        if let Ok(dataset_topics) = result {
+            topics.extend(dataset_topics);
         }
     }
 
     let to_insert_clusters: Vec<ClusterTopicRow> =
         topics.iter().map(|topic| topic.topic.clone()).collect();
-
     let to_insert_memberships: Vec<ClusterMembershipRow> = topics
         .iter()
         .flat_map(|topic| topic.memberships.clone())
@@ -161,6 +159,7 @@ fn hdbscan_clustering(data: Vec<QueryRow>, dataset_id: Uuid) -> Result<Vec<Clust
         .parse::<usize>()?;
     let params = HdbscanHyperParams::builder()
         .min_cluster_size(min_cluster_size)
+        .allow_single_cluster(true)
         .build();
 
     let clusterer = hdbscan::Hdbscan::new(&vectors, params);
@@ -361,6 +360,8 @@ async fn handle_dataset(
         }
     }
 
+    println!("Finished clustering for {dataset_id}");
+
     Ok(topics)
 }
 
@@ -369,19 +370,21 @@ async fn insert_clusters_and_memberships(
     to_insert_clusters: Vec<ClusterTopicRow>,
     to_insert_memberships: Vec<ClusterMembershipRow>,
 ) -> Result<()> {
-    let mut inserter = client.insert("default.cluster_topics")?;
+    let mut topic_inserter = client.insert("default.cluster_topics")?;
 
     for cluster in to_insert_clusters {
-        inserter.write(&cluster).await?;
+        topic_inserter.write(&cluster).await?;
     }
-    inserter.end().await?;
 
-    let mut inserter = client.insert("default.search_cluster_memberships")?;
+    topic_inserter.end().await?;
+
+    let mut membership_inserter = client.insert("default.search_cluster_memberships")?;
 
     for membership in to_insert_memberships {
-        inserter.write(&membership).await?;
+        membership_inserter.write(&membership).await?;
     }
-    inserter.end().await?;
+
+    membership_inserter.end().await?;
 
     Ok(())
 }
