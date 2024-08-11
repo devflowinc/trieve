@@ -5,7 +5,7 @@ edition = "2021"
 default-run = "trieve-server"
 
 [profile.release]
-debug = 0
+debug = true
 incremental = true
 lto = "fat"
 opt-level = 3
