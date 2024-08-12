@@ -29,7 +29,16 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
   });
 
   return (
-    <div class={cn("flex flex-col items-start", props.class)}>{rows()}</div>
+    <div
+      class={cn(
+        "flex flex-col items-start rounded-md",
+        "outline-magenta-200 outline outline-[0.5px]",
+        props.class,
+        props.isAlternate ? "bg-magenta-100" : "bg-magenta-50",
+      )}
+    >
+      {rows()}
+    </div>
   );
 };
 
@@ -61,7 +70,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
               <JSONMetadata
                 isChild={props.isChild}
                 isAlternate={!props.isAlternate}
-                class="pl-8"
+                class="ml-8"
                 data={item as object}
               />
             )}
@@ -73,7 +82,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
         "block",
         <JSONMetadata
           isAlternate={!props.isAlternate}
-          class="pl-8"
+          class="ml-8"
           data={props.value}
         />,
       ];
@@ -96,8 +105,8 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
           // "background-color": value()[0] === "inline" ? undefined : "#fde0ff",
         }}
         class={cn(
-          "flex outline-magenta-200 outline outline-[0.5px] px-2 my-1 rounded-md",
-          props.isAlternate ? "bg-magenta-100" : "bg-magenta-50",
+          "flex px-2 my-0.5 rounded-md",
+          // props.isAlternate ? "bg-magenta-100" : "bg-magenta-50",
         )}
       >
         <div class="font-medium">{props.key}: </div>
