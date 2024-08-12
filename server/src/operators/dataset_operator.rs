@@ -293,7 +293,7 @@ pub async fn clear_dataset_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_collection = format!("{}_vectors", dataset_config.EMBEDDING_SIZE);
+    let qdrant_collection = format!("{}_vectors_bm25", dataset_config.EMBEDDING_SIZE);
 
     let chunk_groups = chunk_group::chunk_group
         .filter(chunk_group::dataset_id.eq(id))
