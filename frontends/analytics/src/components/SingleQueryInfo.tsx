@@ -2,6 +2,7 @@ import { createQuery } from "@tanstack/solid-query";
 import { getSearchQuery } from "../api/analytics";
 import { Show, useContext } from "solid-js";
 import { DatasetContext } from "../layouts/TopBarLayout";
+import { JSONMetadata } from "shared/ui";
 
 interface SingleQueryProps {
   queryId: string;
@@ -19,9 +20,7 @@ export const SingleQuery = (props: SingleQueryProps) => {
   return (
     <div>
       <div>Single Query INfo</div>
-      <Show when={query.data}>
-        {(data) => <pre>{JSON.stringify(data(), null, 4)}</pre>}
-      </Show>
+      <Show when={query.data}>{(data) => <JSONMetadata data={data()} />}</Show>
     </div>
   );
 };
