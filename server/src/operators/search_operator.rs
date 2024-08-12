@@ -1350,11 +1350,12 @@ pub async fn get_metadata_from_groups(
     Ok(group_chunks)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, timer))]
 #[inline(never)]
 /// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
+    timer: Option<&mut Timer>,
     data: &SearchChunksReqPayload,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
@@ -1391,6 +1392,14 @@ pub async fn retrieve_chunks_from_point_ids(
             get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
                 .await?
         };
+
+    let timer = if let Some(timer) = timer {
+        timer.add("fetched from postgres");
+
+        Some(timer)
+    } else {
+        None
+    };
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
@@ -1486,7 +1495,9 @@ pub async fn retrieve_chunks_from_point_ids(
         })
         .collect();
 
-    transaction.finish();
+    if let Some(timer) = timer {
+        timer.add("highlight chunks");
+    }
 
     Ok(SearchChunkQueryResponseBody {
         score_chunks,
@@ -1803,10 +1814,13 @@ pub async fn search_chunks_query(
 
     timer.add("fetched from qdrant");
 
-    let mut result_chunks =
-        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
-
-    timer.add("fetched from postgres");
+    let mut result_chunks = retrieve_chunks_from_point_ids(
+        search_chunk_query_results,
+        Some(timer),
+        &data,
+        pool.clone(),
+    )
+    .await?;
 
     let rerank_chunks_input = if let Some(rerank_by) = rerank_by {
         match rerank_by.rerank_type {
@@ -1943,10 +1957,13 @@ pub async fn search_hybrid_chunks(
     )
     .await?;
 
-    timer.add("fetched point_ids from qdrant");
-
-    let result_chunks =
-        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
+    let result_chunks = retrieve_chunks_from_point_ids(
+        search_chunk_query_results,
+        Some(timer),
+        &data,
+        pool.clone(),
+    )
+    .await?;
 
     timer.add("fetched metadata from postgres");
 
@@ -2067,6 +2084,7 @@ pub async fn search_groups_query(
 
     let mut result_chunks = retrieve_chunks_from_point_ids(
         search_semantic_chunk_query_results,
+        None,
         &web::Json(data.clone().into()),
         pool.clone(),
     )
@@ -2203,6 +2221,7 @@ pub async fn search_hybrid_groups(
 
     let result_chunks = retrieve_chunks_from_point_ids(
         qdrant_results,
+        None,
         &web::Json(data.clone().into()),
         pool.clone(),
     )
@@ -2715,6 +2734,7 @@ pub async fn autocomplete_chunks_query(
 
     let mut result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results.clone(),
+        None,
         &data.clone().into(),
         pool.clone(),
     )
