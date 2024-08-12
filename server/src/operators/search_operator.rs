@@ -1111,7 +1111,6 @@ pub enum SearchOverGroupsResponseTypes {
 }
 
 #[tracing::instrument(skip(pool))]
-#[inline(never)]
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     data: &SearchOverGroupsReqPayload,

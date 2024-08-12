@@ -1332,7 +1332,6 @@ pub fn get_slice_from_vec_string(vec: Vec<String>, index: usize) -> Result<Strin
     }
 }
 
-#[inline(never)]
 pub fn get_stop_words() -> Vec<String> {
     include_str!("../stop-words.txt")
         .lines()
@@ -1347,7 +1346,6 @@ pub enum HighlightStrategy {
     V1,
 }
 
-#[inline(never)]
 pub fn get_highlights_with_exact_match(
     input: ChunkMetadata,
     query: String,
@@ -1945,7 +1943,6 @@ pub fn get_highlights_with_exact_match(
 
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument]
-#[inline(never)]
 pub fn get_highlights(
     input: ChunkMetadata,
     query: String,
@@ -2102,7 +2099,6 @@ pub fn get_highlights(
     ))
 }
 
-#[inline(never)]
 fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> ChunkMetadata {
     let mut meta_data = input;
     let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();
