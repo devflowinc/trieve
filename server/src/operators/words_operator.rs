@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    time::{Duration, Instant},
+};
 
 use crate::{
     data::models::{RedisPool, TypoOptions, TypoRange},
@@ -191,8 +194,65 @@ pub async fn get_bktree_from_redis_query(
     }
 }
 
+struct BKTreeCacheEntry {
+    bktree: BkTree,
+    expiration: Instant,
+}
+
+pub struct BKTreeCache {
+    cache: RwLock<HashMap<uuid::Uuid, BKTreeCacheEntry>>,
+}
+
 lazy_static! {
-    static ref bktree_cache: RwLock<HashMap<uuid::Uuid, BkTree>> = RwLock::new(HashMap::new());
+    static ref BKTREE_CACHE: BKTreeCache = BKTreeCache::new();
+}
+
+impl BKTreeCache {
+    fn new() -> Self {
+        Self {
+            cache: RwLock::new(HashMap::new()),
+        }
+    }
+
+    fn insert_with_ttl(&self, id: uuid::Uuid, bktree: BkTree, ttl: Duration) {
+        if let Ok(mut cache) = self.cache.try_write() {
+            let entry = BKTreeCacheEntry {
+                bktree,
+                expiration: Instant::now() + ttl,
+            };
+            cache.insert(id, entry);
+        };
+    }
+
+    fn get_if_valid(&self, id: &uuid::Uuid) -> Option<BkTree> {
+        match self.cache.try_read() {
+            Ok(cache) => cache.get(id).and_then(|entry| {
+                if Instant::now() < entry.expiration {
+                    Some(entry.bktree.clone())
+                } else {
+                    None
+                }
+            }),
+            _ => None,
+        }
+    }
+
+    fn remove_expired(&self) {
+        if let Ok(mut cache) = self.cache.try_write() {
+            cache.retain(|_, entry| Instant::now() < entry.expiration);
+        }
+    }
+
+    pub fn enforce_cache_ttl() {
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60)); // Run every 60 seconds
+
+            loop {
+                interval.tick().await;
+                BKTREE_CACHE.remove_expired();
+            }
+        });
+    }
 }
 
 fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> String {
@@ -277,25 +337,23 @@ pub async fn correct_query(
         return Ok(query);
     }
 
-    match bktree_cache.try_read() {
-        Ok(in_mem_cache) => match in_mem_cache.get(&dataset_id) {
-            Some(tree) => Ok(correct_query_helper(tree, query, options)),
-            None => {
-                drop(in_mem_cache);
-                let dataset_id = dataset_id;
-                let redis_pool = redis_pool.clone();
-                tokio::spawn(async move {
-                    if let Ok(mut in_mem_cache) = bktree_cache.try_write() {
-                        if let Ok(Some(bktree)) =
-                            get_bktree_from_redis_query(dataset_id, redis_pool).await
-                        {
-                            in_mem_cache.insert(dataset_id, bktree);
-                        };
-                    }
-                });
-                Ok(query)
-            }
-        },
-        Err(_) => Ok(query),
+    match BKTREE_CACHE.get_if_valid(&dataset_id) {
+        Some(tree) => Ok(correct_query_helper(&tree, query, options)),
+        None => {
+            let dataset_id = dataset_id;
+            let redis_pool = redis_pool.clone();
+            tokio::spawn(async move {
+                if let Ok(Some(bktree)) = get_bktree_from_redis_query(dataset_id, redis_pool).await
+                {
+                    // TTL of 1 day
+                    BKTREE_CACHE.insert_with_ttl(
+                        dataset_id,
+                        bktree,
+                        Duration::from_secs(60 * 60 * 24),
+                    );
+                };
+            });
+            Ok(query)
+        }
     }
 }
