@@ -1441,7 +1441,10 @@ pub fn get_highlights_with_exact_match(
             .to_string(),
     );
     let query_split = cleaned_query.split_whitespace().collect_vec();
-    let mut starting_length = query_split.len() - 1;
+    let mut starting_length = 0;
+    if !query_split.is_empty() {
+        starting_length = query_split.len() - 1;
+    }
     while starting_length > 0 {
         let mut current_skip = 0;
         while current_skip <= query_split.len() - starting_length {
