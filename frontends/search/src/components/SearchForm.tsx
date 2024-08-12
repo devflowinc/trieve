@@ -134,6 +134,11 @@ const SearchForm = (props: {
       isSelected: false,
       value: "cross_encoder",
     },
+    {
+      name: "BM25",
+      isSelected: false,
+      value: "bm25",
+    },
   ]);
 
   createEffect(() => {

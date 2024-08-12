@@ -380,6 +380,34 @@ impl RetrievePointQuery {
                             filter: filter.clone(),
                         })
                     }
+                    ReRankOptions::BM25 => {
+                        let data = SearchChunksReqPayload {
+                            query: QueryTypes::Single(
+                                rerank_by
+                                    .rerank_query
+                                    .clone()
+                                    .unwrap_or(parsed_query.query.clone()),
+                            ),
+                            search_type: SearchMethod::BM25,
+                            ..Default::default()
+                        };
+
+                        let vector = get_qdrant_vector(
+                            data.search_type,
+                            ParsedQueryTypes::Single(parsed_query),
+                            config,
+                        )
+                        .await?;
+
+                        Some(QdrantSearchQuery {
+                            vector,
+                            score_threshold: self.score_threshold,
+                            limit: rerank_by.prefetch_amount.unwrap_or(1000),
+                            rerank_by: Box::new(None),
+                            sort_by: None,
+                            filter: filter.clone(),
+                        })
+                    }
                     ReRankOptions::CrossEncoder => None,
                 }
             } else {

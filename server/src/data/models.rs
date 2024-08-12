@@ -4807,6 +4807,8 @@ pub enum QdrantSortBy {
 pub enum ReRankOptions {
     Semantic,
     Fulltext,
+    #[serde(rename = "bm25", alias = "BM25")]
+    BM25,
     CrossEncoder,
 }
 
