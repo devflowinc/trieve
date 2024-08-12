@@ -1,7 +1,8 @@
-import { createMemo, JSX, Show } from "solid-js";
+import { createMemo, For, JSX, Show } from "solid-js";
 import { cn } from "../utils";
 
 type JSONMetadataProps = {
+  isChild?: boolean;
   data: object;
   isAlternate?: boolean;
   class?: string;
@@ -10,12 +11,14 @@ type JSONMetadataProps = {
 export const JSONMetadata = (props: JSONMetadataProps) => {
   const rows = createMemo(() => {
     if (typeof props.data !== "object") {
+      console.log("Not an object!", typeof props.data);
       return <div>Not an object!</div>;
     }
     return Object.entries(props.data).map(
       ([key, value]: [key: string, value: unknown]) => {
         return (
           <JSONMetadaRow
+            isChild={props.isChild}
             isAlternate={props.isAlternate}
             key={key}
             value={value}
@@ -34,6 +37,7 @@ interface JSONMetadaRowProps {
   key: string;
   value: unknown;
   isAlternate?: boolean;
+  isChild?: boolean;
 }
 
 type NextShapeType = "inline" | "block";
@@ -43,15 +47,33 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
     if (typeof props.value === "undefined") {
       return ["inline", null];
     }
+
     if (typeof props.value === "object") {
       if (props.value === null) {
         return ["inline", "null"];
       }
+
+      if (Array.isArray(props.value)) {
+        return [
+          "block",
+          <For each={props.value} fallback={<div>Empty array</div>}>
+            {(item) => (
+              <JSONMetadata
+                isChild={props.isChild}
+                isAlternate={!props.isAlternate}
+                class="pl-8"
+                data={item as object}
+              />
+            )}
+          </For>,
+        ];
+      }
+
       return [
         "block",
         <JSONMetadata
           isAlternate={!props.isAlternate}
-          class="pl-4"
+          class="pl-8"
           data={props.value}
         />,
       ];
