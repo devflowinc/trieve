@@ -1111,6 +1111,7 @@ pub enum SearchOverGroupsResponseTypes {
 }
 
 #[tracing::instrument(skip(pool))]
+#[inline(never)]
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     data: &SearchOverGroupsReqPayload,
@@ -1350,8 +1351,9 @@ pub async fn get_metadata_from_groups(
     Ok(group_chunks)
 }
 
-/// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
 #[tracing::instrument(skip(pool))]
+#[inline(never)]
+/// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
     data: &SearchChunksReqPayload,
