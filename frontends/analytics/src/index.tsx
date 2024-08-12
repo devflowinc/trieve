@@ -15,6 +15,7 @@ import { RagAnalyticsPage } from "./pages/RagAnalyticsPage";
 import { DataExplorerTabs } from "./layouts/DataExplorerTabs";
 import { SearchTablePage } from "./pages/tablePages/SearchTablePage";
 import { RAGTablePage } from "./pages/tablePages/RAGTablePage";
+import { SingleQueryPage } from "./pages/SingleQueryPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/trends",
         component: TrendExplorer,
+      },
+      {
+        path: "/query/:id",
+        component: SingleQueryPage,
       },
       {
         path: "/data",
