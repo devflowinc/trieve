@@ -1302,7 +1302,7 @@ pub async fn search_chunks(
     "score_threshold": 0.5
 }))]
 pub struct AutocompleteReqPayload {
-    /// Can be either "semantic", or "fulltext". "semantic" will pull in one page_size of the nearest cosine distant vectors. "fulltext" will pull in one page_size of full-text results based on SPLADE.
+    /// Can be either "semantic", or "fulltext". "semantic" will pull in one page_size of the nearest cosine distant vectors. "fulltext" will pull in one page_size of full-text results based on SPLADE. "bm25" will pull in one page_size of results based on the BM25 algorithim
     pub search_type: SearchMethod,
     /// If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.
     pub extend_results: Option<bool>,

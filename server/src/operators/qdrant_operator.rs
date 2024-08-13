@@ -1178,6 +1178,7 @@ pub async fn recommend_qdrant_query(
             }
         },
         RecommendType::FullText => "sparse_vectors",
+        RecommendType::BM25 => "bm25_vectors",
     };
 
     let recommend_points = RecommendPoints {
@@ -1286,6 +1287,7 @@ pub async fn recommend_qdrant_groups_query(
             }
         },
         RecommendType::FullText => "sparse_vectors",
+        RecommendType::BM25 => "bm25_vectors",
     };
 
     let recommend_points = RecommendPointGroups {

@@ -1108,7 +1108,7 @@ pub struct RecommendGroupsReqPayload {
     pub negative_group_tracking_ids: Option<Vec<String>>,
     /// Strategy to use for recommendations, either "average_vector" or "best_score". The default is "average_vector". The "average_vector" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search. The "best_score" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives.
     pub strategy: Option<RecommendationStrategy>,
-    /// The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.
+    /// The type of recommendation to make. This lets you choose whether to recommend based off of `semantic`, `fulltext` or `bm25` similarity. The default is `semantic`.
     pub recommend_type: Option<RecommendType>,
     /// Filters to apply to the chunks to be recommended. This is a JSON object which contains the filters to apply to the chunks to be recommended. The default is None.
     pub filters: Option<ChunkFilter>,
