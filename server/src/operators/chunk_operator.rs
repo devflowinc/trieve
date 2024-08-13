@@ -2337,7 +2337,7 @@ pub async fn get_pg_point_ids_from_qdrant_point_ids(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_check_html_from_ids_query(
+pub async fn get_chunk_html_from_ids_query(
     chunk_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Option<Vec<(uuid::Uuid, String)>>, ServiceError> {

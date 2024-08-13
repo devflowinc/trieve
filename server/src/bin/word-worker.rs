@@ -19,7 +19,7 @@ use trieve_server::{
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
-        chunk_operator::get_check_html_from_ids_query,
+        chunk_operator::get_chunk_html_from_ids_query,
         dataset_operator::add_words_to_dataset,
         parse_operator::convert_html_to_text,
         words_operator::{CreateBkTreeMessage, ProcessWordsFromDatasetMessage},
@@ -250,7 +250,7 @@ async fn process_chunks(
     clickhouse_client: clickhouse::Client,
 ) -> Result<(), ServiceError> {
     let mut word_count_map: HashMap<(uuid::Uuid, String), i32> = HashMap::new();
-    if let Some(chunks) = get_check_html_from_ids_query(
+    if let Some(chunks) = get_chunk_html_from_ids_query(
         message
             .chunks_to_process
             .clone()

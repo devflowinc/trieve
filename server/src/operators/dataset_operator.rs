@@ -123,6 +123,7 @@ pub async fn get_all_dataset_ids(pool: web::Data<Pool>) -> Result<Vec<uuid::Uuid
 
     let datasets = datasets_columns::datasets
         .select(datasets_columns::id)
+        .filter(datasets_columns::deleted.eq(0))
         .load::<uuid::Uuid>(&mut conn)
         .await
         .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
