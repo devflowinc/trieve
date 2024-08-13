@@ -19,7 +19,7 @@ export const SingleQuery = (props: SingleQueryProps) => {
 
   return (
     <div>
-      <div>Single Query INfo</div>
+      <div>Single Query Info</div>
       <Show when={query.data}>{(data) => <JSONMetadata data={data()} />}</Show>
     </div>
   );

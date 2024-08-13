@@ -5,11 +5,15 @@ type JSONMetadataProps = {
   isChild?: boolean;
   data: object;
   isAlternate?: boolean;
+  copyJSONButton?: boolean;
   class?: string;
 };
 
 export const JSONMetadata = (props: JSONMetadataProps) => {
   const rows = createMemo(() => {
+    if (props.data === null) {
+      return <div>Null</div>;
+    }
     if (typeof props.data !== "object") {
       console.log("Not an object!", typeof props.data);
       return <div>Not an object!</div>;
@@ -37,6 +41,10 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
         props.isAlternate ? "bg-magenta-100" : "bg-magenta-50",
       )}
     >
+      <Show when={props.copyJSONButton}>
+        <div>Copy</div>
+      </Show>
+
       {rows()}
     </div>
   );
@@ -68,6 +76,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
           <For each={props.value} fallback={<div>Empty array</div>}>
             {(item) => (
               <JSONMetadata
+                copyJSONButton={false}
                 isChild={props.isChild}
                 isAlternate={!props.isAlternate}
                 class="ml-8"
@@ -81,6 +90,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
       return [
         "block",
         <JSONMetadata
+          copyJSONButton={false}
           isAlternate={!props.isAlternate}
           class="ml-8"
           data={props.value}
