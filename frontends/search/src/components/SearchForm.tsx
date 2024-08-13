@@ -101,7 +101,11 @@ const SearchForm = (props: {
   ];
 
   if (bm25Active) {
-    default_settings.push({ name: "AutoComplete BM25", isSelected: false, route: "autocomplete-bm25" });
+    default_settings.push({
+      name: "AutoComplete BM25",
+      isSelected: false,
+      route: "autocomplete-bm25",
+    });
     default_settings.push({ name: "BM25", isSelected: false, route: "BM25" });
   }
 
@@ -142,7 +146,7 @@ const SearchForm = (props: {
       name: "BM25",
       isSelected: false,
       value: "bm25",
-    })
+    });
   }
   const [rerankTypes, setRerankTypes] = createSignal(defaultRerankTypes);
 
@@ -187,6 +191,13 @@ const SearchForm = (props: {
           return { ...type, isSelected: false };
         }
       });
+    });
+    setRerankQuery(() => {
+      if (isSortBySearchType(props.search.state.sort_by)) {
+        return props.search.state.sort_by.rerank_query ?? "";
+      } else {
+        return "";
+      }
     });
   });
 
