@@ -9,6 +9,7 @@ import {
   AiOutlineLineChart,
   AiOutlineTable,
   AiOutlineUser,
+  AiOutlineApi,
 } from "solid-icons/ai";
 import { apiHost } from "../utils/apiHost";
 import { IoChatboxOutline, IoLogOutOutline } from "solid-icons/io";
@@ -56,7 +57,7 @@ export const Sidebar = (props: NavbarProps) => {
   const pathname = usePathname();
   const navigate = useBetterNav();
 
-  const dashboardUiURL = import.meta.env.VITE_DASHBOARD_UI_URL as string;
+  const dashboardURL = import.meta.env.VITE_DASHBOARD_URL as string;
 
   const logOut = () => {
     void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
@@ -151,28 +152,43 @@ export const Sidebar = (props: NavbarProps) => {
             );
           }}
         </For>
-        <button type="button" class="hover:text-fuchsia-800">
-          <a
-            href={`${dashboardUiURL}/dashboard/dataset/${orgDatasetParams()}`}
-            class="flex w-full flex-row items-center gap-2"
-            target="_blank"
-          >
-            <TbLayoutDashboard />
-            Dashboard
-          </a>
-        </button>
       </div>
-      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start border-t border-t-neutral-300 bg-neutral-200/50 px-4 py-4">
-        <div class="flex items-center gap-2">
-          <p>{userContext?.user().email}</p>
-          <AiOutlineUser class="h-4 w-4" />
+      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start border-t border-t-neutral-300 bg-neutral-200/50">
+        <div class="flex flex-col px-4 pt-4">
+          <button type="button" class="hover:text-fuchsia-800">
+            <a
+              href={`${dashboardURL}/dashboard/dataset/${orgDatasetParams()}`}
+              class="flex w-full flex-row items-center gap-2"
+              target="_blank"
+            >
+              Dashboard
+              <TbLayoutDashboard class="text-sm" />
+            </a>
+          </button>
+          <button type="button" class="hover:text-fuchsia-800">
+            <a
+              href="https://docs.trieve.ai/api-reference/"
+              class="flex w-full flex-row items-center gap-2"
+              target="_blank"
+            >
+              API Docs
+              <AiOutlineApi class="text-sm" />
+            </a>
+          </button>
         </div>
-        <button
-          class="flex items-center gap-2 hover:text-fuchsia-800"
-          onClick={logOut}
-        >
-          Log Out <IoLogOutOutline class="inline-block h-4 w-4" />
-        </button>
+        <hr class="my-2 w-full border border-neutral-300" />
+        <div class="px-4 pb-4">
+          <div class="flex items-center gap-2">
+            <p>{userContext?.user().email}</p>
+            <AiOutlineUser class="h-4 w-4" />
+          </div>
+          <button
+            class="flex items-center gap-2 hover:text-fuchsia-800"
+            onClick={logOut}
+          >
+            Log Out <IoLogOutOutline class="inline-block h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
