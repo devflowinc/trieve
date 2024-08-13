@@ -1,4 +1,4 @@
-import { Show, useContext, For } from "solid-js";
+import { Show, useContext, For, createMemo } from "solid-js";
 import { OrgContext } from "../contexts/OrgContext";
 import { UserContext } from "../contexts/UserAuthContext";
 import { DatasetAndUsage } from "shared/types";
@@ -13,6 +13,7 @@ import {
 import { apiHost } from "../utils/apiHost";
 import { IoChatboxOutline, IoLogOutOutline } from "solid-icons/io";
 import { HiOutlineMagnifyingGlass, HiOutlineNewspaper } from "solid-icons/hi";
+import { TbLayoutDashboard } from "solid-icons/tb";
 
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
@@ -51,8 +52,11 @@ const navbarRoutes = [
 export const Sidebar = (props: NavbarProps) => {
   const userContext = useContext(UserContext);
   const orgContext = useContext(OrgContext);
+
   const pathname = usePathname();
   const navigate = useBetterNav();
+
+  const dashboardUiURL = import.meta.env.VITE_DASHBOARD_UI_URL as string;
 
   const logOut = () => {
     void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
@@ -70,6 +74,16 @@ export const Sidebar = (props: NavbarProps) => {
         });
     });
   };
+
+  //Construct a7b64c7f-01ad-43b2-aaaf-c78192ca3d72/start?org=ca34dafa-7826-41b4-9953-cd58617834f1
+  const orgDatasetParams = createMemo(() => {
+    const orgId = orgContext?.selectedOrg().id;
+    const datasetId = props.selectedDataset?.dataset.id;
+    let params = "";
+    if (datasetId) params += datasetId;
+    if (orgId && datasetId) params += `/start?org=${orgId}`;
+    return params;
+  });
 
   return (
     <div class="relative hidden h-screen flex-col justify-start overflow-y-auto border border-r-neutral-300 bg-neutral-100 p-4 lg:flex">
@@ -137,6 +151,16 @@ export const Sidebar = (props: NavbarProps) => {
             );
           }}
         </For>
+        <button type="button" class="hover:text-fuchsia-800">
+          <a
+            href={`${dashboardUiURL}/dashboard/dataset/${orgDatasetParams()}`}
+            class="flex w-full flex-row items-center gap-2"
+            target="_blank"
+          >
+            <TbLayoutDashboard />
+            Dashboard
+          </a>
+        </button>
       </div>
       <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start border-t border-t-neutral-300 bg-neutral-200/50 px-4 py-4">
         <div class="flex items-center gap-2">
