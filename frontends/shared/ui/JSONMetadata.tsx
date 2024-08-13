@@ -1,4 +1,4 @@
-import { createMemo, For, JSX, Show } from "solid-js";
+import { createMemo, createSignal, For, JSX, Show } from "solid-js";
 import { cn } from "../utils";
 
 type JSONMetadataProps = {
@@ -6,7 +6,9 @@ type JSONMetadataProps = {
   data: object;
   isAlternate?: boolean;
   copyJSONButton?: boolean;
+  closedByDefault?: boolean;
   class?: string;
+  monospace?: boolean;
 };
 
 export const JSONMetadata = (props: JSONMetadataProps) => {
@@ -22,6 +24,7 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
       ([key, value]: [key: string, value: unknown]) => {
         return (
           <JSONMetadaRow
+            closedByDefault={false}
             isChild={props.isChild}
             isAlternate={props.isAlternate}
             key={key}
@@ -34,6 +37,11 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
 
   return (
     <div
+      // Monospace font
+      style={{
+        "font-family":
+          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+      }}
       class={cn(
         "flex flex-col items-start rounded-md",
         // "outline-magenta-200 outline outline-[0.5px]",
@@ -54,11 +62,14 @@ interface JSONMetadaRowProps {
   value: unknown;
   isAlternate?: boolean;
   isChild?: boolean;
+  closedByDefault?: boolean;
 }
 
 type NextShapeType = "inline" | "block" | "block-array";
 
 const JSONMetadaRow = (props: JSONMetadaRowProps) => {
+  const [isOpen, setIsOpen] = createSignal<boolean>(true);
+
   const value = createMemo<[NextShapeType, JSX.Element]>(() => {
     if (typeof props.value === "undefined") {
       return ["inline", null];
@@ -75,6 +86,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
           <For each={props.value} fallback={<div>Empty array</div>}>
             {(item) => (
               <JSONMetadata
+                closedByDefault={props.closedByDefault}
                 copyJSONButton={false}
                 isChild={props.isChild}
                 isAlternate={!props.isAlternate}
@@ -89,6 +101,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
       return [
         "block",
         <JSONMetadata
+          closedByDefault={props.closedByDefault}
           copyJSONButton={false}
           isAlternate={!props.isAlternate}
           class="ml-8"
@@ -106,6 +119,40 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
     return ["inline", <div>Can't infer</div>];
   });
 
+  const openingBrace = createMemo(() => {
+    if (isOpen()) {
+      if (value()[0] === "block") {
+        return (
+          <span>
+            {"{"}
+            <button
+              onClick={() => {
+                setIsOpen(false);
+              }}
+            >
+              Close
+            </button>
+          </span>
+        );
+      }
+      if (value()[0] === "block-array") {
+        return <span>{"["}</span>;
+      }
+    } else {
+      if (value()[0] === "block") {
+        return (
+          <span
+            onClick={() => {
+              setIsOpen(true);
+            }}
+          >
+            {"{...}"}
+          </span>
+        );
+      }
+    }
+  });
+
   return (
     <Show when={props.value}>
       <div
@@ -119,19 +166,17 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
         )}
       >
         <div class="font-medium">
-          {props.key}:
-          <Show when={value()[0] === "block"}>
-            <span>{" {"}</span>
-          </Show>
-          <Show when={value()[0] === "block-array"}>
-            <span>{" ["}</span>
-          </Show>
+          {props.key}:{openingBrace()}
         </div>
-        <div> {value()[1]}</div>
-        <Show when={value()[0] === "block"}>
+
+        <Show when={isOpen()}>
+          <div class="pl-1">{value()[1]}</div>
+        </Show>
+
+        <Show when={value()[0] === "block" && isOpen()}>
           <span class="font-medium">{" }"}</span>
         </Show>
-        <Show when={value()[0] === "block-array"}>
+        <Show when={value()[0] === "block-array" && isOpen()}>
           <span class="font-medium">{" ]"}</span>
         </Show>
       </div>
