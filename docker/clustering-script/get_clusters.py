@@ -161,6 +161,10 @@ if __name__ == "__main__":
             # Fetch data
             data = fetch_dataset_vectors(client, dataset_id[0], 3000)
 
+            if len(data) < 30:
+                print(f"Skipping dataset {dataset_id[0]} due to insufficient data")
+                continue
+
             # Perform spherical k-means clustering
             hdbscan = hdbscan_clustering(data)
 
