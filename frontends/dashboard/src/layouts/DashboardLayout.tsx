@@ -65,11 +65,11 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
   return (
     <>
       <ShowToasts />
-      <div class="flex min-h-screen flex-col bg-white text-black">
+      <div class="flex max-h-screen min-h-screen flex-col bg-white text-black">
         <div class="w-full border-b px-8 py-2">
           <NavBar />
         </div>
-        <div class="flex">
+        <div class="flex max-h-full overflow-hidden">
           <Sidebar />
           <Switch>
             <Match when={userContext.loading?.()}>
@@ -78,7 +78,7 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
               </div>
             </Match>
             <Match when={userContext.user?.()?.orgs.length === 0}>
-              <div class="flex flex-1 items-center justify-center">
+              <div class="flex flex-1 items-center justify-center overflow-y-auto">
                 <div class="flex flex-col items-center">
                   <h1 class="text-3xl">
                     You are currently not part of any organization
@@ -90,7 +90,7 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
               </div>
             </Match>
             <Match when={currentUserRole() < 1}>
-              <div class="mt-4 flex h-full w-full items-center justify-center">
+              <div class="mt-4 flex h-full w-full items-center justify-center overflow-y-auto">
                 <div class="text-center">
                   <h1 class="text-3xl font-semibold text-neutral-800">
                     You do not have access to this page
@@ -110,7 +110,7 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
                 (userContext.user?.()?.orgs.length ?? 0) > 0
               }
             >
-              <div class="w-full bg-neutral-50 px-8">
+              <div class="w-full overflow-y-auto bg-neutral-50 px-8">
                 <div class="my-6 flex flex-col space-y-3 border-b">
                   <OrgName />
                   <OrgTabs />
