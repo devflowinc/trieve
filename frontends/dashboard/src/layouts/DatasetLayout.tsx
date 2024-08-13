@@ -25,13 +25,13 @@ export const DatasetLayout = (props: DatasetLayoutProps) => {
   return (
     <>
       <ShowToasts />
-      <div class="flex min-h-screen flex-col bg-white text-black">
+      <div class="flex max-h-screen min-h-screen flex-col bg-white text-black">
         <div class="w-full border-b px-8 py-2">
           <NavBar />
         </div>
-        <div class="flex">
+        <div class="flex max-h-full overflow-hidden">
           <Sidebar />
-          <div class="w-full bg-neutral-50 px-8">
+          <div class="max-h-full w-full overflow-scroll bg-neutral-50 px-8">
             <div class="my-6 flex flex-col space-y-3 border-b">
               <DatasetName />
               <DatasetTabs />
