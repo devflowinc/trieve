@@ -1357,7 +1357,7 @@ pub fn get_highlights_with_exact_match(
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
     let cleaned_query = query.replace(
-        |c: char| (delimiters.contains(&c.to_string()) && c != ' ') || c != '\"',
+        |c: char| (delimiters.contains(&c.to_string()) && c != ' ') || c == '\"',
         "",
     );
 
