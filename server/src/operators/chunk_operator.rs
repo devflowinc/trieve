@@ -92,8 +92,8 @@ pub async fn get_point_ids_from_unified_chunk_ids(
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_point_ids: Vec<uuid::Uuid> = match chunk_ids[0] {
-        UnifiedId::TrieveUuid(_) => chunk_metadata_columns::chunk_metadata
+    let qdrant_point_ids: Vec<uuid::Uuid> = match chunk_ids.get(0) {
+        Some(UnifiedId::TrieveUuid(_)) => chunk_metadata_columns::chunk_metadata
             .filter(
                 chunk_metadata_columns::id.eq_any(
                     &chunk_ids
@@ -107,7 +107,7 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             .load::<uuid::Uuid>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
-        UnifiedId::TrackingId(_) => chunk_metadata_columns::chunk_metadata
+        Some(UnifiedId::TrackingId(_)) => chunk_metadata_columns::chunk_metadata
             .filter(
                 chunk_metadata_columns::tracking_id.eq_any(
                     &chunk_ids
@@ -121,6 +121,7 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             .load::<uuid::Uuid>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
+        None => vec![],
     };
 
     Ok(qdrant_point_ids)
