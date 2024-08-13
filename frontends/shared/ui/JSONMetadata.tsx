@@ -56,7 +56,7 @@ interface JSONMetadaRowProps {
   isChild?: boolean;
 }
 
-type NextShapeType = "inline" | "block";
+type NextShapeType = "inline" | "block" | "block-array";
 
 const JSONMetadaRow = (props: JSONMetadaRowProps) => {
   const value = createMemo<[NextShapeType, JSX.Element]>(() => {
@@ -71,7 +71,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
 
       if (Array.isArray(props.value)) {
         return [
-          "block",
+          "block-array",
           <For each={props.value} fallback={<div>Empty array</div>}>
             {(item) => (
               <JSONMetadata
@@ -123,10 +123,16 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
           <Show when={value()[0] === "block"}>
             <span>{" {"}</span>
           </Show>
+          <Show when={value()[0] === "block-array"}>
+            <span>{" ["}</span>
+          </Show>
         </div>
         <div> {value()[1]}</div>
         <Show when={value()[0] === "block"}>
           <span class="font-medium">{" }"}</span>
+        </Show>
+        <Show when={value()[0] === "block-array"}>
+          <span class="font-medium">{" ]"}</span>
         </Show>
       </div>
     </Show>
