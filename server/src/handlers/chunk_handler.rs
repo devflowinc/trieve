@@ -2619,3 +2619,43 @@ pub fn check_completion_param_validity(
 
     Ok(())
 }
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct GetItemsWithTagReqPayload {
+    pub tag: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct GetItemsWithTagResponse {
+    pub count: i64,
+}
+
+#[utoipa::path(
+    post,
+    path = "/chunk/tag/count",
+    context_path = "/api",
+    tag = "Chunk",
+    request_body(content = GetItemsWithTagReqPayload, description = "JSON request payload to get items with the tag in the request", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Items with the tag that you were searching for", body = GetItemsWithTagResponse),
+        (status = 400, description = "Service error relating to finding items by tag", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn get_items_with_tag(
+    tag: web::Json<GetItemsWithTagReqPayload>,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+
+    let count = get_items_with_tag_query(tag.into_inner().tag, dataset_id, pool).await?;
+
+    Ok(HttpResponse::Ok().json(GetItemsWithTagResponse { count }))
+}

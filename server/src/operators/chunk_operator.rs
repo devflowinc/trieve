@@ -19,7 +19,7 @@ use crate::{
 use actix_web::web;
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
-use diesel::dsl::{not, sql};
+use diesel::dsl::{count, not, sql};
 use diesel::prelude::*;
 use diesel::sql_types;
 use diesel::upsert::excluded;
@@ -2332,4 +2332,26 @@ pub async fn get_pg_point_ids_from_qdrant_point_ids(
         .map_err(|_| ServiceError::BadRequest("Failed to get chunk ids".to_string()))?;
 
     Ok(chunk_ids)
+}
+
+pub async fn get_items_with_tag_query(
+    tag: String,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<i64, ServiceError> {
+    use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
+    use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let count = dataset_tags_columns::dataset_tags
+        .inner_join(chunk_metadata_tags_columns::chunk_metadata_tags)
+        .select(count(chunk_metadata_tags_columns::chunk_metadata_id))
+        .filter(dataset_tags_columns::dataset_id.eq(dataset_id))
+        .filter(dataset_tags_columns::tag.eq(tag))
+        .first(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get chunk metadata".to_string()))?;
+
+    Ok(count)
 }

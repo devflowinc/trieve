@@ -181,6 +181,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::autocomplete,
         handlers::chunk_handler::get_chunks_by_ids,
         handlers::chunk_handler::scroll_dataset_chunks,
+        handlers::chunk_handler::get_items_with_tag,
         handlers::user_handler::update_user,
         handlers::user_handler::set_user_api_key,
         handlers::user_handler::delete_user_api_key,
@@ -277,6 +278,8 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::ChunkReturnTypes,
             handlers::chunk_handler::ScrollChunksReqPayload,
             handlers::chunk_handler::ScrollChunksResponseBody,
+            handlers::chunk_handler::GetItemsWithTagReqPayload,
+            handlers::chunk_handler::GetItemsWithTagResponse,
             handlers::group_handler::RecommendGroupsReqPayload,
             handlers::group_handler::RecommendGroupsResponse,
             handlers::group_handler::SearchWithinGroupReqPayload,
@@ -867,6 +870,10 @@ pub fn main() -> std::io::Result<()> {
                                                 handlers::chunk_handler::delete_chunk_by_tracking_id,
                                             ),
                                         ),
+                                )
+                                .service(
+                                    web::resource("/tag/count")
+                                        .route(web::post().to(handlers::chunk_handler::get_items_with_tag)),
                                 )
                         )
                         .service(
