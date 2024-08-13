@@ -602,7 +602,15 @@ pub async fn regenerate_message(
     event_queue: web::Data<EventQueue>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    regenerate_message_patch(data, user, dataset_org_plan_sub, pool, event_queue, redis_pool).await
+    regenerate_message_patch(
+        data,
+        user,
+        dataset_org_plan_sub,
+        pool,
+        event_queue,
+        redis_pool,
+    )
+    .await
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -874,6 +882,7 @@ pub async fn get_suggested_queries(
             Some(cleaned_query)
         }
     })
+    .map(|query| query.to_string().trim().trim_matches('\n').to_string())
     .collect();
 
     while queries.len() < 3 {

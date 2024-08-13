@@ -20,7 +20,7 @@ use diesel::result::{DatabaseErrorKind, Error as DBError};
 use diesel_async::RunQueryDsl;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
+use time::{format_description, OffsetDateTime};
 
 use super::clickhouse_operator::EventQueue;
 
@@ -760,37 +760,54 @@ pub async fn add_words_to_dataset(
 pub struct WordDatasetCount {
     #[serde(with = "clickhouse::serde::uuid")]
     pub id: uuid::Uuid,
-    #[serde(with = "clickhouse::serde::uuid")]
-    pub dataset_id: uuid::Uuid,
     pub word: String,
     pub count: i32,
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub created_at: OffsetDateTime,
 }
 
 #[tracing::instrument(skip(clickhouse_client))]
 pub async fn scroll_words_from_dataset(
     dataset_id: uuid::Uuid,
     offset: uuid::Uuid,
+    last_processed: Option<OffsetDateTime>,
     limit: i64,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<Option<Vec<WordDatasetCount>>, ServiceError> {
-    let query = format!(
+    let mut query = format!(
         "
        SELECT 
             id,
-            dataset_id,
             word,
             count,
-            created_at
         FROM words_datasets
-        LEFT JOIN dataset_words_last_processed ON dataset_words_last_processed.dataset_id = words_datasets.dataset_id
         WHERE dataset_id = '{}' AND id > '{}' 
-            AND (created_at > last_processed OR last_processed IS NULL)
-        ORDER BY id ASC LIMIT {}
         ",
-        dataset_id, offset, limit
+        dataset_id, offset,
     );
+
+    if let Some(last_processed) = last_processed {
+        query = format!(
+            "{} AND created_at >= '{}'",
+            query,
+            last_processed
+                .format(
+                    &format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]",)
+                        .unwrap()
+                )
+                .map_err(|e| {
+                    log::error!("Error formatting last processed time: {:?}", e);
+                    sentry::capture_message(
+                        "Error formatting last processed time",
+                        sentry::Level::Error,
+                    );
+                    ServiceError::InternalServerError(format!(
+                        "Error formatting last processed time: {:?}",
+                        e
+                    ))
+                })?
+        );
+    }
+
+    query = format!("{} ORDER BY id LIMIT {}", query, limit);
 
     let words = clickhouse_client
         .query(&query)

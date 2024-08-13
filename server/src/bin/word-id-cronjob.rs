@@ -121,7 +121,6 @@ async fn main() -> Result<(), ServiceError> {
         .collect_vec();
 
     let dataset_ids_and_processed = join_all(dataset_ids_and_processed).await;
-    dbg!(&dataset_ids_and_processed);
 
     for (dataset_id, last_processed) in dataset_ids_and_processed {
         let mut chunk_id_offset = uuid::Uuid::nil();

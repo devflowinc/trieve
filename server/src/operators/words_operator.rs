@@ -1,5 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
+    io::Write,
+    sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
 
@@ -8,12 +10,18 @@ use crate::{
     errors::ServiceError,
 };
 use actix_web::web;
+use flate2::{
+    write::{GzDecoder, GzEncoder},
+    Compression,
+};
 use itertools::Itertools;
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
+use rayon::prelude::*;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::collections::VecDeque;
 use tokio::sync::RwLock;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct Node {
     word: String,
     count: i32,
@@ -22,15 +30,140 @@ struct Node {
 
 /// A BK-tree datastructure
 ///
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct BkTree {
     root: Option<Box<Node>>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct FlatNode {
+    parent_index: Option<usize>,
+    distance: Option<isize>,
+    word: String,
+    count: i32,
+}
+
+impl Serialize for BkTree {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut queue = VecDeque::new();
+        let mut flat_tree = Vec::new();
+
+        if let Some(root) = &self.root {
+            queue.push_back((None, None, root.as_ref()));
+        }
+
+        while let Some((parent_index, distance, node)) = queue.pop_front() {
+            let current_index = flat_tree.len();
+            flat_tree.push(FlatNode {
+                parent_index,
+                distance,
+                word: node.word.clone(),
+                count: node.count,
+            });
+
+            for (child_distance, child) in &node.children {
+                queue.push_back((Some(current_index), Some(*child_distance), child));
+            }
+        }
+
+        let binary_data = bincode::serialize(&flat_tree).map_err(serde::ser::Error::custom)?;
+        serializer.serialize_bytes(&binary_data)
+    }
+}
+
+impl<'de> Deserialize<'de> for BkTree {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let binary_data: Vec<u8> = Vec::deserialize(deserializer)?;
+        let flat_tree: Vec<FlatNode> =
+            bincode::deserialize(&binary_data).map_err(serde::de::Error::custom)?;
+
+        if flat_tree.is_empty() {
+            return Ok(BkTree { root: None });
+        }
+
+        let mut nodes: Vec<Node> = flat_tree
+            .iter()
+            .map(|flat_node| Node {
+                word: flat_node.word.clone(),
+                count: flat_node.count,
+                children: Vec::new(),
+            })
+            .collect();
+
+        // Reconstruct the tree structure
+        for i in (1..nodes.len()).rev() {
+            let parent_index = flat_tree[i].parent_index.unwrap();
+            let distance = flat_tree[i].distance.unwrap();
+            let child = nodes.remove(i);
+            nodes[parent_index].children.push((distance, child));
+        }
+
+        Ok(BkTree {
+            root: Some(Box::new(nodes.remove(0))),
+        })
+    }
 }
 
 impl Default for BkTree {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub fn levenshtein_distance<S: AsRef<str>>(a: &S, b: &S) -> isize {
+    let a = a.as_ref().to_lowercase();
+    let b = b.as_ref().to_lowercase();
+
+    if a == b {
+        return 0;
+    }
+
+    let a_len = a.chars().count();
+    let b_len = b.chars().count();
+
+    if a_len == 0 {
+        return b_len as isize;
+    }
+
+    if b_len == 0 {
+        return a_len as isize;
+    }
+
+    let mut res = 0;
+    let mut cache: Vec<usize> = (1..).take(a_len).collect();
+    let mut a_dist;
+    let mut b_dist;
+
+    for (ib, cb) in b.chars().enumerate() {
+        res = ib;
+        a_dist = ib;
+        for (ia, ca) in a.chars().enumerate() {
+            b_dist = if ca == cb { a_dist } else { a_dist + 1 };
+            a_dist = cache[ia];
+
+            res = if a_dist > res {
+                if b_dist > res {
+                    res + 1
+                } else {
+                    b_dist
+                }
+            } else if b_dist > a_dist {
+                a_dist + 1
+            } else {
+                b_dist
+            };
+
+            cache[ia] = res;
+        }
+    }
+
+    res as isize
 }
 
 impl BkTree {
@@ -59,9 +192,13 @@ impl BkTree {
             Some(ref mut root_node) => {
                 let mut u = &mut **root_node;
                 loop {
-                    let k = bktree::levenshtein_distance(&u.word, &val.0);
+                    let k = levenshtein_distance(&u.word, &val.0);
                     if k == 0 {
                         u.count = val.1;
+                        return;
+                    }
+
+                    if val.1 == 1 {
                         return;
                     }
 
@@ -95,26 +232,53 @@ impl BkTree {
         match self.root {
             None => Vec::new(),
             Some(ref root) => {
-                let mut found = Vec::new();
+                let found = Arc::new(Mutex::new(Vec::new()));
+                let mut candidates: Vec<&Node> = vec![root];
 
-                let mut candidates: std::collections::VecDeque<&Node> =
-                    std::collections::VecDeque::new();
-                candidates.push_back(root);
+                while !candidates.is_empty() {
+                    let next_candidates: Vec<&Node> = if candidates.len() > 1000 {
+                        candidates
+                            .par_iter()
+                            .flat_map(|&n| {
+                                let distance = levenshtein_distance(&n.word, &val);
+                                let mut local_candidates = Vec::new();
 
-                while let Some(n) = candidates.pop_front() {
-                    let distance = bktree::levenshtein_distance(&n.word, &val);
-                    if distance <= max_dist {
-                        found.push(((&n.word, &n.count), distance));
-                    }
+                                if distance <= max_dist {
+                                    found.lock().unwrap().push(((&n.word, &n.count), distance));
+                                }
 
-                    candidates.extend(
-                        n.children
+                                for (arc, node) in &n.children {
+                                    if (*arc - distance).abs() <= max_dist {
+                                        local_candidates.push(node);
+                                    }
+                                }
+
+                                local_candidates
+                            })
+                            .collect()
+                    } else {
+                        candidates
                             .iter()
-                            .filter(|(arc, _)| (*arc - distance).abs() <= max_dist)
-                            .map(|(_, node)| node),
-                    );
+                            .flat_map(|&n| {
+                                let distance = levenshtein_distance(&n.word, &val);
+                                if distance <= max_dist {
+                                    found.lock().unwrap().push(((&n.word, &n.count), distance));
+                                }
+                                n.children
+                                    .iter()
+                                    .filter(|(arc, _)| (*arc - distance).abs() <= max_dist)
+                                    .map(|(_, node)| node)
+                                    .collect::<Vec<_>>()
+                            })
+                            .collect()
+                    };
+
+                    candidates = next_candidates;
                 }
-                found
+
+                let mut result = Arc::try_unwrap(found).unwrap().into_inner().unwrap();
+                result.sort_by_key(|&(_, dist)| dist);
+                result
             }
         }
     }
@@ -126,6 +290,79 @@ impl BkTree {
             queue.push(&**root);
         }
         Iter { queue }
+    }
+
+    pub async fn from_redis(
+        dataset_id: uuid::Uuid,
+        redis_pool: web::Data<RedisPool>,
+    ) -> Result<Option<Self>, ServiceError> {
+        let mut redis_conn = redis_pool.get().await.map_err(|_| {
+            ServiceError::InternalServerError("Failed to get redis connection".to_string())
+        })?;
+
+        let compressed_bk_tree: Option<Vec<u8>> = redis::cmd("GET")
+            .arg(format!("bk_tree_{}", dataset_id))
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        if let Some(compressed_bk_tree) = compressed_bk_tree {
+            let buf = Vec::new();
+            let mut decoder = GzDecoder::new(buf);
+            decoder.write_all(&compressed_bk_tree).map_err(|err| {
+                ServiceError::InternalServerError(format!("Failed to decompress bk tree {}", err))
+            })?;
+
+            let serialized_bk_tree = decoder.finish().map_err(|err| {
+                ServiceError::InternalServerError(format!(
+                    "Failed to finish decompressing bk tree {}",
+                    err
+                ))
+            })?;
+
+            let tree = bincode::deserialize(&serialized_bk_tree).map_err(|err| {
+                ServiceError::InternalServerError(format!("Failed to deserialize bk tree {}", err))
+            })?;
+
+            Ok(Some(tree))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn save(
+        &self,
+        dataset_id: uuid::Uuid,
+        redis_pool: web::Data<RedisPool>,
+    ) -> Result<(), ServiceError> {
+        if self.root.is_none() {
+            return Ok(());
+        }
+        let mut redis_conn = redis_pool.get().await.map_err(|_| {
+            ServiceError::InternalServerError("Failed to get redis connection".to_string())
+        })?;
+
+        let uncompressed_bk_tree = bincode::serialize(self).map_err(|_| {
+            ServiceError::InternalServerError("Failed to serialize bk tree".to_string())
+        })?;
+
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(&uncompressed_bk_tree).map_err(|_| {
+            ServiceError::InternalServerError("Failed to compress bk tree".to_string())
+        })?;
+
+        let serialized_bk_tree = encoder.finish().map_err(|_| {
+            ServiceError::InternalServerError("Failed to finish compressing bk tree".to_string())
+        })?;
+
+        redis::cmd("SET")
+            .arg(format!("bk_tree_{}", dataset_id))
+            .arg(serialized_bk_tree)
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        Ok(())
     }
 }
 
@@ -169,29 +406,6 @@ pub struct ProcessWordsFromDatasetMessage {
 pub struct CreateBkTreeMessage {
     pub dataset_id: uuid::Uuid,
     pub attempt_number: usize,
-}
-
-pub async fn get_bktree_from_redis_query(
-    dataset_id: uuid::Uuid,
-    redis_pool: web::Data<RedisPool>,
-) -> Result<Option<BkTree>, ServiceError> {
-    let mut redis_conn = redis_pool.get().await.map_err(|_| {
-        ServiceError::InternalServerError("Failed to get redis connection".to_string())
-    })?;
-
-    let serialized_bk_tree: Option<Vec<u8>> = redis::cmd("GET")
-        .arg(format!("bk_tree_{}", dataset_id))
-        .query_async(&mut *redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    if let Some(serialized_bk_tree) = serialized_bk_tree {
-        let tree: BkTree = rmp_serde::from_slice(&serialized_bk_tree)
-            .map_err(|_| ServiceError::BadRequest("Failed to deserialize bk tree".to_string()))?;
-        Ok(Some(tree))
-    } else {
-        Ok(None)
-    }
 }
 
 struct BKTreeCacheEntry {
@@ -313,8 +527,6 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
         }
     }
 
-    dbg!(&query_split_to_correction);
-
     let mut corrected_query = query.clone();
 
     if !query_split_to_correction.is_empty() {
@@ -342,15 +554,31 @@ pub async fn correct_query(
         None => {
             let dataset_id = dataset_id;
             let redis_pool = redis_pool.clone();
+            dbg!("Pulling new BK tree from Redis");
             tokio::spawn(async move {
-                if let Ok(Some(bktree)) = get_bktree_from_redis_query(dataset_id, redis_pool).await
-                {
+                match BkTree::from_redis(dataset_id, redis_pool).await {
                     // TTL of 1 day
-                    BKTREE_CACHE.insert_with_ttl(
-                        dataset_id,
-                        bktree,
-                        Duration::from_secs(60 * 60 * 24),
-                    );
+                    Ok(Some(bktree)) => {
+                        BKTREE_CACHE.insert_with_ttl(
+                            dataset_id,
+                            bktree,
+                            Duration::from_secs(60 * 60 * 24),
+                        );
+                        dbg!(
+                            "Inserted new BK tree into cache for dataset_id: {:?}",
+                            dataset_id
+                        );
+                    }
+                    Ok(None) => {
+                        dbg!("No BK tree found in Redis for dataset_id: {:?}", dataset_id);
+                    }
+                    Err(e) => {
+                        dbg!(
+                            "Failed to insert new BK tree into cache {:?} for dataset_id: {:?}",
+                            e,
+                            dataset_id
+                        );
+                    }
                 };
             });
             Ok(query)

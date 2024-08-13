@@ -2478,7 +2478,6 @@ pub async fn scroll_chunk_ids_for_dictionary_query(
         .into_boxed();
 
     if let Some(last_processed) = last_processed {
-        dbg!(&last_processed.last_processed.unix_timestamp());
         let last_processed =
             NaiveDateTime::from_timestamp(last_processed.last_processed.unix_timestamp(), 0);
 
@@ -2516,7 +2515,7 @@ pub async fn get_last_processed_from_clickhouse(
     dataset_id: uuid::Uuid,
 ) -> Result<Option<DatasetLastProcessed>, ServiceError> {
     let query = format!(
-        "SELECT ?fields FROM dataset_words_last_processed WHERE dataset_id = '{}' LIMIT 1",
+        "SELECT dataset_id, min(last_processed) as last_processed FROM dataset_words_last_processed WHERE dataset_id = '{}' GROUP BY dataset_id LIMIT 1",
         dataset_id
     );
 

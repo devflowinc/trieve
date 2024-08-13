@@ -163,7 +163,11 @@ tantivy = "0.22.0"
 strsim = "0.11.1"
 levenshtein_automata = "0.2.1"
 bktree = "1.0.1"
-rmp-serde = "1.3.0"
+flate2 = "1.0.31"
+bincode = "1.3"
+rayon = "1.10.0"
+crossbeam = "0.8.4"
+
 
 [build-dependencies]
 dotenvy = "0.15.7"
