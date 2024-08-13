@@ -313,8 +313,6 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
         }
     }
 
-    dbg!(&query_split_to_correction);
-
     let mut corrected_query = query.clone();
 
     if !query_split_to_correction.is_empty() {

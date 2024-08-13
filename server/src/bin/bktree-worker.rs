@@ -157,10 +157,8 @@ async fn bktree_worker(
             break;
         }
 
-        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
+        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("SPOP")
             .arg("bktree_creation")
-            .arg("bktree_processing")
-            .arg(1.0)
             .query_async(&mut *redis_connection)
             .await;
 
@@ -171,6 +169,10 @@ async fn bktree_worker(
                 if payload.is_empty() {
                     continue;
                 }
+                let _: Result<i32, redis::RedisError> = redis::cmd("SADD")
+                    .arg("bktree_processing")
+                    .query_async(&mut *redis_connection)
+                    .await;
 
                 payload
                     .first()
@@ -203,15 +205,6 @@ async fn bktree_worker(
 
         let mut id_offset = uuid::Uuid::nil();
         log::info!("Processing dataset {}", create_tree_msg.dataset_id);
-
-        match update_dataset_last_processed_query(create_tree_msg.dataset_id, &clickhouse_client)
-            .await
-        {
-            Ok(_) => {}
-            Err(err) => {
-                log::error!("Failed to update last processed {:?}", err);
-            }
-        }
 
         let mut bk_tree = if let Ok(Some(bktree)) =
             get_bktree_from_redis_query(create_tree_msg.dataset_id, redis_pool.clone()).await
@@ -309,6 +302,15 @@ async fn bktree_worker(
                 .await;
             }
         }
+        match update_dataset_last_processed_query(create_tree_msg.dataset_id, &clickhouse_client)
+            .await
+        {
+            Ok(_) => {}
+            Err(err) => {
+                log::error!("Failed to update last processed {:?}", err);
+            }
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
     }
 }
 

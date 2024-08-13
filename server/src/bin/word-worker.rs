@@ -352,7 +352,7 @@ async fn process_chunks(
         })
         .collect::<Result<Vec<String>, ServiceError>>()?;
 
-    redis::cmd("LPUSH")
+    redis::cmd("SADD")
         .arg("bktree_creation")
         .arg(create_tree_msgs)
         .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
@@ -379,7 +379,7 @@ pub async fn readd_error_to_queue(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let _ = redis::cmd("LREM")
+    let _ = redis::cmd("SPOP")
         .arg("process_dictionary")
         .arg(1)
         .arg(old_payload_message.clone())
@@ -406,7 +406,7 @@ pub async fn readd_error_to_queue(
         ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
     })?;
 
-    redis::cmd("lpush")
+    redis::cmd("SADD")
         .arg("create_dictionary")
         .arg(&new_payload_message)
         .query_async(&mut *redis_conn)

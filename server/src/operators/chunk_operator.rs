@@ -2384,7 +2384,6 @@ pub async fn scroll_chunk_ids_for_dictionary_query(
         .into_boxed();
 
     if let Some(last_processed) = last_processed {
-        dbg!(&last_processed.last_processed.unix_timestamp());
         let last_processed =
             NaiveDateTime::from_timestamp(last_processed.last_processed.unix_timestamp(), 0);
 
