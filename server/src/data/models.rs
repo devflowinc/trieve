@@ -1847,9 +1847,9 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
+    pub server_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
-    pub server_configuration: serde_json::Value,
 }
 
 impl Dataset {

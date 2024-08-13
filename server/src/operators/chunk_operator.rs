@@ -2344,11 +2344,15 @@ pub async fn get_items_with_tag_query(
 
     let mut conn = pool.get().await.unwrap();
 
+    // The count here should be fine because we filter the dataset_tags column very heavily
     let count = dataset_tags_columns::dataset_tags
         .inner_join(chunk_metadata_tags_columns::chunk_metadata_tags)
         .select(count(chunk_metadata_tags_columns::chunk_metadata_id))
         .filter(dataset_tags_columns::dataset_id.eq(dataset_id))
         .filter(dataset_tags_columns::tag.eq(tag))
+        .into_boxed();
+
+    let count = count
         .first(&mut conn)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get chunk metadata".to_string()))?;

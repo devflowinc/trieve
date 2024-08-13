@@ -2621,12 +2621,12 @@ pub fn check_completion_param_validity(
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct GetItemsWithTagReqPayload {
+pub struct CountItemsWithTagReqPayload {
     pub tag: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct GetItemsWithTagResponse {
+pub struct CountItemsWithTagResponse {
     pub count: i64,
 }
 
@@ -2637,7 +2637,7 @@ pub struct GetItemsWithTagResponse {
     tag = "Chunk",
     request_body(content = GetItemsWithTagReqPayload, description = "JSON request payload to get items with the tag in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "Items with the tag that you were searching for", body = GetItemsWithTagResponse),
+        (status = 200, description = "Count of the items with the tag that you were searching for", body = GetItemsWithTagResponse),
         (status = 400, description = "Service error relating to finding items by tag", body = ErrorResponseBody),
     ),
     params(
@@ -2647,8 +2647,8 @@ pub struct GetItemsWithTagResponse {
         ("ApiKey" = ["readonly"]),
     )
 )]
-pub async fn get_items_with_tag(
-    tag: web::Json<GetItemsWithTagReqPayload>,
+pub async fn count_items_with_tag(
+    tag: web::Json<CountItemsWithTagReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -2657,5 +2657,5 @@ pub async fn get_items_with_tag(
 
     let count = get_items_with_tag_query(tag.into_inner().tag, dataset_id, pool).await?;
 
-    Ok(HttpResponse::Ok().json(GetItemsWithTagResponse { count }))
+    Ok(HttpResponse::Ok().json(CountItemsWithTagResponse { count }))
 }
