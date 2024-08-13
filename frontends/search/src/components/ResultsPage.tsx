@@ -88,10 +88,6 @@ const ResultsPage = (props: ResultsPageProps) => {
     note: "",
   });
 
-  createEffect(() => {
-    console.log(props.rateQuery());
-  });
-
   const fetchChunkCollections = () => {
     if (!$currentUser?.()) return;
     const dataset = $dataset?.();
