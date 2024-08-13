@@ -21,7 +21,7 @@ FROM debian:bookworm-slim as runtime
 RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates 
 WORKDIR /app
 COPY ./migrations/ /app/migrations
-COPY --from=builder /app/target/release/word-id-cronjob" /app/word-id-cronjob"
+COPY --from=builder /app/target/release/word-id-cronjob /app/word-id-cronjob
 
 
 EXPOSE 8090
