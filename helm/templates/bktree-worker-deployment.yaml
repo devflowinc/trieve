@@ -16,7 +16,6 @@ spec:
         app.kubernetes.io/name: bktree-worker
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      serviceAccountName: cloud-postgres-service-account
       containers:
       - name: bktree-worker
         image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5001/" (ne .Values.environment "local")) "bktree-worker" .Values.containers.bktree_worker.tag }}
@@ -113,34 +112,3 @@ spec:
             value: {{ .Values.config.analytics.clickhousePassword | quote }}
           - name: USE_ANALYTICS
             value: {{ .Values.config.analytics.enabled | quote }}
-      {{- if eq $.Values.environment "gcloud" }}
-      - name: cloud-sql-proxy
-        # It is recommended to use the latest version of the Cloud SQL Auth Proxy
-        # Make sure to update on a regular schedule!
-        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.0
-        args:
-          - "--structured-logs"
-          - "--auto-iam-authn"
-          # Replace DB_PORT with the port the proxy should listen on
-          - "--port=5432"
-          - "studious-lore-405302:us-west1:trieve-cloud"
-        securityContext:
-          # The default Cloud SQL Auth Proxy image runs as the
-          # "nonroot" user and group (uid: 65532) by default.
-          runAsNonRoot: true
-        # You should use resource requests/limits as a best practice to prevent
-        # pods from consuming too many resources and affecting the execution of
-        # other pods. You should adjust the following values based on what your
-        # application needs. For details, see
-        # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-        resources:
-          requests:
-            # The proxy's memory use scales linearly with the number of active
-            # connections. Fewer open connections will use less memory. Adjust
-            # this value based on your application's requirements.
-            memory: "2Gi"
-            # The proxy's CPU use scales linearly with the amount of IO between
-            # the database and the application. Adjust this value based on your
-            # application's requirements.
-            cpu:    "1"
-      {{- end }}
