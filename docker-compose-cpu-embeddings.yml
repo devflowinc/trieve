@@ -3,7 +3,7 @@ version: '3'
 services:
 
   splade-doc:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.4
     command: --model-id naver/efficient-splade-VI-BT-large-doc --revision main --pooling splade
     ports:
       - "4000:80"
@@ -11,7 +11,7 @@ services:
       - ./data:/data
 
   splade-query:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.4
     command: --model-id naver/efficient-splade-VI-BT-large-query --revision main --pooling splade
     ports:
       - "5000:80"
@@ -19,7 +19,7 @@ services:
       - ./data:/data
 
   jina:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
     command: --model-id jinaai/jina-embeddings-v2-base-en --revision main
     ports:
       - "6000:80"
@@ -27,7 +27,7 @@ services:
       - ./data:/data
 
   bgem3:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
     command: --model-id BAAI/bge-m3 --revision main
     ports:
       - "7000:80"
@@ -35,10 +35,9 @@ services:
       - ./data:/data
 
   reranker:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
-    command: --model-id BAAI/bge-reranker-large --revision refs/pr/4
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    command: --model-id BAAI/bge-reranker-base --revision main
     ports:
       - "8000:80"
     volumes:
       - ./data:/data
-

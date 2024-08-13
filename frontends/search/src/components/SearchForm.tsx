@@ -101,6 +101,11 @@ const SearchForm = (props: {
   ];
 
   if (bm25Active) {
+    default_settings.push({
+      name: "AutoComplete BM25",
+      isSelected: false,
+      route: "autocomplete-bm25",
+    });
     default_settings.push({ name: "BM25", isSelected: false, route: "BM25" });
   }
 
@@ -118,7 +123,7 @@ const SearchForm = (props: {
     },
   ]);
 
-  const [rerankTypes, setRerankTypes] = createSignal([
+  const defaultRerankTypes = [
     {
       name: "Semantic",
       isSelected: false,
@@ -134,7 +139,16 @@ const SearchForm = (props: {
       isSelected: false,
       value: "cross_encoder",
     },
-  ]);
+  ];
+
+  if (bm25Active) {
+    defaultRerankTypes.push({
+      name: "BM25",
+      isSelected: false,
+      value: "bm25",
+    });
+  }
+  const [rerankTypes, setRerankTypes] = createSignal(defaultRerankTypes);
 
   createEffect(() => {
     setSearchTypes((prev) => {
@@ -177,6 +191,13 @@ const SearchForm = (props: {
           return { ...type, isSelected: false };
         }
       });
+    });
+    setRerankQuery(() => {
+      if (isSortBySearchType(props.search.state.sort_by)) {
+        return props.search.state.sort_by.rerank_query ?? "";
+      } else {
+        return "";
+      }
     });
   });
 
@@ -1086,7 +1107,9 @@ const SearchForm = (props: {
                             searchTypes().find((type) => type.isSelected)
                               ?.route === "autocomplete-semantic" ||
                             searchTypes().find((type) => type.isSelected)
-                              ?.route === "autocomplete-fulltext"
+                              ?.route === "autocomplete-fulltext" ||
+                            searchTypes().find((type) => type.isSelected)
+                              ?.route === "autocomplete-bm25"
                           }
                         >
                           <div class="flex items-center justify-between space-x-2 p-1">

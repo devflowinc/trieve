@@ -1302,7 +1302,7 @@ pub async fn search_chunks(
     "score_threshold": 0.5
 }))]
 pub struct AutocompleteReqPayload {
-    /// Can be either "semantic", or "fulltext". "semantic" will pull in one page_size of the nearest cosine distant vectors. "fulltext" will pull in one page_size of full-text results based on SPLADE.
+    /// Can be either "semantic", or "fulltext". "semantic" will pull in one page_size of the nearest cosine distant vectors. "fulltext" will pull in one page_size of full-text results based on SPLADE. "bm25" will pull in one page_size of results based on the BM25 algorithim
     pub search_type: SearchMethod,
     /// If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.
     pub extend_results: Option<bool>,
@@ -1940,7 +1940,7 @@ pub struct RecommendChunksRequest {
     pub positive_tracking_ids: Option<Vec<String>>,
     /// The tracking_ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
     pub negative_tracking_ids: Option<Vec<String>>,
-    /// Strategy to use for recommendations, either "average_vector" or "best_score". The default is "average_vector". The "average_vector" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search. The "best_score" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives.
+    /// Strategy to use for recommendations, either "average_vector" or "best_score". The default is "average_vector". The "average_vector" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search (You must provide at least one of either positive_chunk_ids or positive_tracking_ids for `average_vector` strategy). The "best_score" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives for best score you can provide a list of only negatives or only positives or both.
     pub strategy: Option<RecommendationStrategy>,
     /// The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.
     pub recommend_type: Option<RecommendType>,
@@ -1970,7 +1970,7 @@ pub enum RecommendResponseTypes {
 
 /// Get Recommended Chunks
 ///
-/// Get recommendations of chunks similar to the positive samples in the request and dissimilar to the negative. You must provide at least one of either positive_chunk_ids or positive_tracking_ids.
+/// Get recommendations of chunks similar to the positive samples in the request and dissimilar to the negative.
 #[utoipa::path(
     post,
     path = "/chunk/recommend",
@@ -2006,9 +2006,16 @@ pub async fn get_recommended_chunks(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
-    if positive_chunk_ids.is_none() && positive_tracking_ids.is_none() {
+    if positive_chunk_ids.is_none()
+        && positive_tracking_ids.is_none()
+        && data
+            .strategy
+            .clone()
+            .unwrap_or(RecommendationStrategy::AverageVector)
+            == RecommendationStrategy::AverageVector
+    {
         return Err(ServiceError::BadRequest(
-            "Either positive_chunk_ids or positive_tracking_ids must be provided".to_string(),
+            "Either positive_chunk_ids or positive_tracking_ids must be provided for average_vector strategy".to_string(),
         )
         .into());
     }

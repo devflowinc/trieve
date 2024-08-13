@@ -1072,7 +1072,7 @@ pub fn term_frequency(
             for token in batch.iter() {
                 let token_id =
                     (murmur3_32(&mut Cursor::new(token), 0).unwrap() as i32).unsigned_abs();
-                let num_occurences = raw_freqs[token];
+                let num_occurences = raw_freqs.get(token).unwrap_or(&0f32);
 
                 let top = num_occurences * (k + 1f32);
                 let bottom = num_occurences + k * (1f32 - b + b * doc_len / avg_len);
@@ -1086,7 +1086,7 @@ pub fn term_frequency(
                     let token_id =
                         (murmur3_32(&mut Cursor::new(token), 0).unwrap() as i32).unsigned_abs();
 
-                    let value = tf_map[&token_id];
+                    let value = tf_map.get(&token_id).unwrap_or(&0f32);
                     tf_map.insert(token_id, fulltext_boost.boost_factor as f32 * value);
                 }
             }

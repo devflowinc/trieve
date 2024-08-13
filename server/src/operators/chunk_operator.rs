@@ -92,8 +92,8 @@ pub async fn get_point_ids_from_unified_chunk_ids(
 
     let mut conn = pool.get().await.unwrap();
 
-    let qdrant_point_ids: Vec<uuid::Uuid> = match chunk_ids[0] {
-        UnifiedId::TrieveUuid(_) => chunk_metadata_columns::chunk_metadata
+    let qdrant_point_ids: Vec<uuid::Uuid> = match chunk_ids.get(0) {
+        Some(UnifiedId::TrieveUuid(_)) => chunk_metadata_columns::chunk_metadata
             .filter(
                 chunk_metadata_columns::id.eq_any(
                     &chunk_ids
@@ -107,7 +107,7 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             .load::<uuid::Uuid>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
-        UnifiedId::TrackingId(_) => chunk_metadata_columns::chunk_metadata
+        Some(UnifiedId::TrackingId(_)) => chunk_metadata_columns::chunk_metadata
             .filter(
                 chunk_metadata_columns::tracking_id.eq_any(
                     &chunk_ids
@@ -121,6 +121,7 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             .load::<uuid::Uuid>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?,
+        None => vec![],
     };
 
     Ok(qdrant_point_ids)
@@ -1332,7 +1333,6 @@ pub fn get_slice_from_vec_string(vec: Vec<String>, index: usize) -> Result<Strin
     }
 }
 
-#[inline(never)]
 pub fn get_stop_words() -> Vec<String> {
     include_str!("../stop-words.txt")
         .lines()
@@ -1347,7 +1347,6 @@ pub enum HighlightStrategy {
     V1,
 }
 
-#[inline(never)]
 pub fn get_highlights_with_exact_match(
     input: ChunkMetadata,
     query: String,
@@ -1359,7 +1358,7 @@ pub fn get_highlights_with_exact_match(
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
     let cleaned_query = query.replace(
-        |c: char| (delimiters.contains(&c.to_string()) && c != ' ') || c != '\"',
+        |c: char| (delimiters.contains(&c.to_string()) && c != ' ') || c == '\"',
         "",
     );
 
@@ -1443,7 +1442,10 @@ pub fn get_highlights_with_exact_match(
             .to_string(),
     );
     let query_split = cleaned_query.split_whitespace().collect_vec();
-    let mut starting_length = query_split.len() - 1;
+    let mut starting_length = 0;
+    if !query_split.is_empty() {
+        starting_length = query_split.len() - 1;
+    }
     while starting_length > 0 {
         let mut current_skip = 0;
         while current_skip <= query_split.len() - starting_length {
@@ -1945,7 +1947,6 @@ pub fn get_highlights_with_exact_match(
 
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument]
-#[inline(never)]
 pub fn get_highlights(
     input: ChunkMetadata,
     query: String,
@@ -2102,7 +2103,6 @@ pub fn get_highlights(
     ))
 }
 
-#[inline(never)]
 fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> ChunkMetadata {
     let mut meta_data = input;
     let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();

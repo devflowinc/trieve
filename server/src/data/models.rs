@@ -4732,6 +4732,8 @@ pub enum RecommendType {
     Semantic,
     #[serde(rename = "fulltext", alias = "full_text")]
     FullText,
+    #[serde(rename = "bm25", alias = "BM25")]
+    BM25,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
@@ -4807,6 +4809,8 @@ pub enum QdrantSortBy {
 pub enum ReRankOptions {
     Semantic,
     Fulltext,
+    #[serde(rename = "bm25", alias = "BM25")]
+    BM25,
     CrossEncoder,
 }
 
