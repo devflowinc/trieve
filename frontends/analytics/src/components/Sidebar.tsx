@@ -1,4 +1,4 @@
-import { Show, useContext, For } from "solid-js";
+import { Show, useContext, For, createMemo } from "solid-js";
 import { OrgContext } from "../contexts/OrgContext";
 import { UserContext } from "../contexts/UserAuthContext";
 import { DatasetAndUsage } from "shared/types";
@@ -9,10 +9,12 @@ import {
   AiOutlineLineChart,
   AiOutlineTable,
   AiOutlineUser,
+  AiOutlineApi,
 } from "solid-icons/ai";
 import { apiHost } from "../utils/apiHost";
 import { IoChatboxOutline, IoLogOutOutline } from "solid-icons/io";
 import { HiOutlineMagnifyingGlass, HiOutlineNewspaper } from "solid-icons/hi";
+import { TbLayoutDashboard } from "solid-icons/tb";
 
 interface NavbarProps {
   datasetOptions: DatasetAndUsage[];
@@ -51,8 +53,11 @@ const navbarRoutes = [
 export const Sidebar = (props: NavbarProps) => {
   const userContext = useContext(UserContext);
   const orgContext = useContext(OrgContext);
+
   const pathname = usePathname();
   const navigate = useBetterNav();
+
+  const dashboardURL = import.meta.env.VITE_DASHBOARD_URL as string;
 
   const logOut = () => {
     void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
@@ -70,6 +75,16 @@ export const Sidebar = (props: NavbarProps) => {
         });
     });
   };
+
+  //Construct a7b64c7f-01ad-43b2-aaaf-c78192ca3d72/start?org=ca34dafa-7826-41b4-9953-cd58617834f1
+  const orgDatasetParams = createMemo(() => {
+    const orgId = orgContext?.selectedOrg().id;
+    const datasetId = props.selectedDataset?.dataset.id;
+    let params = "";
+    if (datasetId) params += datasetId;
+    if (orgId && datasetId) params += `/start?org=${orgId}`;
+    return params;
+  });
 
   return (
     <div class="relative hidden h-screen flex-col justify-start overflow-y-auto border border-r-neutral-300 bg-neutral-100 p-4 lg:flex">
@@ -138,17 +153,42 @@ export const Sidebar = (props: NavbarProps) => {
           }}
         </For>
       </div>
-      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start border-t border-t-neutral-300 bg-neutral-200/50 px-4 py-4">
-        <div class="flex items-center gap-2">
-          <p>{userContext?.user().email}</p>
-          <AiOutlineUser class="h-4 w-4" />
+      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start border-t border-t-neutral-300 bg-neutral-200/50">
+        <div class="flex flex-col px-4 pt-4">
+          <button type="button" class="hover:text-fuchsia-800">
+            <a
+              href={`${dashboardURL}/dashboard/dataset/${orgDatasetParams()}`}
+              class="flex w-full flex-row items-center gap-2"
+              target="_blank"
+            >
+              Dashboard
+              <TbLayoutDashboard class="text-sm" />
+            </a>
+          </button>
+          <button type="button" class="hover:text-fuchsia-800">
+            <a
+              href="https://docs.trieve.ai/api-reference/"
+              class="flex w-full flex-row items-center gap-2"
+              target="_blank"
+            >
+              API Docs
+              <AiOutlineApi class="text-sm" />
+            </a>
+          </button>
         </div>
-        <button
-          class="flex items-center gap-2 hover:text-fuchsia-800"
-          onClick={logOut}
-        >
-          Log Out <IoLogOutOutline class="inline-block h-4 w-4" />
-        </button>
+        <hr class="my-2 w-full border border-neutral-300" />
+        <div class="px-4 pb-4">
+          <div class="flex items-center gap-2">
+            <p>{userContext?.user().email}</p>
+            <AiOutlineUser class="h-4 w-4" />
+          </div>
+          <button
+            class="flex items-center gap-2 hover:text-fuchsia-800"
+            onClick={logOut}
+          >
+            Log Out <IoLogOutOutline class="inline-block h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
