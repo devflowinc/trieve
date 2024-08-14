@@ -1,5 +1,6 @@
 import { createMemo, createSignal, For, JSX, Show } from "solid-js";
 import { cn } from "../utils";
+import { VsTriangleDown } from "solid-icons/vs";
 
 type JSONMetadataProps = {
   isChild?: boolean;
@@ -14,11 +15,11 @@ type JSONMetadataProps = {
 export const JSONMetadata = (props: JSONMetadataProps) => {
   const rows = createMemo(() => {
     if (props.data === null) {
-      return <div>Null</div>;
+      return null;
     }
     if (typeof props.data !== "object") {
       console.log("Not an object!", typeof props.data);
-      return <div>Not an object!</div>;
+      return null;
     }
     return Object.entries(props.data).map(
       ([key, value]: [key: string, value: unknown]) => {
@@ -39,8 +40,9 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
     <div
       // Monospace font
       style={{
-        "font-family":
-          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+        "font-family": props.monospace
+          ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
+          : undefined,
       }}
       class={cn(
         "flex flex-col items-start rounded-md",
@@ -65,7 +67,7 @@ interface JSONMetadaRowProps {
   closedByDefault?: boolean;
 }
 
-type NextShapeType = "inline" | "block" | "block-array";
+type NextShapeType = "inline" | "block" | "block-array" | "";
 
 const JSONMetadaRow = (props: JSONMetadaRowProps) => {
   const [isOpen, setIsOpen] = createSignal<boolean>(true);
@@ -81,6 +83,26 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
       }
 
       if (Array.isArray(props.value)) {
+        if (props.value.length === 0) {
+          return ["inline", "[]"];
+        }
+
+        const firstValue = props.value[0] as unknown;
+
+        // Check if its a string or number
+        if (typeof firstValue === "string" || typeof firstValue === "number") {
+          return [
+            "inline",
+            <div class="flex">
+              <div>[</div>
+              <For each={props.value} fallback={<div>Empty array</div>}>
+                {(item) => <div>{JSON.stringify(item)},</div>}
+              </For>
+              <div>]</div>
+            </div>,
+          ];
+        }
+
         return [
           "block-array",
           <For each={props.value} fallback={<div>Empty array</div>}>
@@ -123,30 +145,55 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
     if (isOpen()) {
       if (value()[0] === "block") {
         return (
-          <span>
+          <span class="inline-flex gap-2">
             {"{"}
             <button
               onClick={() => {
                 setIsOpen(false);
               }}
             >
-              Close
+              <VsTriangleDown size={12} />
             </button>
           </span>
         );
       }
       if (value()[0] === "block-array") {
-        return <span>{"["}</span>;
+        return (
+          <span class="inline-flex gap-2">
+            {"["}
+            <button
+              onClick={() => {
+                setIsOpen(false);
+              }}
+            >
+              <VsTriangleDown size={12} />
+            </button>
+          </span>
+        );
       }
     } else {
       if (value()[0] === "block") {
         return (
           <span
+            class="font-medium"
             onClick={() => {
               setIsOpen(true);
             }}
           >
             {"{...}"}
+          </span>
+        );
+      }
+
+      if (value()[0] === "block-array") {
+        return (
+          <span
+            class="font-medium"
+            onClick={() => {
+              setIsOpen(true);
+            }}
+          >
+            {"[...]"}
           </span>
         );
       }
@@ -158,12 +205,8 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
       <div
         style={{
           "flex-direction": value()[0] === "inline" ? "row" : "column",
-          // "background-color": value()[0] === "inline" ? undefined : "#fde0ff",
         }}
-        class={cn(
-          "flex px-2 rounded-md",
-          // props.isAlternate ? "bg-magenta-100" : "bg-magenta-50",
-        )}
+        class={cn("flex px-2 rounded-md")}
       >
         <div class="font-medium">
           {props.key}:{openingBrace()}
