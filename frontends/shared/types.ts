@@ -476,7 +476,11 @@ export interface SearchQueryEvent {
   request_params: Record<string, unknown>;
   latency: number;
   top_score: number;
-  results: string[];
+  results: {
+    highlights: unknown;
+    metadata: Record<string, unknown>[];
+    score: number;
+  }[];
   dataset_id: string;
   created_at: string;
 }

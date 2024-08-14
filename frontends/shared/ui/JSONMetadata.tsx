@@ -1,6 +1,7 @@
 import { createMemo, createSignal, For, JSX, Show } from "solid-js";
 import { cn } from "../utils";
 import { VsTriangleDown } from "solid-icons/vs";
+import { AiOutlineCheck, AiOutlineCopy } from "solid-icons/ai";
 
 type JSONMetadataProps = {
   isChild?: boolean;
@@ -36,6 +37,8 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
     );
   });
 
+  const [copied, setCopied] = createSignal(false);
+
   return (
     <div
       // Monospace font
@@ -51,7 +54,20 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
       )}
     >
       <Show when={props.copyJSONButton}>
-        <div>Copy</div>
+        <button
+          onClick={() => {
+            void navigator.clipboard.writeText(JSON.stringify(props.data));
+            setCopied(true);
+          }}
+          class="absolute top-4 right-4"
+        >
+          <Show
+            fallback={<AiOutlineCopy size={20} class="text-neutral-800" />}
+            when={copied()}
+          >
+            <AiOutlineCheck size={20} class="text-neutral-800" />
+          </Show>
+        </button>
       </Show>
 
       {rows()}

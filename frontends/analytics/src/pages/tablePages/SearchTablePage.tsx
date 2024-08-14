@@ -141,6 +141,8 @@ export const SearchTablePage = () => {
           {(data) => (
             <div classList={{ "border border-neutral-300": data().length > 0 }}>
               <Table
+                fallback={<div class="py-8 text-center">No Data</div>}
+                data={data()}
                 fixed
                 headers={
                   <Tr>
@@ -165,8 +167,6 @@ export const SearchTablePage = () => {
                     </Th>
                   </Tr>
                 }
-                fallback={<div class="py-8 text-center">No Data</div>}
-                data={data()}
               >
                 {(row) => <SearchRow event={row} filter={filters.filter} />}
               </Table>

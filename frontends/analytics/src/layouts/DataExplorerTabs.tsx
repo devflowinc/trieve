@@ -8,10 +8,10 @@ const pages: { name: string; path: string }[] = [
     name: "Searches",
     path: "/data/searches",
   },
-  {
-    name: "RAG Messages",
-    path: "/data/messages",
-  },
+  // {
+  //   name: "RAG Messages",
+  //   path: "/data/messages",
+  // },
 ];
 
 export const DataExplorerTabs: ParentComponent = (props) => {
