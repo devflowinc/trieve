@@ -131,31 +131,33 @@ const ResultCard = (props: ResultCardProps) => {
   const [showingJson, setShowingJson] = createSignal(false);
 
   return (
-    <div class="rounded-md border border-neutral-200 bg-white p-2 shadow-md">
-      <div class="flex justify-between text-sm">
-        <div>{metadata()?.id}</div>
-        <button onClick={() => setShowingJson(!showingJson())}>
-          <VsJson />
-        </button>
-      </div>
-      <div class="text-sm opacity-60">Score: {props?.result?.score}</div>
-      <Show when={metadata()}>
-        {(metadata) => (
-          <div>
-            <div class="line-clamp-4">{metadata().chunk_html}</div>
-          </div>
-        )}
-      </Show>
-      <FullScreenModal
-        class="max-h-[80vh] max-w-[80vw] overflow-y-auto p-3"
-        show={showingJson}
-        setShow={setShowingJson}
-      >
-        <div>
-          <div class="text-lg">Metadata</div>
-          <JSONMetadata copyJSONButton data={props.result.metadata[0]} />
+    <Show when={props.result}>
+      <div class="rounded-md border border-neutral-200 bg-white p-2 shadow-md">
+        <div class="flex justify-between text-sm">
+          <div>{metadata()?.id}</div>
+          <button onClick={() => setShowingJson(!showingJson())}>
+            <VsJson />
+          </button>
         </div>
-      </FullScreenModal>
-    </div>
+        <div class="text-sm opacity-60">Score: {props?.result?.score}</div>
+        <Show when={metadata()}>
+          {(metadata) => (
+            <div>
+              <div class="line-clamp-4">{metadata().chunk_html}</div>
+            </div>
+          )}
+        </Show>
+        <FullScreenModal
+          class="max-h-[80vh] max-w-[80vw] overflow-y-auto p-3"
+          show={showingJson}
+          setShow={setShowingJson}
+        >
+          <div>
+            <div class="text-lg">Metadata</div>
+            <JSONMetadata copyJSONButton data={props.result.metadata[0]} />
+          </div>
+        </FullScreenModal>
+      </div>
+    </Show>
   );
 };
