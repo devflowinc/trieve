@@ -63,7 +63,7 @@ export const SingleQuery = (props: SingleQueryProps) => {
           />
         </div>
         <div class="h-4" />
-        <div class="text-bold h-2 w-full border-t-2 border-t-neutral-300/80 text-neutral-800 outline-neutral-500" />
+        <div class="text-bold mb-2 h-2 w-full border-t-2 border-t-neutral-300/80 text-neutral-800 outline-neutral-500" />
         <div class="grid grid-cols-2 gap-4">
           <div>
             <div>Request Parameters</div>
