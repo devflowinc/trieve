@@ -252,6 +252,16 @@ pub async fn get_search_analytics(
 
             SearchAnalyticsResponse::CountQueries(count_queries)
         }
+        SearchAnalytics::PopularFilters { filter } => {
+            let popular_filters = get_popular_filter_values_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            SearchAnalyticsResponse::PopularFilters(popular_filters)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
