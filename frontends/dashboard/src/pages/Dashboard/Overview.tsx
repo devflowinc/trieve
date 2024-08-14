@@ -15,7 +15,6 @@ import {
 import NewDatasetModal from "../../components/NewDatasetModal";
 import { DatasetOverview } from "../../components/DatasetOverview";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
-import { BiRegularLinkExternal } from "solid-icons/bi";
 import { FaRegularClipboard } from "solid-icons/fa";
 import { createToast } from "../../components/ShowToasts";
 import { BuildingSomething } from "../../components/BuildingSomething";
@@ -107,14 +106,6 @@ export const Overview = () => {
           <h2 id="user-details-name" class="text-lg font-medium leading-6">
             Create a Dataset Below to Get Started!
           </h2>
-          <a
-            class="flex items-center space-x-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm"
-            href="https://docs.trieve.ai"
-            target="_blank"
-          >
-            <p>API Docs</p>
-            <BiRegularLinkExternal class="h-4 w-4" />
-          </a>
         </div>
         <BuildingSomething />
         <div class="flex flex-col space-y-2">
