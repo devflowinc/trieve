@@ -229,6 +229,7 @@ services:
       - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
       - VITE_CHAT_UI_URL=${VITE_CHAT_UI_URL}
       - VITE_ANALYTICS_UI_URL=${VITE_ANALYTICS_UI_URL}
+      - VITE_BM25_ACTIVE=${VITE_BM25_ACTIVE}
 
   chat:
     image: trieve/chat
@@ -242,6 +243,7 @@ services:
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
       - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
+      - VITE_DASHBOARD_URL=${VITE_DASHBOARD_URL}
 
   search:
     image: trieve/search
@@ -254,6 +256,8 @@ services:
       - 5174:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
+      - VITE_DASHBOARD_URL=${VITE_DASHBOARD_URL}
+      - VITE_BM25_ACTIVE=${VITE_BM25_ACTIVE}
 
   analytics-site:
     image: trieve/analytics-site
