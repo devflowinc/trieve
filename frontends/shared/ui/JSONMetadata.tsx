@@ -197,7 +197,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
       if (value()[0] === "block") {
         return (
           <span
-            class="font-medium"
+            class="font-medium cursor-pointer"
             onClick={() => {
               setIsOpen(true);
             }}
@@ -210,7 +210,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
       if (value()[0] === "block-array") {
         return (
           <span
-            class="font-medium"
+            class="font-medium cursor-pointer"
             onClick={() => {
               setIsOpen(true);
             }}
