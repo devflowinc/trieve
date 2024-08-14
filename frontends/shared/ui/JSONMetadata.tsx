@@ -107,12 +107,18 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
 
         // Check if its a string or number
         if (typeof firstValue === "string" || typeof firstValue === "number") {
+          const valueCount = props.value.length;
           return [
             "inline",
             <div class="flex">
               <div>[</div>
               <For each={props.value} fallback={<div>Empty array</div>}>
-                {(item) => <div>{JSON.stringify(item)},</div>}
+                {(item, index) => (
+                  <div>
+                    {JSON.stringify(item)}
+                    <Show when={index() < valueCount - 1}>,</Show>
+                  </div>
+                )}
               </For>
               <div>]</div>
             </div>,

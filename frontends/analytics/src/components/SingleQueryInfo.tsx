@@ -56,7 +56,7 @@ export const SingleQuery = (props: SingleQueryProps) => {
             value={datasetName() || props.data.dataset_id}
           />
           <DataSquare label="Results" value={props.data.results.length} />
-          <DataSquare label="Latency" value={props.data.latency} />
+          <DataSquare label="Latency" value={`${props.data.latency}ms`} />
           <DataSquare
             label="Top Score"
             value={props.data.top_score.toPrecision(4)}
