@@ -45,7 +45,7 @@ export const SingleQuery = (props: SingleQueryProps) => {
           Searched on{" "}
           {format(
             parseCustomDateString(props.data.created_at),
-            "m/d/yy h:mm a",
+            "M/d/yy h:mm a",
           )}
         </div>
         <div class="h-2" />
