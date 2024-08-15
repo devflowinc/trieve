@@ -1118,6 +1118,8 @@ pub struct RecommendGroupsReqPayload {
     pub group_size: Option<u32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
+    /// The user_id is the id of the user who is making the request. This is used to track user interactions with the rrecommendation results.
+    pub user_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
@@ -1344,6 +1346,7 @@ pub async fn get_recommended_groups(
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue
@@ -1405,6 +1408,8 @@ pub struct SearchWithinGroupReqPayload {
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
     pub typo_options: Option<TypoOptions>,
+    /// The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
+    pub user_id: Option<String>,
 }
 
 impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
@@ -1424,6 +1429,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             use_quote_negated_terms: search_within_group_data.use_quote_negated_terms,
             remove_stop_words: search_within_group_data.remove_stop_words,
             typo_options: search_within_group_data.typo_options,
+            user_id: search_within_group_data.user_id,
         }
     }
 }
@@ -1600,6 +1606,7 @@ pub async fn search_within_group(
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue
@@ -1643,6 +1650,8 @@ pub struct SearchOverGroupsReqPayload {
     /// preserved.
     pub remove_stop_words: Option<bool>,
     pub typo_options: Option<TypoOptions>,
+    /// The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
+    pub user_id: Option<String>,
 }
 
 /// Search Over Groups
@@ -1782,6 +1791,7 @@ pub async fn search_over_groups(
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue

@@ -81,6 +81,8 @@ pub struct CreateMessageReqPayload {
     pub new_message_content: String,
     /// The ID of the topic to attach the message to.
     pub topic_id: uuid::Uuid,
+    /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+    pub user_id: Option<String>,
     /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub highlight_options: Option<HighlightOptions>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
@@ -273,6 +275,8 @@ pub struct RegenerateMessageReqPayload {
     pub score_threshold: Option<f32>,
     /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
     pub llm_options: Option<LLMOptions>,
+    /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+    pub user_id: Option<String>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -299,6 +303,8 @@ pub struct EditMessageReqPayload {
     pub score_threshold: Option<f32>,
     /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
     pub llm_options: Option<LLMOptions>,
+    /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+    pub user_id: Option<String>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -314,6 +320,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             filters: data.filters,
             score_threshold: data.score_threshold,
             llm_options: data.llm_options,
+            user_id: data.user_id,
         }
     }
 }
@@ -331,6 +338,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             filters: data.filters,
             score_threshold: data.score_threshold,
             llm_options: data.llm_options,
+            user_id: data.user_id,
         }
     }
 }
