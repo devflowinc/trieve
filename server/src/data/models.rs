@@ -3666,6 +3666,7 @@ pub struct SearchQueryEvent {
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
     pub query_rating: String,
+    pub user_id: String,
 }
 
 impl Default for SearchQueryEvent {
@@ -3681,6 +3682,7 @@ impl Default for SearchQueryEvent {
             dataset_id: uuid::Uuid::new_v4(),
             created_at: chrono::Utc::now().to_string(),
             query_rating: String::from(""),
+            user_id: String::from(""),
         }
     }
 }
@@ -3892,6 +3894,7 @@ pub struct SearchQueryEventClickhouse {
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
     pub query_rating: String,
+    pub user_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -3930,6 +3933,7 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),
             query_rating: clickhouse_response.query_rating,
+            user_id: clickhouse_response.user_id,
         }
     }
 }
@@ -3943,6 +3947,7 @@ pub struct RagQueryEvent {
     pub results: Vec<ChunkMetadataStringTagSet>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
+    pub user_id: String,
 }
 
 impl RagQueryEventClickhouse {
@@ -3970,6 +3975,7 @@ impl RagQueryEventClickhouse {
             results: chunk_string_tag_sets,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
             created_at: self.created_at.to_string(),
+            user_id: self.user_id,
         }
     }
 }
@@ -3988,6 +3994,7 @@ pub struct RagQueryEventClickhouse {
     pub dataset_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
+    pub user_id: String,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -4032,6 +4039,7 @@ pub struct RecommendationEventClickhouse {
     pub dataset_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
+    pub user_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Default)]
@@ -4047,6 +4055,7 @@ pub struct RecommendationEvent {
     pub top_score: f32,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
+    pub user_id: String,
 }
 
 impl From<RecommendationEventClickhouse> for RecommendationEvent {
@@ -4076,6 +4085,7 @@ impl From<RecommendationEventClickhouse> for RecommendationEvent {
             top_score: clickhouse_response.top_score,
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),
+            user_id: clickhouse_response.user_id.clone(),
         }
     }
 }
@@ -5007,6 +5017,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5036,6 +5047,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5059,6 +5071,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5087,6 +5100,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5113,6 +5127,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5144,6 +5159,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5167,6 +5183,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             slim_chunks: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5193,6 +5210,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             slim_chunks: helper.slim_chunks,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5214,6 +5232,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub filters: Option<ChunkFilter>,
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
+            pub user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5240,6 +5259,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             filters: helper.filters,
             score_threshold: helper.score_threshold,
             llm_options,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5260,6 +5280,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub filters: Option<ChunkFilter>,
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
+            pub user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5285,6 +5306,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             filters: helper.filters,
             score_threshold: helper.score_threshold,
             llm_options,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5307,6 +5329,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub filters: Option<ChunkFilter>,
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
+            pub user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5333,6 +5356,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             page_size: helper.page_size,
             filters: helper.filters,
             score_threshold: helper.score_threshold,
+            user_id: helper.user_id,
             llm_options,
         })
     }

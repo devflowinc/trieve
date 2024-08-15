@@ -398,6 +398,10 @@ pub async fn stream_response(
             .collect(),
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
+        user_id: create_message_req_payload
+            .user_id
+            .clone()
+            .unwrap_or_default(),
     };
 
     event_queue
@@ -589,6 +593,10 @@ pub async fn stream_response(
             user_message: query.clone(),
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion_content.clone(),
+            user_id: create_message_req_payload
+                .user_id
+                .clone()
+                .unwrap_or_default(),
         };
 
         event_queue
@@ -630,6 +638,10 @@ pub async fn stream_response(
             user_message: query.clone(),
             rag_type: "all_chunks".to_string(),
             llm_response: completion.clone(),
+            user_id: create_message_req_payload
+                .user_id
+                .clone()
+                .unwrap_or_default(),
         };
 
         event_queue
