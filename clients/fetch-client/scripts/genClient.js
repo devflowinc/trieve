@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const main = async () => {
   const client = await createClient({
+    client: "@hey-api/client-fetch",
     types: true,
     schemas: false,
     services: false,
