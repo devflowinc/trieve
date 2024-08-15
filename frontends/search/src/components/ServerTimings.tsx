@@ -84,7 +84,7 @@ export const ServerTimings = (props: ServerTimingsProps) => {
                   }}
                   class="absolute border border-neutral-800/80"
                 />
-                <div class="pl-2">{name}</div>
+                <div class="pl-2">{name.replaceAll("_", " ")}</div>
               </>
             )}
           </For>
