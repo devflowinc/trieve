@@ -224,13 +224,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             <span class="text-sm font-medium text-gray-900 dark:text-white">
               Show Server Timings
             </span>
-            <div
-              class="text-primary-600 focus:ring-primary-500 h-3 w-3 rounded border-gray-300"
-              // checked={showServerTimings()}
-              // onChange={(e) => {
-              //   setShowServerTimings(e.target.checked);
-              // }}
-            >
+            <div class="text-primary-600 focus:ring-primary-500 h-3 w-3 rounded border-gray-300">
               <VsChevronRight
                 classList={{
                   "transition-transform": true,
