@@ -961,6 +961,8 @@ pub struct SearchChunksReqPayload {
     pub use_quote_negated_terms: Option<bool>,
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+    pub user_id: Option<String>,
 }
 
 impl Default for SearchChunksReqPayload {
@@ -979,6 +981,7 @@ impl Default for SearchChunksReqPayload {
             content_only: None,
             use_quote_negated_terms: None,
             remove_stop_words: None,
+            user_id: None,
         }
     }
 }
@@ -1230,6 +1233,7 @@ pub async fn search_chunks(
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue
@@ -1326,6 +1330,8 @@ pub struct AutocompleteReqPayload {
     pub use_quote_negated_terms: Option<bool>,
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+    pub user_id: Option<String>,
 }
 
 impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
@@ -1344,6 +1350,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             content_only: autocomplete_data.content_only,
             use_quote_negated_terms: autocomplete_data.use_quote_negated_terms,
             remove_stop_words: autocomplete_data.remove_stop_words,
+            user_id: autocomplete_data.user_id,
         }
     }
 }
@@ -1427,6 +1434,7 @@ pub async fn autocomplete(
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue
@@ -1636,6 +1644,7 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             content_only: None,
             use_quote_negated_terms: count_data.use_quote_negated_terms,
             remove_stop_words: None,
+            user_id: None,
         }
     }
 }
@@ -1950,6 +1959,8 @@ pub struct RecommendChunksRequest {
     pub limit: Option<u64>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the recommendation results.
+    pub user_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -2223,6 +2234,7 @@ pub async fn get_recommended_chunks(
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue
@@ -2292,6 +2304,8 @@ pub struct GenerateOffChunksReqPayload {
     pub max_tokens: Option<u32>,
     /// Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
     pub stop_tokens: Option<Vec<String>>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+    pub user_id: Option<String>,
 }
 
 /// RAG on Specified Chunks
@@ -2520,6 +2534,7 @@ pub async fn generate_off_chunks(
             user_message: prompt,
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion_content.clone(),
+            user_id: data.user_id.clone().unwrap_or_default(),
         };
 
         event_queue
@@ -2554,6 +2569,7 @@ pub async fn generate_off_chunks(
             user_message: prompt,
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion,
+            user_id: data.user_id.clone().unwrap_or_default(),
         };
 
         event_queue
