@@ -4,20 +4,19 @@ import { ServerTiming } from "./ResultsPage";
 interface ServerTimingsProps {
   timings: ServerTiming[];
 }
+
 export const ServerTimings = (props: ServerTimingsProps) => {
   const [timingsBox, setTimingsBox] = createSignal<HTMLDivElement>();
   const [fullContainer, setFullContainer] = createSignal<HTMLDivElement>();
+  const [availableWidth, setAvailableWidth] = createSignal(0);
+  const [fullContainerWidth, setFullContainerWidth] = createSignal(0);
+
   const totalTime = createMemo(() => {
     return props.timings.reduce((acc, t) => acc + t.duration, 0);
   });
 
-  const [availableWidth, setAvailableWidth] = createSignal(0);
-
-  const [fullContainerWidth, setFullContainerWidth] = createSignal(0);
-
   onMount(() => {
     const observer = new ResizeObserver((entries) => {
-      console.log("IT CHANGED");
       const entry = entries[0];
       setAvailableWidth(entry.contentRect.width);
     });
@@ -41,40 +40,34 @@ export const ServerTimings = (props: ServerTimingsProps) => {
     };
   });
 
-  const labels = createMemo(() => {
-    return props.timings.map((t) => t.name);
-  });
+  const labels = createMemo(() => props.timings.map((t) => t.name));
 
   const banners = createMemo(() => {
-    console.log("RECOMPUTING WITH AVAILABLE WIDTH", availableWidth());
     if (availableWidth() === 0) return [];
-
-    const bannerComponents = [];
     let usedWidth = 0;
-
-    for (let i = 0; i < props.timings.length; i++) {
-      const timing = props.timings[i];
+    return props.timings.map((timing, idx) => {
       const width = (timing.duration / totalTime()) * availableWidth();
-      bannerComponents.push(
+      const banner = (
         <div
-          class={`grid w-full place-items-center bg-magenta-700`}
+          class="grid w-full place-items-center bg-magenta-700"
           style={{
             width: `${width}px`,
             "min-width": `${width}px`,
             "max-width": `${width}px`,
             height: "24px",
-            "margin-left": `${usedWidth}px`,
+            position: "absolute",
+            left: `${usedWidth}px`,
+            top: `${idx * 24}px`,
           }}
         >
           <div class="h-full w-full pt-[4px] text-center align-middle text-xs">
             {timing.duration}ms
           </div>
-        </div>,
+        </div>
       );
       usedWidth += width;
-    }
-
-    return bannerComponents;
+      return banner;
+    });
   });
 
   return (
@@ -106,7 +99,8 @@ export const ServerTimings = (props: ServerTimingsProps) => {
           <div
             id="timingsBox"
             ref={setTimingsBox}
-            class="grow border-l border-l-neutral-800/80"
+            class="relative grow border-l border-l-neutral-800/80"
+            style={{ height: `${props.timings.length * 24}px` }}
           >
             <For each={banners()}>{(component) => component}</For>
           </div>
