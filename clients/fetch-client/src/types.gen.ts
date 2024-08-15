@@ -374,6 +374,10 @@ export type CountChunksReqPayload = {
      */
     score_threshold?: number | null;
     search_type: CountSearchMethod;
+    /**
+     * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+     */
+    use_quote_negated_terms?: boolean | null;
 };
 
 export type CountSearchMethod = 'fulltext' | 'semantic' | 'bm25';
@@ -535,6 +539,7 @@ export type DatasetConfigurationDTO = {
      * The BM25 K parameter
      */
     BM25_K?: number | null;
+    DISTANCE_METRIC?: (DistanceMetric) | null;
     /**
      * The base URL for the embedding API
      */
@@ -666,6 +671,8 @@ export type DeprecatedSearchOverGroupsResponseBody = {
     total_chunk_pages: number;
 };
 
+export type DistanceMetric = 'euclidean' | 'cosine' | 'manhattan' | 'dot';
+
 export type EditMessageReqPayload = {
     /**
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
@@ -770,7 +777,7 @@ export type FullTextBoost = {
     phrase: string;
 };
 
-export type GenerateChunksRequest = {
+export type GenerateOffChunksReqPayload = {
     /**
      * The ids of the chunks to be retrieved and injected into the context window for RAG.
      */
@@ -780,7 +787,7 @@ export type GenerateChunksRequest = {
      */
     frequency_penalty?: number | null;
     /**
-     * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>`` tags to the chunk_html of the chunks to highlight matching splits.
+     * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits.
      */
     highlight_results?: boolean | null;
     /**
@@ -792,11 +799,11 @@ export type GenerateChunksRequest = {
      */
     presence_penalty?: number | null;
     /**
-     * The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on. The length of this array must be at least 1.
+     * The previous messages to be placed into the chat history. There must be at least one previous message.
      */
     prev_messages: Array<ChatMessageProxy>;
     /**
-     * Prompt for the last message in the prev_messages array. This will be used to generate the next message in the chat. The default is 'Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
+     * Prompt will be used to tell the model what to generate in the next message in the chat. The default is 'Respond to the previous instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
      */
     prompt?: string | null;
     /**
@@ -833,6 +840,22 @@ export type GeoInfoWithBias = {
 };
 
 export type GeoTypes = number;
+
+export type GetAllTagsReqPayload = {
+    /**
+     * Page number to return, 1-indexed. Default is 1.
+     */
+    page?: number | null;
+    /**
+     * Number of items to return per page. Default is 20.
+     */
+    page_size?: number | null;
+};
+
+export type GetAllTagsResponse = {
+    tags: Array<TagsWithCount>;
+    total: number;
+};
 
 export type GetChunksData = {
     ids: Array<(string)>;
@@ -1163,7 +1186,7 @@ export type RateQueryRequest = {
     rating: number;
 };
 
-export type ReRankOptions = 'semantic' | 'fulltext' | 'cross_encoder';
+export type ReRankOptions = 'semantic' | 'fulltext' | 'bm25' | 'cross_encoder';
 
 export type RecommendChunksRequest = {
     filters?: (ChunkFilter) | null;
@@ -1246,7 +1269,7 @@ export type RecommendResponseTypes = RecommendChunksResponseBody | Array<ChunkMe
 /**
  * The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.
  */
-export type RecommendType = 'semantic' | 'fulltext';
+export type RecommendType = 'semantic' | 'fulltext' | 'bm25';
 
 export type RecommendationAnalytics = {
     filter?: (RecommendationAnalyticsFilter) | null;
@@ -1470,7 +1493,10 @@ export type SearchChunksReqPayload = {
      */
     remove_stop_words?: boolean | null;
     /**
-     * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
+     * Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric
+     * For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance
+     * This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold
+     * A threshold of 0 will default to no threashold
      */
     score_threshold?: number | null;
     search_type: SearchMethod;
@@ -1679,11 +1705,11 @@ export type SearchWithinGroupResults = {
  */
 export type SemanticBoost = {
     /**
-     * Amount to multiplicatevly increase the frequency of the tokens in the phrase by
+     * Arbitrary float (positive or negative) specifying the multiplicate factor to apply before summing the phrase vector with the chunk_html embedding vector
      */
     distance_factor: number;
     /**
-     * The phrase to boost in the fulltext document frequency index
+     * Terms to embed in order to create the vector which is weighted summed with the chunk_html embedding vector
      */
     phrase: string;
 };
@@ -1856,6 +1882,11 @@ export type SuggestedQueriesReqPayload = {
 
 export type SuggestedQueriesResponse = {
     queries: Array<(string)>;
+};
+
+export type TagsWithCount = {
+    count: number;
+    tag: string;
 };
 
 export type Topic = {
@@ -2337,7 +2368,7 @@ export type GenerateOffChunksData = {
     /**
      * JSON request payload to perform RAG on some chunks (chunks)
      */
-    requestBody: GenerateChunksRequest;
+    requestBody: GenerateOffChunksReqPayload;
     /**
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
      */
@@ -2748,6 +2779,9 @@ export type GetChunksByIdsData = {
 export type GetChunksByIdsResponse = Array<ChunkReturnTypes>;
 
 export type ScrollDatasetChunksData = {
+    /**
+     * JSON request payload to scroll through chunks (chunks)
+     */
     requestBody: ScrollChunksReqPayload;
     /**
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
@@ -2755,7 +2789,7 @@ export type ScrollDatasetChunksData = {
     trDataset: string;
 };
 
-export type ScrollDatasetChunksResponse = ScrollChunksReqPayload;
+export type ScrollDatasetChunksResponse = ScrollChunksResponseBody;
 
 export type GetChunksByTrackingIdsData = {
     /**
@@ -2829,6 +2863,19 @@ export type GetDatasetFilesHandlerData = {
 };
 
 export type GetDatasetFilesHandlerResponse = Array<File>;
+
+export type GetAllTagsData = {
+    /**
+     * JSON request payload to get items with the tag in the request
+     */
+    requestBody: GetAllTagsReqPayload;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetAllTagsResponse2 = GetAllTagsResponse;
 
 export type GetGroupsForDatasetData = {
     /**
@@ -3913,7 +3960,7 @@ export type $OpenApiTs = {
                 /**
                  * Number of chunks equivalent to page_size starting from offset_chunk_id
                  */
-                200: ScrollChunksReqPayload;
+                200: ScrollChunksResponseBody;
                 /**
                  * Service error relating to scrolling chunks
                  */
@@ -3997,6 +4044,21 @@ export type $OpenApiTs = {
                 200: Array<File>;
                 /**
                  * Service error relating to getting the files in the current datase
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/dataset/get_all_tags': {
+        post: {
+            req: GetAllTagsData;
+            res: {
+                /**
+                 * Page of tags requested with all tags and the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset
+                 */
+                200: GetAllTagsResponse;
+                /**
+                 * Service error relating to finding items by tag
                  */
                 400: ErrorResponseBody;
             };
