@@ -47,6 +47,7 @@ import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
 import { FiEye } from "solid-icons/fi";
 import { ServerTimings } from "./ServerTimings";
+import { VsChevronRight } from "solid-icons/vs";
 
 export interface ResultsPageProps {
   search: SearchStore;
@@ -213,21 +214,32 @@ const ResultsPage = (props: ResultsPageProps) => {
   const ShowServerTimings = () => {
     return (
       <div class="w-full self-start">
-        <div class="flex items-center space-x-2 self-start">
+        <button
+          onClick={() => {
+            setShowServerTimings(!showServerTimings());
+          }}
+          class="flex cursor-pointer items-center space-x-2 self-start"
+        >
           <label class="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              class="text-primary-600 focus:ring-primary-500 h-3 w-3 rounded border-gray-300"
-              checked={showServerTimings()}
-              onChange={(e) => {
-                setShowServerTimings(e.target.checked);
-              }}
-            />
             <span class="text-sm font-medium text-gray-900 dark:text-white">
               Show Server Timings
             </span>
+            <div
+              class="text-primary-600 focus:ring-primary-500 h-3 w-3 rounded border-gray-300"
+              // checked={showServerTimings()}
+              // onChange={(e) => {
+              //   setShowServerTimings(e.target.checked);
+              // }}
+            >
+              <VsChevronRight
+                classList={{
+                  "transition-transform": true,
+                  "rotate-90": showServerTimings(),
+                }}
+              />
+            </div>
           </label>
-        </div>
+        </button>
         <div class="w-full">
           <Show when={showServerTimings()}>
             <ServerTimings timings={serverTimings()} />
