@@ -252,6 +252,8 @@ Things you need
 - kubectl
 - k9s (optional)
 
+Run this to configure the cli's iam user and secret key
+ 
 ```sh
 aws configure
 ```
@@ -421,13 +423,15 @@ Happy hacking 🚀
 Things you need
 
 - Domain name
-- helm cli
-- google cloud cli
+- helm cli (https://helm.sh/docs/intro/install)
+- google cloud cli (https://cloud.google.com/sdk/docs/install)
 - kubectl
 - k9s (optional)
 
+Run this to set your project-id
+
 ```sh
-aws configure
+gcloud auth login
 ```
 
 ### Provision Terraform
