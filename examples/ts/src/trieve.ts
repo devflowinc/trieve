@@ -6,4 +6,4 @@ export const trieve = new Trieve({
   debug: false,
 });
 
-export const EXAMPLE_DATASET_ID = "9f2600a4-9979-4a54-a0e5-d4da4bb0eaec";
+export const EXAMPLE_DATASET_ID = "6e15c9ff-037b-4559-ad25-bbb17aaf51d2";
