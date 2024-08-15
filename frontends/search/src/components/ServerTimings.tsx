@@ -1,4 +1,4 @@
-import { createMemo, createSignal, For } from "solid-js";
+import { createMemo, createSignal, For, onMount } from "solid-js";
 import { ServerTiming } from "./ResultsPage";
 
 interface ServerTimingsProps {
@@ -10,23 +10,38 @@ export const ServerTimings = (props: ServerTimingsProps) => {
     return props.timings.reduce((acc, t) => acc + t.duration, 0);
   });
 
+  const [availableWidth, setAvailableWidth] = createSignal(0);
+
+  onMount(() => {
+    onMount(() => {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        setAvailableWidth(entry.contentRect.width);
+      });
+      if (timingsBox() !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        observer.observe(timingsBox()!);
+      }
+
+      return () => observer.disconnect();
+    });
+  });
+
   const labels = createMemo(() => {
     return props.timings.map((t) => t.name);
   });
 
   const banners = createMemo(() => {
     console.log(timingsBox());
-    const availableWidth =
-      document.getElementById("timingsBox")?.clientWidth ?? 0;
     console.log(availableWidth);
-    if (availableWidth === 0) return [];
+    if (availableWidth() === 0) return [];
 
     const bannerComponents = [];
     let usedWidth = 0;
 
     for (let i = 0; i < props.timings.length; i++) {
       const timing = props.timings[i];
-      const width = (timing.duration / totalTime()) * availableWidth;
+      const width = (timing.duration / totalTime()) * availableWidth();
       bannerComponents.push(
         <div
           class={`grid w-full place-items-center bg-magenta-700`}
