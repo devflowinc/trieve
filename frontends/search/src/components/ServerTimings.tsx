@@ -51,7 +51,7 @@ export const ServerTimings = (props: ServerTimingsProps) => {
             "margin-left": `${usedWidth}px`,
           }}
         >
-          <div class="h-full w-full pt-[2px] text-center align-middle text-xs">
+          <div class="h-full w-full pt-[4px] text-center align-middle text-xs">
             {timing.duration}ms
           </div>
         </div>,
@@ -64,15 +64,15 @@ export const ServerTimings = (props: ServerTimingsProps) => {
 
   return (
     <div class="py-2">
-      <div class="pl-2 font-medium">Total Time: {totalTime()}ms</div>
+      <div class="text-md pl-2 font-semibold">Total Time: {totalTime()}ms</div>
       <div class="flex">
         <div class="shrink px-2 pr-4">
           <For each={labels()}>
             {(name) => (
-              <div>
+              <>
                 <div class="absolute w-[calc(100%-50px)] border border-neutral-800/80" />
-                {name}
-              </div>
+                <div class="pl-2">{name}</div>
+              </>
             )}
           </For>
           <div class="absolute w-[calc(100%-50px)] border border-neutral-800/80" />
