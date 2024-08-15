@@ -4371,6 +4371,7 @@ impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
 pub struct SearchCTRMetricsClickhouse {
     pub searches_with_clicks: i64,
     pub percent_searches_with_clicks: f64,
+    pub percent_searches_without_clicks: f64,
     pub avg_position_of_click: f64,
 }
 
@@ -4378,6 +4379,7 @@ pub struct SearchCTRMetricsClickhouse {
 pub struct SearchCTRMetrics {
     pub searches_with_clicks: i64,
     pub percent_searches_with_clicks: f64,
+    pub percent_searches_without_clicks: f64,
     pub avg_position_of_click: f64,
 }
 
@@ -4387,6 +4389,9 @@ impl From<SearchCTRMetricsClickhouse> for SearchCTRMetrics {
             searches_with_clicks: metrics.searches_with_clicks,
             percent_searches_with_clicks: f64::from_be_bytes(
                 metrics.percent_searches_with_clicks.to_be_bytes(),
+            ),
+            percent_searches_without_clicks: f64::from_be_bytes(
+                metrics.percent_searches_without_clicks.to_be_bytes(),
             ),
             avg_position_of_click: f64::from_be_bytes(metrics.avg_position_of_click.to_be_bytes()),
         }

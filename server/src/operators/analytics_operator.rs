@@ -877,6 +877,7 @@ pub async fn get_search_ctr_metrics_query(
         SELECT 
             searches_with_clicks,
             (searches_with_clicks * 100.0 / total) AS percent_searches_with_click,
+            ((total - searches_with_clicks) * 100.0 / total) AS percent_searches_without_click,
             avg_position_of_click
         FROM (
             SELECT 
