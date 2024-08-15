@@ -852,7 +852,7 @@
           "Chunk"
         ],
         "summary": "RAG on Specified Chunks",
-        "description": "This endpoint exists as an alternative to the topic+message concept where our API handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt. See more in the \"search before generate\" page at docs.trieve.ai.",
+        "description": "This endpoint exists as an alternative to the topic+message resource pattern where our Trieve handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt and the conversation is ephemeral.",
         "operationId": "generate_off_chunks",
         "parameters": [
           {
@@ -870,7 +870,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenerateChunksRequest"
+                "$ref": "#/components/schemas/GenerateOffChunksReqPayload"
               }
             }
           },
@@ -913,7 +913,7 @@
           "Chunk"
         ],
         "summary": "Get Recommended Chunks",
-        "description": "Get recommendations of chunks similar to the positive samples in the request and dissimilar to the negative. You must provide at least one of either positive_chunk_ids or positive_tracking_ids.",
+        "description": "Get recommendations of chunks similar to the positive samples in the request and dissimilar to the negative.",
         "operationId": "get_recommended_chunks",
         "parameters": [
           {
@@ -2661,7 +2661,7 @@
           "Chunk"
         ],
         "summary": "Scroll Chunks",
-        "description": "Get paginated chunks from your dataset with filters and custom sorting. If sort by is not specified, the results will sort by the id's of the chunks in ascending order.",
+        "description": "Get paginated chunks from your dataset with filters and custom sorting. If sort by is not specified, the results will sort by the id's of the chunks in ascending order. Sort by and offset_chunk_id cannot be used together; if you want to scroll with a sort by then you need to use a must_not filter with the ids you have already seen. There is a limit of 1000 id's in a must_not filter at a time.",
         "operationId": "scroll_dataset_chunks",
         "parameters": [
           {
@@ -2675,7 +2675,7 @@
           }
         ],
         "requestBody": {
-          "description": "",
+          "description": "JSON request payload to scroll through chunks (chunks)",
           "content": {
             "application/json": {
               "schema": {
@@ -2691,7 +2691,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScrollChunksReqPayload"
+                  "$ref": "#/components/schemas/ScrollChunksResponseBody"
                 }
               }
             }
@@ -2799,8 +2799,8 @@
         "tags": [
           "Dataset"
         ],
-        "summary": "Create dataset",
-        "description": "Create a new dataset. The auth'ed user must be an owner of the organization to create a dataset.",
+        "summary": "Create Dataset",
+        "description": "Auth'ed user must be an owner of the organization to create a dataset.",
         "operationId": "create_dataset",
         "parameters": [
           {
@@ -2858,8 +2858,8 @@
         "tags": [
           "Dataset"
         ],
-        "summary": "Update Dataset",
-        "description": "Update a dataset by id or tracking_id. One of id or tracking_id must be provided. The auth'ed user must be an owner of the organization to update a dataset.",
+        "summary": "Update Dataset by ID or Tracking ID",
+        "description": "One of id or tracking_id must be provided. The auth'ed user must be an owner of the organization to update a dataset.",
         "operationId": "update_dataset",
         "parameters": [
           {
@@ -3061,6 +3061,67 @@
         ]
       }
     },
+    "/api/dataset/get_all_tags": {
+      "post": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Get All Tags",
+        "description": "Scroll through all tags in the dataset and get the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset.",
+        "operationId": "get_all_tags",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to get items with the tag in the request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetAllTagsReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Page of tags requested with all tags and the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAllTagsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to finding items by tag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
     "/api/dataset/groups/{dataset_id}/{page}": {
       "get": {
         "tags": [
@@ -3137,7 +3198,7 @@
           "Dataset"
         ],
         "summary": "Get Datasets from Organization",
-        "description": "Get all datasets for an organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
+        "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_datasets_from_organization",
         "parameters": [
           {
@@ -3232,7 +3293,7 @@
           "Dataset"
         ],
         "summary": "Delete Dataset by Tracking ID",
-        "description": "Delete a dataset by its tracking id. The auth'ed user must be an owner of the organization to delete a dataset.",
+        "description": "Auth'ed user must be an owner of the organization to delete a dataset.",
         "operationId": "delete_dataset_by_tracking_id",
         "parameters": [
           {
@@ -3294,7 +3355,7 @@
           "Dataset"
         ],
         "summary": "Get Usage By Dataset ID",
-        "description": "Get the usage for a dataset by its id.",
+        "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_usage_by_dataset_id",
         "parameters": [
           {
@@ -3363,8 +3424,8 @@
         "tags": [
           "Dataset"
         ],
-        "summary": "Get Dataset",
-        "description": "Get a dataset by id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
+        "summary": "Get Dataset By ID",
+        "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_dataset",
         "parameters": [
           {
@@ -3432,7 +3493,7 @@
           "Dataset"
         ],
         "summary": "Delete Dataset",
-        "description": "Delete a dataset. The auth'ed user must be an owner of the organization to delete a dataset.",
+        "description": "Auth'ed user must be an owner of the organization to delete a dataset.",
         "operationId": "delete_dataset",
         "parameters": [
           {
@@ -6691,6 +6752,11 @@
           },
           "search_type": {
             "$ref": "#/components/schemas/CountSearchMethod"
+          },
+          "use_quote_negated_terms": {
+            "type": "boolean",
+            "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
+            "nullable": true
           }
         },
         "example": {
@@ -6875,6 +6941,7 @@
             "BM25_B": 0.75,
             "BM25_ENABLED": true,
             "BM25_K": 0.75,
+            "DISTANCE_METRIC": "cosine",
             "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
             "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
             "EMBEDDING_QUERY_PREFIX": "",
@@ -7125,6 +7192,7 @@
             "BM25_B": 0.75,
             "BM25_ENABLED": true,
             "BM25_K": 0.75,
+            "DISTANCE_METRIC": "cosine",
             "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
             "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
             "EMBEDDING_QUERY_PREFIX": "",
@@ -7247,6 +7315,14 @@
             "type": "number",
             "format": "float",
             "description": "The BM25 K parameter",
+            "nullable": true
+          },
+          "DISTANCE_METRIC": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DistanceMetric"
+              }
+            ],
             "nullable": true
           },
           "EMBEDDING_BASE_URL": {
@@ -7377,6 +7453,7 @@
           "BM25_B": 0.75,
           "BM25_ENABLED": true,
           "BM25_K": 0.75,
+          "DISTANCE_METRIC": "cosine",
           "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
           "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
           "EMBEDDING_QUERY_PREFIX": "",
@@ -7544,6 +7621,15 @@
             "format": "int64"
           }
         }
+      },
+      "DistanceMetric": {
+        "type": "string",
+        "enum": [
+          "euclidean",
+          "cosine",
+          "manhattan",
+          "dot"
+        ]
       },
       "EditMessageReqPayload": {
         "type": "object",
@@ -7897,7 +7983,7 @@
           }
         }
       },
-      "GenerateChunksRequest": {
+      "GenerateOffChunksReqPayload": {
         "type": "object",
         "required": [
           "prev_messages",
@@ -7920,7 +8006,7 @@
           },
           "highlight_results": {
             "type": "boolean",
-            "description": "Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>`` tags to the chunk_html of the chunks to highlight matching splits.",
+            "description": "Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits.",
             "nullable": true
           },
           "max_tokens": {
@@ -7941,11 +8027,11 @@
             "items": {
               "$ref": "#/components/schemas/ChatMessageProxy"
             },
-            "description": "The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on. The length of this array must be at least 1."
+            "description": "The previous messages to be placed into the chat history. There must be at least one previous message."
           },
           "prompt": {
             "type": "string",
-            "description": "Prompt for the last message in the prev_messages array. This will be used to generate the next message in the chat. The default is 'Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.",
+            "description": "Prompt will be used to tell the model what to generate in the next message in the chat. The default is 'Respond to the previous instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.",
             "nullable": true
           },
           "stop_tokens": {
@@ -7972,10 +8058,9 @@
           "chunk_ids": [
             "d290f1ee-6c54-4b01-90e6-d701748f0851"
           ],
-          "model": "text-embedding-small",
           "prev_messages": [
             {
-              "content": "I am going to provide several pieces of information (docs) for you to use in response to a request or question.",
+              "content": "How do I setup RAG with Trieve?",
               "role": "user"
             }
           ],
@@ -8028,6 +8113,42 @@
             "format": "double"
           }
         ]
+      },
+      "GetAllTagsReqPayload": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Page number to return, 1-indexed. Default is 1.",
+            "nullable": true
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of items to return per page. Default is 20.",
+            "nullable": true
+          }
+        }
+      },
+      "GetAllTagsResponse": {
+        "type": "object",
+        "required": [
+          "tags",
+          "total"
+        ],
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagsWithCount"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "GetChunksData": {
         "type": "object",
@@ -9126,6 +9247,7 @@
         "enum": [
           "semantic",
           "fulltext",
+          "bm25",
           "cross_encoder"
         ]
       },
@@ -9354,7 +9476,8 @@
         "description": "The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.",
         "enum": [
           "semantic",
-          "fulltext"
+          "fulltext",
+          "bm25"
         ]
       },
       "RecommendationAnalytics": {
@@ -10348,7 +10471,7 @@
           "score_threshold": {
             "type": "number",
             "format": "float",
-            "description": "Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.",
+            "description": "Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric\nFor Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance\nThis threshold applies before weight and bias modifications. If not specified, this defaults to no threshold\nA threshold of 0 will default to no threashold",
             "nullable": true
           },
           "search_type": {
@@ -10999,11 +11122,11 @@
           "distance_factor": {
             "type": "number",
             "format": "float",
-            "description": "Amount to multiplicatevly increase the frequency of the tokens in the phrase by"
+            "description": "Arbitrary float (positive or negative) specifying the multiplicate factor to apply before summing the phrase vector with the chunk_html embedding vector"
           },
           "phrase": {
             "type": "string",
-            "description": "The phrase to boost in the fulltext document frequency index"
+            "description": "Terms to embed in order to create the vector which is weighted summed with the chunk_html embedding vector"
           }
         }
       },
@@ -11616,6 +11739,22 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "TagsWithCount": {
+        "type": "object",
+        "required": [
+          "tag",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tag": {
+            "type": "string"
           }
         }
       },
