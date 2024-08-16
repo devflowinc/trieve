@@ -96,7 +96,7 @@ pub struct ChunkReqPayload {
     pub upsert_by_tracking_id: Option<bool>,
     /// Group ids are the Trieve generated ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these Trieve generated ids must be created first, it cannot be arbitrarily created through this route.
     pub group_ids: Option<Vec<uuid::Uuid>>,
-    /// Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these user-assigned tracking_ids must be created first, it cannot be arbitrarily created through this route.
+    /// Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. If a group with the tracking_id does not exist, it will be created.
     pub group_tracking_ids: Option<Vec<String>>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
     pub time_stamp: Option<String>,
