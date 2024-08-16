@@ -141,7 +141,7 @@ blake3 = "1.5.1"
 actix-http = "3.7.0"
 clickhouse = { version = "0.12.0", features = ["time", "uuid"] }
 prometheus = "0.13.4"
-chm = "0.1.8"
+chm = "0.1.9"
 murmur3 = "0.5.2"
 tantivy = "0.22.0"
 
