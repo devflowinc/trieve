@@ -3,36 +3,24 @@
   "ui": "tui",
   "tasks": {
     "build": {
-      "outputs": [
-        "dist/**"
-      ],
-      "dependsOn": [
-        "^build"
-      ]
+      "outputs": ["dist/**"],
+      "dependsOn": ["^build"]
     },
     "lint": {
       "cache": false,
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "lint:CI": {
       "cache": false,
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "dev": {
       "persistent": true,
       "cache": false,
-      "dependsOn": [
-        "trieve-fetch-client#build"
-      ]
+      "dependsOn": ["trieve-ts-sdk#build"]
     },
-    "trieve-fetch-client#build": {
-      "outputs": [
-        "dist"
-      ]
+    "trieve-ts-sdk#build": {
+      "outputs": ["dist"]
     }
   }
 }

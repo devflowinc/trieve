@@ -3372,7 +3372,7 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/analytics/recommendation': {
+    '/api/analytics/recommendations': {
         post: {
             req: GetRecommendationAnalyticsData;
             res: {

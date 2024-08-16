@@ -21,7 +21,7 @@
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",
     "terracotta": "^1.0.3",
-    "trieve-fetch-client": "*",
+    "trieve-ts-sdk": "*",
     "vite-plugin-runtime-env": "^0.1.1"
   },
   "devDependencies": {
