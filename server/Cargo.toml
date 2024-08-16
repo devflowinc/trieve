@@ -92,7 +92,7 @@ async-stream = "0.3.5"
 actix = "0.13.0"
 futures = "0.3.28"
 crossbeam-channel = "0.5.8"
-qdrant-client = "1.10.1"
+qdrant-client = "1.11.1"
 rust-s3 = { version = "0.34.0" }
 base64 = "0.22.0"
 glob = "0.3.1"

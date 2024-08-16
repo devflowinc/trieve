@@ -23,9 +23,9 @@ use crate::{
             remove_bookmark_from_qdrant_query,
         },
         search_operator::{
-            full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
-            search_groups_query, search_hybrid_groups, semantic_search_over_groups,
-            GroupScoreChunk, SearchOverGroupsQueryResult, SearchOverGroupsResults,
+            get_metadata_from_groups, hybrid_search_over_groups, search_groups_query,
+            search_hybrid_groups, search_over_groups_query, GroupScoreChunk,
+            SearchOverGroupsQueryResult, SearchOverGroupsResults,
         },
     },
 };
@@ -1629,10 +1629,12 @@ pub struct SearchOverGroupsReqPayload {
     pub filters: Option<ChunkFilter>,
     /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub highlight_options: Option<HighlightOptions>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
     /// Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.
-    pub group_size: Option<u32>,
+    pub group_size: Option<u64>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
@@ -1701,24 +1703,6 @@ pub async fn search_over_groups(
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type {
-        SearchMethod::FullText => {
-            if !dataset_config.FULLTEXT_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Fulltext search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-
-            full_text_search_over_groups(
-                data.clone(),
-                parsed_query,
-                pool,
-                dataset_org_plan_sub.dataset.clone(),
-                &dataset_config,
-                &mut timer,
-            )
-            .await?
-        }
         SearchMethod::Hybrid => {
             hybrid_search_over_groups(
                 data.clone(),
@@ -1731,13 +1715,7 @@ pub async fn search_over_groups(
             .await?
         }
         _ => {
-            if !dataset_config.SEMANTIC_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Semantic search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-            semantic_search_over_groups(
+            search_over_groups_query(
                 data.clone(),
                 parsed_query,
                 pool,

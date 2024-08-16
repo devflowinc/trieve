@@ -12,17 +12,18 @@ use crate::{
     handlers::chunk_handler::ChunkFilter,
 };
 use actix_web::web;
+use futures::future::try_join_all;
 use itertools::Itertools;
 use qdrant_client::{
     qdrant::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
         quantization_config::Quantization, query, BinaryQuantization, CreateCollectionBuilder,
         CreateFieldIndexCollectionBuilder, DeleteFieldIndexCollectionBuilder, DeletePointsBuilder,
-        Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, OrderBy, PayloadIndexParams,
-        PointId, PointStruct, PrefetchQuery, QuantizationConfig, Query, QueryBatchPoints,
+        Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, OrderBy, PointId,
+        PointStruct, PrefetchQuery, QuantizationConfig, Query, QueryBatchPoints, QueryPointGroups,
         QueryPoints, RecommendPointGroups, RecommendPoints, RecommendStrategy, ScrollPointsBuilder,
-        SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints, SetPayloadPointsBuilder,
-        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType,
+        SearchBatchPoints, SearchParams, SearchPoints, SetPayloadPointsBuilder, SparseIndexConfig,
+        SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType,
         UpsertPointsBuilder, Value, Vector, VectorInput, VectorParams, VectorParamsMap,
         VectorsConfig, WithPayloadSelector, WithVectorsSelector,
     },
@@ -343,14 +344,14 @@ pub async fn create_new_qdrant_collection_query(
                     "content",
                     FieldType::Text,
                 )
-                .field_index_params(PayloadIndexParams {
-                    index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
+                .field_index_params(IndexParams::TextIndexParams(
+                    TextIndexParams {
                         tokenizer: TokenizerType::Prefix as i32,
                         min_token_len: Some(2),
                         max_token_len: Some(10),
                         lowercase: Some(true),
-                    })),
-                }),
+                    },
+                )),
             )
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
@@ -774,20 +775,29 @@ pub struct QdrantSearchQuery {
     pub rerank_by: Box<Option<QdrantSearchQuery>>,
     pub sort_by: Option<SortByField>,
     pub vector: VectorType,
+    pub group_size: Option<u64>,
 }
 
 #[tracing::instrument]
 #[allow(clippy::too_many_arguments)]
-pub async fn search_over_groups_query(
+pub async fn search_over_groups_qdrant_query(
     page: u64,
-    filter: Filter,
-    limit: u64,
-    score_threshold: Option<f32>,
-    group_size: u32,
-    vector: VectorType,
+    queries: Vec<QdrantSearchQuery>,
     dataset_config: DatasetConfiguration,
     get_total_pages: bool,
 ) -> Result<(Vec<GroupSearchResults>, u64), ServiceError> {
+    if queries.is_empty() || queries.iter().all(|query| query.limit == 0) {
+        return Ok((vec![], 0));
+    }
+
+    let group_size = queries
+        .iter()
+        .map(|query| query.group_size.unwrap_or(1))
+        .max()
+        .unwrap_or(3);
+
+    let limit = queries.iter().map(|query| query.limit).max().unwrap_or(10);
+
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
@@ -796,127 +806,113 @@ pub async fn search_over_groups_query(
     )
     .await?;
 
-    let vector_name = match vector {
-        VectorType::SpladeSparse(_) => "sparse_vectors",
-        VectorType::BM25Sparse(_) => "bm25_vectors",
-        VectorType::Dense(ref embedding_vector) => match embedding_vector.len() {
-            384 => "384_vectors",
-            512 => "512_vectors",
-            768 => "768_vectors",
-            1024 => "1024_vectors",
-            3072 => "3072_vectors",
-            1536 => "1536_vectors",
-            _ => {
-                return Err(ServiceError::BadRequest(
-                    "Invalid embedding vector size".to_string(),
-                ))
-            }
-        },
-    };
+    let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
 
-    let search_point_groups = match vector {
-        VectorType::Dense(ref embedding_vector) => SearchPointGroups {
-            collection_name: qdrant_collection.to_string(),
-            vector: embedding_vector.clone(),
-            vector_name: Some(vector_name.to_string()),
-            limit: (limit * page) as u32,
-            score_threshold,
-            with_payload: Some(WithPayloadSelector::from(false)),
-            with_vectors: Some(WithVectorsSelector::from(false)),
-            filter: Some(filter.clone()),
-            group_by: "group_ids".to_string(),
-            group_size: if group_size == 0 { 1 } else { group_size },
-            timeout: Some(60),
-            params: Some(SearchParams {
-                exact: Some(false),
-                indexed_only: Some(dataset_config.INDEXED_ONLY),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        VectorType::SpladeSparse(ref sparse_vector) | VectorType::BM25Sparse(ref sparse_vector) => {
-            let sparse_vector: Vector = sparse_vector.clone().into();
-            SearchPointGroups {
+    let count_future = count_qdrant_query(count_limit, queries.clone(), dataset_config.clone());
+
+    let search_point_req_payloads: Vec<QueryPointGroups> = queries
+        .into_iter()
+        .map(|query| {
+            let (mut prefetch, (vector_name, qdrant_query)) =
+                get_prefetch_query(query.clone(), dataset_config.clone());
+
+            let offset = query.limit * page.saturating_sub(1);
+
+            if let Some(prefetch) = prefetch.get_mut(0) {
+                let new_page = if offset / prefetch.limit.unwrap_or(1) > 0 {
+                    (offset / prefetch.limit.unwrap_or(1)) + 1
+                } else {
+                    1
+                };
+
+                prefetch.limit = Some(prefetch.limit.unwrap_or(1) * new_page);
+            }
+
+            let score_threshold = match qdrant_query.variant {
+                Some(query::Variant::OrderBy(_)) => None,
+                _ => query.score_threshold,
+            };
+
+            let group_size = query.group_size.unwrap_or(3);
+
+            QueryPointGroups {
                 collection_name: qdrant_collection.to_string(),
-                vector: sparse_vector.data,
-                sparse_indices: sparse_vector.indices,
-                vector_name: Some(vector_name.to_string()),
-                limit: (limit * page) as u32,
+                limit: Some(query.limit * page),
+                prefetch,
+                using: vector_name,
+                query: Some(qdrant_query),
                 score_threshold,
                 with_payload: Some(WithPayloadSelector::from(false)),
                 with_vectors: Some(WithVectorsSelector::from(false)),
-                filter: Some(filter.clone()),
-                group_by: "group_ids".to_string(),
-                group_size: if group_size == 0 { 1 } else { group_size },
                 timeout: Some(60),
+                filter: Some(query.filter.clone()),
                 params: Some(SearchParams {
                     exact: Some(false),
                     indexed_only: Some(dataset_config.INDEXED_ONLY),
                     ..Default::default()
                 }),
+                group_by: "group_ids".to_string(),
+                group_size: Some(if group_size == 0 { 1 } else { group_size }),
                 ..Default::default()
             }
-        }
-    };
+        })
+        .collect::<Vec<QueryPointGroups>>();
 
-    let point_id_futures = qdrant_client.search_groups(search_point_groups);
+    let search_batch_future = search_point_req_payloads
+        .into_iter()
+        .map(|search_point_req_payload| qdrant_client.query_groups(search_point_req_payload))
+        .collect::<Vec<_>>();
 
-    let qdrant_query = QdrantSearchQuery {
-        filter,
-        score_threshold,
-        rerank_by: Box::new(None),
-        limit,
-        sort_by: None,
-        vector,
-    };
+    let search_batch_futures = try_join_all(search_batch_future);
 
-    let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
+    let (count, search_batch_response) =
+        futures::future::join(count_future, search_batch_futures).await;
 
-    let count_future = count_qdrant_query(count_limit, vec![qdrant_query], dataset_config.clone());
-
-    let (qdrant_search_results, count) =
-        futures::future::join(point_id_futures, count_future).await;
-
-    let point_ids: Vec<GroupSearchResults> = qdrant_search_results
+    let point_ids: Vec<GroupSearchResults> = search_batch_response
         .map_err(|e| {
             log::error!("Failed to search points on Qdrant {:?}", e);
             ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
         })?
-        .result
-        .unwrap()
-        .groups
-        .iter()
-        .filter_map(|point| {
-            let group_id = match &point.id.clone()?.kind? {
-                Kind::StringValue(id) => uuid::Uuid::from_str(id).unwrap_or_default(),
-                _ => {
-                    return None;
-                }
-            };
-
-            let hits: Vec<SearchResult> = point
-                .hits
+        .into_iter()
+        .flat_map(|response| {
+            response
+                .result
+                .unwrap()
+                .groups
                 .iter()
-                .filter_map(|hit| match hit.id.clone()?.point_id_options? {
-                    PointIdOptions::Uuid(id) => Some(SearchResult {
-                        score: hit.score,
-                        point_id: uuid::Uuid::parse_str(&id).ok()?,
-                    }),
-                    PointIdOptions::Num(_) => None,
-                })
-                .collect();
+                .filter_map(|point| {
+                    let group_id = match &point.id.clone()?.kind? {
+                        Kind::StringValue(id) => uuid::Uuid::from_str(id).unwrap_or_default(),
+                        _ => {
+                            return None;
+                        }
+                    };
 
-            if group_size == 0 {
-                Some(GroupSearchResults {
-                    group_id,
-                    hits: vec![],
+                    let hits: Vec<SearchResult> = point
+                        .hits
+                        .iter()
+                        .filter_map(|hit| match hit.id.clone()?.point_id_options? {
+                            PointIdOptions::Uuid(id) => Some(SearchResult {
+                                score: hit.score,
+                                point_id: uuid::Uuid::parse_str(&id).ok()?,
+                            }),
+                            PointIdOptions::Num(_) => None,
+                        })
+                        .collect();
+
+                    if group_size == 0 {
+                        Some(GroupSearchResults {
+                            group_id,
+                            hits: vec![],
+                        })
+                    } else {
+                        Some(GroupSearchResults { group_id, hits })
+                    }
                 })
-            } else {
-                Some(GroupSearchResults { group_id, hits })
-            }
+                .skip((page - 1) as usize * limit as usize)
+                .collect_vec()
         })
-        .skip((page - 1) as usize * limit as usize)
-        .collect();
+        .collect_vec();
 
     Ok((point_ids, count?))
 }

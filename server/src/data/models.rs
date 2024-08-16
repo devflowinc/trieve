@@ -5263,7 +5263,8 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             page_size: Option<u64>,
             get_total_pages: Option<bool>,
             filters: Option<ChunkFilter>,
-            group_size: Option<u32>,
+            sort_options: Option<SortOptions>,
+            group_size: Option<u64>,
             highlight_options: Option<HighlightOptions>,
             score_threshold: Option<f32>,
             slim_chunks: Option<bool>,
@@ -5276,12 +5277,13 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
 
         let mut helper = Helper::deserialize(deserializer)?;
 
-        let (_, extracted_highlight_options) = if !helper.other.is_empty() {
+        let (extracted_sort_options, extracted_highlight_options) = if !helper.other.is_empty() {
             extract_sort_highlight_options(&mut helper.other)
         } else {
             (None, None)
         };
         let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+        let sort_options = helper.sort_options.or(extracted_sort_options);
 
         Ok(SearchOverGroupsReqPayload {
             search_type: helper.search_type,
@@ -5291,6 +5293,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             get_total_pages: helper.get_total_pages,
             filters: helper.filters,
             highlight_options,
+            sort_options,
             group_size: helper.group_size,
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,
