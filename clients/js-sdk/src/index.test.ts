@@ -7,9 +7,11 @@ test("adds 1 + 2 to equal 3", async () => {
     apiKey: "tr-mKHF9sstPHQHcCbh6Qk6Uw54hx7uwDGU",
   });
 
-  const data = await trieve.search({
-    query: "one",
-    datasetId: "c04c43d9-382d-4815-810d-b776904a7390",
-  });
-  expect(data.chunks).toHaveLength(10);
+  const data = await trieve
+    .dataset("c04c43d9-382d-4815-810d-b776904a7390")
+    .search({
+      query: "one",
+    });
+
+  expect(data?.chunks).toHaveLength(10);
 });

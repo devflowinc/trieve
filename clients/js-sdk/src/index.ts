@@ -6,6 +6,7 @@ import {
 
 export class TrieveSDK {
   trieve: Trieve;
+  datasetId: string | null;
   constructor({
     apiKey,
     baseUrl = "https://api.trieve.ai",
@@ -18,26 +19,39 @@ export class TrieveSDK {
       baseUrl: baseUrl,
       debug: false,
     });
+    this.datasetId = null;
+  }
+
+  dataset(datasetId: string) {
+    this.datasetId = datasetId;
+
+    return this;
   }
 
   async search({
-    datasetId,
     search_type = "fulltext",
     query,
   }: {
-    datasetId: string;
     search_type?: CountSearchMethod;
     query: string;
   }) {
-    const searchResult = (await this.trieve.fetch("/api/chunk/search", "post", {
-      xApiVersion: "V2",
-      data: {
-        search_type: search_type,
-        query: query,
-      },
-      datasetId: datasetId,
-    })) as SearchResponseBody;
+    if (!this.datasetId) {
+      console.log("No dataset passed");
+      return;
+    }
+    const searchResults = (await this.trieve.fetch(
+      "/api/chunk/search",
+      "post",
+      {
+        xApiVersion: "V2",
+        data: {
+          search_type: search_type,
+          query: query,
+        },
+        datasetId: this.datasetId,
+      }
+    )) as SearchResponseBody;
 
-    return searchResult;
+    return searchResults;
   }
 }
