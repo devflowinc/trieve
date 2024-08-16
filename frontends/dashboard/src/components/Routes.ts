@@ -3,7 +3,7 @@ export type RouteScope = keyof typeof ApiRoutes;
 export const ApiRoutes = {
   "api/analytics": [
     "POST /api/analytics/rag",
-    "POST /api/analytics/recommendation",
+    "POST /api/analytics/recommendations",
     "POST /api/analytics/search",
     "POST /api/analytics/search/cluster",
   ],
