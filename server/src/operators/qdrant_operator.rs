@@ -1429,6 +1429,10 @@ pub async fn delete_points_from_qdrant(
         .await
         .map_err(|err| {
             log::info!("Failed to delete points from qdrant {:?}", err);
+            sentry::capture_message(
+                &format!("Failed to delete points from qdrant {:?}", err),
+                sentry::Level::Error,
+            );
             ServiceError::BadRequest("Failed to delete points from qdrant".to_string())
         })?;
 
