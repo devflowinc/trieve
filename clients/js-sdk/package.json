@@ -1,0 +1,21 @@
+{
+  "name": "trieve-js-sdk",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "version": "0.11.7",
+  "license": "MIT",
+  "scripts": {
+    "build:clean": "rm -rf dist && yarn build",
+    "build": "node ./scripts/build.js"
+  },
+  "dependencies": {
+    "trieve-fetch-client": "*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0",
+    "esbuild-register": "^3.6.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

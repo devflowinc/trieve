@@ -249,7 +249,7 @@ services:
     image: trieve/search
     build:
       context: ./frontends
-      dockerfile: /search/
+      dockerfile: ./search/Dockerfile
     networks:
       - app-network
     ports:

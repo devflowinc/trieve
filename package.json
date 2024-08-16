@@ -10,7 +10,8 @@
     "frontends/analytics",
     "frontends/shared",
     "frontends/config",
-    "clients/fetch-client"
+    "clients/fetch-client",
+    "clients/js-sdk"
   ],
   "scripts": {
     "dev": "turbo dev",
