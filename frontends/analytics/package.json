@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@nozbe/microfuzz": "^1.0.0",
+    "@sentry/browser": "^7.110.0",
     "@solidjs/router": "^0.13.6",
     "@tanstack/solid-query": "^5.48.0",
     "@tanstack/solid-query-devtools": "^5.48.0",
