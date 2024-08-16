@@ -2184,6 +2184,53 @@ pub async fn create_chunk_metadata(
 
     let mut chunk_metadatas = vec![];
 
+    let mut group_tracking_ids_to_group_ids: HashMap<String, uuid::Uuid> = HashMap::new();
+
+    let all_group_tracking_ids: Vec<String> = chunks
+        .iter()
+        .flat_map(|chunk| chunk.group_tracking_ids.clone().unwrap_or_default())
+        .unique()
+        .collect();
+
+    get_group_ids_from_tracking_ids_query(
+        all_group_tracking_ids.clone(),
+        dataset_uuid,
+        pool.clone(),
+    )
+    .await?
+    .iter()
+    .for_each(|(group_id, tracking_id)| {
+        if let Some(tracking_id) = tracking_id {
+            group_tracking_ids_to_group_ids.insert(tracking_id.clone(), *group_id);
+        }
+    });
+
+    let new_groups: Vec<ChunkGroup> = all_group_tracking_ids
+        .iter()
+        .filter_map(|group_tracking_id| {
+            if !group_tracking_ids_to_group_ids.contains_key(group_tracking_id) {
+                Some(ChunkGroup::from_details(
+                    Some(group_tracking_id.clone()),
+                    None,
+                    dataset_uuid,
+                    Some(group_tracking_id.to_string()),
+                    None,
+                    None,
+                ))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let created_groups = create_groups_query(new_groups, true, pool.clone()).await?;
+
+    created_groups.iter().for_each(|group| {
+        if let Some(tracking_id) = &group.tracking_id {
+            group_tracking_ids_to_group_ids.insert(tracking_id.clone(), group.id);
+        }
+    });
+
     for chunk in chunks {
         let chunk_tag_set = chunk
             .tag_set
@@ -2246,50 +2293,13 @@ pub async fn create_chunk_metadata(
             }
         }
 
-        let group_ids_from_group_tracking_ids =
+        let group_ids_from_group_tracking_ids: Vec<uuid::Uuid> =
             if let Some(group_tracking_ids) = chunk.group_tracking_ids.clone() {
-                let group_id_tracking_ids = get_group_ids_from_tracking_ids_query(
-                    group_tracking_ids.clone(),
-                    dataset_uuid,
-                    pool.clone(),
-                )
-                .await?;
-
-                let mut group_ids = group_id_tracking_ids
-                    .clone()
-                    .into_iter()
-                    .map(|(group_id, _)| group_id)
-                    .collect::<Vec<uuid::Uuid>>();
-                let found_group_tracking_ids = group_id_tracking_ids
-                    .into_iter()
-                    .filter_map(|(_, group_tracking_id)| group_tracking_id)
-                    .collect::<Vec<String>>();
-
-                let mut new_groups = vec![];
-                for group_tracking_id in group_tracking_ids {
-                    if !found_group_tracking_ids.contains(&group_tracking_id) {
-                        let new_group = ChunkGroup::from_details(
-                            Some(group_tracking_id.clone()),
-                            None,
-                            dataset_uuid,
-                            Some(group_tracking_id),
-                            None,
-                            None,
-                        );
-
-                        new_groups.push(new_group);
-                    }
-                }
-                let created_groups = create_groups_query(new_groups, false, pool.clone()).await?;
-
-                group_ids.extend(
-                    created_groups
-                        .into_iter()
-                        .map(|group| group.id)
-                        .collect::<Vec<uuid::Uuid>>(),
-                );
-
-                group_ids
+                group_tracking_ids
+                    .iter()
+                    .filter_map(|tracking_id| group_tracking_ids_to_group_ids.get(tracking_id))
+                    .copied()
+                    .collect()
             } else {
                 vec![]
             };
