@@ -69,7 +69,7 @@ function camelcaseToSnakeCase(str: string) {
 // Convert camelcase to snake case and replace
 function replacePathParams(
   path: string,
-  params: Record<string, string>,
+  params: Record<string, string>
 ): string {
   for (const [key, value] of Object.entries(params)) {
     path = path.replace(`{${camelcaseToSnakeCase(key)}}`, value);
@@ -87,7 +87,7 @@ interface TrieveOpts {
   debug?: boolean;
 }
 
-export class Trieve {
+export class TrieveFetchClient {
   private apiKey?: string;
   private baseUrl: string;
   private debug: boolean = false;
@@ -109,7 +109,7 @@ export class Trieve {
   >(
     path: P,
     method: EJECT extends false ? M : HttpMethod,
-    params?: EJECT extends false ? RequestParams<P, M> : URQ,
+    params?: EJECT extends false ? RequestParams<P, M> : URQ
   ): Promise<EJECT extends false ? ResponseBody<P, M> : URE> {
     let requestBody: unknown;
 

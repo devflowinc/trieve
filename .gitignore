@@ -79,6 +79,8 @@ embedding-server/data/*
 */dist/**
 */.vite
 data/*
+clients/ts-sdk/dist/**
+
 
 server/src/trieve_protobufs/*
 server/proto/*
