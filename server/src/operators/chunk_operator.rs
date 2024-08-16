@@ -1,7 +1,7 @@
 use crate::data::models::{
-    ChunkData, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes,
-    ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags, IngestSpecificChunkMetadata,
-    SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
+    ChunkData, ChunkGroup, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags,
+    ChunkMetadataTypes, ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags,
+    IngestSpecificChunkMetadata, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::handlers::chunk_handler::UploadIngestionMessage;
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
@@ -30,6 +30,8 @@ use serde::{Deserialize, Serialize};
 use simsearch::{SearchOptions, SimSearch};
 use std::collections::{HashMap, HashSet};
 use utoipa::ToSchema;
+
+use super::group_operator::create_groups_query;
 
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_metadatas_from_point_ids(
@@ -2253,7 +2255,7 @@ pub async fn create_chunk_metadata(
                 )
                 .await?;
 
-                let group_ids = group_id_tracking_ids
+                let mut group_ids = group_id_tracking_ids
                     .clone()
                     .into_iter()
                     .map(|(group_id, _)| group_id)
@@ -2263,14 +2265,29 @@ pub async fn create_chunk_metadata(
                     .filter_map(|(_, group_tracking_id)| group_tracking_id)
                     .collect::<Vec<String>>();
 
+                let mut new_groups = vec![];
                 for group_tracking_id in group_tracking_ids {
                     if !found_group_tracking_ids.contains(&group_tracking_id) {
-                        return Err(ServiceError::BadRequest(format!(
-                            "Group with tracking id {} does not exist",
-                            group_tracking_id
-                        )));
+                        let new_group = ChunkGroup::from_details(
+                            Some(group_tracking_id.clone()),
+                            None,
+                            dataset_uuid,
+                            Some(group_tracking_id),
+                            None,
+                            None,
+                        );
+
+                        new_groups.push(new_group);
                     }
                 }
+                let created_groups = create_groups_query(new_groups, false, pool.clone()).await?;
+
+                group_ids.extend(
+                    created_groups
+                        .into_iter()
+                        .map(|group| group.id)
+                        .collect::<Vec<uuid::Uuid>>(),
+                );
 
                 group_ids
             } else {
