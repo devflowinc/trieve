@@ -4,7 +4,6 @@ import { EXAMPLE_DATASET_ID, trieve } from "./trieve";
 const main = async () => {
   const file = fs.readFileSync("./src/uploadme.pdf");
 
-  console.log(file.toString("base64"));
   const fileEncoded = file
     .toString("base64")
     .replace(/\+/g, "-") // Convert '+' to '-'
