@@ -302,7 +302,7 @@ export const availableEmbeddingModels = [
 export const availableDistanceMetrics = [
   {
     id: "cosine",
-    name: "Cosine Simularity",
+    name: "Cosine Similarity",
   },
   {
     id: "euclidean",
