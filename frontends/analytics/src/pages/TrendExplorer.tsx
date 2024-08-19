@@ -6,6 +6,7 @@ import { SearchClusterTopics, SearchQueryEvent } from "shared/types";
 import { toTitleCase } from "../utils/titleCase";
 import { FullScreenModal, Table, Tr } from "shared/ui";
 import { parseCustomDateString } from "../utils/formatDate";
+import { QueryStringDisplay } from "../components/QueryStringDisplay";
 
 const WIPWarning = () => {
   return (
@@ -101,7 +102,13 @@ const TopicRow = (props: TopicRowProps) => {
         <div>Searches</div>
         <Show when={selectedTopicQuery.data}>
           {(searches) => (
-            <For each={searches()}>{(search) => <div>{search.query}</div>}</For>
+            <For each={searches()}>
+              {(search) => (
+                <div>
+                  <QueryStringDisplay>{search.query}</QueryStringDisplay>
+                </div>
+              )}
+            </For>
           )}
         </Show>
       </FullScreenModal>

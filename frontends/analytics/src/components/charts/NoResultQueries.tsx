@@ -8,6 +8,7 @@ import { FullScreenModal, Table, Td, Th, Tr } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { getNoResultQueries } from "../../api/analytics";
 import { BiRegularExpand } from "solid-icons/bi";
+import { QueryStringDisplay } from "../QueryStringDisplay";
 
 interface NoResultQueriesProps {
   params: {
@@ -123,7 +124,9 @@ const QueryCard = (props: QueryCardProps) => {
         }}
         class="cursor-pointer odd:bg-white even:bg-neutral-100 hover:underline hover:odd:bg-neutral-100/80 hover:even:bg-neutral-200/80"
       >
-        <Td class="truncate">{props.query.query}</Td>
+        <Td class="truncate">
+          <QueryStringDisplay>{props.query.query}</QueryStringDisplay>
+        </Td>
         <Td class="w-4 truncate text-right">
           <span class="hover:text-fuchsia-500">
             <BiRegularExpand />

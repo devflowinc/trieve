@@ -21,6 +21,7 @@ import { PaginationButtons } from "../../components/PaginationButtons";
 import { parseCustomDateString } from "../../utils/formatDate";
 import { AiFillCaretDown } from "solid-icons/ai";
 import { useBetterNav } from "../../utils/useBetterNav";
+import { QueryStringDisplay } from "../../components/QueryStringDisplay";
 
 export const SearchTablePage = () => {
   const queryClient = useQueryClient();
@@ -200,7 +201,9 @@ const SearchRow = (props: SearchRowProps) => {
         navigate(`/query/${props.event.id}`);
       }}
     >
-      <Td class="truncate">{props.event.query}</Td>
+      <Td class="truncate">
+        <QueryStringDisplay>{props.event.query}</QueryStringDisplay>
+      </Td>
       <Td>
         {format(parseCustomDateString(props.event.created_at), "M/d/yy h:mm a")}
       </Td>

@@ -12,9 +12,10 @@ import { PaginationButtons } from "../PaginationButtons";
 import { FullScreenModal, Table, Td, Th, Tr } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { IoOpenOutline } from "solid-icons/io";
-import { OrgContext } from "../../contexts/OrgContext";
 import { ChartCard } from "./ChartCard";
 import { BiRegularExpand } from "solid-icons/bi";
+import { useBetterNav } from "../../utils/useBetterNav";
+import { QueryStringDisplay } from "../QueryStringDisplay";
 
 interface LowConfidenceQueriesProps {
   params: AnalyticsParams;
@@ -143,22 +144,7 @@ export interface QueryCardProps {
 }
 export const QueryCard = (props: QueryCardProps) => {
   const [open, setOpen] = createSignal(false);
-
-  const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
-
-  const dataset = useContext(DatasetContext);
-  const organization = useContext(OrgContext);
-
-  const openSearchPlayground = (query: string) => {
-    const orgId = organization.selectedOrg().id;
-    const datasetId = dataset().dataset?.id;
-    let params = orgId ? `?organization=${orgId}` : "";
-    if (datasetId) params += `&dataset=${datasetId}`;
-    if (query) params += `&query=${query}`;
-    if (props.filters?.search_method)
-      params += `&searchType=${props.filters.search_method}`;
-    return params;
-  };
+  const navigate = useBetterNav();
 
   return (
     <>
@@ -171,7 +157,9 @@ export const QueryCard = (props: QueryCardProps) => {
         }}
         class="cursor-pointer odd:bg-white even:bg-neutral-100 hover:underline hover:odd:bg-neutral-100/80 hover:even:bg-neutral-200/80"
       >
-        <Td class="truncate">{props.query.query}</Td>
+        <Td class="truncate">
+          <QueryStringDisplay>{props.query.query}</QueryStringDisplay>
+        </Td>
         <Td class="truncate text-right">{props.query.top_score.toFixed(5)}</Td>
         <Td>
           <span class="hover:text-fuchsia-500">
@@ -184,14 +172,15 @@ export const QueryCard = (props: QueryCardProps) => {
         show={open}
         setShow={setOpen}
         icon={
-          <a
+          <button
             type="button"
             class="hover:text-fuchsia-500"
-            href={`${searchUiURL}${openSearchPlayground(props.query.query)}`}
-            target="_blank"
+            onClick={() => {
+              navigate("/query/" + props.query.id);
+            }}
           >
             <IoOpenOutline />
-          </a>
+          </button>
         }
       >
         <SearchQueryEventModal searchEvent={props.query} />
