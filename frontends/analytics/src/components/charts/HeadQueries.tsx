@@ -6,6 +6,7 @@ import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationButtons } from "../PaginationButtons";
 import { Table, Td, Th, Tr } from "shared/ui";
+import { QueryStringDisplay } from "../QueryStringDisplay";
 
 interface HeadQueriesProps {
   params: { filter: AnalyticsFilter };
@@ -31,7 +32,10 @@ export const HeadQueries = (props: HeadQueriesProps) => {
     const datasetId = dataset().dataset.id;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
-      queryKey: ["head-queries", { filter: params.filter, page: curPage + 1 }],
+      queryKey: [
+        "head-queries",
+        { filter: params.filter, page: curPage + 1, dataset: datasetId },
+      ],
       queryFn: async () => {
         const results = await getHeadQueries(
           params.filter,
@@ -78,7 +82,9 @@ export const HeadQueries = (props: HeadQueriesProps) => {
           >
             {(row) => (
               <Tr>
-                <Td>{row.query}</Td>
+                <Td>
+                  <QueryStringDisplay>{row.query}</QueryStringDisplay>
+                </Td>
                 <Td class="text-right">{row.count}</Td>
               </Tr>
             )}

@@ -9,6 +9,7 @@ import { OrgContext } from "../contexts/OrgContext";
 import { DatasetAndUsage, SearchQueryEvent } from "shared/types";
 import { z } from "zod";
 import { VsJson } from "solid-icons/vs";
+import { QueryStringDisplay } from "./QueryStringDisplay";
 
 interface SingleQueryProps {
   queryId: string;
@@ -40,7 +41,11 @@ export const SingleQuery = (props: SingleQueryProps) => {
 
     return (
       <div>
-        <div class="text-xl">"{props.data.query}"</div>
+        <div class="text-xl">
+          <QueryStringDisplay size="large">
+            {props.data.query}
+          </QueryStringDisplay>
+        </div>
         <div class="opacity-80">
           Searched on{" "}
           {format(
