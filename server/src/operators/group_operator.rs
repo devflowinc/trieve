@@ -36,14 +36,16 @@ pub async fn get_group_from_tracking_id_query(
                 .on(chunk_group_columns::id.eq(groups_from_files_columns::group_id)),
         )
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
-        .filter(chunk_group_columns::tracking_id.eq(tracking_id))
+        .filter(chunk_group_columns::tracking_id.eq(&tracking_id))
         .select((
             ChunkGroup::as_select(),
             groups_from_files_columns::file_id.nullable(),
         ))
         .first::<(ChunkGroup, Option<uuid::Uuid>)>(&mut conn)
         .await
-        .map_err(|_| ServiceError::NotFound("Group with tracking_id not found".to_string()))?;
+        .map_err(|_| {
+            ServiceError::NotFound(format!("Group with tracking_id {:} not found", tracking_id))
+        })?;
 
     Ok(ChunkGroupAndFileId::from_group(group, file_id))
 }
@@ -413,11 +415,14 @@ pub async fn get_bookmarks_for_group_query(
 
     let group_uuid = match group_id {
         UnifiedId::TrackingId(id) => chunk_group_columns::chunk_group
-            .filter(chunk_group_columns::tracking_id.eq(id))
+            .filter(chunk_group_columns::tracking_id.eq(&id))
+            .filter(chunk_group_columns::dataset_id.eq(&dataset_uuid))
             .select(chunk_group_columns::id)
             .first::<uuid::Uuid>(&mut conn)
             .await
-            .map_err(|_| ServiceError::NotFound("Group with id not found".to_string()))?,
+            .map_err(|_| {
+                ServiceError::NotFound(format!("Group with tracking id not found {:}", id))
+            })?,
         UnifiedId::TrieveUuid(id) => id,
     };
 
