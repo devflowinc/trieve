@@ -6,11 +6,11 @@ export type AddChunkToGroupReqPayload = {
     /**
      * Id of the chunk to make a member of the group.
      */
-    chunk_id?: string | null;
+    chunk_id?: (string) | null;
     /**
      * Tracking Id of the chunk to make a member of the group.
      */
-    chunk_tracking_id?: string | null;
+    chunk_tracking_id?: (string) | null;
 };
 
 export type ApiKeyRespBody = {
@@ -28,32 +28,32 @@ export type AuthQuery = {
     /**
      * Code sent via email as a result of successful call to send_invitation
      */
-    inv_code?: string | null;
+    inv_code?: (string) | null;
     /**
      * ID of organization to authenticate into
      */
-    organization_id?: string | null;
+    organization_id?: (string) | null;
     /**
      * URL to redirect to after successful login
      */
-    redirect_uri?: string | null;
+    redirect_uri?: (string) | null;
 };
 
 export type AutocompleteReqPayload = {
     /**
      * Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
      */
-    content_only?: boolean | null;
+    content_only?: (boolean) | null;
     /**
      * If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.
      */
-    extend_results?: boolean | null;
-    filters?: (ChunkFilter) | null;
-    highlight_options?: (HighlightOptions) | null;
+    extend_results?: (boolean) | null;
+    filters?: ((ChunkFilter) | null);
+    highlight_options?: ((HighlightOptions) | null);
     /**
      * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
     /**
      * Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
      */
@@ -61,21 +61,21 @@ export type AutocompleteReqPayload = {
     /**
      * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
      */
-    remove_stop_words?: boolean | null;
+    remove_stop_words?: (boolean) | null;
     /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
-    score_threshold?: number | null;
+    score_threshold?: (number) | null;
     search_type: SearchMethod;
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
      */
-    slim_chunks?: boolean | null;
-    sort_options?: (SortOptions) | null;
+    slim_chunks?: (boolean) | null;
+    sort_options?: ((SortOptions) | null);
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
-    use_quote_negated_terms?: boolean | null;
+    use_quote_negated_terms?: (boolean) | null;
 };
 
 export type BatchQueuedChunkResponse = {
@@ -87,26 +87,26 @@ export type BatchQueuedChunkResponse = {
 };
 
 export type CTRAnalytics = {
-    filter?: (SearchAnalyticsFilter) | null;
+    filter?: ((SearchAnalyticsFilter) | null);
     type: 'search_ctr_metrics';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
-    page?: number | null;
+    filter?: ((SearchAnalyticsFilter) | null);
+    page?: (number) | null;
     type: 'searches_with_clicks';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
-    page?: number | null;
+    filter?: ((SearchAnalyticsFilter) | null);
+    page?: (number) | null;
     type: 'searches_without_clicks';
 } | {
-    filter?: (RecommendationAnalyticsFilter) | null;
+    filter?: ((RecommendationAnalyticsFilter) | null);
     type: 'recommendation_ctr_metrics';
 } | {
-    filter?: (RecommendationAnalyticsFilter) | null;
-    page?: number | null;
+    filter?: ((RecommendationAnalyticsFilter) | null);
+    page?: (number) | null;
     type: 'recommendations_with_clicks';
 } | {
-    filter?: (RecommendationAnalyticsFilter) | null;
-    page?: number | null;
+    filter?: ((RecommendationAnalyticsFilter) | null);
+    page?: (number) | null;
     type: 'recommendations_without_clicks';
 };
 
@@ -118,11 +118,11 @@ export type CTRDataRequestBody = {
     /**
      * The ID of chunk that was clicked
      */
-    clicked_chunk_id?: string | null;
+    clicked_chunk_id?: (string) | null;
     /**
      * The tracking ID of the chunk that was clicked
      */
-    clicked_chunk_tracking_id?: string | null;
+    clicked_chunk_tracking_id?: (string) | null;
     ctr_type: CTRType;
     /**
      * Any metadata you want to include with the event i.e. action, user_id, etc.
@@ -168,7 +168,7 @@ export type ChunkFilter = {
     /**
      * JOSNB prefilter tells the server to perform a full scan over the metadata JSONB column instead of using the filtered HNSW. Datasets on the enterprise plan with custom metadata indices will perform better with the filtered HNSW instead. When false, the server will use the filtered HNSW index to filter chunks. When true, the server will perform a full scan over the metadata JSONB column to filter chunks. Default is true.
      */
-    jsonb_prefilter?: boolean | null;
+    jsonb_prefilter?: (boolean) | null;
     /**
      * All of these field conditions have to match for the chunk to be included in the result set.
      */
@@ -190,8 +190,8 @@ export type ChunkGroup = {
     id: string;
     metadata?: unknown;
     name: string;
-    tag_set?: Array<(string | null)> | null;
-    tracking_id?: string | null;
+    tag_set?: Array<((string) | null)> | null;
+    tracking_id?: (string) | null;
     updated_at: string;
 };
 
@@ -199,47 +199,47 @@ export type ChunkGroupAndFileId = {
     created_at: string;
     dataset_id: string;
     description: string;
-    file_id?: string | null;
+    file_id?: (string) | null;
     id: string;
     metadata?: unknown;
     name: string;
-    tag_set?: Array<(string | null)> | null;
-    tracking_id?: string | null;
+    tag_set?: Array<((string) | null)> | null;
+    tracking_id?: (string) | null;
     updated_at: string;
 };
 
 export type ChunkGroups = Array<ChunkGroup>;
 
 export type ChunkMetadata = {
-    chunk_html?: string | null;
+    chunk_html?: (string) | null;
     created_at: string;
     dataset_id: string;
     id: string;
-    image_urls?: Array<(string | null)> | null;
-    link?: string | null;
-    location?: (GeoInfo) | null;
+    image_urls?: Array<((string) | null)> | null;
+    link?: (string) | null;
+    location?: ((GeoInfo) | null);
     metadata?: unknown;
-    num_value?: number | null;
-    tag_set?: Array<(string | null)> | null;
-    time_stamp?: string | null;
-    tracking_id?: string | null;
+    num_value?: (number) | null;
+    tag_set?: Array<((string) | null)> | null;
+    time_stamp?: (string) | null;
+    tracking_id?: (string) | null;
     updated_at: string;
     weight: number;
 };
 
 export type ChunkMetadataStringTagSet = {
-    chunk_html?: string | null;
+    chunk_html?: (string) | null;
     created_at: string;
     dataset_id: string;
     id: string;
-    image_urls?: Array<(string | null)> | null;
-    link?: string | null;
-    location?: (GeoInfo) | null;
+    image_urls?: Array<((string) | null)> | null;
+    link?: (string) | null;
+    location?: ((GeoInfo) | null);
     metadata?: unknown;
-    num_value?: number | null;
-    tag_set?: string | null;
-    time_stamp?: string | null;
-    tracking_id?: string | null;
+    num_value?: (number) | null;
+    tag_set?: (string) | null;
+    time_stamp?: (string) | null;
+    tracking_id?: (string) | null;
     updated_at: string;
     weight: number;
 };
@@ -247,16 +247,16 @@ export type ChunkMetadataStringTagSet = {
 export type ChunkMetadataTypes = SlimChunkMetadata | ChunkMetadataStringTagSet | ContentChunkMetadata;
 
 export type ChunkMetadataWithScore = {
-    chunk_html?: string | null;
+    chunk_html?: (string) | null;
     created_at: string;
     dataset_id: string;
     id: string;
-    link?: string | null;
+    link?: (string) | null;
     metadata?: unknown;
     score: number;
-    tag_set?: string | null;
-    time_stamp?: string | null;
-    tracking_id?: string | null;
+    tag_set?: (string) | null;
+    time_stamp?: (string) | null;
+    tracking_id?: (string) | null;
     updated_at: string;
     weight: number;
 };
@@ -265,12 +265,12 @@ export type ChunkReqPayload = {
     /**
      * HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
      */
-    chunk_html?: string | null;
+    chunk_html?: (string) | null;
     /**
      * Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
      */
-    convert_html_to_text?: boolean | null;
-    fulltext_boost?: (FullTextBoost) | null;
+    convert_html_to_text?: (boolean) | null;
+    fulltext_boost?: ((FullTextBoost) | null);
     /**
      * Group ids are the Trieve generated ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these Trieve generated ids must be created first, it cannot be arbitrarily created through this route.
      */
@@ -286,8 +286,8 @@ export type ChunkReqPayload = {
     /**
      * Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.
      */
-    link?: string | null;
-    location?: (GeoInfo) | null;
+    link?: (string) | null;
+    location?: ((GeoInfo) | null);
     /**
      * Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
      */
@@ -295,16 +295,16 @@ export type ChunkReqPayload = {
     /**
      * Num value is an arbitrary numerical value that can be used to filter chunks. This is useful for when you want to filter chunks by numerical value. There is no performance hit for filtering on num_value.
      */
-    num_value?: number | null;
-    semantic_boost?: (SemanticBoost) | null;
+    num_value?: (number) | null;
+    semantic_boost?: ((SemanticBoost) | null);
     /**
      * If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and always used for fulltext functionality.
      */
-    semantic_content?: string | null;
+    semantic_content?: (string) | null;
     /**
      * Split avg is a boolean which tells the server to split the text in the chunk_html into smaller chunks and average their resulting vectors. This is useful for when you want to create a chunk from a large piece of text and want to split it into smaller chunks to create a more fuzzy average dense vector. The sparse vector will be generated normally with no averaging. By default this is false.
      */
-    split_avg?: boolean | null;
+    split_avg?: (boolean) | null;
     /**
      * Tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
      */
@@ -312,36 +312,36 @@ export type ChunkReqPayload = {
     /**
      * Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
      */
-    time_stamp?: string | null;
+    time_stamp?: (string) | null;
     /**
      * Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
      */
-    tracking_id?: string | null;
+    tracking_id?: (string) | null;
     /**
      * Upsert when a chunk with the same tracking_id exists. By default this is false, and the request will fail if a chunk with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.
      */
-    upsert_by_tracking_id?: boolean | null;
+    upsert_by_tracking_id?: (boolean) | null;
     /**
      * Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
      */
-    weight?: number | null;
+    weight?: (number) | null;
 };
 
 export type ChunkReturnTypes = ChunkMetadata | ChunkMetadataStringTagSet;
 
 export type ClusterAnalytics = {
-    filter?: (ClusterAnalyticsFilter) | null;
+    filter?: ((ClusterAnalyticsFilter) | null);
     type: 'cluster_topics';
 } | {
     cluster_id: string;
-    page?: number | null;
+    page?: (number) | null;
     type: 'cluster_queries';
 };
 
 export type type2 = 'cluster_topics';
 
 export type ClusterAnalyticsFilter = {
-    date_range?: (DateRange) | null;
+    date_range?: ((DateRange) | null);
 };
 
 export type ClusterAnalyticsResponse = SearchClusterResponse | SearchQueryResponse;
@@ -349,12 +349,12 @@ export type ClusterAnalyticsResponse = SearchClusterResponse | SearchQueryRespon
 export type ConditionType = FieldCondition | HasIDCondition;
 
 export type ContentChunkMetadata = {
-    chunk_html?: string | null;
+    chunk_html?: (string) | null;
     id: string;
-    image_urls?: Array<(string | null)> | null;
-    num_value?: number | null;
-    time_stamp?: string | null;
-    tracking_id?: string | null;
+    image_urls?: Array<((string) | null)> | null;
+    num_value?: (number) | null;
+    time_stamp?: (string) | null;
+    tracking_id?: (string) | null;
     weight: number;
 };
 
@@ -363,21 +363,21 @@ export type CountChunkQueryResponseBody = {
 };
 
 export type CountChunksReqPayload = {
-    filters?: (ChunkFilter) | null;
+    filters?: ((ChunkFilter) | null);
     /**
      * Set limit to restrict the maximum number of chunks to count. This is useful for when you want to reduce the latency of the count operation. By default the limit will be the number of chunks in the dataset.
      */
-    limit?: number | null;
+    limit?: (number) | null;
     query: QueryTypes;
     /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
-    score_threshold?: number | null;
+    score_threshold?: (number) | null;
     search_type: CountSearchMethod;
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
-    use_quote_negated_terms?: boolean | null;
+    use_quote_negated_terms?: (boolean) | null;
 };
 
 export type CountSearchMethod = 'fulltext' | 'semantic' | 'bm25';
@@ -401,21 +401,21 @@ export type CreateDatasetRequest = {
      * Organization ID that the dataset will belong to.
      */
     organization_id: string;
-    server_configuration?: (DatasetConfigurationDTO) | null;
+    server_configuration?: ((DatasetConfigurationDTO) | null);
     /**
      * Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
      */
-    tracking_id?: string | null;
+    tracking_id?: (string) | null;
 };
 
 export type CreateMessageReqPayload = {
     /**
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
      */
-    concat_user_messages_query?: boolean | null;
-    filters?: (ChunkFilter) | null;
-    highlight_options?: (HighlightOptions) | null;
-    llm_options?: (LLMOptions) | null;
+    concat_user_messages_query?: (boolean) | null;
+    filters?: ((ChunkFilter) | null);
+    highlight_options?: ((HighlightOptions) | null);
+    llm_options?: ((LLMOptions) | null);
     /**
      * The content of the user message to attach to the topic and then generate an assistant message in response to.
      */
@@ -423,16 +423,16 @@ export type CreateMessageReqPayload = {
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
     /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
-    score_threshold?: number | null;
+    score_threshold?: (number) | null;
     /**
      * Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
      */
-    search_query?: string | null;
-    search_type?: (SearchMethod) | null;
+    search_query?: (string) | null;
+    search_type?: ((SearchMethod) | null);
     /**
      * The ID of the topic to attach the message to.
      */
@@ -454,7 +454,7 @@ export type CreateSingleChunkGroupReqPayload = {
     /**
      * Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for.
      */
-    description?: string | null;
+    description?: (string) | null;
     /**
      * Optional metadata to assign to the chunk_group. This is a JSON object that can store any additional information you want to associate with the chunks inside of the chunk_group.
      */
@@ -462,7 +462,7 @@ export type CreateSingleChunkGroupReqPayload = {
     /**
      * Name to assign to the chunk_group. Does not need to be unique.
      */
-    name?: string | null;
+    name?: (string) | null;
     /**
      * Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
      */
@@ -470,11 +470,11 @@ export type CreateSingleChunkGroupReqPayload = {
     /**
      * Optional tracking id to assign to the chunk_group. This is a unique identifier for the chunk_group.
      */
-    tracking_id?: string | null;
+    tracking_id?: (string) | null;
     /**
      * Upsert when a chunk_group with the same tracking_id exists. By default this is false, and the request will fail if a chunk_group with the same tracking_id exists. If this is true, the chunk_group will be updated if a chunk_group with the same tracking_id exists.
      */
-    upsert_by_tracking_id?: boolean | null;
+    upsert_by_tracking_id?: (boolean) | null;
 };
 
 export type CreateSingleChunkReqPayload = ChunkReqPayload;
@@ -483,11 +483,11 @@ export type CreateTopicReqPayload = {
     /**
      * The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX if a name is not explicitly provided on the name request body key.
      */
-    first_user_message?: string | null;
+    first_user_message?: (string) | null;
     /**
      * The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
      */
-    name?: string | null;
+    name?: (string) | null;
     /**
      * The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user.
      */
@@ -501,7 +501,7 @@ export type Dataset = {
     name: string;
     organization_id: string;
     server_configuration: unknown;
-    tracking_id?: string | null;
+    tracking_id?: (string) | null;
     updated_at: string;
 };
 
@@ -526,92 +526,92 @@ export type DatasetConfigurationDTO = {
     /**
      * The average length of the chunks in the index for BM25
      */
-    BM25_AVG_LEN?: number | null;
+    BM25_AVG_LEN?: (number) | null;
     /**
      * The BM25 B parameter
      */
-    BM25_B?: number | null;
+    BM25_B?: (number) | null;
     /**
      * Whether to use BM25
      */
-    BM25_ENABLED?: boolean | null;
+    BM25_ENABLED?: (boolean) | null;
     /**
      * The BM25 K parameter
      */
-    BM25_K?: number | null;
-    DISTANCE_METRIC?: (DistanceMetric) | null;
+    BM25_K?: (number) | null;
+    DISTANCE_METRIC?: ((DistanceMetric) | null);
     /**
      * The base URL for the embedding API
      */
-    EMBEDDING_BASE_URL?: string | null;
+    EMBEDDING_BASE_URL?: (string) | null;
     /**
      * The name of the embedding model to use
      */
-    EMBEDDING_MODEL_NAME?: string | null;
+    EMBEDDING_MODEL_NAME?: (string) | null;
     /**
      * The prefix to use for the embedding query
      */
-    EMBEDDING_QUERY_PREFIX?: string | null;
+    EMBEDDING_QUERY_PREFIX?: (string) | null;
     /**
      * The size of the embeddings
      */
-    EMBEDDING_SIZE?: number | null;
+    EMBEDDING_SIZE?: (number) | null;
     /**
      * The frequency penalty to use
      */
-    FREQUENCY_PENALTY?: number | null;
+    FREQUENCY_PENALTY?: (number) | null;
     /**
      * Whether to use fulltext search
      */
-    FULLTEXT_ENABLED?: boolean | null;
+    FULLTEXT_ENABLED?: (boolean) | null;
     /**
      * Whether to only use indexed chunks
      */
-    INDEXED_ONLY?: boolean | null;
+    INDEXED_ONLY?: (boolean) | null;
     /**
      * The base URL for the LLM API
      */
-    LLM_BASE_URL?: string | null;
+    LLM_BASE_URL?: (string) | null;
     /**
      * The default model to use for the LLM
      */
-    LLM_DEFAULT_MODEL?: string | null;
+    LLM_DEFAULT_MODEL?: (string) | null;
     /**
      * Whether the dataset is locked to prevent changes or deletion
      */
-    LOCKED?: boolean | null;
+    LOCKED?: (boolean) | null;
     /**
      * The maximum limit for the number of chunks for counting
      */
-    MAX_LIMIT?: number | null;
+    MAX_LIMIT?: (number) | null;
     /**
      * The maximum number of tokens to use in LLM Response
      */
-    MAX_TOKENS?: number | null;
+    MAX_TOKENS?: (number) | null;
     /**
      * The prompt to use for converting a message to a query
      */
-    MESSAGE_TO_QUERY_PROMPT?: string | null;
+    MESSAGE_TO_QUERY_PROMPT?: (string) | null;
     /**
      * The number of retrievals to include with the RAG model
      */
-    N_RETRIEVALS_TO_INCLUDE?: number | null;
+    N_RETRIEVALS_TO_INCLUDE?: (number) | null;
     /**
      * The presence penalty to use
      */
-    PRESENCE_PENALTY?: number | null;
+    PRESENCE_PENALTY?: (number) | null;
     /**
      * The prompt to use for the RAG model
      */
-    RAG_PROMPT?: string | null;
+    RAG_PROMPT?: (string) | null;
     /**
      * The base URL for the reranker API
      */
-    RERANKER_BASE_URL?: string | null;
+    RERANKER_BASE_URL?: (string) | null;
     /**
      * Whether to use semantic search
      */
-    SEMANTIC_ENABLED?: boolean | null;
+    SEMANTIC_ENABLED?: (boolean) | null;
     /**
      * The stop tokens to use
      */
@@ -619,15 +619,15 @@ export type DatasetConfigurationDTO = {
     /**
      * The system prompt to use for the LLM
      */
-    SYSTEM_PROMPT?: string | null;
+    SYSTEM_PROMPT?: (string) | null;
     /**
      * The temperature to use
      */
-    TEMPERATURE?: number | null;
+    TEMPERATURE?: (number) | null;
     /**
      * Whether to use the message to query prompt
      */
-    USE_MESSAGE_TO_QUERY_PROMPT?: boolean | null;
+    USE_MESSAGE_TO_QUERY_PROMPT?: (boolean) | null;
 };
 
 export type DatasetDTO = {
@@ -635,7 +635,7 @@ export type DatasetDTO = {
     id: string;
     name: string;
     organization_id: string;
-    tracking_id?: string | null;
+    tracking_id?: (string) | null;
     updated_at: string;
 };
 
@@ -646,10 +646,10 @@ export type DatasetUsageCount = {
 };
 
 export type DateRange = {
-    gt?: string | null;
-    gte?: string | null;
-    lt?: string | null;
-    lte?: string | null;
+    gt?: (string) | null;
+    gte?: (string) | null;
+    lt?: (string) | null;
+    lte?: (string) | null;
 };
 
 export type DeleteTopicData = {
@@ -677,10 +677,10 @@ export type EditMessageReqPayload = {
     /**
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
      */
-    concat_user_messages_query?: boolean | null;
-    filters?: (ChunkFilter) | null;
-    highlight_options?: (HighlightOptions) | null;
-    llm_options?: (LLMOptions) | null;
+    concat_user_messages_query?: (boolean) | null;
+    filters?: ((ChunkFilter) | null);
+    highlight_options?: ((HighlightOptions) | null);
+    llm_options?: ((LLMOptions) | null);
     /**
      * The sort order of the message to edit.
      */
@@ -692,16 +692,16 @@ export type EditMessageReqPayload = {
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
     /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
-    score_threshold?: number | null;
+    score_threshold?: (number) | null;
     /**
      * Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
      */
-    search_query?: string | null;
-    search_type?: (SearchMethod) | null;
+    search_query?: (string) | null;
+    search_type?: ((SearchMethod) | null);
     /**
      * The id of the topic to edit the message at the given sort order for.
      */
@@ -720,14 +720,14 @@ export type EventReturn = {
 export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed';
 
 export type FieldCondition = {
-    date_range?: (DateRange) | null;
+    date_range?: ((DateRange) | null);
     /**
      * Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
      */
     field: string;
-    geo_bounding_box?: (LocationBoundingBox) | null;
-    geo_polygon?: (LocationPolygon) | null;
-    geo_radius?: (LocationRadius) | null;
+    geo_bounding_box?: ((LocationBoundingBox) | null);
+    geo_polygon?: ((LocationPolygon) | null);
+    geo_radius?: ((LocationRadius) | null);
     /**
      * Match all lets you pass in an array of values that will return results if all of the items match. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. If both match_all and match_any are provided, the match_any condition will be used.
      */
@@ -736,7 +736,7 @@ export type FieldCondition = {
      * Match any lets you pass in an array of values that will return results if any of the items match. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. If both match_all and match_any are provided, the match_any condition will be used.
      */
     match_any?: Array<MatchCondition> | null;
-    range?: (Range) | null;
+    range?: ((Range) | null);
 };
 
 export type File = {
@@ -744,11 +744,11 @@ export type File = {
     dataset_id: string;
     file_name: string;
     id: string;
-    link?: string | null;
+    link?: (string) | null;
     metadata?: unknown;
     size: number;
-    tag_set?: Array<(string | null)> | null;
-    time_stamp?: string | null;
+    tag_set?: Array<((string) | null)> | null;
+    time_stamp?: (string) | null;
     updated_at: string;
 };
 
@@ -756,7 +756,7 @@ export type FileDTO = {
     created_at: string;
     file_name: string;
     id: string;
-    link?: string | null;
+    link?: (string) | null;
     metadata?: unknown;
     s3_url: string;
     size: number;
@@ -785,19 +785,19 @@ export type GenerateOffChunksReqPayload = {
     /**
      * Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
      */
-    frequency_penalty?: number | null;
+    frequency_penalty?: (number) | null;
     /**
      * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits.
      */
-    highlight_results?: boolean | null;
+    highlight_results?: (boolean) | null;
     /**
      * The maximum number of tokens to generate in the chat completion. Default is None.
      */
-    max_tokens?: number | null;
+    max_tokens?: (number) | null;
     /**
      * Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Default is 0.7.
      */
-    presence_penalty?: number | null;
+    presence_penalty?: (number) | null;
     /**
      * The previous messages to be placed into the chat history. There must be at least one previous message.
      */
@@ -805,7 +805,7 @@ export type GenerateOffChunksReqPayload = {
     /**
      * Prompt will be used to tell the model what to generate in the next message in the chat. The default is 'Respond to the previous instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
      */
-    prompt?: string | null;
+    prompt?: (string) | null;
     /**
      * Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
      */
@@ -813,11 +813,11 @@ export type GenerateOffChunksReqPayload = {
     /**
      * Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
      */
-    stream_response?: boolean | null;
+    stream_response?: (boolean) | null;
     /**
      * What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.5.
      */
-    temperature?: number | null;
+    temperature?: (number) | null;
 };
 
 /**
@@ -845,11 +845,11 @@ export type GetAllTagsReqPayload = {
     /**
      * Page number to return, 1-indexed. Default is 1.
      */
-    page?: number | null;
+    page?: (number) | null;
     /**
      * Number of items to return per page. Default is 20.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
 };
 
 export type GetAllTagsResponse = {
@@ -870,8 +870,8 @@ export type GetChunksInGroupsResponseBody = {
 };
 
 export type GetDatasetsPagination = {
-    limit?: number | null;
-    offset?: number | null;
+    limit?: (number) | null;
+    offset?: (number) | null;
 };
 
 export type GetEventsData = {
@@ -882,11 +882,11 @@ export type GetEventsData = {
     /**
      * The page number to get. Default is 1.
      */
-    page?: number | null;
+    page?: (number) | null;
     /**
      * The number of items per page. Default is 10.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
 };
 
 export type GetGroupsForChunksReqPayload = {
@@ -905,15 +905,15 @@ export type GroupData = {
 };
 
 export type GroupScoreChunk = {
-    file_id?: string | null;
+    file_id?: (string) | null;
     group_created_at: string;
     group_dataset_id: string;
-    group_description?: string | null;
+    group_description?: (string) | null;
     group_id: string;
     group_metadata?: unknown;
-    group_name?: string | null;
-    group_tag_set?: Array<(string | null)> | null;
-    group_tracking_id?: string | null;
+    group_name?: (string) | null;
+    group_tag_set?: Array<((string) | null)> | null;
+    group_tracking_id?: (string) | null;
     group_updated_at: string;
     metadata: Array<ScoreChunkDTO>;
 };
@@ -954,24 +954,24 @@ export type HighlightOptions = {
     /**
      * Set highlight_max_length to control the maximum number of tokens (typically whitespace separated strings, but sometimes also word stems) which can be present within a single highlight. If not specified, this defaults to 8. This is useful to shorten large splits which may have low scores due to length compared to the query. Set to something very large like 100 to highlight entire splits.
      */
-    highlight_max_length?: number | null;
+    highlight_max_length?: (number) | null;
     /**
      * Set highlight_max_num to control the maximum number of highlights per chunk. If not specified, this defaults to 3. It may be less than 3 if no snippets score above the highlight_threshold.
      */
-    highlight_max_num?: number | null;
+    highlight_max_num?: (number) | null;
     /**
      * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
      */
-    highlight_results?: boolean | null;
-    highlight_strategy?: (HighlightStrategy) | null;
+    highlight_results?: (boolean) | null;
+    highlight_strategy?: ((HighlightStrategy) | null);
     /**
      * Set highlight_threshold to a lower or higher value to adjust the sensitivity of the highlights applied to the chunk html. If not specified, this defaults to 0.8. The range is 0.0 to 1.0.
      */
-    highlight_threshold?: number | null;
+    highlight_threshold?: (number) | null;
     /**
      * Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once. This parameter can be overriden to respect the highlight_max_length param.
      */
-    highlight_window?: number | null;
+    highlight_window?: (number) | null;
 };
 
 export type HighlightStrategy = 'exactmatch' | 'v1';
@@ -1006,19 +1006,19 @@ export type LLMOptions = {
     /**
      * Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
      */
-    completion_first?: boolean | null;
+    completion_first?: (boolean) | null;
     /**
      * Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
      */
-    frequency_penalty?: number | null;
+    frequency_penalty?: (number) | null;
     /**
      * The maximum number of tokens to generate in the chat completion. Default is None.
      */
-    max_tokens?: number | null;
+    max_tokens?: (number) | null;
     /**
      * Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Default is 0.7.
      */
-    presence_penalty?: number | null;
+    presence_penalty?: (number) | null;
     /**
      * Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
      */
@@ -1026,15 +1026,15 @@ export type LLMOptions = {
     /**
      * Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
      */
-    stream_response?: boolean | null;
+    stream_response?: (boolean) | null;
     /**
      * Optionally, override the system prompt in dataset server settings.
      */
-    system_prompt?: string | null;
+    system_prompt?: (string) | null;
     /**
      * What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.5.
      */
-    temperature?: number | null;
+    temperature?: (number) | null;
 };
 
 export type LatencyGraphResponse = {
@@ -1059,13 +1059,13 @@ export type LocationRadius = {
 export type MatchCondition = string | number;
 
 export type Message = {
-    completion_tokens?: number | null;
+    completion_tokens?: (number) | null;
     content: string;
     created_at: string;
     dataset_id: string;
     deleted: boolean;
     id: string;
-    prompt_tokens?: number | null;
+    prompt_tokens?: (number) | null;
     role: string;
     sort_order: number;
     topic_id: string;
@@ -1093,7 +1093,7 @@ export type Organization = {
     deleted: number;
     id: string;
     name: string;
-    registerable?: boolean | null;
+    registerable?: (boolean) | null;
     updated_at: string;
 };
 
@@ -1122,25 +1122,25 @@ export type QueryCountResponse = {
 export type QueryTypes = string | Array<MultiQuery>;
 
 export type RAGAnalytics = {
-    filter?: (RAGAnalyticsFilter) | null;
-    page?: number | null;
-    sort_by?: (RAGSortBy) | null;
-    sort_order?: (SortOrder) | null;
+    filter?: ((RAGAnalyticsFilter) | null);
+    page?: (number) | null;
+    sort_by?: ((RAGSortBy) | null);
+    sort_order?: ((SortOrder) | null);
     type: 'rag_queries';
 } | {
-    filter?: (RAGAnalyticsFilter) | null;
+    filter?: ((RAGAnalyticsFilter) | null);
     type: 'rag_usage';
 } | {
-    filter?: (RAGAnalyticsFilter) | null;
-    granularity?: (Granularity) | null;
+    filter?: ((RAGAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
     type: 'rag_usage_graph';
 };
 
 export type type3 = 'rag_queries';
 
 export type RAGAnalyticsFilter = {
-    date_range?: (DateRange) | null;
-    rag_type?: (RagTypes) | null;
+    date_range?: ((DateRange) | null);
+    rag_type?: ((RagTypes) | null);
 };
 
 export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse;
@@ -1172,16 +1172,16 @@ export type RagQueryResponse = {
 export type RagTypes = 'chosen_chunks' | 'all_chunks';
 
 export type Range = {
-    gt?: (RangeCondition) | null;
-    gte?: (RangeCondition) | null;
-    lt?: (RangeCondition) | null;
-    lte?: (RangeCondition) | null;
+    gt?: ((RangeCondition) | null);
+    gte?: ((RangeCondition) | null);
+    lt?: ((RangeCondition) | null);
+    lte?: ((RangeCondition) | null);
 };
 
 export type RangeCondition = number;
 
 export type RateQueryRequest = {
-    note?: string | null;
+    note?: (string) | null;
     query_id: string;
     rating: number;
 };
@@ -1189,11 +1189,11 @@ export type RateQueryRequest = {
 export type ReRankOptions = 'semantic' | 'fulltext' | 'bm25' | 'cross_encoder';
 
 export type RecommendChunksRequest = {
-    filters?: (ChunkFilter) | null;
+    filters?: ((ChunkFilter) | null);
     /**
      * The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
      */
-    limit?: number | null;
+    limit?: (number) | null;
     /**
      * The ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
      */
@@ -1210,12 +1210,12 @@ export type RecommendChunksRequest = {
      * The tracking_ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
      */
     positive_tracking_ids?: Array<(string)> | null;
-    recommend_type?: (RecommendType) | null;
+    recommend_type?: ((RecommendType) | null);
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
      */
-    slim_chunks?: boolean | null;
-    strategy?: (RecommendationStrategy) | null;
+    slim_chunks?: (boolean) | null;
+    strategy?: ((RecommendationStrategy) | null);
 };
 
 export type RecommendChunksResponseBody = {
@@ -1224,15 +1224,15 @@ export type RecommendChunksResponseBody = {
 };
 
 export type RecommendGroupsReqPayload = {
-    filters?: (ChunkFilter) | null;
+    filters?: ((ChunkFilter) | null);
     /**
      * The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 3. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to reduce latency due to content download and serialization.
      */
-    group_size?: number | null;
+    group_size?: (number) | null;
     /**
      * The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.
      */
-    limit?: number | null;
+    limit?: (number) | null;
     /**
      * The ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
      */
@@ -1249,12 +1249,12 @@ export type RecommendGroupsReqPayload = {
      * The ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
      */
     positive_group_tracking_ids?: Array<(string)> | null;
-    recommend_type?: (RecommendType) | null;
+    recommend_type?: ((RecommendType) | null);
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
      */
-    slim_chunks?: boolean | null;
-    strategy?: (RecommendationStrategy) | null;
+    slim_chunks?: (boolean) | null;
+    strategy?: ((RecommendationStrategy) | null);
 };
 
 export type RecommendGroupsResponse = RecommendGroupsResponseBody | GroupScoreChunk;
@@ -1272,23 +1272,23 @@ export type RecommendResponseTypes = RecommendChunksResponseBody | Array<ChunkMe
 export type RecommendType = 'semantic' | 'fulltext' | 'bm25';
 
 export type RecommendationAnalytics = {
-    filter?: (RecommendationAnalyticsFilter) | null;
-    page?: number | null;
-    threshold?: number | null;
+    filter?: ((RecommendationAnalyticsFilter) | null);
+    page?: (number) | null;
+    threshold?: (number) | null;
     type: 'low_confidence_recommendations';
 } | {
-    filter?: (RecommendationAnalyticsFilter) | null;
-    page?: number | null;
-    sort_by?: (SearchSortBy) | null;
-    sort_order?: (SortOrder) | null;
+    filter?: ((RecommendationAnalyticsFilter) | null);
+    page?: (number) | null;
+    sort_by?: ((SearchSortBy) | null);
+    sort_order?: ((SortOrder) | null);
     type: 'recommendation_queries';
 };
 
 export type type4 = 'low_confidence_recommendations';
 
 export type RecommendationAnalyticsFilter = {
-    date_range?: (DateRange) | null;
-    recommendation_type?: (RecommendationType) | null;
+    date_range?: ((DateRange) | null);
+    recommendation_type?: ((RecommendationType) | null);
 };
 
 export type RecommendationAnalyticsResponse = RecommendationsEventResponse;
@@ -1346,23 +1346,23 @@ export type RegenerateMessageReqPayload = {
     /**
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
      */
-    concat_user_messages_query?: boolean | null;
-    filters?: (ChunkFilter) | null;
-    highlight_options?: (HighlightOptions) | null;
-    llm_options?: (LLMOptions) | null;
+    concat_user_messages_query?: (boolean) | null;
+    filters?: ((ChunkFilter) | null);
+    highlight_options?: ((HighlightOptions) | null);
+    llm_options?: ((LLMOptions) | null);
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
     /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
-    score_threshold?: number | null;
+    score_threshold?: (number) | null;
     /**
      * Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
      */
-    search_query?: string | null;
-    search_type?: (SearchMethod) | null;
+    search_query?: (string) | null;
+    search_type?: ((SearchMethod) | null);
     /**
      * The id of the topic to regenerate the last message for.
      */
@@ -1393,16 +1393,16 @@ export type ScoreChunkDTO = {
 };
 
 export type ScrollChunksReqPayload = {
-    filters?: (ChunkFilter) | null;
+    filters?: ((ChunkFilter) | null);
     /**
      * Offset chunk id is the id of the chunk to start the page from. If not specified, this defaults to the first chunk in the dataset sorted by id ascending.
      */
-    offset_chunk_id?: string | null;
+    offset_chunk_id?: (string) | null;
     /**
      * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
-    page_size?: number | null;
-    sort_by?: (SortByField) | null;
+    page_size?: (number) | null;
+    sort_by?: ((SortByField) | null);
 };
 
 export type ScrollChunksResponseBody = {
@@ -1410,37 +1410,37 @@ export type ScrollChunksResponseBody = {
 };
 
 export type SearchAnalytics = {
-    filter?: (SearchAnalyticsFilter) | null;
-    granularity?: (Granularity) | null;
+    filter?: ((SearchAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
     type: 'latency_graph';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
-    granularity?: (Granularity) | null;
+    filter?: ((SearchAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
     type: 'search_usage_graph';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
+    filter?: ((SearchAnalyticsFilter) | null);
     type: 'search_metrics';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
-    page?: number | null;
+    filter?: ((SearchAnalyticsFilter) | null);
+    page?: (number) | null;
     type: 'head_queries';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
-    page?: number | null;
-    threshold?: number | null;
+    filter?: ((SearchAnalyticsFilter) | null);
+    page?: (number) | null;
+    threshold?: (number) | null;
     type: 'low_confidence_queries';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
-    page?: number | null;
+    filter?: ((SearchAnalyticsFilter) | null);
+    page?: (number) | null;
     type: 'no_result_queries';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
-    page?: number | null;
-    sort_by?: (SearchSortBy) | null;
-    sort_order?: (SortOrder) | null;
+    filter?: ((SearchAnalyticsFilter) | null);
+    page?: (number) | null;
+    sort_by?: ((SearchSortBy) | null);
+    sort_order?: ((SortOrder) | null);
     type: 'search_queries';
 } | {
-    filter?: (SearchAnalyticsFilter) | null;
+    filter?: ((SearchAnalyticsFilter) | null);
     type: 'count_queries';
 } | {
     search_id: string;
@@ -1450,9 +1450,9 @@ export type SearchAnalytics = {
 export type type5 = 'latency_graph';
 
 export type SearchAnalyticsFilter = {
-    date_range?: (DateRange) | null;
-    search_method?: (SearchMethod) | null;
-    search_type?: (SearchType) | null;
+    date_range?: ((DateRange) | null);
+    search_method?: ((SearchMethod) | null);
+    search_type?: ((SearchType) | null);
 };
 
 export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent;
@@ -1472,43 +1472,43 @@ export type SearchChunksReqPayload = {
     /**
      * Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
      */
-    content_only?: boolean | null;
-    filters?: (ChunkFilter) | null;
+    content_only?: (boolean) | null;
+    filters?: ((ChunkFilter) | null);
     /**
      * Get total page count for the query accounting for the applied filters. Defaults to false, but can be set to true when the latency penalty is acceptable (typically 50-200ms).
      */
-    get_total_pages?: boolean | null;
-    highlight_options?: (HighlightOptions) | null;
+    get_total_pages?: (boolean) | null;
+    highlight_options?: ((HighlightOptions) | null);
     /**
      * Page of chunks to fetch. Page is 1-indexed.
      */
-    page?: number | null;
+    page?: (number) | null;
     /**
      * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
     query: QueryTypes;
     /**
      * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
      */
-    remove_stop_words?: boolean | null;
+    remove_stop_words?: (boolean) | null;
     /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric
      * For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance
      * This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold
      * A threshold of 0 will default to no threashold
      */
-    score_threshold?: number | null;
+    score_threshold?: (number) | null;
     search_type: SearchMethod;
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
      */
-    slim_chunks?: boolean | null;
-    sort_options?: (SortOptions) | null;
+    slim_chunks?: (boolean) | null;
+    sort_options?: ((SortOptions) | null);
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
-    use_quote_negated_terms?: boolean | null;
+    use_quote_negated_terms?: (boolean) | null;
 };
 
 export type SearchClusterResponse = {
@@ -1534,43 +1534,43 @@ export type SearchLatencyGraph = {
 export type SearchMethod = 'fulltext' | 'semantic' | 'hybrid' | 'bm25';
 
 export type SearchOverGroupsReqPayload = {
-    filters?: (ChunkFilter) | null;
+    filters?: ((ChunkFilter) | null);
     /**
      * Get total page count for the query accounting for the applied filters. Defaults to false, but can be set to true when the latency penalty is acceptable (typically 50-200ms).
      */
-    get_total_pages?: boolean | null;
+    get_total_pages?: (boolean) | null;
     /**
      * Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.
      */
-    group_size?: number | null;
-    highlight_options?: (HighlightOptions) | null;
+    group_size?: (number) | null;
+    highlight_options?: ((HighlightOptions) | null);
     /**
      * Page of group results to fetch. Page is 1-indexed.
      */
-    page?: number | null;
+    page?: (number) | null;
     /**
      * Page size is the number of group results to fetch. The default is 10.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
     query: QueryTypes;
     /**
      * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be
      * preserved.
      */
-    remove_stop_words?: boolean | null;
+    remove_stop_words?: (boolean) | null;
     /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
-    score_threshold?: number | null;
+    score_threshold?: (number) | null;
     search_type: SearchMethod;
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
      */
-    slim_chunks?: boolean | null;
+    slim_chunks?: (boolean) | null;
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
-    use_quote_negated_terms?: boolean | null;
+    use_quote_negated_terms?: (boolean) | null;
 };
 
 export type SearchOverGroupsResponseBody = {
@@ -1583,7 +1583,7 @@ export type SearchOverGroupsResponseTypes = SearchOverGroupsResponseBody | Depre
 
 export type SearchOverGroupsResults = {
     chunks: Array<ScoreChunk>;
-    file_id?: string | null;
+    file_id?: (string) | null;
     group: ChunkGroup;
 };
 
@@ -1644,48 +1644,48 @@ export type SearchWithinGroupReqPayload = {
     /**
      * Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
      */
-    content_only?: boolean | null;
-    filters?: (ChunkFilter) | null;
+    content_only?: (boolean) | null;
+    filters?: ((ChunkFilter) | null);
     /**
      * Get total page count for the query accounting for the applied filters. Defaults to false, but can be set to true when the latency penalty is acceptable (typically 50-200ms).
      */
-    get_total_pages?: boolean | null;
+    get_total_pages?: (boolean) | null;
     /**
      * Group specifies the group to search within. Results will only consist of chunks which are bookmarks within the specified group.
      */
-    group_id?: string | null;
+    group_id?: (string) | null;
     /**
      * Group_tracking_id specifies the group to search within by tracking id. Results will only consist of chunks which are bookmarks within the specified group. If both group_id and group_tracking_id are provided, group_id will be used.
      */
-    group_tracking_id?: string | null;
-    highlight_options?: (HighlightOptions) | null;
+    group_tracking_id?: (string) | null;
+    highlight_options?: ((HighlightOptions) | null);
     /**
      * The page of chunks to fetch. Page is 1-indexed.
      */
-    page?: number | null;
+    page?: (number) | null;
     /**
      * The page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
-    page_size?: number | null;
+    page_size?: (number) | null;
     query: QueryTypes;
     /**
      * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
      */
-    remove_stop_words?: boolean | null;
+    remove_stop_words?: (boolean) | null;
     /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
-    score_threshold?: number | null;
+    score_threshold?: (number) | null;
     search_type: SearchMethod;
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
      */
-    slim_chunks?: boolean | null;
-    sort_options?: (SortOptions) | null;
+    slim_chunks?: (boolean) | null;
+    sort_options?: ((SortOptions) | null);
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
-    use_quote_negated_terms?: boolean | null;
+    use_quote_negated_terms?: (boolean) | null;
 };
 
 export type SearchWithinGroupResponseBody = {
@@ -1756,14 +1756,14 @@ export type SlimChunkMetadata = {
     created_at: string;
     dataset_id: string;
     id: string;
-    image_urls?: Array<(string | null)> | null;
-    link?: string | null;
-    location?: (GeoInfo) | null;
+    image_urls?: Array<((string) | null)> | null;
+    link?: (string) | null;
+    location?: ((GeoInfo) | null);
     metadata?: unknown;
-    num_value?: number | null;
-    tag_set?: string | null;
-    time_stamp?: string | null;
-    tracking_id?: string | null;
+    num_value?: (number) | null;
+    tag_set?: (string) | null;
+    time_stamp?: (string) | null;
+    tracking_id?: (string) | null;
     updated_at: string;
     weight: number;
 };
@@ -1772,14 +1772,14 @@ export type SlimChunkMetadataWithArrayTagSet = {
     created_at: string;
     dataset_id: string;
     id: string;
-    image_urls?: Array<(string | null)> | null;
-    link?: string | null;
-    location?: (GeoInfo) | null;
+    image_urls?: Array<((string) | null)> | null;
+    link?: (string) | null;
+    location?: ((GeoInfo) | null);
     metadata?: unknown;
-    num_value?: number | null;
+    num_value?: (number) | null;
     tag_set?: Array<(string)> | null;
-    time_stamp?: string | null;
-    tracking_id?: string | null;
+    time_stamp?: (string) | null;
+    tracking_id?: (string) | null;
     updated_at: string;
     weight: number;
 };
@@ -1787,12 +1787,12 @@ export type SlimChunkMetadataWithArrayTagSet = {
 export type SlimChunkMetadataWithScore = {
     created_at: string;
     id: string;
-    link?: string | null;
+    link?: (string) | null;
     metadata?: unknown;
     score: number;
-    tag_set?: string | null;
-    time_stamp?: string | null;
-    tracking_id?: string | null;
+    tag_set?: (string) | null;
+    time_stamp?: (string) | null;
+    tracking_id?: (string) | null;
     updated_at: string;
     weight: number;
 };
@@ -1800,13 +1800,13 @@ export type SlimChunkMetadataWithScore = {
 export type SlimUser = {
     email: string;
     id: string;
-    name?: string | null;
+    name?: (string) | null;
     orgs: Array<Organization>;
     user_orgs: Array<UserOrganization>;
 };
 
 export type SortByField = {
-    direction?: (SortOrder) | null;
+    direction?: ((SortOrder) | null);
     /**
      * Field to sort by. This has to be a numeric field with a Qdrant `Range` index on it. i.e. num_value and timestamp
      */
@@ -1814,18 +1814,18 @@ export type SortByField = {
     /**
      * How many results to pull in before the sort
      */
-    prefetch_amount?: number | null;
+    prefetch_amount?: (number) | null;
 };
 
 export type SortBySearchType = {
     /**
      * How many results to pull in before the rerabj
      */
-    prefetch_amount?: number | null;
+    prefetch_amount?: (number) | null;
     /**
      * Query to use for prefetching defaults to the search query
      */
-    rerank_query?: string | null;
+    rerank_query?: (string) | null;
     rerank_type: ReRankOptions;
 };
 
@@ -1833,8 +1833,8 @@ export type SortBySearchType = {
  * Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
  */
 export type SortOptions = {
-    location_bias?: (GeoInfoWithBias) | null;
-    sort_by?: (QdrantSortBy) | null;
+    location_bias?: ((GeoInfoWithBias) | null);
+    sort_by?: ((QdrantSortBy) | null);
     /**
      * Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
      */
@@ -1844,7 +1844,7 @@ export type SortOptions = {
     /**
      * Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
      */
-    use_weights?: boolean | null;
+    use_weights?: (boolean) | null;
 };
 
 export type SortOrder = 'desc' | 'asc';
@@ -1855,7 +1855,7 @@ export type StripeInvoice = {
     id: string;
     org_id: string;
     status: string;
-    stripe_id?: string | null;
+    stripe_id?: (string) | null;
     total: number;
 };
 
@@ -1914,11 +1914,11 @@ export type UpdateChunkByTrackingIdData = {
     /**
      * HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
      */
-    chunk_html?: string | null;
+    chunk_html?: (string) | null;
     /**
      * Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
      */
-    convert_html_to_text?: boolean | null;
+    convert_html_to_text?: (boolean) | null;
     /**
      * Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
      */
@@ -1930,7 +1930,7 @@ export type UpdateChunkByTrackingIdData = {
     /**
      * Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
      */
-    link?: string | null;
+    link?: (string) | null;
     /**
      * The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. If no metadata is provided, the existing metadata will be used.
      */
@@ -1938,7 +1938,7 @@ export type UpdateChunkByTrackingIdData = {
     /**
      * Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results. If no time_stamp is provided, the existing time_stamp will be used.
      */
-    time_stamp?: string | null;
+    time_stamp?: (string) | null;
     /**
      * Tracking_id of the chunk you want to update. This is required to match an existing chunk.
      */
@@ -1946,18 +1946,18 @@ export type UpdateChunkByTrackingIdData = {
     /**
      * Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
      */
-    weight?: number | null;
+    weight?: (number) | null;
 };
 
 export type UpdateChunkGroupReqPayload = {
     /**
      * Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for. If not provided, the description will not be updated.
      */
-    description?: string | null;
+    description?: (string) | null;
     /**
      * Id of the chunk_group to update.
      */
-    group_id?: string | null;
+    group_id?: (string) | null;
     /**
      * Optional metadata to assign to the chunk_group. This is a JSON object that can store any additional information you want to associate with the chunks inside of the chunk_group.
      */
@@ -1965,7 +1965,7 @@ export type UpdateChunkGroupReqPayload = {
     /**
      * Name to assign to the chunk_group. Does not need to be unique. If not provided, the name will not be updated.
      */
-    name?: string | null;
+    name?: (string) | null;
     /**
      * Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
      */
@@ -1973,28 +1973,28 @@ export type UpdateChunkGroupReqPayload = {
     /**
      * Tracking Id of the chunk_group to update.
      */
-    tracking_id?: string | null;
+    tracking_id?: (string) | null;
     /**
      * Flag to update the chunks in the group. If true, each chunk in the group will be updated
      * by appending the group's tags to the chunk's tags. Default is false.
      */
-    update_chunks?: boolean | null;
+    update_chunks?: (boolean) | null;
 };
 
 export type UpdateChunkReqPayload = {
     /**
      * HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
      */
-    chunk_html?: string | null;
+    chunk_html?: (string) | null;
     /**
      * Id of the chunk you want to update. You can provide either the chunk_id or the tracking_id. If both are provided, the chunk_id will be used.
      */
-    chunk_id?: string | null;
+    chunk_id?: (string) | null;
     /**
      * Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
      */
-    convert_html_to_text?: boolean | null;
-    fulltext_boost?: (FullTextBoost) | null;
+    convert_html_to_text?: (boolean) | null;
+    fulltext_boost?: ((FullTextBoost) | null);
     /**
      * Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
      */
@@ -2010,8 +2010,8 @@ export type UpdateChunkReqPayload = {
     /**
      * Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
      */
-    link?: string | null;
-    location?: (GeoInfo) | null;
+    link?: (string) | null;
+    location?: ((GeoInfo) | null);
     /**
      * The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. If no metadata is provided, the existing metadata will be used.
      */
@@ -2019,8 +2019,8 @@ export type UpdateChunkReqPayload = {
     /**
      * Num value is an arbitrary numerical value that can be used to filter chunks. This is useful for when you want to filter chunks by numerical value. If no num_value is provided, the existing num_value will be used.
      */
-    num_value?: number | null;
-    semantic_boost?: (SemanticBoost) | null;
+    num_value?: (number) | null;
+    semantic_boost?: ((SemanticBoost) | null);
     /**
      * Tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them. If no tag_set is provided, the existing tag_set will be used.
      */
@@ -2028,42 +2028,42 @@ export type UpdateChunkReqPayload = {
     /**
      * Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results. If no time_stamp is provided, the existing time_stamp will be used.
      */
-    time_stamp?: string | null;
+    time_stamp?: (string) | null;
     /**
      * Tracking_id of the chunk you want to update. This is required to match an existing chunk.
      */
-    tracking_id?: string | null;
+    tracking_id?: (string) | null;
     /**
      * Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
      */
-    weight?: number | null;
+    weight?: (number) | null;
 };
 
 export type UpdateDatasetRequest = {
     /**
      * The id of the dataset you want to update.
      */
-    dataset_id?: string | null;
+    dataset_id?: (string) | null;
     /**
      * The new name of the dataset. Must be unique within the organization. If not provided, the name will not be updated.
      */
-    dataset_name?: string | null;
+    dataset_name?: (string) | null;
     /**
      * Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
      */
-    new_tracking_id?: string | null;
-    server_configuration?: (DatasetConfigurationDTO) | null;
+    new_tracking_id?: (string) | null;
+    server_configuration?: ((DatasetConfigurationDTO) | null);
     /**
      * The tracking ID of the dataset you want to update.
      */
-    tracking_id?: string | null;
+    tracking_id?: (string) | null;
 };
 
 export type UpdateGroupByTrackingIDReqPayload = {
     /**
      * Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for. If not provided, the description will not be updated.
      */
-    description?: string | null;
+    description?: (string) | null;
     /**
      * Optional metadata to assign to the chunk_group. This is a JSON object that can store any additional information you want to associate with the chunks inside of the chunk_group.
      */
@@ -2071,7 +2071,7 @@ export type UpdateGroupByTrackingIDReqPayload = {
     /**
      * Name to assign to the chunk_group. Does not need to be unique. If not provided, the name will not be updated.
      */
-    name?: string | null;
+    name?: (string) | null;
     /**
      * Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
      */
@@ -2086,7 +2086,7 @@ export type UpdateOrganizationReqPayload = {
     /**
      * The new name of the organization. If not provided, the name will not be updated.
      */
-    name?: string | null;
+    name?: (string) | null;
     /**
      * The id of the organization to update.
      */
@@ -2116,7 +2116,7 @@ export type UpdateUserOrgRoleData = {
     /**
      * The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the role of the auth'ed user or api key must be an admin (1) or owner (2) of the organization.
      */
-    user_id?: string | null;
+    user_id?: (string) | null;
 };
 
 export type UploadFileReqPayload = {
@@ -2127,11 +2127,11 @@ export type UploadFileReqPayload = {
     /**
      * Create chunks is a boolean which determines whether or not to create chunks from the file. If false, you can manually chunk the file and send the chunks to the create_chunk endpoint with the file_id to associate chunks with the file. Meant mostly for advanced users.
      */
-    create_chunks?: boolean | null;
+    create_chunks?: (boolean) | null;
     /**
      * Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the group resulting from the file which will hold its chunk.
      */
-    description?: string | null;
+    description?: (string) | null;
     /**
      * Name of the file being uploaded, including the extension.
      */
@@ -2139,11 +2139,11 @@ export type UploadFileReqPayload = {
     /**
      * Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
      */
-    group_tracking_id?: string | null;
+    group_tracking_id?: (string) | null;
     /**
      * Link to the file. This can also be any string. This can be used to filter when searching for the file's resulting chunks. The link value will not affect embedding creation.
      */
-    link?: string | null;
+    link?: (string) | null;
     /**
      * Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. Will be passed down to the file's chunks.
      */
@@ -2151,7 +2151,7 @@ export type UploadFileReqPayload = {
     /**
      * Rebalance chunks is an optional field which allows you to specify whether or not to rebalance the chunks created from the file. If not specified, the default true is used. If true, Trieve will evenly distribute remainder splits across chunks such that 66 splits with a `target_splits_per_chunk` of 20 will result in 3 chunks with 22 splits each.
      */
-    rebalance_chunks?: boolean | null;
+    rebalance_chunks?: (boolean) | null;
     /**
      * Split delimiters is an optional field which allows you to specify the delimiters to use when splitting the file before chunking the text. If not specified, the default [.!?\n] are used to split into sentences. However, you may want to use spaces or other delimiters.
      */
@@ -2163,11 +2163,11 @@ export type UploadFileReqPayload = {
     /**
      * Target splits per chunk. This is an optional field which allows you to specify the number of splits you want per chunk. If not specified, the default 20 is used. However, you may want to use a different number.
      */
-    target_splits_per_chunk?: number | null;
+    target_splits_per_chunk?: (number) | null;
     /**
      * Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.
      */
-    time_stamp?: string | null;
+    time_stamp?: (string) | null;
 };
 
 export type UploadFileResult = {
@@ -2207,7 +2207,7 @@ export type GetCtrAnalyticsData = {
     trDataset: string;
 };
 
-export type GetCtrAnalyticsResponse = CTRAnalyticsResponse;
+export type GetCtrAnalyticsResponse = (CTRAnalyticsResponse);
 
 export type SendCtrDataData = {
     /**
@@ -2220,7 +2220,7 @@ export type SendCtrDataData = {
     trDataset: string;
 };
 
-export type SendCtrDataResponse = void;
+export type SendCtrDataResponse = (void);
 
 export type GetRagAnalyticsData = {
     /**
@@ -2233,7 +2233,7 @@ export type GetRagAnalyticsData = {
     trDataset: string;
 };
 
-export type GetRagAnalyticsResponse = RAGAnalyticsResponse;
+export type GetRagAnalyticsResponse = (RAGAnalyticsResponse);
 
 export type GetRecommendationAnalyticsData = {
     /**
@@ -2246,7 +2246,7 @@ export type GetRecommendationAnalyticsData = {
     trDataset: string;
 };
 
-export type GetRecommendationAnalyticsResponse = RecommendationAnalyticsResponse;
+export type GetRecommendationAnalyticsResponse = (RecommendationAnalyticsResponse);
 
 export type GetSearchAnalyticsData = {
     /**
@@ -2259,7 +2259,7 @@ export type GetSearchAnalyticsData = {
     trDataset: string;
 };
 
-export type GetSearchAnalyticsResponse = SearchAnalyticsResponse;
+export type GetSearchAnalyticsResponse = (SearchAnalyticsResponse);
 
 export type SetQueryRatingData = {
     /**
@@ -2272,7 +2272,7 @@ export type SetQueryRatingData = {
     trDataset: string;
 };
 
-export type SetQueryRatingResponse = void;
+export type SetQueryRatingResponse = (void);
 
 export type GetClusterAnalyticsData = {
     /**
@@ -2285,28 +2285,28 @@ export type GetClusterAnalyticsData = {
     trDataset: string;
 };
 
-export type GetClusterAnalyticsResponse = ClusterAnalyticsResponse;
+export type GetClusterAnalyticsResponse = (ClusterAnalyticsResponse);
 
 export type LoginData = {
     /**
      * Code sent via email as a result of successful call to send_invitation
      */
-    invCode?: string | null;
+    invCode?: (string) | null;
     /**
      * ID of organization to authenticate into
      */
-    organizationId?: string | null;
+    organizationId?: (string) | null;
     /**
      * URL to redirect to after successful login
      */
-    redirectUri?: string | null;
+    redirectUri?: (string) | null;
 };
 
-export type LogoutResponse = void;
+export type LogoutResponse = (void);
 
-export type CallbackResponse = SlimUser;
+export type CallbackResponse = (SlimUser);
 
-export type GetMeResponse = SlimUser;
+export type GetMeResponse = (SlimUser);
 
 export type CreateChunkData = {
     /**
@@ -2319,7 +2319,7 @@ export type CreateChunkData = {
     trDataset: string;
 };
 
-export type CreateChunkResponse = ReturnQueuedChunk;
+export type CreateChunkResponse = (ReturnQueuedChunk);
 
 export type UpdateChunkData = {
     /**
@@ -2332,7 +2332,7 @@ export type UpdateChunkData = {
     trDataset: string;
 };
 
-export type UpdateChunkResponse = void;
+export type UpdateChunkResponse = (void);
 
 export type AutocompleteData = {
     /**
@@ -2346,10 +2346,10 @@ export type AutocompleteData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type AutocompleteResponse = SearchResponseTypes;
+export type AutocompleteResponse = (SearchResponseTypes);
 
 export type CountChunksData = {
     /**
@@ -2362,7 +2362,7 @@ export type CountChunksData = {
     trDataset: string;
 };
 
-export type CountChunksResponse = CountChunkQueryResponseBody;
+export type CountChunksResponse = (CountChunkQueryResponseBody);
 
 export type GenerateOffChunksData = {
     /**
@@ -2375,7 +2375,7 @@ export type GenerateOffChunksData = {
     trDataset: string;
 };
 
-export type GenerateOffChunksResponse = string;
+export type GenerateOffChunksResponse = (string);
 
 export type GetRecommendedChunksData = {
     /**
@@ -2389,10 +2389,10 @@ export type GetRecommendedChunksData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type GetRecommendedChunksResponse = RecommendResponseTypes;
+export type GetRecommendedChunksResponse = (RecommendResponseTypes);
 
 export type SearchChunksData = {
     /**
@@ -2406,10 +2406,10 @@ export type SearchChunksData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type SearchChunksResponse = SearchResponseTypes;
+export type SearchChunksResponse = (SearchResponseTypes);
 
 export type GetSuggestedQueriesData = {
     /**
@@ -2422,7 +2422,7 @@ export type GetSuggestedQueriesData = {
     trDataset: string;
 };
 
-export type GetSuggestedQueriesResponse = SuggestedQueriesResponse;
+export type GetSuggestedQueriesResponse = (SuggestedQueriesResponse);
 
 export type UpdateChunkByTrackingIdData2 = {
     /**
@@ -2435,7 +2435,7 @@ export type UpdateChunkByTrackingIdData2 = {
     trDataset: string;
 };
 
-export type UpdateChunkByTrackingIdResponse = void;
+export type UpdateChunkByTrackingIdResponse = (void);
 
 export type GetChunkByTrackingIdData = {
     /**
@@ -2449,10 +2449,10 @@ export type GetChunkByTrackingIdData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type GetChunkByTrackingIdResponse = ChunkReturnTypes;
+export type GetChunkByTrackingIdResponse = (ChunkReturnTypes);
 
 export type DeleteChunkByTrackingIdData = {
     /**
@@ -2465,7 +2465,7 @@ export type DeleteChunkByTrackingIdData = {
     trDataset: string;
 };
 
-export type DeleteChunkByTrackingIdResponse = void;
+export type DeleteChunkByTrackingIdResponse = (void);
 
 export type GetChunkByIdData = {
     /**
@@ -2479,10 +2479,10 @@ export type GetChunkByIdData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type GetChunkByIdResponse = ChunkReturnTypes;
+export type GetChunkByIdResponse = (ChunkReturnTypes);
 
 export type DeleteChunkData = {
     /**
@@ -2495,7 +2495,7 @@ export type DeleteChunkData = {
     trDataset: string;
 };
 
-export type DeleteChunkResponse = void;
+export type DeleteChunkResponse = (void);
 
 export type CreateChunkGroupData = {
     /**
@@ -2508,7 +2508,7 @@ export type CreateChunkGroupData = {
     trDataset: string;
 };
 
-export type CreateChunkGroupResponse = CreateChunkGroupResponseEnum;
+export type CreateChunkGroupResponse = (CreateChunkGroupResponseEnum);
 
 export type UpdateChunkGroupData = {
     /**
@@ -2521,7 +2521,7 @@ export type UpdateChunkGroupData = {
     trDataset: string;
 };
 
-export type UpdateChunkGroupResponse = void;
+export type UpdateChunkGroupResponse = (void);
 
 export type AddChunkToGroupData = {
     /**
@@ -2538,13 +2538,13 @@ export type AddChunkToGroupData = {
     trDataset: string;
 };
 
-export type AddChunkToGroupResponse = void;
+export type AddChunkToGroupResponse = (void);
 
 export type RemoveChunkFromGroupData = {
     /**
      * Id of the chunk you want to remove from the group
      */
-    chunkId?: string | null;
+    chunkId?: (string) | null;
     /**
      * Id of the group you want to remove the chunk from.
      */
@@ -2552,14 +2552,14 @@ export type RemoveChunkFromGroupData = {
     /**
      * JSON request payload to remove a chunk from a group
      */
-    requestBody?: (RemoveChunkFromGroupReqPayload) | null;
+    requestBody?: ((RemoveChunkFromGroupReqPayload) | null);
     /**
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
      */
     trDataset: string;
 };
 
-export type RemoveChunkFromGroupResponse = void;
+export type RemoveChunkFromGroupResponse = (void);
 
 export type GetGroupsForChunksData = {
     /**
@@ -2572,7 +2572,7 @@ export type GetGroupsForChunksData = {
     trDataset: string;
 };
 
-export type GetGroupsForChunksResponse = Array<GroupsForChunk>;
+export type GetGroupsForChunksResponse = (Array<GroupsForChunk>);
 
 export type SearchOverGroupsData = {
     /**
@@ -2586,10 +2586,10 @@ export type SearchOverGroupsData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type SearchOverGroupsResponse = SearchOverGroupsResponseTypes;
+export type SearchOverGroupsResponse = (SearchOverGroupsResponseTypes);
 
 export type GetRecommendedGroupsData = {
     /**
@@ -2603,10 +2603,10 @@ export type GetRecommendedGroupsData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type GetRecommendedGroupsResponse = RecommendGroupsResponse;
+export type GetRecommendedGroupsResponse = (RecommendGroupsResponse);
 
 export type SearchWithinGroupData = {
     /**
@@ -2620,10 +2620,10 @@ export type SearchWithinGroupData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type SearchWithinGroupResponse = SearchGroupResponseTypes;
+export type SearchWithinGroupResponse = (SearchGroupResponseTypes);
 
 export type GetChunksInGroupByTrackingIdData = {
     /**
@@ -2641,10 +2641,10 @@ export type GetChunksInGroupByTrackingIdData = {
     /**
      * The version of the API to use for the request
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type GetChunksInGroupByTrackingIdResponse = GetChunksInGroupResponse;
+export type GetChunksInGroupByTrackingIdResponse = (GetChunksInGroupResponse);
 
 export type GetGroupByTrackingIdData = {
     /**
@@ -2657,7 +2657,7 @@ export type GetGroupByTrackingIdData = {
     trDataset: string;
 };
 
-export type GetGroupByTrackingIdResponse = ChunkGroupAndFileId;
+export type GetGroupByTrackingIdResponse = (ChunkGroupAndFileId);
 
 export type AddChunkToGroupByTrackingIdData = {
     /**
@@ -2674,7 +2674,7 @@ export type AddChunkToGroupByTrackingIdData = {
     trDataset: string;
 };
 
-export type AddChunkToGroupByTrackingIdResponse = void;
+export type AddChunkToGroupByTrackingIdResponse = (void);
 
 export type UpdateGroupByTrackingIdData = {
     /**
@@ -2691,7 +2691,7 @@ export type UpdateGroupByTrackingIdData = {
     trDataset: string;
 };
 
-export type UpdateGroupByTrackingIdResponse = void;
+export type UpdateGroupByTrackingIdResponse = (void);
 
 export type DeleteGroupByTrackingIdData = {
     /**
@@ -2708,7 +2708,7 @@ export type DeleteGroupByTrackingIdData = {
     trDataset: string;
 };
 
-export type DeleteGroupByTrackingIdResponse = void;
+export type DeleteGroupByTrackingIdResponse = (void);
 
 export type GetChunkGroupData = {
     /**
@@ -2721,7 +2721,7 @@ export type GetChunkGroupData = {
     trDataset: string;
 };
 
-export type GetChunkGroupResponse = ChunkGroupAndFileId;
+export type GetChunkGroupResponse = (ChunkGroupAndFileId);
 
 export type DeleteChunkGroupData = {
     /**
@@ -2738,7 +2738,7 @@ export type DeleteChunkGroupData = {
     trDataset: string;
 };
 
-export type DeleteChunkGroupResponse = void;
+export type DeleteChunkGroupResponse = (void);
 
 export type GetChunksInGroupData = {
     /**
@@ -2748,7 +2748,7 @@ export type GetChunksInGroupData = {
     /**
      * The page of chunks to get from the group
      */
-    page: number | null;
+    page: (number) | null;
     /**
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
      */
@@ -2756,10 +2756,10 @@ export type GetChunksInGroupData = {
     /**
      * The version of the API to use for the request
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type GetChunksInGroupResponse2 = GetChunksInGroupResponse;
+export type GetChunksInGroupResponse2 = (GetChunksInGroupResponse);
 
 export type GetChunksByIdsData = {
     /**
@@ -2773,10 +2773,10 @@ export type GetChunksByIdsData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type GetChunksByIdsResponse = Array<ChunkReturnTypes>;
+export type GetChunksByIdsResponse = (Array<ChunkReturnTypes>);
 
 export type ScrollDatasetChunksData = {
     /**
@@ -2789,7 +2789,7 @@ export type ScrollDatasetChunksData = {
     trDataset: string;
 };
 
-export type ScrollDatasetChunksResponse = ScrollChunksResponseBody;
+export type ScrollDatasetChunksResponse = (ScrollChunksResponseBody);
 
 export type GetChunksByTrackingIdsData = {
     /**
@@ -2803,10 +2803,10 @@ export type GetChunksByTrackingIdsData = {
     /**
      * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
      */
-    xApiVersion?: (APIVersion) | null;
+    xApiVersion?: ((APIVersion) | null);
 };
 
-export type GetChunksByTrackingIdsResponse = Array<ChunkReturnTypes>;
+export type GetChunksByTrackingIdsResponse = (Array<ChunkReturnTypes>);
 
 export type CreateDatasetData = {
     /**
@@ -2819,7 +2819,7 @@ export type CreateDatasetData = {
     trOrganization: string;
 };
 
-export type CreateDatasetResponse = Dataset;
+export type CreateDatasetResponse = (Dataset);
 
 export type UpdateDatasetData = {
     /**
@@ -2832,7 +2832,7 @@ export type UpdateDatasetData = {
     trOrganization: string;
 };
 
-export type UpdateDatasetResponse = Dataset;
+export type UpdateDatasetResponse = (Dataset);
 
 export type ClearDatasetData = {
     /**
@@ -2845,7 +2845,7 @@ export type ClearDatasetData = {
     trDataset: string;
 };
 
-export type ClearDatasetResponse = void;
+export type ClearDatasetResponse = (void);
 
 export type GetDatasetFilesHandlerData = {
     /**
@@ -2862,7 +2862,7 @@ export type GetDatasetFilesHandlerData = {
     trDataset: string;
 };
 
-export type GetDatasetFilesHandlerResponse = Array<File>;
+export type GetDatasetFilesHandlerResponse = (Array<File>);
 
 export type GetAllTagsData = {
     /**
@@ -2875,7 +2875,7 @@ export type GetAllTagsData = {
     trDataset: string;
 };
 
-export type GetAllTagsResponse2 = GetAllTagsResponse;
+export type GetAllTagsResponse2 = (GetAllTagsResponse);
 
 export type GetGroupsForDatasetData = {
     /**
@@ -2892,17 +2892,17 @@ export type GetGroupsForDatasetData = {
     trDataset: string;
 };
 
-export type GetGroupsForDatasetResponse = GroupData;
+export type GetGroupsForDatasetResponse = (GroupData);
 
 export type GetDatasetsFromOrganizationData = {
     /**
      * The number of records to return
      */
-    limit?: number | null;
+    limit?: (number) | null;
     /**
      * The number of records to skip
      */
-    offset?: number | null;
+    offset?: (number) | null;
     /**
      * id of the organization you want to retrieve datasets for
      */
@@ -2913,7 +2913,7 @@ export type GetDatasetsFromOrganizationData = {
     trOrganization: string;
 };
 
-export type GetDatasetsFromOrganizationResponse = Array<DatasetAndUsage>;
+export type GetDatasetsFromOrganizationResponse = (Array<DatasetAndUsage>);
 
 export type DeleteDatasetByTrackingIdData = {
     /**
@@ -2926,7 +2926,7 @@ export type DeleteDatasetByTrackingIdData = {
     trDataset: string;
 };
 
-export type DeleteDatasetByTrackingIdResponse = void;
+export type DeleteDatasetByTrackingIdResponse = (void);
 
 export type GetUsageByDatasetIdData = {
     /**
@@ -2939,7 +2939,7 @@ export type GetUsageByDatasetIdData = {
     trDataset: string;
 };
 
-export type GetUsageByDatasetIdResponse = DatasetUsageCount;
+export type GetUsageByDatasetIdResponse = (DatasetUsageCount);
 
 export type GetDatasetData = {
     /**
@@ -2952,7 +2952,7 @@ export type GetDatasetData = {
     trDataset: string;
 };
 
-export type GetDatasetResponse = Dataset;
+export type GetDatasetResponse = (Dataset);
 
 export type DeleteDatasetData = {
     /**
@@ -2965,7 +2965,7 @@ export type DeleteDatasetData = {
     trDataset: string;
 };
 
-export type DeleteDatasetResponse = void;
+export type DeleteDatasetResponse = (void);
 
 export type GetEventsData2 = {
     /**
@@ -2978,7 +2978,7 @@ export type GetEventsData2 = {
     trDataset: string;
 };
 
-export type GetEventsResponse = EventReturn;
+export type GetEventsResponse = (EventReturn);
 
 export type UploadFileHandlerData = {
     /**
@@ -2991,7 +2991,7 @@ export type UploadFileHandlerData = {
     trDataset: string;
 };
 
-export type UploadFileHandlerResponse = UploadFileResult;
+export type UploadFileHandlerResponse = (UploadFileResult);
 
 export type GetFileHandlerData = {
     /**
@@ -3004,7 +3004,7 @@ export type GetFileHandlerData = {
     trDataset: string;
 };
 
-export type GetFileHandlerResponse = FileDTO;
+export type GetFileHandlerResponse = (FileDTO);
 
 export type DeleteFileHandlerData = {
     /**
@@ -3017,9 +3017,9 @@ export type DeleteFileHandlerData = {
     trDataset: string;
 };
 
-export type DeleteFileHandlerResponse = void;
+export type DeleteFileHandlerResponse = (void);
 
-export type HealthCheckResponse = unknown;
+export type HealthCheckResponse = (unknown);
 
 export type PostInvitationData = {
     /**
@@ -3032,7 +3032,7 @@ export type PostInvitationData = {
     trOrganization: string;
 };
 
-export type PostInvitationResponse = void;
+export type PostInvitationResponse = (void);
 
 export type CreateMessageData = {
     /**
@@ -3045,7 +3045,7 @@ export type CreateMessageData = {
     trDataset: string;
 };
 
-export type CreateMessageResponse = string;
+export type CreateMessageResponse = (string);
 
 export type EditMessageData = {
     /**
@@ -3058,7 +3058,7 @@ export type EditMessageData = {
     trDataset: string;
 };
 
-export type EditMessageResponse = unknown;
+export type EditMessageResponse = (unknown);
 
 export type RegenerateMessageData = {
     /**
@@ -3071,7 +3071,7 @@ export type RegenerateMessageData = {
     trDataset: string;
 };
 
-export type RegenerateMessageResponse = string;
+export type RegenerateMessageResponse = (string);
 
 export type RegenerateMessagePatchData = {
     /**
@@ -3084,7 +3084,7 @@ export type RegenerateMessagePatchData = {
     trDataset: string;
 };
 
-export type RegenerateMessagePatchResponse = string;
+export type RegenerateMessagePatchResponse = (string);
 
 export type GetAllTopicMessagesData = {
     /**
@@ -3097,7 +3097,7 @@ export type GetAllTopicMessagesData = {
     trDataset: string;
 };
 
-export type GetAllTopicMessagesResponse = Array<Message>;
+export type GetAllTopicMessagesResponse = (Array<Message>);
 
 export type CreateOrganizationData = {
     /**
@@ -3106,7 +3106,7 @@ export type CreateOrganizationData = {
     requestBody: CreateOrganizationReqPayload;
 };
 
-export type CreateOrganizationResponse = Organization;
+export type CreateOrganizationResponse = (Organization);
 
 export type UpdateOrganizationData = {
     /**
@@ -3119,7 +3119,7 @@ export type UpdateOrganizationData = {
     trOrganization: string;
 };
 
-export type UpdateOrganizationResponse = Organization;
+export type UpdateOrganizationResponse = (Organization);
 
 export type UpdateAllOrgDatasetConfigsData = {
     /**
@@ -3132,7 +3132,7 @@ export type UpdateAllOrgDatasetConfigsData = {
     trOrganization: string;
 };
 
-export type UpdateAllOrgDatasetConfigsResponse = void;
+export type UpdateAllOrgDatasetConfigsResponse = (void);
 
 export type GetOrganizationUsageData = {
     /**
@@ -3145,7 +3145,7 @@ export type GetOrganizationUsageData = {
     trOrganization: string;
 };
 
-export type GetOrganizationUsageResponse = OrganizationUsageCount;
+export type GetOrganizationUsageResponse = (OrganizationUsageCount);
 
 export type GetOrganizationUsersData = {
     /**
@@ -3158,7 +3158,7 @@ export type GetOrganizationUsersData = {
     trOrganization: string;
 };
 
-export type GetOrganizationUsersResponse = Array<SlimUser>;
+export type GetOrganizationUsersResponse = (Array<SlimUser>);
 
 export type GetOrganizationData = {
     /**
@@ -3171,7 +3171,7 @@ export type GetOrganizationData = {
     trOrganization: string;
 };
 
-export type GetOrganizationResponse = Organization;
+export type GetOrganizationResponse = (Organization);
 
 export type DeleteOrganizationData = {
     /**
@@ -3184,7 +3184,7 @@ export type DeleteOrganizationData = {
     trOrganization: string;
 };
 
-export type DeleteOrganizationResponse = void;
+export type DeleteOrganizationResponse = (void);
 
 export type CreateSetupCheckoutSessionData = {
     /**
@@ -3193,7 +3193,7 @@ export type CreateSetupCheckoutSessionData = {
     organizationId: string;
 };
 
-export type CreateSetupCheckoutSessionResponse = CreateSetupCheckoutSessionResPayload;
+export type CreateSetupCheckoutSessionResponse = (CreateSetupCheckoutSessionResPayload);
 
 export type GetAllInvoicesData = {
     /**
@@ -3202,7 +3202,7 @@ export type GetAllInvoicesData = {
     organizationId: string;
 };
 
-export type GetAllInvoicesResponse = Array<StripeInvoice>;
+export type GetAllInvoicesResponse = (Array<StripeInvoice>);
 
 export type DirectToPaymentLinkData = {
     /**
@@ -3215,7 +3215,7 @@ export type DirectToPaymentLinkData = {
     planId: string;
 };
 
-export type GetAllPlansResponse = Array<StripePlan>;
+export type GetAllPlansResponse = (Array<StripePlan>);
 
 export type CancelSubscriptionData = {
     /**
@@ -3228,7 +3228,7 @@ export type CancelSubscriptionData = {
     trOrganization: string;
 };
 
-export type CancelSubscriptionResponse = unknown;
+export type CancelSubscriptionResponse = (unknown);
 
 export type UpdateSubscriptionPlanData = {
     /**
@@ -3245,7 +3245,7 @@ export type UpdateSubscriptionPlanData = {
     trOrganization: string;
 };
 
-export type UpdateSubscriptionPlanResponse = unknown;
+export type UpdateSubscriptionPlanResponse = (unknown);
 
 export type CreateTopicData = {
     /**
@@ -3258,7 +3258,7 @@ export type CreateTopicData = {
     trDataset: string;
 };
 
-export type CreateTopicResponse = Topic;
+export type CreateTopicResponse = (Topic);
 
 export type UpdateTopicData = {
     /**
@@ -3271,7 +3271,7 @@ export type UpdateTopicData = {
     trDataset: string;
 };
 
-export type UpdateTopicResponse = void;
+export type UpdateTopicResponse = (void);
 
 export type GetAllTopicsForOwnerIdData = {
     /**
@@ -3284,7 +3284,7 @@ export type GetAllTopicsForOwnerIdData = {
     trDataset: string;
 };
 
-export type GetAllTopicsForOwnerIdResponse = Array<Topic>;
+export type GetAllTopicsForOwnerIdResponse = (Array<Topic>);
 
 export type DeleteTopicData2 = {
     /**
@@ -3297,7 +3297,7 @@ export type DeleteTopicData2 = {
     trDataset: string;
 };
 
-export type DeleteTopicResponse = void;
+export type DeleteTopicResponse = (void);
 
 export type UpdateUserData = {
     /**
@@ -3306,7 +3306,7 @@ export type UpdateUserData = {
     requestBody: UpdateUserOrgRoleData;
 };
 
-export type UpdateUserResponse = void;
+export type UpdateUserResponse = (void);
 
 export type SetUserApiKeyData = {
     /**
@@ -3315,7 +3315,7 @@ export type SetUserApiKeyData = {
     requestBody: SetUserApiKeyRequest;
 };
 
-export type SetUserApiKeyResponse2 = SetUserApiKeyResponse;
+export type SetUserApiKeyResponse2 = (SetUserApiKeyResponse);
 
 export type DeleteUserApiKeyData = {
     /**
@@ -3324,9 +3324,9 @@ export type DeleteUserApiKeyData = {
     apiKeyId: string;
 };
 
-export type DeleteUserApiKeyResponse = void;
+export type DeleteUserApiKeyResponse = (void);
 
-export type GetMetricsResponse = string;
+export type GetMetricsResponse = (string);
 
 export type $OpenApiTs = {
     '/api/analytics/ctr': {

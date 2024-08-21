@@ -15,8 +15,8 @@ import {
   SearchWithinGroupReqPayload,
   UpdateChunkGroupReqPayload,
   UpdateGroupByTrackingIDReqPayload,
-} from "../fetch-client";
-import { TrieveSDK } from "../sdk";
+} from "../../fetch-client";
+import { TrieveSDK } from "../../sdk";
 
 export async function createChunkGroup(
   this: TrieveSDK,
@@ -85,22 +85,22 @@ export async function updateGroupByTrackingId(
 
 export async function addChunkToGroup(
   this: TrieveSDK,
-  data: AddChunkToGroupReqPayload & { groupId: string }
+  data: AddChunkToGroupReqPayload & { group_id: string }
 ) {
   return this.trieve.fetch("/api/chunk_group/chunk/{group_id}", "post", {
     data,
-    groupId: data.groupId,
+    groupId: data.group_id,
     datasetId: this.datasetId,
   });
 }
 
 export async function removeChunkFromGroup(
   this: TrieveSDK,
-  data: RemoveChunkFromGroupReqPayload & { groupId: string }
+  data: RemoveChunkFromGroupReqPayload & { group_id: string }
 ) {
   return this.trieve.fetch("/api/chunk_group/chunk/{group_id}", "delete", {
     data,
-    groupId: data.groupId,
+    groupId: data.group_id,
     datasetId: this.datasetId,
   });
 }

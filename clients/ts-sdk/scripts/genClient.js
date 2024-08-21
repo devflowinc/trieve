@@ -2,7 +2,7 @@ import { createClient } from "@hey-api/openapi-ts";
 import fs from "node:fs";
 
 const main = async () => {
-  const client = await createClient({
+  await createClient({
     client: "fetch",
     types: true,
     schemas: false,

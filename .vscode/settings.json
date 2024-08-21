@@ -12,5 +12,6 @@
     "./frontends/dashboard",
     "./frontends/search",
     "./frontends/analytics"
-  ]
+  ],
+  "vitest.disableWorkspaceWarning": true
 }

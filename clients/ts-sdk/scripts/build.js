@@ -1,5 +1,4 @@
 import path from "node:path";
-import url from "node:url";
 import { build as esbuild } from "esbuild";
 
 const srcPath = path.join(process.cwd(), "src");

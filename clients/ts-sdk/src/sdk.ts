@@ -1,11 +1,5 @@
-import * as chunkMethods from "./functions/chunk";
-import * as chunkGroupMethods from "./functions/chunkGroups";
-import {
-  CTRAnalytics,
-  RAGAnalytics,
-  RecommendationAnalytics,
-  TrieveFetchClient,
-} from "./fetch-client";
+import methods from "./functions/index";
+import { TrieveFetchClient } from "./fetch-client";
 
 export class TrieveSDK {
   trieve: TrieveFetchClient;
@@ -28,39 +22,14 @@ export class TrieveSDK {
     });
     this.datasetId = datasetId;
   }
-
-  async getCTRAnalytics(props: CTRAnalytics) {
-    return await this.trieve.fetch("/api/analytics/ctr", "post", {
-      data: props,
-      datasetId: this.datasetId,
-    });
-  }
-  async getRagAnalytics(props: RAGAnalytics) {
-    return this.trieve.fetch("/api/analytics/rag", "post", {
-      data: props,
-      datasetId: this.datasetId,
-    });
-  }
-  async getRecommendationAnalytics(props: RecommendationAnalytics) {
-    return this.trieve.fetch("/api/analytics/recommendations", "post", {
-      data: props,
-      datasetId: this.datasetId,
-    });
-  }
 }
-Object.entries(chunkMethods).forEach(([name, method]) => {
-  // @ts-expect-error
+
+type Methods = typeof methods;
+Object.entries(methods).forEach(([name, method]) => {
+  // @ts-expect-error string should be used to index in this case
   TrieveSDK.prototype[name] = method;
 });
 
-Object.entries(chunkGroupMethods).forEach(([name, method]) => {
-  // @ts-expect-error
-  TrieveSDK.prototype[name] = method;
-});
-
-type ChunkMethods = typeof chunkMethods;
-type ChunkGroupMethods = typeof chunkGroupMethods;
 declare module "./sdk" {
-  interface TrieveSDK extends ChunkMethods {}
-  interface TrieveSDK extends ChunkGroupMethods {}
+  interface TrieveSDK extends Methods {}
 }
