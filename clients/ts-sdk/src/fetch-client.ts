@@ -164,9 +164,13 @@ export class TrieveFetchClient {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${await response.text()}`);
     }
+    let responseObject;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    const responseObject = await response.json();
+    try {
+      responseObject = await response.clone().json();
+    } catch {
+      responseObject = await response.clone().text();
+    }
     if (this.debug) {
       console.info("Response: ", responseObject);
     }

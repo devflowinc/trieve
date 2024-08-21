@@ -1,19 +1,9 @@
-// sum.test.js
-import {
-  expect,
-  test,
-  describe,
-  beforeEach,
-  beforeAll,
-  expectTypeOf,
-} from "vitest";
+import { expect, test, describe, beforeAll, expectTypeOf } from "vitest";
 import { TrieveSDK } from "./sdk";
 import {
   CTRAnalyticsResponse,
   RAGAnalyticsResponse,
-  RecommendationAnalytics,
   RecommendationAnalyticsResponse,
-  RecommendResponseTypes,
 } from "./types.gen";
 
 describe("SDK Tests", async () => {
