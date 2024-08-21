@@ -1,16 +1,14 @@
+import * as chunkMethods from "./functions/chunk";
 import {
   CTRAnalytics,
-  GetCtrAnalyticsData,
   RAGAnalytics,
   RecommendationAnalytics,
-  SearchChunksReqPayload,
-  SearchResponseBody,
   TrieveFetchClient,
 } from "./fetch-client";
 
 export class TrieveSDK {
-  private trieve: TrieveFetchClient;
-  private datasetId: string;
+  trieve: TrieveFetchClient;
+  datasetId: string;
   constructor({
     apiKey,
     baseUrl = "https://api.trieve.ai",
@@ -28,20 +26,6 @@ export class TrieveSDK {
       debug: debug,
     });
     this.datasetId = datasetId;
-  }
-
-  async search(props: SearchChunksReqPayload) {
-    const searchResults = (await this.trieve.fetch(
-      "/api/chunk/search",
-      "post",
-      {
-        xApiVersion: "V2",
-        data: props,
-        datasetId: this.datasetId,
-      }
-    )) as SearchResponseBody;
-
-    return searchResults;
   }
 
   async getCTRAnalytics(props: CTRAnalytics) {
@@ -62,4 +46,13 @@ export class TrieveSDK {
       datasetId: this.datasetId,
     });
   }
+}
+Object.entries(chunkMethods).forEach(([name, method]) => {
+  // @ts-expect-error
+  TrieveSDK.prototype[name] = method;
+});
+
+type Methods = typeof chunkMethods;
+declare module "./sdk" {
+  interface TrieveSDK extends Methods {}
 }
