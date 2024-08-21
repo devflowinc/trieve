@@ -16,8 +16,8 @@ import {
   SuggestedQueriesReqPayload,
   UpdateChunkByTrackingIdData,
   UpdateChunkReqPayload,
-} from "../fetch-client";
-import { TrieveSDK } from "../sdk";
+} from "../../fetch-client";
+import { TrieveSDK } from "../../sdk";
 
 export async function search(this: TrieveSDK, props: SearchChunksReqPayload) {
   const searchResults = (await this.trieve.fetch("/api/chunk/search", "post", {

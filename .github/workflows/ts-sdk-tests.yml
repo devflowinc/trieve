@@ -1,0 +1,34 @@
+name: Typescript SDK test suite
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - "clients/ts-sdk/**"
+
+jobs:
+  build-test:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+      - name: Running lint
+        run: yarn build --filter dashboard
+  eslint:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+      - name: Running tests
+        run: yarn vitest run
+      - name: Annotate Code Linting Results
+        uses: ataylorme/eslint-annotate-action@1.0.4
+        if: always()
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          report-json: "./frontends/dashboard/eslint_report.json"

@@ -72,7 +72,7 @@ function replacePathParams(
   params: Record<string, string>
 ): string {
   for (const [key, value] of Object.entries(params)) {
-    path = path.replace(`{${camelcaseToSnakeCase(key)}}`, value);
+    path = path.replaceAll(`{${camelcaseToSnakeCase(key)}}`, value);
   }
   return path;
 }
@@ -137,14 +137,16 @@ export class TrieveFetchClient {
         }
         // Check if the key is in the path as path params
         const snakedKey = camelcaseToSnakeCase(key);
-        if (path.includes(`{${snakedKey}}`) && typeof value === "string") {
-          pathParams[key] = value;
+        if (
+          path.includes(`{${snakedKey}}`) &&
+          (typeof value === "string" || typeof value === "number")
+        ) {
+          pathParams[key] = value.toLocaleString();
         }
       }
     }
 
     const updatedPath = replacePathParams(path, pathParams);
-
     if (this.debug) {
       console.info("Sending request: ", {
         url: this.baseUrl + updatedPath,
