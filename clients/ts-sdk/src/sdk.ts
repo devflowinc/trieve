@@ -1,4 +1,5 @@
 import * as chunkMethods from "./functions/chunk";
+import * as chunkGroupMethods from "./functions/chunkGroups";
 import {
   CTRAnalytics,
   RAGAnalytics,
@@ -52,7 +53,14 @@ Object.entries(chunkMethods).forEach(([name, method]) => {
   TrieveSDK.prototype[name] = method;
 });
 
-type Methods = typeof chunkMethods;
+Object.entries(chunkGroupMethods).forEach(([name, method]) => {
+  // @ts-expect-error
+  TrieveSDK.prototype[name] = method;
+});
+
+type ChunkMethods = typeof chunkMethods;
+type ChunkGroupMethods = typeof chunkGroupMethods;
 declare module "./sdk" {
-  interface TrieveSDK extends Methods {}
+  interface TrieveSDK extends ChunkMethods {}
+  interface TrieveSDK extends ChunkGroupMethods {}
 }
