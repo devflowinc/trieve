@@ -8,7 +8,7 @@ import {
   EditMessageReqPayload,
   GetAllTopicMessagesData,
   RegenerateMessageReqPayload,
-} from "../../index";
+} from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
 export async function createMessage(
