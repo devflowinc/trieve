@@ -10,7 +10,7 @@ on:
       - "frontends/search/**"
       - "frontends/shared/**"
       - "frontends/config/**"
-      - "clients/fetch-client/**"
+      - "clients/ts-sdk/**"
 
 jobs:
   build-test:

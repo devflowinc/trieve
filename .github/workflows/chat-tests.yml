@@ -10,7 +10,7 @@ on:
       - "frontends/chat/**"
       - "frontends/shared/**"
       - "frontends/config/**"
-      - "clients/fetch-client/**"
+      - "clients/ts-sdk/**"
 jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204

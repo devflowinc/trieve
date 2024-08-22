@@ -166,7 +166,7 @@ export class TrieveFetchClient {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${await response.text()}`);
     }
-    let responseObject;
+    let responseObject: any;
 
     try {
       responseObject = await response.clone().json();

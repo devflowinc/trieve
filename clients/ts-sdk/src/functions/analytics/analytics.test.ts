@@ -1,18 +1,17 @@
-import { beforeAll, describe, expect, expectTypeOf, test } from "vitest";
+import { beforeAll, describe, expectTypeOf, test } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import {
   CTRAnalyticsResponse,
   RAGAnalyticsResponse,
   RecommendationAnalyticsResponse,
+  SearchAnalyticsResponse,
 } from "../../types.gen";
+import { CHUNK_EXAMPLE_ID, TRIEVE } from "../../../__tests__/constants";
 
 describe("Analytics Tests", async () => {
   let trieve: TrieveSDK;
   beforeAll(() => {
-    trieve = new TrieveSDK({
-      apiKey: "tr-mKHF9sstPHQHcCbh6Qk6Uw54hx7uwDGU",
-      datasetId: "c04c43d9-382d-4815-810d-b776904a7390",
-    });
+    trieve = TRIEVE;
   });
   test("ctr analytics get", async () => {
     const data = await trieve.getCTRAnalytics({
@@ -20,6 +19,17 @@ describe("Analytics Tests", async () => {
     });
 
     expectTypeOf(data).toEqualTypeOf<CTRAnalyticsResponse>();
+  });
+  test("sendCTRAnalytics", async () => {
+    const data = await trieve.sendCTRAnalytics({
+      clicked_chunk_id: CHUNK_EXAMPLE_ID,
+      ctr_type: "search",
+      metadata: "query",
+      position: 123,
+      request_id: CHUNK_EXAMPLE_ID,
+    });
+
+    expectTypeOf(data).toBeVoid();
   });
   test("rag analytics get", async () => {
     const data = await trieve.getRagAnalytics({
@@ -34,5 +44,12 @@ describe("Analytics Tests", async () => {
     });
 
     expectTypeOf(data).toEqualTypeOf<RecommendationAnalyticsResponse>();
+  });
+  test("getSearchAnalytics", async () => {
+    const data = await trieve.getSearchAnalytics({
+      type: "count_queries",
+    });
+
+    expectTypeOf(data).toEqualTypeOf<SearchAnalyticsResponse>();
   });
 });

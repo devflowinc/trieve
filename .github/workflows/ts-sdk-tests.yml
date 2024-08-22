@@ -16,9 +16,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: yarn --frozen-lockfile
-      - name: Running lint
-        run: yarn build --filter dashboard
-  eslint:
+      - name: Running tests
+        run: yarn build --filter trieve-ts-sdk
+  tests:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +26,9 @@ jobs:
         run: yarn --frozen-lockfile
       - name: Running tests
         run: yarn vitest run
-      - name: Annotate Code Linting Results
-        uses: ataylorme/eslint-annotate-action@1.0.4
-        if: always()
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          report-json: "./frontends/dashboard/eslint_report.json"
+      # - name: Annotate Code Linting Results
+      #   uses: ataylorme/eslint-annotate-action@1.0.4
+      #   if: always()
+      #   with:
+      #     repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      #     report-json: "./clients/ts-sdk/eslint_report.json"
