@@ -147,6 +147,7 @@ export class TrieveFetchClient {
     }
 
     const updatedPath = replacePathParams(path, pathParams);
+
     if (this.debug) {
       console.info("Sending request: ", {
         url: this.baseUrl + updatedPath,
@@ -166,7 +167,7 @@ export class TrieveFetchClient {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${await response.text()}`);
     }
-    let responseObject: any;
+    let responseObject;
 
     try {
       responseObject = await response.clone().json();
@@ -176,6 +177,8 @@ export class TrieveFetchClient {
     if (this.debug) {
       console.info("Response: ", responseObject);
     }
-    return responseObject;
+    return responseObject as unknown as EJECT extends false
+      ? ResponseBody<P, M>
+      : URE;
   }
 }
