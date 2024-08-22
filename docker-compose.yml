@@ -35,7 +35,7 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
 
   qdrant-database:
-    image: qdrant/qdrant:v1.11.0
+    image: qdrant/qdrant:v1.10.1
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     ports:
