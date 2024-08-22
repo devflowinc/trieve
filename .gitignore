@@ -80,6 +80,7 @@ embedding-server/data/*
 */.vite
 data/*
 clients/ts-sdk/dist/**
+clients/ts-sdk/docs/**
 
 
 server/src/trieve_protobufs/*
