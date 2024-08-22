@@ -30,7 +30,7 @@
     "tailwind-gradient-mask-image": "^1.2.0",
     "tailwind-scrollbar": "^3.1.0",
     "terracotta": "^1.0.3",
-    "trieve-ts-sdk": "*"
+    "trieve-ts-sdk": "file:../../clients/ts-sdk"
   },
   "devDependencies": {
     "config": "*",
