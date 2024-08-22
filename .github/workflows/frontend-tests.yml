@@ -1,4 +1,4 @@
-name: search test suite
+name: Frontends test suite
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -7,9 +7,7 @@ concurrency:
 on:
   pull_request:
     paths:
-      - "frontends/search/**"
-      - "frontends/shared/**"
-      - "frontends/config/**"
+      - "frontends/**"
       - "clients/ts-sdk/**"
 
 jobs:
@@ -19,8 +17,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: yarn --frozen-lockfile
-      - name: Running lint
-        run: yarn build --filter search
+      - name: Running Build
+        run: yarn build
   eslint:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
@@ -28,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Running lint
-        run: yarn lint:CI --filter search
+        run: yarn lint:CI
       - name: Annotate Code Linting Results
         uses: ataylorme/eslint-annotate-action@1.0.4
         if: always()
