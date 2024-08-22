@@ -27,9 +27,27 @@ jobs:
         run: yarn --frozen-lockfile
       - name: Running lint
         run: yarn lint:CI
-      - name: Annotate Code Linting Results
+      - name: Annotate Search Linting Results
         uses: ataylorme/eslint-annotate-action@1.0.4
         if: always()
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           report-json: "./frontends/search/eslint_report.json"
+      - name: Annotate Chat Linting Results
+        uses: ataylorme/eslint-annotate-action@1.0.4
+        if: always()
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          report-json: "./frontends/chat/eslint_report.json"
+      - name: Annotate Dashboard Linting Results
+        uses: ataylorme/eslint-annotate-action@1.0.4
+        if: always()
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          report-json: "./frontends/dashboard/eslint_report.json"
+      - name: Annotate Analytics Linting Results
+        uses: ataylorme/eslint-annotate-action@1.0.4
+        if: always()
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          report-json: "./frontends/analytics/eslint_report.json"
