@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { FaSolidCheck } from "solid-icons/fa";
 import {
   Show,
