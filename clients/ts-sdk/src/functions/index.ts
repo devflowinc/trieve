@@ -3,6 +3,7 @@ import * as groupsMethods from "./groups/chunkGroups";
 import * as analyticsMethods from "./analytics/analytics";
 import * as topicMethods from "./topic/topic";
 import * as messageMethods from "./message/message";
+import * as fileMethods from "./file/file";
 
 export default {
   ...chunkMethods,
@@ -10,4 +11,5 @@ export default {
   ...analyticsMethods,
   ...topicMethods,
   ...messageMethods,
+  ...fileMethods,
 };
