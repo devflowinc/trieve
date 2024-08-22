@@ -16,8 +16,8 @@ describe("Message Tests", async () => {
 
     expectTypeOf(data).toEqualTypeOf<string>();
   });
-  test("updateMessage", async () => {
-    const data = await trieve.updateMessage({
+  test("editMessage", async () => {
+    const data = await trieve.editMessage({
       message_sort_order: 1,
       new_message_content: "test2",
       topic_id: EXAMPLE_TOPIC_ID,
@@ -29,6 +29,8 @@ describe("Message Tests", async () => {
   test("regenerateMessage", async () => {
     const data = await trieve.regenerateMessage({
       topic_id: EXAMPLE_TOPIC_ID,
+      search_query: "test",
+      search_type: "fulltext",
     });
 
     expectTypeOf(data).toEqualTypeOf<string>();
