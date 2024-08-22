@@ -331,7 +331,14 @@ pub async fn get_org_dataset_count(
         .select(organization_usage_counts_columns::dataset_count)
         .first(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Error loading org dataset count".to_string()))?;
+        .map_err(|e| {
+            log::error!(
+                "Error loading org dataset count in get_org_dataset_count: {:?}",
+                e
+            );
+
+            ServiceError::BadRequest("Error loading org dataset count".to_string())
+        })?;
 
     Ok(dataset_count)
 }
