@@ -7,7 +7,7 @@ import {
   CreateTopicReqPayload,
   GetAllTopicsForOwnerIdData,
   UpdateTopicReqPayload,
-} from "../../index";
+} from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
 export async function createTopic(

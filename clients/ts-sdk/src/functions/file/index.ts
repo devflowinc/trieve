@@ -9,7 +9,7 @@ import {
   GetDatasetFilesHandlerData,
   GetFileHandlerData,
   UploadFileReqPayload,
-} from "../../index";
+} from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
 export async function uploadFile(

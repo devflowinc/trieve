@@ -4,7 +4,7 @@
  * @module Event Methods
  */
 
-import { GetEventsData } from "../../index";
+import { GetEventsData } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
 export async function getEventsForDataset(
