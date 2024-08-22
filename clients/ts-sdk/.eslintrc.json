@@ -15,6 +15,7 @@
   },
   "plugins": ["@typescript-eslint"],
   "rules": {
+    "@typescript-eslint/no-unnecessary-type-assertion": 0,
     "@typescript-eslint/no-unused-vars": [
       "error",
       {

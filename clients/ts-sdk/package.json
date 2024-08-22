@@ -6,6 +6,7 @@
   "version": "0.0.1",
   "license": "MIT",
   "scripts": {
+    "lint": "eslint 'src/**/*.ts'",
     "build:clean": "rm -rf dist && yarn type:gen && yarn build",
     "build": "yarn build:src && yarn type:dts",
     "build:src": "node ./scripts/build.js",

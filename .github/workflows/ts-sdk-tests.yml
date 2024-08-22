@@ -25,10 +25,8 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Running tests
+        working-directory: ./clients/ts-sdk
         run: yarn vitest run
-      # - name: Annotate Code Linting Results
-      #   uses: ataylorme/eslint-annotate-action@1.0.4
-      #   if: always()
-      #   with:
-      #     repo-token: "${{ secrets.GITHUB_TOKEN }}"
-      #     report-json: "./clients/ts-sdk/eslint_report.json"
+      - name: Running lint
+        working-directory: ./clients/ts-sdk
+        run: yarn lint

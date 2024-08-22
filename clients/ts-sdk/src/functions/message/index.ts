@@ -22,7 +22,7 @@ export async function createMessage(
   });
 }
 
-export async function updateMessage(
+export async function editMessage(
   /** @hidden */
   this: TrieveSDK,
   data: EditMessageReqPayload
@@ -32,6 +32,7 @@ export async function updateMessage(
     datasetId: this.datasetId,
   });
 }
+
 export async function regenerateMessage(
   /** @hidden */
   this: TrieveSDK,
