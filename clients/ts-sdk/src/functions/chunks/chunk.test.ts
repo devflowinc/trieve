@@ -1,4 +1,4 @@
-import { expect, test, describe, beforeAll, expectTypeOf } from "vitest";
+import { test, describe, beforeAll, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import {
   ChunkReturnTypes,

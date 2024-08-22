@@ -1,9 +1,10 @@
-import * as chunkMethods from "./chunks/chunk";
-import * as groupsMethods from "./groups/chunkGroups";
-import * as analyticsMethods from "./analytics/analytics";
-import * as topicMethods from "./topic/topic";
-import * as messageMethods from "./message/message";
-import * as fileMethods from "./file/file";
+import * as chunkMethods from "./chunks/index";
+import * as groupsMethods from "./groups/index";
+import * as analyticsMethods from "./analytics/index";
+import * as topicMethods from "./topic/index";
+import * as messageMethods from "./message/index";
+import * as fileMethods from "./file/index";
+import * as eventsMethods from "./events/index";
 
 export default {
   ...chunkMethods,
@@ -12,4 +13,5 @@ export default {
   ...topicMethods,
   ...messageMethods,
   ...fileMethods,
+  ...eventsMethods,
 };
