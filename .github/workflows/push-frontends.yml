@@ -8,16 +8,16 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'main'
+      - "main"
     paths:
-    - 'frontends/dashboard/**'
-    - 'frontends/search/**'
-    - 'frontends/chat/**'
-    - 'frontends/analytics-site/**'
-    - 'frontends/shared/**'
-    - 'frontends/config/**'
-    - '.github/workflows/**'
-    - 'clients/fetch-client/**'
+      - "frontends/dashboard/**"
+      - "frontends/search/**"
+      - "frontends/chat/**"
+      - "frontends/analytics-site/**"
+      - "frontends/shared/**"
+      - "frontends/config/**"
+      - ".github/workflows/**"
+      - "clients/ts-sdk/**"
 
 jobs:
   build_chat:

@@ -7,7 +7,7 @@ COPY yarn.lock ./
 COPY turbo.json .
 
 COPY frontends ./frontends
-COPY clients/fetch-client ./clients/fetch-client
+COPY clients/ts-sdk ./clients/ts-sdk
 
 RUN yarn install
 RUN yarn run build --filter analytics

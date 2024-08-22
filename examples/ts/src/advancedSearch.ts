@@ -1,4 +1,4 @@
-import { SearchResponseBody } from "trieve-fetch-client";
+import { SearchResponseBody } from "trieve-ts-sdk";
 import { EXAMPLE_DATASET_ID, trieve } from "./trieve";
 
 const main = async () => {

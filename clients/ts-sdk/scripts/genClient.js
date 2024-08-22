@@ -19,4 +19,4 @@ const main = async () => {
   fs.rmSync("./client", { recursive: true });
 };
 
-main();
+void main();

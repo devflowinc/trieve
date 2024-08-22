@@ -6,6 +6,7 @@ export const TRIEVE = new TrieveSDK({
   apiKey: "tr-mKHF9sstPHQHcCbh6Qk6Uw54hx7uwDGU",
   datasetId: "6cba9148-9cbb-417a-a955-93ea749ef27c",
 });
+export const EXAMPLE_TOPIC_ID = "f85984e1-7818-4971-b300-2f462fe1a5a2";
 
 export const CHUNK_EXAMPLE_TRACKING_ID = "B08569DD46";
 export const CHUNK_EXAMPLE_ID = "7d5ef532-80e3-4978-a174-eb99960fdc9d";

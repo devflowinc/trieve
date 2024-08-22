@@ -10,7 +10,7 @@ on:
       - "frontends/analytics/**"
       - "frontends/shared/**"
       - "frontends/config/**"
-      - "clients/fetch-client/**"
+      - "clients/ts-sdk/**"
 
 jobs:
   build-test:
