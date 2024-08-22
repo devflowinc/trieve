@@ -1,0 +1,23 @@
+/** @type { import('typedoc').TypeDocOptionMap & import('typedoc-plugin-merge-modules').Config } */
+{
+  "out": "./docs",
+  "entryPointStrategy": "expand",
+  "entryPoints": ["src/functions/**", "src/types.gen.ts"],
+  "exclude": ["/src/**/*.test.ts", "src/functions/index.ts"],
+  "excludeProtected": true,
+  "includeVersion": true,
+  "name": "Trieve Typescript SDK",
+  "readme": "./Readme.md",
+  "searchInComments": true,
+  "searchInDocuments": true,
+  "navigationLinks": {
+    "Github": "http://example.com"
+  },
+
+  "categorizeByGroup": true,
+  "groupOrder": ["functions"],
+  "customCss": "./theme/style.css",
+  "plugin": ["typedoc-plugin-merge-modules"],
+  "mergeModulesRenameDefaults": true, // NEW option of TypeDoc added by this plugin
+  "mergeModulesMergeMode": "module" // NEW option of TypeDoc added by this plugin
+}

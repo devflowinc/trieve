@@ -3,7 +3,7 @@
   "type": "module",
   "exports": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "version": "0.11.7",
+  "version": "0.0.1",
   "license": "MIT",
   "scripts": {
     "build:clean": "rm -rf dist && yarn type:gen && yarn build",
@@ -11,7 +11,8 @@
     "build:src": "node ./scripts/build.js",
     "type:gen": "node ./scripts/genClient.js",
     "type:dts": "tsc --emitDeclarationOnly --declarationMap",
-    "test": "vitest"
+    "test": "vitest",
+    "build:docs": "typedoc"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.52.9",
@@ -20,5 +21,9 @@
     "esbuild-register": "^3.6.0",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
+  },
+  "dependencies": {
+    "typedoc-plugin-merge-modules": "^6.0.0",
+    "typedoc": "^0.26.0"
   }
 }

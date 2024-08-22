@@ -1,11 +1,7 @@
 import { beforeAll, describe, expectTypeOf, test } from "vitest";
 import { TrieveSDK } from "../../sdk";
-import { File, FileDTO, Topic, UploadFileResult } from "../../types.gen";
-import {
-  EXAMPLE_FILE_ID,
-  EXAMPLE_TOPIC_ID,
-  TRIEVE,
-} from "../../../__tests__/constants";
+import { File, FileDTO, UploadFileResult } from "../../types.gen";
+import { EXAMPLE_FILE_ID, TRIEVE } from "../../../__tests__/constants";
 import fs from "fs";
 
 const file = fs.readFileSync("./__tests__/uploadme.pdf");
