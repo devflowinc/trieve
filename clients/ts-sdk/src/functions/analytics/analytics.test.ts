@@ -6,7 +6,7 @@ import {
   RecommendationAnalyticsResponse,
   SearchAnalyticsResponse,
 } from "../../types.gen";
-import { CHUNK_EXAMPLE_ID, TRIEVE } from "../../../__tests__/constants";
+import { CHUNK_EXAMPLE_ID, TRIEVE } from "../../__tests__/constants";
 
 describe("Analytics Tests", async () => {
   let trieve: TrieveSDK;

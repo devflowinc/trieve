@@ -1,7 +1,7 @@
 import { beforeAll, describe, expectTypeOf, test } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import { EventReturn } from "../../types.gen";
-import { TRIEVE } from "../../../__tests__/constants";
+import { TRIEVE } from "../../__tests__/constants";
 
 describe("Events Tests", async () => {
   let trieve: TrieveSDK;
