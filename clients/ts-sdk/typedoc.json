@@ -17,7 +17,6 @@
   "categorizeByGroup": true,
   "groupOrder": ["functions"],
   "customCss": "./theme/style.css",
-  "plugin": ["typedoc-plugin-merge-modules"],
-  "mergeModulesRenameDefaults": true, // NEW option of TypeDoc added by this plugin
+  "plugin": ["typedoc-plugin-merge-modules", "typedoc-plugin-mdn-links"],
   "mergeModulesMergeMode": "module" // NEW option of TypeDoc added by this plugin
 }

@@ -15,18 +15,25 @@ import { TrieveSDK } from "../../sdk";
 export async function uploadFile(
   /** @hidden */
   this: TrieveSDK,
-  data: UploadFileReqPayload
+  data: UploadFileReqPayload,
+  signal?: AbortSignal
 ) {
-  return await this.trieve.fetch("/api/file", "post", {
-    data,
-    datasetId: this.datasetId,
-  });
+  return await this.trieve.fetch(
+    "/api/file",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }
 
 export async function getFilesForDataset(
   /** @hidden */
   this: TrieveSDK,
-  data: Omit<Omit<GetDatasetFilesHandlerData, "datasetId">, "trDataset">
+  data: Omit<Omit<GetDatasetFilesHandlerData, "datasetId">, "trDataset">,
+  signal?: AbortSignal
 ) {
   return await this.trieve.fetch(
     "/api/dataset/files/{dataset_id}/{page}",
@@ -34,27 +41,40 @@ export async function getFilesForDataset(
     {
       ...data,
       datasetId: this.datasetId,
-    }
+    },
+    signal
   );
 }
 export async function getFile(
   /** @hidden */
   this: TrieveSDK,
-  data: Omit<GetFileHandlerData, "trDataset">
+  data: Omit<GetFileHandlerData, "trDataset">,
+  signal?: AbortSignal
 ) {
-  return await this.trieve.fetch("/api/file/{file_id}", "get", {
-    ...data,
-    datasetId: this.datasetId,
-  });
+  return await this.trieve.fetch(
+    "/api/file/{file_id}",
+    "get",
+    {
+      ...data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }
 
 export async function deleteFile(
   /** @hidden */
   this: TrieveSDK,
-  data: Omit<DeleteFileHandlerData, "trDataset">
+  data: Omit<DeleteFileHandlerData, "trDataset">,
+  signal?: AbortSignal
 ) {
-  return await this.trieve.fetch("/api/file/{file_id}", "delete", {
-    ...data,
-    datasetId: this.datasetId,
-  });
+  return await this.trieve.fetch(
+    "/api/file/{file_id}",
+    "delete",
+    {
+      ...data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }

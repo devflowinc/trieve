@@ -4,7 +4,7 @@ import { File, FileDTO, UploadFileResult } from "../../types.gen";
 import { EXAMPLE_FILE_ID, TRIEVE } from "../../__tests__/constants";
 import fs from "fs";
 
-const file = fs.readFileSync("./__tests__/uploadme.pdf");
+const file = fs.readFileSync("./src/__tests__/uploadme.pdf");
 
 const fileEncoded = file
   .toString("base64")
