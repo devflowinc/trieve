@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "lint": "eslint 'src/**/*.ts'",
-    "build:clean": "rm -rf dist && yarn type:gen && yarn build",
+    "build:clean": "rm tsconfig.tsbuildinfo && rm -rf dist && yarn type:gen && yarn build",
     "build": "yarn build:src && yarn type:dts",
     "build:src": "node ./scripts/build.js",
     "type:gen": "node ./scripts/genClient.js",
@@ -24,7 +24,7 @@
     "vitest": "^2.0.5"
   },
   "dependencies": {
-    "typedoc-plugin-merge-modules": "^6.0.0",
-    "typedoc": "^0.26.0"
+    "typedoc": "^0.26.0",
+    "typedoc-plugin-merge-modules": "^6.0.0"
   }
 }
