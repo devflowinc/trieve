@@ -85,7 +85,12 @@ const initalState: SearchOptions = {
   group_size: 3,
   useQuoteNegatedTerms: false,
   removeStopWords: false,
-  filters: { must: [], must_not: [], should: [], jsonb_prefilter: true },
+  filters: {
+    must: [],
+    must_not: [],
+    should: [],
+    jsonb_prefilter: true,
+  } as Filters,
   multiQueries: [],
 };
 
