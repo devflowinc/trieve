@@ -109,7 +109,8 @@ export class TrieveFetchClient {
   >(
     path: P,
     method: EJECT extends false ? M : HttpMethod,
-    params?: EJECT extends false ? RequestParams<P, M> : URQ
+    params?: EJECT extends false ? RequestParams<P, M> : URQ,
+    signal?: AbortSignal
   ): Promise<EJECT extends false ? ResponseBody<P, M> : URE> {
     let requestBody: unknown;
 
@@ -162,6 +163,7 @@ export class TrieveFetchClient {
       method,
       headers: headers,
       body: requestBody ? JSON.stringify(requestBody) : undefined,
+      signal: signal,
     });
 
     if (!response.ok) {
