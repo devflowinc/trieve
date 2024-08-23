@@ -7,7 +7,7 @@
   "excludeProtected": true,
   "includeVersion": true,
   "name": "Trieve Typescript SDK",
-  "readme": "./Readme.md",
+  "readme": "./README.md",
   "searchInComments": true,
   "searchInDocuments": true,
   "navigationLinks": {
