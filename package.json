@@ -10,7 +10,7 @@
     "frontends/analytics",
     "frontends/shared",
     "frontends/config",
-    "clients/fetch-client",
+    "clients/ts-sdk",
     "examples/ts"
   ],
   "scripts": {

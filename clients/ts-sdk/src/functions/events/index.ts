@@ -10,10 +10,16 @@ import { TrieveSDK } from "../../sdk";
 export async function getEventsForDataset(
   /** @hidden */
   this: TrieveSDK,
-  data: GetEventsData
+  data: GetEventsData,
+  signal?: AbortSignal
 ) {
-  return await this.trieve.fetch("/api/events", "post", {
-    data,
-    datasetId: this.datasetId,
-  });
+  return await this.trieve.fetch(
+    "/api/events",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }

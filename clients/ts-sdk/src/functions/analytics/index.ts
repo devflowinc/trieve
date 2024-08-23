@@ -25,67 +25,102 @@ import { TrieveSDK } from "../../sdk";
  */
 export async function getCTRAnalytics(
   /** @hidden */
-  /** @hidden */
   this: TrieveSDK,
-  data: CTRAnalytics
+  data: CTRAnalytics,
+  signal?: AbortSignal
 ) {
-  return await this.trieve.fetch("/api/analytics/ctr", "post", {
-    data,
-    datasetId: this.datasetId,
-  });
+  return await this.trieve.fetch(
+    "/api/analytics/ctr",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }
 
 export async function sendCTRAnalytics(
   /** @hidden */
   this: TrieveSDK,
-  data: CTRDataRequestBody
+  data: CTRDataRequestBody,
+  signal?: AbortSignal
 ) {
-  return await this.trieve.fetch("/api/analytics/ctr", "put", {
-    data,
-    datasetId: this.datasetId,
-  });
+  return await this.trieve.fetch(
+    "/api/analytics/ctr",
+    "put",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }
 
 export async function getRagAnalytics(
   /** @hidden */
   this: TrieveSDK,
-  data: RAGAnalytics
+  data: RAGAnalytics,
+  signal?: AbortSignal
 ) {
-  return this.trieve.fetch("/api/analytics/rag", "post", {
-    data,
-    datasetId: this.datasetId,
-  });
+  return this.trieve.fetch(
+    "/api/analytics/rag",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }
 
 export async function getRecommendationAnalytics(
   /** @hidden */
   this: TrieveSDK,
-  data: RecommendationAnalytics
+  data: RecommendationAnalytics,
+  signal?: AbortSignal
 ) {
-  return this.trieve.fetch("/api/analytics/recommendations", "post", {
-    data,
-    datasetId: this.datasetId,
-  });
+  return this.trieve.fetch(
+    "/api/analytics/recommendations",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }
 
 export async function getSearchAnalytics(
   /** @hidden */
   this: TrieveSDK,
-  data: SearchAnalytics
+  data: SearchAnalytics,
+  signal?: AbortSignal
 ) {
-  return this.trieve.fetch("/api/analytics/search", "post", {
-    data,
-    datasetId: this.datasetId,
-  });
+  return this.trieve.fetch(
+    "/api/analytics/search",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }
 
 export async function getClusterAnalytics(
   /** @hidden */
   this: TrieveSDK,
-  data: ClusterAnalytics
+  data: ClusterAnalytics,
+  signal?: AbortSignal
 ) {
-  return this.trieve.fetch("/api/analytics/search/cluster", "post", {
-    data,
-    datasetId: this.datasetId,
-  });
+  return this.trieve.fetch(
+    "/api/analytics/search/cluster",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
 }
