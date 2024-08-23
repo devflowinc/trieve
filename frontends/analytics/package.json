@@ -28,7 +28,9 @@
     "solid-js": "^1.8.17",
     "tailwind-gradient-mask-image": "^1.2.0",
     "tailwind-scrollbar": "^3.1.0",
-    "yarn": "^1.22.22"
+    "trieve-fetch-client": "*",
+    "yarn": "^1.22.22",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.14.0",

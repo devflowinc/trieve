@@ -1,4 +1,4 @@
-use super::auth_handler::{AdminOnly, OwnerOnly};
+use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
         Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO, Pool,
@@ -9,7 +9,7 @@ use crate::{
     operators::{
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, get_dataset_by_id_query,
-            get_dataset_usage_query, get_datasets_by_organization_id,
+            get_dataset_usage_query, get_datasets_by_organization_id, get_tags_in_dataset_query,
             soft_delete_dataset_by_id_query, update_dataset_query,
         },
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
@@ -83,9 +83,9 @@ pub struct CreateDatasetRequest {
     pub server_configuration: Option<DatasetConfigurationDTO>,
 }
 
-/// Create dataset
+/// Create Dataset
 ///
-/// Create a new dataset. The auth'ed user must be an owner of the organization to create a dataset.
+/// Auth'ed user must be an owner of the organization to create a dataset.
 #[utoipa::path(
     post,
     path = "/dataset",
@@ -113,18 +113,19 @@ pub async fn create_dataset(
 
     let organization_sub_plan = get_org_from_id_query(org_id, pool.clone()).await?;
 
-    let dataset_count = get_org_dataset_count(org_id, pool.clone()).await?;
-
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
-    if unlimited == "false"
-        && dataset_count
+    if unlimited == "false" {
+        let dataset_count = get_org_dataset_count(org_id, pool.clone()).await?;
+        if dataset_count
             >= organization_sub_plan
                 .plan
                 .unwrap_or(StripePlan::default())
                 .dataset_count
-    {
-        return Ok(HttpResponse::UpgradeRequired()
-            .json(json!({"message": "Your plan must be upgraded to create additional datasets"})));
+        {
+            return Ok(HttpResponse::UpgradeRequired().json(
+                json!({"message": "Your plan must be upgraded to create additional datasets"}),
+            ));
+        }
     }
 
     let dataset = Dataset::from_details(
@@ -138,6 +139,7 @@ pub async fn create_dataset(
     );
 
     let d = create_dataset_query(dataset, pool).await?;
+
     Ok(HttpResponse::Ok().json(d))
 }
 
@@ -185,9 +187,9 @@ pub struct UpdateDatasetRequest {
     pub new_tracking_id: Option<String>,
 }
 
-/// Update Dataset
+/// Update Dataset by ID or Tracking ID
 ///
-/// Update a dataset by id or tracking_id. One of id or tracking_id must be provided. The auth'ed user must be an owner of the organization to update a dataset.
+/// One of id or tracking_id must be provided. The auth'ed user must be an owner of the organization to update a dataset.
 #[utoipa::path(
     put,
     path = "/dataset",
@@ -245,7 +247,7 @@ pub async fn update_dataset(
 
 /// Delete Dataset
 ///
-/// Delete a dataset. The auth'ed user must be an owner of the organization to delete a dataset.
+/// Auth'ed user must be an owner of the organization to delete a dataset.
 #[utoipa::path(
     delete,
     path = "/dataset/{dataset_id}",
@@ -335,7 +337,7 @@ pub async fn clear_dataset(
 
 /// Delete Dataset by Tracking ID
 ///
-/// Delete a dataset by its tracking id. The auth'ed user must be an owner of the organization to delete a dataset.
+/// Auth'ed user must be an owner of the organization to delete a dataset.
 #[utoipa::path(
     delete,
     path = "/dataset/tracking_id/{tracking_id}",
@@ -379,9 +381,9 @@ pub async fn delete_dataset_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// Get Dataset
+/// Get Dataset By ID
 ///
-/// Get a dataset by id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/dataset/{dataset_id}",
@@ -420,7 +422,7 @@ pub async fn get_dataset(
 
 /// Get Usage By Dataset ID
 ///
-/// Get the usage for a dataset by its id.
+/// Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/dataset/usage/{dataset_id}",
@@ -454,7 +456,7 @@ pub async fn get_usage_by_dataset_id(
 
 /// Get Dataset by Tracking ID
 ///
-/// Get a dataset by its tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/dataset/tracking_id/{tracking_id}",
@@ -500,7 +502,7 @@ pub struct GetDatasetsPagination {
 
 /// Get Datasets from Organization
 ///
-/// Get all datasets for an organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
     path = "/dataset/organization/{organization_id}",
@@ -550,4 +552,66 @@ pub async fn get_datasets_from_organization(
             .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(dataset_and_usages))
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct GetAllTagsReqPayload {
+    /// Number of items to return per page. Default is 20.
+    pub page_size: Option<i64>,
+    /// Page number to return, 1-indexed. Default is 1.
+    pub page: Option<i64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Queryable)]
+pub struct TagsWithCount {
+    pub tag: String,
+    pub count: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct GetAllTagsResponse {
+    pub tags: Vec<TagsWithCount>,
+    pub total: i64,
+}
+
+/// Get All Tags
+///
+/// Scroll through all tags in the dataset and get the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset.
+#[utoipa::path(
+    post,
+    path = "/dataset/get_all_tags",
+    context_path = "/api",
+    tag = "Dataset",
+    request_body(content = GetAllTagsReqPayload, description = "JSON request payload to get items with the tag in the request", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Page of tags requested with all tags and the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset", body = GetAllTagsResponse),
+        (status = 400, description = "Service error relating to finding items by tag", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn get_all_tags(
+    data: web::Json<GetAllTagsReqPayload>,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+    let page = data.page.unwrap_or(1);
+    if page < 1 {
+        return Err(ServiceError::BadRequest(
+            "Page must be greater than 0".to_string(),
+        ));
+    }
+    let page_size = data.page_size.unwrap_or(20);
+    let items = get_tags_in_dataset_query(dataset_id, page, page_size, pool).await?;
+
+    Ok(HttpResponse::Ok().json(GetAllTagsResponse {
+        tags: items.0,
+        total: items.1,
+    }))
 }

@@ -2,7 +2,7 @@ use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetConfiguration, DatasetUsageCount,
     Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
 };
-use crate::handlers::dataset_handler::GetDatasetsPagination;
+use crate::handlers::dataset_handler::{GetDatasetsPagination, TagsWithCount};
 use crate::operators::clickhouse_operator::ClickHouseEvent;
 use crate::operators::qdrant_operator::{
     delete_points_from_qdrant, get_qdrant_collection_from_dataset_config,
@@ -12,6 +12,7 @@ use crate::{
     errors::ServiceError,
 };
 use actix_web::web;
+use diesel::dsl::count;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use diesel_async::RunQueryDsl;
@@ -628,4 +629,42 @@ pub async fn get_dataset_usage_query(
         .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
 
     Ok(dataset_usage)
+}
+
+pub async fn get_tags_in_dataset_query(
+    dataset_id: uuid::Uuid,
+    page: i64,
+    page_size: i64,
+    pool: web::Data<Pool>,
+) -> Result<(Vec<TagsWithCount>, i64), ServiceError> {
+    use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
+    use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let items = dataset_tags_columns::dataset_tags
+        .inner_join(chunk_metadata_tags_columns::chunk_metadata_tags)
+        .group_by(dataset_tags_columns::tag)
+        .select((
+            dataset_tags_columns::tag,
+            count(chunk_metadata_tags_columns::chunk_metadata_id),
+        ))
+        .order_by(count(chunk_metadata_tags_columns::chunk_metadata_id).desc())
+        .filter(dataset_tags_columns::dataset_id.eq(dataset_id))
+        .limit(page_size)
+        .offset((page - 1) * page_size)
+        .load(&mut conn)
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Failed to get items with tags {}", err))
+        })?;
+
+    let total_count = dataset_tags_columns::dataset_tags
+        .select(count(dataset_tags_columns::tag))
+        .filter(dataset_tags_columns::dataset_id.eq(dataset_id))
+        .first::<i64>(&mut conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Failed to get count of tags {}", err)))?;
+
+    Ok((items, total_count))
 }

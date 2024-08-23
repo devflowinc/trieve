@@ -23,8 +23,15 @@ start_local_services() {
     docker compose up -d db redis qdrant-database s3 s3-client keycloak keycloak-db tika clickhouse-db
 }
 
+build_typescript_client() {
+    echo "Building the TypeScript client..."
+    cargo run --features runtime-env --manifest-path server/Cargo.toml --bin redoc_ci > ./clients/fetch-client/openapi.json
+    cd ./clients/fetch-client/; yarn && yarn build:clean;
+    echo "Done building the TypeScript client."
+}
+
 # Main script logic
-while getopts ":qps3l" opt; do
+while getopts ":qps3lc" opt; do
     case $opt in
         q)
             reset_qdrant_database
@@ -34,6 +41,9 @@ while getopts ":qps3l" opt; do
             ;;
         l)
             start_local_services
+            ;;
+        c)
+            build_typescript_client
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2

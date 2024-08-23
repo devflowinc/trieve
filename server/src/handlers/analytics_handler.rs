@@ -252,6 +252,16 @@ pub async fn get_search_analytics(
 
             SearchAnalyticsResponse::CountQueries(count_queries)
         }
+        SearchAnalytics::PopularFilters { filter } => {
+            let popular_filters = get_popular_filter_values_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            SearchAnalyticsResponse::PopularFilters(popular_filters)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
@@ -337,7 +347,7 @@ pub async fn get_rag_analytics(
 /// This route allows you to view the recommendation analytics for a dataset.
 #[utoipa::path(
     post,
-    path = "/analytics/recommendation",
+    path = "/analytics/recommendations",
     context_path = "/api",
     tag = "Analytics",
     request_body(content = RecommendationAnalytics, description = "JSON request payload to filter the graph", content_type = "application/json"),

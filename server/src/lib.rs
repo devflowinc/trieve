@@ -181,6 +181,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::autocomplete,
         handlers::chunk_handler::get_chunks_by_ids,
         handlers::chunk_handler::scroll_dataset_chunks,
+        handlers::dataset_handler::get_all_tags,
         handlers::user_handler::update_user,
         handlers::user_handler::set_user_api_key,
         handlers::user_handler::delete_user_api_key,
@@ -263,7 +264,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::RecommendChunksRequest,
             handlers::chunk_handler::UpdateChunkByTrackingIdData,
             handlers::chunk_handler::SearchChunkQueryResponseBody,
-            handlers::chunk_handler::GenerateChunksRequest,
+            handlers::chunk_handler::GenerateOffChunksReqPayload,
             handlers::chunk_handler::SearchChunksReqPayload,
             handlers::chunk_handler::CountChunksReqPayload,
             handlers::chunk_handler::CountChunkQueryResponseBody,
@@ -277,6 +278,9 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::ChunkReturnTypes,
             handlers::chunk_handler::ScrollChunksReqPayload,
             handlers::chunk_handler::ScrollChunksResponseBody,
+            handlers::dataset_handler::TagsWithCount,
+            handlers::dataset_handler::GetAllTagsReqPayload,
+            handlers::dataset_handler::GetAllTagsResponse,
             handlers::group_handler::RecommendGroupsReqPayload,
             handlers::group_handler::RecommendGroupsResponse,
             handlers::group_handler::SearchWithinGroupReqPayload,
@@ -335,6 +339,7 @@ impl Modify for SecurityAddon {
             operators::analytics_operator::CTRSearchQueryWithoutClicksResponse,
             operators::analytics_operator::CTRRecommendationsWithClicksResponse,
             operators::analytics_operator::CTRRecommendationsWithoutClicksResponse,
+            operators::analytics_operator::PopularFiltersResponse,
             handlers::analytics_handler::CTRDataRequestBody,
             operators::chunk_operator::HighlightStrategy,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
@@ -385,6 +390,7 @@ impl Modify for SecurityAddon {
             data::models::SearchQueriesWithClicksCTRResponse,
             data::models::RecommendationsWithClicksCTRResponse,
             data::models::RecommendationsWithoutClicksCTRResponse,
+            data::models::PopularFilters,
             data::models::RecommendationStrategy,
             data::models::ScoreChunk,
             data::models::Granularity,
@@ -733,6 +739,10 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/usage/{dataset_id}")
                                         .route(web::get().to(handlers::dataset_handler::get_usage_by_dataset_id)),
+                                )
+                                .service(
+                                    web::resource("/get_all_tags")
+                                        .route(web::post().to(handlers::dataset_handler::get_all_tags)),
                                 )
                                 .service(
                                     web::resource("/{dataset_id}")

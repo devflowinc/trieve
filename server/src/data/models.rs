@@ -14,8 +14,9 @@ use crate::handlers::message_handler::{
 use crate::operators::analytics_operator::{
     CTRRecommendationsWithClicksResponse, CTRRecommendationsWithoutClicksResponse,
     CTRSearchQueryWithClicksResponse, CTRSearchQueryWithoutClicksResponse, HeadQueryResponse,
-    LatencyGraphResponse, QueryCountResponse, RagQueryResponse, RecommendationsEventResponse,
-    SearchClusterResponse, SearchQueryResponse, SearchUsageGraphResponse,
+    LatencyGraphResponse, PopularFiltersResponse, QueryCountResponse, RagQueryResponse,
+    RecommendationsEventResponse, SearchClusterResponse, SearchQueryResponse,
+    SearchUsageGraphResponse,
 };
 use crate::operators::chunk_operator::{
     get_metadata_from_id_query, get_metadata_from_ids_query, HighlightStrategy,
@@ -3666,6 +3667,7 @@ pub struct SearchQueryEvent {
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
     pub query_rating: String,
+    pub user_id: String,
 }
 
 impl Default for SearchQueryEvent {
@@ -3681,6 +3683,7 @@ impl Default for SearchQueryEvent {
             dataset_id: uuid::Uuid::new_v4(),
             created_at: chrono::Utc::now().to_string(),
             query_rating: String::from(""),
+            user_id: String::from(""),
         }
     }
 }
@@ -3892,6 +3895,7 @@ pub struct SearchQueryEventClickhouse {
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
     pub query_rating: String,
+    pub user_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -3930,6 +3934,7 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),
             query_rating: clickhouse_response.query_rating,
+            user_id: clickhouse_response.user_id,
         }
     }
 }
@@ -3943,6 +3948,7 @@ pub struct RagQueryEvent {
     pub results: Vec<ChunkMetadataStringTagSet>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
+    pub user_id: String,
 }
 
 impl RagQueryEventClickhouse {
@@ -3970,6 +3976,7 @@ impl RagQueryEventClickhouse {
             results: chunk_string_tag_sets,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
             created_at: self.created_at.to_string(),
+            user_id: self.user_id,
         }
     }
 }
@@ -3988,6 +3995,7 @@ pub struct RagQueryEventClickhouse {
     pub dataset_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
+    pub user_id: String,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -4032,6 +4040,7 @@ pub struct RecommendationEventClickhouse {
     pub dataset_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
+    pub user_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Default)]
@@ -4047,6 +4056,7 @@ pub struct RecommendationEvent {
     pub top_score: f32,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
+    pub user_id: String,
 }
 
 impl From<RecommendationEventClickhouse> for RecommendationEvent {
@@ -4076,6 +4086,7 @@ impl From<RecommendationEventClickhouse> for RecommendationEvent {
             top_score: clickhouse_response.top_score,
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),
+            user_id: clickhouse_response.user_id.clone(),
         }
     }
 }
@@ -4361,6 +4372,7 @@ impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
 pub struct SearchCTRMetricsClickhouse {
     pub searches_with_clicks: i64,
     pub percent_searches_with_clicks: f64,
+    pub percent_searches_without_clicks: f64,
     pub avg_position_of_click: f64,
 }
 
@@ -4368,6 +4380,7 @@ pub struct SearchCTRMetricsClickhouse {
 pub struct SearchCTRMetrics {
     pub searches_with_clicks: i64,
     pub percent_searches_with_clicks: f64,
+    pub percent_searches_without_clicks: f64,
     pub avg_position_of_click: f64,
 }
 
@@ -4377,6 +4390,9 @@ impl From<SearchCTRMetricsClickhouse> for SearchCTRMetrics {
             searches_with_clicks: metrics.searches_with_clicks,
             percent_searches_with_clicks: f64::from_be_bytes(
                 metrics.percent_searches_with_clicks.to_be_bytes(),
+            ),
+            percent_searches_without_clicks: f64::from_be_bytes(
+                metrics.percent_searches_without_clicks.to_be_bytes(),
             ),
             avg_position_of_click: f64::from_be_bytes(metrics.avg_position_of_click.to_be_bytes()),
         }
@@ -4409,6 +4425,80 @@ pub struct SearchTypeCount {
     pub search_type: String,
     pub search_method: String,
     pub search_count: i64,
+}
+
+#[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
+#[schema(example = json!({
+    "clause": "must",
+    "field": "metadata.ep_num",
+    "filter_type": "match_any",
+    "count": 8,
+    "common_values": "['130']: 2, ['198']: 11"
+}))]
+pub struct PopularFiltersClickhouse {
+    pub clause: String,
+    pub field: String,
+    pub filter_type: String,
+    pub count: i64,
+    pub common_values: String,
+}
+
+#[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
+#[schema(example = json!({
+    "clause": "must",
+    "field": "metadata.ep_num",
+    "filter_type": "match_any",
+    "count": 8,
+    "common_values": {
+        "130": 2,
+        "198": 11
+    }
+}))]
+pub struct PopularFilters {
+    pub clause: String,
+    pub field: String,
+    pub filter_type: String,
+    pub count: i64,
+    pub common_values: HashMap<String, u32>,
+}
+
+fn dedup_string_to_hashmap(input: &str) -> HashMap<String, u32> {
+    let mut result: HashMap<String, u32> = HashMap::new();
+
+    // Split the input string and process each part
+    for part in input.split(", ") {
+        if let Some((key, value)) = part.split_once("]: ") {
+            let key = key
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .split(',')
+                .map(|s| s.trim().trim_matches('"').to_string())
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            if let Ok(count) = value.parse::<u32>() {
+                if !key.is_empty() {
+                    result.entry(key).or_insert(count);
+                }
+            }
+        }
+    }
+
+    result
+}
+
+impl From<PopularFiltersClickhouse> for PopularFilters {
+    fn from(clickhouse: PopularFiltersClickhouse) -> Self {
+        let common_values: HashMap<String, u32> =
+            dedup_string_to_hashmap(&clickhouse.common_values);
+        PopularFilters {
+            clause: clickhouse.clause,
+            field: clickhouse.field,
+            filter_type: clickhouse.filter_type,
+            count: clickhouse.count,
+            common_values,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
@@ -4543,6 +4633,10 @@ pub enum SearchAnalytics {
     },
     #[schema(title = "QueryDetails")]
     QueryDetails { search_id: uuid::Uuid },
+    #[schema(title = "PopularFilters")]
+    PopularFilters {
+        filter: Option<SearchAnalyticsFilter>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -4669,6 +4763,8 @@ pub enum SearchAnalyticsResponse {
     CountQueries(QueryCountResponse),
     #[schema(title = "QueryDetails")]
     QueryDetails(SearchQueryEvent),
+    #[schema(title = "PopularFilters")]
+    PopularFilters(PopularFiltersResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -5007,6 +5103,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5036,6 +5133,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5059,6 +5157,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5087,6 +5186,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5113,6 +5213,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             content_only: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5144,6 +5245,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5167,6 +5269,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             slim_chunks: Option<bool>,
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
+            user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5193,6 +5296,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             slim_chunks: helper.slim_chunks,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5214,6 +5318,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub filters: Option<ChunkFilter>,
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
+            pub user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5240,6 +5345,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             filters: helper.filters,
             score_threshold: helper.score_threshold,
             llm_options,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5260,6 +5366,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub filters: Option<ChunkFilter>,
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
+            pub user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5285,6 +5392,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             filters: helper.filters,
             score_threshold: helper.score_threshold,
             llm_options,
+            user_id: helper.user_id,
         })
     }
 }
@@ -5307,6 +5415,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub filters: Option<ChunkFilter>,
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
+            pub user_id: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5333,6 +5442,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             page_size: helper.page_size,
             filters: helper.filters,
             score_threshold: helper.score_threshold,
+            user_id: helper.user_id,
             llm_options,
         })
     }

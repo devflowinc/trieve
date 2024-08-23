@@ -76,9 +76,9 @@ We have a full self-hosting guide available on our [documentation page here](htt
 
 ## Local development with Linux
 
-### Install apt packages
+### Debian/Ubuntu Packages needed packages
 
-```
+```sh
 sudo apt install curl \
 gcc \
 g++ \
@@ -89,6 +89,12 @@ python3-pip \
 libpq-dev \
 libssl-dev \
 openssl
+```
+
+### Arch Packages needed
+
+```sh
+sudo pacman -S base-devel postgresql-libs
 ```
 
 ### Install NodeJS and Yarn

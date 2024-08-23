@@ -4,3 +4,4 @@ export * from "./Tooltip";
 export * from "./Table";
 export * from "./DateRangePicker";
 export * from "./JsonInput";
+export * from "./JSONMetadata";

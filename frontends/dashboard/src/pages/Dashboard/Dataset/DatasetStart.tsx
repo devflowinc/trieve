@@ -24,7 +24,7 @@ import {
   AiOutlineSearch,
 } from "solid-icons/ai";
 import { TbReload } from "solid-icons/tb";
-import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
+import { BiRegularInfoCircle } from "solid-icons/bi";
 import { BsMagic, BsUpload } from "solid-icons/bs";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 import { Tooltip } from "shared/ui";
@@ -284,14 +284,6 @@ export const DatasetStart = () => {
                   <AiOutlineBarChart class="h-5 w-5" />
                 </button>
               </div>
-              <a
-                class="flex items-center space-x-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm hover:border-fuchsia-500 hover:text-fuchsia-500"
-                href="https://docs.trieve.ai"
-                target="_blank"
-              >
-                <p>API Docs</p>
-                <BiRegularLinkExternal class="h-4 w-4" />
-              </a>
               <Show when={usage() && usage()?.chunk_count === 0}>
                 <a
                   class="flex cursor-pointer items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"

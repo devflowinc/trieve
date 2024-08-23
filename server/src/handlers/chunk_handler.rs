@@ -96,7 +96,7 @@ pub struct ChunkReqPayload {
     pub upsert_by_tracking_id: Option<bool>,
     /// Group ids are the Trieve generated ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these Trieve generated ids must be created first, it cannot be arbitrarily created through this route.
     pub group_ids: Option<Vec<uuid::Uuid>>,
-    /// Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these user-assigned tracking_ids must be created first, it cannot be arbitrarily created through this route.
+    /// Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. If a group with the tracking_id does not exist, it will be created.
     pub group_tracking_ids: Option<Vec<String>>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
     pub time_stamp: Option<String>,
@@ -961,6 +961,8 @@ pub struct SearchChunksReqPayload {
     pub use_quote_negated_terms: Option<bool>,
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+    pub user_id: Option<String>,
 }
 
 impl Default for SearchChunksReqPayload {
@@ -979,6 +981,7 @@ impl Default for SearchChunksReqPayload {
             content_only: None,
             use_quote_negated_terms: None,
             remove_stop_words: None,
+            user_id: None,
         }
     }
 }
@@ -1230,6 +1233,7 @@ pub async fn search_chunks(
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue
@@ -1326,6 +1330,8 @@ pub struct AutocompleteReqPayload {
     pub use_quote_negated_terms: Option<bool>,
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
     pub remove_stop_words: Option<bool>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+    pub user_id: Option<String>,
 }
 
 impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
@@ -1344,6 +1350,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             content_only: autocomplete_data.content_only,
             use_quote_negated_terms: autocomplete_data.use_quote_negated_terms,
             remove_stop_words: autocomplete_data.remove_stop_words,
+            user_id: autocomplete_data.user_id,
         }
     }
 }
@@ -1427,6 +1434,7 @@ pub async fn autocomplete(
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue
@@ -1636,6 +1644,7 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             content_only: None,
             use_quote_negated_terms: count_data.use_quote_negated_terms,
             remove_stop_words: None,
+            user_id: None,
         }
     }
 }
@@ -1950,6 +1959,8 @@ pub struct RecommendChunksRequest {
     pub limit: Option<u64>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the recommendation results.
+    pub user_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -2223,6 +2234,7 @@ pub async fn get_recommended_chunks(
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
+        user_id: data.user_id.clone().unwrap_or_default(),
     };
 
     event_queue
@@ -2261,27 +2273,26 @@ pub async fn get_recommended_chunks(
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(example = json!({
-    "model": "text-embedding-small",
     "prev_messages": [
         {
             "role": "user",
-            "content": "I am going to provide several pieces of information (docs) for you to use in response to a request or question.",
+            "content": "How do I setup RAG with Trieve?",
         }
     ],
     "chunk_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
     "prompt": "Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:",
     "stream_response": true
 }))]
-pub struct GenerateChunksRequest {
-    /// The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on. The length of this array must be at least 1.
+pub struct GenerateOffChunksReqPayload {
+    /// The previous messages to be placed into the chat history. There must be at least one previous message.
     pub prev_messages: Vec<ChatMessageProxy>,
     /// The ids of the chunks to be retrieved and injected into the context window for RAG.
     pub chunk_ids: Vec<uuid::Uuid>,
-    /// Prompt for the last message in the prev_messages array. This will be used to generate the next message in the chat. The default is 'Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
+    /// Prompt will be used to tell the model what to generate in the next message in the chat. The default is 'Respond to the previous instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
     pub prompt: Option<String>,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream_response: Option<bool>,
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>`` tags to the chunk_html of the chunks to highlight matching splits.
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits.
     pub highlight_results: Option<bool>,
     /// What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.5.
     pub temperature: Option<f32>,
@@ -2293,17 +2304,19 @@ pub struct GenerateChunksRequest {
     pub max_tokens: Option<u32>,
     /// Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None.
     pub stop_tokens: Option<Vec<String>>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+    pub user_id: Option<String>,
 }
 
 /// RAG on Specified Chunks
 ///
-/// This endpoint exists as an alternative to the topic+message concept where our API handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt. See more in the "search before generate" page at docs.trieve.ai.
+/// This endpoint exists as an alternative to the topic+message resource pattern where our Trieve handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt and the conversation is ephemeral.
 #[utoipa::path(
     post,
     path = "/chunk/generate",
     context_path = "/api",
     tag = "Chunk",
-    request_body(content = GenerateChunksRequest, description = "JSON request payload to perform RAG on some chunks (chunks)", content_type = "application/json"),
+    request_body(content = GenerateOffChunksReqPayload, description = "JSON request payload to perform RAG on some chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
         (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
@@ -2318,7 +2331,7 @@ pub struct GenerateChunksRequest {
 )]
 #[tracing::instrument(skip(pool, event_queue))]
 pub async fn generate_off_chunks(
-    data: web::Json<GenerateChunksRequest>,
+    data: web::Json<GenerateOffChunksReqPayload>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
     _user: LoggedUser,
@@ -2387,7 +2400,7 @@ pub async fn generate_off_chunks(
 
     messages.push(ChatMessage {
         role: Role::User,
-        content: ChatMessageContent::Text("I am going to provide several pieces of information (docs) for you to use in response to a request or question.".to_string()),
+        content: ChatMessageContent::Text("I am going to provide several pieces of information (documents) for you to use in response to a request or question.".to_string()),
         tool_calls: None,
         name: None,
         tool_call_id: None,
@@ -2396,7 +2409,7 @@ pub async fn generate_off_chunks(
     messages.push(ChatMessage {
         role: Role::Assistant,
         content: ChatMessageContent::Text(
-            "Understood, I will use the provided docs as information to respond to any future questions or instructions."
+            "Understood, I will use the provided documents as information to respond to any future questions or instructions."
                 .to_string(),
         ),
         tool_calls: None,
@@ -2521,6 +2534,7 @@ pub async fn generate_off_chunks(
             user_message: prompt,
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion_content.clone(),
+            user_id: data.user_id.clone().unwrap_or_default(),
         };
 
         event_queue
@@ -2555,6 +2569,7 @@ pub async fn generate_off_chunks(
             user_message: prompt,
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion,
+            user_id: data.user_id.clone().unwrap_or_default(),
         };
 
         event_queue

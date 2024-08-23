@@ -297,7 +297,7 @@ export const getSearchQuery = async (
     },
     body: JSON.stringify({
       search_id: searchId,
-      type: "search_query",
+      type: "query_details",
     }),
   });
 

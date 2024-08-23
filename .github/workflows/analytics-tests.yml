@@ -10,6 +10,7 @@ on:
       - "frontends/analytics/**"
       - "frontends/shared/**"
       - "frontends/config/**"
+      - "clients/fetch-client/**"
 
 jobs:
   build-test:
@@ -17,20 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        working-directory: frontends
         run: yarn --frozen-lockfile
       - name: Running lint
-        working-directory: frontends
         run: yarn build --filter analytics
   eslint:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        working-directory: frontends
         run: yarn --frozen-lockfile
       - name: Running lint
-        working-directory: frontends
         run: yarn lint:CI --filter analytics
       - name: Annotate Code Linting Results
         uses: ataylorme/eslint-annotate-action@1.0.4

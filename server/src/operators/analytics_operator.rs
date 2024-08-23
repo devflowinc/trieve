@@ -8,13 +8,14 @@ use utoipa::ToSchema;
 use crate::{
     data::models::{
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, Granularity,
-        HeadQueries, Pool, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse,
-        RagQueryEvent, RagQueryEventClickhouse, RecommendationAnalyticsFilter,
-        RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
-        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
-        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
-        SearchAnalyticsFilter, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics,
-        SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
+        HeadQueries, Pool, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
+        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
+        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
+        RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
+        RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
+        RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
+        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
+        SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, UsageGraphPoint,
@@ -413,6 +414,146 @@ pub async fn get_query_counts_query(
     Ok(QueryCountResponse {
         total_queries: result_counts,
     })
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct PopularFiltersResponse {
+    pub popular_filters: Vec<PopularFilters>,
+}
+
+pub async fn get_popular_filter_values_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<SearchAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<PopularFiltersResponse, ServiceError> {
+    let mut filter_string = String::new();
+    if let Some(filter) = filter {
+        filter_string = filter.add_to_query(String::from(""));
+    }
+
+    let query_string = format!(
+                "WITH filter_data AS (
+            SELECT
+                'must' AS clause,
+                JSONExtractArrayRaw(JSONExtractString(request_params, 'filters'), 'must') AS conditions
+            FROM search_queries
+            WHERE JSONExtractString(request_params, 'filters', 'must') != '[]' AND dataset_id = '{dataset_id}'::UUID {filter_string}
+
+            UNION ALL
+
+            SELECT
+                'should' AS clause,
+                JSONExtractArrayRaw(JSONExtractString(request_params, 'filters'), 'should') AS conditions
+            FROM search_queries
+            WHERE JSONExtractString(request_params, 'filters', 'should') != '[]' AND dataset_id = '{dataset_id}'::UUID {filter_string}
+
+            UNION ALL
+
+            SELECT
+                'must_not' AS clause,
+                JSONExtractArrayRaw(JSONExtractString(request_params, 'filters'), 'must_not') AS conditions
+            FROM search_queries
+            WHERE JSONExtractString(request_params, 'filters', 'must_not') != '[]' AND dataset_id = '{dataset_id}'::UUID {filter_string}
+        ),
+        parsed_conditions AS (
+            SELECT
+                clause,
+                JSONExtractString(condition, 'field') AS field,
+                multiIf(
+                    JSONExtractString(condition, 'match_any') != '', 'match_any',
+                    JSONExtractString(condition, 'match_all') != '', 'match_all',
+                    JSONExtractString(condition, 'range') != '', 'range',
+                    JSONExtractString(condition, 'date_range') != '', 'date_range',
+                    JSONExtractString(condition, 'geo_bounding_box') != '', 'geo_bounding_box',
+                    JSONExtractString(condition, 'geo_radius') != '', 'geo_radius',
+                    JSONExtractString(condition, 'geo_polygon') != '', 'geo_polygon',
+                    'unknown'
+                ) AS filter_type,
+                JSONExtractString(condition, 'match_any') AS match_any_value,
+                JSONExtractString(condition, 'match_all') AS match_all_value,
+                JSONExtractKeysAndValues(condition, 'range', 'Float32') AS range_value,
+                JSONExtractKeysAndValues(condition, 'date_range', 'String') AS date_range_value
+            FROM filter_data
+            ARRAY JOIN conditions AS condition
+        ),
+        aggregated_conditions AS (
+            SELECT
+                clause,
+                field,
+                filter_type,
+                match_any_value,
+                match_all_value,
+                range_value,
+                date_range_value,
+                count() OVER (PARTITION BY clause, field, filter_type) AS total_count,
+                count() OVER (PARTITION BY clause, field, filter_type, match_any_value) AS match_any_count,
+                count() OVER (PARTITION BY clause, field, filter_type, match_all_value) AS match_all_count,
+                count() OVER (PARTITION BY clause, field, filter_type, range_value) AS range_count,
+                count() OVER (PARTITION BY clause, field, filter_type, date_range_value) AS date_range_count
+            FROM parsed_conditions
+        ),
+        final_aggregation AS (
+            SELECT
+                clause,
+                field,
+                filter_type,
+                any(total_count) AS count,
+                arraySort(groupArray((match_any_value, match_any_count))) AS match_any_agg,
+                arraySort(groupArray((match_all_value, match_all_count))) AS match_all_agg,
+                arraySort(groupArray((range_value, range_count))) AS range_agg,
+                arraySort(groupArray((date_range_value, date_range_count))) AS date_range_agg
+            FROM aggregated_conditions
+            GROUP BY clause, field, filter_type
+        )
+        SELECT
+            clause,
+            field,
+            filter_type,
+            count,
+            CASE
+                WHEN filter_type = 'match_any' THEN
+                    arrayStringConcat(
+                        arrayMap(x -> concat(x.1, ': ', toString(x.2)),
+                            match_any_agg),
+                        ', '
+                    )
+                WHEN filter_type = 'match_all' THEN
+                    arrayStringConcat(
+                        arrayMap(x -> concat(x.1, ': ', toString(x.2)),
+                            match_all_agg),
+                        ', '
+                    )
+                WHEN filter_type = 'range' THEN
+                    arrayStringConcat(
+                        arrayMap(x -> concat(x.1, ': ', toString(x.2)),
+                            range_agg),
+                        ', '
+                    )
+                WHEN filter_type = 'date_range' THEN
+                    arrayStringConcat(
+                        arrayMap(x -> concat(x.1, ': ', toString(x.2)),
+                            date_range_agg),
+                        ', '
+                    )
+                ELSE 'N/A'
+            END AS common_values
+        FROM final_aggregation
+        ORDER BY count DESC
+        LIMIT 10", dataset_id = dataset_id, filter_string = filter_string);
+
+    let popular_filters = clickhouse_client
+        .query(query_string.as_str())
+        .fetch_all::<PopularFiltersClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let popular_filters: Vec<PopularFilters> =
+        popular_filters.into_iter().map(|f| f.into()).collect_vec();
+
+    Ok(PopularFiltersResponse { popular_filters })
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -877,6 +1018,7 @@ pub async fn get_search_ctr_metrics_query(
         SELECT 
             searches_with_clicks,
             (searches_with_clicks * 100.0 / total) AS percent_searches_with_click,
+            ((total - searches_with_clicks) * 100.0 / total) AS percent_searches_without_click,
             avg_position_of_click
         FROM (
             SELECT 

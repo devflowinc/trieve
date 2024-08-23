@@ -9,6 +9,7 @@ import {
   Transition,
   TransitionChild,
 } from "terracotta";
+import { cn } from "../utils";
 
 interface FullScreenModalProps {
   children: JSX.Element;
@@ -16,6 +17,7 @@ interface FullScreenModalProps {
   title?: string;
   setShow: (show: boolean) => void;
   icon?: JSX.Element;
+  class?: string;
 }
 
 export const FullScreenModal = (props: FullScreenModalProps) => {
@@ -55,7 +57,12 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left border border-neutral-100 align-middle transition-all transform bg-white shadow-xl rounded">
+              <DialogPanel
+                class={cn(
+                  "inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left border border-neutral-100 align-middle transition-all transform bg-white shadow-xl rounded",
+                  props.class,
+                )}
+              >
                 <Show when={props.title}>
                   {(title) => (
                     <div class="flex items-center justify-between">

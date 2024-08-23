@@ -1412,6 +1412,10 @@ pub async fn delete_points_from_qdrant(
     point_ids: Vec<uuid::Uuid>,
     qdrant_collection: String,
 ) -> Result<(), ServiceError> {
+    if point_ids.is_empty() {
+        return Ok(());
+    }
+
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
         Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
@@ -1429,6 +1433,10 @@ pub async fn delete_points_from_qdrant(
         .await
         .map_err(|err| {
             log::info!("Failed to delete points from qdrant {:?}", err);
+            sentry::capture_message(
+                &format!("Failed to delete points from qdrant {:?}", err),
+                sentry::Level::Error,
+            );
             ServiceError::BadRequest("Failed to delete points from qdrant".to_string())
         })?;
 

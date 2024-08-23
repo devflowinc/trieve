@@ -192,6 +192,13 @@ const SearchForm = (props: {
         }
       });
     });
+    setRerankQuery(() => {
+      if (isSortBySearchType(props.search.state.sort_by)) {
+        return props.search.state.sort_by.rerank_query ?? "";
+      } else {
+        return "";
+      }
+    });
   });
 
   createEffect(() => {

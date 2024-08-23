@@ -46,12 +46,29 @@ import {
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
 import { FiEye } from "solid-icons/fi";
+import { ServerTimings } from "./ServerTimings";
+import { VsChevronRight } from "solid-icons/vs";
 
 export interface ResultsPageProps {
   search: SearchStore;
   rateQuery: Accessor<boolean>;
   setRatingQuery: Setter<boolean>;
 }
+
+export type ServerTiming = {
+  name: string;
+  duration: number;
+};
+
+const parseServerTimings = (labels: string[]): ServerTiming[] => {
+  return labels.map((label) => {
+    const [name, rawDuration] = label.split(";");
+    return {
+      name,
+      duration: parseInt(rawDuration.substring(4)),
+    };
+  });
+};
 
 const ResultsPage = (props: ResultsPageProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
@@ -88,9 +105,8 @@ const ResultsPage = (props: ResultsPageProps) => {
     note: "",
   });
 
-  createEffect(() => {
-    console.log(props.rateQuery());
-  });
+  const [serverTimings, setServerTimings] = createSignal<ServerTiming[]>([]);
+  const [showServerTimings, setShowServerTimings] = createSignal(false);
 
   const fetchChunkCollections = () => {
     if (!$currentUser?.()) return;
@@ -195,6 +211,38 @@ const ResultsPage = (props: ResultsPageProps) => {
     }
   });
 
+  const ShowServerTimings = () => {
+    return (
+      <div class="w-full self-start">
+        <button
+          onClick={() => {
+            setShowServerTimings(!showServerTimings());
+          }}
+          class="flex cursor-pointer items-center space-x-2 self-start"
+        >
+          <label class="flex items-center space-x-2">
+            <span class="text-sm font-medium text-gray-900 dark:text-white">
+              Show Server Timings
+            </span>
+            <div class="text-primary-600 focus:ring-primary-500 h-3 w-3 rounded border-gray-300">
+              <VsChevronRight
+                classList={{
+                  "transition-transform": true,
+                  "rotate-90": showServerTimings(),
+                }}
+              />
+            </div>
+          </label>
+        </button>
+        <div class="w-full">
+          <Show when={showServerTimings()}>
+            <ServerTimings timings={serverTimings()} />
+          </Show>
+        </div>
+      </div>
+    );
+  };
+
   createEffect(
     on([() => props.search.debounced.version, dataset, page], () => {
       const dataset = $dataset?.();
@@ -261,7 +309,9 @@ const ResultsPage = (props: ResultsPageProps) => {
         props.search.debounced.query === ""
       ) {
         searchRoute = "chunks/scroll";
-        requestBody["sort_by"] = sort_by;
+        if (sort_by && isSortByField(sort_by)) {
+          requestBody["sort_by"] = sort_by;
+        }
       } else {
         searchRoute = "chunk/search";
         groupUnique = props.search.debounced.groupUniqueSearch;
@@ -327,6 +377,18 @@ const ResultsPage = (props: ResultsPageProps) => {
             if (resultingChunks.length === 0) {
               setNoResults(true);
             }
+
+            // Handle server timing
+            const serverTiming = response.headers.get("Server-Timing");
+            if (serverTiming) {
+              const metrics = serverTiming.split(",");
+              try {
+                setServerTimings(parseServerTimings(metrics));
+              } catch {
+                setServerTimings([]);
+                console.error("Failed to parse server timing");
+              }
+            }
           });
         } else {
           void response
@@ -380,7 +442,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           </FullScreenModal>
         </Portal>
       </Show>
-      <div class="mt-12 flex w-full flex-col items-center space-y-4">
+      <div class="flex w-full flex-col items-center gap-4 pt-12">
         <Switch>
           <Match when={loading()}>
             <div
@@ -399,6 +461,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
           </Match>
           <Match when={!loading() && groupResultChunks().length == 0}>
+            <ShowServerTimings />
             <div class="flex w-full max-w-screen-2xl flex-col space-y-4">
               <For each={resultChunks()}>
                 {(chunk) => (
@@ -498,6 +561,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
           </Match>
           <Match when={!loading() && groupResultChunks().length > 0}>
+            <ShowServerTimings />
             <For each={groupResultChunks()}>
               {(groupResult) => {
                 const [groupExpanded, setGroupExpanded] = createSignal(true);
@@ -507,7 +571,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                 };
 
                 return (
-                  <div class="flex w-full max-w-screen-2xl flex-col space-y-4">
+                  <div class="flex w-full max-w-screen-2xl flex-col gap-4">
                     <div
                       onClick={toggle}
                       classList={{
