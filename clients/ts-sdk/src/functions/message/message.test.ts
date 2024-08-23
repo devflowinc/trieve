@@ -1,7 +1,8 @@
-import { beforeAll, describe, expectTypeOf, test } from "vitest";
+import { beforeAll, describe, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import { Message } from "../../types.gen";
 import { EXAMPLE_TOPIC_ID, TRIEVE } from "../../__tests__/constants";
+import { test } from "../../__tests__/utils";
 
 describe("Message Tests", async () => {
   let trieve: TrieveSDK;
