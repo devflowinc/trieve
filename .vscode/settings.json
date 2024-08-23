@@ -11,6 +11,8 @@
     "./frontends/chat",
     "./frontends/dashboard",
     "./frontends/search",
-    "./frontends/analytics"
-  ]
+    "./frontends/analytics",
+    "./clients/ts-sdk",
+  ],
+  "vitest.disableWorkspaceWarning": true
 }

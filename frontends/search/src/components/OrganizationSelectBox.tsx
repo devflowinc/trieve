@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Show, For, createMemo, useContext, Switch, Match } from "solid-js";
 import {
   Menu,
