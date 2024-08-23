@@ -7,6 +7,18 @@
 import { GetEventsData } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
+/**
+ * Get events for the dataset.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getEventsForDataset({
+  page: 1,
+  page_size: 10,
+  type: ["chunk_action_failed"],
+});
+ * ```
+ */
 export async function getEventsForDataset(
   /** @hidden */
   this: TrieveSDK,
