@@ -1,4 +1,4 @@
-import { test, describe, beforeAll, expectTypeOf } from "vitest";
+import { describe, beforeAll, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import {
   ChunkReturnTypes,
@@ -15,6 +15,7 @@ import {
   EXAMPLE_CHUNK_HTML,
   TRIEVE,
 } from "../../__tests__/constants";
+import { test } from "../../__tests__/utils";
 
 describe("Chunk Methods Test", async () => {
   let trieve: TrieveSDK;

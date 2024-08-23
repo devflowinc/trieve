@@ -1,4 +1,4 @@
-import { describe, beforeAll, expectTypeOf, it } from "vitest";
+import { describe, beforeAll, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import {
   GROUP_EXAMPLE_ID,
@@ -15,13 +15,14 @@ import {
   SearchGroupResponseTypes,
   SearchOverGroupsResponseTypes,
 } from "../../types.gen";
+import { test } from "../../__tests__/utils";
 
 describe("Chunk Groups Methods Test", async () => {
   let trieve: TrieveSDK;
   beforeAll(() => {
     trieve = TRIEVE;
   });
-  it("createChunkGroup", async () => {
+  test("createChunkGroup", async () => {
     const data = await trieve.createChunkGroup({
       chunk_html: "",
       name: "Example for API tests",
@@ -30,7 +31,7 @@ describe("Chunk Groups Methods Test", async () => {
 
     expectTypeOf(data).toEqualTypeOf<CreateChunkGroupResponseEnum>();
   });
-  it("searchOverGroups", async () => {
+  test("searchOverGroups", async () => {
     const data = await trieve.searchOverGroups({
       query: "test",
       search_type: "fulltext",
@@ -38,7 +39,7 @@ describe("Chunk Groups Methods Test", async () => {
 
     expectTypeOf(data).toEqualTypeOf<SearchOverGroupsResponseTypes>();
   });
-  it("searchInGroup", async () => {
+  test("searchInGroup", async () => {
     const data = await trieve.searchInGroup({
       query: "test",
       search_type: "bm25",
@@ -47,14 +48,14 @@ describe("Chunk Groups Methods Test", async () => {
 
     expectTypeOf(data).toEqualTypeOf<SearchGroupResponseTypes>();
   });
-  it("recommendedGroups", async () => {
+  test("recommendedGroups", async () => {
     const data = await trieve.recommendedGroups({
       positive_group_ids: [GROUP_EXAMPLE_ID],
     });
 
     expectTypeOf(data).toEqualTypeOf<RecommendGroupsResponse>();
   });
-  it("updateGroup", async () => {
+  test("updateGroup", async () => {
     const data = await trieve.updateGroup({
       group_id: GROUP_EXAMPLE_ID,
       description: "test",
@@ -62,28 +63,28 @@ describe("Chunk Groups Methods Test", async () => {
 
     expectTypeOf(data).toBeVoid();
   });
-  it("getGroupsForChunks", async () => {
+  test("getGroupsForChunks", async () => {
     const data = await trieve.getGroupsForChunks({
       chunk_ids: ["7d5ef532-80e3-4978-a174-eb99960fdc9d"],
     });
 
     expectTypeOf(data).toEqualTypeOf<GroupsForChunk[]>();
   });
-  it("getGroupByTrackingId", async () => {
+  test("getGroupByTrackingId", async () => {
     const data = await trieve.getGroupByTrackingId({
       trackingId: GROUP_EXAMPLE_TRACKING_ID,
     });
 
     expectTypeOf(data).toEqualTypeOf<ChunkGroupAndFileId>();
   });
-  it("getGroup", async () => {
+  test("getGroup", async () => {
     const data = await trieve.getGroup({
       groupId: GROUP_EXAMPLE_ID,
     });
 
     expectTypeOf(data).toEqualTypeOf<ChunkGroupAndFileId>();
   });
-  it("getChunksInGroup", async () => {
+  test("getChunksInGroup", async () => {
     const data = await trieve.getChunksInGroup({
       groupId: GROUP_EXAMPLE_ID,
       page: 1,
@@ -91,7 +92,7 @@ describe("Chunk Groups Methods Test", async () => {
 
     expectTypeOf(data).toEqualTypeOf<GetChunksInGroupResponse>();
   });
-  it("getGroupsForDataset", async () => {
+  test("getGroupsForDataset", async () => {
     const data = await trieve.getGroupsForDataset({
       page: 1,
     });
