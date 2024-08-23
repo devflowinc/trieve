@@ -25,13 +25,25 @@ import {
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
+/**
+ * Function that provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results’ chunk_html values will be modified with <b><mark> tags for sub-sentence highlighting.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.search({
+  page: 1,
+  page_size: 10,
+  query: "Some search query",
+ });
+ * ```
+ */
 export async function search(
   /** @hidden */
   this: TrieveSDK,
   props: SearchChunksReqPayload,
   signal?: AbortSignal
 ) {
-  const searchResults = (await this.trieve.fetch(
+  return this.trieve.fetch(
     "/api/chunk/search",
     "post",
     {
@@ -40,10 +52,23 @@ export async function search(
       datasetId: this.datasetId,
     },
     signal
-  )) as SearchResponseBody;
-
-  return searchResults;
+  ) as Promise<SearchResponseBody>;
 }
+
+/**
+ * Function that create new chunk(s). If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint. If uploading in bulk, the maximum amount of chunks that can be uploaded at once is 120 chunks. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.createChunk({
+  chunk_html: "<p>Some HTML content</p>",
+  metadata: {
+    key1: "value1",
+    key2: "value2",
+  },
+});
+ * ```
+ */
 export async function createChunk(
   /** @hidden */
   this: TrieveSDK,
@@ -60,6 +85,20 @@ export async function createChunk(
     signal
   );
 }
+
+/**
+ * Function provides the primary autocomplete functionality for the API. This prioritize prefix matching with semantic or full-text search.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.autocomplete({
+  page: 1,
+  page_size: 10,
+  query: "Some search query",
+  search_type: "semantic",
+});
+ * ```
+ */
 export async function autocomplete(
   /** @hidden */
   this: TrieveSDK,
@@ -77,6 +116,18 @@ export async function autocomplete(
   );
 }
 
+/**
+ * Function that allows you to recommendations of chunks similar to the positive samples in the request and dissimilar to the negative.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getRecommendedChunks({
+  positive_chunk_ids: [
+    "3c90c3cc-0d44-4b50-8888-8dd25736052a"
+  ],
+});
+ * ```
+ */
 export async function getRecommendedChunks(
   /** @hidden */
   this: TrieveSDK,
@@ -94,6 +145,25 @@ export async function getRecommendedChunks(
   );
 }
 
+/**
+ * This function exists as an alternative to the topic+message resource pattern where our Trieve handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt and the conversation is ephemeral.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.ragOnChunk({
+  chunk_ids: ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+  prev_messages: [
+    {
+      content: "How do I setup RAG with Trieve?",
+      role: "user",
+    },
+  ],
+  prompt:
+    "Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:",
+  stream_response: true,
+});
+ * ```
+ */
 export async function ragOnChunk(
   /** @hidden */
   this: TrieveSDK,
@@ -111,6 +181,16 @@ export async function ragOnChunk(
   );
 }
 
+/**
+ * This function will generate 3 suggested queries based off a hybrid search using RAG with the query provided in the request body and return them as a JSON object.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.suggestedQueries({
+  query: "Some search query",
+});
+ * ```
+ */
 export async function suggestedQueries(
   /** @hidden */
   this: TrieveSDK,
@@ -128,6 +208,18 @@ export async function suggestedQueries(
   );
 }
 
+/**
+ * This function can be used to determine the number of chunk results that match a search query including score threshold and filters. It may be high latency for large limits. There is a dataset configuration imposed restriction on the maximum limit value (default 10,000) which is used to prevent DDOS attacks. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.countChunksAboveThreshold({
+  query: "Some search query",
+  score_threshold: 0.5,
+  search_type: "semantic",
+});
+ * ```
+ */
 export async function countChunksAboveThreshold(
   /** @hidden */
   this: TrieveSDK,
@@ -145,6 +237,16 @@ export async function countChunksAboveThreshold(
   );
 }
 
+/**
+ * Get paginated chunks from your dataset with filters and custom sorting. If sort by is not specified, the results will sort by the id’s of the chunks in ascending order. Sort by and offset_chunk_id cannot be used together; if you want to scroll with a sort by then you need to use a must_not filter with the ids you have already seen. There is a limit of 1000 id’s in a must_not filter at a time.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.scroll({
+  page_size: 10
+});
+ * ```
+ */
 export async function scroll(
   /** @hidden */
   this: TrieveSDK,
@@ -161,6 +263,18 @@ export async function scroll(
     signal
   );
 }
+
+/**
+ * Update a chunk. If you try to change the tracking_id of the chunk to have the same tracking_id as an existing chunk, the request will fail. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.autocomplete({
+  chunk_html: "<p>Some HTML content</p>",
+  chunk_id: "d290f1ee-6c54-4b01-90e6-d701748f0851",
+});
+ * ```
+ */
 export async function updateChunk(
   /** @hidden */
   this: TrieveSDK,
@@ -177,6 +291,18 @@ export async function updateChunk(
     signal
   );
 }
+
+/**
+ * Update a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.updateChunkByTrackingId({
+  chunk_html: "New text",
+  tracking_id: "128ABC",
+});
+ * ```
+ */
 export async function updateChunkByTrackingId(
   /** @hidden */
   this: TrieveSDK,
@@ -194,6 +320,16 @@ export async function updateChunkByTrackingId(
   );
 }
 
+/**
+ * Get a singular chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use your own id as the primary reference for a chunk.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getChunkByTrackingId({
+  tracking_id: "128ABC",
+});
+ * ```
+ */
 export async function getChunkByTrackingId(
   /** @hidden */
   this: TrieveSDK,
@@ -212,6 +348,16 @@ export async function getChunkByTrackingId(
   );
 }
 
+/**
+ * Delete a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.deleteChunkByTrackingId({
+  tracking_id: "128ABC",
+});
+ * ```
+ */
 export async function deleteChunkByTrackingId(
   /** @hidden */
   this: TrieveSDK,
@@ -229,6 +375,16 @@ export async function deleteChunkByTrackingId(
   );
 }
 
+/**
+ * Get a singular chunk by id.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getChunkById({
+  chunkId: "128ABC",
+});
+ * ```
+ */
 export async function getChunkById(
   /** @hidden */
   this: TrieveSDK,
@@ -247,6 +403,16 @@ export async function getChunkById(
   );
 }
 
+/**
+ * Delete a singular chunk by id.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.deleteChunkById({
+  chunkId: "128ABC",
+});
+ * ```
+ */
 export async function deleteChunkById(
   /** @hidden */
   this: TrieveSDK,
@@ -264,6 +430,16 @@ export async function deleteChunkById(
   );
 }
 
+/**
+ * Get multiple chunks by multiple ids.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getChunksByIds( {
+  ids: ["3c90c3cc-0d44-4b50-8888-8dd25736052a"],
+});
+ * ```
+ */
 export async function getChunksByIds(
   /** @hidden */
   this: TrieveSDK,
@@ -281,6 +457,16 @@ export async function getChunksByIds(
   );
 }
 
+/**
+ * Get multiple chunks by multiple tracking ids.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getChunksByIds( {
+  tracking_ids: ["3c90c3cc-0d44-4b50-8888-8dd25736052a"],
+});
+ * ```
+ */
 export async function getChunksByTrackingIds(
   /** @hidden */
   this: TrieveSDK,
