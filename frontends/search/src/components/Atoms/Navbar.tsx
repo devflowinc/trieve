@@ -14,7 +14,21 @@ export const Navbar = () => {
     return datasetAndUserContext.currentDataset?.()?.dataset.id;
   });
 
+  const currentOrganizationId = createMemo(() => {
+    return datasetAndUserContext.currentOrganization?.()?.id;
+  });
+
   const [isOpen, setIsOpen] = createSignal(false);
+
+  //Construct a7b64c7f-01ad-43b2-aaaf-c78192ca3d72/start?org=ca34dafa-7826-41b4-9953-cd58617834f1
+  const orgDatasetParams = createMemo(() => {
+    const orgId = currentOrganizationId();
+    const datasetId = currentDatasetId();
+    let params = "";
+    if (datasetId) params += datasetId;
+    if (orgId && datasetId) params += `/start?org=${orgId}`;
+    return params;
+  });
 
   return (
     <div class="mx-auto mb-8 w-full max-w-screen-2xl flex-col items-center px-4">
@@ -42,13 +56,15 @@ export const Navbar = () => {
 
           <div class="flex items-center justify-end space-x-1 sm:space-x-4">
             <a
-              href={dashboardUrl}
+              href={`${dashboardUrl}/dashboard/dataset/${orgDatasetParams()}`}
+              target="_blank"
               class="hidden text-center min-[420px]:text-lg min-[920px]:block"
             >
               Dashboard
             </a>
             <a
               href="https://docs.trieve.ai/api-reference"
+              target="_blank"
               class="hidden text-center min-[420px]:text-lg min-[920px]:block"
             >
               API Docs
@@ -130,7 +146,7 @@ export const Navbar = () => {
         >
           <div class="space-y-1 px-2 pb-3 pt-2">
             <a
-              href={dashboardUrl}
+              href={`${dashboardUrl}/dashboard/dataset/${orgDatasetParams()}`}
               class="block rounded-md bg-neutral-200 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             >
               Dashboard
