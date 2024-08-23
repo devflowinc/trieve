@@ -24,6 +24,24 @@ import {
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
+/**
+ * Create new chunk_group(s). This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Only 1000 chunk groups can be created at a time. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.createChunkGroup({
+  description: "All versions and colorways of the oversized t-shirt",
+  metadata: {
+    color: "black",
+    size: "large",
+  },
+  name: "Versions of Oversized T-Shirt",
+  tag_set: ["tshirt", "oversized", "clothing"],
+  tracking_id: "SNOVERSIZEDTSHIRT",
+  upsert_by_tracking_id: false,
+});
+ * ```
+ */
 export async function createChunkGroup(
   /** @hidden */
   this: TrieveSDK,
@@ -35,6 +53,16 @@ export async function createChunkGroup(
   });
 }
 
+/**
+ * This function allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model. Compatible with semantic, fulltext, or hybrid search modes.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.searchOverGroups({
+  query: "a query",
+});
+ * ```
+ */
 export async function searchOverGroups(
   /** @hidden */
   this: TrieveSDK,
@@ -52,6 +80,16 @@ export async function searchOverGroups(
   );
 }
 
+/**
+ * This function allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.searchInGroup({
+  query: "a query",
+});
+ * ```
+ */
 export async function searchInGroup(
   /** @hidden */
   this: TrieveSDK,
@@ -69,6 +107,16 @@ export async function searchInGroup(
   );
 }
 
+/**
+ * Function to get recommended groups. This route will return groups which are similar to the groups in the request body. You must provide at least one positive group id or group tracking id.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.recommendedGroups({
+  positive_group_ids: ["3c90c3cc-0d44-4b50-8888-8dd25736052a"],
+});
+ * ```
+ */
 export async function recommendedGroups(
   /** @hidden */
   this: TrieveSDK,
@@ -86,6 +134,16 @@ export async function recommendedGroups(
   );
 }
 
+/**
+ * Update a chunk_group. One of group_id or tracking_id must be provided. If you try to change the tracking_id to one that already exists, this operation will fail. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.updateGroup({
+  group_id: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+});
+ * ```
+ */
 export async function updateGroup(
   /** @hidden */
   this: TrieveSDK,
@@ -103,6 +161,16 @@ export async function updateGroup(
   );
 }
 
+/**
+ * date a chunk_group with the given tracking id. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.updateGroupByTrackingId({
+  tracking_id: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+});
+ * ```
+ */
 export async function updateGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
@@ -121,6 +189,16 @@ export async function updateGroupByTrackingId(
   );
 }
 
+/**
+ * Add a chunk to a group. One of chunk_id or chunk_tracking_id must be provided. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.addChunkToGroup({
+  chunk_id: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+});
+ * ```
+ */
 export async function addChunkToGroup(
   /** @hidden */
   this: TrieveSDK,
@@ -139,6 +217,17 @@ export async function addChunkToGroup(
   );
 }
 
+/**
+ * Remove a chunk from a group. Auth’ed user or api key must be an admin or owner of the dataset’s organization to remove a chunk from a group.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.removeChunkFromGroup({
+  chunk_id: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+  groupId: "3c90c3cc-1d76-27198-8888-8dd25736052a"
+});
+ * ```
+ */
 export async function removeChunkFromGroup(
   /** @hidden */
   this: TrieveSDK,
@@ -157,6 +246,16 @@ export async function removeChunkFromGroup(
   );
 }
 
+/**
+ * Function to get the groups that a chunk is in.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getGroupsForChunks({
+  chunk_ids: ["3c90c3cc-0d44-4b50-8888-8dd25736052a"],
+});
+ * ```
+ */
 export async function getGroupsForChunks(
   /** @hidden */
   this: TrieveSDK,
@@ -174,6 +273,17 @@ export async function getGroupsForChunks(
   );
 }
 
+/**
+ * Function to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon. Page is 1-indexed.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getChunksGroupByTrackingId({
+  page: 1,
+  groupTrackingId: "3c90c3cc-1d76-27198-8888-8dd25736052a"
+});
+ * ```
+ */
 export async function getChunksGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
@@ -193,6 +303,16 @@ export async function getChunksGroupByTrackingId(
   );
 }
 
+/**
+ * Fetch the group with the given tracking id. get_group_by_tracking_id
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getGroupByTrackingId({
+  trackingId: "3c90c3cc-1d76-27198-8888-8dd25736052a"
+});
+ * ```
+ */
 export async function getGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
@@ -210,10 +330,21 @@ export async function getGroupByTrackingId(
   );
 }
 
+/**
+ * Add a chunk to a group by tracking id. One of chunk_id or chunk_tracking_id must be provided. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.addChunkToGroupByTrackingId({
+  tracking_id: "3c90c3cc-1d76-27198-8888-8dd25736052a"
+  chunk_tracking_id: "3c90c3cc-1d76-27198-8888-8dd25736052a"
+});
+ * ```
+ */
 export async function addChunkToGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
-  data: AddChunkToGroupReqPayload & { trackingId: string },
+  data: AddChunkToGroupReqPayload & { tracking_id: string },
   signal?: AbortSignal
 ) {
   return this.trieve.fetch(
@@ -222,16 +353,26 @@ export async function addChunkToGroupByTrackingId(
     {
       data,
       datasetId: this.datasetId,
-      trackingId: data.trackingId,
+      trackingId: data.tracking_id,
     },
     signal
   );
 }
 
+/**
+ * Delete a chunk_group with the given tracking id. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.deleteGroupByTrackingId({
+  tracking_id: "3c90c3cc-1d76-27198-8888-8dd25736052a"
+});
+ * ```
+ */
 export async function deleteGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
-  data: DeleteGroupByTrackingIdData & { trackingId: string },
+  data: DeleteGroupByTrackingIdData & { tracking_id: string },
   signal?: AbortSignal
 ) {
   return this.trieve.fetch(
@@ -239,13 +380,23 @@ export async function deleteGroupByTrackingId(
     "delete",
     {
       ...data,
-      trackingId: data.trackingId,
+      trackingId: data.tracking_id,
       datasetId: this.datasetId,
     },
     signal
   );
 }
 
+/**
+ * Fetch the group with the given id. get_group
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getGroup({
+  groupId: "3c90c3cc-1d76-27198-8888-8dd25736052a"
+});
+ * ```
+ */
 export async function getGroup(
   /** @hidden */
   this: TrieveSDK,
@@ -263,6 +414,16 @@ export async function getGroup(
   );
 }
 
+/**
+ * This will delete a chunk_group. If you set delete_chunks to true, it will also delete the chunks within the group. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.deleteGroup({
+  groupId: "3c90c3cc-1d76-27198-8888-8dd25736052a"
+});
+ * ```
+ */
 export async function deleteGroup(
   /** @hidden */
   this: TrieveSDK,
@@ -280,6 +441,17 @@ export async function deleteGroup(
   );
 }
 
+/**
+ * Get all chunks for a group. The response is paginated, with each page containing 10 chunks. Page is 1-indexed.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getChunksInGroup({
+  groupId: "3c90c3cc-1d76-27198-8888-8dd25736052a",
+  page: 1
+});
+ * ```
+ */
 export async function getChunksInGroup(
   /** @hidden */
   this: TrieveSDK,
@@ -297,6 +469,16 @@ export async function getChunksInGroup(
   );
 }
 
+/**
+ * Fetch the groups which belong to a dataset specified by its id.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getGroupsForDataset({
+  page: 1
+});
+ * ```
+ */
 export async function getGroupsForDataset(
   /** @hidden */
   this: TrieveSDK,
