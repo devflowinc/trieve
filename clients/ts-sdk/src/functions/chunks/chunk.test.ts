@@ -14,7 +14,7 @@ import {
   CHUNK_EXAMPLE_TRACKING_ID,
   EXAMPLE_CHUNK_HTML,
   TRIEVE,
-} from "../../../__tests__/constants";
+} from "../../__tests__/constants";
 
 describe("Chunk Methods Test", async () => {
   let trieve: TrieveSDK;

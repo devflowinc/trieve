@@ -27,7 +27,9 @@
   "paths": {
     "/api/analytics/ctr": {
       "post": {
-        "tags": ["Analytics"],
+        "tags": [
+          "Analytics"
+        ],
         "summary": "Get CTR Analytics",
         "description": "This route allows you to view the CTR analytics for a dataset.",
         "operationId": "get_ctr_analytics",
@@ -77,12 +79,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Analytics"],
+        "tags": [
+          "Analytics"
+        ],
         "summary": "Send CTR Data",
         "description": "This route allows you to send CTR data to the system.",
         "operationId": "send_ctr_data",
@@ -125,14 +131,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/analytics/rag": {
       "post": {
-        "tags": ["Analytics"],
+        "tags": [
+          "Analytics"
+        ],
         "summary": "Get RAG Analytics",
         "description": "This route allows you to view the RAG analytics for a dataset.",
         "operationId": "get_rag_analytics",
@@ -182,14 +192,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/analytics/recommendations": {
       "post": {
-        "tags": ["Analytics"],
+        "tags": [
+          "Analytics"
+        ],
         "summary": "Get Recommendation Analytics",
         "description": "This route allows you to view the recommendation analytics for a dataset.",
         "operationId": "get_recommendation_analytics",
@@ -239,14 +253,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/analytics/search": {
       "post": {
-        "tags": ["Analytics"],
+        "tags": [
+          "Analytics"
+        ],
         "summary": "Get Search Analytics",
         "description": "This route allows you to view the search analytics for a dataset.",
         "operationId": "get_search_analytics",
@@ -296,12 +314,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Analytics"],
+        "tags": [
+          "Analytics"
+        ],
         "summary": "Rate Query",
         "description": "This route allows you to Rate a query.",
         "operationId": "set_query_rating",
@@ -344,14 +366,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/analytics/search/cluster": {
       "post": {
-        "tags": ["Analytics"],
+        "tags": [
+          "Analytics"
+        ],
         "summary": "Get Cluster Analytics",
         "description": "This route allows you to view the cluster analytics for a dataset.",
         "operationId": "get_cluster_analytics",
@@ -401,14 +427,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/auth": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Login",
         "description": "This will redirect you to the OAuth provider for authentication with email/pass, SSO, Google, Github, etc.",
         "operationId": "login",
@@ -463,7 +493,9 @@
         }
       },
       "delete": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Logout",
         "description": "Invalidate your current auth credential stored typically stored in a cookie. This does not invalidate your API key.",
         "operationId": "logout",
@@ -476,7 +508,9 @@
     },
     "/api/auth/callback": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "OpenID Connect callback",
         "description": "This is the callback route for the OAuth provider, it should not be called directly. Redirects to browser with set-cookie header.",
         "operationId": "callback",
@@ -506,7 +540,9 @@
     },
     "/api/auth/me": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Get Me",
         "description": "Get the user corresponding to your current auth credentials.",
         "operationId": "get_me",
@@ -534,14 +570,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Create or Upsert Chunk or Chunks",
         "description": "Create new chunk(s). If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.\nIf uploading in bulk, the maximum amount of chunks that can be uploaded at once is 120 chunks. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "create_chunk",
@@ -611,12 +651,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Update Chunk",
         "description": "Update a chunk. If you try to change the tracking_id of the chunk to have the same tracking_id as an existing chunk, the request will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "update_chunk",
@@ -659,14 +703,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/chunk/autocomplete": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Autocomplete",
         "description": "This route provides the primary autocomplete functionality for the API. This prioritize prefix matching with semantic or full-text search.",
         "operationId": "autocomplete",
@@ -730,14 +778,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk/count": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Count chunks above threshold",
         "description": "This route can be used to determine the number of chunk results that match a search query including score threshold and filters. It may be high latency for large limits. There is a dataset configuration imposed restriction on the maximum limit value (default 10,000) which is used to prevent DDOS attacks. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "count_chunks",
@@ -787,14 +839,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk/generate": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "RAG on Specified Chunks",
         "description": "This endpoint exists as an alternative to the topic+message resource pattern where our Trieve handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt and the conversation is ephemeral.",
         "operationId": "generate_off_chunks",
@@ -844,14 +900,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk/recommend": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Get Recommended Chunks",
         "description": "Get recommendations of chunks similar to the positive samples in the request and dissimilar to the negative.",
         "operationId": "get_recommended_chunks",
@@ -915,14 +975,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk/search": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Search",
         "description": "This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<b><mark>` tags for sub-sentence highlighting.",
         "operationId": "search_chunks",
@@ -986,14 +1050,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk/suggestions": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Generate suggested queries",
         "description": "This endpoint will generate 3 suggested queries based off a hybrid search using RAG with the query provided in the request body and return them as a JSON object.",
         "operationId": "get_suggested_queries",
@@ -1043,14 +1111,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk/tracking_id/update": {
       "put": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Update Chunk By Tracking Id",
         "description": "Update a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "update_chunk_by_tracking_id",
@@ -1094,14 +1166,18 @@
         "deprecated": true,
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/chunk/tracking_id/{tracking_id}": {
       "get": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Get Chunk By Tracking Id",
         "description": "Get a singular chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use your own id as the primary reference for a chunk.",
         "operationId": "get_chunk_by_tracking_id",
@@ -1173,12 +1249,16 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Delete Chunk By Tracking Id",
         "description": "Delete a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "delete_chunk_by_tracking_id",
@@ -1219,14 +1299,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/chunk/{chunk_id}": {
       "get": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Get Chunk By Id",
         "description": "Get a singular chunk by id.",
         "operationId": "get_chunk_by_id",
@@ -1299,12 +1383,16 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Delete Chunk",
         "description": "Delete a chunk by its id. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "delete_chunk",
@@ -1346,14 +1434,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group": {
       "post": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Create or Upsert Group or Groups",
         "description": "Create new chunk_group(s). This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail. Only 1000 chunk groups can be created at a time. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "create_chunk_group",
@@ -1413,12 +1505,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Update Group",
         "description": "Update a chunk_group. One of group_id or tracking_id must be provided. If you try to change the tracking_id to one that already exists, this operation will fail. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "update_chunk_group",
@@ -1461,14 +1557,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/chunk/{group_id}": {
       "post": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Add Chunk to Group",
         "description": "Route to add a chunk to a group. One of chunk_id or chunk_tracking_id must be provided. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "add_chunk_to_group",
@@ -1521,12 +1621,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Remove Chunk from Group",
         "description": "Route to remove a chunk from a group. Auth'ed user or api key must be an admin or owner of the dataset's organization to remove a chunk from a group.",
         "operationId": "remove_chunk_from_group",
@@ -1595,14 +1699,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/chunks": {
       "post": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Get Groups for Chunks",
         "description": "Route to get the groups that a chunk is in.",
         "operationId": "get_groups_for_chunks",
@@ -1655,14 +1763,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/group_oriented_search": {
       "post": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Search Over Groups",
         "description": "This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model. Compatible with semantic, fulltext, or hybrid search modes.",
         "operationId": "search_over_groups",
@@ -1726,14 +1838,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/recommend": {
       "post": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Get Recommended Groups",
         "description": "Route to get recommended groups. This route will return groups which are similar to the groups in the request body. You must provide at least one positive group id or group tracking id.",
         "operationId": "get_recommended_groups",
@@ -1797,14 +1913,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/search": {
       "post": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Search Within Group",
         "description": "This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model.",
         "operationId": "search_within_group",
@@ -1868,14 +1988,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/tracking_id/{group_tracking_id}/{page}": {
       "get": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Get Chunks in Group by Tracking ID",
         "description": "Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon. Page is 1-indexed.",
         "operationId": "get_chunks_in_group_by_tracking_id",
@@ -1958,14 +2082,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/tracking_id/{tracking_id}": {
       "get": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Get Group by Tracking ID",
         "description": "Fetch the group with the given tracking id.\nget_group_by_tracking_id",
         "operationId": "get_group_by_tracking_id",
@@ -2023,12 +2151,16 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "post": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Add Chunk to Group by Tracking ID",
         "description": "Route to add a chunk to a group by tracking id. One of chunk_id or chunk_tracking_id must be provided. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "add_chunk_to_group_by_tracking_id",
@@ -2080,12 +2212,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Update Group by Tracking ID",
         "description": "Update a chunk_group with the given tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "update_group_by_tracking_id",
@@ -2139,12 +2275,16 @@
         "deprecated": true,
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Delete Group by Tracking ID",
         "description": "Delete a chunk_group with the given tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "delete_group_by_tracking_id",
@@ -2194,14 +2334,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/{group_id}": {
       "get": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Get Group",
         "description": "Fetch the group with the given id.\nget_group",
         "operationId": "get_chunk_group",
@@ -2260,12 +2404,16 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Delete Group",
         "description": "This will delete a chunk_group. If you set delete_chunks to true, it will also delete the chunks within the group. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "delete_chunk_group",
@@ -2316,14 +2464,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/chunk_group/{group_id}/{page}": {
       "get": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Get Chunks in Group",
         "description": "Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Page is 1-indexed.",
         "operationId": "get_chunks_in_group",
@@ -2408,14 +2560,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunks": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Get Chunks By Ids",
         "description": "Get multiple chunks by multiple ids.",
         "operationId": "get_chunks_by_ids",
@@ -2492,14 +2648,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunks/scroll": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Scroll Chunks",
         "description": "Get paginated chunks from your dataset with filters and custom sorting. If sort by is not specified, the results will sort by the id's of the chunks in ascending order. Sort by and offset_chunk_id cannot be used together; if you want to scroll with a sort by then you need to use a must_not filter with the ids you have already seen. There is a limit of 1000 id's in a must_not filter at a time.",
         "operationId": "scroll_dataset_chunks",
@@ -2549,14 +2709,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/chunks/tracking": {
       "post": {
-        "tags": ["Chunk"],
+        "tags": [
+          "Chunk"
+        ],
         "summary": "Get Chunks By Tracking Ids",
         "description": "Get multiple chunks by ids.",
         "operationId": "get_chunks_by_tracking_ids",
@@ -2623,14 +2787,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/dataset": {
       "post": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Create Dataset",
         "description": "Auth'ed user must be an owner of the organization to create a dataset.",
         "operationId": "create_dataset",
@@ -2680,12 +2848,16 @@
         },
         "security": [
           {
-            "ApiKey": ["owner"]
+            "ApiKey": [
+              "owner"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Update Dataset by ID or Tracking ID",
         "description": "One of id or tracking_id must be provided. The auth'ed user must be an owner of the organization to update a dataset.",
         "operationId": "update_dataset",
@@ -2745,14 +2917,18 @@
         },
         "security": [
           {
-            "ApiKey": ["owner"]
+            "ApiKey": [
+              "owner"
+            ]
           }
         ]
       }
     },
     "/api/dataset/clear/{dataset_id}": {
       "put": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Clear Dataset",
         "description": "Removes all chunks, files, and groups from the dataset while retaining the analytics and dataset itself. The auth'ed user must be an owner of the organization to clear a dataset.",
         "operationId": "clear_dataset",
@@ -2804,14 +2980,18 @@
         },
         "security": [
           {
-            "ApiKey": ["owner"]
+            "ApiKey": [
+              "owner"
+            ]
           }
         ]
       }
     },
     "/api/dataset/files/{dataset_id}/{page}": {
       "get": {
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "summary": "Get Files for Dataset",
         "description": "Get all files which belong to a given dataset specified by the dataset_id parameter. 10 files are returned per page.",
         "operationId": "get_dataset_files_handler",
@@ -2874,14 +3054,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/dataset/get_all_tags": {
       "post": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Get All Tags",
         "description": "Scroll through all tags in the dataset and get the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset.",
         "operationId": "get_all_tags",
@@ -2931,14 +3115,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/dataset/groups/{dataset_id}/{page}": {
       "get": {
-        "tags": ["Chunk Group"],
+        "tags": [
+          "Chunk Group"
+        ],
         "summary": "Get Groups for Dataset",
         "description": "Fetch the groups which belong to a dataset specified by its id.",
         "operationId": "get_groups_for_dataset",
@@ -2997,14 +3185,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/dataset/organization/{organization_id}": {
       "get": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Get Datasets from Organization",
         "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_datasets_from_organization",
@@ -3088,14 +3280,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/dataset/tracking_id/{tracking_id}": {
       "delete": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Delete Dataset by Tracking ID",
         "description": "Auth'ed user must be an owner of the organization to delete a dataset.",
         "operationId": "delete_dataset_by_tracking_id",
@@ -3146,14 +3342,18 @@
         },
         "security": [
           {
-            "ApiKey": ["owner"]
+            "ApiKey": [
+              "owner"
+            ]
           }
         ]
       }
     },
     "/api/dataset/usage/{dataset_id}": {
       "get": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Get Usage By Dataset ID",
         "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_usage_by_dataset_id",
@@ -3212,14 +3412,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/dataset/{dataset_id}": {
       "get": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Get Dataset By ID",
         "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_dataset",
@@ -3278,12 +3482,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["Dataset"],
+        "tags": [
+          "Dataset"
+        ],
         "summary": "Delete Dataset",
         "description": "Auth'ed user must be an owner of the organization to delete a dataset.",
         "operationId": "delete_dataset",
@@ -3335,14 +3543,18 @@
         },
         "security": [
           {
-            "ApiKey": ["owner"]
+            "ApiKey": [
+              "owner"
+            ]
           }
         ]
       }
     },
     "/api/events": {
       "post": {
-        "tags": ["Events"],
+        "tags": [
+          "Events"
+        ],
         "summary": "Get events for the dataset",
         "description": "Get events for the dataset specified by the TR-Dataset header.",
         "operationId": "get_events",
@@ -3392,14 +3604,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/file": {
       "post": {
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "summary": "Upload File",
         "description": "Upload a file to S3 attached to the server. The file will be converted to HTML with tika and chunked algorithmically, images will be OCR'ed with tesseract. The resulting chunks will be indexed and searchable. Optionally, you can only upload the file and manually create chunks associated to the file after. See docs.trieve.ai and/or contact us for more details and tips. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.",
         "operationId": "upload_file_handler",
@@ -3449,14 +3665,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/file/{file_id}": {
       "get": {
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "summary": "Get File",
         "description": "Download a file based on its id.",
         "operationId": "get_file_handler",
@@ -3515,12 +3735,16 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "summary": "Delete File",
         "description": "Delete a file from S3 attached to the server based on its id. This will disassociate chunks from the file, but only delete them all together if you specify delete_chunks to be true. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "delete_file_handler",
@@ -3562,14 +3786,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/health": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Health Check",
         "description": "Confirmation that the service is healthy and can make embedding vectors",
         "operationId": "health_check",
@@ -3592,7 +3820,9 @@
     },
     "/api/invitation": {
       "post": {
-        "tags": ["Invitation"],
+        "tags": [
+          "Invitation"
+        ],
         "summary": "Send Invitation",
         "description": "Invitations act as a way to invite users to join an organization. After a user is invited, they will automatically be added to the organization with the role specified in the invitation once they set their. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "post_invitation",
@@ -3635,14 +3865,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/message": {
       "post": {
-        "tags": ["Message"],
+        "tags": [
+          "Message"
+        ],
         "summary": "Create message",
         "description": "Create message. Messages are attached to topics in order to coordinate memory of gen-AI chat sessions.Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "create_message",
@@ -3692,12 +3926,16 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Message"],
+        "tags": [
+          "Message"
+        ],
         "summary": "Edit message",
         "description": "Edit message which exists within the topic's chat history. This will delete the message and replace it with a new message. The new message will be generated by the AI based on the new content provided in the request body. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "edit_message",
@@ -3740,12 +3978,16 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["Message"],
+        "tags": [
+          "Message"
+        ],
         "summary": "Regenerate message",
         "description": "Regenerate the assistant response to the last user message of a topic. This will delete the last message and replace it with a new message. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "regenerate_message",
@@ -3796,12 +4038,16 @@
         "deprecated": true,
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "patch": {
-        "tags": ["Message"],
+        "tags": [
+          "Message"
+        ],
         "summary": "Regenerate message",
         "description": "Regenerate the assistant response to the last user message of a topic. This will delete the last message and replace it with a new message. The response will include Chunks first on the stream if the topic is using RAG. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "regenerate_message_patch",
@@ -3851,14 +4097,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/messages/{messages_topic_id}": {
       "get": {
-        "tags": ["Message"],
+        "tags": [
+          "Message"
+        ],
         "summary": "Get all messages for a given topic",
         "description": "Get all messages for a given topic. If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.",
         "operationId": "get_all_topic_messages",
@@ -3910,14 +4160,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/organization": {
       "post": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Create Organization",
         "description": "Create a new organization. The auth'ed user who creates the organization will be the default owner of the organization.",
         "operationId": "create_organization",
@@ -3956,12 +4210,16 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Update Organization",
         "description": "Update an organization. Only the owner of the organization can update it.",
         "operationId": "update_organization",
@@ -4011,14 +4269,18 @@
         },
         "security": [
           {
-            "ApiKey": ["owner"]
+            "ApiKey": [
+              "owner"
+            ]
           }
         ]
       }
     },
     "/api/organization/update_dataset_configs": {
       "post": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Update All Dataset Configurations",
         "description": "Update the configurations for all datasets in an organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values. Auth'ed user or api key must have an owner role for the specified organization.",
         "operationId": "update_all_org_dataset_configs",
@@ -4061,14 +4323,18 @@
         },
         "security": [
           {
-            "ApiKey": ["owner"]
+            "ApiKey": [
+              "owner"
+            ]
           }
         ]
       }
     },
     "/api/organization/usage/{organization_id}": {
       "get": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Get Organization Usage",
         "description": "Fetch the current usage specification of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_organization_usage",
@@ -4117,14 +4383,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/organization/users/{organization_id}": {
       "get": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Get Organization Users",
         "description": "Fetch the users of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_organization_users",
@@ -4176,14 +4446,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/organization/{organization_id}": {
       "get": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Get Organization",
         "description": "Fetch the details of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_organization",
@@ -4242,12 +4516,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "delete": {
-        "tags": ["Organization"],
+        "tags": [
+          "Organization"
+        ],
         "summary": "Delete Organization",
         "description": "Delete an organization by its id. The auth'ed user must be an owner of the organization to delete it.",
         "operationId": "delete_organization",
@@ -4289,14 +4567,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/stripe/checkout/setup/{organization_id}": {
       "post": {
-        "tags": ["Stripe"],
+        "tags": [
+          "Stripe"
+        ],
         "summary": "Create checkout session setup",
         "description": "Create a checkout session (setup)",
         "operationId": "create_setup_checkout_session",
@@ -4338,7 +4620,9 @@
     },
     "/api/stripe/invoices/{organization_id}": {
       "get": {
-        "tags": ["Stripe"],
+        "tags": [
+          "Stripe"
+        ],
         "summary": "Get All Invoices",
         "description": "Get a list of all invoices",
         "operationId": "get_all_invoices",
@@ -4383,7 +4667,9 @@
     },
     "/api/stripe/payment_link/{plan_id}/{organization_id}": {
       "get": {
-        "tags": ["Stripe"],
+        "tags": [
+          "Stripe"
+        ],
         "summary": "Checkout",
         "description": "Get a 303 SeeOther redirect link to the stripe checkout page for the plan and organization",
         "operationId": "direct_to_payment_link",
@@ -4428,7 +4714,9 @@
     },
     "/api/stripe/plans": {
       "get": {
-        "tags": ["Stripe"],
+        "tags": [
+          "Stripe"
+        ],
         "summary": "Get All Plans",
         "description": "Get a list of all plans",
         "operationId": "get_all_plans",
@@ -4461,7 +4749,9 @@
     },
     "/api/stripe/subscription/{subscription_id}": {
       "delete": {
-        "tags": ["Stripe"],
+        "tags": [
+          "Stripe"
+        ],
         "summary": "Cancel Subscription",
         "description": "Cancel a subscription by its id",
         "operationId": "cancel_subscription",
@@ -4503,14 +4793,18 @@
         },
         "security": [
           {
-            "ApiKey": ["owner"]
+            "ApiKey": [
+              "owner"
+            ]
           }
         ]
       }
     },
     "/api/stripe/subscription_plan/{subscription_id}/{plan_id}": {
       "patch": {
-        "tags": ["Stripe"],
+        "tags": [
+          "Stripe"
+        ],
         "summary": "Update Subscription Plan",
         "description": "Update a subscription to a new plan",
         "operationId": "update_subscription_plan",
@@ -4562,14 +4856,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/topic": {
       "post": {
-        "tags": ["Topic"],
+        "tags": [
+          "Topic"
+        ],
         "summary": "Create Topic",
         "description": "Create a new chat topic. Topics are attached to a owner_id's and act as a coordinator for conversation message history of gen-AI chat sessions. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "create_topic",
@@ -4619,12 +4917,16 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       },
       "put": {
-        "tags": ["Topic"],
+        "tags": [
+          "Topic"
+        ],
         "summary": "Update Topic",
         "description": "Update an existing chat topic. Currently, only the name of the topic can be updated. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "update_topic",
@@ -4667,14 +4969,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/topic/owner/{owner_id}": {
       "get": {
-        "tags": ["Topic"],
+        "tags": [
+          "Topic"
+        ],
         "summary": "Get All Topics for Owner ID",
         "description": "Get all topics belonging to an arbitary owner_id. This is useful for managing message history and chat sessions. It is common to use a browser fingerprint or your user's id as the owner_id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "get_all_topics_for_owner_id",
@@ -4725,14 +5031,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/topic/{topic_id}": {
       "delete": {
-        "tags": ["Topic"],
+        "tags": [
+          "Topic"
+        ],
         "summary": "Delete Topic",
         "description": "Delete an existing chat topic. When a topic is deleted, all associated chat messages are also deleted. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
         "operationId": "delete_topic",
@@ -4774,14 +5084,18 @@
         },
         "security": [
           {
-            "ApiKey": ["admin"]
+            "ApiKey": [
+              "admin"
+            ]
           }
         ]
       }
     },
     "/api/user": {
       "put": {
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "summary": "Update User",
         "description": "Update a user's information. If the user_id is not provided, the auth'ed user will be updated. If the user_id is provided, the role of the auth'ed user or api key must be an admin (1) or owner (2) of the organization.",
         "operationId": "update_user",
@@ -4813,14 +5127,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/user/api_key": {
       "post": {
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "summary": "Set User Api Key",
         "description": "Create a new api key for the auth'ed user. Successful response will contain the newly created api key. If a write role is assigned the api key will have permission level of the auth'ed user who calls this endpoint.",
         "operationId": "set_user_api_key",
@@ -4859,14 +5177,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/api/user/api_key/{api_key_id}": {
       "delete": {
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "summary": "Delete User Api Key",
         "description": "Delete an api key for the auth'ed user.",
         "operationId": "delete_user_api_key",
@@ -4899,14 +5221,18 @@
         },
         "security": [
           {
-            "ApiKey": ["readonly"]
+            "ApiKey": [
+              "readonly"
+            ]
           }
         ]
       }
     },
     "/metrics": {
       "post": {
-        "tags": ["Metrics"],
+        "tags": [
+          "Metrics"
+        ],
         "summary": "Get Prometheus Metrics",
         "description": "This route allows you to view the number of items in each queue in the Prometheus format.",
         "operationId": "get_metrics",
@@ -4944,7 +5270,10 @@
     "schemas": {
       "APIVersion": {
         "type": "string",
-        "enum": ["V1", "V2"]
+        "enum": [
+          "V1",
+          "V2"
+        ]
       },
       "AddChunkToGroupReqPayload": {
         "type": "object",
@@ -5013,10 +5342,14 @@
         },
         "example": {
           "created_at": "2021-01-01 00:00:00.000",
-          "dataset_ids": ["d0d0d0d0-d0d0-d0d0-d0d0-d0d0d0d0d0d0"],
+          "dataset_ids": [
+            "d0d0d0d0-d0d0-d0d0-d0d0-d0d0d0d0d0d0"
+          ],
           "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "name": "Trieve",
-          "organization_ids": ["o1o1o1o1-o1o1-o1o1-o1o1-o1o1o1o1o1o1"],
+          "organization_ids": [
+            "o1o1o1o1-o1o1-o1o1-o1o1-o1o1o1o1o1o1"
+          ],
           "role": 1,
           "updated_at": "2021-01-01 00:00:00.000",
           "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3"
@@ -5051,7 +5384,10 @@
       },
       "AutocompleteReqPayload": {
         "type": "object",
-        "required": ["search_type", "query"],
+        "required": [
+          "search_type",
+          "query"
+        ],
         "properties": {
           "content_only": {
             "type": "boolean",
@@ -5121,6 +5457,11 @@
             "type": "boolean",
             "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
             "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "User ID is the id of the user who is making the request. This is used to track user interactions with the search results.",
+            "nullable": true
           }
         },
         "example": {
@@ -5128,7 +5469,10 @@
             "must": [
               {
                 "field": "metadata.key2",
-                "match": ["value3", "value4"],
+                "match": [
+                  "value3",
+                  "value4"
+                ],
                 "range": {
                   "gt": 0.0,
                   "gte": 0.0,
@@ -5140,7 +5484,10 @@
             "must_not": [
               {
                 "field": "metadata.key3",
-                "match": ["value5", "value6"],
+                "match": [
+                  "value5",
+                  "value6"
+                ],
                 "range": {
                   "gt": 0.0,
                   "gte": 0.0,
@@ -5152,7 +5499,10 @@
             "should": [
               {
                 "field": "metadata.key1",
-                "match": ["value1", "value2"],
+                "match": [
+                  "value1",
+                  "value2"
+                ],
                 "range": {
                   "gt": 0.0,
                   "gte": 0.0,
@@ -5162,7 +5512,12 @@
               }
             ]
           },
-          "highlight_delimiters": ["?", ",", ".", "!"],
+          "highlight_delimiters": [
+            "?",
+            ",",
+            ".",
+            "!"
+          ],
           "highlight_results": true,
           "page": 1,
           "page_size": 10,
@@ -5175,7 +5530,10 @@
       },
       "BatchQueuedChunkResponse": {
         "type": "object",
-        "required": ["chunk_metadata", "pos_in_queue"],
+        "required": [
+          "chunk_metadata",
+          "pos_in_queue"
+        ],
         "properties": {
           "chunk_metadata": {
             "type": "array",
@@ -5199,7 +5557,10 @@
                 "key1": "value1",
                 "key2": "value2"
               },
-              "tag_set": ["tag1", "tag2"],
+              "tag_set": [
+                "tag1",
+                "tag2"
+              ],
               "time_stamp": "2021-01-01 00:00:00.000",
               "tracking_id": "tracking_id",
               "weight": 0.5
@@ -5212,7 +5573,10 @@
                 "key1": "value1",
                 "key2": "value2"
               },
-              "tag_set": ["tag1", "tag2"],
+              "tag_set": [
+                "tag1",
+                "tag2"
+              ],
               "time_stamp": "2021-01-01 00:00:00.000",
               "tracking_id": "tracking_id",
               "weight": 0.5
@@ -5226,7 +5590,9 @@
           {
             "type": "object",
             "title": "SearchCTRMetrics",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -5238,14 +5604,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["search_ctr_metrics"]
+                "enum": [
+                  "search_ctr_metrics"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "SearchesWithClicks",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -5263,14 +5633,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["searches_with_clicks"]
+                "enum": [
+                  "searches_with_clicks"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "SearchesWithoutClicks",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -5288,14 +5662,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["searches_without_clicks"]
+                "enum": [
+                  "searches_without_clicks"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "RecommendationCTRMetrics",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -5307,14 +5685,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["recommendation_ctr_metrics"]
+                "enum": [
+                  "recommendation_ctr_metrics"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "RecommendationsWithClicks",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -5332,14 +5714,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["recommendations_with_clicks"]
+                "enum": [
+                  "recommendations_with_clicks"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "RecommendationsWithoutClicks",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -5357,7 +5743,9 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["recommendations_without_clicks"]
+                "enum": [
+                  "recommendations_without_clicks"
+                ]
               }
             }
           }
@@ -5390,7 +5778,11 @@
       },
       "CTRDataRequestBody": {
         "type": "object",
-        "required": ["request_id", "ctr_type", "position"],
+        "required": [
+          "request_id",
+          "ctr_type",
+          "position"
+        ],
         "properties": {
           "clicked_chunk_id": {
             "type": "string",
@@ -5424,7 +5816,9 @@
       },
       "CTRRecommendationsWithClicksResponse": {
         "type": "object",
-        "required": ["recommendations"],
+        "required": [
+          "recommendations"
+        ],
         "properties": {
           "recommendations": {
             "type": "array",
@@ -5436,7 +5830,9 @@
       },
       "CTRRecommendationsWithoutClicksResponse": {
         "type": "object",
-        "required": ["recommendations"],
+        "required": [
+          "recommendations"
+        ],
         "properties": {
           "recommendations": {
             "type": "array",
@@ -5448,7 +5844,9 @@
       },
       "CTRSearchQueryWithClicksResponse": {
         "type": "object",
-        "required": ["queries"],
+        "required": [
+          "queries"
+        ],
         "properties": {
           "queries": {
             "type": "array",
@@ -5460,7 +5858,9 @@
       },
       "CTRSearchQueryWithoutClicksResponse": {
         "type": "object",
-        "required": ["queries"],
+        "required": [
+          "queries"
+        ],
         "properties": {
           "queries": {
             "type": "array",
@@ -5472,11 +5872,17 @@
       },
       "CTRType": {
         "type": "string",
-        "enum": ["search", "recommendation"]
+        "enum": [
+          "search",
+          "recommendation"
+        ]
       },
       "ChatMessageProxy": {
         "type": "object",
-        "required": ["role", "content"],
+        "required": [
+          "role",
+          "content"
+        ],
         "properties": {
           "content": {
             "type": "string"
@@ -5528,7 +5934,10 @@
           "must": [
             {
               "field": "tag_set",
-              "match_all": ["A", "B"]
+              "match_all": [
+                "A",
+                "B"
+              ]
             },
             {
               "field": "num_value",
@@ -5597,7 +6006,11 @@
             "foo": "bar"
           },
           "name": "Versions of Oversized T-Shirt",
-          "tag_set": ["tshirt", "oversized", "clothing"],
+          "tag_set": [
+            "tshirt",
+            "oversized",
+            "clothing"
+          ],
           "tracking_id": "SNOVERSIZEDTSHIRT",
           "updated_at": "2021-01-01 00:00:00.000"
         }
@@ -5681,7 +6094,11 @@
               "foo": "bar"
             },
             "name": "Versions of Oversized T-Shirt",
-            "tag_set": ["tshirt", "oversized", "clothing"],
+            "tag_set": [
+              "tshirt",
+              "oversized",
+              "clothing"
+            ],
             "tracking_id": "SNOVERSIZEDTSHIRT",
             "updated_at": "2021-01-01 00:00:00.000"
           },
@@ -5693,7 +6110,11 @@
               "foo": "bar"
             },
             "name": "Versions of Slim-Fit T-Shirt",
-            "tag_set": ["tshirt", "slim", "clothing"],
+            "tag_set": [
+              "tshirt",
+              "slim",
+              "clothing"
+            ],
             "tracking_id": "SNSLIMFITTSHIRT",
             "updated_at": "2021-01-01 00:00:00.000"
           }
@@ -5702,7 +6123,13 @@
       "ChunkMetadata": {
         "type": "object",
         "title": "V2",
-        "required": ["id", "created_at", "updated_at", "dataset_id", "weight"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "dataset_id",
+          "weight"
+        ],
         "properties": {
           "chunk_html": {
             "type": "string",
@@ -5793,7 +6220,13 @@
       "ChunkMetadataStringTagSet": {
         "type": "object",
         "title": "V1",
-        "required": ["id", "created_at", "updated_at", "dataset_id", "weight"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "dataset_id",
+          "weight"
+        ],
         "properties": {
           "chunk_html": {
             "type": "string",
@@ -6003,7 +6436,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these user-assigned tracking_ids must be created first, it cannot be arbitrarily created through this route.",
+            "description": "Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. If a group with the tracking_id does not exist, it will be created.",
             "nullable": true
           },
           "image_urls": {
@@ -6091,9 +6524,16 @@
             "boost_factor": 5.0,
             "phrase": "foo"
           },
-          "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
-          "group_tracking_ids": ["group_tracking_id"],
-          "image_urls": ["https://example.com/red", "https://example.com/blue"],
+          "group_ids": [
+            "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          ],
+          "group_tracking_ids": [
+            "group_tracking_id"
+          ],
+          "image_urls": [
+            "https://example.com/red",
+            "https://example.com/blue"
+          ],
           "link": "https://example.com",
           "location": {
             "lat": -34,
@@ -6107,7 +6547,10 @@
             "distance_factor": 0.5,
             "phrase": "flagship"
           },
-          "tag_set": ["tag1", "tag2"],
+          "tag_set": [
+            "tag1",
+            "tag2"
+          ],
           "time_stamp": "2021-01-01 00:00:00.000",
           "tracking_id": "tracking_id"
         }
@@ -6127,7 +6570,9 @@
           {
             "type": "object",
             "title": "ClusterTopics",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -6139,14 +6584,19 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["cluster_topics"]
+                "enum": [
+                  "cluster_topics"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "ClusterQueries",
-            "required": ["cluster_id", "type"],
+            "required": [
+              "cluster_id",
+              "type"
+            ],
             "properties": {
               "cluster_id": {
                 "type": "string",
@@ -6160,7 +6610,9 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["cluster_queries"]
+                "enum": [
+                  "cluster_queries"
+                ]
               }
             }
           }
@@ -6204,7 +6656,10 @@
       },
       "ContentChunkMetadata": {
         "type": "object",
-        "required": ["id", "weight"],
+        "required": [
+          "id",
+          "weight"
+        ],
         "properties": {
           "chunk_html": {
             "type": "string",
@@ -6258,7 +6713,9 @@
       },
       "CountChunkQueryResponseBody": {
         "type": "object",
-        "required": ["count"],
+        "required": [
+          "count"
+        ],
         "properties": {
           "count": {
             "type": "integer",
@@ -6269,7 +6726,10 @@
       },
       "CountChunksReqPayload": {
         "type": "object",
-        "required": ["search_type", "query"],
+        "required": [
+          "search_type",
+          "query"
+        ],
         "properties": {
           "filters": {
             "allOf": [
@@ -6312,7 +6772,11 @@
       },
       "CountSearchMethod": {
         "type": "string",
-        "enum": ["fulltext", "semantic", "bm25"]
+        "enum": [
+          "fulltext",
+          "semantic",
+          "bm25"
+        ]
       },
       "CreateBatchChunkGroupReqPayload": {
         "type": "array",
@@ -6326,7 +6790,11 @@
               "foo": "bar"
             },
             "name": "Versions of Oversized T-Shirt",
-            "tag_set": ["tshirt", "oversized", "clothing"],
+            "tag_set": [
+              "tshirt",
+              "oversized",
+              "clothing"
+            ],
             "tracking_id": "SNOVERSIZEDTSHIRT",
             "upsert_by_tracking_id": false
           },
@@ -6336,7 +6804,11 @@
               "foo": "bar"
             },
             "name": "Versions of Slim-Fit T-Shirt",
-            "tag_set": ["tshirt", "slim", "clothing"],
+            "tag_set": [
+              "tshirt",
+              "slim",
+              "clothing"
+            ],
             "tracking_id": "SNSLIMFITTSHIRT",
             "upsert_by_tracking_id": false
           }
@@ -6350,8 +6822,12 @@
         "example": [
           {
             "chunk_html": "<p>Some HTML content</p>",
-            "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
-            "group_tracking_ids": ["group_tracking_id"],
+            "group_ids": [
+              "d290f1ee-6c54-4b01-90e6-d701748f0851"
+            ],
+            "group_tracking_ids": [
+              "group_tracking_id"
+            ],
             "image_urls": [
               "https://example.com/red",
               "https://example.com/blue"
@@ -6365,15 +6841,22 @@
               "key1": "value1",
               "key2": "value2"
             },
-            "tag_set": ["tag1", "tag2"],
+            "tag_set": [
+              "tag1",
+              "tag2"
+            ],
             "time_stamp": "2021-01-01 00:00:00.000",
             "tracking_id": "tracking_id",
             "upsert_by_tracking_id": true
           },
           {
             "chunk_html": "<p>Some more HTML content</p>",
-            "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
-            "group_tracking_ids": ["group_tracking_id"],
+            "group_ids": [
+              "d290f1ee-6c54-4b01-90e6-d701748f0851"
+            ],
+            "group_tracking_ids": [
+              "group_tracking_id"
+            ],
             "image_urls": [],
             "link": "https://explain.com",
             "location": {
@@ -6384,7 +6867,10 @@
               "key1": "value1",
               "key2": "value2"
             },
-            "tag_set": ["tag3", "tag4"],
+            "tag_set": [
+              "tag3",
+              "tag4"
+            ],
             "time_stamp": "2021-01-01 00:00:00.000",
             "tracking_id": "tracking_id",
             "upsert_by_tracking_id": true,
@@ -6424,7 +6910,10 @@
       },
       "CreateDatasetRequest": {
         "type": "object",
-        "required": ["dataset_name", "organization_id"],
+        "required": [
+          "dataset_name",
+          "organization_id"
+        ],
         "properties": {
           "dataset_name": {
             "type": "string",
@@ -6474,7 +6963,10 @@
             "PRESENCE_PENALTY": 0.0,
             "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
             "SEMANTIC_ENABLED": true,
-            "STOP_TOKENS": ["\n\n", "\n"],
+            "STOP_TOKENS": [
+              "\n\n",
+              "\n"
+            ],
             "SYSTEM_PROMPT": "You are a helpful assistant",
             "TEMPERATURE": 0.5,
             "USE_MESSAGE_TO_QUERY_PROMPT": false
@@ -6483,7 +6975,10 @@
       },
       "CreateMessageReqPayload": {
         "type": "object",
-        "required": ["new_message_content", "topic_id"],
+        "required": [
+          "new_message_content",
+          "topic_id"
+        ],
         "properties": {
           "concat_user_messages_query": {
             "type": "boolean",
@@ -6548,12 +7043,19 @@
             "type": "string",
             "format": "uuid",
             "description": "The ID of the topic to attach the message to."
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.",
+            "nullable": true
           }
         }
       },
       "CreateOrganizationReqPayload": {
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string",
@@ -6563,7 +7065,9 @@
       },
       "CreateSetupCheckoutSessionResPayload": {
         "type": "object",
-        "required": ["url"],
+        "required": [
+          "url"
+        ],
         "properties": {
           "url": {
             "type": "string"
@@ -6613,7 +7117,11 @@
             "size": "large"
           },
           "name": "Versions of Oversized T-Shirt",
-          "tag_set": ["tshirt", "oversized", "clothing"],
+          "tag_set": [
+            "tshirt",
+            "oversized",
+            "clothing"
+          ],
           "tracking_id": "SNOVERSIZEDTSHIRT",
           "upsert_by_tracking_id": false
         }
@@ -6623,7 +7131,9 @@
       },
       "CreateTopicReqPayload": {
         "type": "object",
-        "required": ["owner_id"],
+        "required": [
+          "owner_id"
+        ],
         "properties": {
           "first_user_message": {
             "type": "string",
@@ -6709,7 +7219,10 @@
             "PRESENCE_PENALTY": 0.0,
             "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
             "SEMANTIC_ENABLED": true,
-            "STOP_TOKENS": ["\n\n", "\n"],
+            "STOP_TOKENS": [
+              "\n\n",
+              "\n"
+            ],
             "SYSTEM_PROMPT": "You are a helpful assistant",
             "TEMPERATURE": 0.5,
             "USE_MESSAGE_TO_QUERY_PROMPT": false
@@ -6757,7 +7270,10 @@
       },
       "DatasetAndUsage": {
         "type": "object",
-        "required": ["dataset", "dataset_usage"],
+        "required": [
+          "dataset",
+          "dataset_usage"
+        ],
         "properties": {
           "dataset": {
             "$ref": "#/components/schemas/DatasetDTO"
@@ -6964,7 +7480,10 @@
           "PRESENCE_PENALTY": 0.0,
           "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
           "SEMANTIC_ENABLED": true,
-          "STOP_TOKENS": ["\n\n", "\n"],
+          "STOP_TOKENS": [
+            "\n\n",
+            "\n"
+          ],
           "SYSTEM_PROMPT": "You are a helpful assistant",
           "TEMPERATURE": 0.5,
           "USE_MESSAGE_TO_QUERY_PROMPT": false
@@ -7015,7 +7534,11 @@
       },
       "DatasetUsageCount": {
         "type": "object",
-        "required": ["id", "dataset_id", "chunk_count"],
+        "required": [
+          "id",
+          "dataset_id",
+          "chunk_count"
+        ],
         "properties": {
           "chunk_count": {
             "type": "integer",
@@ -7065,7 +7588,9 @@
       },
       "DeleteTopicData": {
         "type": "object",
-        "required": ["topic_id"],
+        "required": [
+          "topic_id"
+        ],
         "properties": {
           "topic_id": {
             "type": "string",
@@ -7076,7 +7601,9 @@
       },
       "DeleteUserApiKeyRequest": {
         "type": "object",
-        "required": ["api_key_id"],
+        "required": [
+          "api_key_id"
+        ],
         "properties": {
           "api_key_id": {
             "type": "string",
@@ -7088,7 +7615,10 @@
       "DeprecatedSearchOverGroupsResponseBody": {
         "type": "object",
         "title": "V1",
-        "required": ["group_chunks", "total_chunk_pages"],
+        "required": [
+          "group_chunks",
+          "total_chunk_pages"
+        ],
         "properties": {
           "group_chunks": {
             "type": "array",
@@ -7104,11 +7634,20 @@
       },
       "DistanceMetric": {
         "type": "string",
-        "enum": ["euclidean", "cosine", "manhattan", "dot"]
+        "enum": [
+          "euclidean",
+          "cosine",
+          "manhattan",
+          "dot"
+        ]
       },
       "EditMessageReqPayload": {
         "type": "object",
-        "required": ["topic_id", "message_sort_order", "new_message_content"],
+        "required": [
+          "topic_id",
+          "message_sort_order",
+          "new_message_content"
+        ],
         "properties": {
           "concat_user_messages_query": {
             "type": "boolean",
@@ -7178,12 +7717,19 @@
             "type": "string",
             "format": "uuid",
             "description": "The id of the topic to edit the message at the given sort order for."
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.",
+            "nullable": true
           }
         }
       },
       "ErrorResponseBody": {
         "type": "object",
-        "required": ["message"],
+        "required": [
+          "message"
+        ],
         "properties": {
           "message": {
             "type": "string"
@@ -7195,7 +7741,10 @@
       },
       "EventReturn": {
         "type": "object",
-        "required": ["events", "page_count"],
+        "required": [
+          "events",
+          "page_count"
+        ],
         "properties": {
           "events": {
             "type": "array",
@@ -7227,7 +7776,9 @@
       },
       "FieldCondition": {
         "type": "object",
-        "required": ["field"],
+        "required": [
+          "field"
+        ],
         "properties": {
           "date_range": {
             "allOf": [
@@ -7292,7 +7843,10 @@
         },
         "example": {
           "field": "metadata.key1",
-          "match": ["value1", "value2"],
+          "match": [
+            "value1",
+            "value2"
+          ],
           "range": {
             "gt": 0.0,
             "gte": 0.0,
@@ -7428,7 +7982,10 @@
       "FullTextBoost": {
         "type": "object",
         "description": "Boost phrase is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).",
-        "required": ["phrase", "boost_factor"],
+        "required": [
+          "phrase",
+          "boost_factor"
+        ],
         "properties": {
           "boost_factor": {
             "type": "number",
@@ -7443,7 +8000,10 @@
       },
       "GenerateOffChunksReqPayload": {
         "type": "object",
-        "required": ["prev_messages", "chunk_ids"],
+        "required": [
+          "prev_messages",
+          "chunk_ids"
+        ],
         "properties": {
           "chunk_ids": {
             "type": "array",
@@ -7507,10 +8067,17 @@
             "format": "float",
             "description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.5.",
             "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "User ID is the id of the user who is making the request. This is used to track user interactions with the RAG results.",
+            "nullable": true
           }
         },
         "example": {
-          "chunk_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+          "chunk_ids": [
+            "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          ],
           "prev_messages": [
             {
               "content": "How do I setup RAG with Trieve?",
@@ -7524,7 +8091,10 @@
       "GeoInfo": {
         "type": "object",
         "description": "Location that you want to use as the center of the search.",
-        "required": ["lat", "lon"],
+        "required": [
+          "lat",
+          "lon"
+        ],
         "properties": {
           "lat": {
             "$ref": "#/components/schemas/GeoTypes"
@@ -7537,7 +8107,10 @@
       "GeoInfoWithBias": {
         "type": "object",
         "description": "Location bias lets you rank your results by distance from a location. If not specified, this has no effect. Bias allows you to determine how much of an effect the location of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.",
-        "required": ["location", "bias"],
+        "required": [
+          "location",
+          "bias"
+        ],
         "properties": {
           "bias": {
             "type": "number",
@@ -7580,7 +8153,10 @@
       },
       "GetAllTagsResponse": {
         "type": "object",
-        "required": ["tags", "total"],
+        "required": [
+          "tags",
+          "total"
+        ],
         "properties": {
           "tags": {
             "type": "array",
@@ -7596,7 +8172,9 @@
       },
       "GetChunksData": {
         "type": "object",
-        "required": ["ids"],
+        "required": [
+          "ids"
+        ],
         "properties": {
           "ids": {
             "type": "array",
@@ -7620,7 +8198,11 @@
       "GetChunksInGroupsResponseBody": {
         "type": "object",
         "title": "V2",
-        "required": ["chunks", "group", "total_pages"],
+        "required": [
+          "chunks",
+          "group",
+          "total_pages"
+        ],
         "properties": {
           "chunks": {
             "type": "array",
@@ -7680,12 +8262,16 @@
         "example": {
           "page": 1,
           "page_size": 10,
-          "type": ["chunk_action_failed"]
+          "type": [
+            "chunk_action_failed"
+          ]
         }
       },
       "GetGroupsForChunksReqPayload": {
         "type": "object",
-        "required": ["chunk_ids"],
+        "required": [
+          "chunk_ids"
+        ],
         "properties": {
           "chunk_ids": {
             "type": "array",
@@ -7698,7 +8284,9 @@
       },
       "GetTrackingChunksData": {
         "type": "object",
-        "required": ["tracking_ids"],
+        "required": [
+          "tracking_ids"
+        ],
         "properties": {
           "tracking_ids": {
             "type": "array",
@@ -7710,11 +8298,19 @@
       },
       "Granularity": {
         "type": "string",
-        "enum": ["minute", "second", "hour", "day"]
+        "enum": [
+          "minute",
+          "second",
+          "hour",
+          "day"
+        ]
       },
       "GroupData": {
         "type": "object",
-        "required": ["groups", "total_pages"],
+        "required": [
+          "groups",
+          "total_pages"
+        ],
         "properties": {
           "groups": {
             "type": "array",
@@ -7794,7 +8390,11 @@
       "GroupsBookmarkQueryResult": {
         "type": "object",
         "title": "V1",
-        "required": ["chunks", "group", "total_pages"],
+        "required": [
+          "chunks",
+          "group",
+          "total_pages"
+        ],
         "properties": {
           "chunks": {
             "type": "array",
@@ -7814,7 +8414,10 @@
       },
       "GroupsForChunk": {
         "type": "object",
-        "required": ["chunk_uuid", "slim_groups"],
+        "required": [
+          "chunk_uuid",
+          "slim_groups"
+        ],
         "properties": {
           "chunk_uuid": {
             "type": "string",
@@ -7850,7 +8453,10 @@
       },
       "HeadQueries": {
         "type": "object",
-        "required": ["query", "count"],
+        "required": [
+          "query",
+          "count"
+        ],
         "properties": {
           "count": {
             "type": "integer",
@@ -7863,7 +8469,9 @@
       },
       "HeadQueryResponse": {
         "type": "object",
-        "required": ["queries"],
+        "required": [
+          "queries"
+        ],
         "properties": {
           "queries": {
             "type": "array",
@@ -7929,7 +8537,10 @@
       },
       "HighlightStrategy": {
         "type": "string",
-        "enum": ["exactmatch", "v1"]
+        "enum": [
+          "exactmatch",
+          "v1"
+        ]
       },
       "InvitationData": {
         "type": "object",
@@ -8021,7 +8632,9 @@
       },
       "LatencyGraphResponse": {
         "type": "object",
-        "required": ["latency_points"],
+        "required": [
+          "latency_points"
+        ],
         "properties": {
           "latency_points": {
             "type": "array",
@@ -8033,7 +8646,10 @@
       },
       "LocationBoundingBox": {
         "type": "object",
-        "required": ["top_left", "bottom_right"],
+        "required": [
+          "top_left",
+          "bottom_right"
+        ],
         "properties": {
           "bottom_right": {
             "$ref": "#/components/schemas/GeoInfo"
@@ -8045,7 +8661,9 @@
       },
       "LocationPolygon": {
         "type": "object",
-        "required": ["exterior"],
+        "required": [
+          "exterior"
+        ],
         "properties": {
           "exterior": {
             "type": "array",
@@ -8067,7 +8685,10 @@
       },
       "LocationRadius": {
         "type": "object",
-        "required": ["center", "radius"],
+        "required": [
+          "center",
+          "radius"
+        ],
         "properties": {
           "center": {
             "$ref": "#/components/schemas/GeoInfo"
@@ -8168,7 +8789,10 @@
       "MultiQuery": {
         "type": "object",
         "description": "MultiQuery allows you to construct a dense vector from multiple queries with a weighted sum. This is useful for when you want to emphasize certain features of the query. This only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.",
-        "required": ["query", "weight"],
+        "required": [
+          "query",
+          "weight"
+        ],
         "properties": {
           "query": {
             "type": "string",
@@ -8196,7 +8820,13 @@
       },
       "Organization": {
         "type": "object",
-        "required": ["id", "name", "created_at", "updated_at", "deleted"],
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "updated_at",
+          "deleted"
+        ],
         "properties": {
           "created_at": {
             "type": "string",
@@ -8281,6 +8911,63 @@
           "user_count": 5
         }
       },
+      "PopularFilters": {
+        "type": "object",
+        "required": [
+          "clause",
+          "field",
+          "filter_type",
+          "count",
+          "common_values"
+        ],
+        "properties": {
+          "clause": {
+            "type": "string"
+          },
+          "common_values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "field": {
+            "type": "string"
+          },
+          "filter_type": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "clause": "must",
+          "common_values": {
+            "130": 2,
+            "198": 11
+          },
+          "count": 8,
+          "field": "metadata.ep_num",
+          "filter_type": "match_any"
+        }
+      },
+      "PopularFiltersResponse": {
+        "type": "object",
+        "required": [
+          "popular_filters"
+        ],
+        "properties": {
+          "popular_filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PopularFilters"
+            }
+          }
+        }
+      },
       "QdrantSortBy": {
         "oneOf": [
           {
@@ -8294,7 +8981,9 @@
       },
       "QueryCountResponse": {
         "type": "object",
-        "required": ["total_queries"],
+        "required": [
+          "total_queries"
+        ],
         "properties": {
           "total_queries": {
             "type": "array",
@@ -8323,7 +9012,9 @@
           {
             "type": "object",
             "title": "RAGQueries",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -8357,14 +9048,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["rag_queries"]
+                "enum": [
+                  "rag_queries"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "RAGUsage",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -8376,14 +9071,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["rag_usage"]
+                "enum": [
+                  "rag_usage"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "RAGUsageGraph",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -8403,7 +9102,9 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["rag_usage_graph"]
+                "enum": [
+                  "rag_usage_graph"
+                ]
               }
             }
           }
@@ -8448,11 +9149,16 @@
       },
       "RAGSortBy": {
         "type": "string",
-        "enum": ["created_at", "latency"]
+        "enum": [
+          "created_at",
+          "latency"
+        ]
       },
       "RAGUsageGraphResponse": {
         "type": "object",
-        "required": ["usage_points"],
+        "required": [
+          "usage_points"
+        ],
         "properties": {
           "usage_points": {
             "type": "array",
@@ -8464,7 +9170,9 @@
       },
       "RAGUsageResponse": {
         "type": "object",
-        "required": ["total_queries"],
+        "required": [
+          "total_queries"
+        ],
         "properties": {
           "total_queries": {
             "type": "integer",
@@ -8482,7 +9190,8 @@
           "search_id",
           "results",
           "dataset_id",
-          "created_at"
+          "created_at",
+          "user_id"
         ],
         "properties": {
           "created_at": {
@@ -8509,6 +9218,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "user_id": {
+            "type": "string"
+          },
           "user_message": {
             "type": "string"
           }
@@ -8516,7 +9228,9 @@
       },
       "RagQueryResponse": {
         "type": "object",
-        "required": ["queries"],
+        "required": [
+          "queries"
+        ],
         "properties": {
           "queries": {
             "type": "array",
@@ -8528,7 +9242,10 @@
       },
       "RagTypes": {
         "type": "string",
-        "enum": ["chosen_chunks", "all_chunks"]
+        "enum": [
+          "chosen_chunks",
+          "all_chunks"
+        ]
       },
       "Range": {
         "type": "object",
@@ -8587,7 +9304,10 @@
       },
       "RateQueryRequest": {
         "type": "object",
-        "required": ["query_id", "rating"],
+        "required": [
+          "query_id",
+          "rating"
+        ],
         "properties": {
           "note": {
             "type": "string",
@@ -8605,7 +9325,12 @@
       },
       "ReRankOptions": {
         "type": "string",
-        "enum": ["semantic", "fulltext", "bm25", "cross_encoder"]
+        "enum": [
+          "semantic",
+          "fulltext",
+          "bm25",
+          "cross_encoder"
+        ]
       },
       "RecommendChunksRequest": {
         "type": "object",
@@ -8679,13 +9404,21 @@
               }
             ],
             "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "User ID is the id of the user who is making the request. This is used to track user interactions with the recommendation results.",
+            "nullable": true
           }
         }
       },
       "RecommendChunksResponseBody": {
         "type": "object",
         "title": "V2",
-        "required": ["id", "chunks"],
+        "required": [
+          "id",
+          "chunks"
+        ],
         "properties": {
           "chunks": {
             "type": "array",
@@ -8778,6 +9511,11 @@
               }
             ],
             "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the rrecommendation results.",
+            "nullable": true
           }
         }
       },
@@ -8794,7 +9532,10 @@
       "RecommendGroupsResponseBody": {
         "type": "object",
         "title": "V2",
-        "required": ["id", "results"],
+        "required": [
+          "id",
+          "results"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -8824,14 +9565,20 @@
       "RecommendType": {
         "type": "string",
         "description": "The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.",
-        "enum": ["semantic", "fulltext", "bm25"]
+        "enum": [
+          "semantic",
+          "fulltext",
+          "bm25"
+        ]
       },
       "RecommendationAnalytics": {
         "oneOf": [
           {
             "type": "object",
             "title": "LowConfidenceRecommendations",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -8854,14 +9601,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["low_confidence_recommendations"]
+                "enum": [
+                  "low_confidence_recommendations"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "RecommendationQueries",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -8895,7 +9646,9 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["recommendation_queries"]
+                "enum": [
+                  "recommendation_queries"
+                ]
               }
             }
           }
@@ -8970,7 +9723,8 @@
           "results",
           "top_score",
           "dataset_id",
-          "created_at"
+          "created_at",
+          "user_id"
         ],
         "properties": {
           "created_at": {
@@ -9021,21 +9775,32 @@
           "top_score": {
             "type": "number",
             "format": "float"
+          },
+          "user_id": {
+            "type": "string"
           }
         }
       },
       "RecommendationStrategy": {
         "type": "string",
         "description": "Strategy to use for recommendations, either \"average_vector\" or \"best_score\". The default is \"average_vector\". The \"average_vector\" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search. The \"best_score\" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives.",
-        "enum": ["average_vector", "best_score"]
+        "enum": [
+          "average_vector",
+          "best_score"
+        ]
       },
       "RecommendationType": {
         "type": "string",
-        "enum": ["Chunk", "Group"]
+        "enum": [
+          "Chunk",
+          "Group"
+        ]
       },
       "RecommendationsEventResponse": {
         "type": "object",
-        "required": ["queries"],
+        "required": [
+          "queries"
+        ],
         "properties": {
           "queries": {
             "type": "array",
@@ -9047,7 +9812,11 @@
       },
       "RecommendationsWithClicksCTRResponse": {
         "type": "object",
-        "required": ["clicked_chunk", "position", "created_at"],
+        "required": [
+          "clicked_chunk",
+          "position",
+          "created_at"
+        ],
         "properties": {
           "clicked_chunk": {
             "$ref": "#/components/schemas/ChunkMetadata"
@@ -9091,7 +9860,9 @@
       },
       "RecommendationsWithoutClicksCTRResponse": {
         "type": "object",
-        "required": ["created_at"],
+        "required": [
+          "created_at"
+        ],
         "properties": {
           "created_at": {
             "type": "string"
@@ -9128,7 +9899,9 @@
       },
       "RegenerateMessageReqPayload": {
         "type": "object",
-        "required": ["topic_id"],
+        "required": [
+          "topic_id"
+        ],
         "properties": {
           "concat_user_messages_query": {
             "type": "boolean",
@@ -9189,12 +9962,19 @@
             "type": "string",
             "format": "uuid",
             "description": "The id of the topic to regenerate the last message for."
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.",
+            "nullable": true
           }
         }
       },
       "RemoveChunkFromGroupReqPayload": {
         "type": "object",
-        "required": ["chunk_id"],
+        "required": [
+          "chunk_id"
+        ],
         "properties": {
           "chunk_id": {
             "type": "string",
@@ -9215,12 +9995,19 @@
       },
       "RoleProxy": {
         "type": "string",
-        "enum": ["system", "user", "assistant"]
+        "enum": [
+          "system",
+          "user",
+          "assistant"
+        ]
       },
       "ScoreChunk": {
         "type": "object",
         "title": "V2",
-        "required": ["chunk", "score"],
+        "required": [
+          "chunk",
+          "score"
+        ],
         "properties": {
           "chunk": {
             "$ref": "#/components/schemas/NewChunkMetadataTypes"
@@ -9259,7 +10046,10 @@
       },
       "ScoreChunkDTO": {
         "type": "object",
-        "required": ["metadata", "score"],
+        "required": [
+          "metadata",
+          "score"
+        ],
         "properties": {
           "highlights": {
             "type": "array",
@@ -9337,7 +10127,9 @@
       },
       "ScrollChunksResponseBody": {
         "type": "object",
-        "required": ["chunks"],
+        "required": [
+          "chunks"
+        ],
         "properties": {
           "chunks": {
             "type": "array",
@@ -9352,7 +10144,9 @@
           {
             "type": "object",
             "title": "LatencyGraph",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -9372,14 +10166,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["latency_graph"]
+                "enum": [
+                  "latency_graph"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "SearchUsageGraph",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -9399,14 +10197,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["search_usage_graph"]
+                "enum": [
+                  "search_usage_graph"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "SearchMetrics",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -9418,14 +10220,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["search_metrics"]
+                "enum": [
+                  "search_metrics"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "HeadQueries",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -9443,14 +10249,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["head_queries"]
+                "enum": [
+                  "head_queries"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "LowConfidenceQueries",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -9473,14 +10283,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["low_confidence_queries"]
+                "enum": [
+                  "low_confidence_queries"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "NoResultQueries",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -9498,14 +10312,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["no_result_queries"]
+                "enum": [
+                  "no_result_queries"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "SearchQueries",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -9539,14 +10357,18 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["search_queries"]
+                "enum": [
+                  "search_queries"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "CountQueries",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "filter": {
                 "allOf": [
@@ -9558,14 +10380,19 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["count_queries"]
+                "enum": [
+                  "count_queries"
+                ]
               }
             }
           },
           {
             "type": "object",
             "title": "QueryDetails",
-            "required": ["search_id", "type"],
+            "required": [
+              "search_id",
+              "type"
+            ],
             "properties": {
               "search_id": {
                 "type": "string",
@@ -9573,7 +10400,32 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["query_details"]
+                "enum": [
+                  "query_details"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "PopularFilters",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "popular_filters"
+                ]
               }
             }
           }
@@ -9639,6 +10491,9 @@
           },
           {
             "$ref": "#/components/schemas/SearchQueryEvent"
+          },
+          {
+            "$ref": "#/components/schemas/PopularFiltersResponse"
           }
         ]
       },
@@ -9647,6 +10502,7 @@
         "required": [
           "searches_with_clicks",
           "percent_searches_with_clicks",
+          "percent_searches_without_clicks",
           "avg_position_of_click"
         ],
         "properties": {
@@ -9655,6 +10511,10 @@
             "format": "double"
           },
           "percent_searches_with_clicks": {
+            "type": "number",
+            "format": "double"
+          },
+          "percent_searches_without_clicks": {
             "type": "number",
             "format": "double"
           },
@@ -9667,7 +10527,10 @@
       "SearchChunkQueryResponseBody": {
         "type": "object",
         "title": "V1",
-        "required": ["score_chunks", "total_chunk_pages"],
+        "required": [
+          "score_chunks",
+          "total_chunk_pages"
+        ],
         "properties": {
           "score_chunks": {
             "type": "array",
@@ -9683,7 +10546,10 @@
       },
       "SearchChunksReqPayload": {
         "type": "object",
-        "required": ["search_type", "query"],
+        "required": [
+          "search_type",
+          "query"
+        ],
         "properties": {
           "content_only": {
             "type": "boolean",
@@ -9759,6 +10625,11 @@
             "type": "boolean",
             "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
             "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "User ID is the id of the user who is making the request. This is used to track user interactions with the search results.",
+            "nullable": true
           }
         },
         "example": {
@@ -9777,17 +10648,28 @@
             "must_not": [
               {
                 "field": "metadata.key3",
-                "match": ["value5", "value6"]
+                "match": [
+                  "value5",
+                  "value6"
+                ]
               }
             ],
             "should": [
               {
                 "field": "metadata.key1",
-                "match": ["value1", "value2"]
+                "match": [
+                  "value1",
+                  "value2"
+                ]
               }
             ]
           },
-          "highlight_delimiters": ["?", ",", ".", "!"],
+          "highlight_delimiters": [
+            "?",
+            ",",
+            ".",
+            "!"
+          ],
           "highlight_results": true,
           "page": 1,
           "page_size": 10,
@@ -9799,7 +10681,9 @@
       },
       "SearchClusterResponse": {
         "type": "object",
-        "required": ["clusters"],
+        "required": [
+          "clusters"
+        ],
         "properties": {
           "clusters": {
             "type": "array",
@@ -9856,7 +10740,10 @@
       },
       "SearchLatencyGraph": {
         "type": "object",
-        "required": ["time_stamp", "average_latency"],
+        "required": [
+          "time_stamp",
+          "average_latency"
+        ],
         "properties": {
           "average_latency": {
             "type": "number",
@@ -9869,11 +10756,19 @@
       },
       "SearchMethod": {
         "type": "string",
-        "enum": ["fulltext", "semantic", "hybrid", "bm25"]
+        "enum": [
+          "fulltext",
+          "semantic",
+          "hybrid",
+          "bm25"
+        ]
       },
       "SearchOverGroupsReqPayload": {
         "type": "object",
-        "required": ["search_type", "query"],
+        "required": [
+          "search_type",
+          "query"
+        ],
         "properties": {
           "filters": {
             "allOf": [
@@ -9943,13 +10838,22 @@
             "type": "boolean",
             "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
             "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.",
+            "nullable": true
           }
         }
       },
       "SearchOverGroupsResponseBody": {
         "type": "object",
         "title": "V2",
-        "required": ["id", "results", "total_pages"],
+        "required": [
+          "id",
+          "results",
+          "total_pages"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -9980,7 +10884,10 @@
       "SearchOverGroupsResults": {
         "type": "object",
         "title": "V2",
-        "required": ["group", "chunks"],
+        "required": [
+          "group",
+          "chunks"
+        ],
         "properties": {
           "chunks": {
             "type": "array",
@@ -10000,7 +10907,12 @@
       },
       "SearchQueriesWithClicksCTRResponse": {
         "type": "object",
-        "required": ["query", "clicked_chunk", "position", "created_at"],
+        "required": [
+          "query",
+          "clicked_chunk",
+          "position",
+          "created_at"
+        ],
         "properties": {
           "clicked_chunk": {
             "$ref": "#/components/schemas/ChunkMetadata"
@@ -10019,7 +10931,10 @@
       },
       "SearchQueriesWithoutClicksCTRResponse": {
         "type": "object",
-        "required": ["query", "created_at"],
+        "required": [
+          "query",
+          "created_at"
+        ],
         "properties": {
           "created_at": {
             "type": "string"
@@ -10041,7 +10956,8 @@
           "results",
           "dataset_id",
           "created_at",
-          "query_rating"
+          "query_rating",
+          "user_id"
         ],
         "properties": {
           "created_at": {
@@ -10076,12 +10992,17 @@
           "top_score": {
             "type": "number",
             "format": "float"
+          },
+          "user_id": {
+            "type": "string"
           }
         }
       },
       "SearchQueryResponse": {
         "type": "object",
-        "required": ["queries"],
+        "required": [
+          "queries"
+        ],
         "properties": {
           "queries": {
             "type": "array",
@@ -10094,7 +11015,11 @@
       "SearchResponseBody": {
         "type": "object",
         "title": "V2",
-        "required": ["id", "chunks", "total_pages"],
+        "required": [
+          "id",
+          "chunks",
+          "total_pages"
+        ],
         "properties": {
           "chunks": {
             "type": "array",
@@ -10134,7 +11059,11 @@
       },
       "SearchSortBy": {
         "type": "string",
-        "enum": ["created_at", "latency", "top_score"]
+        "enum": [
+          "created_at",
+          "latency",
+          "top_score"
+        ]
       },
       "SearchType": {
         "type": "string",
@@ -10147,7 +11076,11 @@
       },
       "SearchTypeCount": {
         "type": "object",
-        "required": ["search_type", "search_method", "search_count"],
+        "required": [
+          "search_type",
+          "search_method",
+          "search_count"
+        ],
         "properties": {
           "search_count": {
             "type": "integer",
@@ -10167,7 +11100,9 @@
       },
       "SearchUsageGraphResponse": {
         "type": "object",
-        "required": ["usage_points"],
+        "required": [
+          "usage_points"
+        ],
         "properties": {
           "usage_points": {
             "type": "array",
@@ -10179,7 +11114,10 @@
       },
       "SearchWithinGroupReqPayload": {
         "type": "object",
-        "required": ["query", "search_type"],
+        "required": [
+          "query",
+          "search_type"
+        ],
         "properties": {
           "content_only": {
             "type": "boolean",
@@ -10266,13 +11204,22 @@
             "type": "boolean",
             "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
             "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.",
+            "nullable": true
           }
         }
       },
       "SearchWithinGroupResponseBody": {
         "type": "object",
         "title": "V2",
-        "required": ["id", "chunks", "total_pages"],
+        "required": [
+          "id",
+          "chunks",
+          "total_pages"
+        ],
         "properties": {
           "chunks": {
             "type": "array",
@@ -10293,7 +11240,11 @@
       "SearchWithinGroupResults": {
         "type": "object",
         "title": "V1",
-        "required": ["bookmarks", "group", "total_pages"],
+        "required": [
+          "bookmarks",
+          "group",
+          "total_pages"
+        ],
         "properties": {
           "bookmarks": {
             "type": "array",
@@ -10313,7 +11264,10 @@
       "SemanticBoost": {
         "type": "object",
         "description": "Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of \"iphone\" 25% closer to the term \"flagship\" by using the distance phrase \"flagship\" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.",
-        "required": ["phrase", "distance_factor"],
+        "required": [
+          "phrase",
+          "distance_factor"
+        ],
         "properties": {
           "distance_factor": {
             "type": "number",
@@ -10328,7 +11282,10 @@
       },
       "SetUserApiKeyRequest": {
         "type": "object",
-        "required": ["name", "role"],
+        "required": [
+          "name",
+          "role"
+        ],
         "properties": {
           "dataset_ids": {
             "type": "array",
@@ -10369,7 +11326,9 @@
       },
       "SetUserApiKeyResponse": {
         "type": "object",
-        "required": ["api_key"],
+        "required": [
+          "api_key"
+        ],
         "properties": {
           "api_key": {
             "type": "string",
@@ -10379,7 +11338,10 @@
       },
       "SingleQueuedChunkResponse": {
         "type": "object",
-        "required": ["chunk_metadata", "pos_in_queue"],
+        "required": [
+          "chunk_metadata",
+          "pos_in_queue"
+        ],
         "properties": {
           "chunk_metadata": {
             "$ref": "#/components/schemas/ChunkMetadata"
@@ -10399,7 +11361,10 @@
                 "key1": "value1",
                 "key2": "value2"
               },
-              "tag_set": ["tag1", "tag2"],
+              "tag_set": [
+                "tag1",
+                "tag2"
+              ],
               "time_stamp": "2021-01-01 00:00:00.000",
               "tracking_id": "tracking_id",
               "weight": 0.5
@@ -10410,7 +11375,13 @@
       },
       "SlimChunkMetadata": {
         "type": "object",
-        "required": ["id", "created_at", "updated_at", "dataset_id", "weight"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "dataset_id",
+          "weight"
+        ],
         "properties": {
           "created_at": {
             "type": "string",
@@ -10491,7 +11462,13 @@
       },
       "SlimChunkMetadataWithArrayTagSet": {
         "type": "object",
-        "required": ["id", "created_at", "updated_at", "dataset_id", "weight"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "dataset_id",
+          "weight"
+        ],
         "properties": {
           "created_at": {
             "type": "string",
@@ -10561,7 +11538,13 @@
       },
       "SlimChunkMetadataWithScore": {
         "type": "object",
-        "required": ["id", "created_at", "updated_at", "weight", "score"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "weight",
+          "score"
+        ],
         "properties": {
           "created_at": {
             "type": "string",
@@ -10622,7 +11605,12 @@
       },
       "SlimUser": {
         "type": "object",
-        "required": ["id", "email", "user_orgs", "orgs"],
+        "required": [
+          "id",
+          "email",
+          "user_orgs",
+          "orgs"
+        ],
         "properties": {
           "email": {
             "type": "string"
@@ -10675,7 +11663,9 @@
       },
       "SortByField": {
         "type": "object",
-        "required": ["field"],
+        "required": [
+          "field"
+        ],
         "properties": {
           "direction": {
             "allOf": [
@@ -10700,7 +11690,9 @@
       },
       "SortBySearchType": {
         "type": "object",
-        "required": ["rerank_type"],
+        "required": [
+          "rerank_type"
+        ],
         "properties": {
           "prefetch_amount": {
             "type": "integer",
@@ -10757,7 +11749,10 @@
       },
       "SortOrder": {
         "type": "string",
-        "enum": ["desc", "asc"]
+        "enum": [
+          "desc",
+          "asc"
+        ]
       },
       "StripeInvoice": {
         "type": "object",
@@ -10873,7 +11868,9 @@
       },
       "SuggestedQueriesReqPayload": {
         "type": "object",
-        "required": ["query"],
+        "required": [
+          "query"
+        ],
         "properties": {
           "query": {
             "type": "string",
@@ -10883,7 +11880,9 @@
       },
       "SuggestedQueriesResponse": {
         "type": "object",
-        "required": ["queries"],
+        "required": [
+          "queries"
+        ],
         "properties": {
           "queries": {
             "type": "array",
@@ -10895,7 +11894,10 @@
       },
       "TagsWithCount": {
         "type": "object",
-        "required": ["tag", "count"],
+        "required": [
+          "tag",
+          "count"
+        ],
         "properties": {
           "count": {
             "type": "integer",
@@ -10956,7 +11958,10 @@
       },
       "UpdateAllOrgDatasetConfigsReqPayload": {
         "type": "object",
-        "required": ["organization_id", "dataset_config"],
+        "required": [
+          "organization_id",
+          "dataset_config"
+        ],
         "properties": {
           "dataset_config": {
             "description": "The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values."
@@ -10990,7 +11995,10 @@
             "PRESENCE_PENALTY": 0.0,
             "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
             "SEMANTIC_ENABLED": true,
-            "STOP_TOKENS": ["\n\n", "\n"],
+            "STOP_TOKENS": [
+              "\n\n",
+              "\n"
+            ],
             "SYSTEM_PROMPT": "You are a helpful assistant",
             "TEMPERATURE": 0.5,
             "USE_MESSAGE_TO_QUERY_PROMPT": false
@@ -10999,7 +12007,9 @@
       },
       "UpdateChunkByTrackingIdData": {
         "type": "object",
-        "required": ["tracking_id"],
+        "required": [
+          "tracking_id"
+        ],
         "properties": {
           "chunk_html": {
             "type": "string",
@@ -11208,7 +12218,9 @@
         "example": {
           "chunk_html": "<p>Some HTML content</p>",
           "chunk_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-          "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+          "group_ids": [
+            "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          ],
           "link": "https://example.com",
           "metadata": {
             "key1": "value1",
@@ -11275,7 +12287,10 @@
             "PRESENCE_PENALTY": 0.0,
             "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
             "SEMANTIC_ENABLED": true,
-            "STOP_TOKENS": ["\n\n", "\n"],
+            "STOP_TOKENS": [
+              "\n\n",
+              "\n"
+            ],
             "SYSTEM_PROMPT": "You are a helpful assistant",
             "TEMPERATURE": 0.5,
             "USE_MESSAGE_TO_QUERY_PROMPT": false
@@ -11284,7 +12299,9 @@
       },
       "UpdateGroupByTrackingIDReqPayload": {
         "type": "object",
-        "required": ["tracking_id"],
+        "required": [
+          "tracking_id"
+        ],
         "properties": {
           "description": {
             "type": "string",
@@ -11316,7 +12333,9 @@
       },
       "UpdateOrganizationReqPayload": {
         "type": "object",
-        "required": ["organization_id"],
+        "required": [
+          "organization_id"
+        ],
         "properties": {
           "name": {
             "type": "string",
@@ -11332,7 +12351,10 @@
       },
       "UpdateTopicReqPayload": {
         "type": "object",
-        "required": ["topic_id", "name"],
+        "required": [
+          "topic_id",
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string",
@@ -11347,7 +12369,10 @@
       },
       "UpdateUserOrgRoleData": {
         "type": "object",
-        "required": ["organization_id", "role"],
+        "required": [
+          "organization_id",
+          "role"
+        ],
         "properties": {
           "organization_id": {
             "type": "string",
@@ -11369,7 +12394,10 @@
       },
       "UploadFileReqPayload": {
         "type": "object",
-        "required": ["base64_file", "file_name"],
+        "required": [
+          "base64_file",
+          "file_name"
+        ],
         "properties": {
           "base64_file": {
             "type": "string",
@@ -11447,15 +12475,24 @@
             "key1": "value1",
             "key2": "value2"
           },
-          "split_delimiters": [",", ".", "\n"],
-          "tag_set": ["tag1", "tag2"],
+          "split_delimiters": [
+            ",",
+            ".",
+            "\n"
+          ],
+          "tag_set": [
+            "tag1",
+            "tag2"
+          ],
           "target_splits_per_chunk": 20,
           "time_stamp": "2021-01-01 00:00:00.000Z"
         }
       },
       "UploadFileResult": {
         "type": "object",
-        "required": ["file_metadata"],
+        "required": [
+          "file_metadata"
+        ],
         "properties": {
           "file_metadata": {
             "$ref": "#/components/schemas/File"
@@ -11464,7 +12501,10 @@
       },
       "UsageGraphPoint": {
         "type": "object",
-        "required": ["time_stamp", "requests"],
+        "required": [
+          "time_stamp",
+          "requests"
+        ],
         "properties": {
           "requests": {
             "type": "integer",

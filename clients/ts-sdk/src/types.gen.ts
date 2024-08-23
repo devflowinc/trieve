@@ -76,6 +76,10 @@ export type AutocompleteReqPayload = {
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
     use_quote_negated_terms?: (boolean) | null;
+    /**
+     * User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+     */
+    user_id?: (string) | null;
 };
 
 export type BatchQueuedChunkResponse = {
@@ -276,7 +280,7 @@ export type ChunkReqPayload = {
      */
     group_ids?: Array<(string)> | null;
     /**
-     * Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these user-assigned tracking_ids must be created first, it cannot be arbitrarily created through this route.
+     * Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. If a group with the tracking_id does not exist, it will be created.
      */
     group_tracking_ids?: Array<(string)> | null;
     /**
@@ -437,6 +441,10 @@ export type CreateMessageReqPayload = {
      * The ID of the topic to attach the message to.
      */
     topic_id: string;
+    /**
+     * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+     */
+    user_id?: (string) | null;
 };
 
 export type CreateOrganizationReqPayload = {
@@ -706,6 +714,10 @@ export type EditMessageReqPayload = {
      * The id of the topic to edit the message at the given sort order for.
      */
     topic_id: string;
+    /**
+     * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+     */
+    user_id?: (string) | null;
 };
 
 export type ErrorResponseBody = {
@@ -818,6 +830,10 @@ export type GenerateOffChunksReqPayload = {
      * What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Default is 0.5.
      */
     temperature?: (number) | null;
+    /**
+     * User ID is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+     */
+    user_id?: (string) | null;
 };
 
 /**
@@ -1107,6 +1123,20 @@ export type OrganizationUsageCount = {
     user_count: number;
 };
 
+export type PopularFilters = {
+    clause: string;
+    common_values: {
+        [key: string]: (number);
+    };
+    count: number;
+    field: string;
+    filter_type: string;
+};
+
+export type PopularFiltersResponse = {
+    popular_filters: Array<PopularFilters>;
+};
+
 /**
  * Sort by lets you specify a method to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
  */
@@ -1162,6 +1192,7 @@ export type RagQueryEvent = {
     rag_type: string;
     results: Array<ChunkMetadataStringTagSet>;
     search_id: string;
+    user_id: string;
     user_message: string;
 };
 
@@ -1216,6 +1247,10 @@ export type RecommendChunksRequest = {
      */
     slim_chunks?: (boolean) | null;
     strategy?: ((RecommendationStrategy) | null);
+    /**
+     * User ID is the id of the user who is making the request. This is used to track user interactions with the recommendation results.
+     */
+    user_id?: (string) | null;
 };
 
 export type RecommendChunksResponseBody = {
@@ -1255,6 +1290,10 @@ export type RecommendGroupsReqPayload = {
      */
     slim_chunks?: (boolean) | null;
     strategy?: ((RecommendationStrategy) | null);
+    /**
+     * The user_id is the id of the user who is making the request. This is used to track user interactions with the rrecommendation results.
+     */
+    user_id?: (string) | null;
 };
 
 export type RecommendGroupsResponse = RecommendGroupsResponseBody | GroupScoreChunk;
@@ -1311,6 +1350,7 @@ export type RecommendationEvent = {
     request_params: unknown;
     results: Array<unknown>;
     top_score: number;
+    user_id: string;
 };
 
 /**
@@ -1367,6 +1407,10 @@ export type RegenerateMessageReqPayload = {
      * The id of the topic to regenerate the last message for.
      */
     topic_id: string;
+    /**
+     * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
+     */
+    user_id?: (string) | null;
 };
 
 export type RemoveChunkFromGroupReqPayload = {
@@ -1445,6 +1489,9 @@ export type SearchAnalytics = {
 } | {
     search_id: string;
     type: 'query_details';
+} | {
+    filter?: ((SearchAnalyticsFilter) | null);
+    type: 'popular_filters';
 };
 
 export type type5 = 'latency_graph';
@@ -1455,11 +1502,12 @@ export type SearchAnalyticsFilter = {
     search_type?: ((SearchType) | null);
 };
 
-export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent;
+export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse;
 
 export type SearchCTRMetrics = {
     avg_position_of_click: number;
     percent_searches_with_clicks: number;
+    percent_searches_without_clicks: number;
     searches_with_clicks: number;
 };
 
@@ -1509,6 +1557,10 @@ export type SearchChunksReqPayload = {
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
     use_quote_negated_terms?: (boolean) | null;
+    /**
+     * User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+     */
+    user_id?: (string) | null;
 };
 
 export type SearchClusterResponse = {
@@ -1571,6 +1623,10 @@ export type SearchOverGroupsReqPayload = {
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
     use_quote_negated_terms?: (boolean) | null;
+    /**
+     * The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
+     */
+    user_id?: (string) | null;
 };
 
 export type SearchOverGroupsResponseBody = {
@@ -1610,6 +1666,7 @@ export type SearchQueryEvent = {
     results: Array<unknown>;
     search_type: string;
     top_score: number;
+    user_id: string;
 };
 
 export type SearchQueryResponse = {
@@ -1686,6 +1743,10 @@ export type SearchWithinGroupReqPayload = {
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
     use_quote_negated_terms?: (boolean) | null;
+    /**
+     * The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
+     */
+    user_id?: (string) | null;
 };
 
 export type SearchWithinGroupResponseBody = {

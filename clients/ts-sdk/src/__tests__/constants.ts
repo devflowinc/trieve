@@ -1,4 +1,4 @@
-import { TrieveSDK } from "../src/sdk";
+import { TrieveSDK } from "../sdk";
 
 export const GROUP_EXAMPLE_ID = "460e5ee8-98bc-4fed-b4ec-68f4d6453e5f";
 export const GROUP_EXAMPLE_TRACKING_ID = "1234";

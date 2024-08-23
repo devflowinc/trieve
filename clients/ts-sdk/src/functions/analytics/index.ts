@@ -10,6 +10,7 @@ import {
   CTRDataRequestBody,
   RAGAnalytics,
   RecommendationAnalytics,
+  SearchAnalytics,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 

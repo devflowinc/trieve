@@ -4,7 +4,7 @@ import {
   GROUP_EXAMPLE_ID,
   GROUP_EXAMPLE_TRACKING_ID,
   TRIEVE,
-} from "../../../__tests__/constants";
+} from "../../__tests__/constants";
 import {
   ChunkGroupAndFileId,
   CreateChunkGroupResponseEnum,
