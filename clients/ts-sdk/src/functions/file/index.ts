@@ -12,6 +12,25 @@ import {
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
+/**
+ * Upload a file to S3 attached to the server. The file will be converted to HTML with tika and chunked algorithmically, images will be OCR’ed with tesseract. The resulting chunks will be indexed and searchable. Optionally, you can only upload the file and manually create chunks associated to the file after. See docs.trieve.ai and/or contact us for more details and tips. Auth’ed user must be an admin or owner of the dataset’s organization to upload a file.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.uploadFile({
+  base64_file: "base64_encoded_file",
+  create_chunks: true,
+  description: "This is an example file",
+  file_mime_type: "application/pdf",
+  file_name: "example.pdf",
+  link: "https://example.com",
+  metadata: {
+    key1: "value1",
+    key2: "value2",
+  },
+});
+ * ```
+ */
 export async function uploadFile(
   /** @hidden */
   this: TrieveSDK,
@@ -29,6 +48,16 @@ export async function uploadFile(
   );
 }
 
+/**
+ * Get all files which belong to a given dataset specified by the dataset_id parameter. 10 files are returned per page.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getFilesForDataset({
+  page:1,
+});
+ * ```
+ */
 export async function getFilesForDataset(
   /** @hidden */
   this: TrieveSDK,
@@ -45,6 +74,17 @@ export async function getFilesForDataset(
     signal
   );
 }
+
+/**
+ * Download a file based on its id.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getFile({
+  fileId: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+});
+ * ```
+ */
 export async function getFile(
   /** @hidden */
   this: TrieveSDK,
@@ -62,6 +102,16 @@ export async function getFile(
   );
 }
 
+/**
+ * Delete a file from S3 attached to the server based on its id. This will disassociate chunks from the file, but only delete them all together if you specify delete_chunks to be true. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.deleteFile({
+  fileId: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+});
+ * ```
+ */
 export async function deleteFile(
   /** @hidden */
   this: TrieveSDK,
