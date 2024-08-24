@@ -611,12 +611,25 @@ pub async fn stream_response(
     let (s, r) = unbounded::<String>();
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
+    let completion_first = create_message_req_payload
+        .llm_options
+        .as_ref()
+        .map(|x| x.completion_first)
+        .unwrap_or(Some(false))
+        .unwrap_or(false);
+
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
 
+        let message_to_be_stored = if completion_first {
+            format!("{}{}", completion, chunk_metadatas_stringified)
+        } else {
+            format!("{}{}", chunk_metadatas_stringified, completion)
+        };
+
         let new_message = models::Message::from_details(
-            format!("{}{}", chunk_metadatas_stringified, completion),
+            message_to_be_stored,
             topic_id,
             next_message_order().try_into().unwrap(),
             "assistant".to_string(),

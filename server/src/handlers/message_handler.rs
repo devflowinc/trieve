@@ -185,12 +185,23 @@ pub async fn create_message(
         .map(|message| {
             let mut message = message;
             if message.role == "assistant" {
-                message.content = message
-                    .content
-                    .split("||")
-                    .last()
-                    .unwrap_or("I give up, I can't find chunks for this message")
-                    .to_string();
+                if message.content.starts_with("[{") {
+                    // This is (chunks, content)
+                    message.content = message
+                        .content
+                        .split("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                } else {
+                    // This is (content, chunks)
+                    message.content = message
+                        .content
+                        .rsplit("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                }
             }
             message
         })
@@ -247,8 +258,23 @@ pub async fn get_all_topic_messages(
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
 
-    let messages =
-        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool).await?;
+    let messages: Vec<models::Message> =
+        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool)
+            .await?
+            .into_iter()
+            .filter_map(|mut message| {
+                if message.content.starts_with("||[{") {
+                    match message.content.rsplit_once("}]") {
+                        Some((chunks, ai_message)) => {
+                            message.content = format!("{}{}}}]", ai_message, chunks);
+                        }
+                        _ => return None,
+                    }
+                }
+
+                Some(message)
+            })
+            .collect();
 
     Ok(HttpResponse::Ok().json(messages))
 }
@@ -471,12 +497,23 @@ pub async fn regenerate_message_patch(
         .map(|message| {
             let mut message = message;
             if message.role == "assistant" {
-                message.content = message
-                    .content
-                    .split("||")
-                    .last()
-                    .unwrap_or("I give up, I can't find a citation")
-                    .to_string();
+                if message.content.starts_with("[{") {
+                    // This is (chunks, content)
+                    message.content = message
+                        .content
+                        .split("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                } else {
+                    // This is (content, chunks)
+                    message.content = message
+                        .content
+                        .rsplit("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                }
             }
             message
         })
@@ -549,90 +586,7 @@ pub async fn regenerate_message(
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let topic_id = data.topic_id;
-    let dataset_config =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
-
-    check_completion_param_validity(data.llm_options.clone())?;
-
-    let get_messages_pool = pool.clone();
-    let create_message_pool = pool.clone();
-    let dataset_id = dataset_org_plan_sub.dataset.id;
-
-    let mut previous_messages =
-        get_topic_messages(topic_id, dataset_id, &get_messages_pool).await?;
-
-    if previous_messages.len() < 2 {
-        return Err(
-            ServiceError::BadRequest("Not enough messages to regenerate".to_string()).into(),
-        );
-    }
-
-    if previous_messages.len() == 2 {
-        return stream_response(
-            previous_messages,
-            topic_id,
-            dataset_org_plan_sub.dataset,
-            create_message_pool,
-            event_queue,
-            dataset_config,
-            data.into_inner().into(),
-        )
-        .await;
-    }
-
-    // remove citations from the previous messages
-    previous_messages = previous_messages
-        .into_iter()
-        .map(|message| {
-            let mut message = message;
-            if message.role == "assistant" {
-                message.content = message
-                    .content
-                    .split("||")
-                    .last()
-                    .unwrap_or("I give up, I can't find a citation")
-                    .to_string();
-            }
-            message
-        })
-        .collect::<Vec<models::Message>>();
-
-    let mut message_to_regenerate = None;
-    for message in previous_messages.iter().rev() {
-        if message.role == "assistant" {
-            message_to_regenerate = Some(message.clone());
-            break;
-        }
-    }
-
-    let message_id = match message_to_regenerate {
-        Some(message) => message.id,
-        None => {
-            return Err(ServiceError::BadRequest("No message to regenerate".to_string()).into());
-        }
-    };
-
-    let mut previous_messages_to_regenerate = Vec::new();
-    for message in previous_messages.iter() {
-        if message.id == message_id {
-            break;
-        }
-        previous_messages_to_regenerate.push(message.clone());
-    }
-
-    delete_message_query(message_id, topic_id, dataset_id, &pool).await?;
-
-    stream_response(
-        previous_messages_to_regenerate,
-        topic_id,
-        dataset_org_plan_sub.dataset,
-        create_message_pool,
-        event_queue,
-        dataset_config,
-        data.into_inner().into(),
-    )
-    .await
+    regenerate_message_patch(data, user, dataset_org_plan_sub, pool, event_queue).await
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
