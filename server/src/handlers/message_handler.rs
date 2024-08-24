@@ -497,7 +497,14 @@ pub async fn regenerate_message_patch(
         .map(|message| {
             let mut message = message;
             if message.role == "assistant" {
-                if message.content.starts_with("[{") {
+                if message.content.starts_with("||[{") {
+                    match message.content.rsplit_once("}]") {
+                        Some((_, ai_message)) => {
+                            message.content = ai_message.to_string();
+                        }
+                        _ => return message,
+                    }
+                } else if message.content.starts_with("[{") {
                     // This is (chunks, content)
                     message.content = message
                         .content
