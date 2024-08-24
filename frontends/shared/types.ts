@@ -266,39 +266,6 @@ export interface ApiKeyRespBody {
   updated_at: string;
 }
 
-export const availableEmbeddingModels = [
-  {
-    id: "jina-base-en",
-    name: "jina-base-en (securely hosted by Trieve)",
-    url: "https://embedding.trieve.ai",
-    dimension: 768,
-  },
-  {
-    id: "bge-m3",
-    name: "bge-m3 (securely hosted by Trieve)",
-    url: "https://embedding.trieve.ai/bge-m3",
-    dimension: 1024,
-  },
-  {
-    id: "jina-embeddings-v2-base-code",
-    name: "jina-embeddings-v2-base-code (securely hosted by Trieve)",
-    url: "https://embedding.trieve.ai/jina-code",
-    dimension: 768,
-  },
-  {
-    id: "text-embedding-3-small",
-    name: "text-embedding-3-small (hosted by OpenAI)",
-    url: "https://api.openai.com/v1",
-    dimension: 1536,
-  },
-  {
-    id: "text-embedding-3-large",
-    name: "text-embedding-3-large (hosted by OpenAI)",
-    url: "https://api.openai.com/v1",
-    dimension: 3072,
-  },
-];
-
 export const availableDistanceMetrics = [
   {
     id: "cosine",

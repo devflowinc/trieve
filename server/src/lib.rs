@@ -1143,6 +1143,9 @@ pub fn main() -> std::io::Result<()> {
                                 .route(web::put().to(handlers::analytics_handler::send_ctr_data))
                                 .route(web::post().to(handlers::analytics_handler::get_ctr_analytics)),
                             )
+                        ).service(
+                            web::resource("/embedding_models")
+                                .route(web::get().to(handlers::chunk_handler::get_available_models))
                         ),
                 )
         })

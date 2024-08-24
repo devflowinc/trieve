@@ -2661,3 +2661,55 @@ pub fn check_completion_param_validity(
 
     Ok(())
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct AvailableModelResponse {
+    models: Vec<EmbeddingModel>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct EmbeddingModel {
+    id: String,
+    display_name: String,
+    url: String,
+    dimension: u32,
+}
+
+pub async fn get_available_models() -> Result<HttpResponse, ServiceError> {
+    let avail_models = AvailableModelResponse {
+        models: vec![
+            EmbeddingModel {
+                id: "jina-base-en".into(),
+                display_name: "jina-base-en (securely hosted by Trieve)".into(),
+                url: "https://embedding.trieve.ai".into(),
+                dimension: 768,
+            },
+            EmbeddingModel {
+                id: "bge-m3".into(),
+                display_name: "bge-m3 (securely hosted by Trieve)".into(),
+                url: "https://embedding.trieve.ai/bge-m3".into(),
+                dimension: 1024,
+            },
+            EmbeddingModel {
+                id: "jina-embeddings-v2-base-code".into(),
+                display_name: "jina-embeddings-v2-base-code (securely hosted by Trieve)".into(),
+                url: "https://embedding.trieve.ai/jina-code".into(),
+                dimension: 768,
+            },
+            EmbeddingModel {
+                id: "text-embedding-3-small".into(),
+                display_name: "text-embedding-3-small (hosted by OpenAI)".into(),
+                url: "https://api.openai.com/v1".into(),
+                dimension: 1536,
+            },
+            EmbeddingModel {
+                id: "text-embedding-3-large".into(),
+                display_name: "text-embedding-3-large (hosted by OpenAI)".into(),
+                url: "https://api.openai.com/v1".into(),
+                dimension: 3072,
+            },
+        ],
+    };
+
+    Ok(HttpResponse::Ok().json(avail_models))
+}
