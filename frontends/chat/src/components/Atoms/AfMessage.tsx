@@ -103,8 +103,13 @@ export const AfMessage = (props: AfMessageProps) => {
     const split_content = props.content.split("||");
     let content = props.content;
     if (split_content.length > 1) {
-      setChunkMetadatas(JSON.parse(split_content[0]));
-      content = split_content[1];
+      if (split_content[0].startsWith("[{")) {
+        setChunkMetadatas(JSON.parse(split_content[0]));
+        content = split_content[1];
+      } else {
+        content = split_content[0];
+        setChunkMetadatas(JSON.parse(split_content[1]));
+      }
     } else if (props.content.length > 25) {
       return {
         content:

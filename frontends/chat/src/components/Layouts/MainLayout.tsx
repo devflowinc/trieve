@@ -58,6 +58,11 @@ const MainLayout = (props: LayoutProps) => {
   const [concatUserMessagesQuery, setConcatUserMessagesQuery] = createSignal<
     boolean | null
   >(null);
+
+  const [streamCompletionsFirst, setStreamCompletionsFirst] = createSignal<
+    boolean | null
+  >(null);
+
   const [pageSize, setPageSize] = createSignal<number | null>(null);
   const [searchQuery, setSearchQuery] = createSignal<string | null>(null);
   const [minScore, setMinScore] = createSignal<number | null>(null);
@@ -193,6 +198,9 @@ const MainLayout = (props: LayoutProps) => {
           new_message_content,
           topic_id: finalTopicId,
           system_prompt: systemPrompt(),
+          llm_options: {
+            completion_first: streamCompletionsFirst(),
+          },
         }),
         signal: completionAbortController().signal,
       });
@@ -304,6 +312,9 @@ const MainLayout = (props: LayoutProps) => {
                         new_message_content: content,
                         message_sort_order: idx(),
                         topic_id: props.selectedTopic?.id,
+                        llm_options: {
+                          completion_first: streamCompletionsFirst(),
+                        },
                       }),
                     })
                       .then((response) => {
@@ -384,6 +395,20 @@ const MainLayout = (props: LayoutProps) => {
                 tabIndex={0}
               >
                 <div class="flex flex-col gap-2">
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="stream_completion_first">
+                      Stream Completions First
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="stream_completion_first"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={streamCompletionsFirst() ?? false}
+                      onChange={(e) => {
+                        setStreamCompletionsFirst(e.target.checked);
+                      }}
+                    />
+                  </div>
                   <div class="flex w-full items-center gap-x-2">
                     <label for="concat_user_messages">
                       Concatenate User Messages:
