@@ -42,6 +42,24 @@ const getFiltersFromStorage = (datasetId: string) => {
   return parsedFilters;
 };
 
+const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
+
+const default_settings = [
+  { name: "Hybrid", route: "hybrid" },
+  {
+    name: "FullText",
+    route: "fulltext",
+  },
+  {
+    name: "Semantic",
+    route: "semantic",
+  },
+];
+
+if (bm25Active) {
+  default_settings.push({ name: "BM25", route: "bm25" });
+}
+
 const MainLayout = (props: LayoutProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
@@ -72,6 +90,7 @@ const MainLayout = (props: LayoutProps) => {
   const [completionAbortController, setCompletionAbortController] =
     createSignal<AbortController>(new AbortController());
   const [showFilterModal, setShowFilterModal] = createSignal<boolean>(false);
+  const [searchType, setSearchType] = createSignal<string | null>("hybrid");
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -201,6 +220,7 @@ const MainLayout = (props: LayoutProps) => {
           llm_options: {
             completion_first: streamCompletionsFirst(),
           },
+          search_type: searchType(),
         }),
         signal: completionAbortController().signal,
       });
@@ -459,6 +479,23 @@ const MainLayout = (props: LayoutProps) => {
                         setMinScore(parseFloat(e.target.value));
                       }}
                     />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="search_option">Search Type:</label>
+                    <select
+                      id="search_option"
+                      class="w-1/6 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
+                      value={searchType() ?? ""}
+                      onChange={(e) => {
+                        setSearchType(e.target.value);
+                      }}
+                    >
+                      <For each={default_settings}>
+                        {(setting) => (
+                          <option value={setting.route}>{setting.name}</option>
+                        )}
+                      </For>
+                    </select>
                   </div>
                   <div class="flex w-full items-center gap-x-2">
                     <label for="system_prompt">System Prompt:</label>
