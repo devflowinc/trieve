@@ -932,7 +932,7 @@ pub struct ChunkFilter {
     "score_threshold": 0.5
 }))]
 pub struct SearchChunksReqPayload {
-    /// Can be either "semantic", "fulltext", or "hybrid". If specified as "hybrid", it will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
+    /// Can be either "semantic", "fulltext", "hybrid, or "bm25". If specified as "hybrid", it will pull in one page of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page of the nearest cosine distant vectors. "fulltext" will pull in one page of full-text results based on SPLADE. "bm25" will get one page of results scored using BM25 with the terms OR'd together.
     pub search_type: SearchMethod,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search.
     pub query: QueryTypes,
@@ -951,7 +951,7 @@ pub struct SearchChunksReqPayload {
     /// Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric
     /// For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance
     /// This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold
-    /// A threshold of 0 will default to no threashold
+    /// A threshold of 0 will default to no threshold
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,

@@ -914,8 +914,7 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/search")
                                         .route(web::post().to(handlers::group_handler::search_within_group))
-                                        .wrap(Compress::default())
-,
+                                        .wrap(Compress::default()),
                                 )
                                 .service(
                                     web::resource("/group_oriented_search").route(
@@ -926,8 +925,8 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/recommend").route(
                                         web::post().to(handlers::group_handler::get_recommended_groups),
-                                    )                                        .wrap(Compress::default())
-,
+                                    )
+                                    .wrap(Compress::default()),
                                 )
                                 .service(
                                     web::resource("/chunk/{chunk_group_id}")
