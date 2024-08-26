@@ -1,0 +1,44 @@
+name: Deploy TS-SDK docs to github pages
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      contents: "read"
+      id-token: "write"
+      pages: "write"
+      actions: "write"
+      checks: "write"
+      deployments: "write"
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+      - name: Running tests
+        run: yarn build --filter trieve-ts-sdk
+      - name: Build the app
+        run: yarn build --filter trieve-ts-sdk
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: "./clients/ts-sdk/docs"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
