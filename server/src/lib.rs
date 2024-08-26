@@ -235,6 +235,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::send_ctr_data,
         handlers::analytics_handler::get_ctr_analytics,
         handlers::analytics_handler::set_query_rating,
+        handlers::analytics_handler::get_top_datasets,
         handlers::metrics_handler::get_metrics,
     ),
     components(
@@ -327,6 +328,7 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::UpdateDatasetRequest,
             handlers::dataset_handler::GetDatasetsPagination,
             data::models::DatasetConfigurationDTO,
+            handlers::analytics_handler::GetTopDatasetsRequestBody,
             operators::analytics_operator::HeadQueryResponse,
             operators::analytics_operator::LatencyGraphResponse,
             operators::analytics_operator::SearchUsageGraphResponse,
@@ -363,6 +365,8 @@ impl Modify for SecurityAddon {
             data::models::SearchResultType,
             data::models::RoleProxy,
             data::models::RAGUsageResponse,
+            data::models::TopDatasetsRequestTypes,
+            data::models::TopDatasetsResponse,
             data::models::RAGUsageGraphResponse,
             data::models::ClusterAnalytics,
             data::models::RAGAnalytics,
@@ -1120,6 +1124,10 @@ pub fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/recommendations")
                                 .route(web::post().to(handlers::analytics_handler::get_recommendation_analytics)),
+                            )
+                            .service(
+                                web::resource("/top")
+                                .route(web::post().to(handlers::analytics_handler::get_top_datasets)),
                             )
                             .service(
                                 web::resource("/ctr")
