@@ -49,6 +49,10 @@ path = "src/bin/queue-bm25-migration.rs"
 name = "reindex-worker"
 path = "src/bin/reindex-worker.rs"
 
+[[bin]]
+name = "clone-qdrant"
+path = "src/bin/clone-qdrant.rs"
+
 
 [dependencies]
 actix-identity = { version = "0.7.1" }

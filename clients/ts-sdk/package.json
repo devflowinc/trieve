@@ -3,6 +3,9 @@
   "type": "module",
   "exports": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "version": "0.0.1",
   "license": "MIT",
   "scripts": {
@@ -22,9 +25,7 @@
     "esbuild-register": "^3.6.0",
     "typedoc-plugin-mdn-links": "^3.2.9",
     "typescript": "^5.5.4",
-    "vitest": "^2.0.5"
-  },
-  "dependencies": {
+    "vitest": "^2.0.5",
     "typedoc": "^0.26.0",
     "typedoc-plugin-merge-modules": "^6.0.0"
   }

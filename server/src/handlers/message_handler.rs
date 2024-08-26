@@ -1,15 +1,16 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{ChunkFilter, ParsedQuery, SearchChunksReqPayload},
+    chunk_handler::{ChunkFilter, ParsedQuery, ParsedQueryTypes, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{
-        self, ChunkMetadataTypes, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        HighlightOptions, LLMOptions, Pool, SearchMethod,
+        self, ChunkMetadata, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions,
+        LLMOptions, Pool, SearchMethod,
     },
     errors::ServiceError,
     get_env,
     operators::{
+        chunk_operator::{get_chunk_metadatas_from_point_ids, get_random_chunk_metadatas_query},
         clickhouse_operator::EventQueue,
         message_operator::{
             create_topic_message_query, delete_message_query, get_message_by_sort_for_topic_query,
@@ -17,7 +18,8 @@ use crate::{
         },
         organization_operator::get_message_org_count,
         parse_operator::convert_html_to_text,
-        search_operator::search_hybrid_chunks,
+        qdrant_operator::scroll_dataset_points,
+        search_operator::{assemble_qdrant_filter, search_chunks_query, search_hybrid_chunks},
     },
 };
 use actix_web::{web, HttpResponse};
@@ -185,12 +187,23 @@ pub async fn create_message(
         .map(|message| {
             let mut message = message;
             if message.role == "assistant" {
-                message.content = message
-                    .content
-                    .split("||")
-                    .last()
-                    .unwrap_or("I give up, I can't find chunks for this message")
-                    .to_string();
+                if message.content.starts_with("[{") {
+                    // This is (chunks, content)
+                    message.content = message
+                        .content
+                        .split("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                } else {
+                    // This is (content, chunks)
+                    message.content = message
+                        .content
+                        .rsplit("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                }
             }
             message
         })
@@ -247,8 +260,23 @@ pub async fn get_all_topic_messages(
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
 
-    let messages =
-        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool).await?;
+    let messages: Vec<models::Message> =
+        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool)
+            .await?
+            .into_iter()
+            .filter_map(|mut message| {
+                if message.content.starts_with("||[{") {
+                    match message.content.rsplit_once("}]") {
+                        Some((chunks, ai_message)) => {
+                            message.content = format!("{}{}}}]", ai_message, chunks);
+                        }
+                        _ => return None,
+                    }
+                }
+
+                Some(message)
+            })
+            .collect();
 
     Ok(HttpResponse::Ok().json(messages))
 }
@@ -471,12 +499,30 @@ pub async fn regenerate_message_patch(
         .map(|message| {
             let mut message = message;
             if message.role == "assistant" {
-                message.content = message
-                    .content
-                    .split("||")
-                    .last()
-                    .unwrap_or("I give up, I can't find a citation")
-                    .to_string();
+                if message.content.starts_with("||[{") {
+                    match message.content.rsplit_once("}]") {
+                        Some((_, ai_message)) => {
+                            message.content = ai_message.to_string();
+                        }
+                        _ => return message,
+                    }
+                } else if message.content.starts_with("[{") {
+                    // This is (chunks, content)
+                    message.content = message
+                        .content
+                        .split("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                } else {
+                    // This is (content, chunks)
+                    message.content = message
+                        .content
+                        .rsplit("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                }
             }
             message
         })
@@ -549,96 +595,17 @@ pub async fn regenerate_message(
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let topic_id = data.topic_id;
-    let dataset_config =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
-
-    check_completion_param_validity(data.llm_options.clone())?;
-
-    let get_messages_pool = pool.clone();
-    let create_message_pool = pool.clone();
-    let dataset_id = dataset_org_plan_sub.dataset.id;
-
-    let mut previous_messages =
-        get_topic_messages(topic_id, dataset_id, &get_messages_pool).await?;
-
-    if previous_messages.len() < 2 {
-        return Err(
-            ServiceError::BadRequest("Not enough messages to regenerate".to_string()).into(),
-        );
-    }
-
-    if previous_messages.len() == 2 {
-        return stream_response(
-            previous_messages,
-            topic_id,
-            dataset_org_plan_sub.dataset,
-            create_message_pool,
-            event_queue,
-            dataset_config,
-            data.into_inner().into(),
-        )
-        .await;
-    }
-
-    // remove citations from the previous messages
-    previous_messages = previous_messages
-        .into_iter()
-        .map(|message| {
-            let mut message = message;
-            if message.role == "assistant" {
-                message.content = message
-                    .content
-                    .split("||")
-                    .last()
-                    .unwrap_or("I give up, I can't find a citation")
-                    .to_string();
-            }
-            message
-        })
-        .collect::<Vec<models::Message>>();
-
-    let mut message_to_regenerate = None;
-    for message in previous_messages.iter().rev() {
-        if message.role == "assistant" {
-            message_to_regenerate = Some(message.clone());
-            break;
-        }
-    }
-
-    let message_id = match message_to_regenerate {
-        Some(message) => message.id,
-        None => {
-            return Err(ServiceError::BadRequest("No message to regenerate".to_string()).into());
-        }
-    };
-
-    let mut previous_messages_to_regenerate = Vec::new();
-    for message in previous_messages.iter() {
-        if message.id == message_id {
-            break;
-        }
-        previous_messages_to_regenerate.push(message.clone());
-    }
-
-    delete_message_query(message_id, topic_id, dataset_id, &pool).await?;
-
-    stream_response(
-        previous_messages_to_regenerate,
-        topic_id,
-        dataset_org_plan_sub.dataset,
-        create_message_pool,
-        event_queue,
-        dataset_config,
-        data.into_inner().into(),
-    )
-    .await
+    regenerate_message_patch(data, user, dataset_org_plan_sub, pool, event_queue).await
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct SuggestedQueriesReqPayload {
     /// The query to base the generated suggested queries off of using RAG. A hybrid search for 10 chunks from your dataset using this query will be performed and the context of the chunks will be used to generate the suggested queries.
-    pub query: String,
+    pub query: Option<String>,
+    /// Can be either "semantic", "fulltext", "hybrid, or "bm25". If specified as "hybrid", it will pull in one page of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page of the nearest cosine distant vectors. "fulltext" will pull in one page of full-text results based on SPLADE. "bm25" will get one page of results scored using BM25 with the terms OR'd together.
+    pub search_type: Option<SearchMethod>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -674,6 +641,7 @@ pub async fn get_suggested_queries(
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
+    let dataset_id = dataset_org_plan_sub.dataset.id;
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.clone().server_configuration);
 
@@ -698,36 +666,87 @@ pub async fn get_suggested_queries(
         .into()
     };
 
-    let chunk_metadatas = search_hybrid_chunks(
-        SearchChunksReqPayload {
-            search_type: SearchMethod::Hybrid,
-            query: models::QueryTypes::Single(data.query.clone()),
-            page_size: Some(10),
-            ..Default::default()
-        },
-        ParsedQuery {
-            query: data.query.clone(),
-            quote_words: None,
-            negated_words: None,
-        },
-        pool,
-        dataset_org_plan_sub.dataset.clone(),
-        &dataset_config,
-        &mut Timer::new(),
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?
-    .score_chunks;
+    let search_type = data.search_type.clone().unwrap_or(SearchMethod::Hybrid);
+    let filters = data.filters.clone();
+
+    let chunk_metadatas = match data.query.clone() {
+        Some(query) => {
+            let search_req_payload = SearchChunksReqPayload {
+                search_type: search_type.clone(),
+                query: models::QueryTypes::Single(query.clone()),
+                page_size: Some(10),
+                filters,
+                ..Default::default()
+            };
+            let parsed_query = ParsedQuery {
+                query,
+                quote_words: None,
+                negated_words: None,
+            };
+            match search_type {
+                SearchMethod::Hybrid => search_hybrid_chunks(
+                    search_req_payload,
+                    parsed_query,
+                    pool,
+                    dataset_org_plan_sub.dataset.clone(),
+                    &dataset_config,
+                    &mut Timer::new(),
+                )
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?,
+                _ => search_chunks_query(
+                    search_req_payload,
+                    ParsedQueryTypes::Single(parsed_query),
+                    pool,
+                    dataset_org_plan_sub.dataset.clone(),
+                    &dataset_config,
+                    &mut Timer::new(),
+                )
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?,
+            }
+            .score_chunks
+            .into_iter()
+            .filter_map(|chunk| chunk.metadata.clone().first().cloned())
+            .map(ChunkMetadata::from)
+            .collect::<Vec<ChunkMetadata>>()
+        }
+        None => {
+            let random_chunk = get_random_chunk_metadatas_query(dataset_id, 1, pool.clone())
+                .await?
+                .clone()
+                .first()
+                .cloned();
+            match random_chunk {
+                Some(chunk) => {
+                    let filter =
+                        assemble_qdrant_filter(filters, None, None, dataset_id, pool.clone())
+                            .await?;
+
+                    let qdrant_point_ids = scroll_dataset_points(
+                        10,
+                        Some(chunk.qdrant_point_id),
+                        None,
+                        dataset_config,
+                        filter,
+                    )
+                    .await?;
+
+                    get_chunk_metadatas_from_point_ids(qdrant_point_ids.clone(), pool)
+                        .await?
+                        .into_iter()
+                        .map(ChunkMetadata::from)
+                        .collect()
+                }
+                None => vec![],
+            }
+        }
+    };
 
     let rag_content = chunk_metadatas
         .iter()
         .enumerate()
         .map(|(idx, chunk)| {
-            let chunk = match chunk.metadata.first().unwrap() {
-                ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata,
-                _ => unreachable!("The operator should never return slim chunks for this"),
-            };
-
             format!(
                 "Doc {}: {}",
                 idx + 1,
@@ -815,11 +834,11 @@ pub async fn get_suggested_queries(
             .chat()
             .create(parameters.clone())
             .await
-            .expect("No OpenAI Completion for topic");
+            .expect("No LLM Completion for topic");
         queries = match &query
             .choices
             .first()
-            .expect("No response for OpenAI completion")
+            .expect("No response for LLM completion")
             .message
             .content
         {
@@ -834,10 +853,6 @@ pub async fn get_suggested_queries(
     let mut engine: SimSearch<String> = SimSearch::new();
 
     chunk_metadatas.iter().for_each(|chunk| {
-        let chunk = match chunk.metadata.first().unwrap() {
-            ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata,
-            _ => unreachable!("The operator should never return slim chunks for this"),
-        };
         let content = convert_html_to_text(&chunk.chunk_html.clone().unwrap_or_default());
 
         engine.insert(content.clone(), &content);
