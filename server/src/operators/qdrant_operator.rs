@@ -20,11 +20,11 @@ use qdrant_client::{
         CreateFieldIndexCollectionBuilder, DeleteFieldIndexCollectionBuilder, DeletePointsBuilder,
         Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, OrderBy, PayloadIndexParams,
         PointId, PointStruct, PrefetchQuery, QuantizationConfig, Query, QueryBatchPoints,
-        QueryPoints, RecommendPointGroups, RecommendPoints, RecommendStrategy, ScrollPointsBuilder,
-        SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints, SetPayloadPointsBuilder,
-        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType,
-        UpsertPointsBuilder, Value, Vector, VectorInput, VectorParams, VectorParamsMap,
-        VectorsConfig, WithPayloadSelector, WithVectorsSelector,
+        QueryPoints, RecommendPointGroups, RecommendPoints, RecommendStrategy, RetrievedPoint,
+        ScrollPointsBuilder, SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints,
+        SetPayloadPointsBuilder, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
+        TextIndexParams, TokenizerType, UpsertPointsBuilder, Value, Vector, VectorInput,
+        VectorParams, VectorParamsMap, VectorsConfig, WithPayloadSelector, WithVectorsSelector,
     },
     Payload, Qdrant,
 };
@@ -1462,6 +1462,54 @@ pub async fn get_qdrant_collections() -> Result<Vec<String>, ServiceError> {
         .collect();
 
     Ok(collection_names)
+}
+
+pub async fn scroll_qdrant_collection_ids_custom_url(
+    collection_name: String,
+    offset_id: Option<String>,
+    limit: Option<u32>,
+    qdrant_client: Qdrant,
+) -> Result<(Vec<RetrievedPoint>, Option<String>), ServiceError> {
+    let mut scroll_points_params = ScrollPointsBuilder::new(collection_name);
+
+    if let Some(offset_id) = offset_id {
+        scroll_points_params = scroll_points_params.offset(offset_id);
+    };
+
+    if let Some(limit) = limit {
+        scroll_points_params = scroll_points_params.limit(limit);
+    };
+    let qdrant_point_ids = qdrant_client
+        .scroll(scroll_points_params.with_payload(true).with_vectors(true))
+        .await
+        .map_err(|err| {
+            log::info!("Failed to scroll points from qdrant {:?}", err);
+            ServiceError::BadRequest("Failed to scroll points from qdrant".to_string())
+        })?;
+
+    let points = qdrant_point_ids
+        .result
+        .iter()
+        .filter_map(|point| {
+            match point.id.clone()?.point_id_options? {
+                PointIdOptions::Uuid(id) => uuid::Uuid::parse_str(&id).ok()?,
+                PointIdOptions::Num(_) => {
+                    return None;
+                }
+            };
+
+            Some(point.clone())
+        })
+        .collect::<Vec<RetrievedPoint>>();
+
+    let offset = qdrant_point_ids
+        .next_page_offset
+        .map(|id| match id.point_id_options {
+            Some(PointIdOptions::Uuid(id)) => id,
+            _ => "".to_string(),
+        });
+
+    Ok((points, offset))
 }
 
 pub async fn scroll_qdrant_collection_ids(
