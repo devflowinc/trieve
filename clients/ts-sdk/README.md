@@ -34,7 +34,7 @@ const data = await trieve.search({
 });
 ```
 
-To see all the functions we export you can take a look at [our docs](https://test.com).
+To see all the functions we export you can take a look at [our docs](https://ts-sdk.trieve.ai).
 
 ## License
 
