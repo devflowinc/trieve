@@ -18,20 +18,20 @@ async fn main() -> Result<(), ServiceError> {
     let collection_to_clone =
         get_env!("COLLECTION_TO_CLONE", "COLLECTION_TO_CLONE is not set").to_string();
 
-    let original_qdrant_connection = Qdrant::from_url(&origin_qdrant_url)
-        .api_key(qdrant_api_key)
-        .timeout(std::time::Duration::from_secs(60))
-        .build()
-        .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))?;
-    let new_qdrant_connection = Qdrant::from_url(&new_qdrant_url)
-        .api_key(qdrant_api_key)
-        .timeout(std::time::Duration::from_secs(60))
-        .build()
-        .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))?;
-
     let mut offset = Some(uuid::Uuid::nil().to_string());
 
     while let Some(cur_offset) = offset {
+        let original_qdrant_connection = Qdrant::from_url(&origin_qdrant_url)
+            .api_key(qdrant_api_key.clone())
+            .timeout(std::time::Duration::from_secs(60))
+            .build()
+            .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))?;
+        let new_qdrant_connection = Qdrant::from_url(&new_qdrant_url)
+            .api_key(qdrant_api_key.clone())
+            .timeout(std::time::Duration::from_secs(60))
+            .build()
+            .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))?;
+
         let (origin_qdrant_points, new_offset) = scroll_qdrant_collection_ids_custom_url(
             collection_to_clone.clone(),
             Some(cur_offset.to_string()),
@@ -60,7 +60,7 @@ async fn main() -> Result<(), ServiceError> {
 
         new_qdrant_connection
             .upsert_points(UpsertPointsBuilder::new(
-                collection_to_clone,
+                collection_to_clone.clone(),
                 point_structs_to_upsert,
             ))
             .await
