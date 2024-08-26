@@ -2,8 +2,8 @@
 {
   "out": "./docs",
   "entryPointStrategy": "expand",
-  "entryPoints": ["src/functions/**", "src/types.gen.ts"],
-  "exclude": ["/src/**/*.test.ts", "src/functions/index.ts"],
+  "entryPoints": ["src/functions/**/index.ts", "src/types.gen.ts"],
+  "exclude": ["/src/functions/*.test.ts", "src/functions/index.ts"],
   "excludeProtected": true,
   "includeVersion": true,
   "name": "Trieve Typescript SDK",
@@ -15,7 +15,6 @@
   },
 
   "categorizeByGroup": true,
-  "groupOrder": ["functions"],
   "customCss": "./theme/style.css",
   "plugin": ["typedoc-plugin-merge-modules", "typedoc-plugin-mdn-links"],
   "mergeModulesMergeMode": "module" // NEW option of TypeDoc added by this plugin
