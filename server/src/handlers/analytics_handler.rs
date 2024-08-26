@@ -1,10 +1,11 @@
 use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
-        CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        DatasetAndOrgWithSubAndPlan, DateRange, Pool, RAGAnalytics, RAGAnalyticsResponse,
-        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
-        SearchAnalyticsResponse, TopDatasetsRequestTypes,
+        CTRAnalytics, CTRAnalyticsResponse, ClusterAnalytics, ClusterAnalyticsResponse,
+        DatasetAndOrgWithSubAndPlan, DateRange, EventDataClickhouse, EventTypes, Pool,
+        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
+        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
+        TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::analytics_operator::*,
@@ -409,35 +410,19 @@ pub async fn get_recommendation_analytics(
     Ok(HttpResponse::Ok().json(response))
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
-pub struct CTRDataRequestBody {
-    /// The request id for the CTR data
-    pub request_id: uuid::Uuid,
-    /// The type of CTR data being sent e.g. search or recommendation
-    pub ctr_type: CTRType,
-    /// The ID of chunk that was clicked
-    pub clicked_chunk_id: Option<uuid::Uuid>,
-    /// The tracking ID of the chunk that was clicked
-    pub clicked_chunk_tracking_id: Option<String>,
-    /// The position of the clicked chunk
-    pub position: i32,
-    /// Any metadata you want to include with the event i.e. action, user_id, etc.
-    pub metadata: Option<serde_json::Value>,
-}
-
-/// Send CTR Data
+/// Send Event Data
 ///
-/// This route allows you to send CTR data to the system.
+/// This route allows you to send event data to the system.
 #[utoipa::path(
     put,
-    path = "/analytics/ctr",
+    path = "/analytics/events",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = CTRDataRequestBody, description = "JSON request payload to send CTR data", content_type = "application/json"),
+    request_body(content = EventTypes, description = "JSON request payload to send event data", content_type = "application/json"),
     responses(
-        (status = 204, description = "The CTR data was successfully sent"),
+        (status = 204, description = "The event data was successfully sent"),
 
-        (status = 400, description = "Service error relating to sending CTR data", body = ErrorResponseBody),
+        (status = 400, description = "Service error relating to sending event data", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
@@ -446,20 +431,17 @@ pub struct CTRDataRequestBody {
         ("ApiKey" = ["admin"]),
     )
 )]
-pub async fn send_ctr_data(
+pub async fn send_event_data(
     _user: AdminOnly,
-    data: web::Json<CTRDataRequestBody>,
+    data: web::Json<EventTypes>,
     clickhouse_client: web::Data<clickhouse::Client>,
-    pool: web::Data<Pool>,
+
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    send_ctr_data_query(
-        data.into_inner(),
-        clickhouse_client.get_ref(),
-        pool.clone(),
-        dataset_org_plan_sub.dataset.id,
-    )
-    .await?;
+    let event_data =
+        EventDataClickhouse::from_event_data(data.into_inner(), dataset_org_plan_sub.dataset.id);
+
+    send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

@@ -1,11 +1,10 @@
-use super::chunk_operator::get_metadata_from_tracking_id_query;
 use crate::{
     data::models::{
-        ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, Granularity,
-        HeadQueries, Pool, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
-        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
-        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
-        RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
+        ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, EventDataClickhouse,
+        Granularity, HeadQueries, Pool, PopularFilters, PopularFiltersClickhouse,
+        RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent,
+        RagQueryEventClickhouse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
+        RecommendationEvent, RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
         RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
         RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
         SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
@@ -16,9 +15,7 @@ use crate::{
         TopDatasetsResponseClickhouse, UsageGraphPoint, UsageGraphPointClickhouse,
     },
     errors::ServiceError,
-    handlers::analytics_handler::{
-        CTRDataRequestBody, GetTopDatasetsRequestBody, RateQueryRequest,
-    },
+    handlers::analytics_handler::{GetTopDatasetsRequestBody, RateQueryRequest},
 };
 use actix_web::web;
 use diesel::prelude::*;
@@ -952,45 +949,22 @@ pub async fn get_recommendation_queries_query(
     Ok(RecommendationsEventResponse { queries })
 }
 
-pub async fn send_ctr_data_query(
-    data: CTRDataRequestBody,
+pub async fn send_event_data_query(
+    data: EventDataClickhouse,
     clickhouse_client: &clickhouse::Client,
-    pool: web::Data<Pool>,
-    dataset_id: uuid::Uuid,
 ) -> Result<(), ServiceError> {
-    let chunk_id = if let Some(chunk_id) = data.clicked_chunk_id {
-        chunk_id
-    } else if let Some(tracking_id) = data.clicked_chunk_tracking_id {
-        get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool)
-            .await
-            .map_err(|e| {
-                log::error!("Error fetching metadata: {:?}", e);
-                ServiceError::InternalServerError("Error fetching metadata".to_string())
-            })?
-            .id
-    } else {
-        return Err(ServiceError::BadRequest(
-            "Missing tracking_id or clicked_chunk_id".to_string(),
-        ));
-    };
+    let query_string = format!(
+        "INSERT INTO default.events (id, event_type, event_name, items, metadata, user_id, is_conversion, request_id, dataset_id, created_at, updated_at) VALUES ('{}', '{}', '{}', ['{:?}'], '{}', '{}', '{}', '{}', '{}', now(), now())",
+        data.id, data.event_type, data.event_name.replace('\'', "''").replace('?', "|q").replace('\n', ""), data.items.join(",").replace('\'', "''").replace('?', "|q").replace('\n', ""), data.metadata.replace('\'', "''").replace('?', "|q").replace('\n', ""), data.user_id, data.is_conversion, data.request_id, data.dataset_id
+    );
 
     clickhouse_client
-        .query(
-            "INSERT INTO default.ctr_data (id, request_id, type, chunk_id, dataset_id, position, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, now())",
-        )
-        .bind(uuid::Uuid::new_v4())
-        .bind(data.request_id)
-        .bind(data.ctr_type)
-        .bind(chunk_id)
-        .bind(dataset_id)
-        .bind(data.position)
-        .bind(serde_json::to_string(&data.metadata.unwrap_or_default()).unwrap_or_default())
+        .query(&query_string)
         .execute()
         .await
-        .map_err(|err| {
-            log::error!("Error writing to ClickHouse default.ctr_data: {:?}", err);
-            sentry::capture_message(&format!("Error writing to ClickHouse default.ctr_data: {:?}", err), sentry::Level::Error);
-            ServiceError::InternalServerError("Error writing to ClickHouse default.ctr_data".to_string())
+        .map_err(|e| {
+            log::error!("Error sending event data: {:?}", e);
+            ServiceError::InternalServerError("Error sending event data".to_string())
         })?;
 
     Ok(())
@@ -1016,19 +990,13 @@ pub async fn get_search_ctr_metrics_query(
             SELECT COUNT(*) AS total
             FROM default.search_queries
             WHERE dataset_id = ? AND is_duplicate = 0
-        )
-        SELECT 
-            searches_with_clicks,
-            (searches_with_clicks * 100.0 / total) AS percent_searches_with_click,
-            ((total - searches_with_clicks) * 100.0 / total) AS percent_searches_without_click,
-            avg_position_of_click
-        FROM (
-            SELECT 
-                COUNT(*) AS searches_with_clicks,
-                AVG(ctr_data.`position`) AS avg_position_of_click
-            FROM default.ctr_data
-            JOIN default.search_queries ON ctr_data.request_id = search_queries.id
-            WHERE search_queries.dataset_id = ?
+        ),
+        metadata_values AS (
+            SELECT arrayJoin(JSONExtractKeys(metadata)) AS key,
+                JSONExtractFloat(metadata, key) AS value
+            FROM default.events
+            JOIN default.search_queries ON toUUID(events.request_id) = search_queries.id
+            WHERE search_queries.dataset_id = ? AND events.event_type = 'click'
         ",
     );
 
@@ -1038,7 +1006,18 @@ pub async fn get_search_ctr_metrics_query(
 
     query_string.push_str(
         "
-        ) subquery
+            )
+        SELECT 
+            searches_with_clicks,
+            (searches_with_clicks * 100.0 / total) AS percent_searches_with_click,
+            ((total - searches_with_clicks) * 100.0 / total) AS percent_searches_without_click,
+            avg_metadata_value
+        FROM (
+            SELECT 
+                COUNT(*) AS searches_with_clicks,
+                AVG(value) AS avg_metadata_value
+            FROM metadata_values
+        ) AS subquery
         CROSS JOIN total_searches
         ",
     );
@@ -1067,13 +1046,12 @@ pub async fn get_searches_with_clicks_query(
     let mut query_string = String::from(
         "SELECT 
             search_queries.query,
-            ctr_data.chunk_id,
-            ctr_data.dataset_id,
-            ctr_data.position,
-            ctr_data.created_at
-        FROM default.ctr_data 
-        JOIN default.search_queries ON ctr_data.request_id = search_queries.id 
-        WHERE search_queries.dataset_id = ? AND search_queries.is_duplicate = 0",
+            events.dataset_id,
+            events.metadata,
+            events.created_at
+        FROM default.events 
+        JOIN default.search_queries ON toUUID(events.request_id) = search_queries.id 
+        WHERE search_queries.dataset_id = ? AND search_queries.is_duplicate = 0 AND events.event_type = 'click'",
     );
 
     if let Some(filter) = filter {
@@ -1083,7 +1061,7 @@ pub async fn get_searches_with_clicks_query(
     query_string.push_str(
         "
         ORDER BY 
-            ctr_data.created_at DESC
+            events.created_at DESC
         LIMIT 10
         OFFSET ?",
     );
@@ -1118,8 +1096,9 @@ pub async fn get_searches_without_clicks_query(
     let mut query_string = String::from(
         "SELECT search_queries.query, search_queries.created_at
         FROM default.search_queries sq
-        LEFT JOIN default.ctr_data cd ON sq.id = cd.request_id
-        WHERE cd.request_id = '00000000-0000-0000-0000-000000000000' AND search_queries.dataset_id = ? AND search_queries.is_duplicate = 0",
+        LEFT JOIN default.events cd ON sq.id = toUUID(cd.request_id) AND 
+            events.event_type = 'click'
+        WHERE cd.request_id = '' AND search_queries.dataset_id = ? AND search_queries.is_duplicate = 0",
     );
 
     if let Some(filter) = filter {
@@ -1160,19 +1139,14 @@ pub async fn get_recommendation_ctr_metrics_query(
         "WITH total_recommendations AS (
             SELECT COUNT(*) AS total
             FROM default.recommendations
-            WHERE dataset_id = ?
-        )
-        SELECT 
-            recommendations_with_clicks,
-            (recommendations_with_clicks * 100.0 / total) AS percent_recommendations_with_click,
-            avg_position_of_click
-        FROM (
-            SELECT 
-                COUNT(*) AS recommendations_with_clicks,
-                AVG(ctr_data.`position`) AS avg_position_of_click
-            FROM default.ctr_data
-            JOIN default.recommendations ON ctr_data.request_id = recommendations.id
-            WHERE recommendations.dataset_id = ?
+            WHERE dataset_id = ? 
+        ),
+        metadata_values AS (
+            SELECT arrayJoin(JSONExtractKeys(metadata)) AS key,
+                JSONExtractFloat(metadata, key) AS value
+            FROM default.events
+            JOIN default.recommendations ON toUUID(events.request_id) = recommendations.id
+            WHERE recommendations.dataset_id = ? AND events.event_type = 'click'
         ",
     );
 
@@ -1182,7 +1156,18 @@ pub async fn get_recommendation_ctr_metrics_query(
 
     query_string.push_str(
         "
-        ) subquery
+         )
+        SELECT 
+            recommendations_with_clicks,
+            (recommendations_with_clicks * 100.0 / total) AS percent_recommendations_with_click,
+            ((total - recommendations_with_clicks) * 100.0 / total) AS percent_recommendations_without_click,
+            avg_metadata_value
+        FROM (
+            SELECT 
+                COUNT(*) AS recommendations_with_clicks,
+                AVG(value) AS avg_metadata_value
+            FROM metadata_values
+        ) AS subquery
         CROSS JOIN total_recommendations
         ",
     );
@@ -1224,13 +1209,12 @@ pub async fn get_recommendations_with_clicks_query(
             recommendations.negative_ids,
             recommendations.positive_tracking_ids,
             recommendations.negative_tracking_ids,
-            ctr_data.chunk_id,
-            ctr_data.dataset_id,
-            ctr_data.position,
-            ctr_data.created_at
-        FROM default.ctr_data 
-        JOIN default.recommendations ON ctr_data.request_id = recommendations.id 
-        WHERE recommendations.dataset_id = ?",
+            events.dataset_id,
+            events.metadata,
+            events.created_at
+        FROM default.events 
+        JOIN default.recommendations ON toUUID(events.request_id) = recommendations.id 
+        WHERE recommendations.dataset_id = ? AND events.event_type = 'click'",
     );
 
     if let Some(filter) = filter {
@@ -1240,7 +1224,7 @@ pub async fn get_recommendations_with_clicks_query(
     query_string.push_str(
         "
         ORDER BY 
-            ctr_data.created_at DESC
+            events.created_at DESC
         LIMIT 10
         OFFSET ?",
     );
@@ -1280,8 +1264,9 @@ pub async fn get_recommendations_without_clicks_query(
             recommendations.negative_tracking_ids,
             recommendations.created_at
         FROM default.recommendations r
-        LEFT JOIN default.ctr_data cd ON r.id = cd.request_id
-        WHERE cd.request_id = '00000000-0000-0000-0000-000000000000' AND recommendations.dataset_id = ?",
+        LEFT JOIN default.events cd ON r.id = toUUID(cd.request_id) AND 
+            events.event_type = 'click'
+        WHERE cd.request_id = '' AND recommendations.dataset_id = ?",
     );
 
     if let Some(filter) = filter {
