@@ -4,6 +4,7 @@ on:
   push:
     branches: ["main"]
   pull_request:
+    branches: ["main"]
 
 jobs:
   build:
@@ -12,13 +13,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    permissions:
-      contents: "read"
-      id-token: "write"
-      pages: "write"
-      actions: "write"
-      checks: "write"
-      deployments: "write"
     strategy:
       matrix:
         node-version: [18.x]
