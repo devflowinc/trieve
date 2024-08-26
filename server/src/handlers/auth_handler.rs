@@ -287,6 +287,8 @@ pub struct AuthQuery {
     pub organization_id: Option<uuid::Uuid>,
     /// URL to redirect to after successful login
     pub redirect_uri: Option<String>,
+    /// URL to redirect to if the user is new
+    pub new_user_redirect_uri: Option<String>,
     /// Code sent via email as a result of successful call to send_invitation
     pub inv_code: Option<uuid::Uuid>,
 }
@@ -295,6 +297,8 @@ pub struct AuthQuery {
 pub struct LoginState {
     /// URL to redirect to after successful login
     pub redirect_uri: String,
+    /// URL to redirect to if the user is new
+    pub new_user_redirect_uri: Option<String>,
     /// ID of organization to authenticate into
     pub organization_id: Option<uuid::Uuid>,
     /// Code sent via email as a result of successful call to send_invitation
@@ -356,6 +360,7 @@ pub async fn login(
 
     let login_state = LoginState {
         redirect_uri,
+        new_user_redirect_uri: data.new_user_redirect_uri.clone(),
         organization_id: data.organization_id,
         inv_code: data.inv_code,
     };
