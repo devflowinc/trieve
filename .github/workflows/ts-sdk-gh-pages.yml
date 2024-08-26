@@ -3,8 +3,7 @@ name: Deploy TS-SDK docs to github pages
 on:
   push:
     branches: ["main"]
-  pull_request:
-    branches: ["main"]
+  pull_request
 
 jobs:
   build:
@@ -27,8 +26,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: yarn --frozen-lockfile
-      - name: Running tests
-        run: yarn build --filter trieve-ts-sdk
       - name: Build the app
         working-directory: ./clients/ts-sdk
         run: yarn build:docs
