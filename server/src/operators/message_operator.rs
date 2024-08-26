@@ -69,15 +69,10 @@ pub async fn create_message_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::messages::dsl::messages;
 
-    let mut conn = match pool.get().await {
-        Ok(conn) => conn,
-        Err(e) => {
-            log::error!("Error getting connection from pool: {:?}", e);
-            return Err(ServiceError::InternalServerError(
-                "Error getting postgres connection from pool".into(),
-            ));
-        }
-    };
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     diesel::insert_into(messages)
         .values(&new_message)

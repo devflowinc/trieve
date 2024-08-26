@@ -4203,10 +4203,11 @@ impl SearchAnalyticsFilter {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TopDatasetsResponse {
     pub dataset_id: uuid::Uuid,
+    pub dataset_tracking_id: Option<String>,
     pub total_queries: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row, Clone)]
 pub struct TopDatasetsResponseClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
@@ -4217,6 +4218,7 @@ impl From<TopDatasetsResponseClickhouse> for TopDatasetsResponse {
     fn from(clickhouse_response: TopDatasetsResponseClickhouse) -> TopDatasetsResponse {
         TopDatasetsResponse {
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
+            dataset_tracking_id: None,
             total_queries: clickhouse_response.total_queries,
         }
     }
