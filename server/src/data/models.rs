@@ -4200,6 +4200,40 @@ impl SearchAnalyticsFilter {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopDatasetsResponse {
+    pub dataset_id: uuid::Uuid,
+    pub total_queries: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+pub struct TopDatasetsResponseClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub total_queries: i64,
+}
+
+impl From<TopDatasetsResponseClickhouse> for TopDatasetsResponse {
+    fn from(clickhouse_response: TopDatasetsResponseClickhouse) -> TopDatasetsResponse {
+        TopDatasetsResponse {
+            dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
+            total_queries: clickhouse_response.total_queries,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, ToSchema, Display)]
+#[serde(rename_all = "snake_case")]
+pub enum TopDatasetsRequestTypes {
+    #[display(fmt = "search_queries")]
+    Search,
+    #[serde(rename = "rag")]
+    #[display(fmt = "rag_queries")]
+    RAG,
+    #[display(fmt = "recommendations")]
+    Recommendation,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum RagTypes {

@@ -2,9 +2,9 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        DatasetAndOrgWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        DatasetAndOrgWithSubAndPlan, DateRange, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
-        SearchAnalyticsResponse,
+        SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::analytics_operator::*,
@@ -562,4 +562,39 @@ pub async fn get_ctr_analytics(
     };
 
     Ok(HttpResponse::Ok().json(response))
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
+pub struct GetTopDatasetsRequestBody {
+    pub r#type: TopDatasetsRequestTypes,
+    pub date_range: Option<DateRange>,
+}
+
+/// Get Top Datasets
+///
+/// This route allows you to view the top datasets for a given type.
+#[utoipa::path(
+    post,
+    path = "/analytics/top",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = GetTopDatasetsRequestBody, description = "JSON request payload to filter the top datasets", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The top datasets for the request", body = Vec<TopDatasetsResponse>),
+
+        (status = 400, description = "Service error relating to getting top datasets", body = ErrorResponseBody),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_top_datasets(
+    _user: AdminOnly,
+    data: web::Json<GetTopDatasetsRequestBody>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+) -> Result<HttpResponse, ServiceError> {
+    let top_datasets =
+        get_top_datasets_query(data.into_inner(), clickhouse_client.get_ref()).await?;
+
+    Ok(HttpResponse::Ok().json(top_datasets))
 }

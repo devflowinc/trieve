@@ -18,11 +18,13 @@ use crate::{
         SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
-        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, UsageGraphPoint,
-        UsageGraphPointClickhouse,
+        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopDatasetsResponse,
+        TopDatasetsResponseClickhouse, UsageGraphPoint, UsageGraphPointClickhouse,
     },
     errors::ServiceError,
-    handlers::analytics_handler::{CTRDataRequestBody, RateQueryRequest},
+    handlers::analytics_handler::{
+        CTRDataRequestBody, GetTopDatasetsRequestBody, RateQueryRequest,
+    },
 };
 
 use super::chunk_operator::get_metadata_from_tracking_id_query;
@@ -1352,4 +1354,58 @@ pub async fn set_query_rating_query(
         })?;
 
     Ok(())
+}
+
+pub async fn get_top_datasets_query(
+    data: GetTopDatasetsRequestBody,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Vec<TopDatasetsResponse>, ServiceError> {
+    let mut query_string = format!(
+        "SELECT 
+            dataset_id,
+            COUNT(*) as total_queries
+        FROM 
+            default.{}",
+        data.r#type
+    );
+
+    if let Some(date_range) = data.date_range {
+        if let Some(gt) = &date_range.gt {
+            query_string.push_str(&format!(" AND created_at > '{}'", gt));
+        }
+        if let Some(lt) = &date_range.lt {
+            query_string.push_str(&format!(" AND created_at < '{}'", lt));
+        }
+        if let Some(gte) = &date_range.gte {
+            query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+        }
+        if let Some(lte) = &date_range.lte {
+            query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+        }
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            dataset_id
+        ORDER BY 
+            total_queries DESC
+        LIMIT 10",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .fetch_all::<TopDatasetsResponseClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let response = clickhouse_query
+        .into_iter()
+        .map(|x| x.into())
+        .collect::<Vec<_>>();
+
+    Ok(response)
 }
