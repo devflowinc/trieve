@@ -30,7 +30,8 @@ jobs:
       - name: Running tests
         run: yarn build --filter trieve-ts-sdk
       - name: Build the app
-        run: yarn build --filter trieve-ts-sdk
+        working-directory: ./clients/ts-sdk
+        run: yarn build:docs
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact
