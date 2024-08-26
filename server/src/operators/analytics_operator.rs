@@ -1,10 +1,4 @@
-use actix_web::web;
-use futures::future::join_all;
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use ureq::json;
-use utoipa::ToSchema;
-
+use super::chunk_operator::get_metadata_from_tracking_id_query;
 use crate::{
     data::models::{
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, Granularity,
@@ -26,8 +20,14 @@ use crate::{
         CTRDataRequestBody, GetTopDatasetsRequestBody, RateQueryRequest,
     },
 };
-
-use super::chunk_operator::get_metadata_from_tracking_id_query;
+use actix_web::web;
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
+use futures::future::join_all;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+use ureq::json;
+use utoipa::ToSchema;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SearchClusterResponse {
@@ -1359,7 +1359,10 @@ pub async fn set_query_rating_query(
 pub async fn get_top_datasets_query(
     data: GetTopDatasetsRequestBody,
     clickhouse_client: &clickhouse::Client,
+    pool: web::Data<Pool>,
 ) -> Result<Vec<TopDatasetsResponse>, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
     let mut query_string = format!(
         "SELECT 
             dataset_id,
@@ -1393,7 +1396,7 @@ pub async fn get_top_datasets_query(
         LIMIT 10",
     );
 
-    let clickhouse_query = clickhouse_client
+    let clickhouse_resp_data = clickhouse_client
         .query(query_string.as_str())
         .fetch_all::<TopDatasetsResponseClickhouse>()
         .await
@@ -1402,9 +1405,34 @@ pub async fn get_top_datasets_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let response = clickhouse_query
+    let dataset_ids = clickhouse_resp_data
+        .iter()
+        .map(|x| x.dataset_id)
+        .collect::<Vec<_>>();
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+    let dataset_id_and_tracking_ids = datasets_columns::datasets
+        .select((datasets_columns::id, datasets_columns::tracking_id))
+        .filter(datasets_columns::id.eq_any(dataset_ids))
+        .load::<(uuid::Uuid, Option<String>)>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching dataset ids: {:?}", e);
+            ServiceError::InternalServerError("Error fetching dataset ids".to_string())
+        })?;
+
+    let response = clickhouse_resp_data
         .into_iter()
-        .map(|x| x.into())
+        .map(|x| {
+            let mut top_dataset_resps = TopDatasetsResponse::from(x.clone());
+            top_dataset_resps.dataset_tracking_id = dataset_id_and_tracking_ids
+                .iter()
+                .find(|(id, _)| id == &x.dataset_id)
+                .and_then(|(_, tracking_id)| tracking_id.clone());
+            top_dataset_resps
+        })
         .collect::<Vec<_>>();
 
     Ok(response)

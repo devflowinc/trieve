@@ -592,9 +592,10 @@ pub async fn get_top_datasets(
     _user: AdminOnly,
     data: web::Json<GetTopDatasetsRequestBody>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
     let top_datasets =
-        get_top_datasets_query(data.into_inner(), clickhouse_client.get_ref()).await?;
+        get_top_datasets_query(data.into_inner(), clickhouse_client.get_ref(), pool).await?;
 
     Ok(HttpResponse::Ok().json(top_datasets))
 }
