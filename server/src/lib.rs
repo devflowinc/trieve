@@ -232,7 +232,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
         handlers::analytics_handler::get_recommendation_analytics,
-        handlers::analytics_handler::send_ctr_data,
+        handlers::analytics_handler::send_event_data,
         handlers::analytics_handler::get_ctr_analytics,
         handlers::analytics_handler::set_query_rating,
         handlers::analytics_handler::get_top_datasets,
@@ -342,7 +342,7 @@ impl Modify for SecurityAddon {
             operators::analytics_operator::CTRRecommendationsWithClicksResponse,
             operators::analytics_operator::CTRRecommendationsWithoutClicksResponse,
             operators::analytics_operator::PopularFiltersResponse,
-            handlers::analytics_handler::CTRDataRequestBody,
+            data::models::EventTypes,
             operators::chunk_operator::HighlightStrategy,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             data::models::DateRange,
@@ -389,7 +389,7 @@ impl Modify for SecurityAddon {
             data::models::CTRAnalytics,
             data::models::SearchCTRMetrics,
             data::models::RecommendationCTRMetrics,
-            data::models::CTRType,
+            data::models::EventTypes,
             data::models::CTRAnalyticsResponse,
             data::models::SearchQueriesWithoutClicksCTRResponse,
             data::models::SearchQueriesWithClicksCTRResponse,
@@ -414,6 +414,7 @@ impl Modify for SecurityAddon {
             data::models::TypoOptions,
             data::models::TypoRange,
             data::models::SortByField,
+            data::models::ChunksWithPositions,
             data::models::SortBySearchType,
             data::models::ReRankOptions,
             data::models::Topic,
@@ -1132,11 +1133,13 @@ pub fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/top")
-                                .route(web::post().to(handlers::analytics_handler::get_top_datasets)),
+                                .route(web::post().to(handlers::analytics_handler::get_top_datasets)),)
+                            .service(
+                                web::resource("/events")
+                                .route(web::post().to(handlers::analytics_handler::send_event_data)),
                             )
                             .service(
                                 web::resource("/ctr")
-                                .route(web::put().to(handlers::analytics_handler::send_ctr_data))
                                 .route(web::post().to(handlers::analytics_handler::get_ctr_analytics)),
                             )
                         ),
