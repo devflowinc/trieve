@@ -360,6 +360,7 @@ impl Modify for SecurityAddon {
             data::models::CountSearchMethod,
             data::models::SearchMethod,
             data::models::SearchType,
+            data::models::SuggestType,
             data::models::ApiKeyRespBody,
             data::models::UsageGraphPoint,
             data::models::SearchResultType,

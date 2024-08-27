@@ -3,8 +3,7 @@ use qdrant_client::{
     Qdrant,
 };
 use trieve_server::{
-    errors::ServiceError, get_env,
-    operators::qdrant_operator::scroll_qdrant_collection_ids_custom_url,
+    errors::ServiceError, operators::qdrant_operator::scroll_qdrant_collection_ids_custom_url,
 };
 #[allow(clippy::print_stdout)]
 #[tokio::main]
@@ -12,11 +11,11 @@ async fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();
 
     let origin_qdrant_url =
-        get_env!("ORIGIN_QDRANT_URL", "ORIGIN_QDRANT_URL is not set").to_string();
-    let new_qdrant_url = get_env!("NEW_QDRANT_URL", "NEW_QDRANT_URL is not set").to_string();
-    let qdrant_api_key = get_env!("QDRANT_API_KEY", "QDRANT_API_KEY is not set").to_string();
+        std::env::var("ORIGIN_QDRANT_URL").expect("ORIGIN_QDRANT_URL is not set");
+    let new_qdrant_url = std::env::var("NEW_QDRANT_URL").expect("NEW_QDRANT_URL is not set");
+    let qdrant_api_key = std::env::var("QDRANT_API_KEY").expect("QDRANT_API_KEY is not set");
     let collection_to_clone =
-        get_env!("COLLECTION_TO_CLONE", "COLLECTION_TO_CLONE is not set").to_string();
+        std::env::var("COLLECTION_TO_CLONE").expect("COLLECTION_TO_CLONE is not set");
 
     let mut offset = Some(uuid::Uuid::nil().to_string());
 

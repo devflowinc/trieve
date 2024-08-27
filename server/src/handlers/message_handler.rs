@@ -5,7 +5,7 @@ use super::{
 use crate::{
     data::models::{
         self, ChunkMetadata, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions,
-        LLMOptions, Pool, SearchMethod,
+        LLMOptions, Pool, SearchMethod, SuggestType,
     },
     errors::ServiceError,
     get_env,
@@ -604,6 +604,10 @@ pub struct SuggestedQueriesReqPayload {
     pub query: Option<String>,
     /// Can be either "semantic", "fulltext", "hybrid, or "bm25". If specified as "hybrid", it will pull in one page of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page of the nearest cosine distant vectors. "fulltext" will pull in one page of full-text results based on SPLADE. "bm25" will get one page of results scored using BM25 with the terms OR'd together.
     pub search_type: Option<SearchMethod>,
+    /// Type of suggestions. Can be "question", "keyword", or "semantic". If not specified, this defaults to "keyword".
+    pub suggestion_type: Option<SuggestType>,
+    /// Context is the context of the query. This can be any string under 15 words and 200 characters. The context will be used to generate the suggested queries. Defaults to None.
+    pub context: Option<String>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
 }
@@ -756,9 +760,36 @@ pub async fn get_suggested_queries(
         .collect::<Vec<String>>()
         .join("\n\n");
 
+    let query_style = match data.suggestion_type.clone().unwrap_or(SuggestType::Keyword) {
+        SuggestType::Question => "question",
+        SuggestType::Keyword => "keyword",
+        SuggestType::Semantic => "semantic while not question",
+    };
+    let context_sentence = match data.context.clone() {
+        Some(context) => {
+            if context.split_whitespace().count() > 15 || context.len() > 200 {
+                return Err(ServiceError::BadRequest(
+                    "Context must be under 15 words and 200 characters".to_string(),
+                ));
+            }
+
+            format!(
+                "\n\nSuggest things with the following context in mind: {}.\n\n",
+                context
+            )
+        }
+        None => "".to_string(),
+    };
+
     let content = ChatMessageContent::Text(format!(
-        "Here is some context for the dataset for which the user is querying for {}. Generate 10 suggested followup keyword searches based off the domain of this dataset. Your only response should be the 10 followup keyword searches which are separated by new lines and are just text and you do not add any other context or information about the followup keyword searches. This should not be a list, so do not number each keyword search. These followup keyword searches should be related to the domain of the dataset.",
-        rag_content
+        "Here is some context for the dataset for which the user is querying for {}{}. Generate 10 suggested followup {} style queries based off the domain of this dataset. Your only response should be the 10 followup {} style queries which are separated by new lines and are just text and you do not add any other context or information about the followup {} style queries. This should not be a list, so do not number each {} style queries. These followup {} style queries should be related to the domain of the dataset.",
+        rag_content,
+        context_sentence,
+        query_style,
+        query_style,
+        query_style,
+        query_style,
+        query_style
     ));
 
     let message = ChatMessage {
@@ -826,7 +857,14 @@ pub async fn get_suggested_queries(
         _ => "".to_string(),
     }
     .split('\n')
-    .map(|query| query.to_string().trim().trim_matches('\n').to_string())
+    .filter_map(|query| {
+        let cleaned_query = query.to_string().trim().trim_matches('\n').to_string();
+        if cleaned_query.is_empty() {
+            None
+        } else {
+            Some(cleaned_query)
+        }
+    })
     .collect();
 
     while queries.len() < 3 {

@@ -43,6 +43,7 @@ use itertools::Itertools;
 use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
 use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon, GeoRadius};
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -53,6 +54,28 @@ use utoipa::ToSchema;
 // type alias to use in multiple places
 pub type Pool = diesel_async::pooled_connection::deadpool::Pool<diesel_async::AsyncPgConnection>;
 pub type RedisPool = bb8_redis::bb8::Pool<bb8_redis::RedisConnectionManager>;
+
+pub fn uuid_between(uuid1: uuid::Uuid, uuid2: uuid::Uuid) -> uuid::Uuid {
+    let num1 = u128::from_be_bytes(*uuid1.as_bytes());
+    let num2 = u128::from_be_bytes(*uuid2.as_bytes());
+
+    let (min_num, max_num) = if num1 < num2 {
+        (num1, num2)
+    } else {
+        (num2, num1)
+    };
+
+    let diff = max_num - min_num;
+    let mut rng = rand::thread_rng();
+
+    let random_offset = rng.gen_range(0..=diff);
+
+    let result_num = min_num + random_offset;
+
+    let result_bytes = result_num.to_be_bytes();
+
+    uuid::Uuid::from_bytes(result_bytes)
+}
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[schema(example = json!({
@@ -4137,6 +4160,17 @@ pub enum SearchMethod {
     #[serde(rename = "bm25", alias = "BM25")]
     #[display(fmt = "BM25")]
     BM25,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum SuggestType {
+    #[display(fmt = "question")]
+    Question,
+    #[display(fmt = "keyword")]
+    Keyword,
+    #[display(fmt = "semantic")]
+    Semantic,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
