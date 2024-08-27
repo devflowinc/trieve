@@ -1072,6 +1072,7 @@ const SearchForm = (props: {
                             Reset
                           </button>
                         </div>
+                        <div class="px-1 pt-2 font-bold">General</div>
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Score Threshold (0.0 to 1.0):</label>
                           <input
@@ -1092,23 +1093,20 @@ const SearchForm = (props: {
                           />
                         </div>
                         <div class="flex items-center justify-between space-x-2 p-1">
-                          <label>Highlight exact match</label>
-                          <select
-                            class="h-fit rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                            onChange={(s) => {
+                          <label>Page Size:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            value={tempSearchValues().pageSize}
+                            onChange={(e) => {
                               setTempSearchValues((prev) => {
                                 return {
                                   ...prev,
-                                  highlightStrategy: s.target
-                                    .value as HighlightStrategy,
+                                  pageSize: parseInt(e.currentTarget.value),
                                 };
                               });
                             }}
-                            value={tempSearchValues().highlightStrategy}
-                          >
-                            <option value="v1">V1</option>
-                            <option value="exactmatch">Exact match</option>
-                          </select>
+                          />
                         </div>
                         <Show
                           when={
@@ -1137,6 +1135,7 @@ const SearchForm = (props: {
                             />
                           </div>
                         </Show>
+                        <div class="px-1 font-bold">Performance</div>
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Slim Chunks (Latency Improvement):</label>
                           <input
@@ -1148,38 +1147,6 @@ const SearchForm = (props: {
                                 return {
                                   ...prev,
                                   slimChunks: e.target.checked,
-                                };
-                              });
-                            }}
-                          />
-                        </div>
-                        <div class="flex items-center justify-between space-x-2 p-1">
-                          <label>Page Size:</label>
-                          <input
-                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
-                            type="number"
-                            value={tempSearchValues().pageSize}
-                            onChange={(e) => {
-                              setTempSearchValues((prev) => {
-                                return {
-                                  ...prev,
-                                  pageSize: parseInt(e.currentTarget.value),
-                                };
-                              });
-                            }}
-                          />
-                        </div>
-                        <div class="flex items-center justify-between space-x-2 p-1">
-                          <label>Use Quote Negated Words</label>
-                          <input
-                            class="h-4 w-4"
-                            type="checkbox"
-                            checked={tempSearchValues().useQuoteNegatedTerms}
-                            onChange={(e) => {
-                              setTempSearchValues((prev) => {
-                                return {
-                                  ...prev,
-                                  useQuoteNegatedTerms: e.target.checked,
                                 };
                               });
                             }}
@@ -1201,6 +1168,23 @@ const SearchForm = (props: {
                             }}
                           />
                         </div>
+                        <div class="px-1 font-bold">Search Refinement</div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Use Quote Negated Words:</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={tempSearchValues().useQuoteNegatedTerms}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  useQuoteNegatedTerms: e.target.checked,
+                                };
+                              });
+                            }}
+                          />
+                        </div>
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Remove Stop Words:</label>
                           <input
@@ -1217,6 +1201,8 @@ const SearchForm = (props: {
                             }}
                           />
                         </div>
+                        <div class="px-1 font-bold">Typo Tolerance</div>
+
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Typo Tolerance (Latency Penalty):</label>
                           <input
@@ -1343,6 +1329,7 @@ const SearchForm = (props: {
                             }}
                           />
                         </div>
+                        <div class="px-1 font-bold">Highlighting</div>
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Highlight Results (Latency Penalty):</label>
                           <input
@@ -1460,7 +1447,27 @@ const SearchForm = (props: {
                             }}
                           />
                         </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Highlight exact match</label>
+                          <select
+                            class="h-fit rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                            onChange={(s) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightStrategy: s.target
+                                    .value as HighlightStrategy,
+                                };
+                              });
+                            }}
+                            value={tempSearchValues().highlightStrategy}
+                          >
+                            <option value="v1">V1</option>
+                            <option value="exactmatch">Exact match</option>
+                          </select>
+                        </div>
                         <Show when={props.search.state.groupUniqueSearch}>
+                          <div class="px-1 font-bold">Group Options</div>
                           <div class="items flex justify-between space-x-2 p-1">
                             <label>Group size:</label>
                             <input
