@@ -18,7 +18,8 @@
     "build": "turbo build",
     "build:clean-client": "./convenience.sh -c",
     "lint": "turbo lint",
-    "lint:CI": "turbo lint:CI"
+    "lint:CI": "turbo lint:CI",
+    "typecheck": "turbo typecheck"
   },
   "repository": "git@github.com:devflowinc/trieve.git",
   "author": "Drew Harris <harrisd@smu.edu>",
