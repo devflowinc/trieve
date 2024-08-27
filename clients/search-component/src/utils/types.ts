@@ -1,5 +1,10 @@
-import { ChunkMetadata } from "../../../ts-sdk/dist/types.gen";
+import { ChunkMetadata } from "trieve-ts-sdk";
 
-export type Chunk = ChunkMetadata & {
+export type Chunk = Omit<ChunkMetadata, "metadata"> & {
   highlight?: string | undefined | null;
+  highlightTitle?: string | undefined | null;
+  highlightDescription?: string | undefined | null;
+  metadata: {
+    [key: string]: any;
+  };
 };

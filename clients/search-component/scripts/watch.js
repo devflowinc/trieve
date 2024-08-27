@@ -1,7 +1,22 @@
-import { context as esbuild } from "esbuild";
-import { options } from "./build.js";
+const { context } = require("esbuild");
+const { options } = require("./build");
 
-let ctx = await esbuild(options);
+const main = async () => {
+  let ctx1 = await context({
+    ...options,
+    outfile: "./dist/index.esm.js",
+    format: "esm",
+    target: ["esnext", "node12.22.0"],
+  });
 
-await ctx.watch();
-console.log("watching...");
+  let ctx2 = await context({
+    ...options,
+    format: "cjs",
+    outfile: "./dist/index.cjs.js",
+    target: ["esnext", "node12.22.0"],
+  });
+
+  await ctx2.watch();
+};
+
+main();

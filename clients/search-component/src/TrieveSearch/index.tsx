@@ -1,50 +1,90 @@
 import React, { useState, useEffect, useRef } from "react";
-import { TrieveSDK } from "trieve-ts-sdk";
+import { TrieveSDK, SearchChunksReqPayload } from "trieve-ts-sdk";
 import { highlightText } from "../utils/highlight";
 import { useCombobox } from "downshift";
 import { Item } from "./Item";
 import { Chunk } from "../utils/types";
-import { ChunkMetadata } from "../../../ts-sdk/dist/types.gen";
+import { throttle } from "lodash-es";
 
 type Props = {
   trieve: TrieveSDK;
-  searchType: "fulltext" | "semantic" | "hybrid" | "bm25";
-  onResultClick: (chunk: Chunk) => void;
-  showImages: boolean;
-  theme: "light" | "dark";
+  onResultClick?: (chunk: Chunk) => void;
+  showImages?: boolean;
+  theme?: "light" | "dark";
+  searchOptions?: Omit<SearchChunksReqPayload, "query">;
+  placeholder?: string;
 };
 
 export const TrieveSearch = ({
   trieve,
-  searchType,
   onResultClick,
   showImages,
   theme = "light",
+  placeholder = "Search for anything",
+  searchOptions = {
+    search_type: "hybrid",
+    highlight_options: {
+      highlight_delimiters: ["?", ",", ".", "!", "↵"],
+      highlight_max_length: 2,
+      highlight_max_num: 2,
+      highlight_strategy: "exactmatch",
+      highlight_window: 100,
+    },
+  },
 }: Props) => {
   const [results, setResults] = useState<{ chunk: Chunk }[]>([]);
-  const input = useRef<HTMLDivElement>();
+  const input = useRef<HTMLDivElement>(null);
   const { isOpen, getLabelProps, getMenuProps, getInputProps, getItemProps } =
     useCombobox({
-      isOpen: true,
       items: results,
-      onInputValueChange: ({ inputValue }) => search(inputValue),
+      onInputValueChange: throttle(
+        ({ inputValue }) => search(inputValue),
+        1000
+      ),
+      stateReducer: (state, actionAndChanges) => {
+        const { type, changes } = actionAndChanges;
+        switch (type) {
+          case useCombobox.stateChangeTypes.InputKeyDownEnter: {
+            return {
+              ...changes,
+              inputValue: state.inputValue,
+            };
+          }
+          case useCombobox.stateChangeTypes.InputBlur: {
+            return {
+              ...changes,
+              inputValue: state.inputValue,
+            };
+          }
+          default: {
+            return changes;
+          }
+        }
+      },
     });
-
   const search = async (inputValue: string) => {
     const results = await trieve.search({
+      ...searchOptions,
       query: inputValue,
-      search_type: searchType || "hybrid",
     });
-    const resultsWithHighlight = results.chunks.map((chunk) => ({
-      ...chunk,
-      chunk: {
-        ...chunk.chunk,
-        highlight: highlightText(
-          inputValue,
-          (chunk.chunk as unknown as Chunk).chunk_html
-        ),
-      },
-    }));
+    const resultsWithHighlight = results.chunks.map((chunk) => {
+      const c = chunk.chunk as unknown as Chunk;
+      return {
+        ...chunk,
+        chunk: {
+          ...chunk.chunk,
+          highlight: highlightText(inputValue, c.chunk_html),
+          highlightTitle: highlightText(
+            inputValue,
+            c.metadata?.title || c.metadata?.page_title || c.metadata?.name
+          ),
+          highlightDescription: highlightText(
+            inputValue,
+            c.metadata?.description || c.metadata?.page_description
+          ),
+        },
+      };
+    });
     setResults(resultsWithHighlight as unknown as { chunk: Chunk }[]);
   };
 
@@ -67,7 +107,7 @@ export const TrieveSearch = ({
       className={theme === "dark" ? "dark" : ""}
     >
       <label htmlFor="search" className="sr-only" {...getLabelProps()}>
-        Quick search
+        Search
       </label>
       <div className="input-wrapper" ref={input}>
         <input
@@ -75,7 +115,7 @@ export const TrieveSearch = ({
           name="search"
           type="text"
           className="search-input"
-          placeholder="Search"
+          placeholder={placeholder}
           {...getInputProps()}
         />
         <div className="kbd-wrapper">
