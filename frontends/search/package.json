@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "lint": "prettier --write  \"**/*.{js,jsx,ts,tsx,md,mdx,}\" && eslint --fix \"src/**/*.{js,ts,jsx,tsx,}\"",
     "lint:only": "eslint --fix \"src/**/*.{js,ts,jsx,tsx,}\"",
-    "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
+    "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\"",
+    "typecheck": "tsc --noEmit"
   },
   "description": "The admin client for Trieve Search (https://search.trieve.ai)",
   "dependencies": {
