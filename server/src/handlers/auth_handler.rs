@@ -478,9 +478,12 @@ pub async fn callback(
         .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
         .ok_or(ServiceError::Unauthorized)?;
 
+    let mut user_is_new = false;
+
     let (user, user_orgs, orgs) = match get_user_by_id_query(&user_id, pool.clone()).await {
         Ok(user) => user,
         Err(_) => {
+            user_is_new = true;
             create_account(
                 email.to_string(),
                 name.iter().next().unwrap().1.to_string(),
@@ -539,8 +542,15 @@ pub async fn callback(
     session.remove(OIDC_SESSION_KEY);
     session.remove("login_state");
 
+    let final_redirect = match user_is_new {
+        false => login_state.redirect_uri,
+        true => login_state
+            .new_user_redirect_uri
+            .unwrap_or(login_state.redirect_uri),
+    };
+
     Ok(HttpResponse::SeeOther()
-        .insert_header(("Location", login_state.redirect_uri))
+        .insert_header(("Location", final_redirect))
         .finish())
 }
 
