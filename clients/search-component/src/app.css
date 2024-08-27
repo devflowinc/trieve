@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.dark#trieve-search-component {
+  @apply text-white bg-zinc-900;
+
+  .search-input {
+    @apply bg-zinc-900 text-zinc-50 ring-zinc-700;
+  }
+
+  .kbd-wrapper {
+    kbd {
+      @apply border-zinc-400  text-zinc-400;
+    }
+  }
+
+  .items-menu {
+    @apply bg-zinc-900 border-zinc-700;
+  }
+
+  .item {
+    @apply hover:bg-zinc-800 border-zinc-700;
+  }
+}
+
+#trieve-search-component {
+  @apply text-zinc-950 font-sans font-medium w-full max-w-2xl bg-white rounded-xl relative;
+
+  .input-wrapper {
+    @apply relative mt-2 flex items-center;
+  }
+  .search-input {
+    @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 sm:text-sm sm:leading-6;
+  }
+
+  .kbd-wrapper {
+    @apply absolute inset-y-0 right-0 flex py-1.5 pr-1.5;
+
+    kbd {
+      @apply inline-flex items-center rounded border border-zinc-200 px-1 font-sans text-xs text-zinc-400;
+    }
+  }
+
+  .trieve-powered {
+    @apply select-none cursor-pointer p-2 justify-end flex items-start gap-2  w-full text-xs;
+
+    img {
+      @apply h-4 w-4 cursor-pointer;
+    }
+  }
+
+  .items-menu {
+    @apply absolute top-10 w-full z-10 bg-white border-zinc-200 border rounded;
+
+    .results {
+      @apply max-h-[300px] overflow-auto;
+    }
+  }
+
+  .item {
+    @apply select-none cursor-pointer hover:bg-zinc-50 p-4 text-left flex items-start gap-2  border-b border-zinc-200 w-full text-sm;
+
+    img {
+      @apply w-[10%];
+    }
+
+    p {
+      @apply line-clamp-2;
+    }
+  }
+}

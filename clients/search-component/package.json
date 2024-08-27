@@ -1,0 +1,63 @@
+{
+  "name": "trieve-search-component",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/*",
+    "dist/**/*"
+  ],
+  "version": "0.0.1",
+  "license": "MIT",
+  "scripts": {
+    "dev": "run-p watch:css watch:js",
+    "watch:css": "npx postcss src/app.css -o dist/app.css --watch",
+    "watch:js": "node ./scripts/watch.js",
+    "lint": "eslint 'src/**/*.ts'",
+    "build:clean": "rm tsconfig.tsbuildinfo && rm -rf dist && yarn type:gen && yarn build",
+    "build": "run-s build:src build:css",
+    "build:src": "node ./scripts/build.js",
+    "type:dts": "tsc --emitDeclarationOnly --declarationMap",
+    "build:css": "npx postcss src/app.css -o dist/app.css "
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.7",
+    "@types/lodash-es": "^4.17.12",
+    "@types/react": "^18.3.4",
+    "esbuild": "^0.23.1",
+    "esbuild-node-externals": "^1.14.0",
+    "esbuild-register": "^3.6.0",
+    "eslint-plugin-react": "^7.35.0",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.41",
+    "postcss-cli": "^11.0.0",
+    "postcss-nested": "^6.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind": "^4.0.0",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "downshift": "^9.0.8",
+    "lodash-es": "^4.17.21",
+    "trieve-ts-sdk": "*"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./TrieveSearch": {
+      "types": "./dist/TrieveSearch/index.d.ts",
+      "require": "./dist/TrieveSearch/index.cjs",
+      "import": "./dist/TrieveSearch/index.js"
+    },
+    "./package.json": "./package.json"
+  }
+}
