@@ -313,6 +313,7 @@ pub async fn delete_dataset(
         ("ApiKey" = ["owner"]),
     )
 )]
+#[tracing::instrument(skip(redis_pool))]
 pub async fn clear_dataset(
     data: web::Path<uuid::Uuid>,
     redis_pool: web::Data<RedisPool>,
