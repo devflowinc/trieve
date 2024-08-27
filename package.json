@@ -11,7 +11,7 @@
     "frontends/shared",
     "frontends/config",
     "clients/ts-sdk",
-    "examples/ts"
+    "clients/search-component"
   ],
   "scripts": {
     "dev": "turbo dev",

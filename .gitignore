@@ -79,8 +79,9 @@ embedding-server/data/*
 */dist/**
 */.vite
 data/*
-clients/ts-sdk/dist/**
-clients/ts-sdk/docs/**
+clients/ts-sdk/dist
+clients/ts-sdk/docs
+clients/search-component/dist
 
 
 server/src/trieve_protobufs/*
@@ -88,4 +89,4 @@ server/proto/*
 server/migrations/2024-07-26-165058_move_config_to_table/down.sql
 server/migrations/2024-07-26-165058_move_config_to_table/up.sql
 dist/**
-clients/ts-sdk/dist
+

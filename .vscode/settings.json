@@ -13,6 +13,7 @@
     "./frontends/search",
     "./frontends/analytics",
     "./clients/ts-sdk",
+    "./clients/search-component"
   ],
   "vitest.disableWorkspaceWarning": true
 }
