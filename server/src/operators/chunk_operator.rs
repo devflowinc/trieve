@@ -1,5 +1,5 @@
 use crate::data::models::{
-    ChunkData, ChunkGroup, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags,
+    uuid_between, ChunkData, ChunkGroup, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags,
     ChunkMetadataTypes, ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags,
     IngestSpecificChunkMetadata, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
@@ -345,7 +345,6 @@ pub async fn get_random_chunk_metadatas_query(
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkMetadata>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    let mut random_uuid = uuid::Uuid::new_v4();
 
     let mut conn = pool
         .get()
@@ -355,7 +354,7 @@ pub async fn get_random_chunk_metadatas_query(
     let get_lowest_id_future = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .select(chunk_metadata_columns::id)
-        .order_by(chunk_metadata_columns::id.desc())
+        .order_by(chunk_metadata_columns::id.asc())
         .first::<uuid::Uuid>(&mut conn);
     let get_highest_ids_future = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
@@ -384,14 +383,12 @@ pub async fn get_random_chunk_metadatas_query(
             ))
         }
     };
-    while (random_uuid < lowest_id) || (random_uuid > highest_id) {
-        random_uuid = uuid::Uuid::new_v4();
-    }
+    let random_uuid = uuid_between(lowest_id, highest_id);
 
     let chunk_metadatas: Vec<ChunkMetadataTable> = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .filter(chunk_metadata_columns::id.gt(random_uuid))
-        .order_by(chunk_metadata_columns::id.desc())
+        .order_by(chunk_metadata_columns::id.asc())
         .limit(limit.try_into().unwrap_or(10))
         .select(ChunkMetadataTable::as_select())
         .load::<ChunkMetadataTable>(&mut conn)
