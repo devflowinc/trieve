@@ -4,7 +4,8 @@ use super::{
 };
 use crate::{
     data::models::{
-        self, ChunkMetadata, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions, LLMOptions, Pool, RedisPool, SearchMethod, SuggestType
+        self, ChunkMetadata, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions,
+        LLMOptions, Pool, RedisPool, SearchMethod, SuggestType,
     },
     errors::ServiceError,
     get_env,
