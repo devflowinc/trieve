@@ -1,28 +1,16 @@
-import { omit } from "lodash-es";
 import { Chunk } from "../utils/types";
 import React from "react";
 
 type Props = {
-  index: number;
   item: { chunk: Chunk };
-  getItemProps: (opts: {
-    item: { chunk: Chunk };
-    index: number;
-  }) => object | null | undefined;
   onResultClick?: (chunk: Chunk) => void;
   showImages?: boolean;
 };
 
-export const Item = ({
-  item,
-  index,
-  getItemProps,
-  onResultClick,
-  showImages,
-}: Props) => {
+export const Item = ({ item, onResultClick, showImages }: Props) => {
   const Component = item.chunk.link ? "a" : "button";
   return (
-    <li {...omit(getItemProps({ item, index }), "onClick")}>
+    <li>
       <Component
         className="item"
         onClick={() => onResultClick && onResultClick(item.chunk)}

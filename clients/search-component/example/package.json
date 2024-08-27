@@ -10,11 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@headlessui/react": "^2.1.3",
-    "@heroicons/react": "^2.1.5",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "trieve-ts-sdk": "*"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
