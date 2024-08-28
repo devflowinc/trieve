@@ -277,7 +277,10 @@ pub async fn create_chunk_group(
         .collect::<Vec<ChunkGroup>>();
 
     if created_groups.len() == 1 {
-        Ok(HttpResponse::Ok().json(created_groups[0].clone()))
+        match created_groups.get(0) {
+            Some(group) => Ok(HttpResponse::Ok().json(group.clone())),
+            None => Ok(HttpResponse::Ok().json(serde_json::json!({}))),
+        }
     } else {
         Ok(HttpResponse::Ok().json(created_groups))
     }

@@ -560,8 +560,12 @@ pub async fn stream_response(
                     ))
                 })?;
 
-        let completion_content = match &assistant_completion.choices[0].message.content {
-            ChatMessageContent::Text(text) => text.clone(),
+        let completion_content = match &assistant_completion
+            .choices
+            .get(0)
+            .map(|chat_completion_choice| chat_completion_choice.message.content.clone())
+        {
+            Some(ChatMessageContent::Text(text)) => text.clone(),
             _ => "".to_string(),
         };
 
@@ -673,7 +677,11 @@ pub async fn stream_response(
     let chunk_stream = stream::iter(vec![Ok(Bytes::from(chunk_metadatas_stringified1))]);
     let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
         if let Ok(response) = response {
-            let chat_content = response.choices[0].delta.content.clone();
+            let chat_content = response
+                .choices
+                .get(0)
+                .map(|chat_completion_content| chat_completion_content.delta.content.clone())
+                .unwrap_or(None);
             if let Some(message) = chat_content.clone() {
                 s.send(message).unwrap();
             }

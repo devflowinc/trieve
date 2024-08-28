@@ -2819,7 +2819,9 @@ pub async fn hybrid_search_over_groups(
     timer.add("reranking");
 
     if let Some(score_threshold) = data.score_threshold {
-        reranked_chunks.retain(|chunk| chunk.metadata[0].score >= score_threshold.into());
+        reranked_chunks.retain(|chunk| {
+            chunk.metadata.get(0).map(|m| m.score).unwrap_or(0.0) >= score_threshold.into()
+        });
         reranked_chunks.iter_mut().for_each(|chunk| {
             chunk
                 .metadata
@@ -2914,10 +2916,11 @@ pub async fn autocomplete_chunks_query(
         .await?,
     ];
 
-    qdrant_query[0]
-        .filter
-        .must
-        .push(Condition::matches_text("content", data.query.clone()));
+    if let Some(q) = qdrant_query.get_mut(0) {
+        q.filter
+            .must
+            .push(Condition::matches_text("content", data.query.clone()));
+    }
 
     if data.extend_results.unwrap_or(false) {
         qdrant_query.push(

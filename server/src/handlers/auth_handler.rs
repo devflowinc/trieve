@@ -178,7 +178,11 @@ pub async fn create_account(
                 .organization,
         ),
         None => {
-            let org_name = email.split('@').collect::<Vec<&str>>()[0]
+            let org_name = email
+                .split('@')
+                .collect::<Vec<&str>>()
+                .get(0)
+                .unwrap_or(&"")
                 .to_string()
                 .replace(' ', "-");
             (
