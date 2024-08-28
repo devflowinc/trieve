@@ -1298,6 +1298,7 @@ pub async fn get_recommended_groups(
 
     let group_qdrant_query_result = SearchOverGroupsQueryResult {
         search_results: recommended_groups_from_qdrant.clone(),
+        corrected_query: None,
         total_chunk_pages: (recommended_groups_from_qdrant.len() as f64 / 10.0).ceil() as i64,
     };
 
@@ -1439,6 +1440,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
 pub struct SearchWithinGroupResults {
     pub bookmarks: Vec<ScoreChunkDTO>,
     pub group: ChunkGroupAndFileId,
+    pub corrected_query: Option<String>,
     pub total_pages: i64,
 }
 
@@ -1447,6 +1449,7 @@ pub struct SearchWithinGroupResults {
 pub struct SearchWithinGroupResponseBody {
     pub id: uuid::Uuid,
     pub chunks: Vec<ScoreChunk>,
+    pub corrected_query: Option<String>,
     pub total_pages: i64,
 }
 
@@ -1468,6 +1471,7 @@ impl SearchWithinGroupResults {
                 .into_iter()
                 .map(|chunk| chunk.into())
                 .collect(),
+            corrected_query: self.corrected_query,
             total_pages: self.total_pages,
         }
     }

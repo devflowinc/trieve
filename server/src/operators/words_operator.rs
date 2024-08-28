@@ -469,7 +469,7 @@ impl BKTreeCache {
     }
 }
 
-fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> String {
+fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> Option<String> {
     let query_split_by_whitespace = query
         .split_whitespace()
         .map(|s| s.to_string())
@@ -533,9 +533,10 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
         for (og_string, correction) in query_split_to_correction {
             corrected_query = corrected_query.replacen(&og_string, &correction, 1);
         }
+        Some(corrected_query)
+    } else {
+        None
     }
-
-    corrected_query
 }
 
 #[tracing::instrument(skip(redis_pool))]
@@ -544,9 +545,9 @@ pub async fn correct_query(
     dataset_id: uuid::Uuid,
     redis_pool: web::Data<RedisPool>,
     options: &TypoOptions,
-) -> Result<String, ServiceError> {
+) -> Result<Option<String>, ServiceError> {
     if matches!(options.correct_typos, None | Some(false)) {
-        return Ok(query);
+        return Ok(None);
     }
 
     match BKTREE_CACHE.get_if_valid(&dataset_id) {
@@ -554,7 +555,7 @@ pub async fn correct_query(
         None => {
             let dataset_id = dataset_id;
             let redis_pool = redis_pool.clone();
-            dbg!("Pulling new BK tree from Redis");
+            log::info!("Pulling new BK tree from Redis");
             tokio::spawn(async move {
                 match BkTree::from_redis(dataset_id, redis_pool).await {
                     // TTL of 1 day
@@ -564,16 +565,16 @@ pub async fn correct_query(
                             bktree,
                             Duration::from_secs(60 * 60 * 24),
                         );
-                        dbg!(
+                        log::info!(
                             "Inserted new BK tree into cache for dataset_id: {:?}",
                             dataset_id
                         );
                     }
                     Ok(None) => {
-                        dbg!("No BK tree found in Redis for dataset_id: {:?}", dataset_id);
+                        log::info!("No BK tree found in Redis for dataset_id: {:?}", dataset_id);
                     }
                     Err(e) => {
-                        dbg!(
+                        log::info!(
                             "Failed to insert new BK tree into cache {:?} for dataset_id: {:?}",
                             e,
                             dataset_id
@@ -581,7 +582,7 @@ pub async fn correct_query(
                     }
                 };
             });
-            Ok(query)
+            Ok(None)
         }
     }
 }

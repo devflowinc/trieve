@@ -993,6 +993,7 @@ impl Default for SearchChunksReqPayload {
 #[schema(title = "V1")]
 pub struct SearchChunkQueryResponseBody {
     pub score_chunks: Vec<ScoreChunkDTO>,
+    pub corrected_query: Option<String>,
     pub total_chunk_pages: i64,
 }
 
@@ -1001,6 +1002,7 @@ pub struct SearchChunkQueryResponseBody {
 pub struct SearchResponseBody {
     pub id: uuid::Uuid,
     pub chunks: Vec<ScoreChunk>,
+    pub corrected_query: Option<String>,
     pub total_pages: i64,
 }
 
@@ -1022,6 +1024,7 @@ impl SearchChunkQueryResponseBody {
                 .into_iter()
                 .map(|chunk| chunk.into())
                 .collect(),
+            corrected_query: self.corrected_query,
             total_pages: self.total_chunk_pages,
         }
     }
