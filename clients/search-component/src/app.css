@@ -134,9 +134,17 @@
   .input-wrapper {
     @apply bg-zinc-900;
   }
+
+  .item {
+    @apply hover:bg-zinc-800 border-zinc-700 focus:bg-zinc-800;
+
+    .description {
+      @apply text-zinc-400;
+    }
+  }
 }
 #trieve-search-modal {
-  @apply data-[state=open]:animate-contentShow fixed top-1/2 left-1/2 max-h-[80vh] sm:max-h-[540px] w-[90vw] max-w-[550px] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none;
+  @apply data-[state=open]:animate-contentShow fixed top-1/2 left-1/2 max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none;
 
   .kbd-wrapper {
     @apply absolute  right-2 flex py-1.5 pr-1.5;
@@ -160,21 +168,41 @@
 
   .input-wrapper {
     @apply sticky top-0 bg-zinc-50 pt-2 flex items-center;
-  }
 
+    .search-icon {
+      @apply absolute left-2 text-zinc-400;
+    }
+  }
   input {
-    @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 outline-none sm:text-sm sm:leading-6 bg-zinc-50 px-4 h-12;
+    @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 outline-none sm:text-sm sm:leading-6 bg-zinc-50 px-4 pl-8 h-12;
   }
-
   ul {
     @apply overflow-auto max-h-[420px];
   }
 
   .item {
-    @apply select-none cursor-pointer p-4 text-left flex items-start gap-2  border-b border-zinc-200 w-full text-sm;
+    @apply select-none cursor-pointer p-4 text-left flex items-start gap-2  border-b border-zinc-200 w-full text-sm pr-6 bg-zinc-50 outline-none;
+
+    &:hover,
+    &:focus {
+      @apply bg-zinc-100 outline-none ring-magenta-500 ring-1 ring-inset;
+    }
+
+    &:hover .arrow-link,
+    &:focus .arrow-link {
+      @apply block;
+    }
+
+    .arrow-link {
+      @apply hidden w-4 h-4 text-zinc-600 dark:text-zinc-400 relative -right-2;
+    }
 
     > div {
       @apply flex items-center justify-between w-full;
+    }
+
+    .description {
+      @apply font-normal text-xs text-zinc-600;
     }
   }
 }
@@ -192,7 +220,7 @@
 }
 #open-trieve-modal {
   @apply w-full flex items-center text-sm leading-6 ring-1 shadow-sm text-zinc-400 bg-zinc-50  focus:outline-magenta-500 justify-between  rounded-md border-0 py-1.5 px-2
-  sm:text-sm sm:leading-6 truncate gap-2 min-w-[43px] ring-zinc-200;
+  sm:text-sm truncate gap-2 min-w-[43px] ring-zinc-200  max-w-[300px];
 
   > div {
     @apply flex items-center gap-3 min-w-[42px];

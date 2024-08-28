@@ -5,6 +5,6 @@ export type Chunk = Omit<ChunkMetadata, "metadata"> & {
   highlightTitle?: string | undefined | null;
   highlightDescription?: string | undefined | null;
   metadata: {
-    [key: string]: any;
+    [key: string]: string;
   };
 };
