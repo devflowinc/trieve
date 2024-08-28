@@ -328,7 +328,7 @@ impl FromSql<Jsonb, Pg> for GeoInfo {
     fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
         let bytes = bytes.as_bytes();
 
-        if bytes[0] != 1 {
+        if bytes.get(0) != Some(&1) {
             return Err("Unsupported JSONB encoding version".into());
         }
         serde_json::from_slice(&bytes[1..]).map_err(Into::into)

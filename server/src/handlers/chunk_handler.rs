@@ -1089,7 +1089,7 @@ pub fn parse_query(
             let re = Regex::new(r#""(?:[^"\\]|\\.)*""#).expect("Regex pattern is always valid");
             let quote_words: Vec<String> = re
                 .captures_iter(&query)
-                .map(|capture| capture[0].to_string())
+                .filter_map(|capture| capture.get(0).map(|capture| capture.as_str().to_string()))
                 .filter(|word| !word.is_empty())
                 .collect::<Vec<String>>();
 
@@ -2529,11 +2529,19 @@ pub async fn generate_off_chunks(
                     ))
                 })?;
 
-        let chat_content = assistant_completion.choices[0].message.content.clone();
+        let chat_content = match assistant_completion.choices.get(0) {
+            Some(choice) => choice.message.content.clone(),
+            None => {
+                return Err(ServiceError::InternalServerError(
+                    "Failed to get response completion".into(),
+                )
+                .into())
+            }
+        };
 
-        let completion_content = match &chat_content {
+        let completion_content = match chat_content.clone() {
             ChatMessageContent::Text(text) => text.clone(),
-            _ => "".to_string(),
+            _ => "Failed to get response completion".to_string(),
         };
 
         let clickhouse_rag_event = RagQueryEventClickhouse {
@@ -2595,7 +2603,10 @@ pub async fn generate_off_chunks(
 
     let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
         if let Ok(response) = response {
-            let chat_content = response.choices[0].delta.content.clone();
+            let chat_content = match response.choices.get(0) {
+                Some(choice) => choice.delta.content.clone(),
+                None => Some("failed to get response completion".to_string()),
+            };
             if let Some(message) = chat_content.clone() {
                 s.send(message).unwrap();
             }

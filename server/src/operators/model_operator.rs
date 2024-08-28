@@ -430,7 +430,7 @@ pub async fn get_dense_vectors(
                 "query" => EmbeddingInput::String(
                     format!(
                         "{}{}",
-                        dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_messages[0]
+                        dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_messages.get(0).unwrap_or(&"".to_string())
                     )
                     .to_string(),
                 ),

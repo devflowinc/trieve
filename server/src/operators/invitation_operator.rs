@@ -60,7 +60,7 @@ pub async fn send_invitation(
          <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>",
         org_name,
         inv_url,
-        inv_url.split('?').collect::<Vec<&str>>()[0],
+        inv_url.split('?').collect::<Vec<&str>>().get(0).unwrap_or(&""),
         invitation.email
     );
 
