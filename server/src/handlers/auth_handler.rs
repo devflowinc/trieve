@@ -1,5 +1,4 @@
 use crate::data::models::{Organization, RedisPool, StripePlan, UserRole};
-use crate::data::schema::user_organizations;
 use crate::get_env;
 use crate::operators::invitation_operator::check_inv_valid;
 use crate::operators::organization_operator::{get_org_from_id_query, get_user_org_count};
@@ -546,17 +545,16 @@ pub async fn callback(
     // Use the new_user_redirect_uri if the user has just been created and is the owner of
     // one organization
     let mut final_redirect = login_state.redirect_uri.clone();
-    if user_is_new {
-        if user_orgs
+    if user_is_new
+        && user_orgs
             .clone()
             .into_iter()
-            .any(|org_user| return org_user.role == 2)
-            && user_orgs.len() == 1
-        {
-            final_redirect = login_state
-                .new_user_redirect_uri
-                .unwrap_or(login_state.redirect_uri);
-        }
+            .any(|org_user| org_user.role == 2)
+        && user_orgs.len() == 1
+    {
+        final_redirect = login_state
+            .new_user_redirect_uri
+            .unwrap_or(login_state.redirect_uri);
     }
 
     Ok(HttpResponse::SeeOther()
