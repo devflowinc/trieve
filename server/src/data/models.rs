@@ -4,7 +4,8 @@ use super::schema::*;
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::chunk_handler::{
-    AutocompleteReqPayload, ChunkFilter, FullTextBoost, SearchChunksReqPayload, SemanticBoost,
+    AutocompleteReqPayload, ChunkFilter, FullTextBoost, ParsedQuery, SearchChunksReqPayload,
+    SemanticBoost,
 };
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload};
@@ -1871,9 +1872,9 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
+    pub server_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
-    pub server_configuration: serde_json::Value,
 }
 
 impl Dataset {
@@ -5019,6 +5020,28 @@ pub struct HighlightOptions {
     pub highlight_window: Option<u32>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+/// Typo Options lets you specify different methods to correct typos in the query. If not specified, typos will not be corrected.
+pub struct TypoOptions {
+    /// Set correct_typos to true to correct typos in the query. If not specified, this defaults to false.
+    pub correct_typos: Option<bool>,
+    /// The range of which the query will be corrected if it has one typo. If not specified, this defaults to 5-8.
+    pub one_typo_word_range: Option<TypoRange>,
+    /// The range of which the query will be corrected if it has two typos. If not specified, this defaults to 8-inf.
+    pub two_typo_word_range: Option<TypoRange>,
+    /// Words that should not be corrected. If not specified, this defaults to an empty list.
+    pub disable_on_word: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+/// The TypoRange struct is used to specify the range of which the query will be corrected if it has a typo.
+pub struct TypoRange {
+    /// The minimum number of characters that the query will be corrected if it has a typo. If not specified, this defaults to 5.
+    pub min: u32,
+    /// The maximum number of characters that the query will be corrected if it has a typo. If not specified, this defaults to 8.
+    pub max: Option<u32>,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
 /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
 pub struct LLMOptions {
@@ -5174,6 +5197,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
+            typo_options: Option<TypoOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5204,6 +5228,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
+            typo_options: helper.typo_options,
         })
     }
 }
@@ -5228,6 +5253,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
+            typo_options: Option<TypoOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5257,6 +5283,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
+            typo_options: helper.typo_options,
         })
     }
 }
@@ -5284,6 +5311,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
+            typo_options: Option<TypoOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5316,6 +5344,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
+            typo_options: helper.typo_options,
         })
     }
 }
@@ -5340,6 +5369,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
+            typo_options: Option<TypoOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -5365,6 +5395,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,
             use_quote_negated_terms: helper.use_quote_negated_terms,
+            typo_options: helper.typo_options,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
         })
@@ -5527,6 +5558,15 @@ pub struct MultiQuery {
     pub weight: f32,
 }
 
+impl From<(ParsedQuery, f32)> for MultiQuery {
+    fn from((query, weight): (ParsedQuery, f32)) -> Self {
+        Self {
+            query: query.query,
+            weight,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 #[serde(untagged)]
 /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
@@ -5542,6 +5582,30 @@ impl QueryTypes {
             QueryTypes::Multi(_) => Err(ServiceError::BadRequest(
                 "Cannot use Multi Query with cross encoder or highlights".to_string(),
             )),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, Clone, ToSchema)]
+pub struct WordDataset {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub word: String,
+    pub count: i32,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+}
+
+impl WordDataset {
+    pub fn from_details(word: String, dataset_id: uuid::Uuid, count: i32) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4(),
+            word,
+            dataset_id,
+            count,
+            created_at: OffsetDateTime::now_utc(),
         }
     }
 }

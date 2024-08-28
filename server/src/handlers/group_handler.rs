@@ -10,7 +10,7 @@ use crate::{
         ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
         HighlightOptions, Pool, QueryTypes, RecommendType, RecommendationEventClickhouse,
         RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
-        SearchQueryEventClickhouse, SortOptions, UnifiedId,
+        SearchQueryEventClickhouse, SortOptions, TypoOptions, UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
@@ -1298,6 +1298,7 @@ pub async fn get_recommended_groups(
 
     let group_qdrant_query_result = SearchOverGroupsQueryResult {
         search_results: recommended_groups_from_qdrant.clone(),
+        corrected_query: None,
         total_chunk_pages: (recommended_groups_from_qdrant.len() as f64 / 10.0).ceil() as i64,
     };
 
@@ -1409,6 +1410,7 @@ pub struct SearchWithinGroupReqPayload {
     pub remove_stop_words: Option<bool>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
+    pub typo_options: Option<TypoOptions>,
 }
 
 impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
@@ -1428,6 +1430,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             use_quote_negated_terms: search_within_group_data.use_quote_negated_terms,
             remove_stop_words: search_within_group_data.remove_stop_words,
             user_id: search_within_group_data.user_id,
+            typo_options: search_within_group_data.typo_options,
         }
     }
 }
@@ -1437,6 +1440,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
 pub struct SearchWithinGroupResults {
     pub bookmarks: Vec<ScoreChunkDTO>,
     pub group: ChunkGroupAndFileId,
+    pub corrected_query: Option<String>,
     pub total_pages: i64,
 }
 
@@ -1445,6 +1449,7 @@ pub struct SearchWithinGroupResults {
 pub struct SearchWithinGroupResponseBody {
     pub id: uuid::Uuid,
     pub chunks: Vec<ScoreChunk>,
+    pub corrected_query: Option<String>,
     pub total_pages: i64,
 }
 
@@ -1466,6 +1471,7 @@ impl SearchWithinGroupResults {
                 .into_iter()
                 .map(|chunk| chunk.into())
                 .collect(),
+            corrected_query: self.corrected_query,
             total_pages: self.total_pages,
         }
     }
@@ -1492,17 +1498,20 @@ impl SearchWithinGroupResults {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn search_within_group(
     data: web::Json<SearchWithinGroupReqPayload>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
     api_version: APIVersion,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
+
+    let data = data.into_inner();
 
     //search over the links as well
     let group_id = data.group_id;
@@ -1551,8 +1560,10 @@ pub async fn search_within_group(
                 parsed_query.to_parsed_query()?,
                 group,
                 search_pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1562,8 +1573,10 @@ pub async fn search_within_group(
                 parsed_query,
                 group,
                 search_pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1642,6 +1655,7 @@ pub struct SearchOverGroupsReqPayload {
     pub remove_stop_words: Option<bool>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
+    pub typo_options: Option<TypoOptions>,
 }
 
 /// Search Over Groups
@@ -1665,11 +1679,12 @@ pub struct SearchOverGroupsReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn search_over_groups(
     data: web::Json<SearchOverGroupsReqPayload>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
     api_version: APIVersion,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1713,6 +1728,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
                 &mut timer,
@@ -1724,6 +1740,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query.to_parsed_query()?,
                 pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
                 &mut timer,
@@ -1741,6 +1758,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
                 &mut timer,

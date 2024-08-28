@@ -1,6 +1,7 @@
 use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetConfiguration, DatasetUsageCount,
     Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
+    WordDataset,
 };
 use crate::handlers::dataset_handler::{GetDatasetsPagination, TagsWithCount};
 use crate::operators::clickhouse_operator::ClickHouseEvent;
@@ -12,11 +13,14 @@ use crate::{
     errors::ServiceError,
 };
 use actix_web::web;
+use clickhouse::Row;
 use diesel::dsl::count;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use diesel_async::RunQueryDsl;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use time::{format_description, OffsetDateTime};
 
 use super::clickhouse_operator::EventQueue;
 
@@ -107,6 +111,24 @@ pub async fn get_deleted_dataset_by_unifiedid_query(
     };
 
     Ok(dataset)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_all_dataset_ids(pool: web::Data<Pool>) -> Result<Vec<uuid::Uuid>, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let datasets = datasets_columns::datasets
+        .select(datasets_columns::id)
+        .filter(datasets_columns::deleted.eq(0))
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
+
+    Ok(datasets)
 }
 
 #[tracing::instrument(skip(pool))]
@@ -667,4 +689,167 @@ pub async fn get_tags_in_dataset_query(
         .map_err(|err| ServiceError::BadRequest(format!("Failed to get count of tags {}", err)))?;
 
     Ok((items, total_count))
+}
+
+pub async fn scroll_dataset_ids_query(
+    offset: uuid::Uuid,
+    limit: i64,
+    pool: web::Data<Pool>,
+) -> Result<Option<Vec<uuid::Uuid>>, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let datasets = datasets_columns::datasets
+        .select(datasets_columns::id)
+        .filter(datasets_columns::id.gt(offset))
+        .order_by(datasets_columns::id)
+        .limit(limit)
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Failed to get datasets".to_string()))?;
+
+    if datasets.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(datasets))
+}
+
+pub async fn add_words_to_dataset(
+    words: Vec<String>,
+    counts: Vec<i32>,
+    dataset_ids: Vec<uuid::Uuid>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<(), ServiceError> {
+    let rows = words
+        .into_iter()
+        .zip(counts)
+        .zip(dataset_ids)
+        .map(|((w, count), dataset_id)| WordDataset::from_details(w, dataset_id, count))
+        .collect_vec();
+
+    let mut words_inserter = clickhouse_client
+        .insert("default.words_datasets")
+        .map_err(|e| {
+            log::error!("Error inserting words_datasets: {:?}", e);
+            sentry::capture_message("Error inserting words_datasets", sentry::Level::Error);
+            ServiceError::InternalServerError(format!("Error inserting words_datasets: {:?}", e))
+        })?;
+
+    for row in rows {
+        words_inserter.write(&row).await.map_err(|e| {
+            log::error!("Error inserting words_datasets: {:?}", e);
+            sentry::capture_message("Error inserting words_datasets", sentry::Level::Error);
+            ServiceError::InternalServerError(format!("Error inserting words_datasets: {:?}", e))
+        })?;
+    }
+
+    words_inserter.end().await.map_err(|e| {
+        log::error!("Error inserting words_datasets: {:?}", e);
+        sentry::capture_message("Error inserting words_datasets", sentry::Level::Error);
+        ServiceError::InternalServerError(format!("Error inserting words_datasets: {:?}", e))
+    })?;
+
+    Ok(())
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Row)]
+pub struct WordDatasetCount {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub word: String,
+    pub count: i32,
+}
+
+#[tracing::instrument(skip(clickhouse_client))]
+pub async fn scroll_words_from_dataset(
+    dataset_id: uuid::Uuid,
+    offset: uuid::Uuid,
+    last_processed: Option<OffsetDateTime>,
+    limit: i64,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Option<Vec<WordDatasetCount>>, ServiceError> {
+    let mut query = format!(
+        "
+       SELECT 
+            id,
+            word,
+            count,
+        FROM words_datasets
+        WHERE dataset_id = '{}' AND id > '{}' 
+        ",
+        dataset_id, offset,
+    );
+
+    if let Some(last_processed) = last_processed {
+        query = format!(
+            "{} AND created_at >= '{}'",
+            query,
+            last_processed
+                .format(
+                    &format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]",)
+                        .unwrap()
+                )
+                .map_err(|e| {
+                    log::error!("Error formatting last processed time: {:?}", e);
+                    sentry::capture_message(
+                        "Error formatting last processed time",
+                        sentry::Level::Error,
+                    );
+                    ServiceError::InternalServerError(format!(
+                        "Error formatting last processed time: {:?}",
+                        e
+                    ))
+                })?
+        );
+    }
+
+    query = format!("{} ORDER BY id LIMIT {}", query, limit);
+
+    let words = clickhouse_client
+        .query(&query)
+        .fetch_all::<WordDatasetCount>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching words from dataset: {:?}", e);
+            sentry::capture_message("Error fetching words from dataset", sentry::Level::Error);
+            ServiceError::InternalServerError(format!("Error fetching words from dataset: {:?}", e))
+        })?;
+
+    if words.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(words))
+    }
+}
+
+pub async fn update_dataset_last_processed_query(
+    dataset_id: uuid::Uuid,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<(), ServiceError> {
+    let query = format!(
+        "
+        INSERT INTO dataset_words_last_processed (dataset_id, last_processed)
+        VALUES ('{}', now())
+        ",
+        dataset_id
+    );
+
+    clickhouse_client
+        .query(&query)
+        .execute()
+        .await
+        .map_err(|e| {
+            log::error!("Error updating last processed time: {:?}", e);
+            sentry::capture_message("Error updating last processed time", sentry::Level::Error);
+            ServiceError::InternalServerError(format!(
+                "Error updating last processed time: {:?}",
+                e
+            ))
+        })?;
+
+    Ok(())
 }

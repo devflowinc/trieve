@@ -9,7 +9,7 @@ use crate::{
     handlers::{auth_handler::build_oidc_client, metrics_handler::Metrics},
     operators::{
         clickhouse_operator::EventQueue, qdrant_operator::create_new_qdrant_collection_query,
-        user_operator::create_default_user,
+        user_operator::create_default_user, words_operator::BKTreeCache,
     },
 };
 use actix_cors::Cors;
@@ -411,6 +411,8 @@ impl Modify for SecurityAddon {
             data::models::SortOptions,
             data::models::LLMOptions,
             data::models::HighlightOptions,
+            data::models::TypoOptions,
+            data::models::TypoRange,
             data::models::SortByField,
             data::models::SortBySearchType,
             data::models::ReRankOptions,
@@ -628,6 +630,8 @@ pub fn main() -> std::io::Result<()> {
             log::info!("Analytics disabled");
             (clickhouse::Client::default(), EventQueue::default())
         };
+
+        BKTreeCache::enforce_cache_ttl();
 
 
         let metrics = Metrics::new().map_err(|e| {

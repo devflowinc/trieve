@@ -5,7 +5,7 @@ use crate::data::models::{
     HighlightOptions, IngestSpecificChunkMetadata, Pool, QueryTypes, RagQueryEventClickhouse,
     RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
     ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore,
-    SortByField, SortOptions, UnifiedId, UpdateSpecificChunkMetadata,
+    SortByField, SortOptions, TypoOptions, UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -963,6 +963,8 @@ pub struct SearchChunksReqPayload {
     pub remove_stop_words: Option<bool>,
     /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
+    /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
+    pub typo_options: Option<TypoOptions>,
 }
 
 impl Default for SearchChunksReqPayload {
@@ -982,6 +984,7 @@ impl Default for SearchChunksReqPayload {
             use_quote_negated_terms: None,
             remove_stop_words: None,
             user_id: None,
+            typo_options: None,
         }
     }
 }
@@ -990,6 +993,7 @@ impl Default for SearchChunksReqPayload {
 #[schema(title = "V1")]
 pub struct SearchChunkQueryResponseBody {
     pub score_chunks: Vec<ScoreChunkDTO>,
+    pub corrected_query: Option<String>,
     pub total_chunk_pages: i64,
 }
 
@@ -998,6 +1002,7 @@ pub struct SearchChunkQueryResponseBody {
 pub struct SearchResponseBody {
     pub id: uuid::Uuid,
     pub chunks: Vec<ScoreChunk>,
+    pub corrected_query: Option<String>,
     pub total_pages: i64,
 }
 
@@ -1019,6 +1024,7 @@ impl SearchChunkQueryResponseBody {
                 .into_iter()
                 .map(|chunk| chunk.into())
                 .collect(),
+            corrected_query: self.corrected_query,
             total_pages: self.total_chunk_pages,
         }
     }
@@ -1140,17 +1146,20 @@ pub fn parse_query(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn search_chunks(
-    mut data: web::Json<SearchChunksReqPayload>,
+    data: web::Json<SearchChunksReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
+
+    let mut data = data.into_inner();
 
     let parsed_query = match data.query.clone() {
         QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
@@ -1186,6 +1195,7 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query.to_parsed_query()?,
                 pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
                 &mut timer,
@@ -1197,6 +1207,7 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 pool,
+                redis_pool,
                 dataset_org_plan_sub.dataset.clone(),
                 &dataset_config,
                 &mut timer,
@@ -1332,6 +1343,7 @@ pub struct AutocompleteReqPayload {
     pub remove_stop_words: Option<bool>,
     /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
+    pub typo_options: Option<TypoOptions>,
 }
 
 impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
@@ -1351,6 +1363,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             use_quote_negated_terms: autocomplete_data.use_quote_negated_terms,
             remove_stop_words: autocomplete_data.remove_stop_words,
             user_id: autocomplete_data.user_id,
+            typo_options: autocomplete_data.typo_options,
         }
     }
 }
@@ -1376,12 +1389,13 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
+#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn autocomplete(
     data: web::Json<AutocompleteReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
     api_version: APIVersion,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1404,6 +1418,7 @@ pub async fn autocomplete(
         data.clone(),
         parsed_query,
         pool,
+        redis_pool,
         dataset_org_plan_sub.dataset.clone(),
         &dataset_config,
         &mut timer,
@@ -1645,6 +1660,7 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             use_quote_negated_terms: count_data.use_quote_negated_terms,
             remove_stop_words: None,
             user_id: None,
+            typo_options: None,
         }
     }
 }

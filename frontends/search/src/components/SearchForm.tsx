@@ -1051,6 +1051,13 @@ const SearchForm = (props: {
                                   pageSize: 10,
                                   getTotalPages: false,
                                   highlightStrategy: "exactmatch",
+                                  correctTypos: false,
+                                  oneTypoWordRangeMin: 5,
+                                  oneTypoWordRangeMax: 8,
+                                  twoTypoWordRangeMin: 8,
+                                  twoTypoWordRangeMax: null,
+                                  disableOnWords: [],
+                                  typoTolerance: false,
                                   highlightResults: true,
                                   highlightDelimiters: ["?", ".", "!"],
                                   highlightMaxLength: 8,
@@ -1195,7 +1202,7 @@ const SearchForm = (props: {
                           />
                         </div>
                         <div class="flex items-center justify-between space-x-2 p-1">
-                          <label>Remove Stop Words</label>
+                          <label>Remove Stop Words:</label>
                           <input
                             class="h-4 w-4"
                             type="checkbox"
@@ -1205,6 +1212,132 @@ const SearchForm = (props: {
                                 return {
                                   ...prev,
                                   removeStopWords: e.target.checked,
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Typo Tolerance (Latency Penalty):</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={tempSearchValues().correctTypos}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  correctTypos: e.target.checked,
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>One typo min word length:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            step="any"
+                            value={tempSearchValues().oneTypoWordRangeMin}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  oneTypoWordRangeMin: parseInt(
+                                    e.currentTarget.value,
+                                  ),
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>One typo max word length:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            step="any"
+                            value={
+                              tempSearchValues().oneTypoWordRangeMax?.toString() ??
+                              ""
+                            }
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  oneTypoWordRangeMax:
+                                    e.currentTarget.value === ""
+                                      ? null
+                                      : parseInt(e.currentTarget.value),
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Two typo min word length:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            step="any"
+                            value={tempSearchValues().twoTypoWordRangeMin}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  twoTypoWordRangeMin: parseInt(
+                                    e.currentTarget.value,
+                                  ),
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Two typo max word length:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            step="any"
+                            value={
+                              tempSearchValues().twoTypoWordRangeMax?.toString() ??
+                              ""
+                            }
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  oneTypoWordRangeMax:
+                                    e.currentTarget.value === ""
+                                      ? null
+                                      : parseInt(e.currentTarget.value),
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Disable typo tolerance for words:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="text"
+                            value={tempSearchValues().disableOnWords.join(",")}
+                            onInput={(e) => {
+                              if (e.currentTarget.value === " ") {
+                                setTempSearchValues((prev) => {
+                                  return {
+                                    ...prev,
+                                    disableOnWords: [" "],
+                                  };
+                                });
+                              }
+
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  disableOnWords:
+                                    e.currentTarget.value.split(","),
                                 };
                               });
                             }}

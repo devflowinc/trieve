@@ -18,6 +18,7 @@ use crate::{
 };
 use actix_web::web;
 use chrono::NaiveDateTime;
+use clickhouse::Row;
 use dateparser::DateTimeUtc;
 use diesel::dsl::{not, sql};
 use diesel::prelude::*;
@@ -29,6 +30,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use simsearch::{SearchOptions, SimSearch};
 use std::collections::{HashMap, HashSet};
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 use super::group_operator::create_groups_query;
@@ -2426,4 +2428,104 @@ pub async fn get_pg_point_ids_from_qdrant_point_ids(
         .map_err(|_| ServiceError::BadRequest("Failed to get chunk ids".to_string()))?;
 
     Ok(chunk_ids)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_chunk_html_from_ids_query(
+    chunk_ids: Vec<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Option<Vec<(uuid::Uuid, String)>>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    let mut conn = pool.get().await.unwrap();
+
+    let chunk_htmls = chunk_metadata_columns::chunk_metadata
+        .select((
+            chunk_metadata_columns::id,
+            chunk_metadata_columns::chunk_html.assume_not_null(),
+        ))
+        .filter(chunk_metadata_columns::id.eq_any(chunk_ids))
+        .load::<(uuid::Uuid, String)>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Failed to get chunk_htmls".to_string()))?;
+
+    if chunk_htmls.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(chunk_htmls))
+}
+
+pub async fn scroll_chunk_ids_for_dictionary_query(
+    pool: web::Data<Pool>,
+    dataset_id: uuid::Uuid,
+    last_processed: Option<DatasetLastProcessed>,
+    limit: i64,
+    offset: uuid::Uuid,
+) -> Result<Option<Vec<(uuid::Uuid, uuid::Uuid)>>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let mut chunk_ids = chunk_metadata_columns::chunk_metadata
+        .select((
+            chunk_metadata_columns::id,
+            chunk_metadata_columns::dataset_id,
+        ))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(chunk_metadata_columns::id.gt(offset))
+        .into_boxed();
+
+    if let Some(last_processed) = last_processed {
+        let last_processed =
+            NaiveDateTime::from_timestamp(last_processed.last_processed.unix_timestamp(), 0);
+
+        chunk_ids = chunk_ids.filter(chunk_metadata_columns::created_at.gt(last_processed));
+    }
+
+    let chunk_ids = chunk_ids
+        .order_by(chunk_metadata_columns::id)
+        .limit(limit)
+        .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
+        .await
+        .map_err(|_| {
+            log::error!("Failed to scroll dataset ids for dictionary");
+            ServiceError::InternalServerError(
+                "Failed to scroll dataset ids for dictionary".to_string(),
+            )
+        })?;
+
+    if chunk_ids.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(chunk_ids))
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Row)]
+pub struct DatasetLastProcessed {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub last_processed: OffsetDateTime,
+}
+
+pub async fn get_last_processed_from_clickhouse(
+    clickhouse_client: &clickhouse::Client,
+    dataset_id: uuid::Uuid,
+) -> Result<Option<DatasetLastProcessed>, ServiceError> {
+    let query = format!(
+        "SELECT dataset_id, min(last_processed) as last_processed FROM dataset_words_last_processed WHERE dataset_id = '{}' GROUP BY dataset_id LIMIT 1",
+        dataset_id
+    );
+
+    let last_processed = clickhouse_client
+        .query(&query)
+        .fetch_optional::<DatasetLastProcessed>()
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to get last processed".to_string())
+        })?;
+
+    Ok(last_processed)
 }
