@@ -14,11 +14,11 @@ use flate2::{
     write::{GzDecoder, GzEncoder},
     Compression,
 };
-use itertools::Itertools;
 use lazy_static::lazy_static;
 use rayon::prelude::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::VecDeque;
+use strsim::jaro_winkler;
 use tokio::sync::RwLock;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -471,75 +471,84 @@ impl BKTreeCache {
 }
 
 fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> Option<String> {
-    let query_split_by_whitespace = query
-        .split_whitespace()
-        .map(|s| s.to_string())
-        .collect_vec();
-    let mut query_split_to_correction: HashMap<String, String> = HashMap::new();
-    let excluded_words = options
-        .clone()
+    let query_words: Vec<&str> = query.split_whitespace().collect();
+    let mut corrections = HashMap::new();
+    let excluded_words: HashSet<_> = options
         .disable_on_word
+        .clone()
         .unwrap_or_default()
-        .into_iter()
+        .iter()
         .map(|s| s.to_lowercase())
-        .collect::<HashSet<String>>();
+        .collect();
 
-    for split in &query_split_by_whitespace {
-        if excluded_words.contains(&split.to_lowercase()) {
+    let single_typo_range = options.one_typo_word_range.clone().unwrap_or(TypoRange {
+        min: 5,
+        max: Some(8),
+    });
+
+    let two_typo_range = options
+        .two_typo_word_range
+        .clone()
+        .unwrap_or(TypoRange { min: 8, max: None });
+    let similarity_threshold = 0.8;
+
+    for &word in &query_words {
+        if excluded_words.contains(&word.to_lowercase()) {
             continue;
         }
 
-        let exact_match = tree.find(split.to_string(), 0);
-
-        if !exact_match.is_empty() {
+        if !tree.find(word.to_string(), 0).is_empty() {
             continue;
         }
 
-        let mut corrections = vec![];
-
-        let num_chars = split.chars().collect_vec().len();
-
-        let single_typo_range = options.clone().one_typo_word_range.unwrap_or(TypoRange {
-            min: 5,
-            max: Some(8),
-        });
-
-        if num_chars >= (single_typo_range.min as usize)
-            && num_chars <= (single_typo_range.max.unwrap_or(u32::MAX) as usize)
+        let num_chars = word.chars().count();
+        let max_distance = if num_chars >= two_typo_range.min as usize
+            && num_chars <= two_typo_range.max.unwrap_or(u32::MAX) as usize
         {
-            corrections.extend_from_slice(&tree.find(split.to_string(), 1));
-        }
-
-        let two_typo_range = options
-            .clone()
-            .two_typo_word_range
-            .unwrap_or(TypoRange { min: 8, max: None });
-
-        if num_chars >= (two_typo_range.min as usize)
-            && num_chars <= (two_typo_range.max.unwrap_or(u32::MAX) as usize)
+            2
+        } else if num_chars >= single_typo_range.min as usize
+            && num_chars <= single_typo_range.max.unwrap_or(u32::MAX) as usize
         {
-            corrections.extend_from_slice(&tree.find(split.to_string(), 2));
-        }
+            1
+        } else {
+            0
+        };
 
-        corrections.sort_by(|((_, freq_a), _), ((_, freq_b), _)| (**freq_b).cmp(*freq_a));
+        if max_distance > 0 {
+            let mut best_correction = None;
+            let mut best_freq = 0;
 
-        if let Some(((correction, _), _)) = corrections.get(0) {
-            query_split_to_correction.insert(split.to_string(), correction.to_string());
+            for ((correction, freq), distance) in tree.find(word.to_string(), max_distance) {
+                if distance == 0 {
+                    best_correction = None;
+                    break;
+                }
+
+                let similarity = jaro_winkler(word, correction);
+                if (similarity >= similarity_threshold && *freq > best_freq)
+                    || best_correction.is_none()
+                {
+                    best_correction = Some(correction);
+                    best_freq = *freq;
+                }
+            }
+
+            if let Some(correction) = best_correction {
+                corrections.insert(word, correction.to_string());
+            }
         }
     }
 
-    let mut corrected_query = query.clone();
-
-    if !query_split_to_correction.is_empty() {
-        for (og_string, correction) in query_split_to_correction {
-            corrected_query = corrected_query.replacen(&og_string, &correction, 1);
+    if corrections.is_empty() {
+        None
+    } else {
+        let mut corrected_query = query.to_string();
+        for (original, correction) in corrections {
+            corrected_query = corrected_query.replacen(original, &correction, 1);
         }
         Some(corrected_query)
-    } else {
-        None
     }
 }
-
 #[tracing::instrument(skip(redis_pool))]
 pub async fn correct_query(
     query: String,
