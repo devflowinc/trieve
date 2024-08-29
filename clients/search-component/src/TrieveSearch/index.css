@@ -32,7 +32,11 @@ body {
         @apply max-h-[300px] overflow-auto;
 
         > li[aria-selected="true"] {
-          @apply bg-zinc-50;
+          @apply bg-zinc-100;
+
+          .arrow-link {
+            @apply block;
+          }
         }
       }
     }
@@ -46,7 +50,7 @@ body {
 
       &:hover,
       &:focus {
-        @apply bg-zinc-50 outline-none;
+        @apply bg-zinc-100 outline-none;
       }
 
       > div {

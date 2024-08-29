@@ -1,3 +1,5 @@
+import { HighlightOptions } from "trieve-ts-sdk";
+
 export function highlightText(
   searchTerm: string,
   textToHighlight: string | null | undefined
@@ -13,3 +15,11 @@ export function highlightText(
     return textToHighlight;
   }
 }
+
+export const highlightOptions = {
+  highlight_delimiters: ["?", ",", ".", "!", "↵"],
+  highlight_max_length: 2,
+  highlight_max_num: 1,
+  highlight_strategy: "exactmatch",
+  highlight_window: 10,
+} as HighlightOptions;

@@ -668,6 +668,18 @@
   resolved "https://registry.yarnpkg.com/@polka/url/-/url-1.0.0-next.25.tgz#f077fdc0b5d0078d30893396ff4827a13f99e817"
   integrity sha512-j7P6Rgr3mmtdkeDGTe0E/aYyWEWVtc5yFXtHCRHs28/jptDEWfaVOc5T7cblqy1XKPPfCxJc/8DwQ5YgLOZOVQ==
 
+"@r2wc/core@^1.0.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@r2wc/core/-/core-1.1.0.tgz#93c16cd5bf5bc6d9a52b23536aed4e6a4d2a6ef2"
+  integrity sha512-pEgtPXhfgg8mv/MooU83cb5sXC2aQOXPLm9UX7E7Oz/OXmrnP5r8hD/nJL1empWxC4wo1YeBXvrFu8fXsMgGZQ==
+
+"@r2wc/react-to-web-component@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@r2wc/react-to-web-component/-/react-to-web-component-2.0.3.tgz#3253067dbedf3f9d80cdaac3081c508729e5af57"
+  integrity sha512-nlDJ0LHiWLG/EFB5tBtA+9KLF2oMBeDSAXL08NUzAuj/ac+V0NkMl/RvCFdDFnyrPQqpzpD9uOvOY2E5IFpdCQ==
+  dependencies:
+    "@r2wc/core" "^1.0.0"
+
 "@radix-ui/primitive@1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@radix-ui/primitive/-/primitive-1.1.0.tgz#42ef83b3b56dccad5d703ae8c42919a68798bbe2"
