@@ -13,7 +13,7 @@ import {
 } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { FiTrash } from "solid-icons/fi";
-import { FaSolidGear } from "solid-icons/fa";
+import { FaSolidGear, FaRegularClipboard } from "solid-icons/fa";
 import { useDatasetPages } from "../hooks/useDatasetPages";
 import {
   AiFillCaretLeft,
@@ -459,7 +459,30 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                           );
                         }}
                       >
-                        {datasetAndUsage.dataset.id}
+                        <span class="inline-flex items-center">
+                          {datasetAndUsage.dataset.id}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              void navigator.clipboard.writeText(
+                                datasetAndUsage.dataset?.id ?? "",
+                              );
+                              window.dispatchEvent(
+                                new CustomEvent("show-toast", {
+                                  detail: {
+                                    type: "info",
+                                    title: "Copied",
+                                    message: "Dataset ID copied to clipboard",
+                                  },
+                                }),
+                              );
+                            }}
+                            class="ml-2 hover:text-fuchsia-500"
+                          >
+                            <FaRegularClipboard />
+                          </button>
+                        </span>
                       </td>
                       <td class="whitespace-nowrap py-4 text-sm text-neutral-600">
                         {formatDate(
