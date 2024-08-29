@@ -1140,6 +1140,7 @@ pub fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/ctr")
+                                .route(web::put().to(handlers::analytics_handler::send_ctr_data))
                                 .route(web::post().to(handlers::analytics_handler::get_ctr_analytics)),
                             )
                         ),
