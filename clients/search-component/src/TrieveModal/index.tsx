@@ -1,9 +1,10 @@
-import React, { act, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { SearchChunksReqPayload, TrieveSDK } from "trieve-ts-sdk";
-import { Chunk } from "../utils/types";
+import { Chunk, ChunkWithHighlights } from "../utils/types";
 import * as Dialog from "@radix-ui/react-dialog";
-import { highlightText } from "../utils/highlight";
 import { Item } from "./item";
+import r2wc from "@r2wc/react-to-web-component";
+import { searchWithTrieve } from "../utils/trieve";
 
 type Props = {
   trieve: TrieveSDK;
@@ -16,8 +17,6 @@ type Props = {
   >;
   placeholder?: string;
 };
-
-export type ChunkWithHighlights = { chunk: Chunk; highlights: string[] };
 
 export const TrieveModalSearch = ({
   placeholder = "Search...",
@@ -35,28 +34,12 @@ export const TrieveModalSearch = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const search = async () => {
-    const results = await trieve.search({
-      ...searchOptions,
+    const results = await searchWithTrieve({
       query,
-      highlight_options: {
-        highlight_delimiters: ["?", ",", ".", "!", "↵"],
-        highlight_max_length: 2,
-        highlight_max_num: 1,
-        highlight_strategy: "exactmatch",
-        highlight_window: 10,
-      },
+      searchOptions,
+      trieve,
     });
-    const resultsWithHighlight = results.chunks.map((chunk) => {
-      const c = chunk.chunk as unknown as Chunk;
-      return {
-        ...chunk,
-        chunk: {
-          ...chunk.chunk,
-          highlight: highlightText(query, c.chunk_html),
-        },
-      };
-    });
-    setResults(resultsWithHighlight as unknown as ChunkWithHighlights[]);
+    setResults(results);
   };
   useEffect(() => {
     if (query) {
@@ -178,3 +161,16 @@ export const TrieveModalSearch = ({
     </Dialog.Root>
   );
 };
+
+const ModalSearchWC = r2wc(TrieveModalSearch, {
+  props: {
+    trieve: "function",
+    onResultClick: "function",
+    showImages: "boolean",
+    theme: "string",
+    searchOptions: "json",
+    placeholder: "string",
+  },
+});
+
+customElements.define("trieve-modal-search", ModalSearchWC);

@@ -7,11 +7,11 @@ const options = {
   bundle: true,
   minify: true,
   sourcemap: true,
-  plugins: [nodeExternalsPlugin()],
-  external: [].concat.apply(
-    [],
-    [Object.keys(dependencies), Object.keys(peerDependencies)]
-  ),
+  // plugins: [nodeExternalsPlugin()],
+  // external: [].concat.apply(
+  //   [],
+  //   [Object.keys(dependencies), Object.keys(peerDependencies)]
+  // ),
 };
 
 build({
@@ -26,6 +26,12 @@ build({
   format: "cjs",
   outfile: "./dist/index.cjs.js",
   target: ["esnext", "node12.22.0"],
+});
+
+build({
+  ...options,
+  format: "iife",
+  outfile: "./dist/index.iife.js",
 });
 
 module.exports = {

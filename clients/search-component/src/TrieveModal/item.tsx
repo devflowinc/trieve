@@ -1,5 +1,4 @@
-import { ChunkWithHighlights } from ".";
-import { Chunk } from "../utils/types";
+import { Chunk, ChunkWithHighlights } from "../utils/types";
 import React, { useCallback, useEffect, useRef } from "react";
 
 type Props = {
@@ -55,7 +54,7 @@ export const Item = ({
           item.chunk.image_urls[0] ? (
             <img src={item.chunk.image_urls[0]} />
           ) : null}
-          {item.chunk.highlightDescription || title ? (
+          {title ? (
             <div>
               <h4>{title}</h4>
               <p
@@ -65,7 +64,9 @@ export const Item = ({
             </div>
           ) : (
             <p
-              dangerouslySetInnerHTML={{ __html: item.chunk.highlight || "" }}
+              dangerouslySetInnerHTML={{
+                __html: item.highlights[0] || item.chunk.highlight || "",
+              }}
             ></p>
           )}
           <svg

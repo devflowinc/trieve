@@ -1,19 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { TrieveSDK, SearchChunksReqPayload } from "trieve-ts-sdk";
-import { highlightText } from "../utils/highlight";
 import { useCombobox } from "downshift";
 import { Item } from "./Item";
-import { Chunk } from "../utils/types";
+import { Chunk, ChunkWithHighlights, Props } from "../utils/types";
 import { throttle } from "lodash-es";
-
-type Props = {
-  trieve: TrieveSDK;
-  onResultClick?: (chunk: Chunk) => void;
-  showImages?: boolean;
-  theme?: "light" | "dark";
-  searchOptions?: Omit<SearchChunksReqPayload, "query">;
-  placeholder?: string;
-};
+import r2wc from "@r2wc/react-to-web-component";
+import { searchWithTrieve } from "../utils/trieve";
 
 export const TrieveSearch = ({
   trieve,
@@ -23,16 +14,9 @@ export const TrieveSearch = ({
   placeholder = "Search for anything",
   searchOptions = {
     search_type: "hybrid",
-    highlight_options: {
-      highlight_delimiters: ["?", ",", ".", "!", "↵"],
-      highlight_max_length: 2,
-      highlight_max_num: 2,
-      highlight_strategy: "exactmatch",
-      highlight_window: 100,
-    },
   },
 }: Props) => {
-  const [results, setResults] = useState<{ chunk: Chunk }[]>([]);
+  const [results, setResults] = useState<ChunkWithHighlights[]>([]);
   const input = useRef<HTMLDivElement>(null);
   const { isOpen, getLabelProps, getMenuProps, getInputProps, getItemProps } =
     useCombobox({
@@ -45,10 +29,11 @@ export const TrieveSearch = ({
         const { type, changes } = actionAndChanges;
         switch (type) {
           case useCombobox.stateChangeTypes.InputKeyDownEnter: {
-            return {
-              ...changes,
-              inputValue: state.inputValue,
-            };
+            if (state.selectedItem?.chunk.link) {
+              window.open(state.selectedItem?.chunk.link);
+            } else {
+              onResultClick?.(state.selectedItem?.chunk as Chunk);
+            }
           }
           case useCombobox.stateChangeTypes.InputBlur: {
             return {
@@ -63,29 +48,12 @@ export const TrieveSearch = ({
       },
     });
   const search = async (inputValue: string) => {
-    const results = await trieve.search({
-      ...searchOptions,
+    const results = await searchWithTrieve({
       query: inputValue,
+      searchOptions,
+      trieve,
     });
-    const resultsWithHighlight = results.chunks.map((chunk) => {
-      const c = chunk.chunk as unknown as Chunk;
-      return {
-        ...chunk,
-        chunk: {
-          ...chunk.chunk,
-          highlight: highlightText(inputValue, c.chunk_html),
-          highlightTitle: highlightText(
-            inputValue,
-            c.metadata?.title || c.metadata?.page_title || c.metadata?.name
-          ),
-          highlightDescription: highlightText(
-            inputValue,
-            c.metadata?.description || c.metadata?.page_description
-          ),
-        },
-      };
-    });
-    setResults(resultsWithHighlight as unknown as { chunk: Chunk }[]);
+    setResults(results);
   };
 
   const checkForCMDK = (e: KeyboardEvent) => {
@@ -123,26 +91,41 @@ export const TrieveSearch = ({
         </div>
       </div>
 
-      {isOpen && results.length ? (
-        <ul {...getMenuProps()} className="items-menu">
-          <div className="results">
-            {results.map((item: { chunk: Chunk }, index: number) => (
-              <Item
-                key={`${item.chunk.id}${index}`}
-                index={index}
-                item={item}
-                getItemProps={getItemProps}
-                onResultClick={onResultClick}
-                showImages={showImages}
-              />
-            ))}
-          </div>
-          <li className="trieve-powered">
-            <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
-            Powered by Trieve
-          </li>
-        </ul>
-      ) : null}
+      <ul {...getMenuProps()} className="items-menu">
+        {isOpen && results.length ? (
+          <>
+            <div className="results">
+              {results.map((item, index: number) => (
+                <Item
+                  key={`${item.chunk.id}${index}`}
+                  index={index}
+                  item={item}
+                  getItemProps={getItemProps}
+                  onResultClick={onResultClick}
+                  showImages={showImages}
+                />
+              ))}
+            </div>
+            <li className="trieve-powered">
+              <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
+              Powered by Trieve
+            </li>
+          </>
+        ) : null}
+      </ul>
     </div>
   );
 };
+
+const searchWC = r2wc(TrieveSearch, {
+  props: {
+    trieve: "function",
+    onResultClick: "function",
+    showImages: "boolean",
+    theme: "string",
+    searchOptions: "json",
+    placeholder: "string",
+  },
+});
+
+customElements.define("trieve-search", searchWC);

@@ -1,12 +1,12 @@
 import { omit } from "lodash-es";
-import { Chunk } from "../utils/types";
+import { Chunk, ChunkWithHighlights } from "../utils/types";
 import React from "react";
 
 type Props = {
   index: number;
-  item: { chunk: Chunk };
+  item: ChunkWithHighlights;
   getItemProps: (opts: {
-    item: { chunk: Chunk };
+    item: ChunkWithHighlights;
     index: number;
   }) => object | null | undefined;
   onResultClick?: (chunk: Chunk) => void;
@@ -21,8 +21,13 @@ export const Item = ({
   showImages,
 }: Props) => {
   const Component = item.chunk.link ? "a" : "button";
+  const title =
+    item.chunk.metadata?.title ||
+    item.chunk.metadata?.page_title ||
+    item.chunk.metadata?.name;
+
   return (
-    <li {...omit(getItemProps({ item, index }), "onClick")}>
+    <li {...omit(getItemProps({ item, index }), ["onClick", "ref"])}>
       <Component
         className="item"
         onClick={() => onResultClick && onResultClick(item.chunk)}
@@ -34,23 +39,19 @@ export const Item = ({
           item.chunk.image_urls[0] ? (
             <img src={item.chunk.image_urls[0]} />
           ) : null}
-          {item.chunk.highlightDescription || item.chunk.highlightTitle ? (
+          {title ? (
             <div>
-              <h4
-                dangerouslySetInnerHTML={{
-                  __html: item.chunk.highlightTitle || "",
-                }}
-              ></h4>
+              <h4>{title}</h4>
               <p
                 className="description"
-                dangerouslySetInnerHTML={{
-                  __html: item.chunk.highlightDescription || "",
-                }}
+                dangerouslySetInnerHTML={{ __html: item.highlights?.[0] }}
               ></p>
             </div>
           ) : (
             <p
-              dangerouslySetInnerHTML={{ __html: item.chunk.highlight || "" }}
+              dangerouslySetInnerHTML={{
+                __html: item.highlights?.[0] || item.chunk.highlight || "",
+              }}
             ></p>
           )}
           <svg
@@ -61,9 +62,9 @@ export const Item = ({
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
             <path d="M9 6l6 6l-6 6" />
