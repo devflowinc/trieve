@@ -1,6 +1,6 @@
 import { ChunkWithHighlights } from ".";
 import { Chunk } from "../utils/types";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 type Props = {
   item: ChunkWithHighlights;
@@ -24,26 +24,27 @@ export const Item = ({
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name;
 
-  const checkForUpAndDown = (e: KeyboardEvent) => {
-    if (
-      (e.code === "ArrowDown" || e.code === "ArrowUp") &&
-      itemRef.current === document.activeElement
-    ) {
-      onUpOrDownClicked(index, e.code);
-    }
-  };
+  const checkForUpAndDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.code === "ArrowDown" || e.code === "ArrowUp") {
+        onUpOrDownClicked(index, e.code);
+      }
+    },
+    [item]
+  );
 
   useEffect(() => {
-    document.addEventListener("keydown", checkForUpAndDown);
+    itemRef.current?.addEventListener("keydown", checkForUpAndDown);
     return () => {
-      document.removeEventListener("keydown", checkForUpAndDown);
+      itemRef.current?.removeEventListener("keydown", checkForUpAndDown);
     };
-  });
+  }, []);
 
   return (
     <li>
       <Component
         ref={itemRef}
+        id={`trieve-search-item-${index}`}
         className="item"
         onClick={() => onResultClick && onResultClick(item.chunk)}
         {...(item.chunk.link ? { href: item.chunk.link } : {})}
@@ -75,9 +76,9 @@ export const Item = ({
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
             <path d="M9 6l6 6l-6 6" />

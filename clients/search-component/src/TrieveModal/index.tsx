@@ -1,4 +1,4 @@
-import React, { act, useEffect, useState } from "react";
+import React, { act, useEffect, useRef, useState } from "react";
 import { SearchChunksReqPayload, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk } from "../utils/types";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -32,6 +32,7 @@ export const TrieveModalSearch = ({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
   const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const search = async () => {
     const results = await trieve.search({
@@ -63,33 +64,33 @@ export const TrieveModalSearch = ({
     }
   }, [query]);
 
-  const checkForCMDK = (e: KeyboardEvent) => {
+  const checkForInteractions = (e: KeyboardEvent) => {
     if (e.code === "KeyK" && e.metaKey && !open) setOpen(true);
+    if (e.code === "ArrowDown" && inputRef.current === document.activeElement) {
+      document.getElementById(`trieve-search-item-0`)?.focus();
+    }
   };
 
   const onUpOrDownClicked = (index: number, code: string) => {
-    console.log("clicked");
     if (code === "ArrowDown") {
-      document
-        .getElementsByClassName("trieve-elements-search")[0]
-        .getElementsByClassName("item")
-        [index + 1]?.focus();
+      index < results.length - 1
+        ? document.getElementById(`trieve-search-item-${index + 1}`)?.focus()
+        : document.getElementById(`trieve-search-item-0`)?.focus();
     }
 
     if (code === "ArrowUp") {
-      document
-        .getElementsByClassName("trieve-elements-search")[0]
-        .getElementsByClassName("item")
-        [index - 1]?.focus();
+      index > 0
+        ? document.getElementById(`trieve-search-item-${index - 1}`)?.focus()
+        : inputRef.current?.focus();
     }
   };
 
   useEffect(() => {
-    document.addEventListener("keydown", checkForCMDK);
+    document.addEventListener("keydown", checkForInteractions);
     return () => {
-      document.removeEventListener("keydown", checkForCMDK);
+      document.removeEventListener("keydown", checkForInteractions);
     };
-  });
+  }, []);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -107,9 +108,9 @@ export const TrieveModalSearch = ({
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
@@ -134,15 +135,16 @@ export const TrieveModalSearch = ({
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="search-icon"
             >
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
             <input
+              ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder || "sup"}
