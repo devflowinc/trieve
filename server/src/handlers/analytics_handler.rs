@@ -1,7 +1,7 @@
 use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
-        CTRAnalytics, CTRAnalyticsResponse, ClusterAnalytics, ClusterAnalyticsResponse,
+        CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
         DatasetAndOrgWithSubAndPlan, DateRange, EventDataClickhouse, EventTypes, Pool,
         RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
         RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
@@ -408,6 +408,59 @@ pub async fn get_recommendation_analytics(
     };
 
     Ok(HttpResponse::Ok().json(response))
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
+pub struct CTRDataRequestBody {
+    /// The request id for the CTR data
+    pub request_id: uuid::Uuid,
+    /// The type of CTR data being sent e.g. search or recommendation
+    pub ctr_type: CTRType,
+    /// The ID of chunk that was clicked
+    pub clicked_chunk_id: Option<uuid::Uuid>,
+    /// The tracking ID of the chunk that was clicked
+    pub clicked_chunk_tracking_id: Option<String>,
+    /// The position of the clicked chunk
+    pub position: i32,
+    /// Any metadata you want to include with the event i.e. action, user_id, etc.
+    pub metadata: Option<serde_json::Value>,
+}
+
+/// Send CTR Data
+///
+/// This route allows you to send CTR data to the system.
+#[utoipa::path(
+    put,
+    path = "/analytics/ctr",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = CTRDataRequestBody, description = "JSON request payload to send CTR data", content_type = "application/json"),
+    responses(
+        (status = 204, description = "The CTR data was successfully sent"),
+
+        (status = 400, description = "Service error relating to sending CTR data", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[deprecated]
+pub async fn send_ctr_data(
+    _user: AdminOnly,
+    data: web::Json<CTRDataRequestBody>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let event_data = EventDataClickhouse::from_event_data(
+        data.into_inner().into(),
+        dataset_org_plan_sub.dataset.id,
+    );
+    send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
+
+    Ok(HttpResponse::NoContent().finish())
 }
 
 /// Send Event Data

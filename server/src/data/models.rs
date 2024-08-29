@@ -3,6 +3,7 @@
 use super::schema::*;
 use crate::errors::ServiceError;
 use crate::get_env;
+use crate::handlers::analytics_handler::CTRDataRequestBody;
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, FullTextBoost, SearchChunksReqPayload, SemanticBoost,
 };
@@ -5227,6 +5228,28 @@ pub enum EventTypes {
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
     },
+}
+
+impl From<CTRDataRequestBody> for EventTypes {
+    fn from(data: CTRDataRequestBody) -> Self {
+        EventTypes::Click {
+            event_name: String::from("click"),
+            request_id: Some(data.request_id),
+            clicked_items: ChunksWithPositions {
+                chunk_id: data.clicked_chunk_id.unwrap_or_default(),
+                position: data.position,
+            },
+            user_id: None,
+            is_conversion: None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum CTRType {
+    Search,
+    Recommendation,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
