@@ -1,4 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: delete-worker
-resources:
-  - deployment.yaml

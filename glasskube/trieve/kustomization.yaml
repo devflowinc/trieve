@@ -2,7 +2,7 @@ namespace: default
 commonLabels:
   app.kubernetes.io/name: trieve
   app.kubernetes.io/part-of: trieve
-  app.kubernetes.io/instance: test
+  app.kubernetes.io/instance: trieve
 resources:
   - configmap.yaml
   - clickhouse.yaml
@@ -10,7 +10,6 @@ resources:
   - server
   - ui
   - worker
-  - sync-qdrant # really needed?
   - ingest
   - embeddings
 
@@ -18,6 +17,8 @@ images:
   - name: ghcr.io/huggingface/text-embeddings-inference
     newTag: cpu-1.4
   - name: trieve/ingest
+    newTag: sha-d8b18ca
+  - name: trieve/sync_qdrant
     newTag: sha-d8b18ca
   - name: trieve/server
     newTag: sha-d8b18ca
