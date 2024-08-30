@@ -2,6 +2,12 @@ name: Deploy TS-SDK docs to github pages
 
 on:
   push:
+    paths:
+    - 'clients/ts-sdk/**'
+    branches: ["main"]
+  pull_request:
+    paths:
+    - 'clients/ts-sdk/**'
     branches: ["main"]
 
 jobs:
