@@ -48,6 +48,8 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
 
         void res.json().then((data) => {
           userContext.setSelectedOrganizationId((data as Organization).id);
+          // Refresh the user context with the new organization
+          userContext.login();
 
           navigate(`/dashboard/${(data as Organization).id}/overview`);
 
