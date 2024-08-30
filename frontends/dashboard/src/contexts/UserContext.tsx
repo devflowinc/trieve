@@ -103,7 +103,12 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
 
     const userOrgIds = user()?.user_orgs.map((org) => org.organization_id);
 
-    if (!userOrgIds?.includes(organizationId ?? "")) {
+    // If the selected organization isn't in the users list,
+    // restart login procedure
+    if (
+      !userOrgIds?.includes(organizationId ?? "") &&
+      userOrgIds?.length !== 0
+    ) {
       login();
     }
 
