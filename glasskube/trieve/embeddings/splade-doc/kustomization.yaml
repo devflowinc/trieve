@@ -1,0 +1,7 @@
+commonLabels:
+  app.kubernetes.io/component: embedding-splade-doc
+nameSuffix: -splade-doc
+resources:
+  - ../base
+patches:
+  - path: deployment-patch.yaml

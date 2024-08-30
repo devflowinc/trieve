@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trieve-sync-qdrant
+spec:
+  # TODO: Why is repliacs set to "0" in the helm chart? is this even needed?
+  replicas: 0 # Set to 0 by default
+  selector: {}
+  template:
+    spec:
+      containers:
+        - name: sync-qdrant
+          image: trieve/sync_qdrant
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: trieve-postgresql-server-app
+                  key: uri
+            - name: QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trieve-qdrant-qdrant-apikey
+                  key: api-key
+          envFrom:
+            - configMapRef:
+                name: trieve-server-config
+          resources:
+            limits:
+              cpu: "1"
+              memory: 100Mi

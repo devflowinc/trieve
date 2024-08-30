@@ -1,0 +1,7 @@
+commonLabels:
+  app.kubernetes.io/component: embedding-reranker
+nameSuffix: -reranker
+resources:
+  - ../base
+patches:
+  - path: deployment-patch.yaml
