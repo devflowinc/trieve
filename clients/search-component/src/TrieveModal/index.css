@@ -65,30 +65,29 @@ body {
         @apply font-normal text-xs text-zinc-600;
       }
     }
-  }
-
-  &.dark {
-    .kbd-wrapper {
-      kbd {
-        @apply border-zinc-400  text-zinc-400;
+    &.dark {
+      .kbd-wrapper {
+        kbd {
+          @apply border-zinc-400  text-zinc-400;
+        }
       }
-    }
 
-    @apply text-white bg-zinc-900;
+      @apply text-white bg-zinc-900;
 
-    input {
-      @apply bg-zinc-900 text-zinc-50 ring-zinc-700;
-    }
+      input {
+        @apply bg-zinc-900 text-zinc-50 ring-zinc-700;
+      }
 
-    .input-wrapper {
-      @apply bg-zinc-900;
-    }
+      .input-wrapper {
+        @apply bg-zinc-900;
+      }
 
-    .item {
-      @apply hover:bg-zinc-800 border-zinc-700 focus:bg-zinc-800 bg-zinc-900;
+      .item {
+        @apply hover:bg-zinc-800 border-zinc-700 focus:bg-zinc-800 bg-zinc-900;
 
-      .description {
-        @apply text-zinc-400;
+        .description {
+          @apply text-zinc-400;
+        }
       }
     }
   }

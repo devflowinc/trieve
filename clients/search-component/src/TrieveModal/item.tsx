@@ -17,6 +17,7 @@ export const Item = ({
   onUpOrDownClicked,
 }: Props) => {
   const Component = item.chunk.link ? "a" : "button";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
   const title =
     item.chunk.metadata?.title ||

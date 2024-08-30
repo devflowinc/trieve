@@ -1,15 +1,17 @@
-A Typescript based SDK that allows you to communicate with the Trieve API
+## Trieve Search Component
+
+The easiest way to get up and running in your app using trieve search.
 
 ## How to use
 
 Install using your favorite package manager:
 
 ```
-yarn add trieve-ts-sdk
+yarn add trieve-search-component
 # or
-npm install trieve-ts-sdk
+npm install trieve-search-component
 # or
-pnpm install trieve-ts-sdk
+pnpm install trieve-search-component
 ```
 
 After installing the first step is to instantiate a new `TrieveSDK` like so:
@@ -23,18 +25,52 @@ export const trieve = new TrieveSDK({
 });
 ```
 
-With this done you can use any of the functions available to use trieve in your project and get searching:
+And then you can use any of the two components in your React application or as web component:
 
-```ts
-import { trieve } from "../trieve";
+### Search Modal
 
-const data = await trieve.search({
-  query: "my first query",
-  search_type: "hybrid",
-});
+<details>
+<summary>Screenshots</summary>
+
+![light closed](./github/modal-light-1.png)
+![dark closed](./github/modal-dark-1.png)
+![light open](./github/modal-light-2.png)
+
+</details>
+
+#### Usage in React:
+
+```jsx
+<TrieveModalSearch trieve={trieve} />
 ```
 
-To see all the functions we export you can take a look at [our docs](https://ts-sdk.trieve.ai).
+#### Usage in Web Components:
+
+```html
+<trieve-modal-search trieve="<your trieve instance>" />
+```
+
+### Search Results
+
+<details>
+<summary>Screenshots</summary>
+
+![light](./github/search-light.png)
+![dark](./github/search-dark.png)
+
+</details>
+
+#### Usage in React:
+
+```jsx
+<TrieveSearch trieve={trieve} />
+```
+
+#### Usage in Web Components:
+
+```html
+<trieve-search trieve="<your trieve instance>" />
+```
 
 ## License
 
