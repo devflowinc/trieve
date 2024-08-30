@@ -9,9 +9,8 @@ import {
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
-import { Tooltip } from "shared/ui";
 import { AiOutlineCopy } from "solid-icons/ai";
-import { FiCheck, FiExternalLink, FiGlobe } from "solid-icons/fi";
+import { FiCheck, FiExternalLink } from "solid-icons/fi";
 
 export const sanitzerOptions = {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -105,10 +104,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     >
       <div class="flex w-full flex-col space-y-2 dark:text-white">
         <div class="flex h-fit items-center space-x-1">
-          <Tooltip
-            body={<FiGlobe class="z-50 h-5 w-5 text-green-500" />}
-            tooltipText="Publicly visible"
-          />
           <span class="font-semibold">Doc: {props.counter}</span>
           <div class="flex-1" />
           <Show when={!copied()}>
