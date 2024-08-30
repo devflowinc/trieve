@@ -63,6 +63,16 @@ const domainNavbarRoutes = [
     label: "API Docs",
     icon: AiOutlineApi,
   },
+  {
+    href: "https://search.trieve.ai",
+    label: "Search Playground",
+    icon: HiOutlineMagnifyingGlass,
+  },
+  {
+    href: "https://chat.trieve.ai",
+    label: "Chat Playground",
+    icon: IoChatboxOutline,
+  },
 ];
 
 export const Sidebar = (props: NavbarProps) => {
@@ -168,7 +178,7 @@ export const Sidebar = (props: NavbarProps) => {
                     <div
                       role="link"
                       classList={{
-                        "cursor-pointer flex items-center gap-2": true,
+                        "cursor-pointer flex items-center text-sm gap-2": true,
                         "text-purple-900 underline": pathname() === link.href,
                         "text-black": pathname() !== link.href,
                       }}
@@ -176,7 +186,7 @@ export const Sidebar = (props: NavbarProps) => {
                         window.open(link.href);
                       }}
                     >
-                      {link.icon({ size: "18px" })}
+                      {link.icon({ size: "14px" })}
                       {link.label}
                     </div>
                   );
