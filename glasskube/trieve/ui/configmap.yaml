@@ -8,3 +8,4 @@ data:
   VITE_DASHBOARD_URL: "http://dashboard.localtrieve.com"
   VITE_CHAT_UI_URL: "http://chat.localtrieve.com"
   VITE_ANALYTICS_UI_URL: "http://analytics.localtrieve.com"
+  VITE_BM25_ACTIVE: "true"

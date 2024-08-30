@@ -16,6 +16,7 @@ data:
   SMTP_PASSWORD: "FROM SECRET"
   SMTP_EMAIL_ADDRESS: "noreply@trieve.ai"
   OPENAI_API_KEY: "sk-************************************************"
+  ANTHROPIC_API_KEY: "sk-************************************************"
   LLM_API_KEY: "sk-************************************************"
   SECRET_KEY: "01234012340123401234012340123401234012340123401234012340123401234012340123401234" #generate
   SALT: "" # OPTIOANL
@@ -47,6 +48,7 @@ data:
   CLICKHOUSE_DB: "default"
   CLICKHOUSE_USER: "default"
   CLICKHOUSE_PASSWORD: "password"
+  CLICKHOUSE_DSN: "clickhouse://default:password@clickhouse-trieve-clickhouse:8123/default" # Used by Cronjobs
   JINA_CODE_API_KEY: ""
   RUST_LOG: "INFO"
   BM25_ACTIVE: "true"
