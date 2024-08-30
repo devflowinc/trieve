@@ -56,15 +56,19 @@ export const TrieveModalSearch = ({
 
   const onUpOrDownClicked = (index: number, code: string) => {
     if (code === "ArrowDown") {
-      index < results.length - 1
-        ? document.getElementById(`trieve-search-item-${index + 1}`)?.focus()
-        : document.getElementById(`trieve-search-item-0`)?.focus();
+      if (index < results.length - 1) {
+        document.getElementById(`trieve-search-item-${index + 1}`)?.focus();
+      } else {
+        document.getElementById(`trieve-search-item-0`)?.focus();
+      }
     }
 
     if (code === "ArrowUp") {
-      index > 0
-        ? document.getElementById(`trieve-search-item-${index - 1}`)?.focus()
-        : inputRef.current?.focus();
+      if (index > 0) {
+        document.getElementById(`trieve-search-item-${index - 1}`)?.focus();
+      } else {
+        inputRef.current?.focus();
+      }
     }
   };
 

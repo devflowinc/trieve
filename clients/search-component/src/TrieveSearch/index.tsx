@@ -34,6 +34,7 @@ export const TrieveSearch = ({
             } else {
               onResultClick?.(state.selectedItem?.chunk as Chunk);
             }
+            return state;
           }
           case useCombobox.stateChangeTypes.InputBlur: {
             return {
