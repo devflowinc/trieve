@@ -18,7 +18,6 @@ use lazy_static::lazy_static;
 use rayon::prelude::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::VecDeque;
-use strsim::jaro_winkler;
 use tokio::sync::RwLock;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -490,7 +489,6 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
         .two_typo_word_range
         .clone()
         .unwrap_or(TypoRange { min: 8, max: None });
-    let similarity_threshold = 0.8;
 
     for &word in &query_words {
         if excluded_words.contains(&word.to_lowercase()) {
@@ -516,7 +514,7 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
 
         if max_distance > 0 {
             let mut best_correction = None;
-            let mut best_freq = 0;
+            let mut best_score = 0;
 
             for ((correction, freq), distance) in tree.find(word.to_string(), max_distance) {
                 if distance == 0 {
@@ -524,12 +522,15 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
                     break;
                 }
 
-                let similarity = jaro_winkler(word, correction);
-                if (similarity >= similarity_threshold && *freq > best_freq)
-                    || best_correction.is_none()
-                {
+                if !is_similar_enough(word, correction) {
+                    continue;
+                }
+
+                let score = (max_distance - distance) * 1000 + *freq as isize;
+
+                if score > best_score || best_correction.is_none() {
                     best_correction = Some(correction);
-                    best_freq = *freq;
+                    best_score = score;
                 }
             }
 
@@ -549,6 +550,30 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
         Some(corrected_query)
     }
 }
+
+fn is_similar_enough(word: &str, correction: &str) -> bool {
+    // Length-based filter
+    let len_diff = (word.len() as i32 - correction.len() as i32).abs();
+    if len_diff > 2 {
+        return false;
+    }
+
+    // Prefix matching (adjust the length as needed)
+    let prefix_len = std::cmp::min(3, std::cmp::min(word.len(), correction.len()));
+    if word[..prefix_len] != correction[..prefix_len] {
+        return false;
+    }
+
+    // Character set comparison
+    let word_chars: HashSet<char> = word.chars().collect();
+    let correction_chars: HashSet<char> = correction.chars().collect();
+    let common_chars = word_chars.intersection(&correction_chars).count();
+    let similarity_ratio =
+        common_chars as f32 / word_chars.len().max(correction_chars.len()) as f32;
+
+    similarity_ratio >= 0.7
+}
+
 #[tracing::instrument(skip(redis_pool))]
 pub async fn correct_query(
     query: String,
