@@ -1,0 +1,7 @@
+commonLabels:
+  app.kubernetes.io/component: sync-qdrant
+resources:
+  - deployment.yaml
+images:
+  - name: trieve/sync_qdrant
+    newTag: latest # TODO: change to pinned version

@@ -1,0 +1,9 @@
+apiVersion: packages.glasskube.dev/v1alpha1
+kind: Package
+metadata:
+  name: trieve-qdrant
+spec:
+  packageInfo:
+    name: qdrant
+    repositoryName: glasskube
+    version: v1.11.1+1

@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trieve-embedding
+spec:
+  selector: {}
+  template:
+    spec:
+      containers:
+        - name: embedding
+          readinessProbe:
+            httpGet:
+              path: "/"
+              port: 80
+          image: ghcr.io/huggingface/text-embeddings-inference
+          ports:
+            - containerPort: 80

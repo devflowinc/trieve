@@ -1,0 +1,40 @@
+namespace: default
+commonLabels:
+  app.kubernetes.io/name: trieve
+  app.kubernetes.io/part-of: trieve
+  app.kubernetes.io/instance: test
+resources:
+  - configmap.yaml
+  - clickhouse.yaml
+  - keycloak
+  - server
+  - ui
+  - worker
+  - sync-qdrant # really needed?
+  - ingest
+  - embeddings
+
+images:
+  - name: ghcr.io/huggingface/text-embeddings-inference
+    newTag: cpu-1.4
+  - name: trieve/ingest
+    newTag: sha-d8b18ca
+  - name: trieve/server
+    newTag: sha-d8b18ca
+  - name: trieve/analytics-site
+    newTag: sha-ed22f21
+  - name: trieve/chat
+    newTag: sha-ed22f21
+  - name: trieve/dashboard
+    newTag: sha-ed22f21
+  - name: trieve/search
+    newTag: sha-ed22f21
+  - name: trieve/delete-worker
+    newName: trieve/delete_worker
+    newTag: sha-d8b18ca
+  - name: trieve/file-worker
+    newName: trieve/file_worker
+    newTag: sha-d8b18ca
+  - name: trieve/group-worker
+    newName: trieve/group_worker
+    newTag: sha-d8b18ca

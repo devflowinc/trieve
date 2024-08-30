@@ -1,0 +1,4 @@
+commonLabels:
+  app.kubernetes.io/component: ingest
+resources:
+  - deployment.yaml

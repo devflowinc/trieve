@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trieve-embedding
+spec:
+  selector: {}
+  template:
+    spec:
+      containers:
+        - name: embedding
+          args:
+            - --model-id
+            - naver/efficient-splade-VI-BT-large-query
+            - --revision
+            - main
+            - --pooling
+            - splade

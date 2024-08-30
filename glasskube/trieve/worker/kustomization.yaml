@@ -1,0 +1,4 @@
+resources:
+  - delete-worker
+  - file-worker
+  - group-worker

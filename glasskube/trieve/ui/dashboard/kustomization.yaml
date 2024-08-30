@@ -1,0 +1,16 @@
+commonLabels:
+  app.kubernetes.io/component: trieve-ui-dashboard
+nameSuffix: -dashboard
+resources:
+  - ../base
+patches:
+  - target:
+      kind: Ingress
+      name: trieve-ui
+    patch: |-
+      - op: add
+        path: /spec/rules/0/host
+        value: dashboard.localtrieve.com
+images:
+  - name: ui
+    newName: trieve/dashboard

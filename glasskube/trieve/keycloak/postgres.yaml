@@ -1,0 +1,15 @@
+kind: Cluster
+apiVersion: postgresql.cnpg.io/v1
+metadata:
+  name: trieve-keycloak-db
+spec:
+  enableSuperuserAccess: false
+  instances: 1 # TODO: increase to 3 for prod
+  bootstrap:
+    initdb:
+      database: keycloak
+      owner: keycloak
+  storage:
+    size: 2Gi
+  monitoring:
+    enablePodMonitor: true

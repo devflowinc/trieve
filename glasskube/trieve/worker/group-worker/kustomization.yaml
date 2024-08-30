@@ -1,0 +1,4 @@
+commonLabels:
+  app.kubernetes.io/component: group-worker
+resources:
+  - deployment.yaml

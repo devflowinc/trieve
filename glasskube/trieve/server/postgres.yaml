@@ -1,0 +1,15 @@
+kind: Cluster
+apiVersion: postgresql.cnpg.io/v1
+metadata:
+  name: trieve-postgresql-server
+spec:
+  enableSuperuserAccess: false
+  instances: 2
+  bootstrap:
+    initdb:
+      database: trieve
+      owner: trieve
+  storage:
+    size: 2Gi
+  monitoring:
+    enablePodMonitor: true

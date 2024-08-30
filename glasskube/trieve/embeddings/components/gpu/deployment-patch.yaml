@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trieve-embedding
+spec:
+  selector: {}
+  template:
+    spec:
+      containers:
+        - name: embedding
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
