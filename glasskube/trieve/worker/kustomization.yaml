@@ -1,5 +1,10 @@
 resources:
+  - bktree-worker
   - delete
   - file
   - group
+  - ingest
   - sync-qdrant
+  - reindexer
+  - queue-bm25
+  - word-worker

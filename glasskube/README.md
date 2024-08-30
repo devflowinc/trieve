@@ -70,9 +70,15 @@ Open [dashboard.localtrieve.com](http://dashboard.localtrieve.com) in your brows
 
 ## Optional commands
 
-Scale down all embedding servers:
+#### Scale down all embedding servers:
 
 ```shell
 kubectl scale deployment trieve-embedding-bgem3  trieve-embedding-jina trieve-embedding-reranker trieve-embedding-splade-doc trieve-embedding-splade-query --replicas 0
 
+```
+
+#### Deleting the cluster
+
+```shell
+minikube delete -p trieve
 ```

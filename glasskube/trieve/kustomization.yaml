@@ -10,7 +10,6 @@ resources:
   - server
   - ui
   - worker
-  - ingest
   - embeddings
 
 images:
