@@ -1,4 +1,5 @@
 resources:
-  - delete-worker
-  - file-worker
-  - group-worker
+  - delete
+  - file
+  - group
+  - sync-qdrant

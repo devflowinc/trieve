@@ -8,11 +8,9 @@ data:
   BASE_SERVER_URL: "http://api.localtrieve.com"
   REDIS_URL: "redis://redis:6379"
   QDRANT_URL: "http://trieve-qdrant-qdrant:6334"
-  # QDRANT_API_KEY: "FROM SECRET" # FROM SECRET
   QUANTIZE_VECTORS: "false"
   REPLICATION_FACTOR: "2"
   VECTOR_SIZES: "384,512,768,1024,1536,3072"
-  #  DATABASE_URL: "FROM_SCERET"
   SMTP_RELAY: "smtp.fastmail.com"
   SMTP_USERNAME: "noreply@trieve.ai"
   SMTP_PASSWORD: "FROM SECRET"

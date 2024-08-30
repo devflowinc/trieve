@@ -1,4 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: file-worker
-resources:
-  - deployment.yaml

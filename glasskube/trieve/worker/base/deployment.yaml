@@ -1,15 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: trieve-file-worker
+  name: trieve-worker
 spec:
   selector: {}
   template:
     spec:
       containers:
-      - name: file-worker
-        image: trieve/file-worker
-        env:
+        - name: worker
+          image: worker
+          ports:
+            - containerPort: 80
+          env:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -20,10 +22,10 @@ spec:
                 secretKeyRef:
                   name: trieve-qdrant-qdrant-apikey
                   key: api-key
-        envFrom:
+          envFrom:
             - configMapRef:
                 name: trieve-server-config
-        resources:
-          limits:
-            cpu: "1"
-            memory: 100Mi
+          resources:
+            limits:
+              cpu: "1"
+              memory: 200Mi
