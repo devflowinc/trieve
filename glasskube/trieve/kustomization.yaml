@@ -11,6 +11,7 @@ resources:
   - ui
   - worker
   - embeddings
+  - cronjobs
 
 images:
   - name: ghcr.io/huggingface/text-embeddings-inference
@@ -38,3 +39,9 @@ images:
   - name: trieve/group-worker
     newName: trieve/group_worker
     newTag: sha-d8b18ca
+  - name: trieve/word-id-cronjob
+    newTag: sha-d8b18ca
+  - name: trieve/clickhouse-collapse-query-script
+    newTag: sha-5cdcd38
+  - name: trieve/clickhouse-clustering
+    newTag: sha-e55860a
