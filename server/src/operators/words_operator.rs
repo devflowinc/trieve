@@ -367,6 +367,7 @@ impl BkTree {
 }
 
 /// Iterator over BK-tree elements
+#[allow(dead_code)]
 pub struct IntoIter {
     queue: Vec<Node>,
 }
