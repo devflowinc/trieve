@@ -166,7 +166,6 @@ flate2 = "1.0.31"
 bincode = "1.3"
 rayon = "1.10.0"
 crossbeam = "0.8.4"
-bloomfilter = "1.0.14"
 dashmap = "6.0.1"
 
 

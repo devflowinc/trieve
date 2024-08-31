@@ -12,7 +12,6 @@ use crate::{
     handlers::chunk_handler::ParsedQuery,
 };
 use actix_web::web;
-use bloomfilter::Bloom;
 use dashmap::DashMap;
 use flate2::{
     write::{GzDecoder, GzEncoder},
@@ -22,9 +21,6 @@ use lazy_static::lazy_static;
 use rayon::prelude::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::VecDeque;
-
-const BLOOM_SIZE: usize = 10_000_000; // 10 million bits
-const BLOOM_FP_RATE: f64 = 0.01; // 1% false positive rate
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct Node {
@@ -426,24 +422,26 @@ pub struct BKTreeCache {
 
 lazy_static! {
     static ref BKTREE_CACHE: BKTreeCache = BKTreeCache::new();
-    static ref ENGLISH_WORDS: Bloom<String> = {
-        let words = include_str!("../words.txt");
-        let mut bloom = Bloom::new_for_fp_rate(BLOOM_SIZE, BLOOM_FP_RATE);
-        for word in words.lines() {
-            bloom.set(&word.to_lowercase());
-        }
-        bloom
+    static ref ENGLISH_WORDS: HashSet<String> = {
+        include_str!("../words.txt")
+            .lines()
+            .map(|s| s.to_lowercase())
+            .collect()
     };
     static ref PREFIX_TRIE: Trie = {
         let prefixes = vec![
-            "un", "re", "in", "im", "il", "ir", "dis", "en", "em", "non", "pre", "pro", "anti",
+            "anti", "auto", "de", "dis", "down", "extra", "hyper", "il", "im", "in", "ir", "inter",
+            "mega", "mid", "mis", "non", "over", "out", "post", "pre", "pro", "re", "semi", "sub",
+            "super", "tele", "trans", "ultra", "un", "under", "up",
         ];
         Trie::new(&prefixes)
     };
     static ref SUFFIX_TRIE: Trie = {
         let suffixes = vec![
-            "ing", "ed", "er", "est", "ly", "ity", "y", "ous", "ful", "less", "ness", "ion",
-            "tion", "ation", "able", "ible", "al", "ial", "ive", "ative", "itive",
+            "able", "al", "ance", "ation", "ative", "ed", "en", "ence", "ent", "er", "es", "est",
+            "ful", "ian", "ible", "ic", "ing", "ion", "ious", "ise", "ish", "ism", "ist", "ity",
+            "ive", "ize", "less", "ly", "ment", "ness", "or", "ous", "s", "sion", "tion", "ty",
+            "y",
         ];
         Trie::new(&suffixes)
     };
@@ -703,20 +701,20 @@ fn is_best_correction(word: &str, correction: &str) -> bool {
 }
 
 fn is_likely_english_word(word: &str) -> bool {
-    if ENGLISH_WORDS.check(&word.to_lowercase()) {
+    if ENGLISH_WORDS.contains(&word.to_lowercase()) {
         return true;
     }
 
     // Check for prefix
     if let Some(prefix_len) = PREFIX_TRIE.longest_prefix(word) {
-        if ENGLISH_WORDS.check(&word[prefix_len..].to_lowercase()) {
+        if ENGLISH_WORDS.contains(&word[prefix_len..].to_lowercase()) {
             return true;
         }
     }
 
     // Check for suffix
     if let Some(suffix_len) = SUFFIX_TRIE.longest_suffix(word) {
-        if ENGLISH_WORDS.check(&word[..word.len() - suffix_len].to_lowercase()) {
+        if ENGLISH_WORDS.contains(&word[..word.len() - suffix_len].to_lowercase()) {
             return true;
         }
     }
@@ -726,7 +724,7 @@ fn is_likely_english_word(word: &str) -> bool {
         let parts: Vec<&str> = word.split('-').collect();
         if parts
             .iter()
-            .all(|part| ENGLISH_WORDS.check(&part.to_lowercase()))
+            .all(|part| ENGLISH_WORDS.contains(&part.to_lowercase()))
         {
             return true;
         }
