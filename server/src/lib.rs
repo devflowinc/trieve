@@ -9,7 +9,7 @@ use crate::{
     handlers::{auth_handler::build_oidc_client, metrics_handler::Metrics},
     operators::{
         clickhouse_operator::EventQueue, qdrant_operator::create_new_qdrant_collection_query,
-        user_operator::create_default_user, words_operator::BKTreeCache,
+        user_operator::create_default_user, typo_operator::BKTreeCache,
     },
 };
 use actix_cors::Cors;

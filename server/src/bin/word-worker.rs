@@ -22,7 +22,7 @@ use trieve_server::{
         chunk_operator::get_chunk_html_from_ids_query,
         dataset_operator::add_words_to_dataset,
         parse_operator::convert_html_to_text,
-        words_operator::{CreateBkTreeMessage, ProcessWordsFromDatasetMessage},
+        typo_operator::{CreateBkTreeMessage, ProcessWordsFromDatasetMessage},
     },
 };
 
