@@ -11,6 +11,7 @@ use crate::{
     errors::ServiceError,
 };
 use actix_web::web;
+use bloomfilter::Bloom;
 use dashmap::DashMap;
 use flate2::{
     write::{GzDecoder, GzEncoder},
@@ -20,7 +21,6 @@ use lazy_static::lazy_static;
 use rayon::prelude::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::VecDeque;
-use bloomfilter::Bloom;
 
 const BLOOM_SIZE: usize = 10_000_000; // 10 million bits
 const BLOOM_FP_RATE: f64 = 0.01; // 1% false positive rate
@@ -433,19 +433,21 @@ lazy_static! {
         }
         bloom
     };
-
-       static ref PREFIX_TRIE: Trie = {
-        let prefixes = vec!["un", "re", "in", "im", "il", "ir", "dis", "en", "em", "non", "pre", "pro", "anti"];
+    static ref PREFIX_TRIE: Trie = {
+        let prefixes = vec![
+            "un", "re", "in", "im", "il", "ir", "dis", "en", "em", "non", "pre", "pro", "anti",
+        ];
         Trie::new(&prefixes)
     };
-
     static ref SUFFIX_TRIE: Trie = {
-        let suffixes = vec!["ing", "ed", "er", "est", "ly", "ity", "y", "ous", "ful", "less", "ness", "ion", "tion", "ation", "able", "ible", "al", "ial", "ive", "ative", "itive"];
+        let suffixes = vec![
+            "ing", "ed", "er", "est", "ly", "ity", "y", "ous", "ful", "less", "ness", "ion",
+            "tion", "ation", "able", "ible", "al", "ial", "ive", "ative", "itive",
+        ];
         Trie::new(&suffixes)
     };
-
-    static ref PULLING_BK_TREE: Arc<Mutex<HashSet<uuid::Uuid>>> = Arc::new(Mutex::new(HashSet::new()));
-
+    static ref PULLING_BK_TREE: Arc<Mutex<HashSet<uuid::Uuid>>> =
+        Arc::new(Mutex::new(HashSet::new()));
 }
 
 struct TrieNode {
@@ -456,7 +458,6 @@ struct TrieNode {
 struct Trie {
     root: TrieNode,
 }
-
 
 impl TrieNode {
     fn new() -> Self {
@@ -469,7 +470,9 @@ impl TrieNode {
 
 impl Trie {
     fn new(elements: &[&str]) -> Self {
-        let mut trie = Trie { root: TrieNode::new() };
+        let mut trie = Trie {
+            root: TrieNode::new(),
+        };
         for &element in elements {
             trie.insert(element);
         }
@@ -529,7 +532,7 @@ impl BKTreeCache {
     }
 
     fn insert_with_ttl(&self, id: uuid::Uuid, bktree: BkTree, ttl: Duration) {
-          let entry = BKTreeCacheEntry {
+        let entry = BKTreeCacheEntry {
             bktree: Arc::new(bktree),
             expiration: Instant::now() + ttl,
         };
@@ -702,7 +705,10 @@ fn is_likely_english_word(word: &str) -> bool {
     // Check for compound words
     if word.contains('-') {
         let parts: Vec<&str> = word.split('-').collect();
-        if parts.iter().all(|part| ENGLISH_WORDS.check(&part.to_lowercase())) {
+        if parts
+            .iter()
+            .all(|part| ENGLISH_WORDS.check(&part.to_lowercase()))
+        {
             return true;
         }
     }
@@ -725,7 +731,7 @@ pub async fn correct_query(
         Some(tree) => {
             let result = correct_query_helper(&tree, query, options);
             Ok(result)
-        },
+        }
         None => {
             let dataset_id = dataset_id;
             let redis_pool = redis_pool.clone();
