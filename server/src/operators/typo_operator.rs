@@ -9,6 +9,7 @@ use std::{
 use crate::{
     data::models::{RedisPool, TypoOptions, TypoRange},
     errors::ServiceError,
+    handlers::chunk_handler::ParsedQuery,
 };
 use actix_web::web;
 use bloomfilter::Bloom;
@@ -567,8 +568,12 @@ impl BKTreeCache {
     }
 }
 
-fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> Option<String> {
-    let query_words: Vec<&str> = query.split_whitespace().collect();
+fn correct_query_helper(
+    tree: &BkTree,
+    mut query: ParsedQuery,
+    options: &TypoOptions,
+) -> CorrectedQuery {
+    let query_words: Vec<&str> = query.query.split_whitespace().collect();
     let mut corrections = HashMap::new();
     let excluded_words: HashSet<_> = options
         .disable_on_word
@@ -606,6 +611,13 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
         }
 
         if !tree.find(word.to_string(), 0).is_empty() {
+            query.quote_words = match query.quote_words {
+                Some(mut existing_words) => {
+                    existing_words.push(word.to_string());
+                    Some(existing_words)
+                }
+                None => Some(vec![word.to_string()]),
+            };
             continue;
         }
 
@@ -650,13 +662,20 @@ fn correct_query_helper(tree: &BkTree, query: String, options: &TypoOptions) -> 
     }
 
     if corrections.is_empty() {
-        None
+        CorrectedQuery {
+            query: Some(query),
+            corrected: false,
+        }
     } else {
-        let mut corrected_query = query.to_string();
+        let mut corrected_query = query.query.clone();
         for (original, correction) in corrections {
             corrected_query = corrected_query.replace(original, &correction);
         }
-        Some(corrected_query)
+        query.query = corrected_query;
+        CorrectedQuery {
+            query: Some(query),
+            corrected: true,
+        }
     }
 }
 
@@ -716,15 +735,22 @@ fn is_likely_english_word(word: &str) -> bool {
     false
 }
 
+#[derive(Debug, Default)]
+pub struct CorrectedQuery {
+    pub query: Option<ParsedQuery>,
+    pub corrected: bool,
+}
+
+
 #[tracing::instrument(skip(redis_pool))]
 pub async fn correct_query(
-    query: String,
+    query: ParsedQuery,
     dataset_id: uuid::Uuid,
     redis_pool: web::Data<RedisPool>,
     options: &TypoOptions,
-) -> Result<Option<String>, ServiceError> {
+) -> Result<CorrectedQuery, ServiceError> {
     if matches!(options.correct_typos, None | Some(false)) {
-        return Ok(None);
+        return Ok(CorrectedQuery::default());
     }
 
     match BKTREE_CACHE.get_if_valid(&dataset_id) {
@@ -739,7 +765,7 @@ pub async fn correct_query(
             let pulling_bk_tree = PULLING_BK_TREE.clone();
             let mut pulling_bk_tree = pulling_bk_tree.lock().unwrap();
             if pulling_bk_tree.contains(&dataset_id) {
-                return Ok(None);
+                return Ok(CorrectedQuery::default());
             }
             pulling_bk_tree.insert(dataset_id);
             tokio::spawn(async move {
@@ -771,7 +797,7 @@ pub async fn correct_query(
                 let mut pulling_bk_tree = pulling_bk_tree.lock().unwrap();
                 pulling_bk_tree.remove(&dataset_id);
             });
-            Ok(None)
+            Ok(CorrectedQuery::default())
         }
     }
 }
