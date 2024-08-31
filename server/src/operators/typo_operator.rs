@@ -741,7 +741,6 @@ pub struct CorrectedQuery {
     pub corrected: bool,
 }
 
-
 #[tracing::instrument(skip(redis_pool))]
 pub async fn correct_query(
     query: ParsedQuery,
