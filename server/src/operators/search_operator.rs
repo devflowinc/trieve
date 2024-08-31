@@ -2529,7 +2529,7 @@ pub async fn semantic_search_over_groups(
                         correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
                     if typo_corrected_query.corrected {
-                        corrected_query = typo_corrected_query.query.clone();
+                        corrected_query.clone_from(&typo_corrected_query.query);
                     }
                     *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 }
