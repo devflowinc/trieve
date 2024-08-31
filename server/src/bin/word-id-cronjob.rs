@@ -11,7 +11,7 @@ use trieve_server::{
             get_last_processed_from_clickhouse, scroll_chunk_ids_for_dictionary_query,
         },
         dataset_operator::get_all_dataset_ids,
-        words_operator::ProcessWordsFromDatasetMessage,
+        typo_operator::ProcessWordsFromDatasetMessage,
     },
 };
 

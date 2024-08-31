@@ -16,4 +16,4 @@ pub mod search_operator;
 pub mod stripe_operator;
 pub mod topic_operator;
 pub mod user_operator;
-pub mod words_operator;
+pub mod typo_operator;
