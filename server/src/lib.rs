@@ -234,6 +234,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_recommendation_analytics,
         handlers::analytics_handler::send_event_data,
         handlers::analytics_handler::get_ctr_analytics,
+        handlers::analytics_handler::send_ctr_data,
         handlers::analytics_handler::set_query_rating,
         handlers::analytics_handler::get_top_datasets,
         handlers::metrics_handler::get_metrics,
