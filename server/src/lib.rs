@@ -329,6 +329,8 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::GetDatasetsPagination,
             data::models::DatasetConfigurationDTO,
             handlers::analytics_handler::GetTopDatasetsRequestBody,
+            handlers::analytics_handler::CTRDataRequestBody,
+            data::models::CTRType,
             operators::analytics_operator::HeadQueryResponse,
             operators::analytics_operator::LatencyGraphResponse,
             operators::analytics_operator::SearchUsageGraphResponse,
