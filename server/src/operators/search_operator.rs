@@ -1838,17 +1838,24 @@ pub async fn search_chunks_query(
         timer.add("start correcting query");
         match parsed_query {
             ParsedQueryTypes::Single(ref mut query) => {
-                corrected_query =
-                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
-                query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                let typo_corrected_query =
+                    correct_query(query.clone(), dataset.id, redis_pool, options).await?;
+                if typo_corrected_query.corrected {
+                    corrected_query.clone_from(&typo_corrected_query.query);
+                }
+                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
-                    corrected_query =
-                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                    let typo_corrected_query =
+                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
-                    query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                    if typo_corrected_query.corrected {
+                        corrected_query.clone_from(&typo_corrected_query.query);
+                    }
+                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
+                    *query = corrected_query.clone().unwrap_or(query.clone());
                 }
             }
         }
@@ -1953,7 +1960,7 @@ pub async fn search_chunks_query(
     timer.add("reranking");
     transaction.finish();
 
-    result_chunks.corrected_query = corrected_query;
+    result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_chunks)
 }
@@ -1986,13 +1993,16 @@ pub async fn search_hybrid_chunks(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        corrected_query =
-            correct_query(parsed_query.query.clone(), dataset.id, redis_pool, options).await?;
-        parsed_query.query = corrected_query
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
             .clone()
-            .unwrap_or(parsed_query.query.clone());
+            .unwrap_or(parsed_query.clone());
         data.query = QueryTypes::Single(parsed_query.query.clone());
-
         timer.add("corrected query");
     }
 
@@ -2123,7 +2133,7 @@ pub async fn search_hybrid_chunks(
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
-            corrected_query,
+            corrected_query: corrected_query.map(|c| c.query),
             total_chunk_pages: result_chunks.total_chunk_pages,
         }
     };
@@ -2178,17 +2188,23 @@ pub async fn search_groups_query(
         timer.add("start correcting query");
         match parsed_query {
             ParsedQueryTypes::Single(ref mut query) => {
-                corrected_query =
-                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
-                query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                let typo_corrected_query =
+                    correct_query(query.clone(), dataset.id, redis_pool.clone(), options).await?;
+                if typo_corrected_query.corrected {
+                    corrected_query.clone_from(&typo_corrected_query.query);
+                }
+                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
-                    corrected_query =
-                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                    let typo_corrected_query =
+                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
-                    query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                    if typo_corrected_query.corrected {
+                        corrected_query.clone_from(&typo_corrected_query.query);
+                    }
+                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 }
             }
         }
@@ -2279,7 +2295,7 @@ pub async fn search_groups_query(
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
         group,
-        corrected_query,
+        corrected_query: corrected_query.map(|c| c.query),
         total_pages: result_chunks.total_chunk_pages,
     })
 }
@@ -2303,13 +2319,16 @@ pub async fn search_hybrid_groups(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        corrected_query =
-            correct_query(parsed_query.query.clone(), dataset.id, redis_pool, options).await?;
-        parsed_query.query = corrected_query
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
             .clone()
-            .unwrap_or(parsed_query.query.clone());
+            .unwrap_or(parsed_query.clone());
         data.query = QueryTypes::Single(parsed_query.query.clone());
-
         timer.add("corrected query");
     }
 
@@ -2472,7 +2491,7 @@ pub async fn search_hybrid_groups(
     Ok(SearchWithinGroupResults {
         bookmarks: reranked_chunks.score_chunks,
         group,
-        corrected_query,
+        corrected_query: corrected_query.map(|c| c.query),
         total_pages: result_chunks.total_chunk_pages,
     })
 }
@@ -2496,17 +2515,23 @@ pub async fn semantic_search_over_groups(
         timer.add("start correcting query");
         match parsed_query {
             ParsedQueryTypes::Single(ref mut query) => {
-                corrected_query =
-                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
-                query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                let typo_corrected_query =
+                    correct_query(query.clone(), dataset.id, redis_pool.clone(), options).await?;
+                if typo_corrected_query.corrected {
+                    corrected_query.clone_from(&typo_corrected_query.query);
+                }
+                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
-                    corrected_query =
-                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                    let typo_corrected_query =
+                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
-                    query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                    if typo_corrected_query.corrected {
+                        corrected_query = typo_corrected_query.query.clone();
+                    }
+                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 }
             }
         }
@@ -2564,7 +2589,7 @@ pub async fn semantic_search_over_groups(
     timer.add("fetched from postgres");
 
     //TODO: rerank for groups
-    result_chunks.corrected_query = corrected_query;
+    result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_chunks)
 }
@@ -2598,17 +2623,23 @@ pub async fn full_text_search_over_groups(
         timer.add("start correcting query");
         match parsed_query {
             ParsedQueryTypes::Single(ref mut query) => {
-                corrected_query =
-                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
-                query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                let typo_corrected_query =
+                    correct_query(query.clone(), dataset.id, redis_pool.clone(), options).await?;
+                if typo_corrected_query.corrected {
+                    corrected_query.clone_from(&typo_corrected_query.query);
+                }
+                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
-                    corrected_query =
-                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                    let typo_corrected_query =
+                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
-                    query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                    if typo_corrected_query.corrected {
+                        corrected_query.clone_from(&typo_corrected_query.query);
+                    }
+                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 }
             }
         }
@@ -2654,7 +2685,7 @@ pub async fn full_text_search_over_groups(
     timer.add("fetched from postgres");
 
     //TODO: rerank for groups
-    result_groups_with_chunk_hits.corrected_query = corrected_query;
+    result_groups_with_chunk_hits.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_groups_with_chunk_hits)
 }
@@ -2736,13 +2767,16 @@ pub async fn hybrid_search_over_groups(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        corrected_query =
-            correct_query(parsed_query.query.clone(), dataset.id, redis_pool, options).await?;
-        parsed_query.query = corrected_query
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
             .clone()
-            .unwrap_or(parsed_query.query.clone());
+            .unwrap_or(parsed_query.clone());
         data.query = QueryTypes::Single(parsed_query.query.clone());
-
         timer.add("corrected query");
     }
 
@@ -2873,7 +2907,7 @@ pub async fn hybrid_search_over_groups(
 
     let result_chunks = DeprecatedSearchOverGroupsResponseBody {
         group_chunks: reranked_chunks,
-        corrected_query,
+        corrected_query: corrected_query.map(|c| c.query),
         total_chunk_pages: combined_search_chunk_query_results.total_chunk_pages,
     };
 
@@ -2899,13 +2933,16 @@ pub async fn autocomplete_chunks_query(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        corrected_query =
-            correct_query(parsed_query.query.clone(), dataset.id, redis_pool, options).await?;
-        parsed_query.query = corrected_query
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
             .clone()
-            .unwrap_or(parsed_query.query.clone());
+            .unwrap_or(parsed_query.clone());
         data.query.clone_from(&parsed_query.query);
-
         timer.add("corrected query");
     }
 
@@ -3045,7 +3082,7 @@ pub async fn autocomplete_chunks_query(
     timer.add("reranking");
     transaction.finish();
 
-    result_chunks.corrected_query = corrected_query;
+    result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_chunks)
 }
