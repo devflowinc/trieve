@@ -20,6 +20,11 @@ spec:
     podTemplates:
       - name: clickhouse-pod-template
         spec:
+          volumes:
+            - name: trieve-clickhouse-initdb
+              configMap:
+                name: trieve-clickhouse-initdb
+                defaultMode: 0555
           containers:
             - name: clickhouse
               image: trieve/clickhouse:latest
@@ -29,6 +34,9 @@ spec:
                   mountPath: /var/lib/clickhouse
                 - name: trieve-clickhouse-logs
                   mountPath: /var/log/clickhouse-server
+                - name: trieve-clickhouse-initdb
+                  mountPath: /docker-entrypoint-initdb.d
+                  readOnly: true
               env:
                 - name: EMBEDDING_SERVER_URL
                   value: "" # todo
