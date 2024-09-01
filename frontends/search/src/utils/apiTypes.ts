@@ -88,6 +88,7 @@ export interface ChunkBookmarksDTO {
 
 export interface ChunksWithTotalPagesDTO {
   chunks: ScoreChunkDTO[];
+  corrected_query?: string;
   total_pages: number;
 }
 
