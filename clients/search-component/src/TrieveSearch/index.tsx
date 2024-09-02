@@ -118,15 +118,17 @@ export const TrieveSearch = ({
   );
 };
 
-const searchWC = r2wc(TrieveSearch, {
-  props: {
-    trieve: "function",
-    onResultClick: "function",
-    showImages: "boolean",
-    theme: "string",
-    searchOptions: "json",
-    placeholder: "string",
-  },
-});
+export const initTrieveSearch = (props: Props) => {
+  const searchWC = r2wc(() => <TrieveSearch {...props} />);
 
-customElements.define("trieve-search", searchWC);
+  if (!customElements.get("trieve-search")) {
+    customElements.define("trieve-search", searchWC);
+  }
+};
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "trieve-search": Props;
+    }
+  }
+}

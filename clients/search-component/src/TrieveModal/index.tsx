@@ -5,6 +5,8 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Item } from "./item";
 import r2wc from "@r2wc/react-to-web-component";
 import { searchWithTrieve } from "../utils/trieve";
+import { SearchMode } from "./SearchMode";
+import { ChatMode } from "./ChatMode";
 
 type Props = {
   trieve: TrieveSDK;
@@ -32,6 +34,7 @@ export const TrieveModalSearch = ({
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState("search");
 
   const search = async () => {
     const results = await searchWithTrieve({
@@ -113,45 +116,23 @@ export const TrieveModalSearch = ({
         <Dialog.Content
           id="trieve-search-modal"
           className={theme === "dark" ? "dark" : ""}
+          style={{ overflow: "auto" }}
         >
-          <div className="input-wrapper">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="search-icon"
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </svg>
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={placeholder || "sup"}
+          {mode === "search" ? (
+            <SearchMode
+              results={results}
+              setQuery={setQuery}
+              query={query}
+              setMode={setMode}
+              onUpOrDownClicked={onUpOrDownClicked}
+              showImages={showImages}
+              onResultClick={onResultClick}
+              placeholder={placeholder}
+              inputRef={inputRef}
             />
-            <div className="kbd-wrapper">
-              <kbd>ESC</kbd>
-            </div>
-          </div>
-          <ul className="trieve-elements-search">
-            {results.map((result, index) => (
-              <Item
-                onUpOrDownClicked={onUpOrDownClicked}
-                item={result}
-                index={index}
-                onResultClick={onResultClick}
-                showImages={showImages}
-                key={result.chunk.id}
-              />
-            ))}
-          </ul>
+          ) : (
+            <ChatMode query={query} setMode={setMode} trieve={trieve} />
+          )}
           <a
             className="trieve-powered"
             href="https://trieve.ai"
@@ -166,15 +147,17 @@ export const TrieveModalSearch = ({
   );
 };
 
-const ModalSearchWC = r2wc(TrieveModalSearch, {
-  props: {
-    trieve: "function",
-    onResultClick: "function",
-    showImages: "boolean",
-    theme: "string",
-    searchOptions: "json",
-    placeholder: "string",
-  },
-});
+export const initTrieveModalSearch = (props: Props) => {
+  const ModalSearchWC = r2wc(() => <TrieveModalSearch {...props} />);
 
-customElements.define("trieve-modal-search", ModalSearchWC);
+  if (!customElements.get("trieve-modal-search")) {
+    customElements.define("trieve-modal-search", ModalSearchWC);
+  }
+};
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "trieve-modal-search": Props;
+    }
+  }
+}

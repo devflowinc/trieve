@@ -7,11 +7,11 @@ const options = {
   bundle: true,
   minify: true,
   sourcemap: true,
-  // plugins: [nodeExternalsPlugin()],
-  // external: [].concat.apply(
-  //   [],
-  //   [Object.keys(dependencies), Object.keys(peerDependencies)]
-  // ),
+  plugins: [nodeExternalsPlugin()],
+  external: [].concat.apply(
+    [],
+    [Object.keys(dependencies), Object.keys(peerDependencies)]
+  ),
 };
 
 build({

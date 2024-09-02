@@ -1,10 +1,18 @@
 @import "./TrieveModal/index.css";
 @import "./TrieveSearch/index.css";
 
-#trieve-search-component,
-#trieve-search-modal,
-#trieve-search-modal-overlay {
-  @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.sr-only[aria-hidden="true"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
