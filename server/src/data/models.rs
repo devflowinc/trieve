@@ -5296,6 +5296,8 @@ pub struct TypoOptions {
     pub two_typo_word_range: Option<TypoRange>,
     /// Words that should not be corrected. If not specified, this defaults to an empty list.
     pub disable_on_word: Option<Vec<String>>,
+    /// Auto-require non-english words present in the dataset to exist in each results chunk_html text. If not specified, this defaults to true.
+    pub auto_require_non_english_words: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
