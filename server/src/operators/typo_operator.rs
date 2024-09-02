@@ -573,6 +573,8 @@ fn correct_query_helper(
 ) -> CorrectedQuery {
     let query_words: Vec<&str> = query.query.split_whitespace().collect();
     let mut corrections = HashMap::new();
+    let mut new_quote_words = Vec::new();
+
     let excluded_words: HashSet<_> = options
         .disable_on_word
         .clone()
@@ -608,7 +610,10 @@ fn correct_query_helper(
             continue;
         }
 
-        if !tree.find(word.to_string(), 0).is_empty() {
+        if options.auto_require_non_english_words.unwrap_or(true)
+            && !tree.find(word.to_string(), 0).is_empty()
+        {
+            new_quote_words.push(word);
             query.quote_words = match query.quote_words {
                 Some(mut existing_words) => {
                     existing_words.push(word.to_string());
@@ -659,16 +664,22 @@ fn correct_query_helper(
         }
     }
 
-    if corrections.is_empty() {
+    if corrections.is_empty() && new_quote_words.is_empty() {
         CorrectedQuery {
             query: Some(query),
             corrected: false,
         }
     } else {
         let mut corrected_query = query.query.clone();
+
         for (original, correction) in corrections {
             corrected_query = corrected_query.replace(original, &correction);
         }
+
+        for word in new_quote_words {
+            corrected_query = corrected_query.replace(word, &format!("\"{}\"", word));
+        }
+
         query.query = corrected_query;
         CorrectedQuery {
             query: Some(query),
