@@ -4,7 +4,48 @@ body {
   }
 
   #trieve-search-modal {
-    @apply data-[state=open]:animate-contentShow fixed top-1/2 left-1/2 max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none;
+    @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none text-zinc-950;
+
+    .chat-modal-wrapper {
+      @apply flex flex-col gap-4;
+
+      .user {
+        @apply font-medium text-magenta-500 flex gap-1;
+      }
+
+      .loading-system {
+        @apply fill-zinc-950 w-12;
+      }
+
+      .system {
+        @apply text-sm;
+        p {
+          @apply pb-1;
+        }
+        pre {
+          @apply my-4;
+        }
+
+        ul {
+          @apply list-disc pl-4 my-4;
+        }
+      }
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      @apply font-bold py-2;
+    }
+
+    a {
+      @apply text-zinc-950;
+
+      &:hover {
+        @apply text-zinc-950;
+      }
+    }
 
     .kbd-wrapper {
       @apply absolute  right-2 flex py-1.5 pr-1.5;
@@ -32,12 +73,22 @@ body {
       .search-icon {
         @apply absolute left-2 text-zinc-400;
       }
+
+      &.chat {
+        form {
+          @apply w-full;
+        }
+        .search-icon {
+          @apply top-5 left-1;
+        }
+      }
     }
+
     input {
       @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 outline-none sm:text-sm sm:leading-6 bg-zinc-50 px-4 pl-8 h-12;
     }
     ul {
-      @apply overflow-auto max-h-[420px];
+      @apply overflow-auto max-h-[420px] mt-4;
     }
 
     .item {
@@ -66,10 +117,19 @@ body {
       }
     }
     &.dark {
+      .chat-modal-wrapper {
+        .loading-system {
+          @apply fill-zinc-400 w-12;
+        }
+      }
       .kbd-wrapper {
         kbd {
           @apply border-zinc-400  text-zinc-400;
         }
+      }
+
+      a {
+        @apply text-white hover:text-white;
       }
 
       @apply text-white bg-zinc-900;

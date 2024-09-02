@@ -1,11 +1,28 @@
 const preset = require("config/tailwind");
-
+const {
+  scopedPreflightStyles,
+  isolateInsideOfContainer,
+} = require("tailwindcss-scoped-preflight");
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: "class",
   content: ["src/**/*.tsx"],
   presets: [preset],
-  plugins: [require("@tailwindcss/forms")],
+  plugins: [
+    require("@tailwindcss/forms"),
+    scopedPreflightStyles({
+      isolationStrategy: isolateInsideOfContainer(
+        [
+          "#trieve-search-component",
+          "#trieve-search-modal",
+          "#trieve-search-modal-overlay",
+        ],
+        {
+          rootStyles: true,
+        }
+      ),
+    }),
+  ],
   theme: {
     extend: {
       keyframes: {

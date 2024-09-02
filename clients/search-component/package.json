@@ -7,18 +7,19 @@
     "dist/*",
     "dist/**/*"
   ],
-  "version": "0.0.1-rc1",
+  "version": "0.0.1-rc4",
   "license": "MIT",
   "scripts": {
     "dev": "run-p watch:css watch:js",
     "watch:css": "npx postcss src/app.css -o dist/app.css --watch",
     "watch:js": "node ./scripts/watch.js",
     "lint": "eslint",
-    "build:clean": "rm tsconfig.tsbuildinfo && rm -rf dist && yarn type:gen && yarn build",
+    "build:clean": "rm -rf dist && yarn type:dts && yarn build",
     "build": "run-s build:src build:css type:dts",
     "build:src": "node ./scripts/build.js",
     "type:dts": "tsc --emitDeclarationOnly --declarationMap",
-    "build:css": "npx postcss src/app.css -o dist/app.css "
+    "build:css": "npx postcss src/app.css -o dist/app.css ",
+    "prepublish": "yarn build:clean"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
@@ -27,6 +28,7 @@
     "@types/lodash-es": "^4.17.12",
     "@types/react": "^18.3.4",
     "@types/react-dom": "^18.3.0",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "esbuild": "^0.23.1",
     "esbuild-node-externals": "^1.14.0",
     "esbuild-register": "^3.6.0",
@@ -41,14 +43,18 @@
     "react-dom": "^18.3.1",
     "tailwind": "^4.0.0",
     "tailwindcss": "^3.4.10",
+    "tailwindcss-scoped-preflight": "^3.4.4",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.3.0"
   },
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.0.3",
     "@radix-ui/react-dialog": "^1.1.1",
+    "@thumbmarkjs/thumbmarkjs": "^0.14.8",
     "downshift": "^9.0.8",
     "lodash-es": "^4.17.21",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0",
     "trieve-ts-sdk": "*"
   },
   "peerDependencies": {
