@@ -4,7 +4,7 @@ import Markdown from "react-markdown";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
-import { BackIcon, CheckIcon, LoadingIcon } from "./icons";
+import { BackIcon, CheckIcon, LoadingAIIcon, LoadingIcon } from "./icons";
 import { Chunk } from "../utils/types";
 
 export const ChatMode = ({
@@ -111,7 +111,7 @@ export const ChatMode = ({
                 <div>
                   {message.type == "user" ? (
                     <div className={message.type}>
-                      <CheckIcon />
+                      {isLoading && i === 0 ? <LoadingAIIcon /> : <CheckIcon />}
                       <span> {message.text}</span>
                     </div>
                   ) : null}
