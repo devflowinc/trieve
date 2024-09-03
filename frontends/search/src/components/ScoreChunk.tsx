@@ -28,7 +28,7 @@ import sanitizeHtml from "sanitize-html";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { Tooltip } from "shared/ui";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import { A } from "@solidjs/router";
+import { A, useLocation } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const sanitzerOptions = {
@@ -106,6 +106,11 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
     props.setShowModal(true);
     setShowPropsModal(false);
+  });
+
+  const location = useLocation();
+  const isInChunkViewer = createMemo(() => {
+    return location.pathname.startsWith("/chunk/");
   });
 
   const deleteChunk = () => {
@@ -242,19 +247,21 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </Show>
               <div class="flex-1" />
 
-              <Tooltip
-                body={
-                  <A
-                    href={`/chunk/${
-                      props.chunk.id
-                    }?dataset=${$currentDataset?.()?.dataset.id}`}
-                  >
-                    <FiEye class="h-5 w-5" />
-                  </A>
-                }
-                tooltipText="Open chunk to test recommendations for similar chunks"
-                direction="left"
-              />
+              <Show when={!isInChunkViewer()}>
+                <Tooltip
+                  body={
+                    <A
+                      href={`/chunk/${
+                        props.chunk.id
+                      }?dataset=${$currentDataset?.()?.dataset.id}`}
+                    >
+                      <FiEye class="h-5 w-5" />
+                    </A>
+                  }
+                  tooltipText="Open chunk to test recommendations for similar chunks"
+                  direction="left"
+                />
+              </Show>
               <Show when={currentUserRole() > 0}>
                 <Tooltip
                   body={
