@@ -140,7 +140,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.11.7",
+        version = "0.11.8",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -277,6 +277,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::GetChunksData,
             handlers::chunk_handler::GetTrackingChunksData,
             handlers::chunk_handler::SemanticBoost,
+            handlers::chunk_handler::ScoringOptions,
             handlers::chunk_handler::ChunkReturnTypes,
             handlers::chunk_handler::ScrollChunksReqPayload,
             handlers::chunk_handler::ScrollChunksResponseBody,

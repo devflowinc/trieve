@@ -5,8 +5,8 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::analytics_handler::CTRDataRequestBody;
 use crate::handlers::chunk_handler::{
-    AutocompleteReqPayload, ChunkFilter, FullTextBoost, ParsedQuery, SearchChunksReqPayload,
-    SemanticBoost,
+    AutocompleteReqPayload, ChunkFilter, FullTextBoost, ParsedQuery, ScoringOptions,
+    SearchChunksReqPayload, SemanticBoost,
 };
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload};
@@ -5455,6 +5455,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             get_total_pages: Option<bool>,
             filters: Option<ChunkFilter>,
             sort_options: Option<SortOptions>,
+            scoring_options: Option<ScoringOptions>,
             highlight_options: Option<HighlightOptions>,
             score_threshold: Option<f32>,
             slim_chunks: Option<bool>,
@@ -5486,6 +5487,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             get_total_pages: helper.get_total_pages,
             filters: helper.filters,
             sort_options,
+            scoring_options: helper.scoring_options,
             highlight_options,
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,
@@ -5511,6 +5513,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             page_size: Option<u64>,
             filters: Option<ChunkFilter>,
             sort_options: Option<SortOptions>,
+            scoring_options: Option<ScoringOptions>,
             highlight_options: Option<HighlightOptions>,
             score_threshold: Option<f32>,
             slim_chunks: Option<bool>,
@@ -5541,6 +5544,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             page_size: helper.page_size,
             filters: helper.filters,
             sort_options,
+            scoring_options: helper.scoring_options,
             highlight_options,
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,
