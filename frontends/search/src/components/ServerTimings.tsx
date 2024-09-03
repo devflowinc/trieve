@@ -49,7 +49,7 @@ export const ServerTimings = (props: ServerTimingsProps) => {
       const width = (timing.duration / totalTime()) * availableWidth();
       const banner = (
         <div
-          class="grid w-full place-items-center bg-magenta-700"
+          class="grid w-full place-items-center bg-fuchsia-300 dark:bg-fuchsia-700"
           style={{
             width: `${width}px`,
             "min-width": `${width}px`,
@@ -82,7 +82,7 @@ export const ServerTimings = (props: ServerTimingsProps) => {
                   style={{
                     "min-width": `${fullContainerWidth() - 18}px`,
                   }}
-                  class="absolute border border-neutral-800/80"
+                  class="absolute border border-neutral-300 dark:border-neutral-800/80"
                 />
                 <div class="pl-2">{name.replaceAll("_", " ")}</div>
               </>
@@ -92,14 +92,14 @@ export const ServerTimings = (props: ServerTimingsProps) => {
             style={{
               "min-width": `${fullContainerWidth() - 18}px`,
             }}
-            class="absolute border border-neutral-800/80"
+            class="absolute border border-neutral-300 dark:border-neutral-800/80"
           />
         </div>
         <div class="mr-8 grow">
           <div
             id="timingsBox"
             ref={setTimingsBox}
-            class="relative grow border-l border-l-neutral-800/80"
+            class="relative grow border-l border-l-neutral-300 dark:border-l-neutral-800/80"
             style={{ height: `${props.timings.length * 24}px` }}
           >
             <For each={banners()}>{(component) => component}</For>
