@@ -2,21 +2,24 @@ import { createEffect, createSignal, Show, useContext } from "solid-js";
 import { UserContext } from "../contexts/UserContext";
 import { trieve } from "../api/trieve";
 import { A, useNavigate } from "@solidjs/router";
+import { FullScreenModal } from "shared/ui";
 
-export const NameOrganizationPage = () => {
-  const orgstuff = useContext(UserContext);
+export const NewUserOrgName = () => {
+  const orgContext = useContext(UserContext);
   const [orgNameInput, setOrgNameInput] = createSignal("");
   const [placeholder, setPlaceholder] = createSignal("");
   const [loading, setLoading] = createSignal(false);
   const [error, setError] = createSignal<boolean>(false);
 
+  const [showModal, setShowModal] = createSignal(true);
+
   createEffect(() => {
     // Try to load the placeholder org name
     // Get the org name
-    const selectedOrg = orgstuff.selectedOrganizationId?.();
+    const selectedOrg = orgContext.selectedOrganizationId?.();
     if (selectedOrg) {
       setPlaceholder(
-        orgstuff.user?.()?.orgs.find((org) => org.id === selectedOrg)?.name ||
+        orgContext.user?.()?.orgs.find((org) => org.id === selectedOrg)?.name ||
           "",
       );
     }
@@ -25,7 +28,7 @@ export const NameOrganizationPage = () => {
 
   const submitForm = (e: SubmitEvent) => {
     e.preventDefault();
-    const selectedOrg = orgstuff.selectedOrganizationId?.();
+    const selectedOrg = orgContext.selectedOrganizationId?.();
     if (orgNameInput().length > 0 && selectedOrg) {
       setLoading(true);
       trieve
@@ -47,15 +50,8 @@ export const NameOrganizationPage = () => {
   };
 
   return (
-    <div class="flex min-h-screen flex-col items-center bg-neutral-200">
-      <div class="flex items-end self-start p-4 pl-5">
-        <img
-          class="h-12 w-12 cursor-pointer"
-          src="https://cdn.trieve.ai/trieve-logo.png"
-          alt="Logo"
-        />
-      </div>
-      <div class="rounded-md border border-neutral-300 bg-white p-4 shadow-md">
+    <FullScreenModal show={showModal} setShow={setShowModal}>
+      <>
         <div class="text-lg font-medium">One Last Step...</div>
         <div class="text-sm opacity-70">
           Give your organization a name. This can be changed later.
@@ -72,7 +68,7 @@ export const NameOrganizationPage = () => {
             }}
             name="orgname"
             type="text"
-            class="rounded-sm border border-neutral-200 bg-neutral-100 px-3 py-1"
+            class="rounded-sm border border-neutral-200 bg-neutral-100 px-3 py-1 focus:outline-2 focus:outline-fuchsia-800 focus:ring-0"
           />
           <div class="h-4" />
           <Show when={error()}>
@@ -94,7 +90,7 @@ export const NameOrganizationPage = () => {
             Create
           </button>
         </form>
-      </div>
-    </div>
+      </>
+    </FullScreenModal>
   );
 };

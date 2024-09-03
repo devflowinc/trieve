@@ -287,8 +287,6 @@ pub struct AuthQuery {
     pub organization_id: Option<uuid::Uuid>,
     /// URL to redirect to after successful login
     pub redirect_uri: Option<String>,
-    /// URL to redirect to if the user is new
-    pub new_user_redirect_uri: Option<String>,
     /// Code sent via email as a result of successful call to send_invitation
     pub inv_code: Option<uuid::Uuid>,
 }
@@ -297,8 +295,6 @@ pub struct AuthQuery {
 pub struct LoginState {
     /// URL to redirect to after successful login
     pub redirect_uri: String,
-    /// URL to redirect to if the user is new
-    pub new_user_redirect_uri: Option<String>,
     /// ID of organization to authenticate into
     pub organization_id: Option<uuid::Uuid>,
     /// Code sent via email as a result of successful call to send_invitation
@@ -360,7 +356,6 @@ pub async fn login(
 
     let login_state = LoginState {
         redirect_uri,
-        new_user_redirect_uri: data.new_user_redirect_uri.clone(),
         organization_id: data.organization_id,
         inv_code: data.inv_code,
     };
@@ -542,7 +537,7 @@ pub async fn callback(
     session.remove(OIDC_SESSION_KEY);
     session.remove("login_state");
 
-    // Use the new_user_redirect_uri if the user has just been created and is the owner of
+    // Add a query param if the user has just been created and is the owner of
     // one organization
     let mut final_redirect = login_state.redirect_uri.clone();
     if user_is_new
@@ -552,9 +547,12 @@ pub async fn callback(
             .any(|org_user| org_user.role == 2)
         && user_orgs.len() == 1
     {
-        final_redirect = login_state
-            .new_user_redirect_uri
-            .unwrap_or(login_state.redirect_uri);
+        // Add query param indicating new user
+        if final_redirect.contains("?") {
+            final_redirect = format!("{}&new_user=true", final_redirect);
+        } else {
+            final_redirect = format!("{}?new_user=true", final_redirect);
+        }
     }
 
     Ok(HttpResponse::SeeOther()

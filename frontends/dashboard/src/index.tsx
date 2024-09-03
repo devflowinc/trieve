@@ -16,7 +16,6 @@ import { UserManagement } from "./pages/Dashboard/UserManagment.tsx";
 import { ContextWrapper } from "./layouts/ContextWrapper.tsx";
 import { DatasetEvents } from "./pages/Dashboard/Dataset/DatasetEvents.tsx";
 import { ApiKeys } from "./components/ApiKeys.tsx";
-import { NameOrganizationPage } from "./pages/NameOrganization.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -41,7 +40,6 @@ render(
   () => (
     <Router>
       <Route path="/" component={ContextWrapper}>
-        <Route path={"/name-organization"} component={NameOrganizationPage} />
         <Route path="/" component={Home} />
         <Route path="/dashboard/dataset/:dataset_id" component={DatasetLayout}>
           <Route path="/" component={DatasetStart} />
