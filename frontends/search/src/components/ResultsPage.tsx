@@ -313,7 +313,31 @@ const ResultsPage = (props: ResultsPageProps) => {
         group_size: props.search.debounced.group_size ?? 3,
         use_quote_negated_terms: props.search.debounced.useQuoteNegatedTerms,
         remove_stop_words: props.search.debounced.removeStopWords,
+        scoring_options: {},
       };
+
+      if (
+        props.search.debounced.scoringOptions?.fulltext_boost?.boost_factor &&
+        props.search.debounced.scoringOptions?.fulltext_boost?.phrase
+      ) {
+        requestBody.scoring_options.fulltext_boost = {
+          boost_factor:
+            props.search.debounced.scoringOptions.fulltext_boost.boost_factor,
+          phrase: props.search.debounced.scoringOptions.fulltext_boost.phrase,
+        };
+      }
+      if (
+        props.search.debounced.scoringOptions?.semantic_boost
+          ?.distance_factor &&
+        props.search.debounced.scoringOptions?.semantic_boost?.phrase
+      ) {
+        requestBody.scoring_options.semantic_boost = {
+          distance_factor:
+            props.search.debounced.scoringOptions.semantic_boost
+              .distance_factor,
+          phrase: props.search.debounced.scoringOptions.semantic_boost.phrase,
+        };
+      }
 
       let searchRoute = "";
       let groupUnique = false;
