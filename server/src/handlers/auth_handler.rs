@@ -548,7 +548,7 @@ pub async fn callback(
         && user_orgs.len() == 1
     {
         // Add query param indicating new user
-        if final_redirect.contains("?") {
+        if final_redirect.contains('?') {
             final_redirect = format!("{}&new_user=true", final_redirect);
         } else {
             final_redirect = format!("{}?new_user=true", final_redirect);

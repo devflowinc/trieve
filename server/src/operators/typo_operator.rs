@@ -434,7 +434,7 @@ lazy_static! {
             "mega", "mid", "mis", "non", "over", "out", "post", "pre", "pro", "re", "semi", "sub",
             "super", "tele", "trans", "ultra", "un", "under", "up",
         ];
-        Trie::new(&prefixes)
+        Trie::new(&prefixes, TrieSearchDirection::Prefix)
     };
     static ref SUFFIX_TRIE: Trie = {
         let suffixes = vec![
@@ -443,10 +443,8 @@ lazy_static! {
             "ive", "ize", "less", "ly", "ment", "ness", "or", "ous", "s", "sion", "tion", "ty",
             "y",
         ];
-        Trie::new(&suffixes)
+        Trie::new(&suffixes, TrieSearchDirection::Suffix)
     };
-    static ref PULLING_BK_TREE: Arc<Mutex<HashSet<uuid::Uuid>>> =
-        Arc::new(Mutex::new(HashSet::new()));
 }
 
 struct TrieNode {
@@ -467,22 +465,38 @@ impl TrieNode {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+enum TrieSearchDirection {
+    Prefix,
+    Suffix,
+}
+
 impl Trie {
-    fn new(elements: &[&str]) -> Self {
+    fn new(elements: &[&str], search_direction: TrieSearchDirection) -> Self {
         let mut trie = Trie {
             root: TrieNode::new(),
         };
         for &element in elements {
-            trie.insert(element);
+            trie.insert(element, search_direction);
         }
         trie
     }
 
-    fn insert(&mut self, element: &str) {
+    fn insert(&mut self, element: &str, search_direction: TrieSearchDirection) {
         let mut node = &mut self.root;
-        for ch in element.chars() {
-            node = node.children.entry(ch).or_insert(TrieNode::new());
-        }
+        match search_direction {
+            TrieSearchDirection::Prefix => {
+                for ch in element.chars() {
+                    node = node.children.entry(ch).or_insert(TrieNode::new());
+                }
+            }
+            TrieSearchDirection::Suffix => {
+                for ch in element.chars().rev() {
+                    node = node.children.entry(ch).or_insert(TrieNode::new());
+                }
+            }
+        };
+
         node.is_end = true;
     }
 
@@ -572,6 +586,7 @@ fn correct_query_helper(
     options: &TypoOptions,
 ) -> CorrectedQuery {
     let query_words: Vec<&str> = query.query.split_whitespace().collect();
+
     let mut corrections = HashMap::new();
     let mut new_quote_words = Vec::new();
 
@@ -606,11 +621,11 @@ fn correct_query_helper(
             continue;
         }
 
-        if is_likely_english_word(word) {
+        if is_likely_english_word(&word.to_lowercase()) {
             continue;
         }
 
-        if !tree.find(word.to_string(), 0).is_empty() {
+        if !tree.find(word.to_lowercase(), 0).is_empty() {
             if options.prioritize_domain_specifc_words.unwrap_or(true) {
                 new_quote_words.push(word);
                 query.quote_words = match query.quote_words {
@@ -641,7 +656,7 @@ fn correct_query_helper(
             let mut best_correction = None;
             let mut best_score = 0;
 
-            for ((correction, freq), distance) in tree.find(word.to_string(), max_distance) {
+            for ((correction, freq), distance) in tree.find(word.to_lowercase(), max_distance) {
                 if distance == 0 {
                     best_correction = None;
                     break;
@@ -770,42 +785,41 @@ pub async fn correct_query(
             let dataset_id = dataset_id;
             let redis_pool = redis_pool.clone();
             log::info!("Pulling new BK tree from Redis");
-            let pulling_bk_tree = PULLING_BK_TREE.clone();
-            let mut pulling_bk_tree = pulling_bk_tree.lock().unwrap();
-            if pulling_bk_tree.contains(&dataset_id) {
-                return Ok(CorrectedQuery::default());
+            let tree = match BkTree::from_redis(dataset_id, redis_pool).await {
+                // TTL of 1 day
+                Ok(Some(bktree)) => {
+                    BKTREE_CACHE.insert_with_ttl(
+                        dataset_id,
+                        bktree,
+                        Duration::from_secs(60 * 60 * 24),
+                    );
+                    log::info!(
+                        "Inserted new BK tree into cache for dataset_id: {:?}",
+                        dataset_id
+                    );
+                    BKTREE_CACHE.get_if_valid(&dataset_id)
+                }
+                Ok(None) => {
+                    log::info!("No BK tree found in Redis for dataset_id: {:?}", dataset_id);
+                    return Ok(CorrectedQuery::default());
+                }
+                Err(e) => {
+                    log::info!(
+                        "Failed to insert new BK tree into cache {:?} for dataset_id: {:?}",
+                        e,
+                        dataset_id
+                    );
+                    return Ok(CorrectedQuery::default());
+                }
+            };
+
+            match tree {
+                Some(tree) => {
+                    let result = correct_query_helper(&tree, query, options);
+                    Ok(result)
+                }
+                None => Ok(CorrectedQuery::default()),
             }
-            pulling_bk_tree.insert(dataset_id);
-            tokio::spawn(async move {
-                match BkTree::from_redis(dataset_id, redis_pool).await {
-                    // TTL of 1 day
-                    Ok(Some(bktree)) => {
-                        BKTREE_CACHE.insert_with_ttl(
-                            dataset_id,
-                            bktree,
-                            Duration::from_secs(60 * 60 * 24),
-                        );
-                        log::info!(
-                            "Inserted new BK tree into cache for dataset_id: {:?}",
-                            dataset_id
-                        );
-                    }
-                    Ok(None) => {
-                        log::info!("No BK tree found in Redis for dataset_id: {:?}", dataset_id);
-                    }
-                    Err(e) => {
-                        log::info!(
-                            "Failed to insert new BK tree into cache {:?} for dataset_id: {:?}",
-                            e,
-                            dataset_id
-                        );
-                    }
-                };
-                let pulling_bk_tree = PULLING_BK_TREE.clone();
-                let mut pulling_bk_tree = pulling_bk_tree.lock().unwrap();
-                pulling_bk_tree.remove(&dataset_id);
-            });
-            Ok(CorrectedQuery::default())
         }
     }
 }
