@@ -125,10 +125,3 @@ export const initTrieveSearch = (props: Props) => {
     customElements.define("trieve-search", searchWC);
   }
 };
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "trieve-search": Props;
-    }
-  }
-}

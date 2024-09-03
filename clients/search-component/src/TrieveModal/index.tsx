@@ -174,10 +174,3 @@ export const initTrieveModalSearch = (props: Props) => {
     customElements.define("trieve-modal-search", ModalSearchWC);
   }
 };
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "trieve-modal-search": Props;
-    }
-  }
-}
