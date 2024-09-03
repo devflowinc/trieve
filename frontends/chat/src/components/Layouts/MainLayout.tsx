@@ -290,7 +290,7 @@ const MainLayout = (props: LayoutProps) => {
     <>
       <div class="relative flex w-full flex-col justify-between">
         <div
-          class="flex flex-col items-stretch gap-6 px-4 pb-32 pt-4"
+          class="flex max-w-full flex-col items-stretch gap-6 overflow-hidden px-4 pb-32 pt-4"
           id="topic-messages"
         >
           <For each={messages()}>
