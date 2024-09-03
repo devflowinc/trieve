@@ -6,8 +6,16 @@ body {
   #trieve-search-modal {
     @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none text-zinc-950;
 
+    .trieve-powered {
+      @apply flex items-center justify-end w-full py-4 pr-2 gap-2 select-none cursor-pointer p-2 text-sm sticky -bottom-2 bg-white;
+
+      img {
+        @apply h-4 w-4 cursor-pointer;
+      }
+    }
+
     .chat-modal-wrapper {
-      @apply flex flex-col gap-4;
+      @apply flex flex-col gap-4 relative;
 
       .chat-ul {
         @apply border-zinc-300 rounded border p-4;
@@ -71,14 +79,6 @@ body {
 
       kbd {
         @apply inline-flex items-center rounded border border-zinc-200 px-1 font-sans text-xs text-zinc-400;
-      }
-    }
-
-    .trieve-powered {
-      @apply flex items-center justify-end w-full py-4 pr-2 pb-0 gap-2 select-none cursor-pointer p-2 text-sm;
-
-      img {
-        @apply h-4 w-4 cursor-pointer;
       }
     }
 
@@ -202,6 +202,10 @@ body {
       }
 
       .input-wrapper {
+        @apply bg-zinc-900;
+      }
+
+      .trieve-powered {
         @apply bg-zinc-900;
       }
 
