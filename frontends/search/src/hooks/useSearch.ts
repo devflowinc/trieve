@@ -65,6 +65,7 @@ export interface SearchOptions {
   oneTypoWordRangeMax: number | null;
   twoTypoWordRangeMin: number;
   twoTypoWordRangeMax: number | null;
+  prioritize_domain_specifc_words: boolean | null;
   disableOnWords: string[];
   sort_by: SortByField | SortBySearchType;
   pageSize: number;
@@ -102,6 +103,7 @@ const initalState: SearchOptions = {
   oneTypoWordRangeMax: 8,
   twoTypoWordRangeMin: 8,
   twoTypoWordRangeMax: null,
+  prioritize_domain_specifc_words: true,
   disableOnWords: [],
   highlightResults: true,
   highlightStrategy: "exactmatch",
@@ -140,6 +142,8 @@ const fromStateToParams = (state: SearchOptions): Params => {
     oneTypoWordRangeMax: state.oneTypoWordRangeMax?.toString() ?? "8",
     twoTypoWordRangeMin: state.twoTypoWordRangeMin.toString(),
     twoTypoWordRangeMax: state.twoTypoWordRangeMax?.toString() ?? "",
+    prioritize_domain_specifc_words:
+      state.prioritize_domain_specifc_words?.toString() ?? "",
     disableOnWords: state.disableOnWords.join(","),
     highlightStrategy: state.highlightStrategy,
     highlightResults: state.highlightResults.toString(),
@@ -184,6 +188,8 @@ const fromParamsToState = (
     oneTypoWordRangeMax: parseIntOrNull(params.oneTypoWordRangeMax),
     twoTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "8"),
     twoTypoWordRangeMax: parseIntOrNull(params.twoTypoWordRangeMax),
+    prioritize_domain_specifc_words:
+      (params.prioritize_domain_specifc_words ?? "true") === "true",
     disableOnWords: params.disableOnWords?.split(",") ?? [],
     highlightResults: (params.highlightResults ?? "true") === "true",
     highlightStrategy: isHighlightStrategy(params.highlightStrategy)
