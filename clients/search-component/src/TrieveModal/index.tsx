@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { SearchChunksReqPayload, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk, ChunkWithHighlights } from "../utils/types";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Item } from "./item";
 import r2wc from "@r2wc/react-to-web-component";
 import { searchWithTrieve } from "../utils/trieve";
 import { SearchMode } from "./SearchMode";
@@ -18,6 +17,7 @@ type Props = {
     "highlight_options"
   >;
   placeholder?: string;
+  chat?: boolean;
 };
 
 export const TrieveModalSearch = ({
@@ -29,12 +29,14 @@ export const TrieveModalSearch = ({
   searchOptions = {
     search_type: "hybrid",
   },
+  chat = true,
 }: Props) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState("search");
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const search = async () => {
     const results = await searchWithTrieve({
@@ -83,7 +85,13 @@ export const TrieveModalSearch = ({
   }, []);
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
+        setMode("search");
+      }}
+    >
       <Dialog.Trigger asChild>
         <button
           id="open-trieve-modal"
@@ -112,9 +120,13 @@ export const TrieveModalSearch = ({
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.DialogTitle className="sr-only">Search</Dialog.DialogTitle>
+        <Dialog.DialogDescription className="sr-only">
+          Search or ask an AI
+        </Dialog.DialogDescription>
         <Dialog.Overlay id="trieve-search-modal-overlay" />
         <Dialog.Content
           id="trieve-search-modal"
+          ref={modalRef}
           className={theme === "dark" ? "dark" : ""}
           style={{ overflow: "auto" }}
         >
@@ -129,9 +141,17 @@ export const TrieveModalSearch = ({
               onResultClick={onResultClick}
               placeholder={placeholder}
               inputRef={inputRef}
+              chat={chat}
             />
           ) : (
-            <ChatMode query={query} setMode={setMode} trieve={trieve} />
+            <ChatMode
+              onNewMessage={() =>
+                modalRef.current?.scroll({ top: 0, behavior: "smooth" })
+              }
+              query={query}
+              setMode={setMode}
+              trieve={trieve}
+            />
           )}
           <a
             className="trieve-powered"

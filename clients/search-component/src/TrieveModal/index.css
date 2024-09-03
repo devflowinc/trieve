@@ -9,6 +9,22 @@ body {
     .chat-modal-wrapper {
       @apply flex flex-col gap-4;
 
+      .chat-ul {
+        @apply border-zinc-300 rounded border p-4;
+      }
+
+      .additional-links {
+        @apply flex flex-wrap gap-2 mt-4;
+
+        a {
+          @apply bg-zinc-300 rounded px-2 text-xs py-1 text-zinc-700;
+
+          &:hover {
+            @apply text-zinc-950;
+          }
+        }
+      }
+
       .user {
         @apply font-medium text-magenta-500 flex gap-1;
       }
@@ -18,7 +34,7 @@ body {
       }
 
       .system {
-        @apply text-sm;
+        @apply text-sm mt-4;
         p {
           @apply pb-1;
         }
@@ -28,6 +44,9 @@ body {
 
         ul {
           @apply list-disc pl-4 my-4;
+        }
+        ol {
+          @apply list-decimal pl-4 my-4;
         }
       }
     }
@@ -88,11 +107,35 @@ body {
       @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 outline-none sm:text-sm sm:leading-6 bg-zinc-50 px-4 pl-8 h-12;
     }
     ul {
-      @apply overflow-auto max-h-[420px] mt-4;
+      @apply mt-4;
+
+      &:not(.chat-ul) {
+        @apply overflow-auto max-h-[420px] mt-4;
+      }
     }
 
     .item {
       @apply select-none cursor-pointer p-4 text-left flex items-start gap-2  border-b border-zinc-200 w-full text-sm pr-6 bg-zinc-50 outline-none;
+
+      &.start-chat {
+        @apply items-center flex;
+
+        h4 {
+          @apply p-0;
+
+          span {
+            @apply text-magenta-500;
+          }
+        }
+
+        > div {
+          @apply justify-start gap-4;
+
+          > svg {
+            @apply text-magenta-500;
+          }
+        }
+      }
 
       &:hover,
       &:focus {
@@ -105,7 +148,7 @@ body {
       }
 
       .arrow-link {
-        @apply hidden w-4 h-4 text-zinc-600 dark:text-zinc-400 relative -right-2;
+        @apply hidden w-4 h-4 text-zinc-600 dark:text-zinc-400 relative -right-2 shrink-0;
       }
 
       > div {
@@ -120,6 +163,26 @@ body {
       .chat-modal-wrapper {
         .loading-system {
           @apply fill-zinc-400 w-12;
+        }
+
+        .user {
+          @apply text-magenta-400;
+        }
+
+        .chat-ul {
+          @apply border-zinc-700;
+        }
+
+        .additional-links {
+          @apply flex flex-wrap gap-2 mt-4;
+
+          a {
+            @apply bg-zinc-700 text-zinc-300;
+
+            &:hover {
+              @apply text-white;
+            }
+          }
         }
       }
       .kbd-wrapper {
