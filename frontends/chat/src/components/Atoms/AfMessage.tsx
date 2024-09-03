@@ -305,7 +305,7 @@ export const AfMessage = (props: AfMessageProps) => {
                       });
 
                       return (
-                        <div class="relative w-full rounded-lg bg-gray-100 px-4 py-2 dark:bg-neutral-700">
+                        <div class="relative w-full text-wrap rounded-lg bg-gray-100 px-4 py-2 dark:bg-neutral-700">
                           <button
                             class="absolute right-2 top-2 p-1 text-xs hover:text-fuchsia-500 dark:text-white dark:hover:text-fuchsia-500"
                             onClick={() => {
