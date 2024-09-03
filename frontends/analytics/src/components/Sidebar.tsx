@@ -1,4 +1,4 @@
-import { Show, useContext, For } from "solid-js";
+import { Show, useContext, For, createMemo } from "solid-js";
 import { OrgContext } from "../contexts/OrgContext";
 import { UserContext } from "../contexts/UserAuthContext";
 import { DatasetAndUsage } from "shared/types";
@@ -51,33 +51,43 @@ const navbarRoutes = [
 ];
 
 const dashboardURL = import.meta.env.VITE_DASHBOARD_URL as string;
-
-const domainNavbarRoutes = [
-  {
-    href: dashboardURL,
-    label: "Dashboard",
-    icon: TbLayoutDashboard,
-  },
-  {
-    href: "https://docs.trieve.ai/api-reference/",
-    label: "API Docs",
-    icon: AiOutlineApi,
-  },
-  {
-    href: "https://search.trieve.ai",
-    label: "Search Playground",
-    icon: HiOutlineMagnifyingGlass,
-  },
-  {
-    href: "https://chat.trieve.ai",
-    label: "Chat Playground",
-    icon: IoChatboxOutline,
-  },
-];
+const searchUrl = import.meta.env.VITE_SEARCH_UI_URL as string;
+const chatUrl = import.meta.env.VITE_CHAT_UI_URL as string;
 
 export const Sidebar = (props: NavbarProps) => {
   const userContext = useContext(UserContext);
   const orgContext = useContext(OrgContext);
+
+  const domainNavbarRoutes = createMemo(() => {
+    const domainNavbarRoutes = [
+      {
+        href: `${dashboardURL}/dashboard/dataset/${props.selectedDataset
+          ?.dataset.id}/start?org=${orgContext.selectedOrg().id}`,
+        label: "Dashboard",
+        icon: TbLayoutDashboard,
+      },
+      {
+        href: "https://docs.trieve.ai/api-reference/",
+        label: "API Docs",
+        icon: AiOutlineApi,
+      },
+      {
+        href: `${searchUrl}?organization=${
+          orgContext.selectedOrg().id
+        }&dataset=${props.selectedDataset?.dataset.id}`,
+        label: "Search Playground",
+        icon: HiOutlineMagnifyingGlass,
+      },
+      {
+        href: `${chatUrl}?organization=${
+          orgContext.selectedOrg().id
+        }&dataset=${props.selectedDataset?.dataset.id}`,
+        label: "Chat Playground",
+        icon: IoChatboxOutline,
+      },
+    ];
+    return domainNavbarRoutes;
+  });
 
   const pathname = usePathname();
   const navigate = useBetterNav();
@@ -172,23 +182,23 @@ export const Sidebar = (props: NavbarProps) => {
             <div class="h-4 border-b border-neutral-400/50" />
 
             <div class="flex flex-col gap-2 px-2 pt-4">
-              <For each={domainNavbarRoutes}>
+              <For each={domainNavbarRoutes()}>
                 {(link) => {
                   return (
-                    <div
+                    <a
                       role="link"
                       classList={{
-                        "cursor-pointer flex items-center text-sm gap-2": true,
+                        "cursor-pointer flex items-center text-sm gap-2 hover:text-fuchsia-500":
+                          true,
                         "text-purple-900 underline": pathname() === link.href,
                         "text-black": pathname() !== link.href,
                       }}
-                      onClick={() => {
-                        window.open(link.href);
-                      }}
+                      href={link.href}
+                      target="_blank"
                     >
                       {link.icon({ size: "14px" })}
                       {link.label}
-                    </div>
+                    </a>
                   );
                 }}
               </For>
