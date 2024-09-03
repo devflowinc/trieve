@@ -2,6 +2,8 @@ import { TrieveSearch, TrieveSDK, TrieveModalSearch } from "../../src/index";
 import "../../dist/app.css";
 import { useState } from "react";
 import { IconMoon, IconNext, IconPrevious, IconSun } from "./Icons";
+import SyntaxHighlighter from "react-syntax-highlighter";
+import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 const trieve = new TrieveSDK({
   apiKey: "tr-l1IRx4Jw0iVICiFdf9NroFwmDWQ4CnEd",
@@ -35,6 +37,12 @@ export default function App() {
             </h2>
 
             <TrieveModalSearch trieve={trieve} theme={theme} />
+
+            <div className="mt-8 text-sm rounded overflow-hidden">
+              <SyntaxHighlighter language={"jsx"} style={nightOwl}>
+                {`<TrieveModalSearch trieve={trieve} theme="${theme}" /> `}
+              </SyntaxHighlighter>
+            </div>
           </>
         ) : (
           <>

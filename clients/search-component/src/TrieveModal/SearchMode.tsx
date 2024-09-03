@@ -1,6 +1,7 @@
 import React from "react";
 import { Item } from "./item";
 import { Chunk, ChunkWithHighlights } from "../utils/types";
+import { AIIcon, ArrowIcon } from "./icons";
 
 export const SearchMode = ({
   results,
@@ -12,6 +13,7 @@ export const SearchMode = ({
   showImages,
   placeholder,
   inputRef,
+  chat,
 }: {
   results: ChunkWithHighlights[];
   query: string;
@@ -22,6 +24,7 @@ export const SearchMode = ({
   showImages?: boolean;
   placeholder?: string;
   inputRef: React.RefObject<HTMLInputElement>;
+  chat: boolean;
 }) => {
   return (
     <>
@@ -52,13 +55,19 @@ export const SearchMode = ({
         </div>
       </div>
       <ul className="trieve-elements-search">
-        {results.length ? (
+        {results.length && chat ? (
           <li>
-            <button className="item" onClick={() => setMode("chat")}>
-              <div className="flex flex-col">
-                <h4>Can you tell me about {query}</h4>
-                <p className="description">Use AI to answer your question</p>
+            <button className="item start-chat" onClick={() => setMode("chat")}>
+              <div>
+                <AIIcon />
+                <div>
+                  <h4>
+                    Can you tell me about <span>{query}</span>
+                  </h4>
+                  <p className="description">Use AI to answer your question</p>
+                </div>
               </div>
+              <ArrowIcon />
             </button>
           </li>
         ) : null}
