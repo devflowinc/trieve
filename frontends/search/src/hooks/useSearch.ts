@@ -17,6 +17,21 @@ export interface MultiQuery {
   weight: number;
 }
 
+export interface FulltextBoost {
+  phrase?: string;
+  boost_factor?: number;
+}
+
+export interface SemanticBoost {
+  phrase?: string;
+  distance_factor?: number;
+}
+
+export interface ScoringOptions {
+  fulltext_boost?: FulltextBoost;
+  semantic_boost?: SemanticBoost;
+}
+
 export function isSortByField(
   sortBy: SortByField | SortBySearchType,
 ): sortBy is SortByField {
@@ -66,6 +81,7 @@ export interface SearchOptions {
   removeStopWords: boolean;
   filters: Filters | null;
   multiQueries: MultiQuery[];
+  scoringOptions?: ScoringOptions;
 }
 
 const initalState: SearchOptions = {
@@ -104,6 +120,7 @@ const initalState: SearchOptions = {
     jsonb_prefilter: true,
   } as Filters,
   multiQueries: [],
+  scoringOptions: undefined,
 };
 
 const fromStateToParams = (state: SearchOptions): Params => {
@@ -136,6 +153,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     removeStopWords: state.removeStopWords.toString(),
     filters: JSON.stringify(state.filters),
     multiQueries: JSON.stringify(state.multiQueries),
+    scoringOptions: JSON.stringify(state.scoringOptions),
   };
 };
 
@@ -182,6 +200,9 @@ const fromParamsToState = (
     removeStopWords: (params.removeStopWords ?? "false") === "true",
     filters: JSON.parse(params.filters ?? "null") as Filters | null,
     multiQueries: JSON.parse(params.multiQueries ?? "[]") as MultiQuery[],
+    scoringOptions: JSON.parse(
+      params.scoringOptions ?? "null",
+    ) as ScoringOptions,
   };
 };
 

@@ -1485,6 +1485,113 @@ const SearchForm = (props: {
                             />
                           </div>
                         </Show>
+                        <div class="px-1 font-bold">Scoring Options</div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Fulltext boost phrase:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="text"
+                            value={
+                              tempSearchValues().scoringOptions?.fulltext_boost
+                                ?.phrase ?? ""
+                            }
+                            onInput={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  scoringOptions: {
+                                    ...prev.scoringOptions,
+                                    fulltext_boost: {
+                                      ...prev.scoringOptions?.fulltext_boost,
+                                      phrase: e.currentTarget.value,
+                                    },
+                                  },
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Fulltext boost factor:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            step="any"
+                            value={
+                              tempSearchValues().scoringOptions?.fulltext_boost
+                                ?.boost_factor
+                            }
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  scoringOptions: {
+                                    ...prev.scoringOptions,
+                                    fulltext_boost: {
+                                      ...prev.scoringOptions?.fulltext_boost,
+                                      boost_factor: parseFloat(
+                                        e.currentTarget.value,
+                                      ),
+                                    },
+                                  },
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Semantic boost phrase:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="text"
+                            value={
+                              tempSearchValues().scoringOptions?.semantic_boost
+                                ?.phrase ?? ""
+                            }
+                            onInput={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  scoringOptions: {
+                                    ...prev.scoringOptions,
+                                    semantic_boost: {
+                                      ...prev.scoringOptions?.semantic_boost,
+                                      phrase: e.currentTarget.value,
+                                    },
+                                  },
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Semantic boost distance factor:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            step="any"
+                            value={
+                              tempSearchValues().scoringOptions?.semantic_boost
+                                ?.distance_factor
+                            }
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  scoringOptions: {
+                                    ...prev.scoringOptions,
+                                    semantic_boost: {
+                                      ...prev.scoringOptions?.semantic_boost,
+                                      distance_factor: parseFloat(
+                                        e.currentTarget.value,
+                                      ),
+                                    },
+                                  },
+                                };
+                              });
+                            }}
+                          />
+                        </div>
                       </div>
                     </PopoverPanel>
                   </Show>
