@@ -28,7 +28,7 @@ pub struct EmbeddingParameters {
 #[tracing::instrument]
 pub async fn get_dense_vector(
     message: String,
-    distance_phrase: Option<SemanticBoost>,
+    semantic_boost: Option<SemanticBoost>,
     embed_type: &str,
     dataset_config: DatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
@@ -91,32 +91,23 @@ pub async fn get_dense_vector(
         };
 
     let clipped_message: String = message.chars().take(20000).collect();
+    let mut messages = vec![format!(
+        "{}{}",
+        dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_message
+    )
+    .to_string()];
+    if let Some(semantic_boost) = semantic_boost.as_ref() {
+        if semantic_boost.distance_factor == 0.0 || semantic_boost.phrase.is_empty() {
+            return Err(ServiceError::BadRequest(
+                "Semantic boost phrase is empty or distance factor is 0. Boost phrase must not be empty and distance factor must be greater than 0".to_string(),
+            ));
+        }
 
-    let mut messages = vec![clipped_message.clone()];
-
-    if distance_phrase.is_some() {
-        let clipped_boost: String = distance_phrase
-            .as_ref()
-            .unwrap()
-            .phrase
-            .chars()
-            .take(20000)
-            .collect();
+        let clipped_boost: String = semantic_boost.phrase.chars().take(20000).collect();
         messages.push(clipped_boost);
     }
 
-    let input = match embed_type {
-        "doc" => EmbeddingInput::StringArray(messages),
-        "query" => EmbeddingInput::String(
-            format!(
-                "{}{}",
-                dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_message
-            )
-            .to_string(),
-        ),
-        _ => EmbeddingInput::StringArray(messages),
-    };
-
+    let input = EmbeddingInput::StringArray(messages);
     let parameters = EmbeddingParameters {
         model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
         input,
@@ -139,8 +130,8 @@ pub async fn get_dense_vector(
         ))
     })?;
 
-    let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
-        .map_err(|e| {
+    let embeddings: EmbeddingResponse =
+        format_response(embeddings_resp.into_string().unwrap_or("".to_string())).map_err(|e| {
             log::error!("Failed to format response from embeddings server {:?}", e);
             ServiceError::InternalServerError(
                 "Failed to format response from embeddings server".to_owned(),
@@ -165,10 +156,24 @@ pub async fn get_dense_vector(
         ));
     }
 
-    if distance_phrase.is_some() {
-        let distance_factor = distance_phrase.unwrap().distance_factor;
-        let boost_vector = vectors.pop().unwrap();
-        let embedding_vector = vectors.pop().unwrap();
+    if let Some(semantic_boost) = semantic_boost {
+        let distance_factor = semantic_boost.distance_factor;
+        let boost_vector = match vectors.pop() {
+            Some(v) => v,
+            None => {
+                return Err(ServiceError::InternalServerError(
+                    "No dense embedding returned from server for boost_vector".to_owned(),
+                ))
+            }
+        };
+        let embedding_vector = match vectors.pop() {
+            Some(v) => v,
+            None => {
+                return Err(ServiceError::InternalServerError(
+                    "No dense embedding returned from server for embedding_vector".to_owned(),
+                ))
+            }
+        };
 
         return Ok(embedding_vector
             .iter()
@@ -190,6 +195,7 @@ pub async fn get_dense_vector(
 #[tracing::instrument]
 pub async fn get_sparse_vector(
     message: String,
+    fulltext_boost: Option<FullTextBoost>,
     embed_type: &str,
 ) -> Result<Vec<(u32, f32)>, ServiceError> {
     let origin_key = match embed_type {
@@ -206,11 +212,22 @@ pub async fn get_sparse_vector(
             origin_key
         )))?;
 
-    let clipped_message = message.chars().take(128000).collect();
+    let clipped_message: String = message.chars().take(20000).collect();
+    let mut inputs = vec![clipped_message.clone()];
+    if let Some(fulltext_boost) = fulltext_boost.as_ref() {
+        if fulltext_boost.phrase.is_empty() {
+            return Err(ServiceError::BadRequest(
+                "Fulltext boost phrase is empty. Non-empty phrase must be specified.".to_string(),
+            ));
+        }
+
+        let clipped_boost: String = fulltext_boost.phrase.chars().take(20000).collect();
+        inputs.push(clipped_boost);
+    }
 
     let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
-    let sparse_vectors = ureq::post(&embedding_server_call)
+    let mut sparse_vectors = ureq::post(&embedding_server_call)
         .set("Content-Type", "application/json")
         .set(
             "Authorization",
@@ -220,7 +237,7 @@ pub async fn get_sparse_vector(
             ),
         )
         .send_json(CustomSparseEmbedData {
-            inputs: vec![clipped_message],
+            inputs,
             encode_type: embed_type.to_string(),
             truncate: true,
         })
@@ -241,6 +258,50 @@ pub async fn get_sparse_vector(
                 "Failed parsing response from custom embedding server".to_string(),
             )
         })?;
+
+    if let Some(fulltext_boost) = fulltext_boost {
+        let boost_amt = fulltext_boost.boost_factor;
+        let boost_vector = match sparse_vectors.pop() {
+            Some(v) => v,
+            None => {
+                return Err(ServiceError::InternalServerError(
+                    "No sparse vector returned from server for boost_vector".to_owned(),
+                ))
+            }
+        };
+        let query_vector = match sparse_vectors.pop() {
+            Some(v) => v,
+            None => {
+                return Err(ServiceError::InternalServerError(
+                    "No sparse vector returned from server for embedding_vector".to_owned(),
+                ))
+            }
+        };
+
+        let boosted_query_vector = query_vector
+            .iter()
+            .map(|splade_indice| {
+                if boost_vector
+                    .iter()
+                    .any(|boost_splade_indice| boost_splade_indice.index == splade_indice.index)
+                {
+                    SpladeIndicies {
+                        index: splade_indice.index,
+                        value: splade_indice.value * (boost_amt as f32),
+                    }
+                    .into_tuple()
+                } else {
+                    SpladeIndicies {
+                        index: splade_indice.index,
+                        value: splade_indice.value,
+                    }
+                    .into_tuple()
+                }
+            })
+            .collect();
+
+        return Ok(boosted_query_vector);
+    }
 
     match sparse_vectors.first() {
         Some(v) => Ok(v
