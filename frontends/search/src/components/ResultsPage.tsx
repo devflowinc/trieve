@@ -294,6 +294,8 @@ const ResultsPage = (props: ResultsPageProps) => {
             max: props.search.debounced.twoTypoWordRangeMax,
           },
           disable_on_word: props.search.debounced.disableOnWords,
+          prioritize_domain_specifc_words:
+            props.search.debounced.prioritize_domain_specifc_words,
         },
         highlight_options: {
           highlight_results: props.search.debounced.highlightResults ?? true,

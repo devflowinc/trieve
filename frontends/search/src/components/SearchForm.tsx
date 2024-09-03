@@ -1058,6 +1058,7 @@ const SearchForm = (props: {
                                   twoTypoWordRangeMax: null,
                                   disableOnWords: [],
                                   typoTolerance: false,
+                                  prioritize_domain_specifc_words: true,
                                   highlightResults: true,
                                   highlightDelimiters: ["?", ".", "!"],
                                   highlightMaxLength: 8,
@@ -1214,6 +1215,26 @@ const SearchForm = (props: {
                                 return {
                                   ...prev,
                                   correctTypos: e.target.checked,
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Auto-require Domain Keywords</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={
+                              tempSearchValues()
+                                .prioritize_domain_specifc_words ?? false
+                            }
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  prioritize_domain_specifc_words:
+                                    e.target.checked,
                                 };
                               });
                             }}

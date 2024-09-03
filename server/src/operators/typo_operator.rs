@@ -610,17 +610,17 @@ fn correct_query_helper(
             continue;
         }
 
-        if options.auto_require_non_english_words.unwrap_or(true)
-            && !tree.find(word.to_string(), 0).is_empty()
-        {
-            new_quote_words.push(word);
-            query.quote_words = match query.quote_words {
-                Some(mut existing_words) => {
-                    existing_words.push(word.to_string());
-                    Some(existing_words)
-                }
-                None => Some(vec![word.to_string()]),
-            };
+        if !tree.find(word.to_string(), 0).is_empty() {
+            if options.prioritize_domain_specifc_words.unwrap_or(true) {
+                new_quote_words.push(word);
+                query.quote_words = match query.quote_words {
+                    Some(mut existing_words) => {
+                        existing_words.push(word.to_string());
+                        Some(existing_words)
+                    }
+                    None => Some(vec![word.to_string()]),
+                };
+            }
             continue;
         }
 
