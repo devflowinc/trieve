@@ -46,9 +46,42 @@ And then you can use any of the two components in your React application or as w
 
 #### Usage in Web Components:
 
-```html
-<trieve-modal-search trieve="<your trieve instance>" />
+```js
+initModalSearch({
+  trieve: new TrieveSDK({
+    // your options
+  })
+})
+
+
+<trieve-modal-search />
+
 ```
+
+If you are using it in JSX environment you will need to add the `trieve-modal-search` to the JSX attributes, for solid that would be:
+
+```typescript
+declare module "solid-js" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "trieve-modal-search": {};
+      "trieve-search": {};
+    }
+  }
+}
+```
+
+#### Props
+
+| Name          | Type                                                                                           | Default                     |
+| ------------- | ---------------------------------------------------------------------------------------------- | --------------------------- |
+| trieve        | TrieveSDK                                                                                      | null                        |
+| chat          | boolean                                                                                        | true                        |
+| showImages    | boolean                                                                                        | false                       |
+| placeholder   | string                                                                                         | "Search..."                 |
+| onResultClick | () => void                                                                                     | () => {}                    |
+| theme         | "light" or "dark"                                                                              | "light"                     |
+| searchOptions | [SearchChunksReqPayload](https://ts-sdk.trieve.ai/types/types_gen.SearchChunksReqPayload.html) | `{ search_type: "hybrid" }` |
 
 ### Search Results
 
@@ -71,6 +104,18 @@ And then you can use any of the two components in your React application or as w
 ```html
 <trieve-search trieve="<your trieve instance>" />
 ```
+
+#### Props
+
+| Name          | Type                                                                                           | Default                     |
+| ------------- | ---------------------------------------------------------------------------------------------- | --------------------------- |
+| trieve        | TrieveSDK                                                                                      | null                        |
+| chat          | boolean                                                                                        | true                        |
+| showImages    | boolean                                                                                        | false                       |
+| placeholder   | string                                                                                         | "Search..."                 |
+| onResultClick | () => void                                                                                     | () => {}                    |
+| theme         | "light" or "dark"                                                                              | "light"                     |
+| searchOptions | [SearchChunksReqPayload](https://ts-sdk.trieve.ai/types/types_gen.SearchChunksReqPayload.html) | `{ search_type: "hybrid" }` |
 
 ## License
 
