@@ -6,8 +6,12 @@ body {
   #trieve-search-modal {
     @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none text-zinc-950;
 
+    .trieve-elements-search {
+      @apply pr-2
+    }
+
     .trieve-powered {
-      @apply flex items-center justify-end w-full py-4 pr-2 gap-2 select-none cursor-pointer p-2 text-sm sticky -bottom-2 bg-zinc-50;
+      @apply flex items-center justify-end w-full pt-3 pb-1 px-2 gap-2 select-none cursor-pointer text-sm sticky -bottom-2 bg-zinc-50;
 
       img {
         @apply h-4 w-4 cursor-pointer;
@@ -63,7 +67,7 @@ body {
     h2,
     h3,
     h4 {
-      @apply font-bold py-2;
+      @apply font-semibold py-2;
     }
 
     a {
@@ -120,7 +124,7 @@ body {
     }
 
     .item {
-      @apply select-none cursor-pointer p-4 text-left flex items-start gap-2  border-b border-zinc-200 w-full text-sm pr-6 bg-zinc-50 outline-none;
+      @apply select-none cursor-pointer px-4 py-2 text-left flex items-start gap-2 w-full text-sm bg-zinc-50 outline-none rounded-lg;
 
       &.start-chat {
         @apply items-center flex;
@@ -144,16 +148,16 @@ body {
 
       &:hover,
       &:focus {
-        @apply bg-zinc-100 outline-none ring-magenta-500 ring-1 ring-inset;
+        @apply bg-zinc-100 outline-none ring-0;
       }
 
       &:hover .arrow-link,
       &:focus .arrow-link {
-        @apply block;
+        @apply text-zinc-600 dark:text-zinc-400;
       }
 
       .arrow-link {
-        @apply hidden w-4 h-4 text-zinc-600 dark:text-zinc-400 relative -right-2 shrink-0;
+        @apply text-transparent w-4 h-4 relative -right-2 shrink-0;
       }
 
       > div {
@@ -243,6 +247,24 @@ body {
 
     .open {
       @apply inline-flex items-center rounded border border-zinc-200 px-1 font-sans text-xs text-zinc-400 py-0.5;
+
+      @media screen and (-webkit-font-smoothing: antialiased) {
+        .mac {
+          display: block;
+        }
+
+        .not-mac {
+          display: none;
+        }
+      }
+      
+      .mac {
+        display: none;
+      }
+
+      .not-mac {
+        display: block;
+      }
     }
     &.dark {
       @apply bg-zinc-900 text-white/50   hover:brightness-[1.25] ring-zinc-600/30 hover:ring-magenta-500;

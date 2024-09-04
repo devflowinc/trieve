@@ -53,7 +53,12 @@ export const TrieveModalSearch = ({
   }, [query]);
 
   const checkForInteractions = (e: KeyboardEvent) => {
-    if (e.code === "KeyK" && e.metaKey && !open) setOpen(true);
+    if (e.code === "KeyK" && !open && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(true);
+    }
+
     if (e.code === "ArrowDown" && inputRef.current === document.activeElement) {
       document.getElementById(`trieve-search-item-0`)?.focus();
     }
@@ -115,7 +120,10 @@ export const TrieveModalSearch = ({
             </svg>
             <div>{placeholder}</div>
           </div>
-          <span className="open">⌘K</span>
+          <span className="open">
+            <span className="mac">⌘</span>
+            <span className="not-mac">Ctrl</span>+ K
+          </span>
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
