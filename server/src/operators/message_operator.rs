@@ -46,7 +46,9 @@ pub async fn get_topic_messages(
 ) -> Result<Vec<Message>, ServiceError> {
     use crate::data::schema::messages::dsl::*;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let topic_messages = messages
         .filter(topic_id.eq(messages_topic_id))
@@ -151,7 +153,9 @@ pub async fn get_message_by_sort_for_topic_query(
 ) -> Result<Message, ServiceError> {
     use crate::data::schema::messages::dsl::*;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     messages
         .filter(deleted.eq(false))
@@ -175,7 +179,9 @@ pub async fn get_messages_for_topic_query(
 ) -> Result<Vec<Message>, ServiceError> {
     use crate::data::schema::messages::dsl::*;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     messages
         .filter(topic_id.eq(message_topic_id))
@@ -200,7 +206,9 @@ pub async fn delete_message_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::messages::dsl::*;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let target_message: Message = messages
         .find(given_message_id)

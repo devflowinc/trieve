@@ -495,7 +495,9 @@ pub async fn get_metadata_filter_condition(
         .unwrap_or(&filter.field)
         .to_string();
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let mut query = chunk_metadata_columns::chunk_metadata
         .select(chunk_metadata_columns::qdrant_point_id)
@@ -704,7 +706,9 @@ pub async fn get_group_metadata_filter_condition(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let mut query =
         chunk_metadata_columns::chunk_metadata
@@ -874,7 +878,9 @@ pub async fn get_group_tag_set_filter_condition(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let mut query =
         chunk_metadata_columns::chunk_metadata

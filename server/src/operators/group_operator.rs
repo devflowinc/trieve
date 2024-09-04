@@ -28,7 +28,9 @@ pub async fn get_group_from_tracking_id_query(
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let (group, file_id): (ChunkGroup, Option<uuid::Uuid>) = chunk_group_columns::chunk_group
         .left_join(
@@ -58,7 +60,9 @@ pub async fn get_group_ids_from_tracking_ids_query(
 ) -> Result<Vec<(uuid::Uuid, Option<String>)>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let group_id_tracking_ids = chunk_group_columns::chunk_group
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
@@ -81,7 +85,9 @@ pub async fn update_group_by_tracking_id_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::update(
         chunk_group_columns::chunk_group
@@ -111,7 +117,9 @@ pub async fn create_groups_query(
 
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let mut inserted_groups = if upsert_by_tracking_id {
         diesel::insert_into(chunk_group_columns::chunk_group)
@@ -163,7 +171,9 @@ pub async fn get_groups_for_dataset_query(
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let page = if page == 0 { 1 } else { page };
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let group_count_result = dataset_group_count_columns::dataset_group_counts
         .filter(dataset_group_count_columns::dataset_id.eq(dataset_uuid))
@@ -233,7 +243,9 @@ pub async fn get_group_by_id_query(
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let (group, file_id): (ChunkGroup, Option<uuid::Uuid>) = chunk_group_columns::chunk_group
         .left_join(
@@ -267,7 +279,9 @@ pub async fn delete_group_by_id_query(
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let delete_chunks = delete_chunks.unwrap_or(false);
     let chunks = chunk_group_bookmarks_columns::chunk_group_bookmarks
@@ -347,7 +361,9 @@ pub async fn update_chunk_group_query(
 ) -> Result<ChunkGroup, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let updated_group: ChunkGroup = diesel::update(
         chunk_group_columns::chunk_group
@@ -376,7 +392,9 @@ pub async fn create_chunk_bookmark_query(
     use crate::data::schema::chunk_group_bookmarks::dsl::*;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::insert_into(chunk_group_bookmarks)
         .values(&bookmark)
@@ -475,7 +493,9 @@ pub async fn get_groups_for_bookmark_query(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let groups: Vec<(ChunkGroup, uuid::Uuid, Option<uuid::Uuid>)> =
         chunk_group_columns::chunk_group
@@ -540,7 +560,9 @@ pub async fn delete_chunk_from_group_query(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::delete(
         chunk_group_bookmarks_columns::chunk_group_bookmarks
@@ -577,7 +599,9 @@ pub async fn create_group_from_file_query(
 
     let file_group = FileGroup::from_details(file_id, group_id);
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::insert_into(groups_from_files_columns::groups_from_files)
         .values(&file_group)
@@ -601,7 +625,9 @@ pub async fn get_point_ids_from_unified_group_ids(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let qdrant_point_ids: Vec<uuid::Uuid> = match group_ids.get(0) {
         Some(UnifiedId::TrieveUuid(_)) => chunk_group_columns::chunk_group
@@ -656,7 +682,9 @@ pub async fn get_groups_from_group_ids_query(
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let chunk_groups_and_files: Vec<(ChunkGroup, Option<uuid::Uuid>)> =
         chunk_group_columns::chunk_group
@@ -687,7 +715,9 @@ pub async fn check_group_ids_exist_query(
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let existing_group_ids: Vec<uuid::Uuid> = chunk_group_columns::chunk_group
         .filter(chunk_group_columns::dataset_id.eq(dataset_id))
@@ -758,7 +788,9 @@ pub async fn update_grouped_chunks_query(
 
     let mut offset = uuid::Uuid::nil();
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
@@ -830,7 +862,9 @@ pub async fn get_chunk_point_ids_in_chunk_group_query(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let chunk_ids = chunk_group_bookmarks_columns::chunk_group_bookmarks
         .inner_join(chunk_metadata_columns::chunk_metadata)
@@ -852,7 +886,9 @@ pub async fn get_chunk_metadata_count_in_chunk_group_query(
 ) -> Result<i64, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let count = chunk_group_bookmarks_columns::chunk_group_bookmarks
         .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
