@@ -7,18 +7,18 @@
     "dist/*",
     "dist/**/*"
   ],
-  "version": "0.0.1-rc4",
+  "version": "0.0.1-rc5",
   "license": "MIT",
   "scripts": {
     "dev": "run-p watch:css watch:js",
-    "watch:css": "npx postcss src/app.css -o dist/app.css --watch",
+    "watch:css": "npx postcss src/app.css -o dist/index.css --watch",
     "watch:js": "node ./scripts/watch.js",
     "lint": "eslint",
     "build:clean": "rm -rf dist && yarn type:dts && yarn build",
     "build": "run-s build:src build:css type:dts",
     "build:src": "node ./scripts/build.js",
     "type:dts": "tsc --emitDeclarationOnly --declarationMap",
-    "build:css": "npx postcss src/app.css -o dist/app.css ",
+    "build:css": "npx postcss src/app.css -o dist/index.css ",
     "prepublish": "yarn build:clean"
   },
   "devDependencies": {
@@ -37,6 +37,7 @@
     "npm-run-all": "^4.1.5",
     "postcss": "^8.4.41",
     "postcss-cli": "^11.0.0",
+    "postcss-csso": "^6.0.1",
     "postcss-import": "^16.1.0",
     "postcss-nested": "^6.2.0",
     "react": "^18.3.1",

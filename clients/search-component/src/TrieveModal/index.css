@@ -7,7 +7,7 @@ body {
     @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none text-zinc-950;
 
     .trieve-powered {
-      @apply flex items-center justify-end w-full py-4 pr-2 gap-2 select-none cursor-pointer p-2 text-sm sticky -bottom-2 bg-white;
+      @apply flex items-center justify-end w-full py-4 pr-2 gap-2 select-none cursor-pointer p-2 text-sm sticky -bottom-2 bg-zinc-50;
 
       img {
         @apply h-4 w-4 cursor-pointer;
@@ -15,7 +15,7 @@ body {
     }
 
     .chat-modal-wrapper {
-      @apply flex flex-col gap-4 relative;
+      @apply flex flex-col gap-4 relative mt-1;
 
       .chat-ul {
         @apply border-zinc-300 rounded border p-4;
@@ -87,10 +87,15 @@ body {
     }
 
     .input-wrapper {
-      @apply sticky top-0 bg-zinc-50 pt-2 flex items-center;
+      @apply sticky top-0 bg-zinc-50 pt-2 flex items-center z-10 mt-1;
+
+      &::after {
+        @apply absolute h-[17px] w-full z-50 block top-[56px] bg-gradient-to-b from-zinc-50 via-zinc-50  to-transparent;
+        content: "";
+      }
 
       .search-icon {
-        @apply absolute left-2 text-zinc-400;
+        @apply absolute z-[51] left-2 text-zinc-400;
       }
 
       &.chat {
@@ -104,7 +109,7 @@ body {
     }
 
     input {
-      @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 outline-none sm:text-sm sm:leading-6 bg-zinc-50 px-4 pl-8 h-12;
+      @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 outline-none sm:text-sm sm:leading-6 bg-zinc-50 px-4 pl-8 h-12 z-10 relative;
     }
     ul {
       @apply mt-4;

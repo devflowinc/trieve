@@ -2508,10 +2508,25 @@ crypto2@2.0.0:
     node-rsa "0.4.2"
     util.promisify "1.0.0"
 
+css-tree@~2.2.0:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/css-tree/-/css-tree-2.2.1.tgz#36115d382d60afd271e377f9c5f67d02bd48c032"
+  integrity sha512-OA0mILzGc1kCOCSJerOeqDxDQ4HOh+G8NbOJFOTgOCzpw7fCBubk0fEyxp8AgOL/jvLgYA/uV0cMbe43ElF1JA==
+  dependencies:
+    mdn-data "2.0.28"
+    source-map-js "^1.0.1"
+
 cssesc@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/cssesc/-/cssesc-3.0.0.tgz#37741919903b868565e1c09ea747445cd18983ee"
   integrity sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg==
+
+csso@^5.0.5:
+  version "5.0.5"
+  resolved "https://registry.yarnpkg.com/csso/-/csso-5.0.5.tgz#f9b7fe6cc6ac0b7d90781bb16d5e9874303e2ca6"
+  integrity sha512-0LrrStPOdJj+SPCCrGhzryycLjwcgUSHBtxNA8aIDxf0GLsRh1cKYhB00Gd1lDOS4yGH69+SNn13+TWbVHETFQ==
+  dependencies:
+    css-tree "~2.2.0"
 
 csstype@^3.0.2, csstype@^3.1.0:
   version "3.1.3"
@@ -3640,11 +3655,6 @@ gensync@^1.0.0-beta.2:
   version "1.0.0-beta.2"
   resolved "https://registry.yarnpkg.com/gensync/-/gensync-1.0.0-beta.2.tgz#32a6ee76c3d7f52d46b2b1ae5d93fea8580a25e0"
   integrity sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==
-
-get-browser-fingerprint@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/get-browser-fingerprint/-/get-browser-fingerprint-3.2.0.tgz#b45e16e6185bd07d371a25a8e9fcea15efb0ec44"
-  integrity sha512-EUDjS8nxSGI6ogbGFNkUMCp8bWQKk0Qt7kWVR6Q4aLi6uBuJt3PgqaD2qC0EhgA3GMJF6KNX83uGVUwGpxziNQ==
 
 get-caller-file@^2.0.5:
   version "2.0.5"
@@ -5001,6 +5011,11 @@ mdast-util-to-string@^4.0.0:
   dependencies:
     "@types/mdast" "^4.0.0"
 
+mdn-data@2.0.28:
+  version "2.0.28"
+  resolved "https://registry.yarnpkg.com/mdn-data/-/mdn-data-2.0.28.tgz#5ec48e7bef120654539069e1ae4ddc81ca490eba"
+  integrity sha512-aylIc7Z9y4yzHYAJNuESG3hfhC+0Ibp/MAMiaOZgNv4pmEdFyfZhhhny4MNiAfWdBQ1RQ2mfDWmM1x8SvGyp8g==
+
 mdurl@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/mdurl/-/mdurl-2.0.0.tgz#80676ec0433025dd3e17ee983d0fe8de5a2237e0"
@@ -6122,6 +6137,13 @@ postcss-cli@^11.0.0:
     slash "^5.0.0"
     yargs "^17.0.0"
 
+postcss-csso@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/postcss-csso/-/postcss-csso-6.0.1.tgz#6a3e812e236fde6d710a525f2b63e6d9da5a5008"
+  integrity sha512-ZV4yEziMrx6CEiqabGLrDva0pMD7Fbw7yP+LzJvaynM4OJgTssGN6dHiMsJMJdpmNaLJltXVLsrb/5sxbFa8sA==
+  dependencies:
+    csso "^5.0.5"
+
 postcss-import@^15.1.0:
   version "15.1.0"
   resolved "https://registry.yarnpkg.com/postcss-import/-/postcss-import-15.1.0.tgz#41c64ed8cc0e23735a9698b3249ffdbf704adc70"
@@ -6925,7 +6947,7 @@ solid-use@^0.8.0:
   resolved "https://registry.yarnpkg.com/solid-use/-/solid-use-0.8.0.tgz#d46258c45edb0f4c621285e0ad1aa6b6a674d79b"
   integrity sha512-YX+XmcKLvSx3bwMimMhFy40ZkDnShnUcEw6cW6fSscwKEgl1TG3GlgAvkBmQ3AeWjvQSd8+HGTr82ImsrjkkqA==
 
-source-map-js@^1.2.0:
+source-map-js@^1.0.1, source-map-js@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/source-map-js/-/source-map-js-1.2.0.tgz#16b809c162517b5b8c3e7dcd315a2a5c2612b2af"
   integrity sha512-itJW8lvSA0TXEphiRoawsCksnlf8SyvmFzIhltqAHluXd88pkCd+cXJVHTDwdCr0IzwptSm035IHQktUu1QUMg==
