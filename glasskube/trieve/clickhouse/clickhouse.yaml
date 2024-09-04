@@ -16,26 +16,37 @@ spec:
         layout:
           shardsCount: 1
           replicasCount: 1
+    settings:
+      user_scripts_path: /opt/user_scripts
+      user_defined_executable_functions_config: /opt/user_functions/*_function.xml
   templates:
     podTemplates:
       - name: clickhouse-pod-template
         spec:
           volumes:
-            - name: trieve-clickhouse-initdb
+            - name: trieve-clickhouse-scripts
               configMap:
-                name: trieve-clickhouse-initdb
+                name: trieve-clickhouse-scripts
+                defaultMode: 0555
+            - name: trieve-clickhouse-functions
+              configMap:
+                name: trieve-clickhouse-functions
                 defaultMode: 0555
           containers:
             - name: clickhouse
-              image: trieve/clickhouse:latest
-              digest: sha256:324f541975c43e96b5df6ede74632102d89172b703960bbf01f1842ccf48d240
+              image: clickhouse/clickhouse-server:24.8
               volumeMounts:
+                - name: trieve-clickhouse-userscripts
+                  mountPath: /opt/user_scripts
                 - name: trieve-clickhouse-data
                   mountPath: /var/lib/clickhouse
                 - name: trieve-clickhouse-logs
                   mountPath: /var/log/clickhouse-server
-                - name: trieve-clickhouse-initdb
+                - name: trieve-clickhouse-scripts
                   mountPath: /docker-entrypoint-initdb.d
+                  readOnly: true
+                - name: trieve-clickhouse-functions
+                  mountPath: /opt/user_functions/
                   readOnly: true
               env:
                 - name: EMBEDDING_SERVER_URL
@@ -44,6 +55,13 @@ spec:
                   value: "password" # todo
 
     volumeClaimTemplates:
+      - name: trieve-clickhouse-userscripts
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
       - name: trieve-clickhouse-data
         spec:
           accessModes:
@@ -58,3 +76,5 @@ spec:
           resources:
             requests:
               storage: 2Gi
+
+

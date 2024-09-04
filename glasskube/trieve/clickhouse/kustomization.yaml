@@ -1,3 +1,4 @@
 resources:
-  - configmap.yaml
+  - scripts.yaml
+  - functions.yaml
   - clickhouse.yaml
