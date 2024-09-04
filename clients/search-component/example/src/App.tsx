@@ -1,5 +1,5 @@
 import { TrieveSearch, TrieveSDK, TrieveModalSearch } from "../../src/index";
-import "../../dist/app.css";
+import "../../dist/index.css";
 import { useState } from "react";
 import { IconMoon, IconNext, IconPrevious, IconSun } from "./Icons";
 import SyntaxHighlighter from "react-syntax-highlighter";
