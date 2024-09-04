@@ -94,7 +94,9 @@ pub async fn get_point_ids_from_unified_chunk_ids(
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let qdrant_point_ids: Vec<uuid::Uuid> = match chunk_ids.get(0) {
         Some(UnifiedId::TrieveUuid(_)) => chunk_metadata_columns::chunk_metadata
@@ -170,7 +172,9 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
 
     // Fetch the chunk metadatas for root chunks
     let chunk_metadatas = {
-        let mut conn = pool.get().await.unwrap();
+        let mut conn = pool.get().await.map_err(|_e| {
+            ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+        })?;
         // Get tagset and chunk metadatatable
 
         let chunk_metadata_pair: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
@@ -309,7 +313,9 @@ pub async fn get_content_chunk_from_point_ids_query(
     );
 
     let content_chunks = {
-        let mut conn = pool.get().await.unwrap();
+        let mut conn = pool.get().await.map_err(|_e| {
+            ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+        })?;
         let content_chunk_metadatas: Vec<ContentChunkMetadata> =
             chunk_metadata_columns::chunk_metadata
                 .select((
@@ -416,7 +422,9 @@ pub async fn get_metadata_from_id_query(
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let (chunk_table, tag_set) = chunk_metadata_columns::chunk_metadata
         .left_join(
@@ -459,7 +467,9 @@ pub async fn get_metadata_from_tracking_id_query(
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let (chunk_table, tag_set) = chunk_metadata_columns::chunk_metadata
         .left_join(
@@ -504,7 +514,9 @@ pub async fn get_metadata_from_ids_query(
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
         chunk_metadata_columns::chunk_metadata
@@ -551,7 +563,9 @@ pub async fn get_metadata_from_tracking_ids_query(
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
         chunk_metadata_columns::chunk_metadata
@@ -828,7 +842,9 @@ pub async fn get_optional_metadata_from_tracking_id_query(
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let optional_chunk: Option<(ChunkMetadataTable, Option<Vec<String>>)> =
         chunk_metadata_columns::chunk_metadata
@@ -912,7 +928,9 @@ pub async fn insert_chunk_metadata_query(
 
     let chunk_table: ChunkMetadataTable = chunk_data.clone().into();
 
-    let mut conn = pool.get().await.expect("Failed to get connection to db");
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let data_updated = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
         .values(&chunk_table)
@@ -1061,7 +1079,9 @@ pub async fn bulk_revert_insert_chunk_metadata_query(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl::*;
 
-    let mut conn = pool.get().await.expect("Failed to get connection to db");
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::delete(chunk_metadata.filter(id.eq_any(&chunk_ids)))
         .execute(&mut conn)
@@ -1102,7 +1122,9 @@ pub async fn update_chunk_metadata_query(
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let updated_chunk: ChunkMetadataTable = diesel::update(
         chunk_metadata_columns::chunk_metadata
@@ -1265,7 +1287,9 @@ pub async fn delete_chunk_metadata_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let transaction_result = conn
         .transaction::<_, diesel::result::Error, _>(|conn| {
@@ -1324,7 +1348,9 @@ pub async fn get_qdrant_id_from_chunk_id_query(
 ) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let qdrant_point_ids: Vec<uuid::Uuid> = chunk_metadata_columns::chunk_metadata
         .select(chunk_metadata_columns::qdrant_point_id)
@@ -1348,7 +1374,9 @@ pub async fn get_qdrant_ids_from_chunk_ids_query(
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let qdrant_point_ids: Vec<uuid::Uuid> = match chunk_ids.get(0) {
         Some(UnifiedId::TrieveUuid(_)) => chunk_metadata_columns::chunk_metadata
@@ -2227,7 +2255,9 @@ pub async fn get_row_count_for_organization_id_query(
 ) -> Result<usize, ServiceError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().await.expect("Failed to get connection to db");
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let chunk_metadata_count = organization_usage_counts_columns::organization_usage_counts
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
@@ -2415,7 +2445,9 @@ pub async fn get_pg_point_ids_from_qdrant_point_ids(
 ) -> Result<Vec<(uuid::Uuid, uuid::Uuid)>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let chunk_ids: Vec<(uuid::Uuid, uuid::Uuid)> = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::qdrant_point_id.eq_any(qdrant_point_ids))
@@ -2436,7 +2468,9 @@ pub async fn get_chunk_html_from_ids_query(
     pool: web::Data<Pool>,
 ) -> Result<Option<Vec<(uuid::Uuid, String)>>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let chunk_htmls = chunk_metadata_columns::chunk_metadata
         .select((
