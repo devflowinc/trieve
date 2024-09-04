@@ -1,0 +1,27 @@
+{
+  "bootstrap-sha": "c04a5c4691997e54ec54030cea1dae8ab4486c10",
+  "release-type": "simple",
+  "prerelease": false,
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": false,
+  "draft": false,
+  "extra-files": [],
+  "packages": {
+    ".": {}
+  },
+  "changelog-sections": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug Fixes" },
+    { "type": "chore", "section": "Other" },
+    { "type": "docs", "section": "Docs" },
+    { "type": "perf", "section": "Performance" },
+    { "type": "build", "hidden": true, "section": "Build" },
+    { "type": "deps", "section": "Dependency Updates" },
+    { "type": "ci", "hidden": true, "section": "CI" },
+    { "type": "refactor", "section": "Refactoring" },
+    { "type": "revert", "hidden": true, "section": "Reverts" },
+    { "type": "style", "hidden": true, "section": "Styling" },
+    { "type": "test", "hidden": true, "section": "Tests" }
+  ],
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}
