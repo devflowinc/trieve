@@ -7,7 +7,7 @@ body {
     @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none text-zinc-950;
 
     .trieve-elements-search {
-      @apply pr-2
+      @apply pr-2;
     }
 
     .trieve-powered {
@@ -67,7 +67,7 @@ body {
     h2,
     h3,
     h4 {
-      @apply font-semibold py-2;
+      @apply font-semibold pb-2;
     }
 
     a {
@@ -94,7 +94,7 @@ body {
       @apply sticky top-0 bg-zinc-50 pt-2 flex items-center z-10 mt-1;
 
       &::after {
-        @apply absolute h-[17px] w-full z-50 block top-[56px] bg-gradient-to-b from-zinc-50 via-zinc-50  to-transparent;
+        @apply absolute h-[17px] w-full z-50 block top-[56px] bg-gradient-to-b from-zinc-50 via-zinc-50 to-transparent dark:from-zinc-900 dark:via-zinc-900 dark:to-transparent;
         content: "";
       }
 
@@ -257,7 +257,7 @@ body {
           display: none;
         }
       }
-      
+
       .mac {
         display: none;
       }

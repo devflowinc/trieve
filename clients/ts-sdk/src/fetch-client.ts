@@ -88,9 +88,9 @@ interface TrieveOpts {
 }
 
 export class TrieveFetchClient {
-  private apiKey?: string;
-  private baseUrl: string;
-  private debug: boolean = false;
+  apiKey?: string;
+  baseUrl: string;
+  debug: boolean = false;
 
   constructor(opts: TrieveOpts) {
     this.apiKey = opts.apiKey;
