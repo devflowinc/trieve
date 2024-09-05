@@ -40,7 +40,7 @@ export async function createMessage(
 }
 
 /**
- * Create a message. Messages are attached to topics in order to coordinate memory of gen-AI chat sessions.Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * Create a message as a stream and returns a reader. Messages are attached to topics in order to coordinate memory of gen-AI chat sessions.Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
  * 
  * Example:
  * ```js
