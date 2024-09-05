@@ -8,6 +8,15 @@
   ],
   "version": "0.0.5",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/devflowinc/trieve/issues"
+  },
+  "homepage": "https://ts-sdk.trieve.ai/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devflowinc/trieve",
+    "directory": "clients/ts-sdk"
+  },
   "scripts": {
     "lint": "eslint 'src/**/*.ts'",
     "build:clean": "rm -f tsconfig.tsbuildinfo && rm -rf dist && yarn type:gen && yarn build",
