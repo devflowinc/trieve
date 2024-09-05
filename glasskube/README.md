@@ -4,9 +4,12 @@
 ## 1. Start a new minikube cluster
 
 [Minikube](https://minikube.sigs.k8s.io/docs/start/) can be installed via Homebrew or binary downloads.
+Also make sure to enable the ingress and metrics plugin
 
 ```shell
 minikube start -p trieve
+minikube addons enable metrics-server -p trieve
+minikube addons enable ingress -p trieve
 ```
 
 ## 2. Bootstrap glasskube
@@ -68,14 +71,63 @@ kubectl port-forward svc/trieve-keycloak-service 8080:8080
 
 Open [dashboard.localtrieve.com](http://dashboard.localtrieve.com) in your browser.
 
-## Optional commands
+## Optional commands & debugging info
 
-#### Scale down all embedding servers:
+#### Working on low CPU machines
+
+You can scale down all embedding servers to reduce the memory and cpu usage of trieve.
 
 ```shell
-kubectl scale deployment trieve-embedding-bgem3  trieve-embedding-jina trieve-embedding-reranker trieve-embedding-splade-doc trieve-embedding-splade-query --replicas 0
+kubectl scale deployment trieve-embedding-bgem3 trieve-embedding-jina trieve-embedding-reranker trieve-embedding-splade-doc trieve-embedding-splade-query --replicas 0
+```
+
+If you still want to do end-to-end test you can only start the `trieve-embedding-bgem3`
+and configure the dataset in a specific way:
+
+1. Create a new dataset
+2. Disable full text search
+3. Import test data
+
+After that the ingestion worker will orchestrate the ingestion.
+
+You can see the ingestion progress by connecting to the redis pod and execute the `redis-cli` and
+monitor progress by looking at the queues `llen ingestion` and `llen processing`.
+
+After ingestion is done you can search the dataset by only setting the search type to semantic so
+only bgem3 is used.
+
+#### Qdrant
+
+Qdrant throws some weird exceptions during the initial database migrations, but keeps working normally after.
+
+You can monitor the status of the collections by looking at the Qdrant ui:
+
+```shell
+glasskube open qdrant
+```
+
+You can fetch the API key with:
 
 ```
+kubectl get secret trieve-qdrant-qdrant-apikey -o jsonpath='{.data.api-key}' | base64 -d
+```
+
+#### ClickHouse
+
+In order to test if ClickHouse works you can connect to clickhouse via:
+
+```shell
+kubectl exec -it chi-trieve-clickhouse-cluster1-0-0-0 -- clickhouse-client
+```
+
+The password is currently `password` but will be changed in the future.
+
+In order to see if the custom embedding function works you can execute:
+
+```
+select embed_p('test');
+```
+
 
 #### Deleting the cluster
 
