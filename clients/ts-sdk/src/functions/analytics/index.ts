@@ -1,7 +1,7 @@
 /**
  * This includes all the functions you can use to communicate with our analytics API
  *
- * @module Analytic Methods
+ * @module Analytics Methods
  */
 
 import {
