@@ -44,7 +44,7 @@ export const ChatMode = ({
       setIsLoading(true);
       const fingerprint = await getFingerprint();
       const topic = await trieve.createTopic({
-        first_user_message: currentQuestion,
+        name: currentQuestion,
         owner_id: fingerprint.toString(),
       });
       setCurrentQuestion("");
@@ -53,25 +53,56 @@ export const ChatMode = ({
     }
   };
 
+  const handleReader = async (
+    reader: ReadableStreamDefaultReader<Uint8Array>
+  ) => {
+    setIsLoading(true);
+    let done = false;
+    let textInStream = "";
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      if (doneReading) {
+        done = doneReading;
+        setIsLoading(false);
+      } else if (value) {
+        const decoder = new TextDecoder();
+        const newText = decoder.decode(value);
+        textInStream += newText;
+        const [text, jsonData] = textInStream.split("||");
+        let json;
+        try {
+          json = JSON.parse(jsonData);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_) {
+          json = null;
+        }
+
+        setMessages((m) => [
+          [
+            m[0][0],
+            {
+              type: "system",
+              text: text,
+              additional: json ? json : null,
+            },
+          ],
+          ...m.slice(1),
+        ]);
+      }
+    }
+  };
+
   const createQuestion = async (id?: string) => {
     setIsLoading(true);
-    const answer = await trieve.createMessage({
+    const reader = await trieve.createMessageReader({
       topic_id: id || currentTopic,
       new_message_content: currentQuestion,
+      llm_options: {
+        completion_first: true,
+      },
     });
-    const [json, text] = answer.split("||");
-    setMessages((m) => [
-      [
-        m[0][0],
-        {
-          type: "system",
-          text: text,
-          additional: JSON.parse(json),
-        },
-      ],
-      ...m.slice(1),
-    ]);
-    setIsLoading(false);
+    handleReader(reader);
   };
 
   useEffect(() => {
@@ -105,17 +136,17 @@ export const ChatMode = ({
       </div>
       <div className="chat-modal-wrapper">
         {messages.map((chat, i) => (
-          <ul className="chat-ul">
+          <ul className="chat-ul" key={i}>
             {chat.map((message, idx) => {
               return (
-                <div>
+                <div key={idx}>
                   {message.type == "user" ? (
                     <div className={message.type}>
                       {isLoading && i === 0 ? <LoadingAIIcon /> : <CheckIcon />}
                       <span> {message.text}</span>
                     </div>
                   ) : null}
-                  {isLoading && i === 0 ? (
+                  {isLoading && i === 0 && !message.text ? (
                     <div className="system">
                       <LoadingIcon />
                     </div>
