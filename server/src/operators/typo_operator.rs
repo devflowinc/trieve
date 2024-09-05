@@ -599,14 +599,14 @@ fn correct_query_helper(
         .collect();
 
     let single_typo_range = options.one_typo_word_range.clone().unwrap_or(TypoRange {
-        min: 5,
-        max: Some(8),
+        min: 4,
+        max: Some(6),
     });
 
     let two_typo_range = options
         .two_typo_word_range
         .clone()
-        .unwrap_or(TypoRange { min: 8, max: None });
+        .unwrap_or(TypoRange { min: 6, max: None });
 
     for &word in &query_words {
         if corrections.contains_key(word) {
@@ -661,7 +661,7 @@ fn correct_query_helper(
                     best_correction = None;
                     break;
                 }
-                if !is_best_correction(word, correction) {
+                if !is_best_correction(word.to_lowercase(), correction.to_string()) {
                     continue;
                 }
 
@@ -703,7 +703,7 @@ fn correct_query_helper(
     }
 }
 
-fn is_best_correction(word: &str, correction: &str) -> bool {
+fn is_best_correction(word: String, correction: String) -> bool {
     // Length-based filter
     let len_diff = (word.len() as i32 - correction.len() as i32).abs();
     if len_diff > 2 {
@@ -712,7 +712,9 @@ fn is_best_correction(word: &str, correction: &str) -> bool {
 
     // Prefix matching (adjust the length as needed)
     let prefix_len = std::cmp::min(1, std::cmp::min(word.len(), correction.len()));
-    if word[..prefix_len] != correction[..prefix_len] {
+    if word.chars().take(prefix_len).collect::<Vec<_>>()
+        != correction.chars().take(prefix_len).collect::<Vec<_>>()
+    {
         return false;
     }
 
