@@ -49,8 +49,10 @@ spec:
                   mountPath: /opt/user_functions/
                   readOnly: true
               env:
+                - name: CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS
+                  value: "true"
                 - name: EMBEDDING_SERVER_URL
-                  value: "" # todo
+                  value: "http://trieve-embedding-bgem3" # todo
                 - name: CLICKHOUSE_ADMIN_PASSWORD
                   value: "password" # todo
 

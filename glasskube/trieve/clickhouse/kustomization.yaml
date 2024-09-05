@@ -1,4 +1,15 @@
 resources:
-  - scripts.yaml
-  - functions.yaml
   - clickhouse.yaml
+
+configMapGenerator:
+  - name: trieve-clickhouse-functions
+    files:
+      - embedding_function.xml
+    options:
+      disableNameSuffixHash: true
+
+  - name: trieve-clickhouse-scripts
+    files:
+      - load_embed.sh
+    options:
+      disableNameSuffixHash: true
