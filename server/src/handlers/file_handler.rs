@@ -194,7 +194,7 @@ pub async fn upload_file_handler(
     redis::cmd("lpush")
         .arg("file_ingestion")
         .arg(&serialized_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<_, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     push_to_redis_span.finish();

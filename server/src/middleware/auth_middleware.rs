@@ -228,7 +228,7 @@ async fn get_user(
 
                         let slim_user_string = serde_json::to_string(&slim_user).ok()?;
                         redis_conn
-                            .set(slim_user.id.to_string(), slim_user_string)
+                            .set::<_, _, ()>(slim_user.id.to_string(), slim_user_string)
                             .await
                             .ok()?;
 

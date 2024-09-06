@@ -311,7 +311,7 @@ async fn upload_file(
     let tika_html_parse_span = transaction.start_child("tika_html_parse", "Parse tika html");
 
     let tika_response = tika_client
-        .put(&format!("{}/tika", tika_url))
+        .put(format!("{}/tika", tika_url))
         .header("Accept", "text/html")
         .body(file_data.clone())
         .send()
@@ -434,7 +434,7 @@ pub async fn readd_error_to_queue(
         redis::cmd("lpush")
             .arg("dead_letters_file")
             .arg(old_payload_message)
-            .query_async(&mut *redis_conn)
+            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -462,7 +462,7 @@ pub async fn readd_error_to_queue(
     redis::cmd("lpush")
         .arg("file_ingestion")
         .arg(&new_payload_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

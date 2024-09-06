@@ -104,7 +104,7 @@ pub async fn update_organization_query(
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
     })?;
 
-    redis_conn.del(users).await.map_err(|_| {
+    redis_conn.del::<_, ()>(users).await.map_err(|_| {
         ServiceError::InternalServerError("Failed to delete user from redis".to_string())
     })?;
 
@@ -145,7 +145,7 @@ pub async fn delete_organization_query(
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
     })?;
 
-    redis_conn.del(users).await.map_err(|_| {
+    redis_conn.del::<_, ()>(users).await.map_err(|_| {
         ServiceError::InternalServerError("Failed to delete user from redis".to_string())
     })?;
 
@@ -225,7 +225,7 @@ pub async fn delete_organization_query(
     })?;
 
     redis_conn
-        .sadd("deleted_organizations", org_id.to_string())
+        .sadd::<_, _, ()>("deleted_organizations", org_id.to_string())
         .await
         .map_err(|_| {
             ServiceError::InternalServerError(

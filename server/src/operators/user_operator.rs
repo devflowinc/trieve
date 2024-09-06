@@ -146,9 +146,12 @@ pub async fn update_user_org_role_query(
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
     })?;
 
-    redis_conn.del(user_id.to_string()).await.map_err(|_| {
-        ServiceError::InternalServerError("Failed to delete user from redis".to_string())
-    })?;
+    redis_conn
+        .del::<_, ()>(user_id.to_string())
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to delete user from redis".to_string())
+        })?;
 
     Ok(())
 }
@@ -486,7 +489,7 @@ pub async fn add_user_to_organization(
     })?;
 
     redis_conn
-        .del(user_id_refresh.to_string())
+        .del::<_, ()>(user_id_refresh.to_string())
         .await
         .map_err(|_| {
             ServiceError::InternalServerError("Failed to delete user from redis".to_string())
@@ -611,9 +614,12 @@ pub async fn remove_user_from_org_query(
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
     })?;
 
-    redis_conn.del(user_id.to_string()).await.map_err(|_| {
-        ServiceError::InternalServerError("Failed to delete user from redis".to_string())
-    })?;
+    redis_conn
+        .del::<_, ()>(user_id.to_string())
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to delete user from redis".to_string())
+        })?;
 
     Ok(())
 }

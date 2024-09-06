@@ -723,7 +723,7 @@ pub async fn update_chunk(
     redis::cmd("lpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
-        .query_async(&mut *redis_conn)
+        .query_async::<_, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -869,7 +869,7 @@ pub async fn update_chunk_by_tracking_id(
     redis::cmd("lpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
-        .query_async(&mut *redis_conn)
+        .query_async::<_, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
