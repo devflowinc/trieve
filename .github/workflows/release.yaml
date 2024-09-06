@@ -25,7 +25,7 @@ jobs:
   publish-manifest:
     needs:
       - release-please
-    if: ${{ needs.release-please.outputs.releases_created == 'true'
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
