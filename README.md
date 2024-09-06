@@ -118,6 +118,12 @@ npm install -g yarn
 mkdir server/tmp
 ```
 
+### Install rust
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
 ### Install cargo-watch
 
 ```
@@ -156,7 +162,7 @@ COMPOSE_PROFILE=dev docker compose up
 
 ### Start services for local dev
 
-We know this is bad. Currently, We recommend managing this through tmux or VSCode terminal tabs.
+We know this is bad. Currently, we recommend managing this through [tmux](https://gist.github.com/skeptrunedev/101c7a13bb9b9242999830655470efac) or VSCode terminal tabs.
 
 ```
 cd server
@@ -174,6 +180,8 @@ cd chat
 yarn
 yarn dev
 ```
+
+We have [tmux config](https://gist.github.com/skeptrunedev/101c7a13bb9b9242999830655470efac) we use internally you can use.
 
 ## Local development with Windows
 
@@ -222,9 +230,11 @@ Add Postgres to PATH
 ### Setup env's
 
 ```
-cp .env.chat ./chat/.env
-cp .env.search ./search/.env
+cp .env.analytics ./frontends/analytics/.env
+cp .env.chat ./frontends/chat/.env
+cp .env.search ./frontends/search/.env
 cp .env.server ./server/.env
+cp .env.dashboard ./frontends/dashboard/.env
 ```
 
 ### Add your `LLM_API_KEY` to `./server/.env`
