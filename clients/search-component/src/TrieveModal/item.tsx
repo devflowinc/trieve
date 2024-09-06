@@ -62,14 +62,14 @@ export const Item = ({
               <p
                 className="description"
                 dangerouslySetInnerHTML={{ __html: item.highlights[0] }}
-              ></p>
+              />
             </div>
           ) : (
             <p
               dangerouslySetInnerHTML={{
                 __html: item.highlights[0] || item.chunk.highlight || "",
               }}
-            ></p>
+            />
           )}
           <ArrowIcon />
         </div>

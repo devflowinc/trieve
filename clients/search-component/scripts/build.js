@@ -3,7 +3,7 @@ const { build } = require("esbuild");
 const { dependencies, peerDependencies } = require("../package.json");
 
 const options = {
-  entryPoints: [`src/index.ts`],
+  entryPoints: ["src/index.ts"],
   bundle: true,
   minify: true,
   sourcemap: true,

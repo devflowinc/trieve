@@ -1,4 +1,4 @@
-import { omit } from "lodash-es";
+import omit from "lodash.omit";
 import { Chunk, ChunkWithHighlights } from "../utils/types";
 import React from "react";
 
