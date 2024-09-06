@@ -11,6 +11,9 @@
   },
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
+    { "type": "feature", "section": "Features" },
+    { "type": "enhancement", "section": "Enhacements" },
+    { "type": "enhancements", "section": "Enhacements" },
     { "type": "fix", "section": "Bug Fixes" },
     { "type": "chore", "section": "Other" },
     { "type": "docs", "section": "Docs" },
