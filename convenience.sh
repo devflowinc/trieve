@@ -30,8 +30,13 @@ build_typescript_client() {
     echo "Done building the TypeScript client."
 }
 
+start_firecrawl() {
+    echo "Starting Firecrawl..."
+    docker compose -f docker-compose-firecrawl.yml up -d firecrawl-worker firecrawl-api playwright-service redis
+}
+
 # Main script logic
-while getopts ":qps3lc" opt; do
+while getopts ":qps3lcf" opt; do
     case $opt in
         q)
             reset_qdrant_database
@@ -41,6 +46,9 @@ while getopts ":qps3lc" opt; do
             ;;
         l)
             start_local_services
+            ;;
+        f)
+            start_firecrawl
             ;;
         c)
             build_typescript_client
