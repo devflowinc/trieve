@@ -35,17 +35,17 @@
 
 ## Features
 
-- **🔒 Self-Hosting in your VPC or on-prem**: Buy a license to host in your company's VPC on prem with our ready-to-go docker containers and terraform templates. 
+- **🔒 Self-Hosting in your VPC or on-prem**: Buy a license to host in your company's VPC on prem with our ready-to-go docker containers and terraform templates.
 - **🧠 Semantic Dense Vector Search**: Integrates with OpenAI or Jina embedding models and [Qdrant](https://qdrant.tech) to provide semantic vector search.
 - **🔍 Typo Tolerant Full-Text/Neural Search**: Every uploaded chunk is vector'ized with [naver/efficient-splade-VI-BT-large-query](https://huggingface.co/naver/efficient-splade-VI-BT-large-query) for typo tolerant, quality neural sparse-vector search.
 - **🖊️ Sub-Sentence Highlighting**: Highlight the matching words or sentences within a chunk and bold them on search to enhance UX for your users. Shout out to the [simsearch](https://github.com/smartdatalake/simsearch) crate!
-- **🌟 Recommendations**: Find similar chunks (or files if using grouping) with the recommendation API. Very helpful if you have a platform where users favorite, bookmark, or upvote content. 
+- **🌟 Recommendations**: Find similar chunks (or files if using grouping) with the recommendation API. Very helpful if you have a platform where users favorite, bookmark, or upvote content.
 - **🤖 Convenient RAG API Routes**: We integrate with OpenRouter to provide you with access to any LLM you would like for RAG. Try our routes for [fully-managed RAG with topic-based memory management](https://api.trieve.ai/redoc#tag/message/operation/create_message_completion_handler) or [select your own context RAG](https://api.trieve.ai/redoc#tag/chunk/operation/generate_off_chunks).
 - **💼 Bring Your Own Models**: If you'd like, you can bring your own text-embedding, SPLADE, cross-encoder re-ranking, and/or large-language model (LLM) and plug it into our infrastructure.
-- **🔄 Hybrid Search with cross-encoder re-ranking**: For the best results, use hybrid search with [BAAI/bge-reranker-large](https://huggingface.co/BAAI/bge-reranker-large) re-rank optimization. 
+- **🔄 Hybrid Search with cross-encoder re-ranking**: For the best results, use hybrid search with [BAAI/bge-reranker-large](https://huggingface.co/BAAI/bge-reranker-large) re-rank optimization.
 - **📆 Recency Biasing**: Easily bias search results for what was most recent to prevent staleness
 - **🛠️ Tunable Popularity-Based Ranking (Merchandizing)**: Weight indexed documents by popularity, total sales, or any other arbitrary metric for tunable relevancy
-- **🕳️ Filtering**: Date-range, substring match, tag, numeric, and other filter types are supported. 
+- **🕳️ Filtering**: Date-range, substring match, tag, numeric, and other filter types are supported.
 - **🧐 Duplicate Detection**: Check out our docs on [collision-based dup detection](https://docs.trieve.ai/duplicate_detection) to learn about how we handle duplicates. This is a setting you can turn on or off.
 - **👥 Grouping**: Mark multiple chunks as being part of the same file and search on the file-level such that the same top-level result never appears twice
 
@@ -127,10 +127,11 @@ cargo install cargo-watch
 ### Setup env's
 
 ```
-cp .env.chat ./chat/.env
-cp .env.search ./search/.env
+cp .env.analytics ./frontends/analytics/.env
+cp .env.chat ./frontends/chat/.env
+cp .env.search ./frontends/search/.env
 cp .env.server ./server/.env
-cp .env.dashboard ./dashboard/.env
+cp .env.dashboard ./frontends/dashboard/.env
 ```
 
 ### Add your `LLM_API_KEY` to `./server/.env`
@@ -149,8 +150,8 @@ cp .env.dashboard ./dashboard/.env
 cat .env.chat .env.search .env.server .env.docker-compose > .env
 
 ./convenience.sh -l
-# or 
-COMPOSE_PROFILE=dev docker compose up 
+# or
+COMPOSE_PROFILE=dev docker compose up
 ```
 
 ### Start services for local dev
