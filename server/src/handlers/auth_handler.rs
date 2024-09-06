@@ -529,7 +529,7 @@ pub async fn callback(
     })?;
 
     redis_conn
-        .set(slim_user.id.to_string(), slim_user_string)
+        .set::<_, _, ()>(slim_user.id.to_string(), slim_user_string)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

@@ -427,7 +427,7 @@ pub async fn get_dense_vectors(
 
             let vectors_resp = async move {
                 let embeddings_resp = cur_client
-                .post(&format!("{}/embeddings?api-version=2023-05-15", url))
+                .post(format!("{}/embeddings?api-version=2023-05-15", url))
                 .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
                 .header("api-key", &embedding_api_key.clone())
                 .header("Content-Type", "application/json")
@@ -511,7 +511,7 @@ pub async fn get_dense_vectors(
 
                 let vectors_resp = async move {
                     let embeddings_resp = cur_client
-                    .post(&format!("{}/embeddings?api-version=2023-05-15", url))
+                    .post(format!("{}/embeddings?api-version=2023-05-15", url))
                     .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
                     .header("api-key", &embedding_api_key.clone())
                     .header("Content-Type", "application/json")

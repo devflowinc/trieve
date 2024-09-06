@@ -360,7 +360,7 @@ impl BkTree {
         redis::cmd("SET")
             .arg(format!("bk_tree_{}", dataset_id))
             .arg(serialized_bk_tree)
-            .query_async(&mut *redis_conn)
+            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

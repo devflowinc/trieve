@@ -393,7 +393,7 @@ pub async fn readd_error_to_queue(
         redis::cmd("lpush")
             .arg("dictionary_dead_letters")
             .arg(old_payload_message)
-            .query_async(&mut *redis_conn)
+            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         return Err(ServiceError::InternalServerError(format!(
@@ -409,7 +409,7 @@ pub async fn readd_error_to_queue(
     redis::cmd("lpush")
         .arg("create_dictionary")
         .arg(&new_payload_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

@@ -770,7 +770,7 @@ pub async fn soft_update_grouped_chunks_query(
     redis::cmd("lpush")
         .arg("group_update_queue")
         .arg(&serialized_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<_, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
