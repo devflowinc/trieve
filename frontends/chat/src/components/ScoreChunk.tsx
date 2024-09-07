@@ -10,7 +10,7 @@ import {
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
 import { AiOutlineCopy } from "solid-icons/ai";
-import { FiCheck, FiExternalLink } from "solid-icons/fi";
+import { FiCheck, FiExternalLink, FiGlobe } from "solid-icons/fi";
 
 export const sanitzerOptions = {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -72,24 +72,30 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [expandMetadata, setExpandMetadata] = createSignal(false);
 
   const copyChunk = () => {
-    navigator.clipboard
-      .write([
-        new ClipboardItem({
-          "text/html": new Blob([props.chunk.chunk_html ?? ""], {
-            type: "text/html",
+    try {
+      navigator.clipboard
+        .write([
+          new ClipboardItem({
+            "text/plain": new Blob([props.chunk.chunk_html ?? ""], {
+              type: "text/plain",
+            }),
+            "text/html": new Blob([props.chunk.chunk_html ?? ""], {
+              type: "text/html",
+            }),
           }),
-        }),
-      ])
-      .then(() => {
-        alert("COPIED");
-        setCopied(true);
-        setTimeout(() => {
-          setCopied(false);
-        }, 2000);
-      })
-      .catch((err: string) => {
-        alert("Failed to copy to clipboard: " + err);
-      });
+        ])
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => {
+            setCopied(false);
+          }, 2000);
+        })
+        .catch((err) => {
+          alert(`Failed to copy to clipboard: ${(err as Error).message}`);
+        });
+    } catch (err) {
+      alert(`Failed to copy to clipboard: ${(err as Error).message}`);
+    }
   };
 
   const useExpand = createMemo(() => {
@@ -107,7 +113,11 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           <span class="font-semibold">Doc: {props.counter}</span>
           <div class="flex-1" />
           <Show when={!copied()}>
-            <button class="h-fit opacity-50" onClick={() => copyChunk()}>
+            <button
+              title="Copy text to clipboard"
+              class="h-fit opacity-50"
+              onClick={() => copyChunk()}
+            >
               <AiOutlineCopy class="h-5 w-5 fill-current" />
             </button>
           </Show>
