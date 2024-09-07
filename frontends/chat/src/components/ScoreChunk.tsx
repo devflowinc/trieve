@@ -10,7 +10,7 @@ import {
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
 import { AiOutlineCopy } from "solid-icons/ai";
-import { FiCheck, FiExternalLink, FiGlobe } from "solid-icons/fi";
+import { FiCheck, FiExternalLink } from "solid-icons/fi";
 
 export const sanitzerOptions = {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
