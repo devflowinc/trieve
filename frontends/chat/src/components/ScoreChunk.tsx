@@ -118,7 +118,11 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           <span class="font-semibold">Doc: {props.counter}</span>
           <div class="flex-1" />
           <Show when={!copied()}>
-            <button class="h-fit opacity-50" onClick={() => copyChunk()}>
+            <button
+              title="Copy text to clipboard"
+              class="h-fit opacity-50"
+              onClick={() => copyChunk()}
+            >
               <AiOutlineCopy class="h-5 w-5 fill-current" />
             </button>
           </Show>
