@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "prettier --write  \"**/*.{js,jsx,ts,tsx,md,mdx,}\" && eslint --fix \"src/**/*.{js,ts,jsx,tsx,astro}\"",
     "lint:only": "eslint --fix \"src/**/*.{js,ts,jsx,tsx,}\"",
-    "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
+    "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@nozbe/microfuzz": "^1.0.0",
@@ -21,7 +22,7 @@
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",
     "terracotta": "^1.0.3",
-    "trieve-ts-sdk": "file:../../clients/ts-sdk",
+    "trieve-ts-sdk": "*",
     "vite-plugin-runtime-env": "^0.1.1"
   },
   "devDependencies": {

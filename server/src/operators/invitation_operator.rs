@@ -15,7 +15,9 @@ pub async fn create_invitation_query(
 ) -> Result<Invitation, ServiceError> {
     use crate::data::schema::invitations::dsl::invitations;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let new_invitation = Invitation::from_details(email, organization_id, user_role);
 
@@ -35,7 +37,9 @@ pub async fn get_invitation_by_id_query(
 ) -> Result<Invitation, ServiceError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let invitation = invitations_columns::invitations
         .filter(invitations_columns::id.eq(id))
@@ -89,7 +93,9 @@ pub async fn set_invitation_used(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::update(invitations_columns::invitations)
         .filter(invitations_columns::id.eq(id))
@@ -148,7 +154,9 @@ pub async fn get_invitations_for_organization_query(
 ) -> Result<Vec<Invitation>, ServiceError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let invitations = invitations_columns::invitations
         .filter(invitations_columns::organization_id.eq(organization_id))
@@ -165,7 +173,9 @@ pub async fn delete_invitation_by_id_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::delete(invitations_columns::invitations.filter(invitations_columns::id.eq(id)))
         .execute(&mut conn)

@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trieve-embedding
+spec:
+  selector: {}
+  template:
+    spec:
+      containers:
+        - name: embedding
+          args:
+            - --model-id
+            - jinaai/jina-embeddings-v2-base-en
+            - --revision
+            - main

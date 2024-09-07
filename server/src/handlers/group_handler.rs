@@ -1426,6 +1426,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             filters: search_within_group_data.filters,
             search_type: search_within_group_data.search_type,
             sort_options: search_within_group_data.sort_options,
+            scoring_options: None,
             highlight_options: search_within_group_data.highlight_options,
             score_threshold: search_within_group_data.score_threshold,
             slim_chunks: search_within_group_data.slim_chunks,

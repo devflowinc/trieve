@@ -104,7 +104,7 @@ pub async fn update_organization_query(
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
     })?;
 
-    redis_conn.del(users).await.map_err(|_| {
+    redis_conn.del::<_, ()>(users).await.map_err(|_| {
         ServiceError::InternalServerError("Failed to delete user from redis".to_string())
     })?;
 
@@ -145,7 +145,7 @@ pub async fn delete_organization_query(
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
     })?;
 
-    redis_conn.del(users).await.map_err(|_| {
+    redis_conn.del::<_, ()>(users).await.map_err(|_| {
         ServiceError::InternalServerError("Failed to delete user from redis".to_string())
     })?;
 
@@ -225,7 +225,7 @@ pub async fn delete_organization_query(
     })?;
 
     redis_conn
-        .sadd("deleted_organizations", org_id.to_string())
+        .sadd::<_, _, ()>("deleted_organizations", org_id.to_string())
         .await
         .map_err(|_| {
             ServiceError::InternalServerError(
@@ -453,7 +453,9 @@ pub async fn get_org_users_by_id_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let user_orgs_orgs: Vec<(User, UserOrganization, Organization)> = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
@@ -493,7 +495,9 @@ pub async fn get_arbitrary_org_owner_from_org_id(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let user_orgs_orgs: (User, UserOrganization, Organization) = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
@@ -541,7 +545,9 @@ pub async fn get_arbitrary_org_owner_from_dataset_id(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let user_orgs_orgs: (User, UserOrganization, Organization) = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
@@ -587,7 +593,9 @@ pub async fn get_soft_deleted_datasets_for_organization(
 ) -> Result<Vec<Dataset>, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let datasets: Vec<Dataset> = datasets_columns::datasets
         .filter(datasets_columns::organization_id.eq(organization_id))
@@ -611,7 +619,9 @@ pub async fn delete_actual_organization_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::delete(
         organizations_columns::organizations.filter(organizations_columns::id.eq(org_id)),
@@ -639,7 +649,9 @@ pub async fn update_all_org_dataset_configs_query(
         new_config.to_string().replace('\'', "''"), org_id
     ));
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     concat_configs_raw_query
         .execute(&mut conn)

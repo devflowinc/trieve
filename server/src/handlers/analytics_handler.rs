@@ -2,9 +2,10 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        DatasetAndOrgWithSubAndPlan, DateRange, Pool, RAGAnalytics, RAGAnalyticsResponse,
-        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
-        SearchAnalyticsResponse, TopDatasetsRequestTypes,
+        DatasetAndOrgWithSubAndPlan, DateRange, EventDataClickhouse, EventTypes, Pool,
+        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
+        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
+        TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::analytics_operator::*,
@@ -446,20 +447,54 @@ pub struct CTRDataRequestBody {
         ("ApiKey" = ["admin"]),
     )
 )]
+#[deprecated]
 pub async fn send_ctr_data(
     _user: AdminOnly,
     data: web::Json<CTRDataRequestBody>,
     clickhouse_client: web::Data<clickhouse::Client>,
-    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    send_ctr_data_query(
-        data.into_inner(),
-        clickhouse_client.get_ref(),
-        pool.clone(),
+    let event_data = EventDataClickhouse::from_event_data(
+        data.into_inner().into(),
         dataset_org_plan_sub.dataset.id,
+    );
+    send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+/// Send Event Data
+///
+/// This route allows you to send event data to the system.
+#[utoipa::path(
+    put,
+    path = "/analytics/events",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = EventTypes, description = "JSON request payload to send event data", content_type = "application/json"),
+    responses(
+        (status = 204, description = "The event data was successfully sent"),
+
+        (status = 400, description = "Service error relating to sending event data", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
     )
-    .await?;
+)]
+pub async fn send_event_data(
+    _user: AdminOnly,
+    data: web::Json<EventTypes>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let event_data =
+        EventDataClickhouse::from_event_data(data.into_inner(), dataset_org_plan_sub.dataset.id);
+
+    send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

@@ -1,0 +1,7 @@
+commonLabels:
+  app.kubernetes.io/component: keycloak
+resources:
+  - postgres.yaml
+  - keycloak.yaml
+  - realm-import.yaml
+  

@@ -7,15 +7,20 @@
   "excludeProtected": true,
   "includeVersion": true,
   "name": "Trieve Typescript SDK",
+  "favicon": "https://cdn.trieve.ai/favicon-32x32.png",
   "readme": "./README.md",
-  "searchInComments": true,
-  "searchInDocuments": true,
+  "customFooterHtml": "Please reach out if you'd like assistance; we are responsive! Contact <a href='mailto:humans@trieve.ai'>humans@trieve.ai</a> or see <a href='https://trieve.ai'>trieve.ai</a> for links to Discord and Matrix.",
+  "searchInComments": false,
+  "searchInDocuments": false,
   "navigationLinks": {
-    "Github": "http://example.com"
+    "Github": "https://github.com/devflowinc/trieve/tree/main/clients/ts-sdk"
   },
-
   "categorizeByGroup": true,
   "customCss": "./theme/style.css",
-  "plugin": ["typedoc-plugin-merge-modules", "typedoc-plugin-mdn-links"],
-  "mergeModulesMergeMode": "module" // NEW option of TypeDoc added by this plugin
+  "plugin": [
+    "typedoc-plugin-merge-modules",
+    "typedoc-plugin-mdn-links",
+    "typedoc-plugin-extras"
+  ],
+  "mergeModulesMergeMode": "module"
 }

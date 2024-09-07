@@ -27,6 +27,7 @@ import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { createToast } from "./ShowToasts";
 import { Tooltip } from "shared/ui";
+import { useLocation } from "@solidjs/router";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -65,6 +66,11 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
   const $currentDataset = datasetAndUserContext.currentDataset;
+
+  const location = useLocation();
+  const isInChunkViewer = createMemo(() => {
+    return location.pathname.startsWith("/chunk/");
+  });
 
   const onDelete = () => {
     if (props.signedInUserId !== props.viewingUserId) return;
@@ -145,19 +151,21 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   <FiEdit class="h-5 w-5" />
                 </a>
               </Show>
-              <Tooltip
-                body={
-                  <a
-                    title="Open chunk to test recommendations for similar chunks"
-                    href={`/chunk/${props.chunk.id}?dataset=${
-                      $currentDataset?.()?.dataset.id ?? ""
-                    }`}
-                  >
-                    <FiEye class="h-5 w-5" />
-                  </a>
-                }
-                tooltipText="Open to test recommendations for similar chunks"
-              />
+              <Show when={!isInChunkViewer()}>
+                <Tooltip
+                  body={
+                    <a
+                      title="Open chunk to test recommendations for similar chunks"
+                      href={`/chunk/${props.chunk.id}?dataset=${
+                        $currentDataset?.()?.dataset.id ?? ""
+                      }`}
+                    >
+                      <FiEye class="h-5 w-5" />
+                    </a>
+                  }
+                  tooltipText="Open to test recommendations for similar chunks"
+                />
+              </Show>
 
               <BookmarkPopover
                 totalGroupPages={props.totalGroupPages}

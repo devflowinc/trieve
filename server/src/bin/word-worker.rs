@@ -22,7 +22,7 @@ use trieve_server::{
         chunk_operator::get_chunk_html_from_ids_query,
         dataset_operator::add_words_to_dataset,
         parse_operator::convert_html_to_text,
-        words_operator::{CreateBkTreeMessage, ProcessWordsFromDatasetMessage},
+        typo_operator::{CreateBkTreeMessage, ProcessWordsFromDatasetMessage},
     },
 };
 
@@ -393,7 +393,7 @@ pub async fn readd_error_to_queue(
         redis::cmd("lpush")
             .arg("dictionary_dead_letters")
             .arg(old_payload_message)
-            .query_async(&mut *redis_conn)
+            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         return Err(ServiceError::InternalServerError(format!(
@@ -409,7 +409,7 @@ pub async fn readd_error_to_queue(
     redis::cmd("lpush")
         .arg("create_dictionary")
         .arg(&new_payload_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

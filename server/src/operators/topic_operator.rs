@@ -7,7 +7,9 @@ use diesel_async::RunQueryDsl;
 pub async fn create_topic_query(topic: Topic, pool: &web::Data<Pool>) -> Result<(), ServiceError> {
     use crate::data::schema::topics::dsl::*;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::insert_into(topics)
         .values(&topic)
@@ -28,7 +30,9 @@ pub async fn delete_topic_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::topics::dsl::*;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::update(
         topics
@@ -52,7 +56,9 @@ pub async fn update_topic_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::topics::dsl::*;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::update(
         topics
@@ -75,7 +81,9 @@ pub async fn get_topic_query(
 ) -> Result<Topic, ServiceError> {
     use crate::data::schema::topics::dsl::*;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     topics
         .filter(id.eq(topic_id))
@@ -95,7 +103,9 @@ pub async fn get_topic_for_owner_id_query(
 ) -> Result<Topic, ServiceError> {
     use crate::data::schema::topics::dsl as topics_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     topics_columns::topics
         .filter(topics_columns::id.eq(topic_id))
@@ -119,7 +129,9 @@ pub async fn get_all_topics_for_owner_id_query(
 ) -> Result<Vec<Topic>, ServiceError> {
     use crate::data::schema::topics::dsl as topics_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     topics_columns::topics
         .filter(topics_columns::owner_id.eq(topic_owner_id))

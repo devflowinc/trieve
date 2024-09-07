@@ -416,7 +416,7 @@ pub async fn readd_error_to_queue(
         redis::cmd("lpush")
             .arg("dead_letters_delete")
             .arg(old_payload_message)
-            .query_async(&mut *redis_conn)
+            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -456,7 +456,7 @@ pub async fn readd_error_to_queue(
     redis::cmd("lpush")
         .arg("delete_dataset_queue")
         .arg(&new_payload_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

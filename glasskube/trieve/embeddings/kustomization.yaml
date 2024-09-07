@@ -1,0 +1,8 @@
+resources:
+  - bgem3
+  - jina
+  - reranker
+  - splade-doc
+  - splade-query
+components:
+  - components/cpu

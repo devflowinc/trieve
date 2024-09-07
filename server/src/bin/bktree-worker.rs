@@ -15,7 +15,7 @@ use trieve_server::{
     operators::{
         chunk_operator::get_last_processed_from_clickhouse,
         dataset_operator::{scroll_words_from_dataset, update_dataset_last_processed_query},
-        words_operator::{BkTree, CreateBkTreeMessage},
+        typo_operator::{BkTree, CreateBkTreeMessage},
     },
 };
 
@@ -351,7 +351,7 @@ pub async fn readd_error_to_queue(
         redis::cmd("SADD")
             .arg("bktree_dead_letters")
             .arg(old_payload_message)
-            .query_async(&mut *redis_conn)
+            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

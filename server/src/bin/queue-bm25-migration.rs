@@ -81,7 +81,7 @@ async fn main() -> Result<(), ServiceError> {
             redis::cmd("lpush")
                 .arg("collection_migration")
                 .arg(&message)
-                .query_async(&mut *conn)
+                .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *conn)
                 .await
                 .map_err(|_| {
                     ServiceError::BadRequest("Failed to send message to redis".to_string())

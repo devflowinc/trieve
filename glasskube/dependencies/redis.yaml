@@ -1,0 +1,9 @@
+apiVersion: packages.glasskube.dev/v1alpha1
+kind: Package
+metadata:
+  name: trieve-redis
+spec:
+  packageInfo:
+    name: redis
+    repositoryName: glasskube
+    version: v7.4.0+1

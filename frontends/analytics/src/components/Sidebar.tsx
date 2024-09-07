@@ -4,7 +4,7 @@ import { UserContext } from "../contexts/UserAuthContext";
 import { DatasetAndUsage } from "shared/types";
 import { usePathname } from "../hooks/usePathname";
 import { useBetterNav } from "../utils/useBetterNav";
-import { Select } from "shared/ui";
+import { Select, Tooltip } from "shared/ui";
 import {
   AiOutlineLineChart,
   AiOutlineTable,
@@ -50,14 +50,47 @@ const navbarRoutes = [
   },
 ];
 
+const dashboardURL = import.meta.env.VITE_DASHBOARD_URL as string;
+const searchUrl = import.meta.env.VITE_SEARCH_UI_URL as string;
+const chatUrl = import.meta.env.VITE_CHAT_UI_URL as string;
+
 export const Sidebar = (props: NavbarProps) => {
   const userContext = useContext(UserContext);
   const orgContext = useContext(OrgContext);
 
+  const domainNavbarRoutes = createMemo(() => {
+    const domainNavbarRoutes = [
+      {
+        href: `${dashboardURL}/dashboard/dataset/${props.selectedDataset
+          ?.dataset.id}/start?org=${orgContext.selectedOrg().id}`,
+        label: "Dashboard",
+        icon: TbLayoutDashboard,
+      },
+      {
+        href: "https://docs.trieve.ai/api-reference/",
+        label: "API Docs",
+        icon: AiOutlineApi,
+      },
+      {
+        href: `${searchUrl}?organization=${
+          orgContext.selectedOrg().id
+        }&dataset=${props.selectedDataset?.dataset.id}`,
+        label: "Search Playground",
+        icon: HiOutlineMagnifyingGlass,
+      },
+      {
+        href: `${chatUrl}?organization=${
+          orgContext.selectedOrg().id
+        }&dataset=${props.selectedDataset?.dataset.id}`,
+        label: "Chat Playground",
+        icon: IoChatboxOutline,
+      },
+    ];
+    return domainNavbarRoutes;
+  });
+
   const pathname = usePathname();
   const navigate = useBetterNav();
-
-  const dashboardURL = import.meta.env.VITE_DASHBOARD_URL as string;
 
   const logOut = () => {
     void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
@@ -76,118 +109,122 @@ export const Sidebar = (props: NavbarProps) => {
     });
   };
 
-  //Construct a7b64c7f-01ad-43b2-aaaf-c78192ca3d72/start?org=ca34dafa-7826-41b4-9953-cd58617834f1
-  const orgDatasetParams = createMemo(() => {
-    const orgId = orgContext?.selectedOrg().id;
-    const datasetId = props.selectedDataset?.dataset.id;
-    let params = "";
-    if (datasetId) params += datasetId;
-    if (orgId && datasetId) params += `/start?org=${orgId}`;
-    return params;
-  });
-
   return (
-    <div class="relative hidden h-screen flex-col justify-start overflow-y-auto border border-r-neutral-300 bg-neutral-100 p-4 lg:flex">
-      <div class="flex items-center gap-1">
-        <img
-          class="h-12 w-12 cursor-pointer"
-          src="https://cdn.trieve.ai/trieve-logo.png"
-          alt="Logo"
-        />
-        <div>
-          <div class="text-2xl font-semibold leading-none">Trieve</div>
-          <div class="pl-1 text-sm leading-tight text-neutral-600">
-            Analytics
+    <div class="relative hidden h-screen flex-col justify-start overflow-y-auto border border-r-neutral-300 bg-neutral-100 lg:flex">
+      <div class="flex flex-grow flex-col p-4">
+        <div class="flex items-center gap-1">
+          <img
+            class="h-12 w-12 cursor-pointer"
+            src="https://cdn.trieve.ai/trieve-logo.png"
+            alt="Logo"
+          />
+          <div>
+            <div class="text-2xl font-semibold leading-none">Trieve</div>
+            <div class="pl-1 text-sm leading-tight text-neutral-600">
+              Analytics
+            </div>
           </div>
         </div>
-      </div>
-      <div class="border-neutral-20 h-4 border-b" />
-      <div>
-        <Select
-          label={<div class="pt-2 text-sm opacity-60">Organization</div>}
-          class="min-w-[220px]"
-          options={userContext?.user().orgs || []}
-          display={(org) => org.name}
-          onSelected={(e) => {
-            orgContext.selectOrg(e.id);
-          }}
-          selected={orgContext.selectedOrg()}
-          id="dataset-select"
-        />
-      </div>
-      <Show when={props.datasetOptions.length > 0 && props.selectedDataset}>
-        {(selected) => (
+        <div class="border-neutral-20 h-4 border-b" />
+        <div>
           <Select
-            label={<div class="pt-2 text-sm opacity-60">Dataset</div>}
+            label={<div class="pt-2 text-sm opacity-60">Organization</div>}
             class="min-w-[220px]"
-            options={props.datasetOptions}
-            display={(dataset) => dataset.dataset.name}
+            options={userContext?.user().orgs || []}
+            display={(org) => org.name}
             onSelected={(e) => {
-              props.setSelectedDataset(e);
+              orgContext.selectOrg(e.id);
             }}
-            selected={selected()}
+            selected={orgContext.selectedOrg()}
             id="dataset-select"
           />
-        )}
-      </Show>
-      <div class="border-neutral-20 h-4 border-b" />
-      <div class="flex flex-col gap-4 px-2 pt-4">
-        <For each={navbarRoutes}>
-          {(link) => {
-            return (
-              <div
-                role="link"
-                classList={{
-                  "cursor-pointer flex items-center gap-2": true,
-                  "text-purple-900 underline": pathname() === link.href,
-                  "text-black": pathname() !== link.href,
-                }}
-                onClick={() => {
-                  navigate(link.href);
-                }}
-              >
-                {link.icon({ size: "18px" })}
-                {link.label}
-              </div>
-            );
-          }}
-        </For>
-      </div>
-      <div class="absolute bottom-0 left-0 right-0 flex flex-col items-start border-t border-t-neutral-300 bg-neutral-200/50">
-        <div class="flex flex-col px-4 pt-4">
-          <button type="button" class="hover:text-fuchsia-800">
-            <a
-              href={`${dashboardURL}/dashboard/dataset/${orgDatasetParams()}`}
-              class="flex w-full flex-row items-center gap-2"
-              target="_blank"
-            >
-              Dashboard
-              <TbLayoutDashboard class="text-sm" />
-            </a>
-          </button>
-          <button type="button" class="hover:text-fuchsia-800">
-            <a
-              href="https://docs.trieve.ai/api-reference/"
-              class="flex w-full flex-row items-center gap-2"
-              target="_blank"
-            >
-              API Docs
-              <AiOutlineApi class="text-sm" />
-            </a>
-          </button>
         </div>
-        <hr class="my-2 w-full border border-neutral-300" />
-        <div class="px-4 pb-4">
-          <div class="flex items-center gap-2">
-            <p>{userContext?.user().email}</p>
-            <AiOutlineUser class="h-4 w-4" />
+        <Show when={props.datasetOptions.length > 0 && props.selectedDataset}>
+          {(selected) => (
+            <Select
+              label={<div class="pt-2 text-sm opacity-60">Dataset</div>}
+              class="min-w-[220px]"
+              options={props.datasetOptions}
+              display={(dataset) => dataset.dataset.name}
+              onSelected={(e) => {
+                props.setSelectedDataset(e);
+              }}
+              selected={selected()}
+              id="dataset-select"
+            />
+          )}
+        </Show>
+        <div class="border-neutral-20 h-4 border-b" />
+        <div class="flex flex-grow flex-col justify-between">
+          <div class="flex flex-col gap-4 px-2 pt-4">
+            <For each={navbarRoutes}>
+              {(link) => {
+                return (
+                  <div
+                    role="link"
+                    classList={{
+                      "cursor-pointer flex items-center gap-2": true,
+                      "text-purple-900 underline": pathname() === link.href,
+                      "text-black": pathname() !== link.href,
+                    }}
+                    onClick={() => {
+                      navigate(link.href);
+                    }}
+                  >
+                    {link.icon({ size: "18px" })}
+                    {link.label}
+                  </div>
+                );
+              }}
+            </For>
           </div>
-          <button
-            class="flex items-center gap-2 hover:text-fuchsia-800"
-            onClick={logOut}
+          <div>
+            <div class="h-4 border-b border-neutral-400/50" />
+
+            <div class="flex flex-col gap-2 px-2 pt-4">
+              <For each={domainNavbarRoutes()}>
+                {(link) => {
+                  return (
+                    <a
+                      role="link"
+                      classList={{
+                        "cursor-pointer flex items-center text-sm gap-2 hover:text-fuchsia-500":
+                          true,
+                        "text-purple-900 underline": pathname() === link.href,
+                        "text-black": pathname() !== link.href,
+                      }}
+                      href={link.href}
+                      target="_blank"
+                    >
+                      {link.icon({ size: "14px" })}
+                      {link.label}
+                    </a>
+                  );
+                }}
+              </For>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="justify-self-end border-t border-t-neutral-300 bg-neutral-200/50">
+        <div class="flex w-full items-center justify-between gap-2 px-6 py-4">
+          <div class="flex items-center gap-2">
+            <AiOutlineUser class="h-4 w-4" />
+            <span>{userContext?.user().email}</span>
+          </div>
+          <Tooltip
+            tooltipClass="text-sm border border-neutral-300 bg-neutral-200 min-w-max"
+            unsetWidth
+            tooltipText="Log Out"
+            direction="top"
           >
-            Log Out <IoLogOutOutline class="inline-block h-4 w-4" />
-          </button>
+            <button
+              class="flex items-center gap-2 justify-self-end p-1 pl-2 opacity-60 hover:text-fuchsia-800"
+              onClick={logOut}
+            >
+              <IoLogOutOutline class="inline-block h-4 w-4" />
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>

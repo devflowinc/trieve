@@ -11,14 +11,15 @@
     "frontends/shared",
     "frontends/config",
     "clients/ts-sdk",
-    "examples/ts"
+    "clients/search-component"
   ],
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
+    "dev": "turbo dev --filter=\"./frontends/**\"",
+    "build": "turbo build --filter=\"./frontends/**\"",
     "build:clean-client": "./convenience.sh -c",
-    "lint": "turbo lint",
-    "lint:CI": "turbo lint:CI"
+    "lint": "turbo lint --filter=\"./frontends/**\"",
+    "lint:CI": "turbo lint:CI --filter=\"./frontends/**\"",
+    "typecheck": "turbo typecheck --filter=\"./frontends/**\""
   },
   "repository": "git@github.com:devflowinc/trieve.git",
   "author": "Drew Harris <harrisd@smu.edu>",

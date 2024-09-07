@@ -9,7 +9,7 @@ use crate::{
     handlers::{auth_handler::build_oidc_client, metrics_handler::Metrics},
     operators::{
         clickhouse_operator::EventQueue, qdrant_operator::create_new_qdrant_collection_query,
-        user_operator::create_default_user, words_operator::BKTreeCache,
+        typo_operator::BKTreeCache, user_operator::create_default_user,
     },
 };
 use actix_cors::Cors;
@@ -140,7 +140,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.11.7",
+        version = "0.11.8",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -232,8 +232,9 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
         handlers::analytics_handler::get_recommendation_analytics,
-        handlers::analytics_handler::send_ctr_data,
+        handlers::analytics_handler::send_event_data,
         handlers::analytics_handler::get_ctr_analytics,
+        handlers::analytics_handler::send_ctr_data,
         handlers::analytics_handler::set_query_rating,
         handlers::analytics_handler::get_top_datasets,
         handlers::metrics_handler::get_metrics,
@@ -276,6 +277,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::GetChunksData,
             handlers::chunk_handler::GetTrackingChunksData,
             handlers::chunk_handler::SemanticBoost,
+            handlers::chunk_handler::ScoringOptions,
             handlers::chunk_handler::ChunkReturnTypes,
             handlers::chunk_handler::ScrollChunksReqPayload,
             handlers::chunk_handler::ScrollChunksResponseBody,
@@ -329,6 +331,8 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::GetDatasetsPagination,
             data::models::DatasetConfigurationDTO,
             handlers::analytics_handler::GetTopDatasetsRequestBody,
+            handlers::analytics_handler::CTRDataRequestBody,
+            data::models::CTRType,
             operators::analytics_operator::HeadQueryResponse,
             operators::analytics_operator::LatencyGraphResponse,
             operators::analytics_operator::SearchUsageGraphResponse,
@@ -342,7 +346,7 @@ impl Modify for SecurityAddon {
             operators::analytics_operator::CTRRecommendationsWithClicksResponse,
             operators::analytics_operator::CTRRecommendationsWithoutClicksResponse,
             operators::analytics_operator::PopularFiltersResponse,
-            handlers::analytics_handler::CTRDataRequestBody,
+            data::models::EventTypes,
             operators::chunk_operator::HighlightStrategy,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             data::models::DateRange,
@@ -389,7 +393,7 @@ impl Modify for SecurityAddon {
             data::models::CTRAnalytics,
             data::models::SearchCTRMetrics,
             data::models::RecommendationCTRMetrics,
-            data::models::CTRType,
+            data::models::EventTypes,
             data::models::CTRAnalyticsResponse,
             data::models::SearchQueriesWithoutClicksCTRResponse,
             data::models::SearchQueriesWithClicksCTRResponse,
@@ -414,6 +418,7 @@ impl Modify for SecurityAddon {
             data::models::TypoOptions,
             data::models::TypoRange,
             data::models::SortByField,
+            data::models::ChunksWithPositions,
             data::models::SortBySearchType,
             data::models::ReRankOptions,
             data::models::Topic,
@@ -1132,7 +1137,10 @@ pub fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/top")
-                                .route(web::post().to(handlers::analytics_handler::get_top_datasets)),
+                                .route(web::post().to(handlers::analytics_handler::get_top_datasets)),)
+                            .service(
+                                web::resource("/events")
+                                .route(web::post().to(handlers::analytics_handler::send_event_data)),
                             )
                             .service(
                                 web::resource("/ctr")

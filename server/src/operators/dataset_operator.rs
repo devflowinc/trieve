@@ -262,7 +262,7 @@ pub async fn soft_delete_dataset_by_id_query(
     redis::cmd("lpush")
         .arg("delete_dataset_queue")
         .arg(&serialized_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<_, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -297,7 +297,7 @@ pub async fn clear_dataset_by_dataset_id_query(
     redis::cmd("lpush")
         .arg("delete_dataset_queue")
         .arg(&serialized_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<_, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -316,7 +316,9 @@ pub async fn clear_dataset_query(
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::files::dsl as files_column;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
@@ -456,7 +458,9 @@ pub async fn delete_dataset_by_id_query(
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     clear_dataset_query(
         id,
@@ -662,7 +666,9 @@ pub async fn get_tags_in_dataset_query(
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let items = dataset_tags_columns::dataset_tags
         .inner_join(chunk_metadata_tags_columns::chunk_metadata_tags)

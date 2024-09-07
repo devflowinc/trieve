@@ -66,12 +66,14 @@ export type AutocompleteReqPayload = {
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
     score_threshold?: (number) | null;
+    scoring_options?: ((ScoringOptions) | null);
     search_type: SearchMethod;
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
      */
     slim_chunks?: (boolean) | null;
     sort_options?: ((SortOptions) | null);
+    typo_options?: ((TypoOptions) | null);
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
@@ -332,6 +334,11 @@ export type ChunkReqPayload = {
 };
 
 export type ChunkReturnTypes = ChunkMetadata | ChunkMetadataStringTagSet;
+
+export type ChunksWithPositions = {
+    chunk_id: string;
+    position: number;
+};
 
 export type ClusterAnalytics = {
     filter?: ((ClusterAnalyticsFilter) | null);
@@ -675,6 +682,7 @@ export type DeleteUserApiKeyRequest = {
 };
 
 export type DeprecatedSearchOverGroupsResponseBody = {
+    corrected_query?: (string) | null;
     group_chunks: Array<GroupScoreChunk>;
     total_chunk_pages: number;
 };
@@ -730,6 +738,131 @@ export type EventReturn = {
 };
 
 export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed';
+
+export type EventTypes = {
+    /**
+     * The name of the event
+     */
+    event_name: string;
+    event_type: 'view';
+    /**
+     * The items that were viewed
+     */
+    items: Array<(string)>;
+    /**
+     * Any other metadata associated with the event
+     */
+    metadata?: unknown;
+    /**
+     * The request id of the event to associate it with a request
+     */
+    request_id?: (string) | null;
+    /**
+     * The user id of the user who viewed the items
+     */
+    user_id?: (string) | null;
+} | {
+    /**
+     * The name of the event
+     */
+    event_name: string;
+    event_type: 'add_to_cart';
+    /**
+     * Whether the event is a conversion event
+     */
+    is_conversion?: (boolean) | null;
+    /**
+     * The items that were added to the cart
+     */
+    items: Array<(string)>;
+    /**
+     * Any other metadata associated with the event
+     */
+    metadata?: unknown;
+    /**
+     * The request id of the event to associate it with a request
+     */
+    request_id?: (string) | null;
+    /**
+     * The user id of the user who added the items to the cart
+     */
+    user_id?: (string) | null;
+} | {
+    clicked_items: ChunksWithPositions;
+    /**
+     * The name of the event
+     */
+    event_name: string;
+    event_type: 'click';
+    /**
+     * Whether the event is a conversion event
+     */
+    is_conversion?: (boolean) | null;
+    /**
+     * The request id of the event to associate it with a request
+     */
+    request_id?: (string) | null;
+    /**
+     * The user id of the user who clicked the items
+     */
+    user_id?: (string) | null;
+} | {
+    /**
+     * The currency of the purchase
+     */
+    currency?: (string) | null;
+    /**
+     * The name of the event
+     */
+    event_name: string;
+    event_type: 'purchase';
+    /**
+     * Whether the event is a conversion event
+     */
+    is_conversion?: (boolean) | null;
+    /**
+     * The items that were purchased
+     */
+    items: Array<(string)>;
+    /**
+     * The request id of the event to associate it with a request
+     */
+    request_id?: (string) | null;
+    /**
+     * The user id of the user who purchased the items
+     */
+    user_id?: (string) | null;
+    /**
+     * The value of the purchase
+     */
+    value?: (number) | null;
+} | {
+    /**
+     * The name of the event
+     */
+    event_name: string;
+    event_type: 'filter_clicked';
+    /**
+     * Whether the event is a conversion event
+     */
+    is_conversion?: (boolean) | null;
+    /**
+     * The filter items that were clicked in a hashmap ie. {filter_name: filter_value} where filter_name is filter_type::field_name
+     */
+    items: {
+        [key: string]: (string);
+    };
+    /**
+     * The request id of the event to associate it with a request
+     */
+    request_id?: (string) | null;
+    /**
+     * The user id of the user who clicked the items
+     */
+    user_id?: (string) | null;
+};
+
+export type event_type = 'view';
 
 export type FieldCondition = {
     date_range?: ((DateRange) | null);
@@ -907,6 +1040,11 @@ export type GetEventsData = {
 
 export type GetGroupsForChunksReqPayload = {
     chunk_ids: Array<(string)>;
+};
+
+export type GetTopDatasetsRequestBody = {
+    date_range?: ((DateRange) | null);
+    type: TopDatasetsRequestTypes;
 };
 
 export type GetTrackingChunksData = {
@@ -1335,6 +1473,7 @@ export type RecommendationAnalyticsResponse = RecommendationsEventResponse;
 export type RecommendationCTRMetrics = {
     avg_position_of_click: number;
     percent_recommendations_with_clicks: number;
+    percent_recommendations_without_clicks: number;
     recommendations_with_clicks: number;
 };
 
@@ -1365,11 +1504,11 @@ export type RecommendationsEventResponse = {
 };
 
 export type RecommendationsWithClicksCTRResponse = {
-    clicked_chunk: ChunkMetadata;
+    clicked_chunks: Array<ChunkMetadata>;
     created_at: string;
     negative_ids?: Array<(string)> | null;
     negative_tracking_ids?: Array<(string)> | null;
-    position: number;
+    positions: Array<(number)>;
     positive_ids?: Array<(string)> | null;
     positive_tracking_ids?: Array<(string)> | null;
 };
@@ -1434,6 +1573,14 @@ export type ScoreChunkDTO = {
     highlights?: Array<(string)> | null;
     metadata: Array<ChunkMetadataTypes>;
     score: number;
+};
+
+/**
+ * Scoring options provides ways to modify the sparse or dense vector created for the query in order to change how potential matches are scored. If not specified, this defaults to no modifications.
+ */
+export type ScoringOptions = {
+    fulltext_boost?: ((FullTextBoost) | null);
+    semantic_boost?: ((SemanticBoost) | null);
 };
 
 export type ScrollChunksReqPayload = {
@@ -1512,6 +1659,7 @@ export type SearchCTRMetrics = {
 };
 
 export type SearchChunkQueryResponseBody = {
+    corrected_query?: (string) | null;
     score_chunks: Array<ScoreChunkDTO>;
     total_chunk_pages: number;
 };
@@ -1541,18 +1689,17 @@ export type SearchChunksReqPayload = {
      */
     remove_stop_words?: (boolean) | null;
     /**
-     * Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric
-     * For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance
-     * This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold
-     * A threshold of 0 will default to no threashold
+     * Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric. For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance. This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold. A threshold of 0 will default to no threshold.
      */
     score_threshold?: (number) | null;
+    scoring_options?: ((ScoringOptions) | null);
     search_type: SearchMethod;
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
      */
     slim_chunks?: (boolean) | null;
     sort_options?: ((SortOptions) | null);
+    typo_options?: ((TypoOptions) | null);
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
@@ -1619,6 +1766,7 @@ export type SearchOverGroupsReqPayload = {
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
      */
     slim_chunks?: (boolean) | null;
+    typo_options?: ((TypoOptions) | null);
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
@@ -1630,6 +1778,7 @@ export type SearchOverGroupsReqPayload = {
 };
 
 export type SearchOverGroupsResponseBody = {
+    corrected_query?: (string) | null;
     id: string;
     results: Array<SearchOverGroupsResults>;
     total_pages: number;
@@ -1644,9 +1793,9 @@ export type SearchOverGroupsResults = {
 };
 
 export type SearchQueriesWithClicksCTRResponse = {
-    clicked_chunk: ChunkMetadata;
+    clicked_chunks: Array<ChunkMetadata>;
     created_at: string;
-    position: number;
+    positions: Array<(number)>;
     query: string;
 };
 
@@ -1675,6 +1824,7 @@ export type SearchQueryResponse = {
 
 export type SearchResponseBody = {
     chunks: Array<ScoreChunk>;
+    corrected_query?: (string) | null;
     id: string;
     total_pages: number;
 };
@@ -1739,6 +1889,7 @@ export type SearchWithinGroupReqPayload = {
      */
     slim_chunks?: (boolean) | null;
     sort_options?: ((SortOptions) | null);
+    typo_options?: ((TypoOptions) | null);
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
      */
@@ -1751,12 +1902,14 @@ export type SearchWithinGroupReqPayload = {
 
 export type SearchWithinGroupResponseBody = {
     chunks: Array<ScoreChunk>;
+    corrected_query?: (string) | null;
     id: string;
     total_pages: number;
 };
 
 export type SearchWithinGroupResults = {
     bookmarks: Array<ScoreChunkDTO>;
+    corrected_query?: (string) | null;
     group: ChunkGroupAndFileId;
     total_pages: number;
 };
@@ -1934,11 +2087,20 @@ export type StripePlan = {
     user_count: number;
 };
 
+export type SuggestType = 'question' | 'keyword' | 'semantic';
+
 export type SuggestedQueriesReqPayload = {
+    /**
+     * Context is the context of the query. This can be any string under 15 words and 200 characters. The context will be used to generate the suggested queries. Defaults to None.
+     */
+    context?: (string) | null;
+    filters?: ((ChunkFilter) | null);
     /**
      * The query to base the generated suggested queries off of using RAG. A hybrid search for 10 chunks from your dataset using this query will be performed and the context of the chunks will be used to generate the suggested queries.
      */
-    query: string;
+    query?: (string) | null;
+    search_type?: ((SearchMethod) | null);
+    suggestion_type?: ((SuggestType) | null);
 };
 
 export type SuggestedQueriesResponse = {
@@ -1950,6 +2112,14 @@ export type TagsWithCount = {
     tag: string;
 };
 
+export type TopDatasetsRequestTypes = 'search' | 'rag' | 'recommendation';
+
+export type TopDatasetsResponse = {
+    dataset_id: string;
+    dataset_tracking_id?: (string) | null;
+    total_queries: number;
+};
+
 export type Topic = {
     created_at: string;
     dataset_id: string;
@@ -1958,6 +2128,36 @@ export type Topic = {
     name: string;
     owner_id: string;
     updated_at: string;
+};
+
+/**
+ * Typo Options lets you specify different methods to correct typos in the query. If not specified, typos will not be corrected.
+ */
+export type TypoOptions = {
+    /**
+     * Set correct_typos to true to correct typos in the query. If not specified, this defaults to false.
+     */
+    correct_typos?: (boolean) | null;
+    /**
+     * Words that should not be corrected. If not specified, this defaults to an empty list.
+     */
+    disable_on_word?: Array<(string)> | null;
+    one_typo_word_range?: ((TypoRange) | null);
+    two_typo_word_range?: ((TypoRange) | null);
+};
+
+/**
+ * The TypoRange struct is used to specify the range of which the query will be corrected if it has a typo.
+ */
+export type TypoRange = {
+    /**
+     * The maximum number of characters that the query will be corrected if it has a typo. If not specified, this defaults to 8.
+     */
+    max?: (number) | null;
+    /**
+     * The minimum number of characters that the query will be corrected if it has a typo. If not specified, this defaults to 5.
+     */
+    min: number;
 };
 
 export type UpdateAllOrgDatasetConfigsReqPayload = {
@@ -2283,6 +2483,19 @@ export type SendCtrDataData = {
 
 export type SendCtrDataResponse = (void);
 
+export type SendEventDataData = {
+    /**
+     * JSON request payload to send event data
+     */
+    requestBody: EventTypes;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type SendEventDataResponse = (void);
+
 export type GetRagAnalyticsData = {
     /**
      * JSON request payload to filter the graph
@@ -2347,6 +2560,15 @@ export type GetClusterAnalyticsData = {
 };
 
 export type GetClusterAnalyticsResponse = (ClusterAnalyticsResponse);
+
+export type GetTopDatasetsData = {
+    /**
+     * JSON request payload to filter the top datasets
+     */
+    requestBody: GetTopDatasetsRequestBody;
+};
+
+export type GetTopDatasetsResponse = (Array<TopDatasetsResponse>);
 
 export type LoginData = {
     /**
@@ -3418,6 +3640,21 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/analytics/events': {
+        put: {
+            req: SendEventDataData;
+            res: {
+                /**
+                 * The event data was successfully sent
+                 */
+                204: void;
+                /**
+                 * Service error relating to sending event data
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
     '/api/analytics/rag': {
         post: {
             req: GetRagAnalyticsData;
@@ -3486,6 +3723,21 @@ export type $OpenApiTs = {
                 200: ClusterAnalyticsResponse;
                 /**
                  * Service error relating to getting cluster analytics
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/analytics/top': {
+        post: {
+            req: GetTopDatasetsData;
+            res: {
+                /**
+                 * The top datasets for the request
+                 */
+                200: Array<TopDatasetsResponse>;
+                /**
+                 * Service error relating to getting top datasets
                  */
                 400: ErrorResponseBody;
             };

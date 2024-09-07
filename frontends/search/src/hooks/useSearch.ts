@@ -17,6 +17,21 @@ export interface MultiQuery {
   weight: number;
 }
 
+export interface FulltextBoost {
+  phrase?: string;
+  boost_factor?: number;
+}
+
+export interface SemanticBoost {
+  phrase?: string;
+  distance_factor?: number;
+}
+
+export interface ScoringOptions {
+  fulltext_boost?: FulltextBoost;
+  semantic_boost?: SemanticBoost;
+}
+
 export function isSortByField(
   sortBy: SortByField | SortBySearchType,
 ): sortBy is SortByField {
@@ -50,6 +65,7 @@ export interface SearchOptions {
   oneTypoWordRangeMax: number | null;
   twoTypoWordRangeMin: number;
   twoTypoWordRangeMax: number | null;
+  prioritize_domain_specifc_words: boolean | null;
   disableOnWords: string[];
   sort_by: SortByField | SortBySearchType;
   pageSize: number;
@@ -66,6 +82,7 @@ export interface SearchOptions {
   removeStopWords: boolean;
   filters: Filters | null;
   multiQueries: MultiQuery[];
+  scoringOptions?: ScoringOptions;
 }
 
 const initalState: SearchOptions = {
@@ -82,10 +99,11 @@ const initalState: SearchOptions = {
   pageSize: 10,
   getTotalPages: false,
   correctTypos: false,
-  oneTypoWordRangeMin: 5,
-  oneTypoWordRangeMax: 8,
-  twoTypoWordRangeMin: 8,
+  oneTypoWordRangeMin: 4,
+  oneTypoWordRangeMax: 6,
+  twoTypoWordRangeMin: 6,
   twoTypoWordRangeMax: null,
+  prioritize_domain_specifc_words: true,
   disableOnWords: [],
   highlightResults: true,
   highlightStrategy: "exactmatch",
@@ -104,6 +122,7 @@ const initalState: SearchOptions = {
     jsonb_prefilter: true,
   } as Filters,
   multiQueries: [],
+  scoringOptions: undefined,
 };
 
 const fromStateToParams = (state: SearchOptions): Params => {
@@ -120,9 +139,11 @@ const fromStateToParams = (state: SearchOptions): Params => {
     getTotalPages: state.getTotalPages.toString(),
     correctTypos: state.correctTypos.toString(),
     oneTypoWordRangeMin: state.oneTypoWordRangeMin.toString(),
-    oneTypoWordRangeMax: state.oneTypoWordRangeMax?.toString() ?? "8",
+    oneTypoWordRangeMax: state.oneTypoWordRangeMax?.toString() ?? "6",
     twoTypoWordRangeMin: state.twoTypoWordRangeMin.toString(),
     twoTypoWordRangeMax: state.twoTypoWordRangeMax?.toString() ?? "",
+    prioritize_domain_specifc_words:
+      state.prioritize_domain_specifc_words?.toString() ?? "",
     disableOnWords: state.disableOnWords.join(","),
     highlightStrategy: state.highlightStrategy,
     highlightResults: state.highlightResults.toString(),
@@ -136,6 +157,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     removeStopWords: state.removeStopWords.toString(),
     filters: JSON.stringify(state.filters),
     multiQueries: JSON.stringify(state.multiQueries),
+    scoringOptions: JSON.stringify(state.scoringOptions),
   };
 };
 
@@ -162,10 +184,12 @@ const fromParamsToState = (
     pageSize: parseInt(params.pageSize ?? "10"),
     getTotalPages: (params.getTotalPages ?? "false") === "true",
     correctTypos: (params.correctTypos ?? "false") === "true",
-    oneTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "5"),
+    oneTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "4"),
     oneTypoWordRangeMax: parseIntOrNull(params.oneTypoWordRangeMax),
-    twoTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "8"),
+    twoTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "6"),
     twoTypoWordRangeMax: parseIntOrNull(params.twoTypoWordRangeMax),
+    prioritize_domain_specifc_words:
+      (params.prioritize_domain_specifc_words ?? "true") === "true",
     disableOnWords: params.disableOnWords?.split(",") ?? [],
     highlightResults: (params.highlightResults ?? "true") === "true",
     highlightStrategy: isHighlightStrategy(params.highlightStrategy)
@@ -182,6 +206,9 @@ const fromParamsToState = (
     removeStopWords: (params.removeStopWords ?? "false") === "true",
     filters: JSON.parse(params.filters ?? "null") as Filters | null,
     multiQueries: JSON.parse(params.multiQueries ?? "[]") as MultiQuery[],
+    scoringOptions: JSON.parse(
+      params.scoringOptions ?? "null",
+    ) as ScoringOptions,
   };
 };
 

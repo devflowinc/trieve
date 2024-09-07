@@ -59,6 +59,15 @@ pub struct SemanticBoost {
     pub distance_factor: f32,
 }
 
+/// Scoring options provides ways to modify the sparse or dense vector created for the query in order to change how potential matches are scored. If not specified, this defaults to no modifications.
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct ScoringOptions {
+    ///  Full text boost is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
+    pub fulltext_boost: Option<FullTextBoost>,
+    /// Semantic boost is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
+    pub semantic_boost: Option<SemanticBoost>,
+}
+
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 #[schema(example = json!({
     "chunk_html": "<p>Some HTML content</p>",
@@ -714,7 +723,7 @@ pub async fn update_chunk(
     redis::cmd("lpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
-        .query_async(&mut *redis_conn)
+        .query_async::<_, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -860,7 +869,7 @@ pub async fn update_chunk_by_tracking_id(
     redis::cmd("lpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
-        .query_async(&mut *redis_conn)
+        .query_async::<_, ()>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -946,12 +955,11 @@ pub struct SearchChunksReqPayload {
     pub filters: Option<ChunkFilter>,
     /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub sort_options: Option<SortOptions>,
+    /// Scoring options provides ways to modify the sparse or dense vector created for the query in order to change how potential matches are scored. If not specified, this defaults to no modifications.
+    pub scoring_options: Option<ScoringOptions>,
     /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub highlight_options: Option<HighlightOptions>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric
-    /// For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance
-    /// This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold
-    /// A threshold of 0 will default to no threshold
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric. For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance. This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold. A threshold of 0 will default to no threshold.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
     pub slim_chunks: Option<bool>,
@@ -977,6 +985,7 @@ impl Default for SearchChunksReqPayload {
             page_size: Some(10),
             filters: None,
             sort_options: None,
+            scoring_options: None,
             highlight_options: None,
             score_threshold: None,
             slim_chunks: None,
@@ -1329,6 +1338,8 @@ pub struct AutocompleteReqPayload {
     pub filters: Option<ChunkFilter>,
     /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub sort_options: Option<SortOptions>,
+    /// Scoring options provides ways to modify the sparse or dense vector created for the query in order to change how potential matches are scored. If not specified, this defaults to no modifications.
+    pub scoring_options: Option<ScoringOptions>,
     /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub highlight_options: Option<HighlightOptions>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
@@ -1356,6 +1367,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             page_size: autocomplete_data.page_size,
             filters: autocomplete_data.filters,
             sort_options: autocomplete_data.sort_options,
+            scoring_options: autocomplete_data.scoring_options,
             highlight_options: autocomplete_data.highlight_options,
             score_threshold: autocomplete_data.score_threshold,
             slim_chunks: autocomplete_data.slim_chunks,
@@ -1653,6 +1665,7 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             page_size: count_data.limit,
             filters: count_data.filters,
             sort_options: None,
+            scoring_options: None,
             highlight_options: None,
             score_threshold: count_data.score_threshold,
             slim_chunks: None,

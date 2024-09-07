@@ -8,6 +8,8 @@ import {
 } from "solid-js";
 import { createToast } from "../components/ShowToasts";
 import { SlimUser } from "shared/types";
+import { useSearchParams } from "@solidjs/router";
+import { NewUserOrgName } from "../components/NewUserOrgName";
 
 export interface UserStoreContextProps {
   children: JSX.Element;
@@ -27,12 +29,14 @@ export interface UserStore {
   login: () => void;
   logout: () => void;
   loading: Accessor<boolean> | null;
+  isNewUser: Accessor<boolean>;
 }
 
 export const UserContext = createContext<UserStore>({
   user: null,
   setUser: () => {},
   selectedOrganizationId: null,
+  isNewUser: () => false,
   setSelectedOrganizationId: () => {},
   loading: null,
   login: () => {},
@@ -42,7 +46,10 @@ export const UserContext = createContext<UserStore>({
 export const UserContextWrapper = (props: UserStoreContextProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
 
+  const [searchParams] = useSearchParams();
+
   const [user, setUser] = createSignal<SlimUser | null>(null);
+  const [isNewUser, setIsNewUser] = createSignal(false);
   const [selectedOrganizationId, setSelectedOrganizationId] = createSignal<
     string | null
   >(null);
@@ -74,6 +81,13 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   };
 
   createEffect(() => {
+    console.log(searchParams);
+    if (searchParams["new_user"]) {
+      setIsNewUser(true);
+    }
+  });
+
+  createEffect(() => {
     let organizationId = selectedOrganizationId();
 
     if (organizationId == null) {
@@ -103,7 +117,12 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
 
     const userOrgIds = user()?.user_orgs.map((org) => org.organization_id);
 
-    if (!userOrgIds?.includes(organizationId ?? "")) {
+    // If the selected organization isn't in the users list,
+    // restart login procedure
+    if (
+      !userOrgIds?.includes(organizationId ?? "") &&
+      userOrgIds?.length !== 0
+    ) {
       login();
     }
 
@@ -119,6 +138,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     setUser: setUser,
     selectedOrganizationId: selectedOrganizationId,
     setSelectedOrganizationId: setSelectedOrganizationId,
+    isNewUser: isNewUser,
     loading: isLoading,
     login: login,
     logout: () => {},
@@ -129,6 +149,9 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
       <Show when={!isLoading()}>
         <UserContext.Provider value={userStore}>
           {props.children}
+          <Show when={isNewUser()}>
+            <NewUserOrgName />
+          </Show>
         </UserContext.Provider>
       </Show>
       <Show when={isLoading()}>

@@ -63,4 +63,11 @@ jobs:
         run: cargo run --features runtime-env --manifest-path server/Cargo.toml --bin redoc_ci > openapi.json
       - name: Vaccum lint
         run: vacuum lint openapi.json -r '.github/rules.yaml' -d
+      - name: Copy OpenAPI spec to sdk folder
+        run: cp openapi.json ./clients/ts-sdk/openapi.json
+      - name: Build the TS SDK
+        working-directory: ./clients/ts-sdk
+        run: yarn && yarn build:clean
+      - name: Typecheck all frontends
+        run: yarn && yarn typecheck
 

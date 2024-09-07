@@ -473,9 +473,12 @@ pub async fn callback(
         .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
         .ok_or(ServiceError::Unauthorized)?;
 
+    let mut user_is_new = false;
+
     let (user, user_orgs, orgs) = match get_user_by_id_query(&user_id, pool.clone()).await {
         Ok(user) => user,
         Err(_) => {
+            user_is_new = true;
             create_account(
                 email.to_string(),
                 name.iter().next().unwrap().1.to_string(),
@@ -519,14 +522,14 @@ pub async fn callback(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let slim_user = SlimUser::from_details(user, user_orgs, orgs);
+    let slim_user = SlimUser::from_details(user, user_orgs.clone(), orgs);
 
     let slim_user_string = serde_json::to_string(&slim_user).map_err(|_| {
         ServiceError::InternalServerError("Failed to serialize slim user to JSON".into())
     })?;
 
     redis_conn
-        .set(slim_user.id.to_string(), slim_user_string)
+        .set::<_, _, ()>(slim_user.id.to_string(), slim_user_string)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -534,8 +537,26 @@ pub async fn callback(
     session.remove(OIDC_SESSION_KEY);
     session.remove("login_state");
 
+    // Add a query param if the user has just been created and is the owner of
+    // one organization
+    let mut final_redirect = login_state.redirect_uri.clone();
+    if user_is_new
+        && user_orgs
+            .clone()
+            .into_iter()
+            .any(|org_user| org_user.role == 2)
+        && user_orgs.len() == 1
+    {
+        // Add query param indicating new user
+        if final_redirect.contains('?') {
+            final_redirect = format!("{}&new_user=true", final_redirect);
+        } else {
+            final_redirect = format!("{}?new_user=true", final_redirect);
+        }
+    }
+
     Ok(HttpResponse::SeeOther()
-        .insert_header(("Location", login_state.redirect_uri))
+        .insert_header(("Location", final_redirect))
         .finish())
 }
 

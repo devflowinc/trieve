@@ -1,0 +1,286 @@
+body {
+  #trieve-search-modal-overlay {
+    @apply bg-black/50 w-screen fixed inset-0 h-screen data-[state=open]:animate-overlayShow;
+  }
+
+  #trieve-search-modal {
+    @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none text-zinc-950 font-sans;
+
+    .trieve-elements-search {
+      @apply pr-2;
+    }
+
+    .trieve-powered {
+      @apply flex items-center justify-end w-full pt-3 pb-1 px-2 gap-2 select-none cursor-pointer text-sm sticky -bottom-2 bg-zinc-50;
+
+      img {
+        @apply h-4 w-4 cursor-pointer;
+      }
+    }
+
+    .chat-modal-wrapper {
+      @apply flex flex-col gap-4 relative mt-1;
+
+      .chat-ul {
+        @apply border-zinc-300 rounded border p-4;
+      }
+
+      .additional-links {
+        @apply flex flex-wrap gap-2 mt-4;
+
+        a {
+          @apply bg-zinc-300 rounded px-2 text-xs py-1 text-zinc-700;
+
+          &:hover {
+            @apply text-zinc-950;
+          }
+        }
+      }
+
+      .user {
+        @apply font-medium text-magenta-500 flex gap-1;
+      }
+
+      .loading-system {
+        @apply fill-zinc-950 w-12;
+      }
+
+      .system {
+        @apply text-sm mt-4;
+        p {
+          @apply pb-1;
+        }
+        pre {
+          @apply my-4;
+        }
+
+        ul {
+          @apply list-disc pl-4 my-4;
+        }
+        ol {
+          @apply list-decimal pl-4 my-4;
+        }
+      }
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      @apply font-semibold pb-2  m-0 font-sans leading-normal pt-0 text-base;
+    }
+
+    a {
+      @apply text-zinc-950;
+
+      &:hover {
+        @apply text-zinc-950;
+      }
+    }
+
+    .kbd-wrapper {
+      @apply absolute  right-2 flex py-1.5 pr-1.5;
+
+      kbd {
+        @apply inline-flex items-center rounded border border-zinc-200 px-1 font-sans text-xs text-zinc-400;
+      }
+    }
+
+    .close-modal-button {
+      @apply absolute top-4 right-4 cursor-pointer;
+    }
+
+    .input-wrapper {
+      @apply sticky top-0 bg-zinc-50 pt-2 flex items-center z-10 mt-1;
+
+      &::after {
+        @apply absolute h-[17px] w-full z-50 block top-[56px] bg-gradient-to-b from-zinc-50 via-zinc-50 to-transparent;
+        content: "";
+      }
+
+      .search-icon {
+        @apply absolute z-[51] left-2 text-zinc-400;
+      }
+
+      &.chat {
+        form {
+          @apply w-full;
+        }
+        .search-icon {
+          @apply top-5 left-1;
+        }
+      }
+    }
+
+    input {
+      @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 outline-none sm:text-sm sm:leading-6 bg-zinc-50 px-4 pl-8 h-12 z-10 relative;
+    }
+    ul {
+      @apply mt-4;
+
+      &:not(.chat-ul) {
+        @apply overflow-auto max-h-[420px] mt-4 mx-0 px-0;
+      }
+    }
+
+    .item {
+      @apply select-none cursor-pointer px-4 py-2 text-left flex items-start gap-2 w-full text-sm bg-zinc-50 outline-none rounded-lg;
+
+      &.start-chat {
+        @apply items-center flex;
+
+        h4 {
+          @apply p-0;
+
+          span {
+            @apply text-magenta-500;
+          }
+        }
+
+        > div {
+          @apply justify-start gap-4;
+
+          > svg {
+            @apply text-magenta-500;
+          }
+        }
+      }
+
+      &:hover,
+      &:focus {
+        @apply bg-zinc-100 outline-none ring-0;
+      }
+
+      &:hover .arrow-link,
+      &:focus .arrow-link {
+        @apply text-zinc-600 dark:text-zinc-400;
+      }
+
+      .arrow-link {
+        @apply text-transparent w-4 h-4 relative -right-2 shrink-0;
+      }
+
+      > div {
+        @apply flex items-center justify-between w-full;
+      }
+
+      .description {
+        @apply font-normal text-xs text-zinc-600 m-0;
+      }
+    }
+    &.dark {
+      .chat-modal-wrapper {
+        .loading-system {
+          @apply fill-zinc-400 w-12;
+        }
+
+        .user {
+          @apply text-magenta-400;
+        }
+
+        .chat-ul {
+          @apply border-zinc-700 mb-0;
+        }
+
+        .additional-links {
+          @apply flex flex-wrap gap-2 mt-4;
+
+          a {
+            @apply bg-zinc-700 text-zinc-300;
+
+            &:hover {
+              @apply text-white;
+            }
+          }
+        }
+      }
+      .kbd-wrapper {
+        kbd {
+          @apply border-zinc-400  text-zinc-400;
+        }
+      }
+
+      a {
+        @apply text-white hover:text-white;
+      }
+
+      @apply text-white bg-zinc-900;
+
+      input {
+        @apply bg-zinc-900 text-zinc-50 ring-zinc-700;
+      }
+
+      .input-wrapper {
+        @apply bg-zinc-900;
+
+        &::after {
+          @apply bg-gradient-to-b from-zinc-900 via-zinc-900 to-transparent;
+          content: "";
+        }
+      }
+
+      .trieve-powered {
+        @apply bg-zinc-900;
+      }
+
+      .item {
+        @apply hover:bg-zinc-800 border-zinc-700 focus:bg-zinc-800 bg-zinc-900;
+
+        .description {
+          @apply text-zinc-400;
+        }
+      }
+    }
+  }
+}
+body {
+  #open-trieve-modal {
+    @apply w-full flex items-center text-sm leading-6 ring-1 shadow-sm text-zinc-400 bg-zinc-50  focus:outline-magenta-500 justify-between  rounded-md border-0 py-1.5 px-2
+          sm:text-sm truncate gap-2 min-w-[43px] ring-zinc-200  max-w-[300px];
+
+    > div {
+      @apply flex items-center gap-3 min-w-[42px];
+
+      svg {
+        @apply min-w-4 flex-none text-zinc-700 hover:text-zinc-800;
+      }
+
+      > div {
+        @apply truncate min-w-0;
+      }
+    }
+
+    .open {
+      @apply inline-flex items-center rounded border border-zinc-200 px-1 font-sans text-xs text-zinc-400 py-0.5;
+
+      @media screen and (-webkit-font-smoothing: antialiased) {
+        .mac {
+          display: block;
+        }
+
+        .not-mac {
+          display: none;
+        }
+      }
+
+      .mac {
+        display: none;
+      }
+
+      .not-mac {
+        display: block;
+      }
+    }
+    &.dark {
+      @apply bg-zinc-900 text-white/50   hover:brightness-[1.25] ring-zinc-600/30 hover:ring-magenta-500;
+
+      svg {
+        @apply text-zinc-300 hover:text-zinc-200;
+      }
+
+      span {
+        @apply border-zinc-400  text-zinc-400;
+      }
+    }
+  }
+}

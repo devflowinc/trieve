@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trieve-server-config
+data:
+  SENTRY_URL: "https://********************************@sentry.trieve.ai/6"
+  ADMIN_API_KEY: "admin" #generate
+  BASE_SERVER_URL: "http://api.localtrieve.com"
+  REDIS_URL: "redis://redis:6379"
+  QDRANT_URL: "http://trieve-qdrant-qdrant:6334"
+  QUANTIZE_VECTORS: "false"
+  REPLICATION_FACTOR: "2"
+  VECTOR_SIZES: "384,512,768,1024,1536,3072"
+  SMTP_RELAY: "smtp.fastmail.com"
+  SMTP_USERNAME: "noreply@trieve.ai"
+  SMTP_PASSWORD: "FROM SECRET"
+  SMTP_EMAIL_ADDRESS: "noreply@trieve.ai"
+  OPENAI_API_KEY: "sk-************************************************"
+  ANTHROPIC_API_KEY: "sk-************************************************"
+  LLM_API_KEY: "sk-************************************************"
+  SECRET_KEY: "01234012340123401234012340123401234012340123401234012340123401234012340123401234" #generate
+  SALT: "" # OPTIOANL
+  S3_ENDPOINT: ""
+  S3_ACCESS_KEY: ""
+  S3_SECRET_KEY: ""
+  S3_BUCKET: ""
+  COOKIE_SECURE: "false"
+  TIKA_URL: "http://tika:9998"
+  OPENAI_BASE_URL: "https://api.openai.com/v1"
+  STRIPE_SECRET: "" #load from secret
+  STRIPE_WEBHOOK_SECRET: "" # load from secret
+  ADMIN_DASHBOARD_URL: "http://localhost:5173" #load
+  OIDC_CLIENT_SECRET: "YllmLDTy67MbsUBrUAWvQ7z9aMq0QcKx"
+  OIDC_CLIENT_ID: "trieve"
+  OIDC_AUTH_REDIRECT_URL: "http://trieve-keycloak-service:8080/realms/trieve/protocol/openid-connect/auth"
+  OIDC_ISSUER_URL: "http://trieve-keycloak-service:8080/realms/trieve"
+  GPU_SERVER_ORIGIN: "http://localhost:7070"
+  SPARSE_SERVER_QUERY_ORIGIN: "http://trieve-embedding-splade-query"
+  SPARSE_SERVER_DOC_ORIGIN: "http://trieve-embedding-splade-doc"
+  EMBEDDING_SERVER_ORIGIN: "http://trieve-embedding-bgem3"
+  EMBEDDING_SERVER_ORIGIN_BGEM3: "http://trieve-embedding-bgem3"
+  EMBEDDING_SERVER_ORIGIN_JINA_CODE: "http://trieve-embedding-jina"
+  RERANKER_SERVER_ORIGIN: "http://trieve-embedding-reranker"
+  UNLIMITED: "true"
+  REDIS_CONNECTIONS: "2"
+  USE_ANALYTICS: "true"
+  CLICKHOUSE_URL: "http://clickhouse-trieve-clickhouse:8123"
+  CLICKHOUSE_DB: "default"
+  CLICKHOUSE_USER: "default"
+  CLICKHOUSE_PASSWORD: "password"
+  CLICKHOUSE_DSN: "clickhouse://default:password@clickhouse-trieve-clickhouse:8123/default" # Used by Cronjobs
+  JINA_CODE_API_KEY: ""
+  RUST_LOG: "INFO"
+  BM25_ACTIVE: "true"
+  CREATE_QDRANT_COLLECTIONS: "true"

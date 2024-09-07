@@ -165,6 +165,7 @@ export const AfMessage = (props: AfMessageProps) => {
         orientation={screenWidth() > 768 ? "horizontal" : "vertical"}
         sizes={sizes()}
         onSizesChange={(sizes) => setSizes(sizes)}
+        class="max-w-full"
         classList={{
           "self-start": props.role == "assistant",
           "self-end": props.role == "user",
@@ -174,7 +175,7 @@ export const AfMessage = (props: AfMessageProps) => {
           minSize={0.1}
           ref={setLeftColumnRef}
           classList={{
-            "dark:text-white self-start group grow shadow-sm w-full h-full rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
+            "dark:text-white self-start group grow shadow-sm max-w-full overflow-hidden h-full rounded border dark:border-neutral-700 md:px-6 px-4 py-4 flex items-start":
               true,
             "bg-neutral-200 border-neutral-300 dark:bg-neutral-700/70":
               props.role === "assistant",
@@ -183,7 +184,7 @@ export const AfMessage = (props: AfMessageProps) => {
             "md:mr-16": props.role === "assistant" && metadata().length <= 0,
           }}
         >
-          <div class="flex w-full items-center gap-4 self-start text-black dark:text-neutral-100 md:flex-row">
+          <div class="flex w-full items-center gap-4 self-start text-wrap text-black dark:text-neutral-100 md:flex-row">
             <div class="mt-1 self-start">
               {props.role === "user" ? (
                 <BiSolidUserRectangle class="fill-current" />
@@ -194,7 +195,7 @@ export const AfMessage = (props: AfMessageProps) => {
             <div
               classList={{
                 "w-full": true,
-                "flex gap-y-8 items-start lg:gap-4 flex-col-reverse lg:flex-row":
+                "flex overflow-hidden gap-y-8 items-start lg:gap-4 flex-col-reverse lg:flex-row":
                   !!chunkMetadatas(),
               }}
             >
@@ -245,7 +246,7 @@ export const AfMessage = (props: AfMessageProps) => {
                 <SolidMarkdown
                   remarkPlugins={[remarkBreaks, remarkGfm]}
                   rehypePlugins={[rehypeSanitize]}
-                  class="w-full select-text space-y-2"
+                  class="w-full max-w-[full] select-text space-y-2 overflow-hidden"
                   components={{
                     h1: (props) => {
                       return (
@@ -331,7 +332,9 @@ export const AfMessage = (props: AfMessageProps) => {
                             </Switch>
                           </button>
 
-                          <code ref={setCodeBlock}>{props.children}</code>
+                          <div class="overflow-x-auto">
+                            <code ref={setCodeBlock}>{props.children}</code>
+                          </div>
                         </div>
                       );
                     },

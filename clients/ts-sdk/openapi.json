@@ -12,7 +12,7 @@
       "name": "BSL",
       "url": "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt"
     },
-    "version": "0.11.7"
+    "version": "0.11.8"
   },
   "servers": [
     {
@@ -120,6 +120,61 @@
           },
           "400": {
             "description": "Service error relating to sending CTR data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true,
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/analytics/events": {
+      "put": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Send Event Data",
+        "description": "This route allows you to send event data to the system.",
+        "operationId": "send_event_data",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to send event data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventTypes"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The event data was successfully sent"
+          },
+          "400": {
+            "description": "Service error relating to sending event data",
             "content": {
               "application/json": {
                 "schema": {
@@ -416,6 +471,59 @@
           },
           "400": {
             "description": "Service error relating to getting cluster analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/analytics/top": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Top Datasets",
+        "description": "This route allows you to view the top datasets for a given type.",
+        "operationId": "get_top_datasets",
+        "requestBody": {
+          "description": "JSON request payload to filter the top datasets",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetTopDatasetsRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The top datasets for the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopDatasetsResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting top datasets",
             "content": {
               "application/json": {
                 "schema": {
@@ -5437,6 +5545,14 @@
             "description": "Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.",
             "nullable": true
           },
+          "scoring_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScoringOptions"
+              }
+            ],
+            "nullable": true
+          },
           "search_type": {
             "$ref": "#/components/schemas/SearchMethod"
           },
@@ -5449,6 +5565,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/SortOptions"
+              }
+            ],
+            "nullable": true
+          },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
               }
             ],
             "nullable": true
@@ -6565,6 +6689,23 @@
           }
         ]
       },
+      "ChunksWithPositions": {
+        "type": "object",
+        "required": [
+          "chunk_id",
+          "position"
+        ],
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ClusterAnalytics": {
         "oneOf": [
           {
@@ -7159,8 +7300,8 @@
           "created_at",
           "updated_at",
           "organization_id",
-          "deleted",
-          "server_configuration"
+          "server_configuration",
+          "deleted"
         ],
         "properties": {
           "created_at": {
@@ -7620,6 +7761,10 @@
           "total_chunk_pages"
         ],
         "properties": {
+          "corrected_query": {
+            "type": "string",
+            "nullable": true
+          },
           "group_chunks": {
             "type": "array",
             "items": {
@@ -7773,6 +7918,238 @@
           "group_chunks_updated",
           "group_chunks_action_failed"
         ]
+      },
+      "EventTypes": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "event_name",
+              "items",
+              "event_type"
+            ],
+            "properties": {
+              "event_name": {
+                "type": "string",
+                "description": "The name of the event"
+              },
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "view"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The items that were viewed"
+              },
+              "metadata": {
+                "description": "Any other metadata associated with the event",
+                "nullable": true
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The request id of the event to associate it with a request",
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who viewed the items",
+                "nullable": true
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "event_name",
+              "items",
+              "event_type"
+            ],
+            "properties": {
+              "event_name": {
+                "type": "string",
+                "description": "The name of the event"
+              },
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "add_to_cart"
+                ]
+              },
+              "is_conversion": {
+                "type": "boolean",
+                "description": "Whether the event is a conversion event",
+                "nullable": true
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The items that were added to the cart"
+              },
+              "metadata": {
+                "description": "Any other metadata associated with the event",
+                "nullable": true
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The request id of the event to associate it with a request",
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who added the items to the cart",
+                "nullable": true
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "event_name",
+              "clicked_items",
+              "event_type"
+            ],
+            "properties": {
+              "clicked_items": {
+                "$ref": "#/components/schemas/ChunksWithPositions"
+              },
+              "event_name": {
+                "type": "string",
+                "description": "The name of the event"
+              },
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "click"
+                ]
+              },
+              "is_conversion": {
+                "type": "boolean",
+                "description": "Whether the event is a conversion event",
+                "nullable": true
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The request id of the event to associate it with a request",
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who clicked the items",
+                "nullable": true
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "event_name",
+              "items",
+              "event_type"
+            ],
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "The currency of the purchase",
+                "nullable": true
+              },
+              "event_name": {
+                "type": "string",
+                "description": "The name of the event"
+              },
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "purchase"
+                ]
+              },
+              "is_conversion": {
+                "type": "boolean",
+                "description": "Whether the event is a conversion event",
+                "nullable": true
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The items that were purchased"
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The request id of the event to associate it with a request",
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who purchased the items",
+                "nullable": true
+              },
+              "value": {
+                "type": "number",
+                "format": "double",
+                "description": "The value of the purchase",
+                "nullable": true
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "event_name",
+              "items",
+              "event_type"
+            ],
+            "properties": {
+              "event_name": {
+                "type": "string",
+                "description": "The name of the event"
+              },
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "filter_clicked"
+                ]
+              },
+              "is_conversion": {
+                "type": "boolean",
+                "description": "Whether the event is a conversion event",
+                "nullable": true
+              },
+              "items": {
+                "type": "object",
+                "description": "The filter items that were clicked in a hashmap ie. {filter_name: filter_value} where filter_name is filter_type::field_name",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The request id of the event to associate it with a request",
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who clicked the items",
+                "nullable": true
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "event_type"
+        }
       },
       "FieldCondition": {
         "type": "object",
@@ -8279,6 +8656,25 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "GetTopDatasetsRequestBody": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "date_range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateRange"
+              }
+            ],
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/TopDatasetsRequestTypes"
           }
         }
       },
@@ -9693,6 +10089,7 @@
         "required": [
           "recommendations_with_clicks",
           "percent_recommendations_with_clicks",
+          "percent_recommendations_without_clicks",
           "avg_position_of_click"
         ],
         "properties": {
@@ -9701,6 +10098,10 @@
             "format": "double"
           },
           "percent_recommendations_with_clicks": {
+            "type": "number",
+            "format": "double"
+          },
+          "percent_recommendations_without_clicks": {
             "type": "number",
             "format": "double"
           },
@@ -9813,13 +10214,16 @@
       "RecommendationsWithClicksCTRResponse": {
         "type": "object",
         "required": [
-          "clicked_chunk",
-          "position",
+          "clicked_chunks",
+          "positions",
           "created_at"
         ],
         "properties": {
-          "clicked_chunk": {
-            "$ref": "#/components/schemas/ChunkMetadata"
+          "clicked_chunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChunkMetadata"
+            }
           },
           "created_at": {
             "type": "string"
@@ -9838,9 +10242,12 @@
             },
             "nullable": true
           },
-          "position": {
-            "type": "integer",
-            "format": "int32"
+          "positions": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           },
           "positive_ids": {
             "type": "array",
@@ -10089,6 +10496,28 @@
             }
           ],
           "score": 0.5
+        }
+      },
+      "ScoringOptions": {
+        "type": "object",
+        "description": "Scoring options provides ways to modify the sparse or dense vector created for the query in order to change how potential matches are scored. If not specified, this defaults to no modifications.",
+        "properties": {
+          "fulltext_boost": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FullTextBoost"
+              }
+            ],
+            "nullable": true
+          },
+          "semantic_boost": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SemanticBoost"
+              }
+            ],
+            "nullable": true
+          }
         }
       },
       "ScrollChunksReqPayload": {
@@ -10532,6 +10961,10 @@
           "total_chunk_pages"
         ],
         "properties": {
+          "corrected_query": {
+            "type": "string",
+            "nullable": true
+          },
           "score_chunks": {
             "type": "array",
             "items": {
@@ -10602,7 +11035,15 @@
           "score_threshold": {
             "type": "number",
             "format": "float",
-            "description": "Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric\nFor Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance\nThis threshold applies before weight and bias modifications. If not specified, this defaults to no threshold\nA threshold of 0 will default to no threashold",
+            "description": "Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric. For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance. This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold. A threshold of 0 will default to no threshold.",
+            "nullable": true
+          },
+          "scoring_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScoringOptions"
+              }
+            ],
             "nullable": true
           },
           "search_type": {
@@ -10617,6 +11058,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/SortOptions"
+              }
+            ],
+            "nullable": true
+          },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
               }
             ],
             "nullable": true
@@ -10834,6 +11283,14 @@
             "description": "Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.",
             "nullable": true
           },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
+              }
+            ],
+            "nullable": true
+          },
           "use_quote_negated_terms": {
             "type": "boolean",
             "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
@@ -10855,6 +11312,10 @@
           "total_pages"
         ],
         "properties": {
+          "corrected_query": {
+            "type": "string",
+            "nullable": true
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -10909,20 +11370,26 @@
         "type": "object",
         "required": [
           "query",
-          "clicked_chunk",
-          "position",
+          "clicked_chunks",
+          "positions",
           "created_at"
         ],
         "properties": {
-          "clicked_chunk": {
-            "$ref": "#/components/schemas/ChunkMetadata"
+          "clicked_chunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChunkMetadata"
+            }
           },
           "created_at": {
             "type": "string"
           },
-          "position": {
-            "type": "integer",
-            "format": "int32"
+          "positions": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           },
           "query": {
             "type": "string"
@@ -11026,6 +11493,10 @@
             "items": {
               "$ref": "#/components/schemas/ScoreChunk"
             }
+          },
+          "corrected_query": {
+            "type": "string",
+            "nullable": true
           },
           "id": {
             "type": "string",
@@ -11200,6 +11671,14 @@
             ],
             "nullable": true
           },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
+              }
+            ],
+            "nullable": true
+          },
           "use_quote_negated_terms": {
             "type": "boolean",
             "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
@@ -11227,6 +11706,10 @@
               "$ref": "#/components/schemas/ScoreChunk"
             }
           },
+          "corrected_query": {
+            "type": "string",
+            "nullable": true
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -11251,6 +11734,10 @@
             "items": {
               "$ref": "#/components/schemas/ScoreChunkDTO"
             }
+          },
+          "corrected_query": {
+            "type": "string",
+            "nullable": true
           },
           "group": {
             "$ref": "#/components/schemas/ChunkGroupAndFileId"
@@ -11866,15 +12353,50 @@
           "user_count": 5
         }
       },
+      "SuggestType": {
+        "type": "string",
+        "enum": [
+          "question",
+          "keyword",
+          "semantic"
+        ]
+      },
       "SuggestedQueriesReqPayload": {
         "type": "object",
-        "required": [
-          "query"
-        ],
         "properties": {
+          "context": {
+            "type": "string",
+            "description": "Context is the context of the query. This can be any string under 15 words and 200 characters. The context will be used to generate the suggested queries. Defaults to None.",
+            "nullable": true
+          },
+          "filters": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChunkFilter"
+              }
+            ],
+            "nullable": true
+          },
           "query": {
             "type": "string",
-            "description": "The query to base the generated suggested queries off of using RAG. A hybrid search for 10 chunks from your dataset using this query will be performed and the context of the chunks will be used to generate the suggested queries."
+            "description": "The query to base the generated suggested queries off of using RAG. A hybrid search for 10 chunks from your dataset using this query will be performed and the context of the chunks will be used to generate the suggested queries.",
+            "nullable": true
+          },
+          "search_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SearchMethod"
+              }
+            ],
+            "nullable": true
+          },
+          "suggestion_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuggestType"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -11905,6 +12427,35 @@
           },
           "tag": {
             "type": "string"
+          }
+        }
+      },
+      "TopDatasetsRequestTypes": {
+        "type": "string",
+        "enum": [
+          "search",
+          "rag",
+          "recommendation"
+        ]
+      },
+      "TopDatasetsResponse": {
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "total_queries"
+        ],
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataset_tracking_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "total_queries": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -11954,6 +12505,63 @@
           "name": "Trieve",
           "owner_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
+      "TypoOptions": {
+        "type": "object",
+        "description": "Typo Options lets you specify different methods to correct typos in the query. If not specified, typos will not be corrected.",
+        "properties": {
+          "correct_typos": {
+            "type": "boolean",
+            "description": "Set correct_typos to true to correct typos in the query. If not specified, this defaults to false.",
+            "nullable": true
+          },
+          "disable_on_word": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Words that should not be corrected. If not specified, this defaults to an empty list.",
+            "nullable": true
+          },
+          "one_typo_word_range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoRange"
+              }
+            ],
+            "nullable": true
+          },
+          "two_typo_word_range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoRange"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "TypoRange": {
+        "type": "object",
+        "description": "The TypoRange struct is used to specify the range of which the query will be corrected if it has a typo.",
+        "required": [
+          "min"
+        ],
+        "properties": {
+          "max": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The maximum number of characters that the query will be corrected if it has a typo. If not specified, this defaults to 8.",
+            "nullable": true,
+            "minimum": 0
+          },
+          "min": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The minimum number of characters that the query will be corrected if it has a typo. If not specified, this defaults to 5.",
+            "minimum": 0
+          }
         }
       },
       "UpdateAllOrgDatasetConfigsReqPayload": {

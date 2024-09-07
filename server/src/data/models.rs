@@ -3,9 +3,10 @@
 use super::schema::*;
 use crate::errors::ServiceError;
 use crate::get_env;
+use crate::handlers::analytics_handler::CTRDataRequestBody;
 use crate::handlers::chunk_handler::{
-    AutocompleteReqPayload, ChunkFilter, FullTextBoost, ParsedQuery, SearchChunksReqPayload,
-    SemanticBoost,
+    AutocompleteReqPayload, ChunkFilter, FullTextBoost, ParsedQuery, ScoringOptions,
+    SearchChunksReqPayload, SemanticBoost,
 };
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload};
@@ -3716,10 +3717,8 @@ impl Default for SearchQueryEvent {
 pub struct SearchQueriesWithClicksCTRResponseClickhouse {
     pub query: String,
     #[serde(with = "clickhouse::serde::uuid")]
-    pub clicked_chunk: uuid::Uuid,
-    #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
-    pub position: i32,
+    pub chunks_with_position: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
 }
@@ -3727,8 +3726,8 @@ pub struct SearchQueriesWithClicksCTRResponseClickhouse {
 #[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
 pub struct SearchQueriesWithClicksCTRResponse {
     pub query: String,
-    pub clicked_chunk: ChunkMetadata,
-    pub position: i32,
+    pub clicked_chunks: Vec<ChunkMetadata>,
+    pub positions: Vec<i32>,
     pub created_at: String,
 }
 
@@ -3737,14 +3736,33 @@ impl SearchQueriesWithClicksCTRResponseClickhouse {
         self,
         pool: web::Data<Pool>,
     ) -> SearchQueriesWithClicksCTRResponse {
-        let chunk = get_metadata_from_id_query(self.clicked_chunk, self.dataset_id, pool)
-            .await
-            .unwrap_or_default();
+        let chunks_with_positions: Vec<ChunksWithPositions> =
+            serde_json::from_str(&self.chunks_with_position).unwrap();
+
+        let futures: Vec<_> = chunks_with_positions
+            .iter()
+            .map(|chunk_with_position| async {
+                let chunk = get_metadata_from_id_query(
+                    chunk_with_position.chunk_id,
+                    self.dataset_id,
+                    pool.clone(),
+                )
+                .await
+                .unwrap_or_default();
+
+                (chunk, chunk_with_position.position)
+            })
+            .collect();
+
+        let results = futures::future::join_all(futures).await;
+
+        let (clicked_chunks, positions): (Vec<ChunkMetadata>, Vec<i32>) =
+            results.into_iter().unzip();
 
         SearchQueriesWithClicksCTRResponse {
             query: self.query,
-            clicked_chunk: chunk,
-            position: self.position,
+            clicked_chunks,
+            positions,
             created_at: self.created_at.to_string(),
         }
     }
@@ -3781,10 +3799,8 @@ pub struct RecommendationsWithClicksCTRResponseClickhouse {
     pub positive_tracking_ids: Vec<String>,
     pub negative_tracking_ids: Vec<String>,
     #[serde(with = "clickhouse::serde::uuid")]
-    pub clicked_chunk: uuid::Uuid,
-    #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
-    pub position: i32,
+    pub chunks_with_position: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
 }
@@ -3795,8 +3811,8 @@ pub struct RecommendationsWithClicksCTRResponse {
     pub negative_ids: Option<Vec<String>>,
     pub positive_tracking_ids: Option<Vec<String>>,
     pub negative_tracking_ids: Option<Vec<String>>,
-    pub clicked_chunk: ChunkMetadata,
-    pub position: i32,
+    pub clicked_chunks: Vec<ChunkMetadata>,
+    pub positions: Vec<i32>,
     pub created_at: String,
 }
 
@@ -3805,9 +3821,28 @@ impl RecommendationsWithClicksCTRResponseClickhouse {
         self,
         pool: web::Data<Pool>,
     ) -> RecommendationsWithClicksCTRResponse {
-        let clicked_chunk = get_metadata_from_id_query(self.clicked_chunk, self.dataset_id, pool)
-            .await
-            .unwrap_or_default();
+        let chunks_with_positions: Vec<ChunksWithPositions> =
+            serde_json::from_str(&self.chunks_with_position).unwrap();
+
+        let futures: Vec<_> = chunks_with_positions
+            .iter()
+            .map(|chunk_with_position| async {
+                let chunk = get_metadata_from_id_query(
+                    chunk_with_position.chunk_id,
+                    self.dataset_id,
+                    pool.clone(),
+                )
+                .await
+                .unwrap_or_default();
+
+                (chunk, chunk_with_position.position)
+            })
+            .collect();
+
+        let results = futures::future::join_all(futures).await;
+
+        let (clicked_chunks, positions): (Vec<ChunkMetadata>, Vec<i32>) =
+            results.into_iter().unzip();
 
         //only return the vecs that are not empty everything else should be None
         let positive_ids = if !self.positive_ids.is_empty() {
@@ -3839,8 +3874,8 @@ impl RecommendationsWithClicksCTRResponseClickhouse {
             negative_ids,
             positive_tracking_ids,
             negative_tracking_ids,
-            clicked_chunk,
-            position: self.position,
+            clicked_chunks,
+            positions,
             created_at: self.created_at.to_string(),
         }
     }
@@ -4474,6 +4509,7 @@ impl From<SearchCTRMetricsClickhouse> for SearchCTRMetrics {
 pub struct RecommendationCTRMetrics {
     pub recommendations_with_clicks: i64,
     pub percent_recommendations_with_clicks: f64,
+    pub percent_recommendations_without_clicks: f64,
     pub avg_position_of_click: f64,
 }
 
@@ -4512,6 +4548,142 @@ pub struct PopularFiltersClickhouse {
     pub filter_type: String,
     pub count: i64,
     pub common_values: String,
+}
+
+#[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
+#[schema(example = json!({
+    "clause": "must",
+    "field": "metadata.ep_num",
+    "filter_type": "match_any",
+    "count": 8,
+    "common_values": "['130']: 2, ['198']: 11"
+}))]
+pub struct EventDataClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub event_type: String,
+    pub event_name: String,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub request_id: uuid::Uuid,
+    pub items: Vec<String>,
+    pub metadata: String,
+    pub user_id: String,
+    pub is_conversion: bool,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub updated_at: OffsetDateTime,
+}
+
+impl EventDataClickhouse {
+    pub fn from_event_data(event: EventTypes, dataset_id: uuid::Uuid) -> Self {
+        match event {
+            EventTypes::AddToCart {
+                event_name,
+                request_id,
+                items,
+                user_id,
+                metadata,
+                is_conversion,
+            } => EventDataClickhouse {
+                id: uuid::Uuid::new_v4(),
+                event_type: "add_to_cart".to_string(),
+                event_name,
+                request_id: request_id.unwrap_or_default(),
+                items,
+                metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
+                user_id: user_id.unwrap_or_default(),
+                is_conversion: is_conversion.unwrap_or(true),
+                dataset_id,
+                created_at: OffsetDateTime::now_utc(),
+                updated_at: OffsetDateTime::now_utc(),
+            },
+            EventTypes::Purchase {
+                event_name,
+                request_id,
+                items,
+                user_id,
+                is_conversion,
+                value,
+                currency,
+            } => EventDataClickhouse {
+                id: uuid::Uuid::new_v4(),
+                event_type: "purchase".to_string(),
+                event_name,
+                request_id: request_id.unwrap_or_default(),
+                items,
+                metadata: json!({
+                    "value": value.unwrap_or(0.0f64),
+                    "currency": currency.unwrap_or("USD".to_string())
+                })
+                .to_string(),
+                user_id: user_id.unwrap_or_default(),
+                is_conversion: is_conversion.unwrap_or(true),
+                dataset_id,
+                created_at: OffsetDateTime::now_utc(),
+                updated_at: OffsetDateTime::now_utc(),
+            },
+            EventTypes::View {
+                event_name,
+                request_id,
+                items,
+                user_id,
+                metadata,
+            } => EventDataClickhouse {
+                id: uuid::Uuid::new_v4(),
+                event_type: "view".to_string(),
+                event_name,
+                request_id: request_id.unwrap_or_default(),
+                items,
+                metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
+                user_id: user_id.unwrap_or_default(),
+                is_conversion: false,
+                dataset_id,
+                created_at: OffsetDateTime::now_utc(),
+                updated_at: OffsetDateTime::now_utc(),
+            },
+            EventTypes::Click {
+                event_name,
+                request_id,
+                clicked_items,
+                user_id,
+                is_conversion,
+            } => EventDataClickhouse {
+                id: uuid::Uuid::new_v4(),
+                event_type: "click".to_string(),
+                event_name,
+                request_id: request_id.unwrap_or_default(),
+                items: vec![],
+                metadata: serde_json::to_string(&clicked_items).unwrap_or_default(),
+                user_id: user_id.unwrap_or_default(),
+                is_conversion: is_conversion.unwrap_or(true),
+                dataset_id,
+                created_at: OffsetDateTime::now_utc(),
+                updated_at: OffsetDateTime::now_utc(),
+            },
+            EventTypes::FilterClicked {
+                event_name,
+                request_id,
+                items,
+                user_id,
+                is_conversion,
+            } => EventDataClickhouse {
+                id: uuid::Uuid::new_v4(),
+                event_type: "filter_clicked".to_string(),
+                event_name,
+                request_id: request_id.unwrap_or_default(),
+                items: vec![],
+                metadata: serde_json::to_string(&items).unwrap_or_default(),
+                user_id: user_id.unwrap_or_default(),
+                is_conversion: is_conversion.unwrap_or(true),
+                dataset_id,
+                created_at: OffsetDateTime::now_utc(),
+                updated_at: OffsetDateTime::now_utc(),
+            },
+        }
+    }
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
@@ -4982,6 +5154,99 @@ pub enum ReRankOptions {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct ChunksWithPositions {
+    pub chunk_id: uuid::Uuid,
+    pub position: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "event_type")]
+pub enum EventTypes {
+    View {
+        /// The name of the event
+        event_name: String,
+        /// The request id of the event to associate it with a request
+        request_id: Option<uuid::Uuid>,
+        /// The items that were viewed
+        items: Vec<String>,
+        /// The user id of the user who viewed the items
+        user_id: Option<String>,
+        /// Any other metadata associated with the event
+        metadata: Option<serde_json::Value>,
+    },
+    AddToCart {
+        /// The name of the event
+        event_name: String,
+        /// The request id of the event to associate it with a request
+        request_id: Option<uuid::Uuid>,
+        /// The items that were added to the cart
+        items: Vec<String>,
+        /// The user id of the user who added the items to the cart
+        user_id: Option<String>,
+        /// Any other metadata associated with the event
+        metadata: Option<serde_json::Value>,
+        /// Whether the event is a conversion event
+        is_conversion: Option<bool>,
+    },
+    Click {
+        /// The name of the event
+        event_name: String,
+        /// The request id of the event to associate it with a request
+        request_id: Option<uuid::Uuid>,
+        /// The items that were clicked and their positons in a hashmap ie. {item_id: position}
+        clicked_items: ChunksWithPositions,
+        /// The user id of the user who clicked the items
+        user_id: Option<String>,
+        /// Whether the event is a conversion event
+        is_conversion: Option<bool>,
+    },
+    Purchase {
+        /// The name of the event
+        event_name: String,
+        /// The request id of the event to associate it with a request
+        request_id: Option<uuid::Uuid>,
+        /// The items that were purchased
+        items: Vec<String>,
+        /// The user id of the user who purchased the items
+        user_id: Option<String>,
+        /// The value of the purchase
+        value: Option<f64>,
+        /// The currency of the purchase
+        currency: Option<String>,
+        /// Whether the event is a conversion event
+        is_conversion: Option<bool>,
+    },
+    FilterClicked {
+        /// The name of the event
+        event_name: String,
+        /// The request id of the event to associate it with a request
+        request_id: Option<uuid::Uuid>,
+        /// The filter items that were clicked in a hashmap ie. {filter_name: filter_value} where filter_name is filter_type::field_name
+        items: HashMap<String, String>,
+        /// The user id of the user who clicked the items
+        user_id: Option<String>,
+        /// Whether the event is a conversion event
+        is_conversion: Option<bool>,
+    },
+}
+
+impl From<CTRDataRequestBody> for EventTypes {
+    fn from(data: CTRDataRequestBody) -> Self {
+        EventTypes::Click {
+            event_name: String::from("click"),
+            request_id: Some(data.request_id),
+            clicked_items: ChunksWithPositions {
+                chunk_id: data.clicked_chunk_id.unwrap_or_default(),
+                position: data.position,
+            },
+            user_id: None,
+            is_conversion: None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum CTRType {
     Search,
@@ -5031,6 +5296,8 @@ pub struct TypoOptions {
     pub two_typo_word_range: Option<TypoRange>,
     /// Words that should not be corrected. If not specified, this defaults to an empty list.
     pub disable_on_word: Option<Vec<String>>,
+    /// Auto-require non-english words present in the dataset to exist in each results chunk_html text. If not specified, this defaults to true.
+    pub prioritize_domain_specifc_words: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
@@ -5190,6 +5457,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             get_total_pages: Option<bool>,
             filters: Option<ChunkFilter>,
             sort_options: Option<SortOptions>,
+            scoring_options: Option<ScoringOptions>,
             highlight_options: Option<HighlightOptions>,
             score_threshold: Option<f32>,
             slim_chunks: Option<bool>,
@@ -5221,6 +5489,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             get_total_pages: helper.get_total_pages,
             filters: helper.filters,
             sort_options,
+            scoring_options: helper.scoring_options,
             highlight_options,
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,
@@ -5246,6 +5515,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             page_size: Option<u64>,
             filters: Option<ChunkFilter>,
             sort_options: Option<SortOptions>,
+            scoring_options: Option<ScoringOptions>,
             highlight_options: Option<HighlightOptions>,
             score_threshold: Option<f32>,
             slim_chunks: Option<bool>,
@@ -5276,6 +5546,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             page_size: helper.page_size,
             filters: helper.filters,
             sort_options,
+            scoring_options: helper.scoring_options,
             highlight_options,
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,

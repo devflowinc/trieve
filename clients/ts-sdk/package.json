@@ -6,11 +6,11 @@
   "files": [
     "dist"
   ],
-  "version": "0.0.1",
+  "version": "0.0.5",
   "license": "MIT",
   "scripts": {
     "lint": "eslint 'src/**/*.ts'",
-    "build:clean": "rm tsconfig.tsbuildinfo && rm -rf dist && yarn type:gen && yarn build",
+    "build:clean": "rm -f tsconfig.tsbuildinfo && rm -rf dist && yarn type:gen && yarn build",
     "build": "yarn build:src && yarn type:dts",
     "build:src": "node ./scripts/build.js",
     "type:gen": "node ./scripts/genClient.js",
@@ -19,14 +19,15 @@
     "build:docs": "typedoc"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "^0.52.9",
+    "@hey-api/openapi-ts": "^0.53",
     "@vitest/ui": "^2.0.5",
     "esbuild": "^0.23.1",
     "esbuild-register": "^3.6.0",
-    "typedoc-plugin-mdn-links": "^3.2.9",
-    "typescript": "^5.5.4",
-    "vitest": "^2.0.5",
     "typedoc": "^0.26.0",
-    "typedoc-plugin-merge-modules": "^6.0.0"
+    "typedoc-plugin-extras": "^3.1.0",
+    "typedoc-plugin-mdn-links": "^3.2.9",
+    "typedoc-plugin-merge-modules": "^6.0.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
   }
 }

@@ -1,0 +1,29 @@
+name: Search component test suite
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - "clients/search-component/**"
+
+jobs:
+  build-test:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+      - name: Running tests
+        run: yarn build --filter trieve-search-component
+  tests:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+      - name: Running lint
+        working-directory: ./clients/search-component
+        run: yarn lint

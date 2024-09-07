@@ -12,7 +12,7 @@ use super::model_operator::{
 use super::qdrant_operator::{
     count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
 };
-use super::words_operator::correct_query;
+use super::typo_operator::correct_query;
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
     ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
@@ -21,7 +21,8 @@ use crate::data::models::{
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
-    ParsedQuery, ParsedQueryTypes, SearchChunkQueryResponseBody, SearchChunksReqPayload,
+    ParsedQuery, ParsedQueryTypes, ScoringOptions, SearchChunkQueryResponseBody,
+    SearchChunksReqPayload,
 };
 use crate::handlers::group_handler::{
     SearchOverGroupsReqPayload, SearchWithinGroupReqPayload, SearchWithinGroupResults,
@@ -342,6 +343,7 @@ impl RetrievePointQuery {
                         let vector = get_qdrant_vector(
                             data.search_type,
                             ParsedQueryTypes::Single(parsed_query),
+                            None,
                             config,
                         )
                         .await?;
@@ -369,6 +371,7 @@ impl RetrievePointQuery {
                         let vector = get_qdrant_vector(
                             data.search_type,
                             ParsedQueryTypes::Single(parsed_query),
+                            None,
                             config,
                         )
                         .await?;
@@ -396,6 +399,7 @@ impl RetrievePointQuery {
                         let vector = get_qdrant_vector(
                             data.search_type,
                             ParsedQueryTypes::Single(parsed_query),
+                            None,
                             config,
                         )
                         .await?;
@@ -491,7 +495,9 @@ pub async fn get_metadata_filter_condition(
         .unwrap_or(&filter.field)
         .to_string();
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let mut query = chunk_metadata_columns::chunk_metadata
         .select(chunk_metadata_columns::qdrant_point_id)
@@ -700,7 +706,9 @@ pub async fn get_group_metadata_filter_condition(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let mut query =
         chunk_metadata_columns::chunk_metadata
@@ -870,7 +878,9 @@ pub async fn get_group_tag_set_filter_condition(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let mut query =
         chunk_metadata_columns::chunk_metadata
@@ -1682,6 +1692,7 @@ pub fn rerank_chunks(
 async fn get_qdrant_vector(
     search_type: SearchMethod,
     parsed_query: ParsedQueryTypes,
+    scoring_options: Option<ScoringOptions>,
     config: &DatasetConfiguration,
 ) -> Result<VectorType, ServiceError> {
     match search_type {
@@ -1691,9 +1702,15 @@ async fn get_qdrant_vector(
                     "Semantic search is not enabled for this dataset".to_string(),
                 ));
             }
+            let semantic_boost = scoring_options
+                .clone()
+                .map(|options| options.semantic_boost)
+                .unwrap_or(None);
+
             let embedding_vector = match parsed_query {
                 ParsedQueryTypes::Single(query) => {
-                    get_dense_vector(query.query.clone(), None, "query", config.clone()).await?
+                    get_dense_vector(query.query.clone(), semantic_boost, "query", config.clone())
+                        .await?
                 }
                 ParsedQueryTypes::Multi(queries) => {
                     let mut embedding_futures = Vec::new();
@@ -1745,9 +1762,14 @@ async fn get_qdrant_vector(
                     "BM25 search is not enabled for this dataset".to_string(),
                 ));
             }
+            let fulltext_boost = scoring_options
+                .clone()
+                .map(|options| options.fulltext_boost)
+                .unwrap_or(None);
+
             let sparse_vectors = match parsed_query {
                 ParsedQueryTypes::Single(query) => get_bm25_embeddings(
-                    vec![(query.query.clone(), None)],
+                    vec![(query.query.clone(), fulltext_boost)],
                     config.BM25_AVG_LEN,
                     config.BM25_B,
                     config.BM25_K,
@@ -1769,9 +1791,14 @@ async fn get_qdrant_vector(
                 ));
             }
 
+            let fulltext_boost = scoring_options
+                .clone()
+                .map(|options| options.fulltext_boost)
+                .unwrap_or(None);
+
             let sparse_vector = match parsed_query {
                 ParsedQueryTypes::Single(query) => {
-                    get_sparse_vector(query.query.clone(), "query").await?
+                    get_sparse_vector(query.query.clone(), fulltext_boost, "query").await?
                 }
                 ParsedQueryTypes::Multi(_) => {
                     return Err(ServiceError::BadRequest(
@@ -1817,28 +1844,41 @@ pub async fn search_chunks_query(
         timer.add("start correcting query");
         match parsed_query {
             ParsedQueryTypes::Single(ref mut query) => {
-                corrected_query =
-                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
-                query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                let typo_corrected_query =
+                    correct_query(query.clone(), dataset.id, redis_pool, options).await?;
+                if typo_corrected_query.corrected {
+                    corrected_query.clone_from(&typo_corrected_query.query);
+                }
+                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
-                    corrected_query =
-                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                    let typo_corrected_query =
+                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
-                    query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                    if typo_corrected_query.corrected {
+                        corrected_query.clone_from(&typo_corrected_query.query);
+                    }
+                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
+                    *query = corrected_query.clone().unwrap_or(query.clone());
                 }
             }
         }
         timer.add("corrected query");
     }
 
-    timer.add("start to create dense embedding vector");
+    timer.add("start to create query vector");
 
-    let vector = get_qdrant_vector(data.clone().search_type, parsed_query.clone(), config).await?;
+    let vector = get_qdrant_vector(
+        data.clone().search_type,
+        parsed_query.clone(),
+        data.clone().scoring_options,
+        config,
+    )
+    .await?;
 
-    timer.add("computed dense embedding");
+    timer.add("computed query vector");
 
     let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
         Some(Some(sort_by)) => match sort_by {
@@ -1926,7 +1966,7 @@ pub async fn search_chunks_query(
     timer.add("reranking");
     transaction.finish();
 
-    result_chunks.corrected_query = corrected_query;
+    result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_chunks)
 }
@@ -1959,29 +1999,44 @@ pub async fn search_hybrid_chunks(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        corrected_query =
-            correct_query(parsed_query.query.clone(), dataset.id, redis_pool, options).await?;
-        parsed_query.query = corrected_query
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
             .clone()
-            .unwrap_or(parsed_query.query.clone());
+            .unwrap_or(parsed_query.clone());
         data.query = QueryTypes::Single(parsed_query.query.clone());
-
         timer.add("corrected query");
     }
 
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let dense_vector_future = get_dense_vector(
+    let semantic_boost = data
+        .scoring_options
+        .clone()
+        .map(|options| options.semantic_boost)
+        .unwrap_or(None);
+    let fulltext_boost = data
+        .scoring_options
+        .clone()
+        .map(|options| options.fulltext_boost)
+        .unwrap_or(None);
+
+    let dense_query_vector_future = get_dense_vector(
         data.query.clone().to_single_query()?,
-        None,
+        semantic_boost,
         "query",
         dataset_config.clone(),
     );
 
-    let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), "query");
+    let sparse_query_vector_future =
+        get_sparse_vector(parsed_query.query.clone(), fulltext_boost, "query");
 
     let (dense_vector, sparse_vector) =
-        futures::try_join!(dense_vector_future, sparse_vector_future)?;
+        futures::try_join!(dense_query_vector_future, sparse_query_vector_future)?;
 
     timer.add("computed sparse and dense embeddings");
 
@@ -2084,7 +2139,7 @@ pub async fn search_hybrid_chunks(
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
-            corrected_query,
+            corrected_query: corrected_query.map(|c| c.query),
             total_chunk_pages: result_chunks.total_chunk_pages,
         }
     };
@@ -2129,7 +2184,8 @@ pub async fn search_groups_query(
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
-    let vector = get_qdrant_vector(data.clone().search_type, parsed_query.clone(), config).await?;
+    let vector =
+        get_qdrant_vector(data.clone().search_type, parsed_query.clone(), None, config).await?;
 
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
@@ -2138,17 +2194,23 @@ pub async fn search_groups_query(
         timer.add("start correcting query");
         match parsed_query {
             ParsedQueryTypes::Single(ref mut query) => {
-                corrected_query =
-                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
-                query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                let typo_corrected_query =
+                    correct_query(query.clone(), dataset.id, redis_pool.clone(), options).await?;
+                if typo_corrected_query.corrected {
+                    corrected_query.clone_from(&typo_corrected_query.query);
+                }
+                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
-                    corrected_query =
-                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                    let typo_corrected_query =
+                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
-                    query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                    if typo_corrected_query.corrected {
+                        corrected_query.clone_from(&typo_corrected_query.query);
+                    }
+                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 }
             }
         }
@@ -2239,7 +2301,7 @@ pub async fn search_groups_query(
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
         group,
-        corrected_query,
+        corrected_query: corrected_query.map(|c| c.query),
         total_pages: result_chunks.total_chunk_pages,
     })
 }
@@ -2263,13 +2325,16 @@ pub async fn search_hybrid_groups(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        corrected_query =
-            correct_query(parsed_query.query.clone(), dataset.id, redis_pool, options).await?;
-        parsed_query.query = corrected_query
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
             .clone()
-            .unwrap_or(parsed_query.query.clone());
+            .unwrap_or(parsed_query.clone());
         data.query = QueryTypes::Single(parsed_query.query.clone());
-
         timer.add("corrected query");
     }
 
@@ -2280,7 +2345,7 @@ pub async fn search_hybrid_groups(
         dataset_config.clone(),
     );
 
-    let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), "query");
+    let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), None, "query");
 
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
@@ -2432,7 +2497,7 @@ pub async fn search_hybrid_groups(
     Ok(SearchWithinGroupResults {
         bookmarks: reranked_chunks.score_chunks,
         group,
-        corrected_query,
+        corrected_query: corrected_query.map(|c| c.query),
         total_pages: result_chunks.total_chunk_pages,
     })
 }
@@ -2456,17 +2521,23 @@ pub async fn semantic_search_over_groups(
         timer.add("start correcting query");
         match parsed_query {
             ParsedQueryTypes::Single(ref mut query) => {
-                corrected_query =
-                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
-                query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                let typo_corrected_query =
+                    correct_query(query.clone(), dataset.id, redis_pool.clone(), options).await?;
+                if typo_corrected_query.corrected {
+                    corrected_query.clone_from(&typo_corrected_query.query);
+                }
+                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
-                    corrected_query =
-                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                    let typo_corrected_query =
+                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
-                    query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                    if typo_corrected_query.corrected {
+                        corrected_query.clone_from(&typo_corrected_query.query);
+                    }
+                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 }
             }
         }
@@ -2478,6 +2549,7 @@ pub async fn semantic_search_over_groups(
     let embedding_vector = get_qdrant_vector(
         data.clone().search_type,
         parsed_query.clone(),
+        None,
         &dataset_config.clone(),
     )
     .await?;
@@ -2523,7 +2595,7 @@ pub async fn semantic_search_over_groups(
     timer.add("fetched from postgres");
 
     //TODO: rerank for groups
-    result_chunks.corrected_query = corrected_query;
+    result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_chunks)
 }
@@ -2543,6 +2615,7 @@ pub async fn full_text_search_over_groups(
     let embedding_vector = get_qdrant_vector(
         data.clone().search_type,
         parsed_query.clone(),
+        None,
         &config.clone(),
     )
     .await?;
@@ -2556,17 +2629,23 @@ pub async fn full_text_search_over_groups(
         timer.add("start correcting query");
         match parsed_query {
             ParsedQueryTypes::Single(ref mut query) => {
-                corrected_query =
-                    correct_query(query.query.clone(), dataset.id, redis_pool, options).await?;
-                query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                let typo_corrected_query =
+                    correct_query(query.clone(), dataset.id, redis_pool.clone(), options).await?;
+                if typo_corrected_query.corrected {
+                    corrected_query.clone_from(&typo_corrected_query.query);
+                }
+                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 data.query = QueryTypes::Single(query.query.clone());
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
-                    corrected_query =
-                        correct_query(query.query.clone(), dataset.id, redis_pool.clone(), options)
+                    let typo_corrected_query =
+                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
                             .await?;
-                    query.query = corrected_query.clone().unwrap_or(query.query.clone());
+                    if typo_corrected_query.corrected {
+                        corrected_query.clone_from(&typo_corrected_query.query);
+                    }
+                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
                 }
             }
         }
@@ -2612,7 +2691,7 @@ pub async fn full_text_search_over_groups(
     timer.add("fetched from postgres");
 
     //TODO: rerank for groups
-    result_groups_with_chunk_hits.corrected_query = corrected_query;
+    result_groups_with_chunk_hits.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_groups_with_chunk_hits)
 }
@@ -2694,13 +2773,16 @@ pub async fn hybrid_search_over_groups(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        corrected_query =
-            correct_query(parsed_query.query.clone(), dataset.id, redis_pool, options).await?;
-        parsed_query.query = corrected_query
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
             .clone()
-            .unwrap_or(parsed_query.query.clone());
+            .unwrap_or(parsed_query.clone());
         data.query = QueryTypes::Single(parsed_query.query.clone());
-
         timer.add("corrected query");
     }
 
@@ -2714,7 +2796,7 @@ pub async fn hybrid_search_over_groups(
     );
 
     let sparse_embedding_vector_future =
-        get_sparse_vector(data.query.clone().to_single_query()?, "query");
+        get_sparse_vector(data.query.clone().to_single_query()?, None, "query");
 
     let (dense_vector, sparse_vector) = futures::try_join!(
         dense_embedding_vectors_future,
@@ -2831,7 +2913,7 @@ pub async fn hybrid_search_over_groups(
 
     let result_chunks = DeprecatedSearchOverGroupsResponseBody {
         group_chunks: reranked_chunks,
-        corrected_query,
+        corrected_query: corrected_query.map(|c| c.query),
         total_chunk_pages: combined_search_chunk_query_results.total_chunk_pages,
     };
 
@@ -2857,13 +2939,16 @@ pub async fn autocomplete_chunks_query(
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
-        corrected_query =
-            correct_query(parsed_query.query.clone(), dataset.id, redis_pool, options).await?;
-        parsed_query.query = corrected_query
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
             .clone()
-            .unwrap_or(parsed_query.query.clone());
+            .unwrap_or(parsed_query.clone());
         data.query.clone_from(&parsed_query.query);
-
         timer.add("corrected query");
     }
 
@@ -2893,6 +2978,7 @@ pub async fn autocomplete_chunks_query(
     let vector = get_qdrant_vector(
         data.clone().search_type,
         ParsedQueryTypes::Single(parsed_query.clone()),
+        data.clone().scoring_options,
         config,
     )
     .await?;
@@ -3002,7 +3088,7 @@ pub async fn autocomplete_chunks_query(
     timer.add("reranking");
     transaction.finish();
 
-    result_chunks.corrected_query = corrected_query;
+    result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_chunks)
 }
@@ -3018,6 +3104,7 @@ pub async fn count_chunks_query(
     let vector = get_qdrant_vector(
         data.clone().search_type.into(),
         parsed_query.clone(),
+        None,
         config,
     )
     .await?;

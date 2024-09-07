@@ -434,3 +434,11 @@ footer p {
 .tsd-accordion-summary svg {
   transition: transform 0.1s ease-in-out;
 }
+
+#tsd-search > div:nth-child(1) > label {
+  display: none;
+}
+
+body > footer > p.tsd-generator {
+  display: none;
+}

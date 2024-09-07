@@ -1,0 +1,17 @@
+{
+  "include": ["src"],
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "declaration": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "jsx": "react",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  }
+}

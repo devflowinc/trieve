@@ -104,6 +104,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     rating: 5,
     note: "",
   });
+  const [correctedQuery, setCorrectedQuery] = createSignal("");
 
   const [serverTimings, setServerTimings] = createSignal<ServerTiming[]>([]);
   const [showServerTimings, setShowServerTimings] = createSignal(false);
@@ -293,6 +294,8 @@ const ResultsPage = (props: ResultsPageProps) => {
             max: props.search.debounced.twoTypoWordRangeMax,
           },
           disable_on_word: props.search.debounced.disableOnWords,
+          prioritize_domain_specifc_words:
+            props.search.debounced.prioritize_domain_specifc_words,
         },
         highlight_options: {
           highlight_results: props.search.debounced.highlightResults ?? true,
@@ -312,7 +315,31 @@ const ResultsPage = (props: ResultsPageProps) => {
         group_size: props.search.debounced.group_size ?? 3,
         use_quote_negated_terms: props.search.debounced.useQuoteNegatedTerms,
         remove_stop_words: props.search.debounced.removeStopWords,
+        scoring_options: {},
       };
+
+      if (
+        props.search.debounced.scoringOptions?.fulltext_boost?.boost_factor &&
+        props.search.debounced.scoringOptions?.fulltext_boost?.phrase
+      ) {
+        requestBody.scoring_options.fulltext_boost = {
+          boost_factor:
+            props.search.debounced.scoringOptions.fulltext_boost.boost_factor,
+          phrase: props.search.debounced.scoringOptions.fulltext_boost.phrase,
+        };
+      }
+      if (
+        props.search.debounced.scoringOptions?.semantic_boost
+          ?.distance_factor &&
+        props.search.debounced.scoringOptions?.semantic_boost?.phrase
+      ) {
+        requestBody.scoring_options.semantic_boost = {
+          distance_factor:
+            props.search.debounced.scoringOptions.semantic_boost
+              .distance_factor,
+          phrase: props.search.debounced.scoringOptions.semantic_boost.phrase,
+        };
+      }
 
       let searchRoute = "";
       let groupUnique = false;
@@ -364,6 +391,7 @@ const ResultsPage = (props: ResultsPageProps) => {
               const groupResult = data.results as GroupScoreChunkDTO[];
               setTotalPages(data.total_pages);
               setSearchID(data.id);
+              setCorrectedQuery(data.corrected_query);
               setGroupResultChunks(groupResult);
 
               resultingChunks = groupResult.flatMap((groupChunkDTO) => {
@@ -383,6 +411,7 @@ const ResultsPage = (props: ResultsPageProps) => {
               });
               setSearchID(data.id);
               setResultChunks(resultingChunks);
+              setCorrectedQuery(data.corrected_query);
               setTotalPages(data.total_pages);
             }
 
@@ -454,7 +483,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           </FullScreenModal>
         </Portal>
       </Show>
-      <div class="flex w-full flex-col items-center gap-4 pt-12">
+      <div class="flex w-full flex-col items-center gap-4 pt-5">
         <Switch>
           <Match when={loading()}>
             <div
@@ -473,6 +502,54 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
           </Match>
           <Match when={!loading() && groupResultChunks().length == 0}>
+            <Show when={correctedQuery()}>
+              <div class="flex w-full flex-col">
+                <div class="text-lg">
+                  {" "}
+                  Showing results for{" "}
+                  <a
+                    class="font-bold text-blue-500"
+                    href={`${new URL(window.location.href).origin}${
+                      new URL(window.location.href).pathname
+                    }?${new URLSearchParams({
+                      ...Object.fromEntries(
+                        new URL(window.location.href).searchParams,
+                      ),
+                      query: correctedQuery(),
+                    }).toString()}`}
+                    onClick={() => {
+                      props.search.setSearch({
+                        query: correctedQuery(),
+                      });
+                    }}
+                  >
+                    {correctedQuery()}
+                  </a>
+                </div>
+                <div>
+                  Search instead for
+                  <a
+                    class="pl-1 font-bold text-blue-500"
+                    href={`${new URL(window.location.href).origin}${
+                      new URL(window.location.href).pathname
+                    }?${new URLSearchParams({
+                      ...Object.fromEntries(
+                        new URL(window.location.href).searchParams,
+                      ),
+                      query: `"${props.search.debounced.query}"`,
+                    }).toString()}`}
+                    onClick={() => {
+                      props.search.setSearch({
+                        query: `"${props.search.debounced.query}"`,
+                      });
+                    }}
+                  >
+                    {props.search.debounced.query}
+                  </a>
+                </div>
+              </div>
+            </Show>
+
             <ShowServerTimings />
             <div class="flex w-full max-w-screen-2xl flex-col space-y-4">
               <For each={resultChunks()}>

@@ -24,7 +24,9 @@ pub async fn get_user_by_id_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let user_orgs_orgs: Vec<(User, UserOrganization, Organization)> = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
@@ -88,7 +90,9 @@ pub async fn add_existing_user_to_org(
 ) -> Result<bool, ServiceError> {
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let user: Vec<User> = users_columns::users
         .filter(users_columns::email.eq(email))
@@ -124,7 +128,9 @@ pub async fn update_user_org_role_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::update(
         user_organizations_columns::user_organizations
@@ -140,9 +146,12 @@ pub async fn update_user_org_role_query(
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
     })?;
 
-    redis_conn.del(user_id.to_string()).await.map_err(|_| {
-        ServiceError::InternalServerError("Failed to delete user from redis".to_string())
-    })?;
+    redis_conn
+        .del::<_, ()>(user_id.to_string())
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to delete user from redis".to_string())
+        })?;
 
     Ok(())
 }
@@ -196,7 +205,9 @@ pub async fn set_user_api_key_query(
     let raw_api_key = generate_api_key();
     let hashed_api_key = hash_api_key(&raw_api_key);
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let api_key_struct = UserApiKey::from_details(
         user_id,
@@ -229,7 +240,9 @@ pub async fn get_user_from_api_key_query(
 
     let api_key_hash = hash_api_key(api_key);
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let user_orgs_orgs: Vec<(User, UserOrganization, Organization, UserApiKey)> =
         users_columns::users
@@ -357,7 +370,9 @@ pub async fn get_user_api_keys_query(
 ) -> Result<Vec<ApiKeyRespBody>, ServiceError> {
     use crate::data::schema::user_api_key::dsl as user_api_key_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let api_keys = user_api_key_columns::user_api_key
         .filter(user_api_key_columns::user_id.eq(user_id))
@@ -381,7 +396,9 @@ pub async fn delete_user_api_keys_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_api_key::dsl as user_api_key_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::delete(
         user_api_key_columns::user_api_key
@@ -407,7 +424,9 @@ pub async fn create_user_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let user = User::from_details_with_id(user_id, email, name);
     let user_org = UserOrganization::from_details(user_id, org_id, role);
@@ -453,7 +472,9 @@ pub async fn add_user_to_organization(
 
     let user_id_refresh = user_org.user_id;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     diesel::insert_into(user_organizations_columns::user_organizations)
         .values(user_org)
@@ -468,7 +489,7 @@ pub async fn add_user_to_organization(
     })?;
 
     redis_conn
-        .del(user_id_refresh.to_string())
+        .del::<_, ()>(user_id_refresh.to_string())
         .await
         .map_err(|_| {
             ServiceError::InternalServerError("Failed to delete user from redis".to_string())
@@ -564,7 +585,9 @@ pub async fn remove_user_from_org_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
 
     let user_role_being_removed: i32 = user_organizations_columns::user_organizations
         .filter(user_organizations_columns::user_id.eq(user_id))
@@ -591,9 +614,12 @@ pub async fn remove_user_from_org_query(
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
     })?;
 
-    redis_conn.del(user_id.to_string()).await.map_err(|_| {
-        ServiceError::InternalServerError("Failed to delete user from redis".to_string())
-    })?;
+    redis_conn
+        .del::<_, ()>(user_id.to_string())
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to delete user from redis".to_string())
+        })?;
 
     Ok(())
 }

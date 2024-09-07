@@ -1,0 +1,22 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: trieve-keycloak
+spec:
+  instances: 1
+  db:
+    vendor: postgres
+    host: trieve-keycloak-db-rw
+    usernameSecret:
+      name: trieve-keycloak-db-app
+      key: username
+    passwordSecret:
+      name: trieve-keycloak-db-app
+      key: password
+  http:
+    httpEnabled: true
+  hostname:
+    strict: false
+    hostname: http://trieve-keycloak-service:8080
+  proxy:
+    headers: xforwarded # double check your reverse proxy sets and overwrites the X-Forwarded-* headers
