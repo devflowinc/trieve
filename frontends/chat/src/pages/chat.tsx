@@ -1,4 +1,10 @@
-import { Show, createEffect, createSignal, useContext } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createMemo,
+  createSignal,
+  useContext,
+} from "solid-js";
 import MainLayout from "../components/Layouts/MainLayout";
 import { Navbar } from "../components/Navbar/Navbar";
 import { Sidebar } from "../components/Navbar/Sidebar";
@@ -63,6 +69,21 @@ export const Chat = () => {
     }
   });
 
+  const getOrganizationDatasetLength = createMemo(() => {
+    const datasetListOrEmpty = userContext.datasetsAndUsages?.() ?? [];
+    const currentOrgId = userContext.currentOrganization?.()?.id;
+
+    const length = datasetListOrEmpty.filter(
+      (item) => item.dataset.organization_id === currentOrgId,
+    ).length;
+
+    return length;
+  });
+
+  const checkDatasetPresent = createMemo(() => {
+    return getOrganizationDatasetLength() > 0;
+  });
+
   return (
     <div class="relative flex h-screen flex-row bg-zinc-100 dark:bg-zinc-900">
       <div class="hidden w-1/4 overflow-x-hidden lg:block">
@@ -113,10 +134,7 @@ export const Chat = () => {
               orgId={userContext?.currentOrganization?.()?.id}
             />
           }
-          when={
-            userContext?.datasetsAndUsages?.length &&
-            userContext?.datasetsAndUsages?.length <= 0
-          }
+          when={checkDatasetPresent()}
         >
           <MainLayout
             setTopics={setTopics}
