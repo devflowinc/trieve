@@ -9,6 +9,7 @@ async function build() {
     platform: "node",
     target: "node21",
     format: "esm",
+    tsconfig: "./tsconfig.json",
     nodePaths: [srcPath],
     sourcemap: true,
     treeShaking: true,

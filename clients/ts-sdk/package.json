@@ -1,7 +1,13 @@
 {
   "name": "trieve-ts-sdk",
   "type": "module",
-  "exports": "./dist/index.js",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
@@ -25,9 +31,11 @@
     "type:gen": "node ./scripts/genClient.js",
     "type:dts": "tsc --emitDeclarationOnly --declarationMap",
     "test": "vitest",
+    "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
     "build:docs": "typedoc"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.15.4",
     "@hey-api/openapi-ts": "^0.53",
     "@vitest/ui": "^2.0.5",
     "esbuild": "^0.23.1",

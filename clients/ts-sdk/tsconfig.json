@@ -4,8 +4,13 @@
     "noEmit": false,
     "emitDeclarationOnly": true,
     "target": "es2016" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
-    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+    ],
     "rootDir": "./src",
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
     "declarationMap": true /* Specify a file that bundles all outputs into one JavaScript file. If 'declaration' is true, also designates a file that bundles all .d.ts output. */,
     "outDir": "./dist",
     "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
@@ -14,6 +19,8 @@
     /* Type Checking */
     "strict": true /* Enable all strict type-checking options. */,
     // "noImplicitAny": true,                            /* Enable error reporting for expressions and declarations with an implied 'any' type. */
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
     "strictNullChecks": true /* When type checking, take into account 'null' and 'undefined'. */,
     "strictFunctionTypes": true /* When assigning functions, check to ensure parameters and the return values are subtype-compatible. */,
     "strictBindCallApply": true /* Check that the arguments for 'bind', 'call', and 'apply' methods match the original function. */,
@@ -22,5 +29,7 @@
     "useUnknownInCatchVariables": true,
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

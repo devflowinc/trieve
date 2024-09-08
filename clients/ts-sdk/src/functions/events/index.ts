@@ -23,7 +23,7 @@ export async function getEventsForDataset(
   /** @hidden */
   this: TrieveSDK,
   data: GetEventsData,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return await this.trieve.fetch(
     "/api/events",
@@ -32,6 +32,6 @@ export async function getEventsForDataset(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
