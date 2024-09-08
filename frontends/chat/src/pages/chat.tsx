@@ -4,6 +4,7 @@ import { Navbar } from "../components/Navbar/Navbar";
 import { Sidebar } from "../components/Navbar/Sidebar";
 import { UserContext } from "../components/contexts/UserContext";
 import { Topic } from "../utils/apiTypes";
+import { NoDatasetsErrorPage } from "./no-datasets-warning";
 
 export const Chat = () => {
   const userContext = useContext(UserContext);
@@ -106,15 +107,27 @@ export const Chat = () => {
           setSelectedTopic={setSelectedTopic}
           topics={topics}
         />
-        <MainLayout
-          setTopics={setTopics}
-          setSelectedTopic={setSelectedTopic}
-          selectedTopic={selectedTopic()}
-          isCreatingTopic={isCreatingTopic()}
-          setLoadingNewTopic={setLoadingNewTopic}
-          selectedNewTopic={selectedNewTopic}
-          setSelectedNewTopic={setSelectedNewTopic}
-        />
+        <Show
+          fallback={
+            <NoDatasetsErrorPage
+              orgId={userContext?.currentOrganization?.()?.id}
+            />
+          }
+          when={
+            userContext?.datasetsAndUsages?.length &&
+            userContext?.datasetsAndUsages?.length <= 0
+          }
+        >
+          <MainLayout
+            setTopics={setTopics}
+            setSelectedTopic={setSelectedTopic}
+            selectedTopic={selectedTopic()}
+            isCreatingTopic={isCreatingTopic()}
+            setLoadingNewTopic={setLoadingNewTopic}
+            selectedNewTopic={selectedNewTopic}
+            setSelectedNewTopic={setSelectedNewTopic}
+          />
+        </Show>
       </div>
     </div>
   );
