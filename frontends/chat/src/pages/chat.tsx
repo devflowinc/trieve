@@ -28,7 +28,11 @@ export const Chat = () => {
     const api_host: string = import.meta.env.VITE_API_HOST;
 
     const dataset = userContext.currentDataset?.();
-    if (!dataset) return [];
+    if (!dataset) {
+      setTopics([]);
+      return [];
+    }
+
     const response = await fetch(
       `${api_host}/topic/owner/${userContext.user?.()?.id ?? ""}`,
       {
@@ -51,11 +55,22 @@ export const Chat = () => {
       setTopics(topics);
       return topics;
     }
+
+    setTopics([]);
     return [];
   };
 
   createEffect(() => {
     void refetchTopics();
+  });
+
+  createEffect(() => {
+    const dataset = userContext.currentDataset?.();
+    if (dataset) {
+      void refetchTopics();
+    } else {
+      setTopics([]);
+    }
   });
 
   createEffect(() => {
