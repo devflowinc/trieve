@@ -1,4 +1,4 @@
-import { RAGAnalyticsFilter, RAGSortBy, SortOrder } from "shared/types";
+import { RAGAnalyticsFilter, SortOrder } from "shared/types";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createSignal, Show, useContext } from "solid-js";
 import { getRAGQueries } from "../../api/analytics";
@@ -12,7 +12,6 @@ interface RagQueriesProps {
   filter: RAGAnalyticsFilter;
 }
 
-const ALL_SORT_BY: RAGSortBy[] = ["created_at", "latency", "top_score"];
 const ALL_SORT_ORDER: SortOrder[] = ["asc", "desc"];
 
 export const RagQueries = (props: RagQueriesProps) => {
@@ -95,13 +94,23 @@ export const RagQueries = (props: RagQueriesProps) => {
               fallback={<div class="py-8 text-center">No Data</div>}
               headerClass="px-2"
               class="my-4"
-              headers={<Tr><Th>Message</Th><Th>RAG Type</Th><Th>Results</Th></Tr>}
+              headers={
+                <Tr>
+                  <Th>Message</Th>
+                  <Th>RAG Type</Th>
+                  <Th>Results</Th>
+                </Tr>
+              }
               data={data()}
             >
               {(row) => (
                 <Tr>
                   <Td fullWidth={true}>{row.user_message}</Td>
-                  <Td class="min-w-[100px]">{ALL_FAKE_RAG_OPTIONS.find(rag => rag.value === row.rag_type)?.label || row.rag_type}</Td>
+                  <Td class="min-w-[100px]">
+                    {ALL_FAKE_RAG_OPTIONS.find(
+                      (rag) => rag.value === row.rag_type,
+                    )?.label || row.rag_type}
+                  </Td>
                   <Td class="text-center">{row.results.length}</Td>
                 </Tr>
               )}
@@ -111,19 +120,6 @@ export const RagQueries = (props: RagQueriesProps) => {
       </div>
     </ChartCard>
   );
-};
-
-const formatSortBy = (sortBy: RAGSortBy) => {
-  switch (sortBy) {
-    case "created_at":
-      return "Created At";
-    case "latency":
-      return "Latency";
-    case "top_score":
-      return "Top Score";
-    default:
-      return sortBy;
-  }
 };
 
 const formatSortOrder = (sortOrder: SortOrder) => {
