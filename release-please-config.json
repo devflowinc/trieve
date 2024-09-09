@@ -15,6 +15,7 @@
     { "type": "enhancement", "section": "Enhacements" },
     { "type": "enhancements", "section": "Enhacements" },
     { "type": "fix", "section": "Bug Fixes" },
+    { "type": "bugfix", "section": "Bug Fixes" },
     { "type": "chore", "section": "Other" },
     { "type": "docs", "section": "Docs" },
     { "type": "perf", "section": "Performance" },
