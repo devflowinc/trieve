@@ -1,0 +1,95 @@
+# Changelog
+
+## [0.12.0](https://github.com/devflowinc/trieve/compare/v0.11.7...v0.12.0) (2024-09-09)
+
+
+### Features
+
+* add abortSignal to chunk endpoint routes ([684a413](https://github.com/devflowinc/trieve/commit/684a413ee2500610d4640e3fc815ff8f58d80339))
+* add analytics endpoint routes to ts-sdk ([b84a50c](https://github.com/devflowinc/trieve/commit/b84a50c150370b8fcc3df5b1de0bb743b106b033))
+* add analytics to sentry ([f11a15f](https://github.com/devflowinc/trieve/commit/f11a15f02fa34b7f45609de1c7b756ab9cb6c728))
+* add back old ctr route ([3e8a0d7](https://github.com/devflowinc/trieve/commit/3e8a0d7e62120e8700677e1b5a2bf45f4ac0138a))
+* add chat and serach playground ([3b60146](https://github.com/devflowinc/trieve/commit/3b60146c171df3eb33661ce66ef2ecd3a7c96dee))
+* add chunk group endpoint routes to ts-sdk ([522e0ea](https://github.com/devflowinc/trieve/commit/522e0ea1a33e7fb51b2dbf28d8f784ecc7246b4b))
+* add CI for search component ([e1e301c](https://github.com/devflowinc/trieve/commit/e1e301cb5b5728c7b91e0a976de8839a418fbbf3))
+* add clickhouse embed function on initdb ([f7f957f](https://github.com/devflowinc/trieve/commit/f7f957f263f861f1e30fe0a50ea95388c419da84))
+* add clone qdrant script ([bd9092a](https://github.com/devflowinc/trieve/commit/bd9092a3439638648c7d84e946eacc850432d2e4))
+* add docs to ts-SDK ([298bb67](https://github.com/devflowinc/trieve/commit/298bb671d0bc7e025d0c0c5b42cf67391c05ac82))
+* add example of search component ([9e22061](https://github.com/devflowinc/trieve/commit/9e2206151a943a8b94a30cca6a513a7cff533041))
+* add file endpoints to ts-sdk ([84070c6](https://github.com/devflowinc/trieve/commit/84070c642e96ba95e0b6950b37dfb4fd1d73e20d))
+* add firecrawl to our docker compose ([8e15ecf](https://github.com/devflowinc/trieve/commit/8e15ecf1364a020fdf083cbbc0e32732336d4591))
+* add glasskube installation instructions ([db01f8a](https://github.com/devflowinc/trieve/commit/db01f8a96c6ed9e502cf91391d171be43770f153))
+* add messages endopoints to ts-sdk ([655899a](https://github.com/devflowinc/trieve/commit/655899a614b8138e405da8dd523c51bd475d68c2))
+* add scoring options req param to search chunks route ([7b91c10](https://github.com/devflowinc/trieve/commit/7b91c10a84d7c5811b0bd34677b5070877ec365b))
+* add scoring_options into the options popover on the search playground ([0b417e9](https://github.com/devflowinc/trieve/commit/0b417e96489018243ecab65a9b1d1697b79af664))
+* add scrolling gradient ([0dbcfb9](https://github.com/devflowinc/trieve/commit/0dbcfb99f1132eed7237177cd301fe0e4cdb9e9b))
+* add small icon animation ([979a86d](https://github.com/devflowinc/trieve/commit/979a86dff4bcf3535aa23833a5c5092da02222fb))
+* add suggestion type and context plus bugfix randomness ([3483f82](https://github.com/devflowinc/trieve/commit/3483f8252874b1885de0a6b68006a9e370cfe406))
+* add tests to ts-sdk routes ([53d1b5d](https://github.com/devflowinc/trieve/commit/53d1b5d5b48bfd5a6d09ac4ad405bf65856d63dc))
+* add tracking_id and id filter ([50d437b](https://github.com/devflowinc/trieve/commit/50d437b0bdf2c7d93a1e73c4860da77398d7d62b))
+* add typecheck scripts ([660a3ab](https://github.com/devflowinc/trieve/commit/660a3abbca63ce7368e0ece12956b00f6df313e5))
+* add TypoOption field to control requiring non-english words ([d7cf581](https://github.com/devflowinc/trieve/commit/d7cf581a5afa277f93a05c72e355a763afb45f35))
+* added completion_first option on the frontends ([b787083](https://github.com/devflowinc/trieve/commit/b7870838eb4ea1c10abaa992c9a480dada917bab))
+* added cronjobs into glasskube repo ([e81c2bc](https://github.com/devflowinc/trieve/commit/e81c2bc95e96b4e84f166a87a28e39a211500902))
+* added option to frontend ([a96bd22](https://github.com/devflowinc/trieve/commit/a96bd2251e24e18cae43c20941eb9981e1dc707c))
+* choose search type in chat ([07c819f](https://github.com/devflowinc/trieve/commit/07c819fc82310f2a0da33f61c7388f868b4ff8a6))
+* copy dataset-id to clipboard ([c801470](https://github.com/devflowinc/trieve/commit/c8014703224f7bd43b39235e25db8c87334169ae))
+* create page and structs for new_user_redirect_url ([b54e48d](https://github.com/devflowinc/trieve/commit/b54e48dc3c901fd84fcb705637f7bc48870f19bf))
+* create Trieve search component ([18f25ff](https://github.com/devflowinc/trieve/commit/18f25ff99898b54323f7094a37e80ddb33880d69))
+* dashboard link in search links to current organization and dataset ([527b4a2](https://github.com/devflowinc/trieve/commit/527b4a23df0d83a7565366fed41160ccc677da07))
+* finish AI chat in modal ([07f39a4](https://github.com/devflowinc/trieve/commit/07f39a493f38fda3e766fff42bf88741930800ee))
+* finish chunks endpoint ts-sdk routes ([ed5b414](https://github.com/devflowinc/trieve/commit/ed5b414577c6380fdd010c0500345ec345813137))
+* fix casing issue and pull from redis in the foreground ([c04a5c4](https://github.com/devflowinc/trieve/commit/c04a5c4691997e54ec54030cea1dae8ab4486c10))
+* fix typo issues ([590d808](https://github.com/devflowinc/trieve/commit/590d808b6e3c8262dbe42214bda8f414b38fbe2f))
+* generic events api ([2ceead6](https://github.com/devflowinc/trieve/commit/2ceead61c236a8952fe7e7411ad1f99e45a6c512))
+* get random suggested queries from the entire dataset ([73e204d](https://github.com/devflowinc/trieve/commit/73e204d63621bf4b64330812b77dcf812c4b254c))
+* get top datasets from CH ([d60c164](https://github.com/devflowinc/trieve/commit/d60c16481f760ee0aa1756f0ec2ed9a180cacd39))
+* group options in search playground ([34daf91](https://github.com/devflowinc/trieve/commit/34daf91fe86bcb3a5ff2666e66ccb04cf85fabd2))
+* improve styling of search component ([667718e](https://github.com/devflowinc/trieve/commit/667718e23e4da999a397dc9cfe53cecf0c34505c))
+* include dataset tracking_ids on get top datasetse query ([632f29d](https://github.com/devflowinc/trieve/commit/632f29d17cd60404cdd1b8df0723520f30bf6cc5))
+* migrate to clickhouse upstream image ([875d132](https://github.com/devflowinc/trieve/commit/875d1325d006c8f5dd09cbd065c49ddd4d2018fe))
+* migrate to upstream clickhouse image ([f1d0d8c](https://github.com/devflowinc/trieve/commit/f1d0d8c5cf6081453fcce56c9eac9eb02b76cdce))
+* multiquery display component ([95ca7f8](https://github.com/devflowinc/trieve/commit/95ca7f825a1618c845bd8b395ea881df0c828d3a))
+* org signup logic and page ([f007b5c](https://github.com/devflowinc/trieve/commit/f007b5c92df0a6a4f5f60c3997e2a7bbd2e00ebf))
+* precheck if words is in the english dictionary and use faster concurrent data structures to store BKTree ([253246e](https://github.com/devflowinc/trieve/commit/253246e353bc8bfbc9d7ac60ac56e5b6b96cb8de))
+* recognize domain specific words ([138cd28](https://github.com/devflowinc/trieve/commit/138cd2835b77405c217cf4c37822713e3bec939f))
+* refactor worker to base deployment ([2e2e0e9](https://github.com/devflowinc/trieve/commit/2e2e0e982acc47380238182cacd1118f0e40eda9))
+* run typecheck ([660a3ab](https://github.com/devflowinc/trieve/commit/660a3abbca63ce7368e0ece12956b00f6df313e5))
+* show corrected query in search playground ([2b143b3](https://github.com/devflowinc/trieve/commit/2b143b369b6f93605df564f97ee3673a1d834be9))
+* streaming LLM responses ([66354b0](https://github.com/devflowinc/trieve/commit/66354b02430783e52e4a800cd7b72f9ddf02ba0e))
+* typo tolerance ([#2144](https://github.com/devflowinc/trieve/issues/2144)) ([ed22f21](https://github.com/devflowinc/trieve/commit/ed22f21514f4fdf32d700230c51cd3265aea0601))
+* use env variables and context for sidebar links ([7e6e031](https://github.com/devflowinc/trieve/commit/7e6e0317e15a29adf5531e54c5933cb3c05cc90d))
+* use jaro-winkler distance to ensure that corrected word is not too different ([b2b9f81](https://github.com/devflowinc/trieve/commit/b2b9f814891a1479f3c31567d9e5072f95b172f3))
+* use new user redirect ([881ad7a](https://github.com/devflowinc/trieve/commit/881ad7af180ba3e9bb2946197f13db11400a51ef))
+* use prefix matching rather than jaro-winkler ([e093dd1](https://github.com/devflowinc/trieve/commit/e093dd15e0959445855447e8be8cc7d90b4300fb))
+* various client fixes ([3243b68](https://github.com/devflowinc/trieve/commit/3243b6844e2060d430a5865fa1098e2ceed957cf))
+
+
+### Bug Fixes
+
+* add better margins to headings ([a89293e](https://github.com/devflowinc/trieve/commit/a89293e36183afebf291fb89b2ecbabe178a9f2e))
+* avoid infinite loop in usercontext ([d86946c](https://github.com/devflowinc/trieve/commit/d86946ca74597f5d67a8e272b95717df2f5db3c7))
+* css fixes for rag page ([fa1a97a](https://github.com/devflowinc/trieve/commit/fa1a97aff668fc05365d748685979855855b20bb))
+* dataset warning for chat ([cbb9ddd](https://github.com/devflowinc/trieve/commit/cbb9ddd78b916e7ebb08c0e122dcc1854d387593))
+* deleting tsbuildinfo ([660a3ab](https://github.com/devflowinc/trieve/commit/660a3abbca63ce7368e0ece12956b00f6df313e5))
+* hide open recs icon when already viewing recs ([430b724](https://github.com/devflowinc/trieve/commit/430b72423c3f4a408e512673afdfa096829de0f8))
+* mintlify boldification ([a301d96](https://github.com/devflowinc/trieve/commit/a301d96dcd03a57a18440f079d58c72994d7290f))
+* no datasets warning for chat ([6a4a41a](https://github.com/devflowinc/trieve/commit/6a4a41a2555917bf2f4a38d8cb6562c34e4f3850))
+* remove cutoff popover and use title tag ([fab7326](https://github.com/devflowinc/trieve/commit/fab7326d50d217ef5060fec8cb7651a25b5217f0))
+* set topic list to empty if dataset is invalid ([53491aa](https://github.com/devflowinc/trieve/commit/53491aada52eaeda5aae923d2fd6784f4f69358b))
+* use query param for new user ([7c0dc8d](https://github.com/devflowinc/trieve/commit/7c0dc8df5b954fc2824eeade167b4027f3a281fb))
+* wrap text in codeblocks to prevent layout glitch ([dd69a0f](https://github.com/devflowinc/trieve/commit/dd69a0ff85bd4bb9ad1741ec39daaf71316e7072))
+
+
+### Other
+
+* bump client sdk version ([678a7a0](https://github.com/devflowinc/trieve/commit/678a7a02b3ceeb5304f427f282f922d33c6820e5))
+* fix eslint ([15f4f8a](https://github.com/devflowinc/trieve/commit/15f4f8a10fd135999c6eece2be58a1172ce9cf90))
+* regenarate lock ([0b7a8bb](https://github.com/devflowinc/trieve/commit/0b7a8bb22f1659fca519ac91d5542f387d1e4239))
+* update client + filter dev script ([db14a1b](https://github.com/devflowinc/trieve/commit/db14a1baf33e1f4bee26400fab1c895b6fd292d9))
+* update message_handler.rs ([3a5170e](https://github.com/devflowinc/trieve/commit/3a5170ecf3e96a2da887895fce7cdeb75677df2b))
+
+
+### Docs
+
+* improved the glasskube installation instructions ([6e114ab](https://github.com/devflowinc/trieve/commit/6e114abdca5683440e2834eccacf3f850dff810f))
