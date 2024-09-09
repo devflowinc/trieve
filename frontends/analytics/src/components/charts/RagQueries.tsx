@@ -5,7 +5,8 @@ import { getRAGQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { ChartCard } from "./ChartCard";
-import { Select, Table, Td, Tr } from "shared/ui";
+import { Select, Table, Td, Th, Tr } from "shared/ui";
+import { ALL_FAKE_RAG_OPTIONS } from "../../pages/RagAnalyticsPage";
 
 interface RagQueriesProps {
   filter: RAGAnalyticsFilter;
@@ -19,7 +20,6 @@ export const RagQueries = (props: RagQueriesProps) => {
   const pages = usePagination();
   const queryClient = useQueryClient();
 
-  const [sortBy, setSortBy] = createSignal<RAGSortBy>("created_at");
   const [sortOrder, setSortOrder] = createSignal<SortOrder>("asc");
 
   createEffect(() => {
@@ -31,7 +31,6 @@ export const RagQueries = (props: RagQueriesProps) => {
         {
           page: curPage + 1,
           filter: props.filter,
-          sortBy: sortBy(),
           sortOrder: sortOrder(),
         },
       ],
@@ -40,7 +39,6 @@ export const RagQueries = (props: RagQueriesProps) => {
           datasetId,
           page: curPage + 1,
           filter: props.filter,
-          sort_by: sortBy(),
           sort_order: sortOrder(),
         });
         if (results.length === 0) {
@@ -57,7 +55,6 @@ export const RagQueries = (props: RagQueriesProps) => {
       {
         page: pages.page(),
         filter: props.filter,
-        sortBy: sortBy(),
         sortOrder: sortOrder(),
       },
     ],
@@ -79,13 +76,6 @@ export const RagQueries = (props: RagQueriesProps) => {
       controller={
         <div class="flex gap-2">
           <Select
-            class="min-w-[130px] bg-neutral-100/90"
-            options={ALL_SORT_BY}
-            display={formatSortBy}
-            selected={sortBy()}
-            onSelected={(e) => setSortBy(e)}
-          />
-          <Select
             class="min-w-[110px] bg-neutral-100/90"
             options={ALL_SORT_ORDER}
             display={formatSortOrder}
@@ -105,13 +95,14 @@ export const RagQueries = (props: RagQueriesProps) => {
               fallback={<div class="py-8 text-center">No Data</div>}
               headerClass="px-2"
               class="my-4"
-              headers={["Message", "RAG Type"]}
+              headers={<Tr><Th>Message</Th><Th>RAG Type</Th><Th>Results</Th></Tr>}
               data={data()}
             >
               {(row) => (
                 <Tr>
                   <Td fullWidth={true}>{row.user_message}</Td>
-                  <Td class="pr-8">{row.rag_type}</Td>
+                  <Td class="min-w-[100px]">{ALL_FAKE_RAG_OPTIONS.find(rag => rag.value === row.rag_type)?.label || row.rag_type}</Td>
+                  <Td class="text-center">{row.results.length}</Td>
                 </Tr>
               )}
             </Table>
