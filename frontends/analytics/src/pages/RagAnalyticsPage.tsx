@@ -11,7 +11,7 @@ type FakeRAGOption = {
   label: string;
   value: FakeRAGType;
 };
-const ALL_FAKE_RAG_OPTIONS: FakeRAGOption[] = [
+export const ALL_FAKE_RAG_OPTIONS: FakeRAGOption[] = [
   { label: "Both", value: "both" },
   { label: "Chosen chunks", value: "chosen_chunks" },
   { label: "All chunks", value: "all_chunks" },
