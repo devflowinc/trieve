@@ -2,7 +2,6 @@ import {
   AnalyticsParams,
   RAGAnalyticsFilter,
   RagQueryEvent,
-  RAGUsageResponse,
   SortOrder,
 } from "shared/types";
 import {
@@ -19,7 +18,7 @@ import {
   Show,
   useContext,
 } from "solid-js";
-import { getRAGQueries } from "../../api/analytics";
+import { getRAGQueries, getRAGUsage } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { ChartCard } from "./ChartCard";
@@ -133,6 +132,13 @@ export const RagQueries = (props: RagQueriesProps) => {
     },
   ]);
 
+  const usage = createQuery(() => ({
+    queryKey: ["rag-usage", { filter: props }],
+    queryFn: () => {
+      return getRAGUsage(dataset().dataset.id, props.filter);
+    },
+  }));
+
   return (
     <ChartCard
       title="RAG Queries"
@@ -156,24 +162,6 @@ export const RagQueries = (props: RagQueriesProps) => {
         when={ragQueriesQuery.data}
       >
         {(data) => {
-          const table = createSolidTable({
-            get data() {
-              return data();
-            },
-            state: {
-              pagination: {
-                pageIndex: pages.page(),
-                pageSize: 10,
-              },
-            },
-            columns: columns(),
-            getCoreRowModel: getCoreRowModel(),
-            manualPagination: true,
-          });
-          const usage = queryClient.getQueryData<RAGUsageResponse>([
-            "rag-usage",
-            { filter: props },
-          ]);
           return (
             <>
               <FullScreenModal
@@ -191,8 +179,21 @@ export const RagQueries = (props: RagQueriesProps) => {
               <TanStackTable
                 pages={pages}
                 perPage={10}
-                total={usage?.total_queries}
-                table={table}
+                total={usage?.data?.total_queries}
+                table={createSolidTable({
+                  get data() {
+                    return ragQueriesQuery.data || [];
+                  },
+                  state: {
+                    pagination: {
+                      pageIndex: pages.page(),
+                      pageSize: 10,
+                    },
+                  },
+                  columns: columns(),
+                  getCoreRowModel: getCoreRowModel(),
+                  manualPagination: true,
+                })}
               />
             </>
           );

@@ -66,11 +66,13 @@ export const TanStackTable = (props: TableProps) => {
           </For>
         </tbody>
       </table>
-      <Pagination
-        pages={props.pages}
-        perPage={props.perPage}
-        total={props.total}
-      />
+      {props.pages.canGoNext() || props.pages.page() !== 1 ? (
+        <Pagination
+          pages={props.pages}
+          perPage={props.perPage}
+          total={props.total}
+        />
+      ) : null}
     </>
   );
 };
