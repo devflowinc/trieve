@@ -1843,7 +1843,7 @@ pub struct DatasetEventCount {
         "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
         "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
         "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
-        "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+        "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
         "N_RETRIEVALS_TO_INCLUDE": 8,
         "EMBEDDING_SIZE": 1536,
         "DISTANCE_METRIC": "cosine",
@@ -1992,7 +1992,7 @@ pub enum DistanceMetric {
     "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
     "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
-    "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+    "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
     "N_RETRIEVALS_TO_INCLUDE": 8,
     "EMBEDDING_SIZE": 1536,
     "DISTANCE_METRIC": "cosine",
@@ -2053,7 +2053,7 @@ pub struct DatasetConfiguration {
     "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
     "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
-    "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+    "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
     "N_RETRIEVALS_TO_INCLUDE": 8,
     "EMBEDDING_SIZE": 1536,
     "DISTANCE_METRIC": "cosine",
@@ -2146,7 +2146,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.unwrap_or("text-embedding-3-small".to_string()),
             RERANKER_BASE_URL: dto.RERANKER_BASE_URL.unwrap_or("".to_string()),
             MESSAGE_TO_QUERY_PROMPT: dto.MESSAGE_TO_QUERY_PROMPT.unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
-            RAG_PROMPT: dto.RAG_PROMPT.unwrap_or("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()),
+            RAG_PROMPT: dto.RAG_PROMPT.unwrap_or("Use the following retrieved documents to respond briefly and accurately:".to_string()),
             N_RETRIEVALS_TO_INCLUDE: dto.N_RETRIEVALS_TO_INCLUDE.unwrap_or(8),
             EMBEDDING_SIZE: dto.EMBEDDING_SIZE.unwrap_or(1536),
             DISTANCE_METRIC: dto.DISTANCE_METRIC.unwrap_or(DistanceMetric::Cosine),
@@ -2216,7 +2216,7 @@ impl Default for DatasetConfiguration {
             EMBEDDING_MODEL_NAME: "text-embedding-3-small".to_string(),
             RERANKER_BASE_URL: "".to_string(),
             MESSAGE_TO_QUERY_PROMPT: "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string(),
-            RAG_PROMPT: "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string(),
+            RAG_PROMPT: "Use the following retrieved documents to respond briefly and accurately:".to_string(),
             N_RETRIEVALS_TO_INCLUDE: 8,
             EMBEDDING_SIZE: 1536,
             DISTANCE_METRIC: DistanceMetric::Cosine,
@@ -2298,16 +2298,16 @@ impl DatasetConfiguration {
                 }).unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
             RAG_PROMPT: configuration
                 .get("RAG_PROMPT")
-                .unwrap_or(&json!("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()))
+                .unwrap_or(&json!("Use the following retrieved documents to respond briefly and accurately:".to_string()))
                 .as_str()
                 .map(|s|
                     if s.is_empty() {
-                        "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()
+                        "Use the following retrieved documents to respond briefly and accurately:".to_string()
                     } else {
                         s.to_string()
                     }
                 )
-                .unwrap_or("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()),
+                .unwrap_or("Use the following retrieved documents to respond briefly and accurately:".to_string()),
             N_RETRIEVALS_TO_INCLUDE: configuration
                 .get("N_RETRIEVALS_TO_INCLUDE")
                 .unwrap_or(&json!(5))
