@@ -73,7 +73,7 @@ export const RagAnalyticsPage = () => {
             granularity: filter.granularity,
           }}
         />
-        <RagQueries filter={filter} />
+        <RagQueries filter={filter} granularity={filter.granularity} />
       </div>
     </>
   );

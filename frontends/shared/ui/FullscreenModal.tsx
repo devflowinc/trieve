@@ -10,6 +10,7 @@ import {
   TransitionChild,
 } from "terracotta";
 import { cn } from "../utils";
+import { IoClose } from "solid-icons/io";
 
 interface FullScreenModalProps {
   children: JSX.Element;
@@ -59,16 +60,26 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
             >
               <DialogPanel
                 class={cn(
-                  "inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left border border-neutral-100 align-middle transition-all transform bg-white shadow-xl rounded",
-                  props.class,
+                  "inline-block w-full max-w-[80vw] p-6 my-8 text-left border border-neutral-100 align-middle transition-all transform bg-white shadow-xl rounded max-h-[80vh] overflow-auto",
+                  props.class
                 )}
               >
+                <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+                  <button
+                    onClick={() => props.setShow(false)}
+                    type="button"
+                    class="rounded-md bg-white text-neutral-400 hover:text-gray-500 focus:outline-none"
+                  >
+                    <span class="sr-only">Close</span>
+                    <IoClose class="w-6 h-6" />
+                  </button>
+                </div>
                 <Show when={props.title}>
                   {(title) => (
                     <div class="flex items-center justify-between">
                       <DialogTitle
                         as="h3"
-                        class="text-lg font-medium leading-6 text-neutral-900"
+                        class="text-lg font-medium leading-6 text-neutral-900 mb-4"
                       >
                         {title()}
                       </DialogTitle>

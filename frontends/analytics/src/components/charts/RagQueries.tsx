@@ -1,15 +1,30 @@
-import { RAGAnalyticsFilter, SortOrder } from "shared/types";
+import {
+  AnalyticsParams,
+  RAGAnalyticsFilter,
+  RagQueryEvent,
+  RAGUsageResponse,
+  SortOrder,
+} from "shared/types";
+import {
+  getCoreRowModel,
+  ColumnDef,
+  createSolidTable,
+} from "@tanstack/solid-table";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createSignal, Show, useContext } from "solid-js";
 import { getRAGQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { ChartCard } from "./ChartCard";
-import { Select, Table, Td, Th, Tr } from "shared/ui";
+import { Select } from "shared/ui";
 import { ALL_FAKE_RAG_OPTIONS } from "../../pages/RagAnalyticsPage";
+import { FullScreenModal, JSONMetadata } from "shared/ui";
+import { IoOpenOutline } from "solid-icons/io";
+import { Table } from "../Table";
 
 interface RagQueriesProps {
   filter: RAGAnalyticsFilter;
+  granularity: AnalyticsParams["granularity"];
 }
 
 const ALL_SORT_ORDER: SortOrder[] = ["asc", "desc"];
@@ -18,11 +33,13 @@ export const RagQueries = (props: RagQueriesProps) => {
   const dataset = useContext(DatasetContext);
   const pages = usePagination();
   const queryClient = useQueryClient();
+  const [open, setOpen] = createSignal<boolean>(false);
+  const [current, setCurrent] = createSignal<number>(0);
 
   const [sortOrder, setSortOrder] = createSignal<SortOrder>("asc");
 
   createEffect(() => {
-    const datasetId = dataset().dataset.id;
+    const datasetId = dataset()?.dataset.id;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: [
@@ -66,6 +83,45 @@ export const RagQueries = (props: RagQueriesProps) => {
     },
   }));
 
+  const defaultColumns: ColumnDef<RagQueryEvent>[] = [
+    {
+      accessorKey: "user_message",
+      header: "User Message",
+    },
+    {
+      accessorKey: "rag_type",
+      header: "Rag Type",
+      cell(props) {
+        return (
+          <>
+            {ALL_FAKE_RAG_OPTIONS.find(
+              (rag) => rag.value === props.getValue<string>(),
+            )?.label || props.getValue<string>()}
+          </>
+        );
+      },
+    },
+    {
+      accessorKey: "results",
+      id: "results",
+      header: "Results",
+      cell(props) {
+        return (
+          <button
+            class="flex items-center gap-2 text-left"
+            onClick={() => {
+              setOpen(true);
+              setCurrent(props.row.index);
+            }}
+          >
+            {props.getValue<RagQueryEvent["results"]>().length}
+            <IoOpenOutline />
+          </button>
+        );
+      },
+    },
+  ];
+
   return (
     <ChartCard
       title="RAG Queries"
@@ -84,40 +140,53 @@ export const RagQueries = (props: RagQueriesProps) => {
         </div>
       }
     >
-      <div>
-        <Show
-          fallback={<div class="py-8 text-center">Loading...</div>}
-          when={ragQueriesQuery.data}
-        >
-          {(data) => (
-            <Table
-              fallback={<div class="py-8 text-center">No Data</div>}
-              headerClass="px-2"
-              class="my-4"
-              headers={
-                <Tr>
-                  <Th>Message</Th>
-                  <Th>RAG Type</Th>
-                  <Th>Results</Th>
-                </Tr>
-              }
-              data={data()}
-            >
-              {(row) => (
-                <Tr>
-                  <Td fullWidth={true}>{row.user_message}</Td>
-                  <Td class="min-w-[100px]">
-                    {ALL_FAKE_RAG_OPTIONS.find(
-                      (rag) => rag.value === row.rag_type,
-                    )?.label || row.rag_type}
-                  </Td>
-                  <Td class="text-center">{row.results.length}</Td>
-                </Tr>
-              )}
-            </Table>
-          )}
-        </Show>
-      </div>
+      <Show
+        fallback={<div class="py-8 text-center">Loading...</div>}
+        when={ragQueriesQuery.data}
+      >
+        {(data) => {
+          const table = createSolidTable({
+            get data() {
+              return data();
+            },
+            state: {
+              pagination: {
+                pageIndex: pages.page(),
+                pageSize: 10,
+              },
+            },
+            columns: defaultColumns,
+            getCoreRowModel: getCoreRowModel(),
+            manualPagination: true,
+          });
+          const usage = queryClient.getQueryData<RAGUsageResponse>([
+            "rag-usage",
+            { filter: props },
+          ]);
+          return (
+            <>
+              <FullScreenModal
+                show={open}
+                setShow={setOpen}
+                title={`Results found for "${data()[current()].user_message}"`}
+              >
+                <JSONMetadata
+                  monospace
+                  copyJSONButton
+                  class="text-sm"
+                  data={data()[current()].results}
+                />
+              </FullScreenModal>
+              <Table
+                pages={pages}
+                perPage={10}
+                total={usage?.total_queries}
+                table={table}
+              />
+            </>
+          );
+        }}
+      </Show>
     </ChartCard>
   );
 };

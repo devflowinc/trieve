@@ -33,7 +33,7 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
             value={value}
           />
         );
-      },
+      }
     );
   });
 
@@ -50,7 +50,7 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
       class={cn(
         "flex flex-col items-start rounded-md",
         // "outline-magenta-200 outline outline-[0.5px]",
-        props.class,
+        props.class
       )}
     >
       <Show when={props.copyJSONButton}>
@@ -134,7 +134,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
                 copyJSONButton={false}
                 isChild={props.isChild}
                 isAlternate={!props.isAlternate}
-                class="ml-8"
+                class="ml-4"
                 data={item as object}
               />
             )}
@@ -148,7 +148,7 @@ const JSONMetadaRow = (props: JSONMetadaRowProps) => {
           closedByDefault={props.closedByDefault}
           copyJSONButton={false}
           isAlternate={!props.isAlternate}
-          class="ml-8"
+          class="ml-4"
           data={props.value}
         />,
       ];
