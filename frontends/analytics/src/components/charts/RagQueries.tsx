@@ -11,7 +11,14 @@ import {
   createSolidTable,
 } from "@tanstack/solid-table";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import { createEffect, createSignal, Show, useContext } from "solid-js";
+import {
+  Accessor,
+  createEffect,
+  createMemo,
+  createSignal,
+  Show,
+  useContext,
+} from "solid-js";
 import { getRAGQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
@@ -83,7 +90,7 @@ export const RagQueries = (props: RagQueriesProps) => {
     },
   }));
 
-  const defaultColumns: ColumnDef<RagQueryEvent>[] = [
+  const columns: Accessor<ColumnDef<RagQueryEvent>[]> = createMemo(() => [
     {
       accessorKey: "user_message",
       header: "User Message",
@@ -125,7 +132,7 @@ export const RagQueries = (props: RagQueriesProps) => {
         );
       },
     },
-  ];
+  ]);
 
   return (
     <ChartCard
@@ -160,7 +167,7 @@ export const RagQueries = (props: RagQueriesProps) => {
                 pageSize: 10,
               },
             },
-            columns: defaultColumns,
+            columns: columns(),
             getCoreRowModel: getCoreRowModel(),
             manualPagination: true,
           });
