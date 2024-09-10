@@ -18,6 +18,7 @@
     "@solidjs/router": "^0.13.6",
     "@tanstack/solid-query": "^5.48.0",
     "@tanstack/solid-query-devtools": "^5.48.0",
+    "@tanstack/solid-table": "^8.20.5",
     "@types/matter-js": "^0.19.6",
     "add": "^2.0.6",
     "chart.js": "^4.4.3",

@@ -1179,6 +1179,18 @@
   dependencies:
     "@tanstack/query-core" "5.52.2"
 
+"@tanstack/solid-table@^8.20.5":
+  version "8.20.5"
+  resolved "https://registry.yarnpkg.com/@tanstack/solid-table/-/solid-table-8.20.5.tgz#56fdf7e488a2134b6a8ed127cf74a20dd6dcff0c"
+  integrity sha512-LsB/g/24CjBpccOcok+u+tfyqtU9SIQg5wf7ne54jRdEsy5YQnrpb5ATWZileHBduIG0p/1oE7UOA+DyjtnbDQ==
+  dependencies:
+    "@tanstack/table-core" "8.20.5"
+
+"@tanstack/table-core@8.20.5":
+  version "8.20.5"
+  resolved "https://registry.yarnpkg.com/@tanstack/table-core/-/table-core-8.20.5.tgz#3974f0b090bed11243d4107283824167a395cf1d"
+  integrity sha512-P9dF7XbibHph2PFRz8gfBKEXEY/HJPOhym8CHmjF8y3q5mWpKx9xtZapXQUWCgkqvsK0R46Azuz+VaxD4Xl+Tg==
+
 "@thumbmarkjs/thumbmarkjs@^0.14.8":
   version "0.14.8"
   resolved "https://registry.yarnpkg.com/@thumbmarkjs/thumbmarkjs/-/thumbmarkjs-0.14.8.tgz#abe3a9ebd9ec949ea7f044acf4a5e0074b18cf97"
