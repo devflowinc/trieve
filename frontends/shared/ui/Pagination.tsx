@@ -1,8 +1,13 @@
-import { usePagination } from "../hooks/usePagination";
+import { Accessor } from "solid-js";
 import { IoChevronBack, IoChevronForward } from "solid-icons/io";
 
 interface PaginationProps {
-  pages: ReturnType<typeof usePagination>;
+  pages: {
+    page: Accessor<number>;
+    nextPage: () => void;
+    prevPage: () => void;
+    canGoNext: Accessor<boolean>;
+  };
   total?: number;
   perPage?: number;
 }

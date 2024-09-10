@@ -5,3 +5,5 @@ export * from "./Table";
 export * from "./DateRangePicker";
 export * from "./JsonInput";
 export * from "./JSONMetadata";
+export * from "./Pagination";
+export * from "./TanStackTable";
