@@ -1,18 +1,22 @@
 import { flexRender, type Table as TableType } from "@tanstack/solid-table";
-import { Pagination } from "./Pagination";
-import { For } from "solid-js";
+import { Accessor, For } from "solid-js";
 import { cn } from "shared/utils";
-import { usePagination } from "../hooks/usePagination";
+import { Pagination } from "shared/ui";
 
 type TableProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   table: TableType<any>;
-  pages: ReturnType<typeof usePagination>;
+  pages: {
+    page: Accessor<number>;
+    nextPage: () => void;
+    prevPage: () => void;
+    canGoNext: Accessor<boolean>;
+  };
   total?: number;
   perPage?: number;
 };
 
-export const Table = (props: TableProps) => {
+export const TanStackTable = (props: TableProps) => {
   return (
     <>
       <table class="min-w-full border-separate border-spacing-0">
@@ -27,7 +31,7 @@ export const Table = (props: TableProps) => {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext(),
+                            header.getContext()
                           )}
                     </th>
                   )}
@@ -47,12 +51,12 @@ export const Table = (props: TableProps) => {
                         idx() !== props.table.getRowModel().rows.length - 1
                           ? "border-b border-neutral-200"
                           : "",
-                        "whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8",
+                        "whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8"
                       )}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext(),
+                        cell.getContext()
                       )}
                     </td>
                   )}

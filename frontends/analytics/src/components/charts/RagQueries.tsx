@@ -23,11 +23,10 @@ import { getRAGQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
 import { ChartCard } from "./ChartCard";
-import { Select } from "shared/ui";
+import { Select, TanStackTable } from "shared/ui";
 import { ALL_FAKE_RAG_OPTIONS } from "../../pages/RagAnalyticsPage";
 import { FullScreenModal, JSONMetadata } from "shared/ui";
 import { IoOpenOutline } from "solid-icons/io";
-import { Table } from "../Table";
 
 interface RagQueriesProps {
   filter: RAGAnalyticsFilter;
@@ -189,7 +188,7 @@ export const RagQueries = (props: RagQueriesProps) => {
                   data={data()[current()].results}
                 />
               </FullScreenModal>
-              <Table
+              <TanStackTable
                 pages={pages}
                 perPage={10}
                 total={usage?.total_queries}
