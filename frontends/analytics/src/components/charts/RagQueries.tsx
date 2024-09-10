@@ -107,16 +107,21 @@ export const RagQueries = (props: RagQueriesProps) => {
       header: "Results",
       cell(props) {
         return (
-          <button
-            class="flex items-center gap-2 text-left"
-            onClick={() => {
-              setOpen(true);
-              setCurrent(props.row.index);
-            }}
+          <Show
+            when={props.getValue<RagQueryEvent["results"]>().length}
+            fallback={props.getValue<RagQueryEvent["results"]>().length}
           >
-            {props.getValue<RagQueryEvent["results"]>().length}
-            <IoOpenOutline />
-          </button>
+            <button
+              class="flex items-center gap-2 text-left"
+              onClick={() => {
+                setOpen(true);
+                setCurrent(props.row.index);
+              }}
+            >
+              {props.getValue<RagQueryEvent["results"]>().length}
+              <IoOpenOutline />
+            </button>
+          </Show>
         );
       },
     },
