@@ -335,7 +335,7 @@ pub async fn remove_user_from_org(
         "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
         "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
         "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
-        "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+        "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
         "N_RETRIEVALS_TO_INCLUDE": 8,
         "EMBEDDING_SIZE": 1536,
         "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",

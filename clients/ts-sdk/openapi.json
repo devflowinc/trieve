@@ -7102,7 +7102,7 @@
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
             "N_RETRIEVALS_TO_INCLUDE": 8,
             "PRESENCE_PENALTY": 0.0,
-            "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+            "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
             "SEMANTIC_ENABLED": true,
             "STOP_TOKENS": [
               "\n\n",
@@ -7358,7 +7358,7 @@
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
             "N_RETRIEVALS_TO_INCLUDE": 8,
             "PRESENCE_PENALTY": 0.0,
-            "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+            "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
             "SEMANTIC_ENABLED": true,
             "STOP_TOKENS": [
               "\n\n",
@@ -7619,7 +7619,7 @@
           "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
           "N_RETRIEVALS_TO_INCLUDE": 8,
           "PRESENCE_PENALTY": 0.0,
-          "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+          "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
           "SEMANTIC_ENABLED": true,
           "STOP_TOKENS": [
             "\n\n",
@@ -12601,7 +12601,7 @@
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
             "N_RETRIEVALS_TO_INCLUDE": 8,
             "PRESENCE_PENALTY": 0.0,
-            "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+            "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
             "SEMANTIC_ENABLED": true,
             "STOP_TOKENS": [
               "\n\n",
@@ -12893,7 +12893,7 @@
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
             "N_RETRIEVALS_TO_INCLUDE": 8,
             "PRESENCE_PENALTY": 0.0,
-            "RAG_PROMPT": "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:",
+            "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
             "SEMANTIC_ENABLED": true,
             "STOP_TOKENS": [
               "\n\n",
