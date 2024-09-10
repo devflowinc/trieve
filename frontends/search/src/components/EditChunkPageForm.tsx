@@ -412,7 +412,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                           body={
                             <BiRegularQuestionMark class="h-4 w-4 rounded-full fill-current" />
                           }
-                          tooltipText="Optional. Weight is applied as a linear factor to score on search results. If you have something likeclickthrough data, you can use it to incrementally increase the boost of a chunk."
+                          tooltipText="Optional. Weight is applied as a linear factor to score on search results. If you have something like clickthrough data, you can use it to incrementally increase the boost of a chunk."
                         />
                       </div>
                     </div>
