@@ -1,4 +1,4 @@
-import { ChartCard } from "../components/charts/ChartCard";
+import { Card } from "../components/charts/Card";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { QueryCounts } from "../components/charts/QueryCounts";
 import { SearchUsageGraph } from "../components/charts/SearchUsageGraph";
@@ -17,10 +17,10 @@ export const OverviewPage = () => {
         <div class="col-span-2">
           <CTRInfoPanel />
         </div>
-        <ChartCard class="flex flex-col justify-between px-4" width={2}>
+        <Card class="flex flex-col justify-between px-4" width={2}>
           <QueryCounts />
-        </ChartCard>
-        <ChartCard
+        </Card>
+        <Card
           title="Requests Per Second"
           controller={
             <SimpleTimeRangeSelector
@@ -37,9 +37,9 @@ export const OverviewPage = () => {
               granularity: rpsDate.granularity(),
             }}
           />
-        </ChartCard>
+        </Card>
 
-        <ChartCard
+        <Card
           controller={
             <SimpleTimeRangeSelector
               setDateOption={headQueriesDate.setDateOption}
@@ -55,7 +55,7 @@ export const OverviewPage = () => {
               filter: headQueriesDate.filter(),
             }}
           />
-        </ChartCard>
+        </Card>
       </div>
     </>
   );
