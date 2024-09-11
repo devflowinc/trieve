@@ -108,21 +108,22 @@ export const SearchTablePage = () => {
 
   return (
     <div>
-
       <div class="my-4 rounded-md bg-white">
         <Show
           fallback={<div class="py-8 text-center">Loading...</div>}
           when={searchTableQuery.data}
         >
-        <Card>
-        <FilterBar noPadding filters={filters} setFilters={setFilters} />
-        <TanStackTable
-            pages={pages}
-            perPage={10}
-            table={table}
-            onRowClick={(row: SearchQueryEvent) => navigate(`/query/${row.id}`)}
-          />
-        </Card>
+          <Card>
+            <FilterBar noPadding filters={filters} setFilters={setFilters} />
+            <TanStackTable
+              pages={pages}
+              perPage={10}
+              table={table}
+              onRowClick={(row: SearchQueryEvent) =>
+                navigate(`/query/${row.id}`)
+              }
+            />
+          </Card>
         </Show>
       </div>
     </div>
