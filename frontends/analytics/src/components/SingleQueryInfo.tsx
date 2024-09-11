@@ -54,18 +54,23 @@ export const SingleQuery = (props: SingleQueryProps) => {
           )}
         </div>
         <div class="h-2" />
-        <div class="flex-start flex justify-center gap-2">
-          <DataSquare label="Search Type" value={props.data.search_type} />
-          <DataSquare
-            label="Dataset"
-            value={datasetName() || props.data.dataset_id}
-          />
-          <DataSquare label="Results" value={props.data.results.length} />
-          <DataSquare label="Latency" value={`${props.data.latency}ms`} />
-          <DataSquare
-            label="Top Score"
-            value={props.data.top_score.toPrecision(4)}
-          />
+        <div>
+          <h3 class="text-base font-semibold leading-6 text-gray-900">
+            Last 30 days
+          </h3>
+          <dl class="m-auto mt-5 grid max-w-4xl grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow md:grid-cols-5 md:divide-x md:divide-y-0">
+            <DataSquare label="Search Type" value={props.data.search_type} />
+            <DataSquare
+              label="Dataset"
+              value={datasetName() || props.data.dataset_id}
+            />
+            <DataSquare label="Results" value={props.data.results.length} />
+            <DataSquare label="Latency" value={`${props.data.latency}ms`} />
+            <DataSquare
+              label="Top Score"
+              value={props.data.top_score.toPrecision(4)}
+            />
+          </dl>
         </div>
         <div class="h-4" />
         <div class="text-bold mb-2 h-2 w-full border-t-2 border-t-neutral-300/80 text-neutral-800 outline-neutral-500" />
@@ -101,9 +106,13 @@ export const DataSquare = (props: {
   value: number | string;
 }) => {
   return (
-    <div class="rounded-md border border-neutral-200 bg-white p-3 text-center shadow-md">
-      <div>{props.label}</div>
-      <div class="font-medium">{props.value}</div>
+    <div class="px-4 py-5 sm:p-6">
+      <dt class="text-base font-normal text-gray-900">{props.label}</dt>
+      <dd class="mt-1 flex items-baseline justify-start md:block lg:flex">
+        <div class="flex items-baseline text-xl font-semibold text-fuchsia-600">
+          {props.value}
+        </div>
+      </dd>
     </div>
   );
 };
