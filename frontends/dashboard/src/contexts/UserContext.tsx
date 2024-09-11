@@ -8,11 +8,10 @@ import {
 } from "solid-js";
 import { createToast } from "../components/ShowToasts";
 import { SlimUser } from "shared/types";
-import { useSearchParams } from "@solidjs/router";
-import { NewUserOrgName } from "../components/NewUserOrgName";
+import { redirect, useSearchParams } from "@solidjs/router";
 
 export interface UserStoreContextProps {
-  children: JSX.Element;
+  children?: JSX.Element;
 }
 
 export interface Notification {
@@ -22,41 +21,61 @@ export interface Notification {
 }
 
 export interface UserStore {
-  user: Accessor<SlimUser | null> | null;
-  setUser: (user: SlimUser | null) => void;
-  selectedOrganizationId: Accessor<string | null> | null;
-  setSelectedOrganizationId: (id: string | null) => void;
+  user: Accessor<SlimUser>;
+  isNewUser: Accessor<boolean>;
+  selectedOrganization: Accessor<SlimUser["orgs"][0]>;
   login: () => void;
   logout: () => void;
-  loading: Accessor<boolean> | null;
-  isNewUser: Accessor<boolean>;
 }
 
 export const UserContext = createContext<UserStore>({
-  user: null,
-  setUser: () => {},
-  selectedOrganizationId: null,
+  user: () => null as unknown as SlimUser,
   isNewUser: () => false,
-  setSelectedOrganizationId: () => {},
-  loading: null,
   login: () => {},
   logout: () => {},
+  selectedOrganization: () => null as unknown as SlimUser["orgs"][0],
 });
 
-export const UserContextWrapper = (props: UserStoreContextProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as string;
+const getInitalUser = () => {
+  const user = window.localStorage.getItem("trieve:user");
+  if (user) {
+    return JSON.parse(user) as SlimUser;
+  }
+};
 
+export const UserContextWrapper = (props: UserStoreContextProps) => {
   const [searchParams] = useSearchParams();
 
-  const [user, setUser] = createSignal<SlimUser | null>(null);
+  const [user, setUser] = createSignal<SlimUser | null>(
+    getInitalUser() ?? null,
+  );
   const [isNewUser, setIsNewUser] = createSignal(false);
-  const [selectedOrganizationId, setSelectedOrganizationId] = createSignal<
-    string | null
+  const [selectedOrganization, setSelectedOrganization] = createSignal<
+    SlimUser["orgs"][0] | null
   >(null);
-  const [isLoading, setIsLoading] = createSignal(false);
+
+  const apiHost = import.meta.env.VITE_API_HOST as string;
+
+  const logout = () => {
+    void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
+      method: "DELETE",
+      credentials: "include",
+    }).then((res) => {
+      res
+        .json()
+        .then((res) => {
+          window.location.href = res.logout_url;
+          window.localStorage.removeItem("trieve:user");
+          setUser(null);
+          setSelectedOrganization(null);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    });
+  };
 
   const login = () => {
-    setIsLoading(true);
     fetch(`${apiHost}/auth/me`, {
       credentials: "include",
     })
@@ -66,98 +85,81 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
         }
         return res.json();
       })
-      .then((data) => {
+      .then((data: SlimUser) => {
+        // cache the user
+        window.localStorage.setItem("trieve:user", JSON.stringify(data));
+
+        // Grab org id from localstorage
+        const possibleOrgId = window.localStorage.getItem(
+          `${data.id}:selectedOrg`,
+        );
+        if (possibleOrgId) {
+          const matchingOrg = data.orgs.find((org) => org.id === possibleOrgId);
+          if (matchingOrg) {
+            setSelectedOrganization(matchingOrg);
+          }
+        } else {
+          const firstOrg = data.orgs.at(0);
+          if (firstOrg) {
+            setSelectedOrganization(firstOrg);
+          } else {
+            redirect("/dashboard/new_user");
+          }
+        }
+
         setUser(data);
       })
       .catch((err) => {
+        setUser(null);
         console.error(err);
         createToast({
           title: "Error",
           type: "error",
           message: "Error logging in",
         });
-      })
-      .finally(() => setIsLoading(false));
+      });
   };
 
   createEffect(() => {
-    console.log(searchParams);
     if (searchParams["new_user"]) {
       setIsNewUser(true);
     }
   });
 
   createEffect(() => {
-    let organizationId = selectedOrganizationId();
-
-    if (organizationId == null) {
-      const path = window.location.pathname;
-      const pathParts = path.split("/");
-      const urlParams = new URLSearchParams(window.location.search);
-      const orgId = urlParams.get("org") ?? pathParts[2];
-
-      if (user()?.user_orgs) {
-        const org = user()?.user_orgs.find(
-          (org) => org.organization_id === orgId,
-        );
-        if (org) {
-          organizationId = orgId;
-          setSelectedOrganizationId(orgId);
-        }
-      }
-
-      if (organizationId == null) {
-        const user_orgs = user()?.user_orgs;
-        if (user_orgs && user_orgs.length > 0) {
-          organizationId = user_orgs[0].organization_id;
-          setSelectedOrganizationId(organizationId);
-        }
-      }
-    }
-
-    const userOrgIds = user()?.user_orgs.map((org) => org.organization_id);
-
-    // If the selected organization isn't in the users list,
-    // restart login procedure
-    if (
-      !userOrgIds?.includes(organizationId ?? "") &&
-      userOrgIds?.length !== 0
-    ) {
-      login();
-    }
-
-    return organizationId;
-  }, null);
-
-  createEffect(() => {
     login();
   });
 
-  const userStore: UserStore = {
-    user: user,
-    setUser: setUser,
-    selectedOrganizationId: selectedOrganizationId,
-    setSelectedOrganizationId: setSelectedOrganizationId,
-    isNewUser: isNewUser,
-    loading: isLoading,
-    login: login,
-    logout: () => {},
-  };
-
   return (
     <>
-      <Show when={!isLoading()}>
-        <UserContext.Provider value={userStore}>
-          {props.children}
-          <Show when={isNewUser()}>
-            <NewUserOrgName />
+      <Show
+        fallback={
+          <div class="mt-4 flex min-h-full w-full items-center justify-center">
+            <div class="mb-28 h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
+          </div>
+        }
+        when={user()}
+      >
+        {(user) => (
+          <Show when={selectedOrganization()}>
+            {(org) => (
+              <UserContext.Provider
+                value={{
+                  user: user,
+                  selectedOrganization: org,
+                  logout,
+                  isNewUser: isNewUser,
+                  login,
+                }}
+              >
+                {props.children}
+                <Show when={isNewUser()}>
+                  <NewUserOrgName />
+                </Show>
+              </UserContext.Provider>
+            )}
           </Show>
-        </UserContext.Provider>
-      </Show>
-      <Show when={isLoading()}>
-        <div class="mt-4 flex min-h-full w-full items-center justify-center">
-          <div class="mb-28 h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
-        </div>
+        )}
       </Show>
     </>
   );

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5173",
+    "dev": "vite --port 5183",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "prettier --write  \"**/*.{js,jsx,ts,tsx,md,mdx,}\" && eslint --fix \"src/**/*.{js,ts,jsx,tsx,astro}\"",
@@ -16,6 +16,8 @@
     "@nozbe/microfuzz": "^1.0.0",
     "@sentry/browser": "^7.110.0",
     "@solidjs/router": "^0.10.1",
+    "@tanstack/solid-query": "^5.55.4",
+    "@tanstack/solid-query-devtools": "^5.55.4",
     "papaparse": "^5.4.1",
     "shared": "*",
     "shiki": "^1.10.0",
@@ -26,12 +28,12 @@
     "vite-plugin-runtime-env": "^0.1.1"
   },
   "devDependencies": {
-    "config": "*",
     "@tailwindcss/typography": "^0.5.10",
     "@types/papaparse": "^5.3.14",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "7.14.1",
     "autoprefixer": "^10.4.16",
+    "config": "*",
     "eslint": "^8.13.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-config-semistandard": "^17.0.0",

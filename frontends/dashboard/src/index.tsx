@@ -2,20 +2,16 @@
 import "./index.css";
 import { render } from "solid-js/web";
 import * as Sentry from "@sentry/browser";
-import { DEV } from "solid-js";
-import { Router, Route } from "@solidjs/router";
-import { DashboardLayout } from "./layouts/DashboardLayout.tsx";
-import { DatasetLayout } from "./layouts/DatasetLayout.tsx";
-import { Overview } from "./pages/Dashboard/Overview.tsx";
-import { DatasetStart } from "./pages/Dashboard/Dataset/DatasetStart.tsx";
-import { DatasetSettingsPage } from "./pages/Dashboard/Dataset/DatasetSettingsPage.tsx";
-import { Settings } from "./pages/Dashboard/Settings.tsx";
-import { Home } from "./pages/Home.tsx";
-import { Billing } from "./pages/Dashboard/Billing.tsx";
-import { UserManagement } from "./pages/Dashboard/UserManagment.tsx";
-import { ContextWrapper } from "./layouts/ContextWrapper.tsx";
-import { DatasetEvents } from "./pages/Dashboard/Dataset/DatasetEvents.tsx";
-import { ApiKeys } from "./components/ApiKeys.tsx";
+import { createContext, DEV, Show } from "solid-js";
+import { Router, RouteDefinition } from "@solidjs/router";
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
+import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
+import { UserContextWrapper } from "./contexts/UserContext.tsx";
+import { TrieveFetchClient } from "trieve-ts-sdk";
+import { NavbarLayout } from "./layouts/NavbarLayout.tsx";
+import { OrganizationHomepage } from "./pages/OrganizationHomepage.tsx";
+import { DatasetHomepage } from "./pages/dataset/DatasetHomepage.tsx";
+import { DatasetLayout } from "./layouts/DatasetSidebarLayout.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -36,31 +32,63 @@ if (!DEV) {
 
 const root = document.getElementById("root");
 
+const queryClient = new QueryClient();
+
+const routes: RouteDefinition[] = [
+  {
+    path: "/",
+    component: UserContextWrapper,
+    children: [
+      {
+        path: "/",
+        component: NavbarLayout,
+        load: (args) => {
+          args.params;
+        },
+        children: [
+          {
+            path: "/",
+            component: OrganizationHomepage,
+          },
+          {
+            path: "/dataset/:id",
+            component: DatasetLayout,
+            children: [
+              {
+                path: "/",
+                component: DatasetHomepage,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    path: "/no-org",
+    component: () => <div>No Org</div>,
+  },
+];
+
+const apiHost = import.meta.env.VITE_API_HOST as string;
+
+const trieve = new TrieveFetchClient({
+  baseUrl: apiHost.replace("/api", ""),
+  debug: true,
+});
+
+export const ApiContext = createContext<TrieveFetchClient>(trieve);
+
 render(
   () => (
-    <Router>
-      <Route path="/" component={ContextWrapper}>
-        <Route path="/" component={Home} />
-        <Route path="/dashboard/dataset/:dataset_id" component={DatasetLayout}>
-          <Route path="/" component={DatasetStart} />
-          <Route path="/start" component={DatasetStart} />
-          <Route path="/settings" component={DatasetSettingsPage} />
-          <Route path="/events" component={DatasetEvents} />
-          <Route path="/api-keys" component={ApiKeys} />
-        </Route>
-        <Route path="/dashboard" component={DashboardLayout} />
-        <Route path="/dashboard/:id" component={DashboardLayout}>
-          <Route path="/" component={Overview} />
-          <Route path="/overview" component={Overview} />
-          <Route path="/users" component={UserManagement} />
-          <Route path="/billing" component={Billing} />
-          <Route path="/settings" component={Settings} />
-          <Route path="/api-keys" component={ApiKeys} />
-          <Route path="*404" component={Overview} />
-        </Route>
-        <Route path="*404" component={Home} />
-      </Route>
-    </Router>
+    <ApiContext.Provider value={trieve}>
+      <QueryClientProvider client={queryClient}>
+        <Router preload>{routes}</Router>
+        <Show when={import.meta.env.DEV}>
+          <SolidQueryDevtools initialIsOpen={false} />
+        </Show>
+      </QueryClientProvider>
+    </ApiContext.Provider>
   ),
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   root!,

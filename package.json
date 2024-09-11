@@ -5,9 +5,10 @@
   "main": "index.js",
   "workspaces": [
     "frontends/search",
-    "frontends/dashboard",
+    "frontends/old-dashboard",
     "frontends/chat",
     "frontends/analytics",
+    "frontends/dashboard",
     "frontends/shared",
     "frontends/config",
     "clients/ts-sdk",
