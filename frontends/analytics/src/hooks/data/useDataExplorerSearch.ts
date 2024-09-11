@@ -1,10 +1,10 @@
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import { getSearchQueries } from "../api/tables";
+import { getSearchQueries } from "../../api/tables";
 import { createEffect, createSignal, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { subDays } from "date-fns";
-import { usePagination } from "./usePagination";
-import { DatasetContext } from "../layouts/TopBarLayout";
+import { usePagination } from "./../usePagination";
+import { DatasetContext } from "../../layouts/TopBarLayout";
 import { AnalyticsParams } from "shared/types";
 
 export type sortByCols = "created_at" | "latency" | "top_score";
