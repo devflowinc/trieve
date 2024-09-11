@@ -22,6 +22,7 @@ interface RAGUsageProps {
 import "chartjs-adapter-date-fns";
 import { Card } from "./Card";
 import { parseCustomDateString } from "../../utils/formatDate";
+import { eachDayOfInterval, isSameDay, subDays } from "date-fns";
 
 export const RAGUsageGraph = (props: RAGUsageProps) => {
   const dataset = useContext(DatasetContext);
@@ -92,6 +93,9 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
                 },
               },
               type: "time",
+              time: {
+                unit: "day",
+              },
               title: {
                 text: "Timestamp",
                 display: true,
@@ -130,12 +134,32 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = undefined;
     }
+    const info = eachDayOfInterval({
+      start: props.params.filter.date_range?.gte || subDays(new Date(), 7),
+      end: props.params.filter.date_range?.lte || new Date(),
+    }).map((d) => {
+      return data.reduce(
+        (acc, curr) => {
+          const parsedDate = new Date(parseCustomDateString(curr.time_stamp));
+          if (isSameDay(parsedDate, d)) {
+            acc = {
+              time_stamp: parsedDate,
+              requests: curr.requests,
+            };
+          }
+
+          return acc;
+        },
+        {
+          time_stamp: d,
+          requests: 0,
+        },
+      );
+    });
 
     // Update the chart data;
-    chartInstance.data.labels = data.map(
-      (point) => new Date(parseCustomDateString(point.time_stamp)),
-    );
-    chartInstance.data.datasets[0].data = data.map((point) => point.requests);
+    chartInstance.data.labels = info.map((point) => point.time_stamp);
+    chartInstance.data.datasets[0].data = info.map((point) => point.requests);
     chartInstance.update();
   });
 

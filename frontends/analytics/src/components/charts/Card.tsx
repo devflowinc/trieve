@@ -16,7 +16,7 @@ export const Card = (props: CardProps) => {
       style={{
         "grid-column": `span ${props.width}`,
       }}
-      class={`shadow-sm rounded-md border border-neutral-100 bg-white p-4 ${classStuff.class}`}
+      class={`rounded-md border border-neutral-100 bg-white p-4 shadow-sm ${classStuff.class}`}
     >
       <div class="mb-4 flex items-center justify-between">
         <div>
