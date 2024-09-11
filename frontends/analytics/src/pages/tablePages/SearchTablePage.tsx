@@ -8,7 +8,7 @@ import { useBetterNav } from "../../utils/useBetterNav";
 import {
   sortByCols,
   useDataExplorerSearch,
-} from "../../hooks/useDataExplorerSearch";
+} from "../../hooks/data/useDataExplorerSearch";
 import {
   createSolidTable,
   getCoreRowModel,
@@ -24,7 +24,6 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
   {
     accessorKey: "created_at",
     header: "Searched At",
-
     sortable: true,
     cell(props) {
       return format(
@@ -80,7 +79,6 @@ export const SearchTablePage = () => {
   ]);
 
   createEffect(() => {
-    console.log(sorting());
     setSortBy(sorting()[0].id as sortByCols);
     setSortOrder(sorting()[0].desc ? "desc" : "asc");
   });
@@ -100,9 +98,9 @@ export const SearchTablePage = () => {
     },
     columns,
     getCoreRowModel: getCoreRowModel(),
-    enableSortingRemoval: false,
     manualPagination: true,
     manualSorting: true,
+    enableSortingRemoval: false,
     onSortingChange: setSorting,
   });
 
