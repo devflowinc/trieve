@@ -40,6 +40,7 @@ use diesel::{
     pg::Pg,
     pg::PgValue,
     serialize::{self as serialize, IsNull, Output, ToSql},
+    sql_types::Text,
 };
 use itertools::Itertools;
 use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
@@ -1873,9 +1874,9 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
-    pub server_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
+    pub server_configuration: serde_json::Value,
 }
 
 impl Dataset {
@@ -5886,6 +5887,60 @@ impl WordDataset {
             dataset_id,
             count,
             created_at: OffsetDateTime::now_utc(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, AsExpression, Display)]
+#[diesel(sql_type = Text)]
+pub enum CrawlStatus {
+    Pending,
+    GotResponseBackFromFirecrawl,
+    Completed,
+    Failed,
+}
+
+impl From<String> for CrawlStatus {
+    fn from(status: String) -> Self {
+        match status.as_str() {
+            "pending" => CrawlStatus::Pending,
+            "got_response_back_from_firecrawl" => CrawlStatus::GotResponseBackFromFirecrawl,
+            "completed" => CrawlStatus::Completed,
+            "failed" => CrawlStatus::Failed,
+            _ => CrawlStatus::Pending,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[diesel(table_name = crawl_requests)]
+pub struct CrawlRequestPG {
+    pub id: uuid::Uuid,
+    pub url: String,
+    pub status: String,
+    pub scrape_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+}
+
+pub struct CrawlRequest {
+    pub id: uuid::Uuid,
+    pub url: String,
+    pub status: CrawlStatus,
+    pub scrape_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+}
+
+impl From<CrawlRequestPG> for CrawlRequest {
+    fn from(crawl_request: CrawlRequestPG) -> Self {
+        Self {
+            id: crawl_request.id,
+            url: crawl_request.url,
+            status: crawl_request.status.into(),
+            scrape_id: crawl_request.scrape_id,
+            dataset_id: crawl_request.dataset_id,
+            created_at: crawl_request.created_at,
         }
     }
 }
