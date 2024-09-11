@@ -1,218 +1,131 @@
-import { format, subDays } from "date-fns";
-import { AnalyticsParams, SearchQueryEvent } from "shared/types";
-import { createStore } from "solid-js/store";
+import { format } from "date-fns";
+import { SearchQueryEvent } from "shared/types";
 import { FilterBar } from "../../components/FilterBar";
-import {
-  createEffect,
-  createMemo,
-  createSignal,
-  JSX,
-  Match,
-  Show,
-  Switch,
-  useContext,
-} from "solid-js";
-import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import { getSearchQueries } from "../../api/tables";
-import { DatasetContext } from "../../layouts/TopBarLayout";
-import { Table, Td, Th, Tr } from "shared/ui";
-import { usePagination } from "../../hooks/usePagination";
-import { PaginationButtons } from "../../components/PaginationButtons";
+import { createEffect, createSignal, Show } from "solid-js";
+import { SortableColumnDef, TanStackTable } from "shared/ui";
 import { parseCustomDateString } from "../../utils/formatDate";
-import { AiFillCaretDown } from "solid-icons/ai";
 import { useBetterNav } from "../../utils/useBetterNav";
-import { QueryStringDisplay } from "../../components/QueryStringDisplay";
+import {
+  sortByCols,
+  useDataExplorerSearch,
+} from "../../hooks/useDataExplorerSearch";
+import {
+  createSolidTable,
+  getCoreRowModel,
+  SortingState,
+} from "@tanstack/solid-table";
+import { Card } from "../../components/charts/Card";
 
-export const SearchTablePage = () => {
-  const queryClient = useQueryClient();
-  const [filters, setFilters] = createStore<AnalyticsParams>({
-    filter: {
-      date_range: {
-        gt: subDays(new Date(), 7),
-      },
-      search_method: undefined, // All methods and types
-      search_type: undefined,
-    },
-    granularity: "day",
-  });
+const columns: SortableColumnDef<SearchQueryEvent>[] = [
+  {
+    accessorKey: "query",
+    header: "Query",
+  },
+  {
+    accessorKey: "created_at",
+    header: "Searched At",
 
-  const [sortOrder, setSortOrder] = createSignal<"desc" | "asc">("desc");
-
-  const [sortBy, setSortBy] = createSignal<
-    "created_at" | "latency" | "top_score"
-  >("created_at");
-
-  const pages = usePagination();
-
-  const dataset = useContext(DatasetContext);
-
-  // Get query data for next page
-  createEffect(() => {
-    void queryClient.prefetchQuery({
-      queryKey: [
-        "search-query-table",
-        {
-          filter: filters.filter,
-          page: pages.page() + 1,
-          sortBy: sortBy(),
-          sortOrder: sortOrder(),
-          datasetId: dataset().dataset.id,
-        },
-      ],
-      queryFn: async () => {
-        const results = await getSearchQueries(
-          {
-            filter: filters.filter,
-            page: pages.page() + 1,
-            sortBy: sortBy(),
-            sortOrder: sortOrder(),
-          },
-          dataset().dataset.id,
-        );
-        if (results.length === 0) {
-          pages.setMaxPageDiscovered(pages.page());
-        }
-        return results;
-      },
-    });
-  });
-
-  const searchTableQuery = createQuery(() => ({
-    queryKey: [
-      "search-query-table",
-      {
-        filter: filters.filter,
-        page: pages.page(),
-        sortBy: sortBy(),
-        sortOrder: sortOrder(),
-        datasetId: dataset().dataset.id,
-      },
-    ],
-
-    queryFn: () => {
-      return getSearchQueries(
-        {
-          filter: filters.filter,
-          page: pages.page(),
-          sortBy: sortBy(),
-          sortOrder: sortOrder(),
-        },
-        dataset().dataset.id,
+    sortable: true,
+    cell(props) {
+      return format(
+        parseCustomDateString(props.getValue<string>()),
+        "M/d/yy h:mm a",
       );
     },
-  }));
+  },
+  {
+    accessorKey: "request_params.search_type",
+    id: "search_type",
+    header: "Search Method",
+    cell(props) {
+      return typeof props.getValue<unknown>() === "string"
+        ? formatSearchMethod(props.getValue<string>())
+        : "All";
+    },
+  },
+  {
+    accessorKey: "latency",
+    header: "Latency",
 
-  interface SortableHeaderProps {
-    children: JSX.Element;
-    sortBy: "created_at" | "latency" | "top_score";
-  }
-  const SortableHeader = (props: SortableHeaderProps) => {
-    return (
-      <button
-        onClick={() => {
-          if (sortBy() === props.sortBy) {
-            setSortOrder(sortOrder() === "desc" ? "asc" : "desc");
-          } else {
-            setSortBy(props.sortBy);
-          }
-        }}
-        class="flex items-center gap-2"
-      >
-        <div>{props.children}</div>
-        <Switch>
-          <Match when={sortBy() === props.sortBy && sortOrder() === "desc"}>
-            <AiFillCaretDown />
-          </Match>
-          <Match when={sortBy() === props.sortBy && sortOrder() === "asc"}>
-            <AiFillCaretDown class="rotate-180 transform" />
-          </Match>
-        </Switch>
-      </button>
-    );
-  };
+    sortable: true,
+    cell(props) {
+      return props.getValue<string>() + "ms";
+    },
+  },
+  {
+    accessorKey: "top_score",
+    header: "Top Score",
+    sortable: true,
+  },
+];
+
+export const SearchTablePage = () => {
+  const navigate = useBetterNav();
+
+  const {
+    pages,
+    searchTableQuery,
+    sortBy,
+    setSortBy,
+    filters,
+    setFilters,
+    sortOrder,
+    setSortOrder,
+  } = useDataExplorerSearch();
+  const [sorting, setSorting] = createSignal<SortingState>([
+    {
+      id: sortBy(),
+      desc: sortOrder() === "desc",
+    },
+  ]);
+
+  createEffect(() => {
+    console.log(sorting());
+    setSortBy(sorting()[0].id as sortByCols);
+    setSortOrder(sorting()[0].desc ? "desc" : "asc");
+  });
+
+  const table = createSolidTable({
+    get data() {
+      return searchTableQuery.data || [];
+    },
+    state: {
+      pagination: {
+        pageIndex: pages.page(),
+        pageSize: 10,
+      },
+      get sorting() {
+        return sorting();
+      },
+    },
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    enableSortingRemoval: false,
+    manualPagination: true,
+    manualSorting: true,
+    onSortingChange: setSorting,
+  });
 
   return (
     <div>
-      <FilterBar noPadding filters={filters} setFilters={setFilters} />
-      <div class="py-4">
+
+      <div class="my-4 rounded-md bg-white">
         <Show
           fallback={<div class="py-8 text-center">Loading...</div>}
           when={searchTableQuery.data}
         >
-          {(data) => (
-            <div classList={{ "border border-neutral-300": data().length > 0 }}>
-              <Table
-                fallback={<div class="py-8 text-center">No Data</div>}
-                data={data()}
-                fixed
-                headers={
-                  <Tr>
-                    <Th class="w-[320px]">Query</Th>
-                    <Th class="w-[150px]">
-                      <SortableHeader sortBy="created_at">
-                        Searched At
-                      </SortableHeader>
-                    </Th>
-                    <Show
-                      when={typeof filters.filter.search_method === "undefined"}
-                    >
-                      <Th>Search Method</Th>
-                    </Show>
-                    <Th class="flex justify-end">
-                      <SortableHeader sortBy="latency">Latency</SortableHeader>
-                    </Th>
-                    <Th class="w-[120px] text-right">
-                      <SortableHeader sortBy="top_score">
-                        Top Score
-                      </SortableHeader>
-                    </Th>
-                  </Tr>
-                }
-              >
-                {(row) => <SearchRow event={row} filter={filters.filter} />}
-              </Table>
-              <div class="flex justify-end px-2 py-1">
-                <PaginationButtons size={14} pages={pages} />
-              </div>
-            </div>
-          )}
+        <Card>
+        <FilterBar noPadding filters={filters} setFilters={setFilters} />
+        <TanStackTable
+            pages={pages}
+            perPage={10}
+            table={table}
+            onRowClick={(row: SearchQueryEvent) => navigate(`/query/${row.id}`)}
+          />
+        </Card>
         </Show>
       </div>
     </div>
-  );
-};
-
-interface SearchRowProps {
-  event: SearchQueryEvent;
-  filter: AnalyticsParams["filter"];
-}
-const SearchRow = (props: SearchRowProps) => {
-  const searchMethod = createMemo(() => {
-    return typeof props.event.request_params["search_type"] === "string"
-      ? formatSearchMethod(props.event.request_params["search_type"])
-      : "All";
-  });
-
-  const navigate = useBetterNav();
-
-  return (
-    <Tr
-      onClick={() => {
-        navigate(`/query/${props.event.id}`);
-      }}
-    >
-      <Td class="truncate">
-        <QueryStringDisplay>{props.event.query}</QueryStringDisplay>
-      </Td>
-      <Td>
-        {format(parseCustomDateString(props.event.created_at), "M/d/yy h:mm a")}
-      </Td>
-      <Show when={typeof props.filter.search_method === "undefined"}>
-        <Td>{searchMethod()}</Td>
-      </Show>
-      <Td class="text-right">{props.event.latency} ms</Td>
-      <Td class="truncate text-left">{props.event.top_score}</Td>
-    </Tr>
   );
 };
 
