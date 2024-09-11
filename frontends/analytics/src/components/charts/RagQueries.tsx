@@ -21,7 +21,7 @@ import {
 import { getRAGQueries, getRAGUsage } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
-import { ChartCard } from "./ChartCard";
+import { Card } from "./Card";
 import { Select, TanStackTable } from "shared/ui";
 import { ALL_FAKE_RAG_OPTIONS } from "../../pages/RagAnalyticsPage";
 import { FullScreenModal, JSONMetadata } from "shared/ui";
@@ -154,7 +154,7 @@ export const RagQueries = (props: RagQueriesProps) => {
   }));
 
   return (
-    <ChartCard
+    <Card
       title="RAG Queries"
       subtitle={"All RAG messages (topic/message and generate_from_chunk)."}
       class="flex flex-col justify-between px-4"
@@ -200,7 +200,7 @@ export const RagQueries = (props: RagQueriesProps) => {
           );
         }}
       </Show>
-    </ChartCard>
+    </Card>
   );
 };
 

@@ -20,7 +20,7 @@ interface RAGUsageProps {
 }
 
 import "chartjs-adapter-date-fns";
-import { ChartCard } from "./ChartCard";
+import { Card } from "./Card";
 import { parseCustomDateString } from "../../utils/formatDate";
 
 export const RAGUsageGraph = (props: RAGUsageProps) => {
@@ -147,7 +147,7 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
   });
 
   return (
-    <ChartCard
+    <Card
       width={2}
       controller={
         <Show when={ragTotalQuery.data}>
@@ -159,6 +159,6 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
       title="RAG Usage"
     >
       <canvas ref={setCanvasElement} class="h-full w-full" />
-    </ChartCard>
+    </Card>
   );
 };

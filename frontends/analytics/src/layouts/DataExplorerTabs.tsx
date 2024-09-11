@@ -25,7 +25,7 @@ export const DataExplorerTabs: ParentComponent = (props) => {
 
   return (
     <>
-      <div class="flex gap-8 border-b-2 border-b-neutral-300 px-2 pb-1">
+      <div class="flex gap-8 border-b border-b-neutral-200 px-2 pb-1">
         <For each={pages}>
           {(page) => (
             <A

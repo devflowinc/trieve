@@ -12,7 +12,7 @@ import { PaginationButtons } from "../PaginationButtons";
 import { FullScreenModal, Table, Td, Th, Tr } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { IoOpenOutline } from "solid-icons/io";
-import { ChartCard } from "./ChartCard";
+import { Card } from "./Card";
 import { BiRegularExpand } from "solid-icons/bi";
 import { useBetterNav } from "../../utils/useBetterNav";
 import { QueryStringDisplay } from "../QueryStringDisplay";
@@ -95,7 +95,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   }));
 
   return (
-    <ChartCard
+    <Card
       subtitle="Searches with the lowest top scores"
       title={"Low Confidence Queries"}
       controller={
@@ -134,7 +134,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
       <div class="flex justify-end pt-2">
         <PaginationButtons size={18} pages={pages} />
       </div>
-    </ChartCard>
+    </Card>
   );
 };
 

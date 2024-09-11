@@ -1,6 +1,6 @@
 import { JSX, Show, splitProps } from "solid-js";
 
-interface ChartCardProps extends JSX.HTMLAttributes<HTMLDivElement> {
+interface CardProps extends JSX.HTMLAttributes<HTMLDivElement> {
   title?: string;
   subtitle?: string;
   width?: number;
@@ -8,7 +8,7 @@ interface ChartCardProps extends JSX.HTMLAttributes<HTMLDivElement> {
   controller?: JSX.Element;
 }
 
-export const ChartCard = (props: ChartCardProps) => {
+export const Card = (props: CardProps) => {
   const [classStuff, others] = splitProps(props, ["class"]);
   return (
     <div
@@ -16,7 +16,7 @@ export const ChartCard = (props: ChartCardProps) => {
       style={{
         "grid-column": `span ${props.width}`,
       }}
-      class={`shadow-xs rounded-md border border-neutral-200 bg-white p-4 ${classStuff.class}`}
+      class={`shadow-sm rounded-md border border-neutral-100 bg-white p-4 ${classStuff.class}`}
     >
       <div class="mb-4 flex items-center justify-between">
         <div>
