@@ -1,4 +1,3 @@
-import { BuildingSomething } from "../../../components/BuildingSomething";
 import {
   createChunkRequest,
   hybridSearchRequest,
@@ -304,7 +303,6 @@ export const DatasetStart = () => {
                 </button>
               </Show>
             </div>
-            <BuildingSomething />
             <div class="flex flex-col gap-2">
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">

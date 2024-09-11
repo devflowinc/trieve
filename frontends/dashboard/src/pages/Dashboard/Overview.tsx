@@ -17,7 +17,6 @@ import { DatasetOverview } from "../../components/DatasetOverview";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
 import { FaRegularClipboard } from "solid-icons/fa";
 import { createToast } from "../../components/ShowToasts";
-import { BuildingSomething } from "../../components/BuildingSomething";
 
 export const Overview = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -102,12 +101,6 @@ export const Overview = () => {
         class="mb-4 flex-col space-y-3 border bg-white py-4 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
         aria-labelledby="organization-details-name"
       >
-        <div class="flex items-center space-x-4">
-          <h2 id="user-details-name" class="text-lg font-medium leading-6">
-            Create a Dataset Below to Get Started!
-          </h2>
-        </div>
-        <BuildingSomething />
         <div class="flex flex-col space-y-2">
           <div class="flex items-center space-x-3">
             <p class="block text-sm font-medium">
@@ -137,11 +130,6 @@ export const Overview = () => {
         </div>
       </section>
 
-      <OrganizationUsageOverview
-        organization={orgSubPlan}
-        orgUsage={orgUsage}
-      />
-      <div class="h-1" />
       <Show when={selectedOrganization()}>
         <DatasetOverview
           selectedOrganization={selectedOrganization}
@@ -153,6 +141,11 @@ export const Overview = () => {
         closeModal={() => {
           setNewDatasetModalOpen(false);
         }}
+      />
+      <div class="h-1" />
+      <OrganizationUsageOverview
+        organization={orgSubPlan}
+        orgUsage={orgUsage}
       />
     </div>
   );

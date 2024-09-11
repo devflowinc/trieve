@@ -1,5 +1,6 @@
 import { Show, useContext } from "solid-js";
 import {
+  BsCalendar,
   BsDiscord,
   BsEnvelope,
   BsGithub,
@@ -63,26 +64,31 @@ export const NavBar = () => {
               <Show when={isOpen()}>
                 <PopoverPanel class="absolute right-0 top-full z-10 mt-1 w-fit min-w-[350px] space-y-2 rounded-md border bg-white px-3 py-2 shadow-lg">
                   <div class="text-nowrap">
-                    <h5 class="text-lg font-semibold">
-                      Need help or just want to chat?
-                    </h5>
-                    <p class="mb-2 text-sm font-semibold text-neutral-800">
+                    <h5 class="text-lg">Need help or just want to chat?</h5>
+                    <p class="mb-2 text-sm text-neutral-800">
                       Expected performance is based on your billing plan. Paid
                       projects are prioritized.
                     </p>
-                    <a
-                      href="mailto:help@arguflow.ai"
-                      class="flex w-fit items-center space-x-1 rounded-md border-[0.5px] border-magenta-200 bg-magenta-50 px-2 py-1 text-sm font-medium"
-                    >
-                      <BsEnvelope class="h-3 w-3" />
-                      <p>humans@trieve.ai</p>
-                    </a>
+                    <div class="flex gap-2">
+                      <a
+                        href="mailto:humans@trieve.ai"
+                        class="flex w-fit items-center space-x-1 rounded-md border-[0.5px] border-magenta-200 bg-magenta-50 px-2 py-1 text-sm font-medium"
+                      >
+                        <BsEnvelope class="h-3 w-3" />
+                        <p>humans@trieve.ai</p>
+                      </a>
+                      <a
+                        href="httsp://cal.com/nick.k"
+                        class="flex w-fit items-center space-x-1 rounded-md border-[0.5px] border-magenta-200 bg-magenta-50 px-2 py-1 text-sm font-medium"
+                      >
+                        <BsCalendar class="h-3 w-3" />
+                        <p>Talk to a Founder</p>
+                      </a>
+                    </div>
                   </div>
                   <div>
-                    <h5 class="mt-3 text-lg font-semibold">
-                      Reach out to the community
-                    </h5>
-                    <p class="text-sm font-semibold text-neutral-800">
+                    <h5 class="mt-3 text-lg">Reach out to the community</h5>
+                    <p class="text-sm text-neutral-800">
                       Welcoming space for other support or advice, including
                       questions on API concepts, or best practices.
                     </p>

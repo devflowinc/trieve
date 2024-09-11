@@ -9,10 +9,15 @@ import {
 import { UserContext } from "../contexts/UserContext";
 import { useNavigate } from "@solidjs/router";
 import { IoLogOutOutline, IoOpenOutline } from "solid-icons/io";
-import { AiOutlinePlus, AiOutlineUser } from "solid-icons/ai";
+import {
+  AiOutlineCalendar,
+  AiOutlinePlus,
+  AiOutlineUser,
+} from "solid-icons/ai";
 import { FaSolidAngleDown, FaSolidAngleRight } from "solid-icons/fa";
 import CreateNewOrgModal from "./CreateNewOrgModal";
 import { DatasetContext } from "../contexts/DatasetContext";
+import { RiLogosDiscordLine } from "solid-icons/ri";
 
 export const Sidebar = () => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
@@ -94,7 +99,7 @@ export const Sidebar = () => {
             </button>
           </div>
           <div class="border-b px-4 py-3">
-            <h5 class="font-semibold text-neutral-600">Admin Tools</h5>
+            <h5 class="font-semibold text-neutral-600">Tools</h5>
             <div class="flex flex-col items-start space-y-1 py-2">
               <div class="flex flex-col items-center text-neutral-800">
                 <div class="flex items-center gap-2">
@@ -170,9 +175,25 @@ export const Sidebar = () => {
           </div>
         </div>
         <div class="sticky bottom-0 flex flex-shrink-0 flex-col items-start border-t bg-neutral-100 px-4 py-4">
-          <div class="flex items-center gap-2">
-            <p>{userContext?.user?.()?.email}</p>
+          <a
+            href="https://discord.gg/E9sPRZqpDT"
+            target="_blank"
+            class="flex items-center gap-2 hover:underline"
+          >
+            <RiLogosDiscordLine class="h-4 w-4" />
+            <p>Join Our Discord</p>
+          </a>
+          <a
+            href="https://cal.com/nick.k"
+            target="_blank"
+            class="flex items-center gap-2 hover:underline"
+          >
+            <AiOutlineCalendar class="h-4 w-4" />
+            <p>Talk to a Founder</p>
+          </a>
+          <div class="mt-2 flex items-center gap-2">
             <AiOutlineUser class="h-4 w-4" />
+            <p>{userContext?.user?.()?.email}</p>
           </div>
           <button
             class="flex items-center gap-2 hover:text-fuchsia-800"
@@ -193,7 +214,7 @@ export const Sidebar = () => {
               });
             }}
           >
-            Log Out <IoLogOutOutline class="inline-block h-4 w-4" />
+            <IoLogOutOutline class="inline-block h-4 w-4" /> Log Out
           </button>
         </div>
       </div>

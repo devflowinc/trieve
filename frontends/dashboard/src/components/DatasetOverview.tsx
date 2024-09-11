@@ -254,7 +254,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                   )
                 ) : (
                   <p class="text-sm text-neutral-700">
-                    This organization does not have any datasets.
+                    Create a dataset below to get started
                   </p>
                 )
               }
