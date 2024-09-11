@@ -5914,6 +5914,7 @@ pub struct CrawlRequestPG {
     pub created_at: chrono::NaiveDateTime,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct CrawlRequest {
     pub id: uuid::Uuid,
     pub url: String,
@@ -5921,6 +5922,7 @@ pub struct CrawlRequest {
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
+    pub attempt_number: i32,
 }
 
 impl From<CrawlRequestPG> for CrawlRequest {
@@ -5932,6 +5934,7 @@ impl From<CrawlRequestPG> for CrawlRequest {
             scrape_id: crawl_request.scrape_id,
             dataset_id: crawl_request.dataset_id,
             created_at: crawl_request.created_at,
+            attempt_number: 0,
         }
     }
 }

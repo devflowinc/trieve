@@ -13,7 +13,7 @@ use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue};
-use crate::operators::crawl_operator::{create_crawl_request, crawl_site};
+use crate::operators::crawl_operator::{crawl_site, create_crawl_request};
 use crate::operators::dataset_operator::get_dataset_usage_query;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
@@ -2687,7 +2687,7 @@ pub struct CrawlResponse {
 }
 
 /// Crawl a Website
-/// 
+///
 /// Crawl a website use firecrawl and make the data available for search.
 #[utoipa::path(
     post,
@@ -2709,14 +2709,22 @@ pub struct CrawlResponse {
 pub async fn crawl(
     data: web::Json<CrawlRequestBody>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data = data.into_inner();
-    let scrape_id = crawl_site(data.site.clone()).await.map_err(|err| {
-        ServiceError::BadRequest(format!("Could not crawl site: {}", err))
-    })?;
+    let scrape_id = crawl_site(data.site.clone())
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?;
 
-    let scrape_id = create_crawl_request(data.site, dataset_org_plan_sub.dataset.id, scrape_id, pool).await?;
+    let scrape_id = create_crawl_request(
+        data.site,
+        dataset_org_plan_sub.dataset.id,
+        scrape_id,
+        pool,
+        redis_pool,
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(CrawlResponse { scrape_id }))
 }
