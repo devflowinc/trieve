@@ -52,6 +52,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    crawl_requests (id) {
+        id -> Uuid,
+        url -> Text,
+        status -> Text,
+        scrape_id -> Uuid,
+        dataset_id -> Uuid,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     dataset_event_counts (id) {
         id -> Uuid,
         notification_count -> Int4,
@@ -90,9 +101,9 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         organization_id -> Uuid,
-        server_configuration -> Jsonb,
         tracking_id -> Nullable<Text>,
         deleted -> Int4,
+        server_configuration -> Jsonb,
     }
 }
 
@@ -292,6 +303,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     chunk_group_bookmarks,
     chunk_metadata,
     chunk_metadata_tags,
+    crawl_requests,
     dataset_event_counts,
     dataset_group_counts,
     dataset_tags,

@@ -13,6 +13,7 @@ use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue};
+use crate::operators::crawl_operator::{create_crawl_request, crawl_site};
 use crate::operators::dataset_operator::get_dataset_usage_query;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
@@ -68,7 +69,7 @@ pub struct ScoringOptions {
     pub semantic_boost: Option<SemanticBoost>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone, Default)]
 #[schema(example = json!({
     "chunk_html": "<p>Some HTML content</p>",
     "link": "https://example.com",
@@ -2673,4 +2674,49 @@ pub fn check_completion_param_validity(
     }
 
     Ok(())
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct CrawlRequestBody {
+    pub site: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct CrawlResponse {
+    pub scrape_id: uuid::Uuid,
+}
+
+/// Crawl a Website
+/// 
+/// Crawl a website use firecrawl and make the data available for search.
+#[utoipa::path(
+    post,
+    path = "/chunk/crawl",
+    context_path = "/api",
+    tag = "Chunk",
+    request_body(content = CrawlRequestBody, description = "JSON request payload to crawl a site", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The crawl id for the website", body = CrawlResponse),
+        (status = 400, description = "Service error relating to crawling", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn crawl(
+    data: web::Json<CrawlRequestBody>,
+    pool: web::Data<Pool>,
+    _user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    let data = data.into_inner();
+    let scrape_id = crawl_site(data.site.clone()).await.map_err(|err| {
+        ServiceError::BadRequest(format!("Could not crawl site: {}", err))
+    })?;
+
+    let scrape_id = create_crawl_request(data.site, dataset_org_plan_sub.dataset.id, scrape_id, pool).await?;
+    Ok(HttpResponse::Ok().json(CrawlResponse { scrape_id }))
 }
