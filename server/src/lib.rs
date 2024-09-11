@@ -856,7 +856,7 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/crawl")
                                         .route(web::post().to(handlers::chunk_handler::crawl)),
-                                )   
+                                )
                                 .service(web::resource("/recommend").route(
                                     web::post().to(handlers::chunk_handler::get_recommended_chunks),
                                 )
