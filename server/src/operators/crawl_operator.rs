@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use ureq::json;
 
 use crate::data::models::CrawlStatus;
+use crate::data::models::RedisPool;
 use crate::{
     data::models::{CrawlRequest, CrawlRequestPG, Pool},
     errors::ServiceError,
@@ -15,125 +16,105 @@ use crate::{
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IngestResult {
-    pub success: bool,
-    pub r#type: String,
-    pub error: Option<String>,
-    pub id: uuid::Uuid,
+    pub status: Status,
+    pub completed: u32,
+    pub total: u32,
+    #[serde(rename = "creditsUsed")]
+    pub credits_used: u32,
+    #[serde(rename = "expiresAt")]
+    pub expires_at: String,
+    pub next: Option<String>,
     pub data: Vec<Document>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Status {
+    Scraping,
+    Completed,
+    Failed,
+    Cancelled,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Document {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub markdown: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub extract: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub html: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "rawHtml")]
     pub raw_html: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub screenshot: Option<String>,
-    pub metadata: DocumentMetadata,
+    pub metadata: Metadata,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DocumentMetadata {
-    #[serde(skip_serializing_if = "Option::is_none")]
+pub struct Metadata {
     pub title: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub keywords: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub robots: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogTitle")]
     pub og_title: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogDescription")]
     pub og_description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogUrl")]
     pub og_url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogImage")]
     pub og_image: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogAudio")]
     pub og_audio: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogDeterminer")]
     pub og_determiner: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogLocale")]
     pub og_locale: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogLocaleAlternate")]
     pub og_locale_alternate: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogSiteName")]
     pub og_site_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "ogVideo")]
     pub og_video: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcTermsCreated")]
     pub dc_terms_created: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcDateCreated")]
     pub dc_date_created: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcDate")]
     pub dc_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcTermsType")]
     pub dc_terms_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcType")]
     pub dc_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcTermsAudience")]
     pub dc_terms_audience: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcTermsSubject")]
     pub dc_terms_subject: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcSubject")]
     pub dc_subject: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcDescription")]
     pub dc_description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "dcTermsKeywords")]
     pub dc_terms_keywords: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "modifiedTime")]
     pub modified_time: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "publishedTime")]
     pub published_time: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "articleTag")]
     pub article_tag: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "articleSection")]
     pub article_section: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "sourceURL")]
     pub source_url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "statusCode")]
-    pub status_code: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_code: Option<u32>,
     pub error: Option<String>,
+    pub site_map: Option<Sitemap>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Sitemap {
+    pub changefreq: String,
+}
 pub async fn get_crawl_request(
     crawl_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -157,6 +138,7 @@ pub async fn create_crawl_request(
     dataset_id: uuid::Uuid,
     scrape_id: uuid::Uuid,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
     let new_crawl_request = CrawlRequestPG {
@@ -176,6 +158,20 @@ pub async fn create_crawl_request(
         .execute(&mut conn)
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    let serialized_message =
+        serde_json::to_string(&CrawlRequest::from(new_crawl_request.clone())).unwrap();
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    redis::cmd("lpush")
+        .arg("scrape_queue")
+        .arg(&serialized_message)
+        .query_async(&mut *redis_conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     Ok(new_crawl_request.scrape_id)
 }
 
@@ -199,16 +195,48 @@ pub async fn update_crawl_status(
     Ok(())
 }
 
-pub async fn crawl_site(
-    url: String,
-) -> Result<uuid::Uuid, ServiceError> {
-    let firecrawl_url = std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "http://localhost:3002".to_string());
-    let firecrawl_webhook = std::env::var("FIRECRAWL_WEBHOOK").unwrap_or_else(|_| "http://localhost:54324".to_string());
+pub async fn get_crawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceError> {
+    let firecrawl_url =
+        std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "http://localhost:3002".to_string());
+    let firecrawl_url = format!("{}/v1/crawl/{}", firecrawl_url, scrape_id);
+    let client = reqwest::Client::new();
+    let response = client.get(&firecrawl_url).send().await.map_err(|e| {
+        log::error!("Error sending request to firecrawl: {:?}", e);
+        ServiceError::InternalServerError("Error sending request to firecrawl".to_string())
+    })?;
+
+    if response.status().is_success() {
+        let json = response.json::<IngestResult>().await.map_err(|e| {
+            log::error!("Error parsing response from firecrawl: {:?}", e);
+            ServiceError::InternalServerError("Error parsing response from firecrawl".to_string())
+        })?;
+
+        if json.status == Status::Completed {
+            log::info!("Got response from firecrawl: {:?}", json);
+            Ok(json)
+        } else {
+            Err(ServiceError::InternalServerError(
+                "Crawl is not completed yet".to_string(),
+            ))
+        }
+    } else {
+        log::error!("Error getting response from firecrawl: {:?}", response);
+        Err(ServiceError::InternalServerError(
+            "Error getting response from firecrawl".to_string(),
+        ))
+    }
+}
+
+pub async fn crawl_site(url: String) -> Result<uuid::Uuid, ServiceError> {
+    let firecrawl_url =
+        std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "http://localhost:3002".to_string());
     let firecrawl_url = format!("{}/v1/crawl", firecrawl_url);
     let client = reqwest::Client::new();
     let response = client
         .post(&firecrawl_url)
-        .json(&json!({ "url": url, "webhook":  firecrawl_webhook}))
+        .json(&json!({ "url": url, "maxDepth": 20, "limit": 20, "allowBackwardLinks": true, "scrapeOptions": {
+            "onlyMainContent": true,
+        } }))
         .send()
         .await
         .map_err(|e| {
@@ -216,20 +244,21 @@ pub async fn crawl_site(
             ServiceError::InternalServerError("Error sending request to firecrawl".to_string())
         })?;
 
-   
-
     if response.status().is_success() {
-         let json = response.json::<serde_json::Value>().await.map_err(|e| {
+        let json = response.json::<serde_json::Value>().await.map_err(|e| {
             log::error!("Error parsing response from firecrawl: {:?}", e);
             ServiceError::InternalServerError("Error parsing response from firecrawl".to_string())
         })?;
+        log::info!("Got response from firecrawl: {:?}", json);
+
         Ok(json.get("id").unwrap().as_str().unwrap().parse().unwrap())
     } else {
         log::error!("Error getting response from firecrawl: {:?}", response);
-        Err(ServiceError::InternalServerError("Error getting response from firecrawl".to_string()))
+        Err(ServiceError::InternalServerError(
+            "Error getting response from firecrawl".to_string(),
+        ))
     }
 }
-
 
 pub fn get_tags(url: String) -> Vec<String> {
     if let Ok(parsed_url) = Url::parse(&url) {
