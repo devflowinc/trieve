@@ -81,7 +81,6 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   };
 
   createEffect(() => {
-    console.log(searchParams);
     if (searchParams["new_user"]) {
       setIsNewUser(true);
     }

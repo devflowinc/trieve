@@ -44,7 +44,7 @@ export const OrganizationUsageOverview = (
           <div class="px-4 py-5 sm:p-6">
             <dt class="text-base font-normal"> Total Users </dt>
             <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
-              <div class="flex items-baseline text-2xl font-semibold text-magenta">
+              <div class="flex items-baseline text-2xl font-semibold text-fuchsia">
                 {formatNumberWithCommas(props.orgUsage()?.user_count ?? 0)}
                 <span class="ml-2 text-sm font-medium text-neutral-600">
                   of{" "}
@@ -58,7 +58,7 @@ export const OrganizationUsageOverview = (
           <div class="px-4 py-5 sm:p-6">
             <dt class="text-base font-normal">Total File Storage</dt>
             <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
-              <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
+              <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-fuchsia">
                 <div>
                   {formatNumberWithCommas(props.orgUsage()?.file_storage ?? 0)}{" "}
                   mb
@@ -80,7 +80,7 @@ export const OrganizationUsageOverview = (
           <div class="px-4 py-5 sm:p-6">
             <dt class="text-base font-normal">Total Message Count</dt>
             <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
-              <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
+              <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-fuchsia">
                 <div>
                   {formatNumberWithCommas(props.orgUsage()?.message_count ?? 0)}
                   <span class="ml-2 text-sm font-medium text-neutral-600">
@@ -101,7 +101,7 @@ export const OrganizationUsageOverview = (
           <div class="px-4 py-5 sm:p-6">
             <dt class="text-base font-normal">Total Chunk Count</dt>
             <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
-              <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
+              <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-fuchsia">
                 <div>
                   {formatNumberWithCommas(props.orgUsage()?.chunk_count ?? 0)}
                   <span class="ml-2 text-sm font-medium text-neutral-600">

@@ -58,14 +58,14 @@ export function MultiSelect<I extends Item>(props: {
       as="div"
     >
       <div class="relative">
-        <ListboxButton class="relative min-w-[300px] max-w-[300px] cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left outline outline-1 outline-gray-300 focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-magenta-300 disabled:opacity-50 sm:text-sm">
+        <ListboxButton class="relative min-w-[300px] max-w-[300px] cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left outline outline-1 outline-gray-300 focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-fuchsia-300 disabled:opacity-50 sm:text-sm">
           <div class="flex flex-wrap gap-1">
             <For
               each={selected()}
               fallback={<span class="block truncate">None selected.</span>}
             >
               {(item): JSX.Element => (
-                <span class="inline-flex items-center rounded bg-magenta-100 px-2 py-0.5 text-xs font-medium text-magenta-800 hover:bg-magenta-300">
+                <span class="inline-flex items-center rounded bg-fuchsia-100 px-2 py-0.5 text-xs font-medium text-fuchsia-800 hover:bg-fuchsia-300">
                   {item.name}
                 </span>
               )}
@@ -92,9 +92,9 @@ export function MultiSelect<I extends Item>(props: {
                         return (
                           <div
                             classList={{
-                              "bg-magenta-100 text-magenta-900": isSelected(),
+                              "bg-fuchsia-100 text-fuchsia-900": isSelected(),
                               "text-gray-900": !isSelected(),
-                              "group-hover:bg-magenta-50 group-hover:text-magenta-900 relative cursor-default select-none py-2 pl-10 pr-4 rounded-md":
+                              "group-hover:bg-fuchsia-50 group-hover:text-fuchsia-900 relative cursor-default select-none py-2 pl-10 pr-4 rounded-md":
                                 true,
                             }}
                           >

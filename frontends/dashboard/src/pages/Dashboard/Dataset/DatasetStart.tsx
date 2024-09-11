@@ -8,12 +8,18 @@ import {
   createMemo,
   createResource,
   createSignal,
+  onCleanup,
   useContext,
 } from "solid-js";
 import { UserContext } from "../../../contexts/UserContext";
 import { useLocation } from "@solidjs/router";
 import { createToast } from "../../../components/ShowToasts";
-import { Dataset, DatasetUsageCount, DefaultError } from "shared/types";
+import {
+  Dataset,
+  DatasetUsageCount,
+  DefaultError,
+  OrganizationUsageCount,
+} from "shared/types";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { FaRegularClipboard } from "solid-icons/fa";
 import {
@@ -28,11 +34,12 @@ import { BsMagic, BsUpload } from "solid-icons/bs";
 import { AddSampleDataModal } from "../../../components/DatasetExampleModal";
 import { Tooltip } from "shared/ui";
 import { Codeblock } from "../../../components/Codeblock";
+import { OnboardingSteps } from "../../../components/OnboardingSteps";
 
 const SAMPLE_DATASET_SIZE = 921;
 
 export const DatasetStart = () => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
   const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
   const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
   const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
@@ -60,7 +67,7 @@ export const DatasetStart = () => {
   const [usage, { mutate: mutateUsage }] = createResource(
     currDatasetId,
     async (datasetId) => {
-      const response = await fetch(`${api_host}/dataset/usage/${datasetId}`, {
+      const response = await fetch(`${apiHost}/dataset/usage/${datasetId}`, {
         method: "GET",
         headers: {
           "TR-Dataset": datasetId,
@@ -91,7 +98,7 @@ export const DatasetStart = () => {
       return;
     }
 
-    fetch(`${api_host}/dataset/usage/${datasetId}`, {
+    fetch(`${apiHost}/dataset/usage/${datasetId}`, {
       method: "GET",
       headers: {
         "TR-Dataset": datasetId,
@@ -112,8 +119,17 @@ export const DatasetStart = () => {
         const newCount: number = newData.chunk_count as number;
         const countDifference = newCount - prevCount;
 
+        setOrgUsage((prev: OrganizationUsageCount | undefined) => {
+          if (!prev) return undefined;
+
+          const prevCopy = { ...prev };
+          prevCopy["chunk_count"] = newCount;
+          return prevCopy;
+        });
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         mutateUsage(() => newData);
+        if (countDifference === 0) return;
         createToast({
           title: "Updated",
           type: "success",
@@ -141,8 +157,8 @@ export const DatasetStart = () => {
   const [updatedTrackingId, setUpdatedTrackingId] = createSignal<
     string | undefined
   >(datasetContext.dataset?.()?.tracking_id);
-
   const [isLoading, setIsLoading] = createSignal<boolean>(false);
+  const [orgUsage, setOrgUsage] = createSignal<OrganizationUsageCount>();
 
   const updateDataset = async () => {
     const organizationId = userContext.selectedOrganizationId?.();
@@ -151,7 +167,7 @@ export const DatasetStart = () => {
     if (!dataset) return;
     try {
       setIsLoading(true);
-      const response = await fetch(`${api_host}/dataset`, {
+      const response = await fetch(`${apiHost}/dataset`, {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -194,7 +210,7 @@ export const DatasetStart = () => {
       return;
     }
 
-    void fetch(`${api_host}/dataset/${datasetId}`, {
+    void fetch(`${apiHost}/dataset/${datasetId}`, {
       method: "GET",
       headers: {
         "TR-Dataset": datasetId,
@@ -219,6 +235,64 @@ export const DatasetStart = () => {
     });
   });
 
+  createEffect(() => {
+    const selectedOrgId = userContext.selectedOrganizationId?.();
+    if (!selectedOrgId) return;
+
+    const orgUsageAbortController = new AbortController();
+    void fetch(`${apiHost}/organization/usage/${selectedOrgId}`, {
+      credentials: "include",
+      headers: {
+        "TR-Organization": selectedOrgId,
+      },
+      signal: orgUsageAbortController.signal,
+    })
+      .then((res) => {
+        if (res.status === 403) {
+          createToast({
+            title: "Error",
+            type: "error",
+            message:
+              "It is likely that an admin or owner recently modified your role0. Please sign out and sign back in to see the changes.",
+            timeout: 10000,
+          });
+
+          setOrgUsage({
+            id: "",
+            org_id: "",
+            dataset_count: 0,
+            user_count: 0,
+            file_storage: 0,
+            message_count: 0,
+            chunk_count: 0,
+          });
+          return;
+        }
+
+        return res.json();
+      })
+      .then((data) => {
+        setOrgUsage(data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+
+    onCleanup(() => {
+      orgUsageAbortController.abort("cleanup");
+    });
+  });
+
+  createEffect(() => {
+    const interval = setInterval(() => {
+      reloadChunkCount();
+    }, 30000);
+
+    onCleanup(() => {
+      clearInterval(interval);
+    });
+  });
+
   const orgDatasetParams = (datasetId: string) => {
     const orgId = userContext.selectedOrganizationId?.();
     return orgId && datasetId
@@ -230,6 +304,9 @@ export const DatasetStart = () => {
     <div class="h-full">
       <main class="mx-auto">
         <div class="space-y-6 pb-8 lg:grid lg:grid-cols-2 lg:gap-5 lg:px-0">
+          <div class="lg:col-span-2">
+            <OnboardingSteps orgUsage={orgUsage} />
+          </div>
           <section
             class="flex-col space-y-4 border bg-white px-4 py-6 shadow sm:rounded-md sm:p-6 lg:col-span-2"
             aria-labelledby="organization-details-name"
@@ -285,7 +362,7 @@ export const DatasetStart = () => {
               </div>
               <Show when={usage() && usage()?.chunk_count === 0}>
                 <a
-                  class="flex cursor-pointer items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
+                  class="flex cursor-pointer items-center space-x-2 rounded-md border bg-fuchsia-500 px-2 py-1 text-sm text-white"
                   href={`${searchUiURL}/upload${orgDatasetParams(
                     curDataset()?.id ?? "",
                   )}`}
@@ -295,7 +372,7 @@ export const DatasetStart = () => {
                   <BsUpload class="h-4 w-4" />
                 </a>
                 <button
-                  class="flex items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
+                  class="flex items-center space-x-2 rounded-md border bg-fuchsia-500 px-2 py-1 text-sm text-white"
                   onClick={() => setOpenSampleDataModal(true)}
                 >
                   <p>Add Sample Data</p>
@@ -370,7 +447,7 @@ export const DatasetStart = () => {
                     name="dataset-name"
                     id="dataset-name"
                     autocomplete="dataset-name"
-                    class="block flex-1 border-0 bg-transparent py-1.5 pl-1 placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm"
+                    class="block flex-1 border-0 bg-transparent py-1.5 pl-1 placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm"
                     value={datasetContext.dataset?.()?.tracking_id ?? ""}
                     onChange={(e) =>
                       setUpdatedTrackingId(e.currentTarget.value)

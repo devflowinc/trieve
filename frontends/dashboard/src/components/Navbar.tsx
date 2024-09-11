@@ -72,14 +72,14 @@ export const NavBar = () => {
                     <div class="flex gap-2">
                       <a
                         href="mailto:humans@trieve.ai"
-                        class="flex w-fit items-center space-x-1 rounded-md border-[0.5px] border-magenta-200 bg-magenta-50 px-2 py-1 text-sm font-medium"
+                        class="flex w-fit items-center space-x-1 rounded-md border-[0.5px] border-fuchsia-200 bg-fuchsia-50 px-2 py-1 text-sm font-medium"
                       >
                         <BsEnvelope class="h-3 w-3" />
                         <p>humans@trieve.ai</p>
                       </a>
                       <a
                         href="httsp://cal.com/nick.k"
-                        class="flex w-fit items-center space-x-1 rounded-md border-[0.5px] border-magenta-200 bg-magenta-50 px-2 py-1 text-sm font-medium"
+                        class="flex w-fit items-center space-x-1 rounded-md border-[0.5px] border-fuchsia-200 bg-fuchsia-50 px-2 py-1 text-sm font-medium"
                       >
                         <BsCalendar class="h-3 w-3" />
                         <p>Talk to a Founder</p>

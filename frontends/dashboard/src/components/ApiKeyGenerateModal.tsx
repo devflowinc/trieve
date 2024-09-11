@@ -216,7 +216,7 @@ export const ApiKeyGenerateModal = (props: {
                               name="dataset-name"
                               id="dataset-name"
                               autocomplete="dataset-name"
-                              class="block flex-1 border-0 bg-transparent py-1.5 pl-1 placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm"
+                              class="block flex-1 border-0 bg-transparent py-1.5 pl-1 placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm"
                               value={name()}
                               onInput={(e) => setName(e.currentTarget.value)}
                             />
@@ -234,7 +234,7 @@ export const ApiKeyGenerateModal = (props: {
                           <select
                             id="location"
                             name="location"
-                            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 text-sm focus:outline-magenta-500"
+                            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 text-sm focus:outline-fuchsia-500"
                             onSelect={(e) => {
                               setRole(parseInt(e.currentTarget.value));
                             }}
@@ -334,7 +334,7 @@ export const ApiKeyGenerateModal = (props: {
                 <div class="mt-3 flex items-center justify-between">
                   <button
                     type="button"
-                    class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-magenta-500"
+                    class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-fuchsia-500"
                     onClick={() => props.closeModal()}
                   >
                     Cancel
@@ -342,7 +342,7 @@ export const ApiKeyGenerateModal = (props: {
                   <button
                     type="submit"
                     disabled={name() === ""}
-                    class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-magenta-700 disabled:bg-magenta-200"
+                    class="inline-flex justify-center rounded-md bg-fuchsia-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-fuchsia-700 disabled:bg-fuchsia-200"
                   >
                     Generate New API Key
                   </button>
@@ -396,7 +396,7 @@ export const ApiKeyGenerateModal = (props: {
               </div>
               <button
                 type="button"
-                class="absolute left-0 top-0 m-2 rounded-full bg-white p-2 text-neutral-900 hover:bg-neutral-200 focus:outline-magenta-500"
+                class="absolute left-0 top-0 m-2 rounded-full bg-white p-2 text-neutral-900 hover:bg-neutral-200 focus:outline-fuchsia-500"
                 onClick={() => props.closeModal()}
               >
                 <svg

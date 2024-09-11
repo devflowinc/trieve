@@ -128,7 +128,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                         name="dataset-name"
                         id="dataset-name"
                         autocomplete="dataset-name"
-                        class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 text-sm focus:outline-magenta-500"
+                        class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 text-sm focus:outline-fuchsia-500"
                         placeholder="Email"
                         value={email()}
                         onInput={(e) => setEmail(e.currentTarget.value)}
@@ -145,7 +145,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                         <select
                           id="location"
                           name="location"
-                          class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 text-sm focus:outline-magenta-500"
+                          class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 text-sm focus:outline-fuchsia-500"
                           onSelect={(e) => {
                             setRole(e.currentTarget.value as UserRole);
                           }}
@@ -170,7 +170,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
               <div class="mt-3 flex items-center justify-between">
                 <button
                   type="button"
-                  class="inline-flex justify-center rounded-md border bg-neutral-100 px-3 py-2 text-sm font-semibold text-black shadow-sm hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:bg-magenta-200"
+                  class="inline-flex justify-center rounded-md border bg-neutral-100 px-3 py-2 text-sm font-semibold text-black shadow-sm hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:bg-fuchsia-200"
                   onClick={handleCloseModal}
                 >
                   Cancel
@@ -179,7 +179,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                   type="submit"
                   disabled={email() === "" || sendingEmail()}
                   classList={{
-                    "inline-flex text-sm justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200":
+                    "inline-flex text-sm justify-center rounded-md bg-fuchsia-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-fuchsia-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-600 disabled:bg-fuchsia-200":
                       true,
                     "cursor-not-allowed animate-pulse": sendingEmail(),
                   }}

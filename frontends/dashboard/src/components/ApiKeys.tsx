@@ -78,7 +78,7 @@ export const ApiKeys = () => {
           <button
             type="button"
             class={
-              "inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
+              "inline-flex justify-center rounded-md bg-fuchsia-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-fuchsia-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-900"
             }
             onClick={(e) => {
               e.preventDefault();

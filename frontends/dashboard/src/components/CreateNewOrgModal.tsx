@@ -146,7 +146,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
                               name="dataset-name"
                               id="dataset-name"
                               autocomplete="dataset-name"
-                              class="block flex-1 border-0 bg-transparent py-1.5 pl-2 placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm"
+                              class="block flex-1 border-0 bg-transparent py-1.5 pl-2 placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm"
                               placeholder="My New Organization..."
                               value={name()}
                               onInput={(e) => setName(e.currentTarget.value)}
@@ -161,7 +161,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
                 <div class="mt-3 flex items-center justify-between">
                   <button
                     type="button"
-                    class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-magenta-500"
+                    class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-fuchsia-500"
                     onClick={() => props.closeModal()}
                   >
                     Cancel
@@ -169,7 +169,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
                   <button
                     type="submit"
                     disabled={name() === ""}
-                    class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-magenta-700 disabled:bg-magenta-200"
+                    class="inline-flex justify-center rounded-md bg-fuchsia-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-fuchsia-700 disabled:bg-fuchsia-200"
                   >
                     Create New Organization
                   </button>

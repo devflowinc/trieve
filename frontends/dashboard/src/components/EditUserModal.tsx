@@ -109,7 +109,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
                         <select
                           id="location"
                           name="location"
-                          class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 text-sm focus:outline-magenta-500"
+                          class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 text-sm focus:outline-fuchsia-500"
                           onSelect={(e) => {
                             setRole(e.currentTarget.value as UserRole);
                           }}
@@ -152,7 +152,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
               <div class="mt-3 flex items-center justify-between">
                 <button
                   type="button"
-                  class="inline-flex justify-center rounded-md bg-neutral-200 px-3 py-2 font-semibold text-black shadow-sm hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:bg-magenta-200"
+                  class="inline-flex justify-center rounded-md bg-neutral-200 px-3 py-2 font-semibold text-black shadow-sm hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:bg-fuchsia-200"
                   onClick={() => props.closeModal()}
                 >
                   Cancel
@@ -162,7 +162,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
                     role() === fromI32ToUserRole(editingUserRole() ?? 0)
                   }
                   type="submit"
-                  class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
+                  class="inline-flex justify-center rounded-md bg-fuchsia-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-fuchsia-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-600 disabled:bg-fuchsia-200"
                 >
                   Change Role
                 </button>

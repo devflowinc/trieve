@@ -16,7 +16,7 @@ export const ProgressBar = (props: ProgressBarProps) => {
       style={{ width: props.width || "100%" }}
     >
       <div
-        class="h-2.5 rounded-full bg-magenta transition-all duration-300 ease-in-out"
+        class="h-2.5 rounded-full bg-fuchsia transition-all duration-300 ease-in-out"
         style={{ width: `${percentage()}%` }}
       />
     </div>

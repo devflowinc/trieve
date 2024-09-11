@@ -16,7 +16,7 @@ export const DatasetTabs = () => {
         href={`/dashboard/dataset/${
           urlParams.dataset_id
         }/start?org=${currentOrgId()}`}
-        activeClass="border-b-2 -mb-[1px] border-magenta-500"
+        activeClass="border-b-2 -mb-[1px] border-fuchsia-500"
         class="hover:text-fuchsia-800"
       >
         Start
@@ -25,7 +25,7 @@ export const DatasetTabs = () => {
         href={`/dashboard/dataset/${
           urlParams.dataset_id
         }/events?org=${currentOrgId()}`}
-        activeClass="border-b-2 -mb-[1px] border-magenta-500"
+        activeClass="border-b-2 -mb-[1px] border-fuchsia-500"
         class="hover:text-fuchsia-800"
       >
         Events
@@ -34,7 +34,7 @@ export const DatasetTabs = () => {
         href={`/dashboard/dataset/${
           urlParams.dataset_id
         }/api-keys?org=${currentOrgId()}`}
-        activeClass="border-b-2 -mb-[1px] border-magenta-500"
+        activeClass="border-b-2 -mb-[1px] border-fuchsia-500"
         class="hover:text-fuchsia-800"
       >
         API Keys
@@ -43,7 +43,7 @@ export const DatasetTabs = () => {
         href={`/dashboard/dataset/${
           urlParams.dataset_id
         }/settings?org=${currentOrgId()}`}
-        activeClass="border-b-2 -mb-[1px] border-magenta-500"
+        activeClass="border-b-2 -mb-[1px] border-fuchsia-500"
         class="hover:text-fuchsia-800"
       >
         Settings

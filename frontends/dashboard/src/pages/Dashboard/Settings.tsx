@@ -110,7 +110,7 @@ const OrgSettingsForm = () => {
           <button
             type="submit"
             classList={{
-              "inline-flex text-sm justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900":
+              "inline-flex text-sm justify-center rounded-md bg-fuchsia-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-fuchsia-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-900":
                 true,
               "animate-pulse cursor-not-allowed": updating(),
             }}
@@ -252,7 +252,7 @@ export const OrgDangerZoneForm = () => {
               deleting() || confirmText() !== selectedOrgnaization()?.name
             }
             classList={{
-              "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
+              "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-fuchsia-500":
                 true,
               "animate-pulse cursor-not-allowed": deleting(),
             }}

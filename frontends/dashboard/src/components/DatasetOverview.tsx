@@ -254,7 +254,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                   )
                 ) : (
                   <p class="text-sm text-neutral-700">
-                    Create a dataset below to get started
+                    Create a dataset by clicking the button below to get started
                   </p>
                 )
               }
@@ -278,7 +278,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
             />
             <Show when={maxDatasets() != 0}>
               <button
-                class="rounded bg-magenta-500 px-3 py-2 text-sm font-semibold text-white"
+                class="rounded bg-fuchsia-500 px-3 py-2 text-sm font-semibold text-white"
                 onClick={() => props.setOpenNewDatasetModal(true)}
               >
                 Create Dataset +
@@ -290,13 +290,17 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
       <Show when={(maxDatasets() === 0 && page() === 0) || !hasLoaded()}>
         <Switch>
           <Match when={hasLoaded()}>
-            <button
-              onClick={() => props.setOpenNewDatasetModal(true)}
-              class="relative block w-full rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2"
-            >
-              <TbDatabasePlus class="mx-auto h-12 w-12 text-magenta" />
-              <span class="mt-2 block font-semibold">Create A New Dataset</span>
-            </button>
+            <div class="group">
+              <button
+                onClick={() => props.setOpenNewDatasetModal(true)}
+                class="group relative block w-full rounded-lg border-2 border-dashed border-fuchsia-300 p-12 text-center text-fuchsia-300 hover:border-fuchsia-400 hover:text-fuchsia-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-offset-2"
+              >
+                <TbDatabasePlus class="group-hover:fuchsia-400 mx-auto h-12 w-12" />
+                <span class="mt-2 block font-semibold text-black">
+                  Create A New Dataset
+                </span>
+              </button>
+            </div>
           </Match>
           <Match when={!hasLoaded()}>
             <div class="flex flex-col items-center justify-center gap-2">

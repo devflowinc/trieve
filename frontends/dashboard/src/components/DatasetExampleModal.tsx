@@ -73,7 +73,7 @@ export const AddSampleDataModal = (props: {
                     Cancel
                   </button>
                   <button
-                    class="rounded-md bg-magenta-500 px-3 py-1 text-sm font-semibold text-white shadow-sm hover:bg-magenta-600"
+                    class="rounded-md bg-fuchsia-500 px-3 py-1 text-sm font-semibold text-white shadow-sm hover:bg-fuchsia-600"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -92,10 +92,10 @@ export const AddSampleDataModal = (props: {
                 </DialogTitle>
                 <div class="mt-2">
                   <div class="relative pt-1">
-                    <div class="mb-4 flex h-2 overflow-hidden rounded bg-magenta-100 text-xs">
+                    <div class="mb-4 flex h-2 overflow-hidden rounded bg-fuchsia-100 text-xs">
                       <div
                         style={{ width: `${progress()}%` }}
-                        class="flex flex-col justify-center whitespace-nowrap bg-magenta-500 text-center text-white shadow-none"
+                        class="flex flex-col justify-center whitespace-nowrap bg-fuchsia-500 text-center text-white shadow-none"
                       />
                     </div>
                   </div>

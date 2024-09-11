@@ -93,7 +93,7 @@ export const ServerSettingsForm = (props: {
                   type="text"
                   name="llmAPIURL"
                   id="llmAPIURL"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                   value={props.serverConfig().LLM_BASE_URL}
                   onInput={(e) =>
                     props.setServerConfig((prev) => {
@@ -124,7 +124,7 @@ export const ServerSettingsForm = (props: {
                   type="text"
                   name="llmAPIURL"
                   id="llmAPIURL"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                   value={props.serverConfig().LLM_API_KEY ?? ""}
                   onInput={(e) =>
                     props.setServerConfig((prev) => {
@@ -148,7 +148,7 @@ export const ServerSettingsForm = (props: {
                   type="text"
                   name="llmDefaultModel"
                   id="llmDefaultModel"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                   value={props.serverConfig().LLM_DEFAULT_MODEL}
                   onInput={(e) =>
                     props.setServerConfig((prev) => {
@@ -184,7 +184,7 @@ export const ServerSettingsForm = (props: {
                   type="number"
                   name="temperature"
                   id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                   value={props.serverConfig().TEMPERATURE ?? 0}
                   onChange={(e) =>
                     props.setServerConfig((prev) => {
@@ -208,7 +208,7 @@ export const ServerSettingsForm = (props: {
                   type="number"
                   name="presencePenalty"
                   id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                   value={props.serverConfig().PRESENCE_PENALTY ?? 0}
                   onChange={(e) =>
                     props.setServerConfig((prev) => {
@@ -232,7 +232,7 @@ export const ServerSettingsForm = (props: {
                   type="number"
                   name="frequencyPenalty"
                   id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                   value={props.serverConfig().FREQUENCY_PENALTY ?? 0}
                   onChange={(e) =>
                     props.setServerConfig((prev) => {
@@ -255,7 +255,7 @@ export const ServerSettingsForm = (props: {
                   type="number"
                   name="presencePenalty"
                   id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                   value={props.serverConfig().MAX_TOKENS ?? 0}
                   onChange={(e) =>
                     props.setServerConfig((prev) => {
@@ -298,7 +298,7 @@ export const ServerSettingsForm = (props: {
                   rows="4"
                   name="messageToQueryPrompt"
                   id="messageToQueryPrompt"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 />
               </div>
 
@@ -322,7 +322,7 @@ export const ServerSettingsForm = (props: {
                   rows="4"
                   name="ragPrompt"
                   id="ragPrompt"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 />
               </div>
 
@@ -346,7 +346,7 @@ export const ServerSettingsForm = (props: {
                   rows="4"
                   name="messageToQueryPrompt"
                   id="messageToQueryPrompt"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 />
               </div>
 
@@ -370,7 +370,7 @@ export const ServerSettingsForm = (props: {
                   rows="4"
                   name="ragPrompt"
                   id="ragPrompt"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 />
               </div>
 
@@ -445,7 +445,7 @@ export const ServerSettingsForm = (props: {
                       type="number"
                       name="bm25B"
                       id="bm25B"
-                      class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                      class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                       value={props.serverConfig().BM25_B ?? 0}
                       onChange={(e) =>
                         props.setServerConfig((prev) => {
@@ -471,7 +471,7 @@ export const ServerSettingsForm = (props: {
                       type="number"
                       name="bm25K"
                       id="bm25K"
-                      class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                      class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                       value={props.serverConfig().BM25_K?.toFixed(2) ?? 0}
                       onChange={(e) =>
                         props.setServerConfig((prev) => {
@@ -497,7 +497,7 @@ export const ServerSettingsForm = (props: {
                       type="number"
                       name="bm25Length"
                       id="bm25Length"
-                      class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                      class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                       value={props.serverConfig().BM25_AVG_LEN ?? 0}
                       onChange={(e) =>
                         props.setServerConfig((prev) => {
@@ -552,7 +552,7 @@ export const ServerSettingsForm = (props: {
                 title="Embedding Model is only editable on creation"
                 disabled
                 name="embeddingSize"
-                class="col-span-2 block w-full cursor-not-allowed rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="col-span-2 block w-full cursor-not-allowed rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 value={
                   availableEmbeddingModels.find(
                     (model) =>
@@ -584,7 +584,7 @@ export const ServerSettingsForm = (props: {
                 type="text"
                 name="embeddingQueryPrefix"
                 id="embeddingQueryPrefix"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 value={props.serverConfig().EMBEDDING_QUERY_PREFIX}
                 onInput={(e) =>
                   props.setServerConfig((prev) => {
@@ -617,7 +617,7 @@ export const ServerSettingsForm = (props: {
                 title="Embedding Model is only editable on creation"
                 disabled
                 name="embeddingSize"
-                class="col-span-2 block w-full cursor-not-allowed rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="col-span-2 block w-full cursor-not-allowed rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 value={
                   availableDistanceMetrics.find(
                     (metric) =>
@@ -664,7 +664,7 @@ export const ServerSettingsForm = (props: {
                 type="number"
                 placeholder="something"
                 id="linesBeforeShowMore"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 value={props.serverConfig().N_RETRIEVALS_TO_INCLUDE}
                 onChange={(e) =>
                   props.setServerConfig((prev) => {
@@ -697,7 +697,7 @@ export const ServerSettingsForm = (props: {
                 type="number"
                 name="maxLimit"
                 id="linesBeforeShowMore"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                 value={props.serverConfig().MAX_LIMIT ?? 0}
                 onChange={(e) =>
                   props.setServerConfig((prev) => {
@@ -955,7 +955,7 @@ export const DangerZoneForm = () => {
                         </Show>
                         <button
                           type="button"
-                          class="pointer:cursor w-fit rounded-md border bg-magenta-400 px-4 py-2 text-sm font-bold text-white hover:bg-magenta-600 focus:outline-magenta-500 disabled:opacity-50"
+                          class="pointer:cursor w-fit rounded-md border bg-fuchsia-400 px-4 py-2 text-sm font-bold text-white hover:bg-fuchsia-600 focus:outline-fuchsia-500 disabled:opacity-50"
                           classList={{
                             "mt-3": isClearing(),
                           }}
@@ -1022,7 +1022,7 @@ export const DangerZoneForm = () => {
                             deleting() && confirmDeleteText() !== datasetName()
                           }
                           classList={{
-                            "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-magenta-500":
+                            "pointer:cursor text-sm w-fit disabled:opacity-50 font-bold rounded-md bg-red-600/80 border px-4 py-2 text-white hover:bg-red-500 focus:outline-fuchsia-500":
                               true,
                             "mt-3": deleting(),
                           }}
@@ -1054,7 +1054,7 @@ export const SaveButton = (props: SaveButtonProps) => {
           e.preventDefault();
           props.onSave();
         }}
-        class="md:whitespace-wrap flex justify-center rounded-md bg-magenta-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-magenta-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
+        class="md:whitespace-wrap flex justify-center rounded-md bg-fuchsia-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-fuchsia-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-600 disabled:bg-fuchsia-200"
       >
         Save Changes
       </button>
@@ -1076,9 +1076,9 @@ export const DatasetSettingsSidebar = (props: { onSave: () => void }) => {
         <a
           href="#general-settings"
           onClick={handleClick}
-          class={`block text-sm font-medium hover:text-magenta-500 ${
+          class={`block text-sm font-medium hover:text-fuchsia-500 ${
             selectedDiv() === "#general-settings"
-              ? "text-magenta-500"
+              ? "text-fuchsia-500"
               : "text-gray-800"
           }`}
         >
@@ -1087,9 +1087,9 @@ export const DatasetSettingsSidebar = (props: { onSave: () => void }) => {
         <a
           href="#embedding-settings"
           onClick={handleClick}
-          class={`block text-sm font-medium hover:text-magenta-500 ${
+          class={`block text-sm font-medium hover:text-fuchsia-500 ${
             selectedDiv() === "#embedding-settings"
-              ? "text-magenta-500"
+              ? "text-fuchsia-500"
               : "text-gray-800"
           }`}
         >
@@ -1098,9 +1098,9 @@ export const DatasetSettingsSidebar = (props: { onSave: () => void }) => {
         <a
           href="#additional-options"
           onClick={handleClick}
-          class={`block text-sm font-medium hover:text-magenta-500 ${
+          class={`block text-sm font-medium hover:text-fuchsia-500 ${
             selectedDiv() === "#additional-options"
-              ? "text-magenta-500"
+              ? "text-fuchsia-500"
               : "text-gray-800"
           }`}
         >
@@ -1109,9 +1109,9 @@ export const DatasetSettingsSidebar = (props: { onSave: () => void }) => {
         <a
           href="#danger-zone"
           onClick={handleClick}
-          class={`block text-sm font-medium hover:text-magenta-500 ${
+          class={`block text-sm font-medium hover:text-fuchsia-500 ${
             selectedDiv() === "#danger-zone"
-              ? "text-magenta-500"
+              ? "text-fuchsia-500"
               : "text-gray-800"
           }`}
         >

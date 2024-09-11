@@ -235,7 +235,7 @@ export const UserManagement = () => {
                 setInviteUserModalOpen(true);
               }}
               type="button"
-              class="block h-[42px] rounded-md border bg-magenta-500 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600"
+              class="block h-[42px] rounded-md border bg-fuchsia-500 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-fuchsia-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-600"
             >
               Add User
             </button>
@@ -301,7 +301,7 @@ export const UserManagement = () => {
                         classList={{
                           "text-neutral-200 cursor-not-allowed":
                             user.id === userContext.user?.()?.id,
-                          "text-magenta-500 hover:text-magenta-900":
+                          "text-fuchsia-500 hover:text-fuchsia-900":
                             user.id !== userContext.user?.()?.id,
                         }}
                       >
@@ -376,7 +376,7 @@ export const UserManagement = () => {
                         onClick={() => {
                           deleteInvitation(invitation.id);
                         }}
-                        class="text-magenta-500 hover:text-magenta-900"
+                        class="text-fuchsia-500 hover:text-fuchsia-900"
                       >
                         Delete
                       </button>

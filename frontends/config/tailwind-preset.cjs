@@ -122,6 +122,9 @@ module.exports = {
           900: "#0C050E",
           950: "#000000",
         },
+        fuchsia: {
+          DEFAULT: "#d946ef",
+        },
       },
       keyframes: {
         scrollup: {

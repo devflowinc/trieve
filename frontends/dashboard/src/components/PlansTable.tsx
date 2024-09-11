@@ -25,7 +25,7 @@ interface ActiveTagProps {
 
 const ActiveTag = (props: ActiveTagProps) => {
   return (
-    <p class="w-fit rounded-lg px-4 py-2 font-semibold text-magenta-500">
+    <p class="w-fit rounded-lg px-4 py-2 font-semibold text-fuchsia-500">
       {props.text}
     </p>
   );
@@ -182,7 +182,7 @@ export const PlansTable = (props: PlansTableProps) => {
     <div class="flex flex-col gap-8">
       <div class="grid w-full grid-cols-3 place-content-center gap-x-2 rounded border bg-white px-5 py-3 text-sm shadow-sm">
         <div class="space-y-1">
-          <p class="text-lg font-semibold uppercase text-magenta-500">
+          <p class="text-lg font-semibold uppercase text-fuchsia-500">
             Enterprise
           </p>
           <p>
@@ -190,7 +190,7 @@ export const PlansTable = (props: PlansTableProps) => {
             Telegram all work.
           </p>
           <a
-            class="block rounded border border-magenta-200/70 bg-magenta-100 py-1 text-center font-medium"
+            class="block rounded border border-fuchsia-200/70 bg-fuchsia-100 py-1 text-center font-medium"
             href="tel:6282224090"
           >
             +1 628-222-4090
@@ -201,25 +201,25 @@ export const PlansTable = (props: PlansTableProps) => {
         </div>
         <div class="mx-auto my-auto space-y-2">
           <div class="flex items-center space-x-2">
-            <BsCheck class="fill-current text-magenta-500" />
+            <BsCheck class="fill-current text-fuchsia-500" />
             <p> 24x7x365 Dedicated Support </p>
           </div>
           <div class="flex items-center space-x-2">
-            <BsCheck class="fill-current text-magenta-500" />
+            <BsCheck class="fill-current text-fuchsia-500" />
             <p> SLAs / DPAs / MSAs </p>
           </div>
           <div class="flex items-center space-x-2">
-            <BsCheck class="fill-current text-magenta-500" />
+            <BsCheck class="fill-current text-fuchsia-500" />
             <p> On-premise support </p>
           </div>
         </div>
         <div class="mx-auto my-auto space-y-2">
           <div class="flex items-center space-x-2">
-            <BsCheck class="fill-current text-magenta-500" />
+            <BsCheck class="fill-current text-fuchsia-500" />
             <p> Provider VPC peering </p>
           </div>
           <div class="flex items-center space-x-2">
-            <BsCheck class="fill-current text-magenta-500" />
+            <BsCheck class="fill-current text-fuchsia-500" />
             <p> SSO/SAML </p>
           </div>
         </div>
@@ -254,7 +254,7 @@ export const PlansTable = (props: PlansTableProps) => {
               onClick={() => {
                 createStripeSetupCheckoutSession();
               }}
-              class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
+              class="w-fit rounded-lg bg-fuchsia-500 px-4 py-2 font-semibold text-white shadow-sm shadow-fuchsia-100/40"
             >
               Update payment method
             </button>
@@ -362,7 +362,7 @@ export const PlansTable = (props: PlansTableProps) => {
                         onClick={() => {
                           void cancelPlan();
                         }}
-                        class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
+                        class="w-fit rounded-lg bg-fuchsia-500 px-4 py-2 font-semibold text-white shadow-sm shadow-fuchsia-100/40"
                       >
                         Downgrade to Free (Cancel)
                       </button>
@@ -390,7 +390,7 @@ export const PlansTable = (props: PlansTableProps) => {
                         <button
                           onClick={onClickFunc}
                           classList={{
-                            "w-fit px-4 py-2 bg-magenta-500 text-white font-semibold rounded-lg shadow-sm shadow-magenta-100/40":
+                            "w-fit px-4 py-2 bg-fuchsia-500 text-white font-semibold rounded-lg shadow-sm shadow-fuchsia-100/40":
                               true,
                             "animate-pulse cursor-not-allowed":
                               processingPlanId() === plan.id,
@@ -403,7 +403,7 @@ export const PlansTable = (props: PlansTableProps) => {
                       actionButton = (
                         <a
                           href={`${api_host}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}`}
-                          class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
+                          class="w-fit rounded-lg bg-fuchsia-500 px-4 py-2 font-semibold text-white shadow-sm shadow-fuchsia-100/40"
                         >
                           Subscribe
                         </a>
