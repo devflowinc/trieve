@@ -9,20 +9,21 @@ interface MagicBoxProps<D extends CreateQueryResult>
   class?: string;
   fallback?: JSX.Element;
   id?: string;
-  heightKey?: string;
+  skeletonKey?: string;
+  skeletonHeight?: string;
   query: D;
   children: (data: NonNullable<D["data"]>) => JSX.Element;
 }
 
 const container = cva([], {
   variants: {
-    styled: {
-      true: "bg-white border border-neutral-300 p-4 shadow-sm",
-      false: "",
+    unstyled: {
+      false: "bg-white rounded-md border border-neutral-300 p-4 shadow-sm",
+      true: "",
     },
   },
   defaultVariants: {
-    styled: true,
+    unstyled: false,
   },
 });
 
@@ -34,30 +35,34 @@ export const MagicBox = <D extends CreateQueryResult>(
   });
 
   const skeletonHeight = createMemo(() => {
-    if (props.heightKey) {
+    if (props.skeletonKey) {
       if (props.query.status === "success") {
-        console.log("saving height");
         // save height of div to local storage
-        const height = document.getElementById(`skeleton-${props.heightKey}`)
+        const height = document.getElementById(`skeleton-${props.skeletonKey}`)
           ?.clientHeight;
         if (height) {
-          console.log("saving height", height);
           localStorage.setItem(
-            `skeleton-${props.heightKey}`,
+            `skeleton-${props.skeletonKey}`,
             height.toString(),
           );
         }
       } else {
         // get height from local storage
-        const height = localStorage.getItem(`skeleton-${props.heightKey}`);
+        const height = localStorage.getItem(`skeleton-${props.skeletonKey}`);
         if (height) {
-          console.log("restoring height", height);
           return `${height}px`;
         } else {
           return "auto";
         }
       }
     } else {
+      if (props.query.isLoading) {
+        if (props.skeletonHeight) {
+          return `${props.skeletonHeight}px`;
+        } else {
+          return "auto";
+        }
+      }
       return "auto";
     }
   });
@@ -65,10 +70,10 @@ export const MagicBox = <D extends CreateQueryResult>(
   return (
     <div
       style={{ height: skeletonHeight() }}
-      id={`skeleton-${props.heightKey}`}
+      id={`skeleton-${props.skeletonKey}`}
       class={cn(
         container({ ...props, class: props.class }),
-        props.query.isLoading && "shimmer",
+        props.query.isLoading && "unstyled-shimmer",
       )}
     >
       <Show fallback={props.fallback} when={props.query.data}>

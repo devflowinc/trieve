@@ -23,7 +23,7 @@ export const DatasetHomepage = () => {
     <div class="p-4">
       <div>Dataset Homepage</div>
       <div class="m-3 bg-orange-700">ID: {datasetId}</div>
-      <MagicBox heightKey="big-tes" query={numQuery}>
+      <MagicBox skeletonKey="big-tes" query={numQuery}>
         {(d) => (
           <div>
             testing
