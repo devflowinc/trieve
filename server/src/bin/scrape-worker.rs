@@ -8,7 +8,6 @@ use std::sync::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
 use actix_web::web;
-use trieve_server::handlers::chunk_handler::ChunkReqPayload;
 use trieve_server::operators::chunk_operator::create_chunk_metadata;
 use trieve_server::operators::dataset_operator::get_dataset_by_id_query;
 use trieve_server::{
@@ -20,6 +19,9 @@ use trieve_server::{
     errors::ServiceError,
     establish_connection, get_env,
     operators::crawl_operator::{get_chunk_html, get_images, get_tags, update_crawl_status},
+};
+use trieve_server::{
+    handlers::chunk_handler::ChunkReqPayload, operators::crawl_operator::chunk_markdown,
 };
 use ureq::json;
 
@@ -92,25 +94,31 @@ async fn crawl(
         let page_markdown = page.markdown.clone().unwrap_or_default();
         let page_tags = get_tags(page_link.clone());
 
-        let chunk = ChunkReqPayload {
-            chunk_html: Some(get_chunk_html(
-                page_markdown.clone(),
-                page_title.clone(),
-                "".to_string(),
-                0,
-                None,
-            )),
-            link: Some(page_link.clone()),
-            tag_set: Some(page_tags),
-            image_urls: Some(get_images(&page_markdown.clone())),
-            metadata: Some(json!({
-                "title": page_title.clone(),
-                "description": page_description.clone(),
-                "url": page_link.clone(),
-            })),
-            ..Default::default()
-        };
-        chunks.push(chunk);
+        let chunk_html = get_chunk_html(
+            page_markdown.clone(),
+            page_title.clone(),
+            "".to_string(),
+            0,
+            None,
+        );
+
+        let chunked_markdown = chunk_markdown(&chunk_html.clone());
+
+        for chunk in chunked_markdown {
+            let chunk = ChunkReqPayload {
+                chunk_html: Some(chunk.clone()),
+                link: Some(page_link.clone()),
+                tag_set: Some(page_tags.clone()),
+                image_urls: Some(get_images(&chunk.clone())),
+                metadata: Some(json!({
+                    "title": page_title.clone(),
+                    "description": page_description.clone(),
+                    "url": page_link.clone(),
+                })),
+                ..Default::default()
+            };
+            chunks.push(chunk);
+        }
     }
 
     let dataset = get_dataset_by_id_query(
