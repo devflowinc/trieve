@@ -169,7 +169,7 @@ pub async fn create_crawl_request(
     redis::cmd("lpush")
         .arg("scrape_queue")
         .arg(&serialized_message)
-        .query_async(&mut *redis_conn)
+        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     Ok(new_crawl_request.scrape_id)
@@ -287,7 +287,7 @@ pub fn get_chunk_html(
         .collect::<Vec<&str>>()
         .join("\n")
         .trim()
-        .replace(|c| c == '-', "");
+        .replace('-', "");
 
     chunk_html = Cleaners::clean_multi_column_links(chunk_html);
     chunk_html = Cleaners::clean_anchortag_headings(chunk_html);
@@ -301,7 +301,7 @@ pub fn get_chunk_html(
     }
 
     if heading_text.is_empty() {
-        chunk_html = chunk_html.trim().replace(|c| c == '-', "");
+        chunk_html = chunk_html.trim().replace('-', "");
     } else {
         let heading_line = format!("{}: {}", page_title, heading_text);
         let mut lines: Vec<&str> = chunk_html.split('\n').collect();

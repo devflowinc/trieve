@@ -147,7 +147,7 @@ async fn crawl(
         redis::cmd("lpush")
             .arg("ingestion")
             .arg(&serialized_message)
-            .query_async(&mut *redis_conn)
+            .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     }
