@@ -12,6 +12,7 @@ import { NavbarLayout } from "./layouts/NavbarLayout.tsx";
 import { OrganizationHomepage } from "./pages/OrganizationHomepage.tsx";
 import { DatasetHomepage } from "./pages/dataset/DatasetHomepage.tsx";
 import { DatasetLayout } from "./layouts/DatasetSidebarLayout.tsx";
+import { DatasetContextProvider } from "./contexts/DatasetContext.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -53,7 +54,11 @@ const routes: RouteDefinition[] = [
           },
           {
             path: "/dataset/:id",
-            component: DatasetLayout,
+            component: (props) => (
+              <DatasetContextProvider>
+                <DatasetLayout>{props.children}</DatasetLayout>
+              </DatasetContextProvider>
+            ),
             // ANY CHILD will have access to datasetID
             children: [
               {
