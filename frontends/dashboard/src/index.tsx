@@ -38,6 +38,7 @@ const routes: RouteDefinition[] = [
   {
     path: "/",
     component: UserContextWrapper,
+    // Any child will have access to current org and user info
     children: [
       {
         path: "/",
@@ -53,6 +54,7 @@ const routes: RouteDefinition[] = [
           {
             path: "/dataset/:id",
             component: DatasetLayout,
+            // ANY CHILD will have access to datasetID
             children: [
               {
                 path: "/",

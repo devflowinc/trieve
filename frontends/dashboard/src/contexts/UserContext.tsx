@@ -1,14 +1,19 @@
 import {
   Accessor,
   JSX,
+  Resource,
   Show,
   createContext,
   createEffect,
+  createResource,
   createSignal,
+  useContext,
 } from "solid-js";
 import { createToast } from "../components/ShowToasts";
 import { SlimUser } from "shared/types";
 import { redirect, useSearchParams } from "@solidjs/router";
+import { ApiContext } from "..";
+import { DatasetAndUsage } from "trieve-ts-sdk";
 
 export interface UserStoreContextProps {
   children?: JSX.Element;
@@ -24,6 +29,7 @@ export interface UserStore {
   user: Accessor<SlimUser>;
   isNewUser: Accessor<boolean>;
   selectedOrganization: Accessor<SlimUser["orgs"][0]>;
+  orgDatasets: Resource<DatasetAndUsage[]>;
   login: () => void;
   logout: () => void;
 }
@@ -32,6 +38,7 @@ export const UserContext = createContext<UserStore>({
   user: () => null as unknown as SlimUser,
   isNewUser: () => false,
   login: () => {},
+  orgDatasets: null as unknown as Resource<DatasetAndUsage[]>,
   logout: () => {},
   selectedOrganization: () => null as unknown as SlimUser["orgs"][0],
 });
@@ -45,6 +52,7 @@ const getInitalUser = () => {
 
 export const UserContextWrapper = (props: UserStoreContextProps) => {
   const [searchParams] = useSearchParams();
+  const trieve = useContext(ApiContext);
 
   const [user, setUser] = createSignal<SlimUser | null>(
     getInitalUser() ?? null,
@@ -64,6 +72,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
       res
         .json()
         .then((res) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           window.location.href = res.logout_url;
           window.localStorage.removeItem("trieve:user");
           setUser(null);
@@ -126,6 +135,17 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     }
   });
 
+  const [orgDatasets, _] = createResource(selectedOrganization, async (org) => {
+    const result = await trieve.fetch(
+      "/api/dataset/organization/{organization_id}",
+      "get",
+      {
+        organizationId: org.id,
+      },
+    );
+    return result;
+  });
+
   createEffect(() => {
     login();
   });
@@ -146,6 +166,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
               <UserContext.Provider
                 value={{
                   user: user,
+                  orgDatasets: orgDatasets,
                   selectedOrganization: org,
                   logout,
                   isNewUser: isNewUser,
@@ -154,7 +175,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
               >
                 {props.children}
                 <Show when={isNewUser()}>
-                  <NewUserOrgName />
+                  <div>New user!!</div>
                 </Show>
               </UserContext.Provider>
             )}
