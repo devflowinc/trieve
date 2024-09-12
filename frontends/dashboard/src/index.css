@@ -12,3 +12,21 @@ pre.shiki {
   padding-right: 14px;
   padding-left: 14px;
 }
+
+@keyframes preloadAnimation {
+  from {
+    background-position: 100% 0
+  }
+
+  to {
+    background-position: -80% 0
+  }
+}
+
+.shimmer {
+  background: linear-gradient(to right, white 8%, #e5e5e5 18%, white 33%);
+  background-size: 200% 50px;
+  animation: preloadAnimation 2s infinite;
+  border-collapse: collapse;
+  width: 100%
+}
