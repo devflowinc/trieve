@@ -402,10 +402,36 @@ impl Cleaners {
 }
 
 pub fn get_images(markdown_content: &str) -> Vec<String> {
-    let image_pattern = Regex::new(r"!\[.*?\]\((.*?\.(?:png|webp))\)").unwrap();
+    let image_pattern = Regex::new(r"!\[.*?\]\((.*?\.(?:png|webp|jpeg|jpg))\)").unwrap();
     image_pattern
         .captures_iter(markdown_content)
         .filter_map(|cap| cap.get(1))
         .map(|m| m.as_str().to_string())
         .collect()
+}
+
+pub fn chunk_markdown(markdown: &str) -> Vec<String> {
+    let re = Regex::new(r"(?m)^(#{1,6}\s.+)$").unwrap();
+    let mut chunks = Vec::new();
+    let mut current_chunk = String::new();
+
+    for line in markdown.lines() {
+        if re.is_match(line) {
+            if !current_chunk.is_empty() {
+                chunks.push(current_chunk.trim().to_string());
+                current_chunk = String::new();
+            }
+            current_chunk.push_str(line);
+            current_chunk.push('\n');
+        } else {
+            current_chunk.push_str(line);
+            current_chunk.push('\n');
+        }
+    }
+
+    if !current_chunk.is_empty() {
+        chunks.push(current_chunk.trim().to_string());
+    }
+
+    chunks
 }
