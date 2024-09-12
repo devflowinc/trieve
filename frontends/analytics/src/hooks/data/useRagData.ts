@@ -1,10 +1,10 @@
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createSignal, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
-import { RAGAnalyticsFilter, SortOrder } from "trieve-ts-sdk";
+import { SortOrder } from "trieve-ts-sdk";
 import { usePagination } from "../usePagination";
 import { getRAGQueries, getRAGUsage } from "../../api/analytics";
-import { AnalyticsParams } from "shared/types";
+import { RAGAnalyticsFilter, AnalyticsParams } from "shared/types";
 
 export interface RagQueriesProps {
   filter: RAGAnalyticsFilter;
