@@ -8,6 +8,7 @@ module.exports = {
   theme: {
     fontFamily: {
       sans: ["Maven Pro", ...defaultTheme.fontFamily.sans],
+      mono: defaultTheme.fontFamily.mono,
     },
     extend: {
       colors: {
