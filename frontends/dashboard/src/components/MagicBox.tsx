@@ -1,6 +1,7 @@
 import { CreateQueryResult } from "@tanstack/solid-query";
 import { cva, VariantProps } from "cva";
-import { children, createMemo, JSX } from "solid-js";
+import { cn } from "shared/utils";
+import { createMemo, JSX } from "solid-js";
 import { Show } from "solid-js";
 
 interface MagicBoxProps<D extends CreateQueryResult>
@@ -65,12 +66,12 @@ export const MagicBox = <D extends CreateQueryResult>(
     <div
       style={{ height: skeletonHeight() }}
       id={`skeleton-${props.heightKey}`}
-      class={container({ ...props, class: props.class })}
+      class={cn(
+        container({ ...props, class: props.class }),
+        props.query.isLoading && "shimmer",
+      )}
     >
-      <Show
-        fallback={props.fallback || <div>Loading...</div>}
-        when={props.query.data}
-      >
+      <Show fallback={props.fallback} when={props.query.data}>
         {children()}
       </Show>
     </div>
