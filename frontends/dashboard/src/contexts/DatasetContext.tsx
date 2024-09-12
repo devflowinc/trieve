@@ -1,71 +1,40 @@
-import {
-  Accessor,
-  JSX,
-  createEffect,
-  createContext,
-  createSignal,
-  useContext,
-} from "solid-js";
-import { Dataset } from "shared/types";
-import { UserContext } from "./UserContext";
 import { useParams } from "@solidjs/router";
-import { createToast } from "../components/ShowToasts";
+import { Accessor, createContext, createMemo, useContext } from "solid-js";
+import { JSX } from "solid-js";
+import { DatasetAndUsage } from "trieve-ts-sdk";
+import { UserContext } from "./UserContext";
 
-export interface DatasetStoreContextProps {
-  children: JSX.Element;
-}
-
-export interface DatasetStore {
-  dataset: Accessor<Dataset | null> | null;
-}
+type DatasetStore = {
+  dataset: Accessor<DatasetAndUsage | null>;
+  datasetId: string;
+};
 
 export const DatasetContext = createContext<DatasetStore>({
-  dataset: null,
+  dataset: () => null as unknown as DatasetAndUsage,
+  datasetId: "",
 });
 
-export const DatasetContextWrapper = (props: DatasetStoreContextProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as string;
-  const userContext = useContext(UserContext);
-  const [dataset, setDataset] = createSignal<Dataset | null>(null);
+export const DatasetContextProvider = (props: { children: JSX.Element }) => {
+  const datasetId = useParams().id;
+  const orgContext = useContext(UserContext);
 
-  createEffect(() => {
-    if (userContext?.user?.()) {
-      const id = useParams().dataset_id;
-      if (!id) return;
-
-      if (!id || !id.match(/^[a-f0-9-]+$/)) {
-        console.error("Invalid dataset id for fetch");
-        return;
-      }
-
-      fetch(`${apiHost}/dataset/${id}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "TR-Organization": userContext.selectedOrganizationId?.() as string,
-        },
-        credentials: "include",
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setDataset(data);
-        })
-        .catch(() => {
-          createToast({
-            title: "Error",
-            type: "error",
-            message: "Failed to fetch the dataset",
-          });
-        });
+  const dataset = createMemo(() => {
+    const possDatasets = orgContext.orgDatasets();
+    if (possDatasets) {
+      return (
+        possDatasets.find((dataset) => dataset.dataset.id === datasetId) || null
+      );
+    } else {
+      return null;
     }
   });
-
-  const datasetStore: DatasetStore = {
-    dataset,
-  };
-
   return (
-    <DatasetContext.Provider value={datasetStore}>
+    <DatasetContext.Provider
+      value={{
+        dataset: dataset,
+        datasetId: datasetId,
+      }}
+    >
       {props.children}
     </DatasetContext.Provider>
   );
