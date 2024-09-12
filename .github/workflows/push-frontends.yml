@@ -16,7 +16,6 @@ on:
       - "frontends/analytics-site/**"
       - "frontends/shared/**"
       - "frontends/config/**"
-      - ".github/workflows/**"
       - "clients/ts-sdk/**"
 
 jobs:
