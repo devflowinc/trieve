@@ -6,7 +6,7 @@ import { MagicSuspense } from "../../components/MagicBox";
 const slowFetchRandomNumber = (delay: number): Promise<number[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve([23, 23, 24]);
+      resolve([23]);
     }, delay);
   });
 };

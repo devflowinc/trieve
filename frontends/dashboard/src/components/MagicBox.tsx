@@ -2,11 +2,12 @@ import { CreateQueryResult } from "@tanstack/solid-query";
 import { cva, VariantProps } from "cva";
 import { cn } from "shared/utils";
 import {
-  children,
   createEffect,
   createMemo,
   createSignal,
   JSX,
+  onCleanup,
+  onMount,
   Suspense,
 } from "solid-js";
 import { Show } from "solid-js";
@@ -100,11 +101,14 @@ interface MagicSuspenseProps extends VariantProps<typeof container> {
 }
 
 export const MagicSuspense = (props: MagicSuspenseProps) => {
-  const [isLoading, setIsLoading] = createSignal(true);
+  const [isLoaded, setIsLoaded] = createSignal(false);
+  const shimmerID = `shimmer-${
+    // eslint-disable-next-line solid/reactivity
+    props.skeletonKey || Math.random().toString(36).substr(2, 9)
+  }`;
+
   const skeletonHeight = createMemo(() => {
-    if (isLoading() === false) {
-      return "auto";
-    }
+    if (isLoaded()) return "auto";
     if (props.skeletonKey) {
       const height = localStorage.getItem(`skeleton-${props.skeletonKey}`);
       return height ? `${height}px` : props.skeletonHeight || "auto";
@@ -112,8 +116,30 @@ export const MagicSuspense = (props: MagicSuspenseProps) => {
     return props.skeletonHeight || "auto";
   });
 
+  onMount(() => {
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "childList") {
+          const removedNodes = Array.from(mutation.removedNodes);
+          if (removedNodes.some((node) => (node as Element).id === shimmerID)) {
+            setIsLoaded(true);
+            observer.disconnect();
+            break;
+          }
+        }
+      }
+    });
+
+    const container = document.getElementById(`skeleton-${props.skeletonKey}`);
+    if (container) {
+      observer.observe(container, { childList: true, subtree: true });
+    }
+
+    onCleanup(() => observer.disconnect());
+  });
+
   createEffect(() => {
-    if (props.skeletonKey) {
+    if (isLoaded() && props.skeletonKey) {
       const element = document.getElementById(`skeleton-${props.skeletonKey}`);
       if (element) {
         const height = element.clientHeight;
@@ -129,14 +155,19 @@ export const MagicSuspense = (props: MagicSuspenseProps) => {
     <div
       style={{ height: skeletonHeight() }}
       id={`skeleton-${props.skeletonKey}`}
-      class={cn(container({ ...props, class: props.class }))}
+      class={cn("relative", container({ ...props, class: props.class }))}
     >
       <Suspense
         fallback={
-          props.fallback || <div class="unstyled-shimmer">Loading...</div>
+          props.fallback || (
+            <div
+              id={shimmerID}
+              class="unstyled-shimmer right- absolute bottom-0 left-0 top-0"
+            />
+          )
         }
       >
-        <>{props.children}</>
+        {props.children}
       </Suspense>
     </div>
   );
