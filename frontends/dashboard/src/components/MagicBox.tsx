@@ -81,7 +81,8 @@ export const MagicBox = <D extends CreateQueryResult>(
       id={`skeleton-${props.skeletonKey}`}
       class={cn(
         container({ ...props, class: props.class }),
-        props.query.isLoading && "unstyled-shimmer",
+        props.query.isLoading &&
+          (props.unstyled ? "unstyled-shimmer" : "shimmer"),
       )}
     >
       <Show fallback={props.fallback} when={props.query.data}>
@@ -162,7 +163,10 @@ export const MagicSuspense = (props: MagicSuspenseProps) => {
           props.fallback || (
             <div
               id={shimmerID}
-              class="unstyled-shimmer right- absolute bottom-0 left-0 top-0"
+              class={cn(
+                "absolute bottom-0 left-0 right-0 top-0",
+                props.unstyled ? "unstyled-shimmer" : "shimmer",
+              )}
             />
           )
         }
