@@ -20,7 +20,7 @@ export const SearchMode = ({
   setQuery: (value: string) => void;
   setMode: (value: string) => void;
   onUpOrDownClicked: (index: number, code: string) => void;
-  onResultClick?: (chunk: Chunk) => void;
+  onResultClick: (chunk: Chunk & { position: number }) => void;
   showImages?: boolean;
   placeholder?: string;
   inputRef: React.RefObject<HTMLInputElement>;

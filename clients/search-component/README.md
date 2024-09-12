@@ -77,6 +77,7 @@ declare module "solid-js" {
 | ------------- | ---------------------------------------------------------------------------------------------- | --------------------------- |
 | trieve        | TrieveSDK                                                                                      | null                        |
 | chat          | boolean                                                                                        | true                        |
+| analytics     | boolean                                                                                        | true                        |
 | showImages    | boolean                                                                                        | false                       |
 | placeholder   | string                                                                                         | "Search..."                 |
 | onResultClick | () => void                                                                                     | () => {}                    |
@@ -110,7 +111,6 @@ declare module "solid-js" {
 | Name          | Type                                                                                           | Default                     |
 | ------------- | ---------------------------------------------------------------------------------------------- | --------------------------- |
 | trieve        | TrieveSDK                                                                                      | null                        |
-| chat          | boolean                                                                                        | true                        |
 | showImages    | boolean                                                                                        | false                       |
 | placeholder   | string                                                                                         | "Search..."                 |
 | onResultClick | () => void                                                                                     | () => {}                    |
