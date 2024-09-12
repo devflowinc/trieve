@@ -1,6 +1,5 @@
-import { JSX, useContext } from "solid-js";
-import { UserContext } from "../contexts/UserContext";
-import { A, useNavigate } from "@solidjs/router";
+import { JSX } from "solid-js";
+import { A } from "@solidjs/router";
 import { BiRegularLinkExternal } from "solid-icons/bi";
 
 interface NavbarLayoutProps {
@@ -42,7 +41,7 @@ export const NavbarLayout = (props: NavbarLayoutProps) => {
           </a>
         </div>
       </div>
-      <div class="flex grow flex-col overflow-scroll bg-purple-200">
+      <div class="flex grow flex-col overflow-scroll bg-neutral-100">
         {props.children}
       </div>
     </div>
