@@ -14,6 +14,7 @@
     { "type": "feature", "section": "Features" },
     { "type": "enhancement", "section": "Enhacements" },
     { "type": "enhancements", "section": "Enhacements" },
+    { "type": "cleanup", "section": "Cleanup" },
     { "type": "fix", "section": "Bug Fixes" },
     { "type": "bugfix", "section": "Bug Fixes" },
     { "type": "chore", "section": "Other" },
