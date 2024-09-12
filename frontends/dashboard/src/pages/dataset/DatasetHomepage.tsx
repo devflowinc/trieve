@@ -1,7 +1,7 @@
 import { For, useContext } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { createQuery } from "@tanstack/solid-query";
-import { MagicBox } from "../../components/MagicBox";
+import { MagicSuspense } from "../../components/MagicBox";
 
 const slowFetchRandomNumber = (delay: number): Promise<number[]> => {
   return new Promise((resolve) => {
@@ -23,16 +23,13 @@ export const DatasetHomepage = () => {
     <div class="p-4">
       <div>Dataset Homepage</div>
       <div class="m-3 bg-orange-700">ID: {datasetId}</div>
-      <MagicBox skeletonKey="big-tes" query={numQuery}>
-        {(d) => (
-          <div>
-            testing
-            <For each={d}>
-              {(num) => <div class="m-3 bg-orange-700">{num}</div>}
-            </For>
-          </div>
-        )}
-      </MagicBox>
+      <MagicSuspense skeletonKey="big-tes">
+        <div>
+          <For each={numQuery.data}>
+            {(num) => <div class="m-3 bg-orange-700">{num}</div>}
+          </For>
+        </div>
+      </MagicSuspense>
     </div>
   );
 };

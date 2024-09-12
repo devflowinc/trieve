@@ -1,7 +1,14 @@
 import { CreateQueryResult } from "@tanstack/solid-query";
 import { cva, VariantProps } from "cva";
 import { cn } from "shared/utils";
-import { createMemo, JSX } from "solid-js";
+import {
+  children,
+  createEffect,
+  createMemo,
+  createSignal,
+  JSX,
+  Suspense,
+} from "solid-js";
 import { Show } from "solid-js";
 
 interface MagicBoxProps<D extends CreateQueryResult>
@@ -79,6 +86,58 @@ export const MagicBox = <D extends CreateQueryResult>(
       <Show fallback={props.fallback} when={props.query.data}>
         {children()}
       </Show>
+    </div>
+  );
+};
+
+interface MagicSuspenseProps extends VariantProps<typeof container> {
+  class?: string;
+  fallback?: JSX.Element;
+  id?: string;
+  skeletonKey?: string;
+  skeletonHeight?: string;
+  children: JSX.Element;
+}
+
+export const MagicSuspense = (props: MagicSuspenseProps) => {
+  const [isLoading, setIsLoading] = createSignal(true);
+  const skeletonHeight = createMemo(() => {
+    if (isLoading() === false) {
+      return "auto";
+    }
+    if (props.skeletonKey) {
+      const height = localStorage.getItem(`skeleton-${props.skeletonKey}`);
+      return height ? `${height}px` : props.skeletonHeight || "auto";
+    }
+    return props.skeletonHeight || "auto";
+  });
+
+  createEffect(() => {
+    if (props.skeletonKey) {
+      const element = document.getElementById(`skeleton-${props.skeletonKey}`);
+      if (element) {
+        const height = element.clientHeight;
+        localStorage.setItem(
+          `skeleton-${props.skeletonKey}`,
+          height.toString(),
+        );
+      }
+    }
+  });
+
+  return (
+    <div
+      style={{ height: skeletonHeight() }}
+      id={`skeleton-${props.skeletonKey}`}
+      class={cn(container({ ...props, class: props.class }))}
+    >
+      <Suspense
+        fallback={
+          props.fallback || <div class="unstyled-shimmer">Loading...</div>
+        }
+      >
+        <>{props.children}</>
+      </Suspense>
     </div>
   );
 };
