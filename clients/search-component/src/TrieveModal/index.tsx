@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { SearchChunksReqPayload, TrieveSDK } from "trieve-ts-sdk";
+import { AutocompleteReqPayload, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk, ChunkWithHighlights } from "../utils/types";
 import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
@@ -14,12 +14,13 @@ type Props = {
   showImages?: boolean;
   theme?: "light" | "dark";
   searchOptions?: Omit<
-    Omit<SearchChunksReqPayload, "query">,
+    Omit<AutocompleteReqPayload, "query">,
     "highlight_options"
   >;
   placeholder?: string;
   chat?: boolean;
   analytics?: boolean;
+  ButtonEl?: JSX.ElementType;
 };
 
 export const TrieveModalSearch = ({
@@ -29,10 +30,11 @@ export const TrieveModalSearch = ({
   trieve,
   theme = "light",
   searchOptions = {
-    search_type: "hybrid",
+    search_type: "fulltext",
   },
   analytics = true,
   chat = true,
+  ButtonEl,
 }: Props) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
@@ -118,33 +120,39 @@ export const TrieveModalSearch = ({
       }}
     >
       <Dialog.Trigger asChild>
-        <button
-          id="open-trieve-modal"
-          type="button"
-          className={theme === "dark" ? "dark" : ""}
-        >
-          <div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </svg>
-            <div>{placeholder}</div>
-          </div>
-          <span className="open">
-            <span className="mac">⌘</span>
-            <span className="not-mac">Ctrl</span>+ K
-          </span>
-        </button>
+        {ButtonEl ? (
+          <button type="button">
+            <ButtonEl />
+          </button>
+        ) : (
+          <button
+            id="open-trieve-modal"
+            type="button"
+            className={theme === "dark" ? "dark" : ""}
+          >
+            <div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+              <div>{placeholder}</div>
+            </div>
+            <span className="open">
+              <span className="mac">⌘</span>
+              <span className="not-mac">Ctrl</span>+ K
+            </span>
+          </button>
+        )}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.DialogTitle className="sr-only">Search</Dialog.DialogTitle>

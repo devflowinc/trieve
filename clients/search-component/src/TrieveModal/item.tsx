@@ -48,6 +48,7 @@ export const Item = ({
         id={`trieve-search-item-${index}`}
         className="item"
         onClick={() => onResultClick({ ...item.chunk, position: index })}
+        {...(item.chunk.link ? { href: item.chunk.link } : {})}
       >
         <div>
           {showImages &&

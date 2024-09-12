@@ -1,4 +1,4 @@
-import { TrieveSDK } from "trieve-ts-sdk";
+import { SearchResponseBody, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk, ChunkWithHighlights, Props } from "./types";
 import { highlightOptions, highlightText } from "./highlight";
 
@@ -6,18 +6,25 @@ export const searchWithTrieve = async ({
   trieve,
   query,
   searchOptions = {
-    search_type: "hybrid",
+    search_type: "fulltext",
   },
 }: {
   trieve: TrieveSDK;
   query: string;
   searchOptions: Props["searchOptions"];
 }) => {
-  const results = await trieve.search({
-    ...searchOptions,
+  const results = (await trieve.autocomplete({
     query,
-    highlight_options: highlightOptions,
-  });
+    highlight_options: {
+      ...highlightOptions,
+      highlight_delimiters: ["?", ",", ".", "!", "\n"],
+    },
+    extend_results: true,
+    score_threshold: 0.2,
+    page_size: 20,
+    ...searchOptions,
+  })) as SearchResponseBody;
+  console.log(results);
   const resultsWithHighlight = results.chunks.map((chunk) => {
     const c = chunk.chunk as unknown as Chunk;
     return {
