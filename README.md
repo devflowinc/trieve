@@ -78,10 +78,7 @@ We have a full self-hosting guide available on our [documentation page here](htt
 
 1. Run `./convenience.sh -f` to start the firecrawl services
 2. Run `cargo run --bin scrape-worker` to start the scrape worker
-3. Install some tunnel service like [ngrok](https://ngrok.com/download) or [localtunnel](npm install -g localtunnel) to expose the scrape worker to the internet
-4. Run `lt --port 54324` or `ngrok http 54324` to get the public URL
-5. Add the public URL to the `FIRECRAWL_WEBHOOK` in the `server/.env` file
-6. Now you can start scraping by sending a POST request to the `/crawl` endpoint with the URL you want to scrape
+3. Now you can start scraping by sending a POST request to the `/crawl` endpoint with the URL you want to scrape
 
 
 ## Local development with Linux
