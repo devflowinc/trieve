@@ -37,6 +37,8 @@ async fn crawl(
         if temp_result.status == Status::Completed {
             ingest_result = temp_result;
             break;
+        } else if temp_result.status == Status::Scraping {
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         } else if temp_result.status == Status::Failed {
             update_crawl_status(scrape_request.id, CrawlStatus::Failed, pool.clone())
                 .await

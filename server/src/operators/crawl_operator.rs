@@ -211,14 +211,8 @@ pub async fn get_crawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceErr
             ServiceError::InternalServerError("Error parsing response from firecrawl".to_string())
         })?;
 
-        if json.status == Status::Completed {
-            log::info!("Got response from firecrawl: {:?}", json);
-            Ok(json)
-        } else {
-            Err(ServiceError::InternalServerError(
-                "Crawl is not completed yet".to_string(),
-            ))
-        }
+        log::info!("Got response from firecrawl: {:?}", json.status);
+        Ok(json)
     } else {
         log::error!("Error getting response from firecrawl: {:?}", response);
         Err(ServiceError::InternalServerError(
