@@ -11,7 +11,7 @@
 
   .jsoneditor-field {
     color: #E45649;
-    @apply min-w-max
+    @apply sm:min-w-max
   }
 
   div.jsoneditor-value.jsoneditor-null {
