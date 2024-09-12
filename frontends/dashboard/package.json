@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "cva": "npm:class-variance-authority",
     "@nozbe/microfuzz": "^1.0.0",
     "@sentry/browser": "^7.110.0",
     "@solidjs/router": "^0.10.1",
