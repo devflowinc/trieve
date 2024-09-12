@@ -23,10 +23,10 @@ export const DatasetHomepage = () => {
     <div class="p-4">
       <div>Dataset Homepage</div>
       <div class="m-3 bg-orange-700">ID: {datasetId}</div>
-      <MagicSuspense skeletonKey="big-tes">
+      <MagicSuspense unstyled skeletonKey="big-tes">
         <div>
           <For each={numQuery.data}>
-            {(num) => <div class="m-3 bg-orange-700">{num}</div>}
+            {(num) => <div class="bg-orange-700">{num}</div>}
           </For>
         </div>
       </MagicSuspense>
