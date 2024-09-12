@@ -13,6 +13,7 @@ import { OrganizationHomepage } from "./pages/OrganizationHomepage.tsx";
 import { DatasetHomepage } from "./pages/dataset/DatasetHomepage.tsx";
 import { DatasetLayout } from "./layouts/DatasetSidebarLayout.tsx";
 import { DatasetContextProvider } from "./contexts/DatasetContext.tsx";
+import { DatasetEvents } from "./pages/dataset/Events.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -64,6 +65,10 @@ const routes: RouteDefinition[] = [
               {
                 path: "/",
                 component: DatasetHomepage,
+              },
+              {
+                path: "/events",
+                component: DatasetEvents,
               },
             ],
           },
