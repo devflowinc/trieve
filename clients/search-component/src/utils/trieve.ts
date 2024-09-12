@@ -31,3 +31,22 @@ export const searchWithTrieve = async ({
 
   return resultsWithHighlight as unknown as ChunkWithHighlights[];
 };
+
+export const sendCtrData = async ({
+  trieve,
+  chunkID,
+  index,
+}: {
+  trieve: TrieveSDK;
+  chunkID: string;
+  index: number;
+}) => {
+  await trieve.sendCTRAnalytics({
+    ctr_type: "search",
+    clicked_chunk_id: chunkID,
+    request_id: chunkID,
+    position: index,
+  });
+
+  return null;
+};

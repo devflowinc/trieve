@@ -4,7 +4,7 @@ import { ArrowIcon } from "./icons";
 
 type Props = {
   item: ChunkWithHighlights;
-  onResultClick?: (chunk: Chunk) => void;
+  onResultClick: (chunk: Chunk & { position: number }) => void;
   showImages?: boolean;
   index: number;
   onUpOrDownClicked: (index: number, code: string) => void;
@@ -47,8 +47,7 @@ export const Item = ({
         ref={itemRef}
         id={`trieve-search-item-${index}`}
         className="item"
-        onClick={() => onResultClick && onResultClick(item.chunk)}
-        {...(item.chunk.link ? { href: item.chunk.link } : {})}
+        onClick={() => onResultClick({ ...item.chunk, position: index })}
       >
         <div>
           {showImages &&
