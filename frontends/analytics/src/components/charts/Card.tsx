@@ -21,7 +21,9 @@ export const Card = (props: CardProps) => {
       <div class="mb-4 flex items-center justify-between">
         <div>
           <Show when={props.title}>
-            {(title) => <div class="text-lg leading-none">{title()}</div>}
+            {(title) => (
+              <div class="text-lg font-medium leading-none">{title()}</div>
+            )}
           </Show>
           <Show when={props.subtitle}>
             {(subtitle) => (
