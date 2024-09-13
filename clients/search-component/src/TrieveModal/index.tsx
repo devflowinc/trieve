@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { SearchChunksReqPayload, TrieveSDK } from "trieve-ts-sdk";
+import { AutocompleteReqPayload, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk, ChunkWithHighlights } from "../utils/types";
 import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
-import { searchWithTrieve } from "../utils/trieve";
+import { searchWithTrieve, sendCtrData } from "../utils/trieve";
 import { SearchMode } from "./SearchMode";
 import { ChatMode } from "./ChatMode";
+import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "./icons";
 
 type Props = {
   trieve: TrieveSDK;
@@ -13,11 +14,13 @@ type Props = {
   showImages?: boolean;
   theme?: "light" | "dark";
   searchOptions?: Omit<
-    Omit<SearchChunksReqPayload, "query">,
+    Omit<AutocompleteReqPayload, "query">,
     "highlight_options"
   >;
   placeholder?: string;
   chat?: boolean;
+  analytics?: boolean;
+  ButtonEl?: JSX.ElementType;
 };
 
 export const TrieveModalSearch = ({
@@ -27,9 +30,11 @@ export const TrieveModalSearch = ({
   trieve,
   theme = "light",
   searchOptions = {
-    search_type: "hybrid",
+    search_type: "fulltext",
   },
+  analytics = true,
   chat = true,
+  ButtonEl,
 }: Props) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
@@ -61,6 +66,23 @@ export const TrieveModalSearch = ({
 
     if (e.code === "ArrowDown" && inputRef.current === document.activeElement) {
       document.getElementById(`trieve-search-item-0`)?.focus();
+    }
+  };
+
+  const onClick = async (chunk: Chunk & { position: number }) => {
+    if (onResultClick) {
+      onResultClick(chunk);
+    }
+
+    if (analytics) {
+      await sendCtrData({
+        trieve,
+        index: chunk.position,
+        chunkID: chunk.id,
+      });
+    }
+    if (chunk.link) {
+      location.href = chunk.link;
     }
   };
 
@@ -98,33 +120,39 @@ export const TrieveModalSearch = ({
       }}
     >
       <Dialog.Trigger asChild>
-        <button
-          id="open-trieve-modal"
-          type="button"
-          className={theme === "dark" ? "dark" : ""}
-        >
-          <div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </svg>
-            <div>{placeholder}</div>
-          </div>
-          <span className="open">
-            <span className="mac">⌘</span>
-            <span className="not-mac">Ctrl</span>+ K
-          </span>
-        </button>
+        {ButtonEl ? (
+          <button type="button">
+            <ButtonEl />
+          </button>
+        ) : (
+          <button
+            id="open-trieve-modal"
+            type="button"
+            className={theme === "dark" ? "dark" : ""}
+          >
+            <div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+              <div>{placeholder}</div>
+            </div>
+            <span className="open">
+              <span className="mac">⌘</span>
+              <span className="not-mac">Ctrl</span>+ K
+            </span>
+          </button>
+        )}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.DialogTitle className="sr-only">Search</Dialog.DialogTitle>
@@ -146,7 +174,7 @@ export const TrieveModalSearch = ({
               setMode={setMode}
               onUpOrDownClicked={onUpOrDownClicked}
               showImages={showImages}
-              onResultClick={onResultClick}
+              onResultClick={onClick}
               placeholder={placeholder}
               inputRef={inputRef}
               chat={chat}
@@ -161,14 +189,40 @@ export const TrieveModalSearch = ({
               trieve={trieve}
             />
           )}
-          <a
-            className="trieve-powered"
-            href="https://trieve.ai"
-            target="_blank"
-          >
-            <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
-            Powered by Trieve
-          </a>
+          <div className="footer">
+            <ul className="commands">
+              <li>
+                <kbd className="commands-key">
+                  <EnterKeyIcon />
+                </kbd>
+                <span className="label">to select</span>
+              </li>
+              <li>
+                <kbd className="commands-key">
+                  <ArrowDownKey />
+                </kbd>
+                <kbd className="commands-key">
+                  <ArrowUpIcon />
+                </kbd>
+                <span className="label">to navigate</span>
+              </li>
+              <li>
+                <kbd className="commands-key">
+                  <EscKeyIcon />
+                </kbd>
+                <span className="label">to close</span>
+              </li>
+            </ul>
+
+            <a
+              className="trieve-powered"
+              href="https://trieve.ai"
+              target="_blank"
+            >
+              <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
+              Powered by Trieve
+            </a>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
