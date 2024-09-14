@@ -129,7 +129,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
             href={`${searchURL}/chunk/${props.chunk.id}?dataset=${props.chunk.dataset_id}`}
             target="_blank"
           >
-            <FiExternalLink class="h-5 w-5 fill-current opacity-50" />
+            <FiExternalLink class="h-5 w-5 opacity-50" />
           </a>
         </div>
         <div class="flex w-full flex-col">
