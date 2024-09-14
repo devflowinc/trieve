@@ -21,17 +21,10 @@ export const NavbarLayout = (props: NavbarLayoutProps) => {
               class="h-12 w-12 cursor-pointer"
               src="https://cdn.trieve.ai/trieve-logo.png"
               alt="Logo"
-              // onClick={() => {
-              //   navigator(
-              //     `/dashboard/${
-              //       userContext.selectedOrganizationId?.() ?? ""
-              //     }/overview`,
-              //   );
-              // }}
             />
             <span class="text-2xl font-semibold">Trieve</span>
           </A>
-          {/* This is portaled by the DatasetSidebarLayout so you can only select a datas*/}
+          {/* This is portaled by the DatasetSidebarLayout so you can only select a dataset when you are in the dataset view*/}
           <div id="dataset-slot" />
         </div>
         <div class="flex items-center justify-end gap-3">

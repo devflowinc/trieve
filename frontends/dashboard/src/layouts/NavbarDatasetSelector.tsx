@@ -30,7 +30,7 @@ export const NavbarDatasetSelector = () => {
             display={(id) => id}
             displayElement={(id) => (
               <div class="flex items-center gap-2">
-                <FiDatabase />
+                <FiDatabase class="text-neutral-400" />
                 <div class="text-sm">{datasetNameFromId(id)}</div>
               </div>
             )}

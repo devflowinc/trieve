@@ -1,4 +1,4 @@
-export const Spacer = (props: { h: number; withBorder: boolean }) => {
+export const Spacer = (props: { h: number; withBorder?: boolean }) => {
   return (
     <div
       classList={{
