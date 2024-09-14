@@ -9,10 +9,12 @@ import {
   ListboxOptions,
 } from "terracotta";
 import createFuzzySearch from "@nozbe/microfuzz";
+import { cn } from "../utils";
 
 interface SelectProps<T> {
   options: T[];
   display: (option: T) => string;
+  displayElement?: (option: T) => JSX.Element;
   selected: T;
   onSelected: (option: T) => void;
   class?: string;
@@ -53,7 +55,10 @@ export const Select = <T,>(props: SelectProps<T>) => {
     <>
       <Show when={props.label}>{(label) => label()}</Show>
       <Listbox
-        class={`bg-neutral-200/70 min-w-[100px] relative border rounded border-neutral-300 ${props.class}`}
+        class={cn(
+          `bg-neutral-200/70 min-w-[100px] relative border rounded border-neutral-300`,
+          props.class,
+        )}
         value={props.selected}
         defaultOpen={false}
         onClose={() => setSearchTerm("")}
@@ -62,7 +67,9 @@ export const Select = <T,>(props: SelectProps<T>) => {
           class="flex py-1 text-sm px-3 w-full justify-between gap-2 items-center"
           onClick={() => setOpen(!open())}
         >
-          {props.display(props.selected)}
+          {props.displayElement
+            ? props.displayElement(props.selected)
+            : props.display(props.selected)}
           <TbSelector />
         </ListboxButton>
         <DisclosureStateChild>
@@ -104,7 +111,11 @@ export const Select = <T,>(props: SelectProps<T>) => {
                               setOpen(false);
                             }}
                           >
-                            <span>{props.display(option)}</span>
+                            <span>
+                              {props.displayElement
+                                ? props.displayElement(option)
+                                : props.display(option)}
+                            </span>
                             {isSelected() ? (
                               <span
                                 classList={{

@@ -1,4 +1,4 @@
-import { useParams } from "@solidjs/router";
+import { useLocation, useNavigate, useParams } from "@solidjs/router";
 import { Accessor, createContext, createMemo, useContext } from "solid-js";
 import { JSX } from "solid-js";
 import { DatasetAndUsage } from "trieve-ts-sdk";
@@ -6,17 +6,21 @@ import { UserContext } from "./UserContext";
 
 type DatasetStore = {
   dataset: Accessor<DatasetAndUsage | null>;
+  selectDataset: (id: string) => void;
   datasetId: string;
 };
 
 export const DatasetContext = createContext<DatasetStore>({
   dataset: () => null as unknown as DatasetAndUsage,
+  selectDataset: (id: string) => {},
   datasetId: "",
 });
 
 export const DatasetContextProvider = (props: { children: JSX.Element }) => {
   const datasetId = useParams().id;
   const orgContext = useContext(UserContext);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const dataset = createMemo(() => {
     const possDatasets = orgContext.orgDatasets();
@@ -28,9 +32,15 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
       return null;
     }
   });
+
+  const selectDataset = (id: string) => {
+    // replace the pathname
+    navigate(`/dataset/${id}`);
+  };
   return (
     <DatasetContext.Provider
       value={{
+        selectDataset,
         dataset: dataset,
         datasetId: datasetId,
       }}
