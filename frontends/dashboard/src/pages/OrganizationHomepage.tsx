@@ -1,4 +1,4 @@
-import { useContext } from "solid-js";
+import { For, useContext } from "solid-js";
 import { UserContext } from "../contexts/UserContext";
 import { ApiContext } from "..";
 import { createQuery } from "@tanstack/solid-query";
@@ -67,16 +67,20 @@ const DatasetOverviewGrid = () => {
 
   return (
     <div class="grid grid-cols-3 gap-4">
-      {data.data?.map((dataset) => (
-        <A href={`/dataset/${dataset.dataset.id}`}>
-          <div class="rounded-md border border-neutral-200 bg-white p-2 shadow-md">
-            <div class="flex items-center gap-2">
-              <FiDatabase class="text-neutral-400" />
-              <div class="">{dataset.dataset.name}</div>
-            </div>
-          </div>
-        </A>
-      ))}
+      {
+        <For each={data.data}>
+          {(dataset) => (
+            <A href={`/dataset/${dataset.dataset.id}`}>
+              <div class="rounded-md border border-neutral-200 bg-white p-2 shadow-md">
+                <div class="flex items-center gap-2">
+                  <FiDatabase class="text-neutral-400" />
+                  <div class="">{dataset.dataset.name}</div>
+                </div>
+              </div>
+            </A>
+          )}
+        </For>
+      }
     </div>
   );
 };
