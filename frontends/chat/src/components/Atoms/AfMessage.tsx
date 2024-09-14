@@ -8,7 +8,8 @@ import {
   BiSolidCheckSquare,
   BiSolidUserRectangle,
 } from "solid-icons/bi";
-import { AiFillRobot } from "solid-icons/ai";
+import { AiFillRobot, AiOutlineCopy } from "solid-icons/ai";
+import { FiCheck } from "solid-icons/fi";
 import {
   Accessor,
   For,
@@ -58,6 +59,36 @@ export const AfMessage = (props: AfMessageProps) => {
   );
 
   const [screenWidth, setScreenWidth] = createSignal(window.innerWidth);
+
+  const [copied, setCopied] = createSignal(false);
+
+  const copyChunk = () => {
+    try {
+      const responseText = props.content.split("||")[1];
+      navigator.clipboard
+        .write([
+          new ClipboardItem({
+            "text/plain": new Blob([responseText ?? ""], {
+              type: "text/plain",
+            }),
+            "text/html": new Blob([responseText ?? ""], {
+              type: "text/html",
+            }),
+          }),
+        ])
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => {
+            setCopied(false);
+          }, 2000);
+        })
+        .catch((err) => {
+          alert(`Failed to copy to clipboard: ${(err as Error).message}`);
+        });
+    } catch (err) {
+      alert(`Failed to copy to clipboard: ${(err as Error).message}`);
+    }
+  };
 
   createEffect(() => {
     const handleResize = () => setScreenWidth(window.innerWidth);
@@ -189,7 +220,21 @@ export const AfMessage = (props: AfMessageProps) => {
               {props.role === "user" ? (
                 <BiSolidUserRectangle class="fill-current" />
               ) : (
-                <AiFillRobot class="fill-current" />
+                <div class="space-y-1.5">
+                  <AiFillRobot class="fill-current" />
+                  <Show when={!copied()}>
+                    <button
+                      class="opacity-80 hover:text-fuchsia-500"
+                      title="Copy text to clipboard"
+                      onClick={() => copyChunk()}
+                    >
+                      <AiOutlineCopy class="h-4 w-4 fill-current" />
+                    </button>
+                  </Show>
+                  <Show when={copied()}>
+                    <FiCheck class="text-green-500" />
+                  </Show>
+                </div>
               )}
             </div>
             <div
