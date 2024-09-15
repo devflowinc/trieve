@@ -9,7 +9,7 @@ import { FiDatabase, FiSearch } from "solid-icons/fi";
 export const OrganizationHomepage = () => {
   const userData = useContext(UserContext);
   return (
-    <div class="p-4 px-8">
+    <div class="px-24 pt-12">
       <div class="text-2xl font-medium">
         {userData.selectedOrganization().name}
       </div>

@@ -2,16 +2,25 @@ import { createMemo, Show, useContext } from "solid-js";
 import { JSX } from "solid-js";
 import { DatasetContext } from "../contexts/DatasetContext";
 import { A, useLocation } from "@solidjs/router";
-import { AiOutlineLeft } from "solid-icons/ai";
+import {
+  AiOutlineCiCircle,
+  AiOutlineHistory,
+  AiOutlineInfoCircle,
+  AiOutlineKey,
+  AiOutlineLeft,
+  AiOutlineMessage,
+  AiOutlineSearch,
+} from "solid-icons/ai";
 import { Spacer } from "./Spacer";
 import { Portal } from "solid-js/web";
 import { NavbarDatasetSelector } from "../layouts/NavbarDatasetSelector";
-import { FiExternalLink } from "solid-icons/fi";
+import { FiExternalLink, FiTrash } from "solid-icons/fi";
 import { UserContext } from "../contexts/UserContext";
 import { IconTypes } from "solid-icons";
+import { IoOptionsOutline } from "solid-icons/io";
+import { TbSparkles } from "solid-icons/tb";
+import { FaSolidTrash } from "solid-icons/fa";
 
-const apiHost = import.meta.env.VITE_API_HOST as string;
-const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
 
@@ -47,7 +56,10 @@ export const DashboardSidebar = () => {
         "bg-magenta-200/30": pathname.pathname === props.href,
       }}
     >
-      {props.label}
+      <div class="flex items-center gap-2">
+        <Show when={props.icon}>{(icon) => icon()({})}</Show>
+        {props.label}
+      </div>
       <Show when={props.isExternal}>
         <FiExternalLink class="text-neutral-500" />
       </Show>
@@ -56,15 +68,14 @@ export const DashboardSidebar = () => {
 
   return (
     <>
-      {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-       */}
+      {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
       <Portal mount={document.querySelector("#dataset-slot")!}>
         <NavbarDatasetSelector />
       </Portal>
       <div class="border-r border-r-neutral-300 bg-neutral-50 px-4 pt-2">
         <A
           href="/"
-          class="flex items-center gap-2 text-xs text-neutral-500 hover:underline"
+          class="flex items-center gap-2 text-[12px] text-neutral-700 hover:underline"
         >
           <AiOutlineLeft size={12} />
           <div>Back to Organization</div>
@@ -75,46 +86,54 @@ export const DashboardSidebar = () => {
             <Link
               href={`/dataset/${datasetId}`}
               label="Overview"
+              icon={AiOutlineInfoCircle}
               isExternal={false}
             />
             <Link
               href={`/dataset/${datasetId}/events`}
+              icon={AiOutlineHistory}
               label={"Event Log"}
               isExternal={false}
+            />
+            <Link
+              isExternal={false}
+              href={`/dataset/${datasetId}/keys`}
+              icon={AiOutlineKey}
+              label="API Keys"
             />
           </div>
           <div class="gap flex flex-col pt-4">
             <SectionLabel>Dataset Settings</SectionLabel>
             <Link
               isExternal={false}
-              href={`/dataset/${datasetId}/keys`}
-              label="API Keys"
-            />
-            <Link
-              isExternal={false}
-              href={`/dataset/${datasetId}/llm-settings`}
-              label="LLM Settings"
-            />
-            <Link
-              isExternal={false}
+              icon={IoOptionsOutline}
               href={`/dataset/${datasetId}/options`}
               label="Dataset Options"
             />
             <Link
               isExternal={false}
+              icon={TbSparkles}
+              href={`/dataset/${datasetId}/llm-settings`}
+              label="LLM Options"
+            />
+            <Link
+              isExternal={false}
+              icon={FiTrash}
               href={`/dataset/${datasetId}/manage`}
               label="Manage Dataset"
             />
           </div>
-          <div class="gap flex flex-col pt-12">
+          <div class="gap flex flex-col pt-6">
             <SectionLabel>Playgrounds</SectionLabel>
             <Link
               isExternal={true}
+              icon={AiOutlineSearch}
               href={`${searchUiURL}${orgDatasetParams()}`}
               label="Search"
             />
             <Link
               isExternal={true}
+              icon={AiOutlineMessage}
               href={`${chatUiURL}${orgDatasetParams()}`}
               label="Chat"
             />
