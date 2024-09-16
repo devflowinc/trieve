@@ -6,7 +6,6 @@ use regex::Regex;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use ureq::json;
-
 use crate::data::models::CrawlStatus;
 use crate::data::models::RedisPool;
 use crate::{
@@ -125,7 +124,7 @@ pub async fn get_crawl_request(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     let request = crawl_requests
-        .select((id, url, status, scrape_id, dataset_id, created_at))
+        .select(CrawlRequestPG::as_select())
         .filter(scrape_id.eq(crawl_id))
         .first::<CrawlRequestPG>(&mut conn)
         .await
@@ -141,14 +140,8 @@ pub async fn create_crawl_request(
     redis_pool: web::Data<RedisPool>,
 ) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
-    let new_crawl_request = CrawlRequestPG {
-        id: uuid::Uuid::new_v4(),
-        url,
-        status: CrawlStatus::Pending.to_string(),
-        scrape_id,
-        dataset_id,
-        created_at: chrono::Utc::now().naive_utc(),
-    };
+    let new_crawl_request =
+        CrawlRequestPG::from_details(url, CrawlStatus::Pending, scrape_id, dataset_id);
     let mut conn = pool
         .get()
         .await

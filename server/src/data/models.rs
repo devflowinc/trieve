@@ -5912,6 +5912,26 @@ pub struct CrawlRequestPG {
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl CrawlRequestPG {
+    pub fn from_details(
+        url: String,
+        status: CrawlStatus,
+        scrape_id: uuid::Uuid,
+        dataset_id: uuid::Uuid,
+    ) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4(),
+            url,
+            status: status.to_string(),
+            scrape_id,
+            dataset_id,
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -5922,6 +5942,7 @@ pub struct CrawlRequest {
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
     pub attempt_number: i32,
 }
 
@@ -5934,6 +5955,7 @@ impl From<CrawlRequestPG> for CrawlRequest {
             scrape_id: crawl_request.scrape_id,
             dataset_id: crawl_request.dataset_id,
             created_at: crawl_request.created_at,
+            updated_at: crawl_request.updated_at,
             attempt_number: 0,
         }
     }
