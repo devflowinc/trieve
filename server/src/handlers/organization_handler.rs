@@ -25,7 +25,7 @@ use utoipa::ToSchema;
     context_path = "/api",
     tag = "Organization",
     responses(
-        (status = 200, description = "Organization with the id that was requested", body = Organization),
+        (status = 200, description = "Organization with the id that was requested", body = OrganizationWithSubAndPlan),
         (status = 400, description = "Service error relating to finding the organization by id", body = ErrorResponseBody),
         (status = 404, description = "Organization not found", body = ErrorResponseBody)
     ),
