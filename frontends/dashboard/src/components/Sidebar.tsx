@@ -72,7 +72,7 @@ export const DashboardSidebar = () => {
       </Portal>
       <div class="border-r border-r-neutral-300 bg-neutral-50 px-4 pt-2">
         <A
-          href="/"
+          href="/org"
           class="flex items-center gap-2 text-[12px] text-neutral-700 hover:underline"
         >
           <AiOutlineLeft size={12} />

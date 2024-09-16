@@ -53,7 +53,7 @@ export const OrganizationLayout = (props: DashboardLayoutProps) => {
           }
         >
           <div class="w-full overflow-y-auto px-8">
-            <div class="my-6 flex flex-col space-y-3 border-b">
+            <div class="mb-2 mt-6 flex flex-col space-y-3 border-b">
               <OrgName />
               <OrgTabs />
             </div>
