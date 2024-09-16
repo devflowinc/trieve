@@ -9,12 +9,12 @@ import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 import { UserContextWrapper } from "./contexts/UserContext.tsx";
 import { TrieveFetchClient } from "trieve-ts-sdk";
 import { NavbarLayout } from "./layouts/NavbarLayout.tsx";
-import { OrganizationHomepage } from "./pages/OrganizationHomepage.tsx";
 import { DatasetHomepage } from "./pages/dataset/DatasetHomepage.tsx";
 import { DatasetLayout } from "./layouts/DatasetSidebarLayout.tsx";
 import { DatasetContextProvider } from "./contexts/DatasetContext.tsx";
 import { DatasetEvents } from "./pages/dataset/Events.tsx";
 import { ApiKeys } from "./pages/dataset/ApiKeys.tsx";
+import { OrganizationLayout } from "./layouts/OrganizationLayout.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -52,7 +52,13 @@ const routes: RouteDefinition[] = [
         children: [
           {
             path: "/",
-            component: OrganizationHomepage,
+            component: OrganizationLayout,
+            children: [
+              {
+                path: "*404",
+                component: () => <div>404</div>,
+              },
+            ],
           },
           {
             path: "/dataset/:id",
@@ -84,6 +90,11 @@ const routes: RouteDefinition[] = [
   {
     path: "/no-org",
     component: () => <div>No Org</div>,
+  },
+
+  {
+    path: "*404",
+    component: () => <div>404</div>,
   },
 ];
 

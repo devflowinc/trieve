@@ -12,7 +12,7 @@ type DatasetStore = {
 
 export const DatasetContext = createContext<DatasetStore>({
   dataset: () => null as unknown as DatasetAndUsage,
-  selectDataset: (id: string) => {},
+  selectDataset: (_id: string) => {},
   datasetId: "",
 });
 
@@ -37,6 +37,7 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
     // replace the pathname
     navigate(`/dataset/${id}`);
   };
+
   return (
     <DatasetContext.Provider
       value={{

@@ -96,7 +96,7 @@ export const ApiKeys = () => {
             </div>
           </Show>
           <Show when={apiKeys().length > 0}>
-            <div class="inline-block min-w-full overflow-hidden rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
+            <div class="inline-block min-w-full overflow-hidden rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-md">
               <table class="min-w-full divide-y divide-gray-300">
                 <thead class="w-full min-w-full bg-neutral-100">
                   <tr>
