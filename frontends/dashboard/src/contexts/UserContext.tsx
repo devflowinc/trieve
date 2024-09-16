@@ -28,7 +28,7 @@ export interface Notification {
 export interface UserStore {
   user: Accessor<SlimUser>;
   isNewUser: Accessor<boolean>;
-  selectedOrganization: Accessor<SlimUser["orgs"][0]>;
+  selectedOrg: Accessor<SlimUser["orgs"][0]>;
   orgDatasets: Resource<DatasetAndUsage[]>;
   login: () => void;
   logout: () => void;
@@ -40,7 +40,7 @@ export const UserContext = createContext<UserStore>({
   login: () => {},
   orgDatasets: null as unknown as Resource<DatasetAndUsage[]>,
   logout: () => {},
-  selectedOrganization: () => null as unknown as SlimUser["orgs"][0],
+  selectedOrg: () => null as unknown as SlimUser["orgs"][0],
 });
 
 const getInitalUser = () => {
@@ -167,7 +167,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
                 value={{
                   user: user,
                   orgDatasets: orgDatasets,
-                  selectedOrganization: org,
+                  selectedOrg: org,
                   logout,
                   isNewUser: isNewUser,
                   login,

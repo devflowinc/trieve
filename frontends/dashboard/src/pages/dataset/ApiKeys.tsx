@@ -30,7 +30,7 @@ export const ApiKeys = () => {
         .user()
         .user_orgs.find(
           (user_org) =>
-            user_org.organization_id === userContext.selectedOrganization().id,
+            user_org.organization_id === userContext.selectedOrg().id,
         )?.role ?? 0
     );
   });

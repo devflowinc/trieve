@@ -17,9 +17,8 @@ export const DatasetContext = createContext<DatasetStore>({
 });
 
 export const DatasetContextProvider = (props: { children: JSX.Element }) => {
-  const datasetId = useParams().id;
+  const params = useParams();
   const orgContext = useContext(UserContext);
-  const location = useLocation();
   const navigate = useNavigate();
 
   const dataset = createMemo(() => {
@@ -43,7 +42,7 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
       value={{
         selectDataset,
         dataset: dataset,
-        datasetId: datasetId,
+        datasetId: params.id,
       }}
     >
       {props.children}
