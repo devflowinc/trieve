@@ -28,7 +28,7 @@ export const DashboardSidebar = () => {
   const pathname = useLocation();
 
   const orgDatasetParams = createMemo(() => {
-    const orgId = userContext.selectedOrganization().id;
+    const orgId = userContext.selectedOrg().id;
     let params = "";
     if (orgId) params += `?organization=${orgId}`;
     if (orgId && datasetId) params += `&dataset=${datasetId}`;

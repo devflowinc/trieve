@@ -1,13 +1,11 @@
-import { Show, createSignal } from "solid-js";
 import { DatasetOverview } from "../../components/DatasetOverview";
 import { FaRegularClipboard } from "solid-icons/fa";
 import { BuildingSomething } from "../../components/BuildingSomething";
-import NewDatasetModal from "../components/NewDatasetModal";
+import { UserContext } from "../../contexts/UserContext";
+import { useContext } from "solid-js";
 
-export const Overview = () => {
-  const [newDatasetModalOpen, setNewDatasetModalOpen] =
-    createSignal<boolean>(false);
-
+export const OrganizationHomepage = () => {
+  const userContext = useContext(UserContext);
   return (
     <div class="space-y-2 pb-8">
       <section
@@ -23,14 +21,14 @@ export const Overview = () => {
         <div class="flex flex-col space-y-2">
           <div class="flex items-center space-x-3">
             <p class="block text-sm font-medium">
-              {selectedOrganization()?.name} org id:
+              {userContext.selectedOrg().name} org id:
             </p>
-            <p class="w-fit text-sm">{selectedOrganization()?.id}</p>
+            <p class="w-fit text-sm">{userContext.selectedOrg().id}</p>
             <button
               class="text-sm underline"
               onClick={() => {
                 void navigator.clipboard.writeText(
-                  selectedOrganization()?.id ?? "",
+                  userContext.selectedOrg().id,
                 );
                 window.dispatchEvent(
                   new CustomEvent("show-toast", {
@@ -49,18 +47,7 @@ export const Overview = () => {
         </div>
       </section>
       <div class="h-1" />
-      <Show when={selectedOrganization()}>
-        <DatasetOverview
-          selectedOrganization={selectedOrganization}
-          setOpenNewDatasetModal={setNewDatasetModalOpen}
-        />
-      </Show>
-      <NewDatasetModal
-        isOpen={newDatasetModalOpen}
-        closeModal={() => {
-          setNewDatasetModalOpen(false);
-        }}
-      />
+      <DatasetOverview />
     </div>
   );
 };

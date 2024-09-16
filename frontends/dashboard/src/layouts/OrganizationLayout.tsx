@@ -14,7 +14,7 @@ export const OrganizationLayout = (props: DashboardLayoutProps) => {
   const currentUserRole = createMemo(() => {
     return (
       userContext.user().user_orgs.find((val) => {
-        return val.organization_id === userContext.selectedOrganization().id;
+        return val.organization_id === userContext.selectedOrg().id;
       })?.role ?? 0
     );
   });

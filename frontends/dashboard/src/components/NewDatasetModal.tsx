@@ -10,14 +10,14 @@ import {
 import { UserContext } from "../contexts/UserContext";
 import { useNavigate } from "@solidjs/router";
 import {
-  ServerEnvsConfiguration,
   availableDistanceMetrics,
   availableEmbeddingModels,
 } from "shared/types";
-import { defaultServerEnvsConfiguration } from "../pages/Dashboard/Dataset/DatasetSettingsPage";
 import { createToast } from "./ShowToasts";
 import { createNewDataset } from "../api/createDataset";
 import { uploadSampleData } from "../api/uploadSampleData";
+import { defaultServerEnvsConfiguration } from "../utils/serverEnvs";
+import { DistanceMetric } from "trieve-ts-sdk";
 
 export interface NewDatasetModalProps {
   isOpen: Accessor<boolean>;
@@ -25,7 +25,7 @@ export interface NewDatasetModalProps {
 }
 
 export const NewDatasetModal = (props: NewDatasetModalProps) => {
-  const [serverConfig, setServerConfig] = createSignal<ServerEnvsConfiguration>(
+  const [serverConfig, setServerConfig] = createSignal(
     defaultServerEnvsConfiguration,
   );
   const userContext = useContext(UserContext);
@@ -42,7 +42,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
       setIsLoading(true);
       const dataset = await createNewDataset({
         name: name(),
-        organizationId: userContext.selectedOrganization().id,
+        organizationId: userContext.selectedOrg().id,
         serverConfig: curServerConfig,
       });
 
@@ -251,10 +251,13 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                   metric.name === e.currentTarget.value,
                               );
 
+                            // @ts-expect-error circular type import fix later
                             setServerConfig((prev) => {
                               return {
                                 ...prev,
-                                DISTANCE_METRIC: distanceMetric?.id ?? "cosine",
+                                DISTANCE_METRIC:
+                                  distanceMetric?.id ??
+                                  ("cosine" as DistanceMetric),
                               };
                             });
                           }}

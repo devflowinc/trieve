@@ -15,6 +15,7 @@ import { DatasetContextProvider } from "./contexts/DatasetContext.tsx";
 import { DatasetEvents } from "./pages/dataset/Events.tsx";
 import { ApiKeys } from "./pages/dataset/ApiKeys.tsx";
 import { OrganizationLayout } from "./layouts/OrganizationLayout.tsx";
+import { OrganizationHomepage } from "./pages/orgs/OrganizationHomepage.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -51,9 +52,13 @@ const routes: RouteDefinition[] = [
         },
         children: [
           {
-            path: "/",
+            path: "/org",
             component: OrganizationLayout,
             children: [
+              {
+                path: "/",
+                component: OrganizationHomepage,
+              },
               {
                 path: "*404",
                 component: () => <div>404</div>,

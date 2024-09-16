@@ -1,4 +1,5 @@
-import { Dataset, DefaultError, ServerEnvsConfiguration } from "shared/types";
+import { Dataset, DefaultError } from "shared/types";
+import { DatasetConfigurationDTO } from "trieve-ts-sdk";
 
 const api_host = import.meta.env.VITE_API_HOST as unknown as string;
 
@@ -9,7 +10,7 @@ export const createNewDataset = async ({
 }: {
   name: string;
   organizationId: string;
-  serverConfig: ServerEnvsConfiguration;
+  serverConfig: DatasetConfigurationDTO;
 }) => {
   const response = await fetch(`${api_host}/dataset`, {
     method: "POST",

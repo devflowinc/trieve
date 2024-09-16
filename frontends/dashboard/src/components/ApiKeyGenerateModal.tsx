@@ -150,7 +150,7 @@ export const ApiKeyGenerateModal = (props: {
   }, false);
 
   const currentUserRole = createMemo(() => {
-    const selectedOrgId = userContext.selectedOrganization().id;
+    const selectedOrgId = userContext.selectedOrg().id;
     if (!selectedOrgId) return 0;
     return (
       userContext

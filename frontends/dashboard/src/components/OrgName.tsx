@@ -6,7 +6,7 @@ export const OrgName = () => {
 
   return (
     <h3 class="text-xl font-semibold text-neutral-600">
-      {userContext.selectedOrganization().name}
+      {userContext.selectedOrg().name}
     </h3>
   );
 };

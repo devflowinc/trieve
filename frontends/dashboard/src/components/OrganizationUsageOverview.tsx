@@ -11,22 +11,22 @@ export const OrganizationUsageOverview = () => {
   const trieve = useContext(ApiContext);
 
   const usageQuery = createQuery(() => ({
-    queryKey: ["org-usage", userContext.selectedOrganization().id],
+    queryKey: ["org-usage", userContext.selectedOrg().id],
     queryFn: async () => {
       return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
-        organizationId: userContext.selectedOrganization().id,
+        organizationId: userContext.selectedOrg().id,
       });
     },
   }));
 
   const subscriptionQuery = createQuery(() => ({
-    queryKey: ["org-subscription", userContext.selectedOrganization().id],
+    queryKey: ["org-subscription", userContext.selectedOrg().id],
     queryFn: async () => {
       return trieve.fetch<"eject">(
         "/api/organization/{organization_id}",
         "get",
         {
-          organizationId: userContext.selectedOrganization().id,
+          organizationId: userContext.selectedOrg().id,
         },
       ) as Promise<OrganizationAndSubAndPlan>;
     },
