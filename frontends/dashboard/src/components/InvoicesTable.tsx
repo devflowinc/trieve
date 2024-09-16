@@ -10,9 +10,9 @@ import {
 } from "solid-js";
 import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
-import { StripeInvoice } from "../types/apiTypes";
 import { TbFileInvoice } from "solid-icons/tb";
-import { formatDate, usdFormatter } from "../formatters";
+import { formatDate } from "../utils/formatters";
+import { StripeInvoice } from "trieve-ts-sdk";
 
 export const InvoicesTable = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;

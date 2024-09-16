@@ -21,7 +21,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
   const userContext = useContext(UserContext);
 
   const currentUserRole = createMemo(() => {
-    const selectedOrgId = userContext.selectedOrganizationId?.();
+    const selectedOrgId = userContext.selectedOrg().id;
     if (!selectedOrgId) return 0;
     return (
       userContext
@@ -49,16 +49,16 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "TR-Organization": userContext.selectedOrganizationId?.() ?? "",
+        "TR-Organization": userContext.selectedOrg().id ?? "",
       },
       body: JSON.stringify({
-        organization_id: userContext.selectedOrganizationId?.(),
+        organization_id: userContext.selectedOrg().id,
         email: email(),
         user_role: fromUserRoleToI32(role()),
         app_url: apiHost,
-        redirect_uri: `${
-          window.location.origin
-        }/dashboard/${userContext.selectedOrganizationId?.()}`,
+        redirect_uri: `${window.location.origin}/?org=${
+          userContext.selectedOrg().id
+        }`,
       }),
     }).then((res) => {
       setSendingEmail(false);

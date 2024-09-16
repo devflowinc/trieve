@@ -2,9 +2,10 @@ import { Show, createEffect, createMemo, useContext } from "solid-js";
 import { createSignal } from "solid-js";
 import { Dialog, DialogOverlay, DialogPanel, DialogTitle } from "terracotta";
 import { UserContext } from "../contexts/UserContext";
-import { DefaultError, SlimUser, fromI32ToUserRole } from "shared/types";
+import { DefaultError, fromI32ToUserRole } from "shared/types";
 import { UserRole, fromUserRoleToI32, stringToUserRole } from "shared/types";
 import { createToast } from "./ShowToasts";
+import { SlimUser } from "trieve-ts-sdk";
 
 export interface InviteUserModalProps {
   editingUser: SlimUser | null;
@@ -23,13 +24,13 @@ export const EditUserModal = (props: InviteUserModalProps) => {
 
   const currentUserRole = createMemo(() => {
     return userContext.user?.()?.user_orgs.find((val) => {
-      return val.organization_id === userContext.selectedOrganizationId?.();
+      return val.organization_id === userContext.selectedOrg().id;
     })?.role;
   });
 
   const editingUserRole = createMemo(() => {
     return props.editingUser?.user_orgs.find((val) => {
-      return val.organization_id === userContext.selectedOrganizationId?.();
+      return val.organization_id === userContext.selectedOrg().id;
     })?.role;
   });
 
@@ -41,7 +42,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        organization_id: userContext.selectedOrganizationId?.(),
+        organization_id: userContext.selectedOrg().id,
         user_id: props.editingUser?.id,
         role: fromUserRoleToI32(role()),
       }),
