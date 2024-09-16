@@ -64,11 +64,12 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
                   props.class
                 )}
               >
-                <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+                <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:flex items-center gap-4 ext-neutral-400 ">
+                  <Show when={props.icon}>{props.icon}</Show>
                   <button
                     onClick={() => props.setShow(false)}
                     type="button"
-                    class="rounded-md bg-white text-neutral-400 hover:text-gray-500 focus:outline-none"
+                    class="rounded-md bg-white t focus:outline-none hover:text-gray-500"
                   >
                     <span class="sr-only">Close</span>
                     <IoClose class="w-6 h-6" />
@@ -83,7 +84,6 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
                       >
                         {title()}
                       </DialogTitle>
-                      <Show when={props.icon}>{props.icon}</Show>
                     </div>
                   )}
                 </Show>
