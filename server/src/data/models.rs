@@ -2669,7 +2669,16 @@ impl Organization {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "email": "trieve@trieve.ai",
+    "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "used": false,
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
+    "role": 1,
+}))]
 #[diesel(table_name = invitations)]
 pub struct Invitation {
     pub id: uuid::Uuid,
