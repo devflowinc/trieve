@@ -8,7 +8,7 @@ import { getLatency } from "../../api/analytics";
 import { Chart } from "chart.js";
 
 import "chartjs-adapter-date-fns";
-import { parseCustomDateString } from "../../utils/formatDate";
+import { fillDate } from "../../utils/graphDatesFiller";
 
 interface LatencyGraphProps {
   params: {
@@ -110,14 +110,16 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
       // @ts-expect-error library types not updated
       chartInstance.options.scales["x"].offset = true;
     }
+    const info = fillDate({
+      data,
+      date_range: props.params.filter.date_range,
+      key: "average_latency",
+      defaultValue: null,
+    });
 
     // Update the chart data
-    chartInstance.data.labels = data.map(
-      (point) => new Date(parseCustomDateString(point.time_stamp)),
-    );
-    chartInstance.data.datasets[0].data = data.map(
-      (point) => point.average_latency,
-    );
+    chartInstance.data.labels = info.map((point) => point.time);
+    chartInstance.data.datasets[0].data = info.map((point) => point.value);
     chartInstance.update();
   });
 

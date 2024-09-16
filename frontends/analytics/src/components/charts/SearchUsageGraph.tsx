@@ -14,7 +14,7 @@ interface SearchUsageProps {
 }
 
 import "chartjs-adapter-date-fns";
-import { parseCustomDateString } from "../../utils/formatDate";
+import { fillDate } from "../../utils/graphDatesFiller";
 
 export const SearchUsageGraph = (props: SearchUsageProps) => {
   const dataset = useContext(DatasetContext);
@@ -114,12 +114,15 @@ export const SearchUsageGraph = (props: SearchUsageProps) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = undefined;
     }
+    const info = fillDate({
+      data,
+      date_range: props.params.filter.date_range,
+      key: "requests",
+    });
 
     // Update the chart data;
-    chartInstance.data.labels = data.map(
-      (point) => new Date(parseCustomDateString(point.time_stamp)),
-    );
-    chartInstance.data.datasets[0].data = data.map((point) => point.requests);
+    chartInstance.data.labels = info.map((point) => point.time);
+    chartInstance.data.datasets[0].data = info.map((point) => point.value);
     chartInstance.update();
   });
 
