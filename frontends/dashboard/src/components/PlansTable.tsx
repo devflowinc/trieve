@@ -10,13 +10,12 @@ import {
   formatBytesDecimal,
   numberFormatter,
   usdFormatter,
-} from "../formatters";
+} from "../utils/formatters";
 import { AiOutlineWarning } from "solid-icons/ai";
 import { createToast } from "./ShowToasts";
-import { CreateSetupCheckoutSessionResPayload } from "../types/apiTypes";
 
-export interface PlansTableProps {
-  currentOrgSubPlan: OrganizationAndSubAndPlan | null;
+interface CreateSetupCheckoutSessionResPayload {
+  url: string;
 }
 
 interface ActiveTagProps {
@@ -30,6 +29,10 @@ const ActiveTag = (props: ActiveTagProps) => {
     </p>
   );
 };
+
+export interface PlansTableProps {
+  currentOrgSubPlan: OrganizationAndSubAndPlan | null;
+}
 
 export const PlansTable = (props: PlansTableProps) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
