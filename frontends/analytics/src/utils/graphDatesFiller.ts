@@ -1,8 +1,6 @@
 import { eachDayOfInterval, isSameDay, subDays } from "date-fns";
 import { parseCustomDateString } from "./formatDate";
-import {
-  DateRangeFilter,
-} from "shared/types";
+import { DateRangeFilter } from "shared/types";
 
 export const fillDate = ({
   key,

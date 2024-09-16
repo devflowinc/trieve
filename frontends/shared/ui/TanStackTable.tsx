@@ -15,6 +15,7 @@ export type SortableColumnDef<TValue> = ColumnDef<any, TValue> & {
 type TableProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   table: TableType<any>;
+  small?: boolean;
   pages: {
     page: Accessor<number>;
     nextPage: () => void;
@@ -36,7 +37,11 @@ export const TanStackTable = (props: TableProps) => {
               <tr>
                 <For each={headerGroup.headers}>
                   {(header) => (
-                    <th class="sticky top-0 z-10 border-b border-neutral-300 bg-white bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8">
+                    <th
+                      class={`sticky top-0 z-10 border-b border-neutral-300 bg-white bg-opacity-75 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8 ${
+                        props.small ? "py-2 pl-3 pr-2" : "py-3.5 pl-4 pr-3"
+                      }`}
+                    >
                       {(header.column.columnDef as SortableColumnDef<any>)
                         .sortable ? (
                         <button
@@ -88,10 +93,13 @@ export const TanStackTable = (props: TableProps) => {
                   {(cell) => (
                     <td
                       class={cn(
+                        props.small
+                          ? "py-3 pl-3 pr-2 sm:pl-4 lg:pl-6"
+                          : " py-4 pl-4 pr-3 sm:pl-6 lg:pl-8",
                         idx() !== props.table.getRowModel().rows.length - 1
                           ? "border-b border-neutral-200"
                           : "",
-                        "whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8"
+                        "whitespace-nowrap text-sm font-medium text-neutral-900"
                       )}
                     >
                       {flexRender(
