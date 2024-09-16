@@ -2,10 +2,10 @@ import { A } from "@solidjs/router";
 
 export const OrgTabs = () => {
   return (
-    <div class="flex space-x-4">
+    <div class="flex gap-4">
       <A
         end={true}
-        href={`/org/`}
+        href={`/org`}
         activeClass="border-b-2 -mb-[1px] border-magenta-500"
         class="hover:text-fuchsia-800"
       >

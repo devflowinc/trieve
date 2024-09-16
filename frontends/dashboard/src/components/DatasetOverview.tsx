@@ -11,16 +11,14 @@ import {
   onCleanup,
   useContext,
 } from "solid-js";
-import { useNavigate } from "@solidjs/router";
 import { FaRegularClipboard } from "solid-icons/fa";
 import { useDatasetPages } from "../hooks/useDatasetPages";
 import { AiFillCaretLeft, AiFillCaretRight } from "solid-icons/ai";
-import { TbReload } from "solid-icons/tb";
-import { createToast } from "./ShowToasts";
 import { formatDate } from "../utils/formatters";
 import NewDatasetModal from "./NewDatasetModal";
 import { UserContext } from "../contexts/UserContext";
 import { MagicSuspense } from "./MagicBox";
+import { A, useNavigate } from "@solidjs/router";
 
 export const DatasetOverview = () => {
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
@@ -106,65 +104,6 @@ export const DatasetOverview = () => {
     userContext.selectedOrg().id;
     setPage(0);
   });
-
-  const reloadChunkCount = (datasetId: string) => {
-    const api_host = import.meta.env.VITE_API_HOST as unknown as string;
-    if (!datasetId) {
-      console.error("Dataset ID is undefined.");
-      return;
-    }
-
-    const currentUsage = usage();
-
-    fetch(`${api_host}/dataset/usage/${datasetId}`, {
-      method: "GET",
-      headers: {
-        "TR-Dataset": datasetId,
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch dataset usage");
-        }
-        return response.json();
-      })
-      .then((newData) => {
-        const prevCount = currentUsage[datasetId]?.chunk_count || 0;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const newCount: number = newData.chunk_count as number;
-        const countDifference = newCount - prevCount;
-
-        setUsage((prevUsage) => ({
-          ...prevUsage,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          [datasetId]: newData,
-        }));
-
-        createToast({
-          title: "Updated",
-          type: "success",
-          message: `Successfully updated chunk count: ${countDifference} chunk${
-            Math.abs(countDifference) === 1 ? " has" : "s have"
-          } been ${
-            countDifference > 0
-              ? "added"
-              : countDifference < 0
-                ? "removed"
-                : "added or removed"
-          } since last update.`,
-          timeout: 3000,
-        });
-      })
-      .catch((error) => {
-        createToast({
-          title: "Error",
-          type: "error",
-          message: `Failed to reload chunk count: ${error}`,
-        });
-      });
-  };
 
   return (
     <>
@@ -282,59 +221,24 @@ export const DatasetOverview = () => {
                 <tbody class="divide-y divide-neutral-200 bg-white">
                   <For each={datasets()}>
                     {(datasetAndUsage) => (
-                      <tr class="cursor-pointer hover:bg-neutral-100">
-                        <td
-                          class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium"
-                          onClick={() => {
-                            navigate(
-                              `/dashboard/dataset/${
-                                datasetAndUsage.dataset.id
-                              }/start?org=${userContext.selectedOrg().id}`,
-                            );
-                          }}
-                        >
+                      <tr
+                        onClick={() => {
+                          navigate(`/dataset/${datasetAndUsage.dataset.id}`);
+                        }}
+                        class="cursor-pointer hover:bg-neutral-100/30"
+                      >
+                        <td class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium">
                           <div class="inline-flex items-center">
                             {datasetAndUsage.dataset.name}
                           </div>
                         </td>
-                        <td
-                          class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600"
-                          onClick={() => {
-                            navigate(
-                              `/dashboard/dataset/${
-                                datasetAndUsage.dataset.id
-                              }/start?org=${userContext.selectedOrg().id}`,
-                            );
-                          }}
-                        >
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600">
                           <span class="inline-flex items-center">
-                            <div>
-                              {usage()[datasetAndUsage.dataset.id]
-                                ?.chunk_count ??
-                                datasetAndUsage.dataset_usage.chunk_count}{" "}
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                reloadChunkCount(datasetAndUsage.dataset.id);
-                              }}
-                              class="ml-2 hover:text-fuchsia-500"
-                            >
-                              <TbReload />
-                            </button>
+                            {usage()[datasetAndUsage.dataset.id]?.chunk_count ??
+                              datasetAndUsage.dataset_usage.chunk_count}{" "}
                           </span>
                         </td>
-                        <td
-                          class="hidden whitespace-nowrap px-3 py-4 text-sm text-neutral-600 lg:block"
-                          onClick={() => {
-                            navigate(
-                              `/dashboard/dataset/${
-                                datasetAndUsage.dataset.id
-                              }/start?org=${userContext.selectedOrg().id}`,
-                            );
-                          }}
-                        >
+                        <td class="hidden whitespace-nowrap px-3 py-4 text-sm text-neutral-600 lg:block">
                           <span class="inline-flex items-center">
                             {datasetAndUsage.dataset.id}
                             <button

@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, useParams } from "@solidjs/router";
+import { useNavigate, useParams } from "@solidjs/router";
 import { Accessor, createContext, createMemo, useContext } from "solid-js";
 import { JSX } from "solid-js";
 import { DatasetAndUsage } from "trieve-ts-sdk";
@@ -25,7 +25,7 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
     const possDatasets = orgContext.orgDatasets();
     if (possDatasets) {
       return (
-        possDatasets.find((dataset) => dataset.dataset.id === datasetId) || null
+        possDatasets.find((dataset) => dataset.dataset.id === params.id) || null
       );
     } else {
       return null;
