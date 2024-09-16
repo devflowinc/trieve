@@ -151,6 +151,7 @@ impl Modify for SecurityAddon {
     modifiers(&SecurityAddon),
     paths(
         handlers::invitation_handler::post_invitation,
+        handlers::invitation_handler::get_invitations,
         handlers::auth_handler::login,
         handlers::auth_handler::logout,
         handlers::auth_handler::get_me,
@@ -458,6 +459,7 @@ impl Modify for SecurityAddon {
             data::models::ConditionType,
             data::models::HasIDCondition,
             data::models::DistanceMetric,
+            data::models::Invitation,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )
