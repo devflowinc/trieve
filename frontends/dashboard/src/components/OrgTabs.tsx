@@ -1,14 +1,6 @@
 import { A } from "@solidjs/router";
-import { UserContext } from "../contexts/UserContext";
-import { createMemo, useContext } from "solid-js";
 
 export const OrgTabs = () => {
-  const userContext = useContext(UserContext);
-
-  const currentOrgId = createMemo(() => {
-    return userContext.selectedOrganizationId?.();
-  });
-
   return (
     <div class="flex space-x-4">
       <A

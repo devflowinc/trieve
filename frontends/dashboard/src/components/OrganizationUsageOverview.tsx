@@ -1,19 +1,37 @@
-import { Accessor } from "solid-js";
-import {
-  OrganizationUsageCount,
-  OrganizationAndSubAndPlan,
-} from "shared/types";
+import { useContext } from "solid-js";
 import { ProgressBar } from "./ProgressBar";
 import { formatNumberWithCommas, formatStorage } from "../utils/formatNumbers";
+import { createQuery } from "@tanstack/solid-query";
+import { UserContext } from "../contexts/UserContext";
+import { ApiContext } from "..";
+import { OrganizationAndSubAndPlan } from "shared/types";
 
-export interface OrganizationUsageOverviewProps {
-  organization: Accessor<OrganizationAndSubAndPlan | undefined>;
-  orgUsage: Accessor<OrganizationUsageCount | undefined>;
-}
+export const OrganizationUsageOverview = () => {
+  const userContext = useContext(UserContext);
+  const trieve = useContext(ApiContext);
 
-export const OrganizationUsageOverview = (
-  props: OrganizationUsageOverviewProps,
-) => {
+  const usageQuery = createQuery(() => ({
+    queryKey: ["org-usage", userContext.selectedOrganization().id],
+    queryFn: async () => {
+      return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
+        organizationId: userContext.selectedOrganization().id,
+      });
+    },
+  }));
+
+  const subscriptionQuery = createQuery(() => ({
+    queryKey: ["org-subscription", userContext.selectedOrganization().id],
+    queryFn: async () => {
+      return trieve.fetch<"eject">(
+        "/api/organization/{organization_id}",
+        "get",
+        {
+          organizationId: userContext.selectedOrganization().id,
+        },
+      ) as Promise<OrganizationAndSubAndPlan>;
+    },
+  }));
+
   return (
     <div class="mb-3 grid grid-cols-1 gap-5 lg:grid-cols-4">
       <dl class="col-span-4 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg border bg-white shadow md:grid-cols-2 md:divide-x md:divide-y-0">
@@ -21,11 +39,11 @@ export const OrganizationUsageOverview = (
           <dt class="text-base font-normal"> Total Users </dt>
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex items-baseline text-2xl font-semibold text-magenta">
-              {formatNumberWithCommas(props.orgUsage()?.user_count ?? 0)}
+              {formatNumberWithCommas(usageQuery.data?.user_count ?? 0)}
               <span class="ml-2 text-sm font-medium text-neutral-600">
-                of{" "}
+                of
                 {formatNumberWithCommas(
-                  props.organization()?.plan?.user_count ?? 0,
+                  subscriptionQuery.data?.plan?.user_count || 0,
                 )}
               </span>
             </div>
@@ -36,16 +54,18 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(props.orgUsage()?.file_storage ?? 0)} mb
+                {formatNumberWithCommas(usageQuery.data?.file_storage ?? 0)} mb
                 <span class="ml-2 text-sm font-medium text-neutral-600">
                   of{" "}
-                  {formatStorage(props.organization()?.plan?.file_storage ?? 0)}{" "}
+                  {formatStorage(
+                    subscriptionQuery.data?.plan?.file_storage || 0,
+                  )}{" "}
                 </span>
               </div>
               <ProgressBar
                 width={"200px"}
-                max={props.organization()?.plan?.file_storage ?? 0}
-                progress={props.orgUsage()?.file_storage ?? 0}
+                max={subscriptionQuery.data?.plan?.file_storage || 0}
+                progress={usageQuery.data?.file_storage || 0}
               />
             </div>
           </dd>
@@ -55,18 +75,18 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(props.orgUsage()?.message_count ?? 0)}
+                {formatNumberWithCommas(usageQuery.data?.message_count ?? 0)}
                 <span class="ml-2 text-sm font-medium text-neutral-600">
                   of{" "}
                   {formatNumberWithCommas(
-                    props.organization()?.plan?.message_count ?? 0,
+                    subscriptionQuery.data?.plan?.message_count ?? 0,
                   )}
                 </span>
               </div>
               <ProgressBar
                 width={"200px"}
-                max={props.organization()?.plan?.message_count ?? 0}
-                progress={props.orgUsage()?.message_count ?? 0}
+                max={subscriptionQuery.data?.plan?.message_count || 0}
+                progress={usageQuery.data?.message_count || 0}
               />
             </div>
           </dd>
@@ -76,18 +96,18 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(props.orgUsage()?.chunk_count ?? 0)}
+                {formatNumberWithCommas(usageQuery.data?.chunk_count ?? 0)}
                 <span class="ml-2 text-sm font-medium text-neutral-600">
                   of{" "}
                   {formatNumberWithCommas(
-                    props.organization()?.plan?.chunk_count ?? 0,
+                    subscriptionQuery.data?.plan?.chunk_count ?? 0,
                   )}
                 </span>
               </div>
               <ProgressBar
                 width={"200px"}
-                max={props.organization()?.plan?.chunk_count ?? 0}
-                progress={props.orgUsage()?.chunk_count ?? 0}
+                max={subscriptionQuery.data?.plan?.chunk_count || 0}
+                progress={usageQuery.data?.chunk_count || 0}
               />
             </div>
           </dd>
