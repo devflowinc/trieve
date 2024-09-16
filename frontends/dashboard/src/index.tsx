@@ -16,6 +16,7 @@ import { DatasetEvents } from "./pages/dataset/Events.tsx";
 import { ApiKeys } from "./pages/dataset/ApiKeys.tsx";
 import { OrganizationLayout } from "./layouts/OrganizationLayout.tsx";
 import { OrganizationHomepage } from "./pages/orgs/OrganizationHomepage.tsx";
+import { OrgUserPage } from "./pages/orgs/OrgUserPage.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -58,6 +59,10 @@ const routes: RouteDefinition[] = [
               {
                 path: "/",
                 component: OrganizationHomepage,
+              },
+              {
+                path: "/users",
+                component: OrgUserPage,
               },
               {
                 path: "*404",

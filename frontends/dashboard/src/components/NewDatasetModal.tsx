@@ -58,7 +58,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
         message: "Successfully created dataset",
       });
       setIsLoading(false);
-      navigate(`/dashboard/dataset/${dataset.id}`);
+      navigate(`/dataset/${dataset.id}`);
     } catch (e: unknown) {
       setIsLoading(false);
       const error = e as Error;
@@ -139,7 +139,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             name="location"
                             class="block w-full select-none rounded-md border border-neutral-300 bg-white py-1.5 pl-2 pr-10 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                           >
-                            <option>{selectedOrgnaization()?.name}</option>
+                            <option>{userContext.selectedOrg().name}</option>
                           </select>
                         </div>
                       </div>
@@ -154,7 +154,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                         <div class="mt-2 sm:col-span-2 sm:mt-0">
                           <div class="flex rounded-md border border-neutral-300 sm:max-w-md">
                             <span class="flex select-none items-center pl-3 text-neutral-600 sm:text-sm">
-                              {selectedOrgnaization()?.name}/
+                              {userContext.selectedOrg().name}/
                             </span>
                             <input
                               type="text"

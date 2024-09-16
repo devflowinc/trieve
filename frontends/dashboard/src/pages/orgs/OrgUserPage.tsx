@@ -1,6 +1,6 @@
 import { For, Show, createEffect, createSignal, useContext } from "solid-js";
 import { UserContext } from "../../contexts/UserContext";
-import { fromI32ToUserRole, isInvitation } from "shared/types";
+import { fromI32ToUserRole, Invitation, isInvitation } from "shared/types";
 import { InviteUserModal } from "../../components/InviteUserModal";
 import { EditUserModal } from "../../components/EditUserModal";
 import { createToast } from "../../components/ShowToasts";
@@ -223,7 +223,7 @@ export const OrgUserPage = () => {
         </div>
       </div>
       <div class="mt-8 overflow-hidden rounded shadow-sm ring-1 ring-black ring-opacity-5">
-        <table class="min-w-full divide-y divide-neutral-300">
+        <table class="min-w-full divide-y divide-neutral-300 bg-white">
           <Show when={!showInvitations()}>
             <thead class="bg-neutral-100">
               <tr>
