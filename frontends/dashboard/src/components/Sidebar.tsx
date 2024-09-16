@@ -3,7 +3,6 @@ import { JSX } from "solid-js";
 import { DatasetContext } from "../contexts/DatasetContext";
 import { A, useLocation } from "@solidjs/router";
 import {
-  AiOutlineCiCircle,
   AiOutlineHistory,
   AiOutlineInfoCircle,
   AiOutlineKey,
@@ -19,7 +18,6 @@ import { UserContext } from "../contexts/UserContext";
 import { IconTypes } from "solid-icons";
 import { IoOptionsOutline } from "solid-icons/io";
 import { TbSparkles } from "solid-icons/tb";
-import { FaSolidTrash } from "solid-icons/fa";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
