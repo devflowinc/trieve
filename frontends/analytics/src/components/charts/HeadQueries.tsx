@@ -23,7 +23,6 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   const { headQueriesQuery, pages } = useHeadQueries({
     params: props.params,
   });
-
   const table = createSolidTable({
     get data() {
       return headQueriesQuery.data || [];
