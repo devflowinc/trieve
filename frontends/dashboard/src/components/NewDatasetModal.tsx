@@ -1,4 +1,4 @@
-import { Accessor, createMemo, createSignal, useContext, For } from "solid-js";
+import { Accessor, createSignal, useContext, For } from "solid-js";
 import {
   Dialog,
   DialogPanel,
@@ -35,23 +35,14 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const [isLoading, setIsLoading] = createSignal(false);
   const [fillWithExampleData, setFillWithExampleData] = createSignal(false);
 
-  const selectedOrgnaization = createMemo(() => {
-    const selectedOrgId = userContext.selectedOrganizationId?.();
-    if (!selectedOrgId) return null;
-    return userContext.user?.()?.orgs.find((org) => org.id === selectedOrgId);
-  });
-
   const createDataset = async () => {
-    const organizationId = userContext.selectedOrganizationId?.();
-    if (!organizationId) return;
-
     const curServerConfig = serverConfig();
 
     try {
       setIsLoading(true);
       const dataset = await createNewDataset({
         name: name(),
-        organizationId,
+        organizationId: userContext.selectedOrganization().id,
         serverConfig: curServerConfig,
       });
 

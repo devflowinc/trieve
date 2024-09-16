@@ -11,13 +11,7 @@ export const NavbarLayout = (props: NavbarLayoutProps) => {
     <div class="flex h-screen min-h-screen flex-col">
       <div class="flex justify-between gap-3 border-b border-b-neutral-300 p-2 px-4 shadow-md">
         <div class="flex items-center gap-8">
-          <A
-            href="/"
-            // href={`/dashboard/${
-            //   userContext.selectedOrganizationId?.() ?? ""
-            // }/overview`}
-            class="flex items-center gap-1"
-          >
+          <A href="/" class="flex items-center gap-1">
             <img
               class="h-12 w-12 cursor-pointer"
               src="https://cdn.trieve.ai/trieve-logo.png"

@@ -1,86 +1,66 @@
-import { For, useContext } from "solid-js";
-import { UserContext } from "../contexts/UserContext";
-import { ApiContext } from "..";
-import { createQuery } from "@tanstack/solid-query";
-import { Spacer } from "../components/Spacer";
-import { A } from "@solidjs/router";
-import { FiDatabase, FiSearch } from "solid-icons/fi";
+import { Show, createSignal } from "solid-js";
+import { DatasetOverview } from "../../components/DatasetOverview";
+import { FaRegularClipboard } from "solid-icons/fa";
+import { BuildingSomething } from "../../components/BuildingSomething";
+import NewDatasetModal from "../components/NewDatasetModal";
 
-export const OrganizationHomepage = () => {
-  const userData = useContext(UserContext);
-  return (
-    <div class="px-24 pt-12">
-      <div class="text-2xl font-medium">
-        {userData.selectedOrganization().name}
-      </div>
-      <Spacer h={16} />
-      <div class="-pb-2 w-[400px]">Datasets</div>
-      <DatasetOverviewGrid />
-      <Spacer h={16} />
-      <OrgSettingsLinks />
-    </div>
-  );
-};
+export const Overview = () => {
+  const [newDatasetModalOpen, setNewDatasetModalOpen] =
+    createSignal<boolean>(false);
 
-const OrgSettingsLinks = () => {
   return (
-    <div class="grid grid-cols-3 gap-2">
-      <div class="">
-        <div>Playgrounds</div>
-        <div class="flex flex-col gap-2 rounded-md border-b-neutral-200 bg-white p-2 last:border-b-0">
-          <A
-            class="flex items-center gap-2 border-b border-b-neutral-300 p-2 last:border-b-0"
-            href="/search"
-          >
-            <FiSearch class="text-neutral-500" />
-            Search
-          </A>
+    <div class="space-y-2 pb-8">
+      <section
+        class="mb-4 flex-col space-y-3 border bg-white py-4 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
+        aria-labelledby="organization-details-name"
+      >
+        <div class="flex items-center space-x-4">
+          <h2 id="user-details-name" class="text-lg font-medium leading-6">
+            Create a Dataset Below to Get Started!
+          </h2>
         </div>
-      </div>
-      <div class="">
-        <div>Playgrounds</div>
-        <div class="rounded-md bg-white p-2">
-          <A href="/search">Search</A>
+        <BuildingSomething />
+        <div class="flex flex-col space-y-2">
+          <div class="flex items-center space-x-3">
+            <p class="block text-sm font-medium">
+              {selectedOrganization()?.name} org id:
+            </p>
+            <p class="w-fit text-sm">{selectedOrganization()?.id}</p>
+            <button
+              class="text-sm underline"
+              onClick={() => {
+                void navigator.clipboard.writeText(
+                  selectedOrganization()?.id ?? "",
+                );
+                window.dispatchEvent(
+                  new CustomEvent("show-toast", {
+                    detail: {
+                      type: "info",
+                      title: "Copied",
+                      message: "Organization ID copied to clipboard",
+                    },
+                  }),
+                );
+              }}
+            >
+              <FaRegularClipboard />
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const DatasetOverviewGrid = () => {
-  const trieve = useContext(ApiContext);
-  const userData = useContext(UserContext);
-
-  const data = createQuery(() => ({
-    queryKey: ["org-homepage-datasets"],
-    queryFn: async () => {
-      return trieve.fetch(
-        "/api/dataset/organization/{organization_id}",
-        "get",
-        {
-          organizationId: userData.selectedOrganization().id,
-          limit: 30,
-        },
-      );
-    },
-  }));
-
-  return (
-    <div class="grid grid-cols-3 gap-4">
-      {
-        <For each={data.data}>
-          {(dataset) => (
-            <A href={`/dataset/${dataset.dataset.id}`}>
-              <div class="rounded-md border border-neutral-200 bg-white p-2 shadow-md">
-                <div class="flex items-center gap-2">
-                  <FiDatabase class="text-neutral-400" />
-                  <div class="">{dataset.dataset.name}</div>
-                </div>
-              </div>
-            </A>
-          )}
-        </For>
-      }
+      </section>
+      <div class="h-1" />
+      <Show when={selectedOrganization()}>
+        <DatasetOverview
+          selectedOrganization={selectedOrganization}
+          setOpenNewDatasetModal={setNewDatasetModalOpen}
+        />
+      </Show>
+      <NewDatasetModal
+        isOpen={newDatasetModalOpen}
+        closeModal={() => {
+          setNewDatasetModalOpen(false);
+        }}
+      />
     </div>
   );
 };
