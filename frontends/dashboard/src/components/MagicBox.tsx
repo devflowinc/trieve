@@ -39,7 +39,10 @@ export const MagicBox = <D extends CreateQueryResult>(
   props: MagicBoxProps<D>,
 ) => {
   const children = createMemo(() => {
-    return props.children(props.query.data as NonNullable<D["data"]>);
+    if (props.query.data) {
+      return props.children(props.query.data as NonNullable<D["data"]>);
+    }
+    return <></>;
   });
 
   const skeletonHeight = createMemo(() => {
