@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "trieve_py_client"
 version = "0.11.8"
-description = "Trieve API"
+description = "Trieve Python SDK"
 authors = ["Trieve Team <developers@trieve.ai>"]
-license = "BSL"
+license = "MIT"
 readme = "README.md"
-repository = "https://github.com/GIT_USER_ID/GIT_REPO_ID"
-keywords = ["OpenAPI", "OpenAPI-Generator", "Trieve API"]
+repository = "https://github.com/devflowinc/trieve/tree/main/clients/python-sdk"
+keywords=["RAG", "search", "embeddings", "recommendations", "analytics", "trieve"]
 include = ["trieve_py_client/py.typed"]
 
 [tool.poetry.dependencies]
