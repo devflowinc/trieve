@@ -70,6 +70,10 @@ const routes: RouteDefinition[] = [
                 component: OrgBillingPage,
               },
               {
+                path: "/keys",
+                component: ApiKeys,
+              },
+              {
                 path: "*404",
                 component: () => <div>404</div>,
               },
