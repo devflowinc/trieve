@@ -22,7 +22,7 @@ from setuptools import setup, find_packages  # noqa: H301
 # prerequisite: setuptools
 # http://pypi.python.org/pypi/setuptools
 NAME = "trieve_py_client"
-VERSION = "0.11.8"
+VERSION = "0.11.82"
 PYTHON_REQUIRES = ">=3.7"
 REQUIRES = [
     "urllib3 >= 1.25.3, < 2.1.0",
@@ -30,6 +30,34 @@ REQUIRES = [
     "pydantic >= 2",
     "typing-extensions >= 4.7.1",
 ]
+LONG_DESCRIPTION = """
+Trieve Python SDK
+=================
+
+Introduction
+------------
+
+This is the official Python SDK for the `Trieve API <https://docs.trieve.ai/api-reference>`__. It provides a convenient way to interact with the API using Python.
+
+See full documentation on Github at `github.com/devflowinc/trieve/tree/main/clients/python-sdk <https://github.com/devflowinc/trieve/tree/main/clients/python-sdk>`__.
+
+Features
+--------
+
+- RAG
+- Search
+- Recommendations
+- Analytics
+
+Installation
+------------
+
+Provide clear instructions on how to install your package. For example:
+
+.. code-block:: bash
+
+   pip install trieve-py-client
+"""
 
 setup(
     name=NAME,
@@ -38,14 +66,29 @@ setup(
     author="Trieve Team",
     author_email="developers@trieve.ai",
     url="https://trieve.ai",
-    keywords=["OpenAPI", "OpenAPI-Generator", "Trieve API"],
+    keywords=["RAG", "search", "embeddings", "recommendations", "analytics", "trieve"],
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    ],
     install_requires=REQUIRES,
     packages=find_packages(exclude=["test", "tests"]),
     include_package_data=True,
-    license="BSL",
-    long_description_content_type='text/markdown',
-    long_description="""\
-    Trieve OpenAPI Specification. This document describes all of the operations available through the Trieve API.
-    """,  # noqa: E501
+    license="MIT",
+    long_description_content_type="text/x-rst",
+    long_description=LONG_DESCRIPTION,
     package_data={"trieve_py_client": ["py.typed"]},
+    project_urls={  # Optional
+        "Bug Reports": "https://github.com/devflowinc/trieve/issues",
+        "Source": "https://github.com/devflowinc/trieve/tree/main/clients/python-sdk",
+        "Documentation": "https://docs.trieve.ai/api-reference",
+        "Website": "https://trieve.ai",
+    },
 )
