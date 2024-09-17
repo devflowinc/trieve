@@ -8,6 +8,7 @@ import { CopyButton } from "../../components/CopyButton";
 import { UserContext } from "../../contexts/UserContext";
 import { CodeExamples } from "../../components/CodeExamples";
 import { Spacer } from "../../components/Spacer";
+import { BuildingSomething } from "../../components/BuildingSomething";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 
@@ -78,9 +79,20 @@ export const DatasetHomepage = () => {
       <Spacer h={12} />
       <CodeExamples />
       <AddSampleDataModal
+        addedDataCallback={() => {
+          // mutateUsage((prev) => {
+          //   if (prev)
+          //     return {
+          //       ...prev,
+          //       chunk_count: SAMPLE_DATASET_SIZE,
+          //     };
+          // });
+        }}
         openModal={openSampleDataModal}
         closeModal={() => setOpenSampleDataModal(false)}
       />
+      <Spacer h={12} />
+      <BuildingSomething />
     </div>
   );
 };
