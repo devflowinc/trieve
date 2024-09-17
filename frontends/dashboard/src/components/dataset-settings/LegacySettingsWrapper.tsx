@@ -12,7 +12,6 @@ import {
   useContext,
 } from "solid-js";
 import { ApiContext } from "../..";
-import { GeneralServerSettings } from "./GeneralSettings";
 
 export type DatasetConfig = DatasetConfigurationDTO & {
   LLM_API_KEY?: string | null;
