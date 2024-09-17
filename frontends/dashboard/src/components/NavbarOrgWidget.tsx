@@ -1,10 +1,9 @@
 import { createSignal, Show, useContext } from "solid-js";
 import { UserContext } from "../contexts/UserContext";
 import { FiChevronDown, FiLogOut, FiPlus, FiUser } from "solid-icons/fi";
-import { Popover, PopoverButton, PopoverPanel, Transition } from "terracotta";
+import { Popover, PopoverButton, PopoverPanel } from "terracotta";
 import { IconTypes } from "solid-icons";
 import { OcPeople3 } from "solid-icons/oc";
-import { useNavigate } from "@solidjs/router";
 import NewOrgModal from "./CreateNewOrgModal";
 
 interface PopoutLinkProps {
@@ -15,7 +14,6 @@ interface PopoutLinkProps {
 
 export const NavbarOrgWidget = () => {
   const userInfo = useContext(UserContext);
-  const navigate = useNavigate();
   const [createOrgModalOpen, setCreateOrgModalOpen] = createSignal(false);
 
   const PopoutLink = (props: PopoutLinkProps) => {
@@ -23,7 +21,7 @@ export const NavbarOrgWidget = () => {
       <button
         type="button"
         class="flex items-center gap-2 border-b border-b-neutral-300 p-1 px-2 text-sm font-medium last:border-b-transparent"
-        onClick={props.onClick}
+        onClick={() => props.onClick()}
       >
         <Show when={props.icon}>{(icon) => icon()({})}</Show>
         <div>{props.label}</div>

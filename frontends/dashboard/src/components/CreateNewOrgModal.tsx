@@ -46,6 +46,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
           throw new Error("Error creating new organization");
         }
 
+        // eslint-disable-next-line solid/reactivity
         void res.json().then(async (data) => {
           // Refresh the user context with the new organization
           userContext.setSelectedOrg((data as Organization).id);
