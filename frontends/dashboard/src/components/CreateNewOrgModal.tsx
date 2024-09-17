@@ -47,11 +47,11 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
         }
 
         void res.json().then((data) => {
-          userContext.setSelectedOrg((data as Organization).id);
           // Refresh the user context with the new organization
+          userContext.setSelectedOrg((data as Organization).id);
           userContext.login();
-
-          navigate(`/dashboard/${(data as Organization).id}/overview`);
+          // refresh window
+          window.location.reload();
 
           createToast({
             title: "Success",
@@ -59,7 +59,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
             message: "Successfully created new organization",
           });
 
-          createEffect(() => props.closeModal());
+          props.closeModal();
         });
       })
       .catch(() => {
