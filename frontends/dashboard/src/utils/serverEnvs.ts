@@ -1,10 +1,11 @@
-import { DatasetConfigurationDTO } from "trieve-ts-sdk";
+import { DatasetConfig } from "../components/dataset-settings/LegacySettingsWrapper";
 
 const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
 
-export const defaultServerEnvsConfiguration: DatasetConfigurationDTO = {
+export const defaultServerEnvsConfiguration: DatasetConfig = {
   LLM_BASE_URL: "",
   LLM_DEFAULT_MODEL: "",
+  LLM_API_KEY: "",
   EMBEDDING_BASE_URL: "https://embedding.trieve.ai",
   EMBEDDING_MODEL_NAME: "jina-base-en",
   MESSAGE_TO_QUERY_PROMPT: "",
