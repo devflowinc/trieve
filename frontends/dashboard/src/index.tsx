@@ -19,6 +19,7 @@ import { OrganizationHomepage } from "./pages/orgs/OrganizationHomepage.tsx";
 import { OrgUserPage } from "./pages/orgs/OrgUserPage.tsx";
 import { OrgBillingPage } from "./pages/orgs/OrgBillingPage.tsx";
 import { OrgSettings } from "./pages/orgs/OrgSettings.tsx";
+import { HomeRedirect } from "./pages/HomeRedirect.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -50,10 +51,11 @@ const routes: RouteDefinition[] = [
       {
         path: "/",
         component: NavbarLayout,
-        load: (args) => {
-          args.params;
-        },
         children: [
+          {
+            path: "/",
+            component: HomeRedirect,
+          },
           {
             path: "/org",
             component: OrganizationLayout,
