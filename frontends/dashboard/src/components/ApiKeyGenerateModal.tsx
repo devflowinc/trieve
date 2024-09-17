@@ -21,7 +21,6 @@ import {
   ApiKeyRespBody,
   DatasetAndUsage,
   fromI32ToUserRole,
-  Organization,
   SetUserApiKeyResponse,
 } from "shared/types";
 import { UserContext } from "../contexts/UserContext";
@@ -34,6 +33,7 @@ import {
 import { Item, MultiSelect } from "./MultiSelect";
 import { Tooltip } from "shared/ui";
 import { ApiRoutes, RouteScope } from "./Routes";
+import { Organization } from "trieve-ts-sdk";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
