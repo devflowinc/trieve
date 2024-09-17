@@ -31,7 +31,7 @@ export const DashboardSidebar = () => {
     const orgId = userContext.selectedOrg().id;
     let params = "";
     if (orgId) params += `?organization=${orgId}`;
-    if (orgId && datasetId) params += `&dataset=${datasetId}`;
+    if (orgId && datasetId) params += `&dataset=${datasetId()}`;
     return params;
   });
 
@@ -82,20 +82,20 @@ export const DashboardSidebar = () => {
         <div class="pt-4">
           <div class="gap flex flex-col">
             <Link
-              href={`/dataset/${datasetId}`}
+              href={`/dataset/${datasetId()}`}
               label="Overview"
               icon={AiOutlineInfoCircle}
               isExternal={false}
             />
             <Link
-              href={`/dataset/${datasetId}/events`}
+              href={`/dataset/${datasetId()}/events`}
               icon={AiOutlineHistory}
               label={"Event Log"}
               isExternal={false}
             />
             <Link
               isExternal={false}
-              href={`/dataset/${datasetId}/keys`}
+              href={`/dataset/${datasetId()}/keys`}
               icon={AiOutlineKey}
               label="API Keys"
             />
@@ -105,19 +105,19 @@ export const DashboardSidebar = () => {
             <Link
               isExternal={false}
               icon={IoOptionsOutline}
-              href={`/dataset/${datasetId}/options`}
+              href={`/dataset/${datasetId()}/options`}
               label="Dataset Options"
             />
             <Link
               isExternal={false}
               icon={TbSparkles}
-              href={`/dataset/${datasetId}/llm-settings`}
+              href={`/dataset/${datasetId()}/llm-settings`}
               label="LLM Options"
             />
             <Link
               isExternal={false}
               icon={FiTrash}
-              href={`/dataset/${datasetId}/manage`}
+              href={`/dataset/${datasetId()}/manage`}
               label="Manage Dataset"
             />
           </div>

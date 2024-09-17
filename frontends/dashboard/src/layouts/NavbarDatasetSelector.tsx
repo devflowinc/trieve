@@ -34,7 +34,7 @@ export const NavbarDatasetSelector = () => {
                 <div class="text-sm">{datasetNameFromId(id)}</div>
               </div>
             )}
-            selected={datasetContext.datasetId}
+            selected={datasetContext.datasetId()}
             options={datasets()}
           />
         )}
