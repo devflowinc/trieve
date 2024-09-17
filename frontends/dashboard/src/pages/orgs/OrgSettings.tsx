@@ -25,7 +25,7 @@ const OrgSettingsForm = () => {
         name: newOrgName,
       }),
     });
-    userContext.login();
+    void userContext.login();
   };
 
   return (
@@ -121,7 +121,7 @@ const OrgDangerZoneForm = () => {
         setDeleting(false);
 
         if (res.ok) {
-          userContext.login();
+          void userContext.login();
 
           createToast({
             title: "Success",
