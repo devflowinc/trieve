@@ -47,7 +47,7 @@ export const SearchAnalyticsPage = () => {
           class="flex flex-col justify-between px-4"
           title="No Result Queries"
           subtitle="Searches with no results"
-          width={5}
+          width={12}
         >
           <NoResultQueries params={analyticsFilters} />
         </Card>

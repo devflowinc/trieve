@@ -1,9 +1,11 @@
 import { AnalyticsFilter, SearchQueryEvent } from "shared/types";
-import { createSignal, Show } from "solid-js";
-import { FullScreenModal, SortableColumnDef, TanStackTable } from "shared/ui";
-import { SearchQueryEventModal } from "../../pages/TrendExplorer";
+import { Show } from "solid-js";
+import { SortableColumnDef, TanStackTable } from "shared/ui";
 import { useNoResultsQueries } from "../../hooks/data/useNoResultsQuery";
 import { createSolidTable, getCoreRowModel } from "@tanstack/solid-table";
+import { format } from "date-fns";
+import { parseCustomDateString } from "../../utils/formatDate";
+import { formatSearchMethod } from "../../utils/searchType";
 
 interface NoResultQueriesProps {
   params: {
@@ -13,14 +15,27 @@ interface NoResultQueriesProps {
 
 const columns: SortableColumnDef<SearchQueryEvent>[] = [
   {
+    accessorKey: "created_at",
+    header: "Searched At",
+    sortable: true,
+    cell(props) {
+      return format(
+        parseCustomDateString(props.getValue<string>()),
+        "M/d/yy h:mm a",
+      );
+    },
+  },
+  {
     accessorKey: "query",
     header: "Query",
+  },
+  {
+    accessorKey: "search_type",
+    header: "Search Type",
     cell(props) {
-      return (
-        <span class="block max-w-[400px] truncate">
-          {props.getValue<string>()}
-        </span>
-      );
+      return typeof props.getValue<unknown>() === "string"
+        ? formatSearchMethod(props.getValue<string>())
+        : "All";
     },
   },
   {
@@ -30,11 +45,13 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
       return props.getValue<number>() + "ms";
     },
   },
+  {
+    accessorKey: "top_score",
+    header: "Top Score",
+  },
 ];
 
 export const NoResultQueries = (props: NoResultQueriesProps) => {
-  const [open, setOpen] = createSignal(false);
-  const [current, setCurrent] = createSignal<SearchQueryEvent | null>(null);
   const { notResultQuery, pages } = useNoResultsQueries({
     params: props.params,
   });
@@ -52,6 +69,7 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
   });
+  console.log(notResultQuery.data);
 
   return (
     <>
@@ -63,27 +81,7 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
           fallback={<div class="py-8 text-center">Loading...</div>}
           when={notResultQuery.data}
         >
-          <Show when={current()}>
-            {(data) => (
-              <FullScreenModal
-                title={data().query}
-                show={open}
-                setShow={setOpen}
-              >
-                <SearchQueryEventModal searchEvent={data()} />
-              </FullScreenModal>
-            )}
-          </Show>
-          <TanStackTable
-            table={table}
-            pages={pages}
-            perPage={10}
-            small
-            onRowClick={(row) => {
-              setCurrent(row);
-              setOpen(true);
-            }}
-          />
+          <TanStackTable table={table} pages={pages} perPage={10} />
         </Show>
       </div>
     </>

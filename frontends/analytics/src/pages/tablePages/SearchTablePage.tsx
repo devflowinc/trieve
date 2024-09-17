@@ -15,6 +15,7 @@ import {
   SortingState,
 } from "@tanstack/solid-table";
 import { Card } from "../../components/charts/Card";
+import { formatSearchMethod } from "../../utils/searchType";
 
 const columns: SortableColumnDef<SearchQueryEvent>[] = [
   {
@@ -126,17 +127,4 @@ export const SearchTablePage = () => {
       </div>
     </div>
   );
-};
-
-const formatSearchMethod = (searchMethod: string) => {
-  switch (searchMethod) {
-    case "hybrid":
-      return "Hybrid";
-    case "fulltext":
-      return "Fulltext";
-    case "semantic":
-      return "Semantic";
-    default:
-      return "All";
-  }
 };
