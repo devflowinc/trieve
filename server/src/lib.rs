@@ -171,7 +171,6 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::create_chunk,
         handlers::chunk_handler::update_chunk,
         handlers::chunk_handler::delete_chunk,
-        handlers::chunk_handler::crawl,
         handlers::chunk_handler::get_recommended_chunks,
         handlers::chunk_handler::update_chunk_by_tracking_id,
         handlers::chunk_handler::search_chunks,
@@ -278,8 +277,6 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::ChunkFilter,
             handlers::chunk_handler::ChunkReturnTypes,
             handlers::chunk_handler::GetChunksData,
-            handlers::chunk_handler::CrawlRequestBody,
-            handlers::chunk_handler::CrawlResponse,
             handlers::chunk_handler::GetTrackingChunksData,
             handlers::chunk_handler::SemanticBoost,
             handlers::chunk_handler::ScoringOptions,
@@ -853,10 +850,6 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("")
                                         .route(web::post().to(handlers::chunk_handler::create_chunk))
                                         .route(web::put().to(handlers::chunk_handler::update_chunk)),
-                                )
-                                .service(
-                                    web::resource("/crawl")
-                                        .route(web::post().to(handlers::chunk_handler::crawl)),
                                 )
                                 .service(web::resource("/recommend").route(
                                     web::post().to(handlers::chunk_handler::get_recommended_chunks),

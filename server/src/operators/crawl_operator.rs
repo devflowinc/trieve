@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use ureq::json;
 
 use crate::data::models::CrawlStatus;
+use crate::data::models::DatasetAndOrgWithSubAndPlan;
 use crate::data::models::RedisPool;
+use crate::handlers::chunk_handler::CrawlInterval;
 use crate::{
     data::models::{CrawlRequest, CrawlRequestPG, Pool},
     errors::ServiceError,
@@ -115,6 +117,38 @@ pub struct Metadata {
 pub struct Sitemap {
     pub changefreq: String,
 }
+
+pub async fn crawl(
+    site: String,
+    interval: Option<CrawlInterval>,
+    pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<uuid::Uuid, ServiceError> {
+    let scrape_id = crawl_site(site.clone())
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?;
+
+    let interval = match interval {
+        Some(CrawlInterval::Daily) => std::time::Duration::from_secs(60 * 60 * 24),
+        Some(CrawlInterval::Weekly) => std::time::Duration::from_secs(60 * 60 * 24 * 7),
+        Some(CrawlInterval::Monthly) => std::time::Duration::from_secs(60 * 60 * 24 * 30),
+        None => std::time::Duration::from_secs(0),
+    };
+
+    let scrape_id = create_crawl_request(
+        site,
+        dataset_org_plan_sub.dataset.id,
+        scrape_id,
+        interval,
+        pool,
+        redis_pool,
+    )
+    .await?;
+
+    Ok(scrape_id)
+}
+
 pub async fn get_crawl_request(
     crawl_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -253,6 +287,48 @@ pub async fn update_next_crawl_at(
     .execute(&mut conn)
     .await
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    Ok(())
+}
+
+pub async fn update_crawl_settings_for_dataset(
+    dataset_id: uuid::Uuid,
+    url: Option<String>,
+    interval: Option<CrawlInterval>,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    if let Some(url) = url {
+        diesel::update(
+            crawl_requests_table::crawl_requests
+                .filter(crawl_requests_table::dataset_id.eq(dataset_id)),
+        )
+        .set(crawl_requests_table::url.eq(url))
+        .execute(&mut conn)
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    }
+
+    if let Some(interval) = interval {
+        let interval = match interval {
+            CrawlInterval::Daily => std::time::Duration::from_secs(60 * 60 * 24),
+            CrawlInterval::Weekly => std::time::Duration::from_secs(60 * 60 * 24 * 7),
+            CrawlInterval::Monthly => std::time::Duration::from_secs(60 * 60 * 24 * 30),
+        };
+        diesel::update(
+            crawl_requests_table::crawl_requests
+                .filter(crawl_requests_table::dataset_id.eq(dataset_id)),
+        )
+        .set(crawl_requests_table::interval.eq(interval.as_secs() as i32))
+        .execute(&mut conn)
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    }
+
     Ok(())
 }
 

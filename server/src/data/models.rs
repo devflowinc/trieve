@@ -4,6 +4,7 @@ use super::schema::*;
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::analytics_handler::CTRDataRequestBody;
+use crate::handlers::chunk_handler::CrawlInterval;
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, FullTextBoost, ParsedQuery, ScoringOptions,
     SearchChunksReqPayload, SemanticBoost,
@@ -1895,6 +1896,41 @@ impl Dataset {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             deleted: 0,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct DatasetWithCrawlSite {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub organization_id: uuid::Uuid,
+    pub tracking_id: Option<String>,
+    pub deleted: i32,
+    pub server_configuration: serde_json::Value,
+    pub crawl_site: Option<String>,
+    pub crawl_interval: Option<CrawlInterval>,
+}
+
+impl DatasetWithCrawlSite {
+    pub fn from_details(
+        dataset: Dataset,
+        crawl_site: Option<String>,
+        crawl_interval: Option<CrawlInterval>,
+    ) -> Self {
+        DatasetWithCrawlSite {
+            id: dataset.id,
+            name: dataset.name,
+            created_at: dataset.created_at,
+            updated_at: dataset.updated_at,
+            organization_id: dataset.organization_id,
+            tracking_id: dataset.tracking_id,
+            server_configuration: dataset.server_configuration,
+            deleted: dataset.deleted,
+            crawl_site,
+            crawl_interval,
         }
     }
 }
