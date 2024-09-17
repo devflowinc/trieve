@@ -58,6 +58,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
         message: "Successfully created dataset",
       });
       setIsLoading(false);
+      await userContext.login();
       navigate(`/dataset/${dataset.id}`);
     } catch (e: unknown) {
       setIsLoading(false);

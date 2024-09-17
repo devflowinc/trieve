@@ -32,14 +32,16 @@ export interface UserStore {
   setSelectedOrg: (orgId: string) => void;
   orgDatasets: Resource<DatasetAndUsage[]>;
   deselectOrg: () => void;
-  login: () => void;
+  login: () => Promise<void>;
   logout: () => void;
 }
 
 export const UserContext = createContext<UserStore>({
   user: () => null as unknown as SlimUser,
   isNewUser: () => false,
-  login: () => {},
+  login: () => {
+    return Promise.resolve();
+  },
   setSelectedOrg: () => {},
   orgDatasets: null as unknown as Resource<DatasetAndUsage[]>,
   deselectOrg: () => {},
@@ -79,49 +81,45 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     });
   };
 
-  const login = () => {
-    fetch(`${apiHost}/auth/me`, {
-      credentials: "include",
-    })
-      .then((res) => {
-        if (res.status === 401) {
-          window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/`;
-        }
-        return res.json();
-      })
-      .then((data: SlimUser) => {
-        // cache the user
-        window.localStorage.setItem("trieve:user", JSON.stringify(data));
-
-        // Grab org id from localstorage
-        const possibleOrgId = window.localStorage.getItem(
-          `${data.id}:selectedOrg`,
-        );
-        if (possibleOrgId) {
-          const matchingOrg = data.orgs.find((org) => org.id === possibleOrgId);
-          if (matchingOrg) {
-            setSelectedOrganization(matchingOrg);
-          }
-        } else {
-          const firstOrg = data.orgs.at(0);
-          if (firstOrg) {
-            setSelectedOrganization(firstOrg);
-          } else {
-            redirect("/dashboard/new_user");
-          }
-        }
-
-        setUser(data);
-      })
-      .catch((err) => {
-        setUser(null);
-        console.error(err);
-        createToast({
-          title: "Error",
-          type: "error",
-          message: "Error logging in",
-        });
+  const login = async () => {
+    try {
+      const res = await fetch(`${apiHost}/auth/me`, {
+        credentials: "include",
       });
+      if (res.status === 401) {
+        window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/`;
+      }
+      const data = (await res.json()) as SlimUser;
+      // cache the user
+      window.localStorage.setItem("trieve:user", JSON.stringify(data));
+
+      // Grab org id from localstorage
+      const possibleOrgId = window.localStorage.getItem(
+        `${data.id}:selectedOrg`,
+      );
+      if (possibleOrgId) {
+        const matchingOrg = data.orgs.find((org) => org.id === possibleOrgId);
+        if (matchingOrg) {
+          setSelectedOrganization(matchingOrg);
+        }
+      } else {
+        const firstOrg = data.orgs.at(0);
+        if (firstOrg) {
+          setSelectedOrganization(firstOrg);
+        } else {
+          redirect("/dashboard/new_user");
+        }
+      }
+      setUser(data);
+    } catch (err) {
+      setUser(null);
+      console.error(err);
+      createToast({
+        title: "Error",
+        type: "error",
+        message: "Error logging in",
+      });
+    }
   };
 
   createEffect(() => {
@@ -151,7 +149,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   };
 
   createEffect(() => {
-    login();
+    void login();
   });
 
   const deselectOrg = () => {

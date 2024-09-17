@@ -46,12 +46,11 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
           throw new Error("Error creating new organization");
         }
 
-        void res.json().then((data) => {
+        void res.json().then(async (data) => {
           // Refresh the user context with the new organization
           userContext.setSelectedOrg((data as Organization).id);
-          userContext.login();
-          // refresh window
-          window.location.reload();
+          await userContext.login();
+          navigate("/org");
 
           createToast({
             title: "Success",

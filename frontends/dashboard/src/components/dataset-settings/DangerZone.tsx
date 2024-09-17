@@ -2,10 +2,13 @@ import { createMemo, createSignal, useContext, Show } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../ShowToasts";
+import { useNavigate } from "@solidjs/router";
 
 export const DangerZoneForm = () => {
   const datasetContext = useContext(DatasetContext);
   const userContext = useContext(UserContext);
+
+  const navigate = useNavigate();
 
   const [deleting, setDeleting] = createSignal(false);
 
@@ -40,7 +43,7 @@ export const DangerZoneForm = () => {
     })
       .then((res) => {
         if (res.ok) {
-          window.location.href = `/dashboard/${organization_id}/overview`;
+          navigate("/org");
           createToast({
             title: "Success",
             message: "Dataset deleted successfully!",
@@ -94,6 +97,7 @@ export const DangerZoneForm = () => {
     <>
       <Show when={datasetContext.dataset != null}>
         <form
+          onSubmit={(e) => e.preventDefault()}
           class="rounded-md border border-red-600/20 shadow-sm shadow-red-500/30"
           id="danger-zone"
         >
