@@ -148,7 +148,7 @@ pub async fn create_dataset(
             .unwrap_or_default(),
     );
 
-    let d = create_dataset_query(dataset, pool.clone()).await?;
+    let d = create_dataset_query(dataset.clone(), pool.clone()).await?;
 
     if let Some(site) = data.crawl_site.clone() {
         crawl(
@@ -156,7 +156,7 @@ pub async fn create_dataset(
             data.crawl_interval.clone(),
             pool.clone(),
             redis_pool.clone(),
-            dataset_org_plan_sub,
+            dataset.id,
         )
         .await?;
     };
