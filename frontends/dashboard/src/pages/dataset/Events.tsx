@@ -35,7 +35,7 @@ export const DatasetEvents = () => {
           event_types: selected().map((s) => s.id) as EventTypeRequest[],
           page: page(),
         },
-        datasetId,
+        datasetId: datasetId(),
       });
       if (isEventDTO(response)) {
         if (Array.isArray(response.events) && response.events.every(isEvent)) {
