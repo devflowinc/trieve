@@ -154,7 +154,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     localStorage.setItem(`${user()?.id}:selectedOrg`, orgId);
     const org = user()?.orgs.find((org) => org.id === orgId);
     if (!org) {
-      throw new Error("Organization not found");
+      return;
     }
     setSelectedOrganization(org);
   };
