@@ -1,13 +1,7 @@
 import { Tooltip } from "shared/ui";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
-import { Show, For, Accessor } from "solid-js";
+import { Accessor } from "solid-js";
 import { DatasetConfig } from "./LegacySettingsWrapper";
-import {
-  availableDistanceMetrics,
-  availableEmbeddingModels,
-} from "shared/types";
-
-const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
 
 export const LLMSettings = (props: {
   serverConfig: Accessor<DatasetConfig>;

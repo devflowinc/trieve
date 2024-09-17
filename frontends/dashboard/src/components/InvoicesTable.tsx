@@ -1,41 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   createEffect,
-  createMemo,
   createSignal,
   onCleanup,
-  useContext,
   For,
   Show,
+  useContext,
 } from "solid-js";
-import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
 import { TbFileInvoice } from "solid-icons/tb";
-import { formatDate } from "../utils/formatters";
+import { formatDate, usdFormatter } from "../utils/formatters";
 import { StripeInvoice } from "trieve-ts-sdk";
+import { UserContext } from "../contexts/UserContext";
 
 export const InvoicesTable = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
-  const selectedOrganization = createMemo(() => {
-    const userContext = useContext(UserContext);
-    const selectedOrgId = userContext.selectedOrganizationId?.();
-    if (!selectedOrgId) return null;
-    return (
-      userContext.user?.()?.orgs.find((org) => org.id === selectedOrgId) ?? null
-    );
-  });
+  const userContext = useContext(UserContext);
 
   const [orgInvoices, setOrgInvoices] = createSignal<StripeInvoice[]>([]);
 
   createEffect(() => {
-    const selectedOrgId = selectedOrganization()?.id;
-    if (!selectedOrgId) return;
-
     const orgInvoiceAbortController = new AbortController();
-    void fetch(`${api_host}/stripe/invoices/${selectedOrgId}`, {
+    void fetch(`${api_host}/stripe/invoices/${userContext.selectedOrg().id}`, {
       credentials: "include",
       headers: {
-        "TR-Organization": selectedOrgId,
+        "TR-Organization": userContext.selectedOrg().id,
       },
       signal: orgInvoiceAbortController.signal,
     })
@@ -67,7 +56,7 @@ export const InvoicesTable = () => {
       <div class="mb-8 flex flex-col gap-4">
         <div class="space-y-2">
           <h3 class="text-lg font-semibold text-neutral-800">
-            Invoices for {selectedOrganization()?.name} Organization
+            Invoices for {userContext.selectedOrg().name} Organization
           </h3>
           <div class="overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5">
             <table class="min-w-full divide-y divide-neutral-300">
