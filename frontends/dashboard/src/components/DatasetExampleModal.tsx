@@ -16,7 +16,7 @@ export const AddSampleDataModal = (props: {
   const startUpload = () => {
     const callback = props.addedDataCallback;
     setConfirmation(true);
-    const datasetId = datasetContext?.dataset?.()?.id;
+    const datasetId = datasetContext.dataset()?.dataset.id;
     if (!datasetId) {
       setStatusText("Error: No dataset ID found");
       return;

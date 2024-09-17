@@ -1,12 +1,23 @@
-import { useContext } from "solid-js";
+import { createSignal, useContext } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { createQuery } from "@tanstack/solid-query";
 import { useTrieve } from "../../hooks/useTrieve";
-import { MagicBox, MagicSuspense } from "../../components/MagicBox";
+import { MagicSuspense } from "../../components/MagicBox";
+import { AddSampleDataModal } from "../../components/DatasetExampleModal";
+import { CopyButton } from "../../components/CopyButton";
+import { UserContext } from "../../contexts/UserContext";
+import { CodeExamples } from "../../components/CodeExamples";
+import { Spacer } from "../../components/Spacer";
+
+const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 
 export const DatasetHomepage = () => {
   const { datasetId } = useContext(DatasetContext);
+  const userContext = useContext(UserContext);
   const trieve = useTrieve();
+
+  const [openSampleDataModal, setOpenSampleDataModal] =
+    createSignal<boolean>(false);
 
   const datasetQuery = createQuery(() => ({
     queryKey: ["dataset", datasetId()],
@@ -26,11 +37,37 @@ export const DatasetHomepage = () => {
     },
   }));
 
+  const orgDatasetParams = (datasetId: string) => {
+    return datasetId
+      ? `/?organization=${userContext.selectedOrg().id}&dataset=${datasetId}`
+      : "";
+  };
+
   return (
     <div class="p-4">
-      <MagicSuspense skeletonHeight="36px" unstyled>
-        <div class="pb-2 text-lg font-medium">{datasetQuery.data?.name}</div>
-      </MagicSuspense>
+      <div class="flex items-end justify-between pb-2">
+        <MagicSuspense skeletonHeight="36px" unstyled>
+          <div class="flex items-center gap-2">
+            <div class="text-lg font-medium">{datasetQuery.data?.name}</div>
+            <CopyButton text={datasetId()} />
+          </div>
+        </MagicSuspense>
+        <div class="flex gap-2">
+          <a
+            class="flex cursor-pointer items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
+            href={`${searchUiURL}/upload${orgDatasetParams(datasetId())}`}
+            target="_blank"
+          >
+            <p>Upload file(s)</p>
+          </a>
+          <button
+            class="flex items-center space-x-2 rounded-md border bg-magenta-500 px-2 py-1 text-sm text-white"
+            onClick={() => setOpenSampleDataModal(true)}
+          >
+            Add Sample Data
+          </button>
+        </div>
+      </div>
       <MagicSuspense>
         <>
           <div>Dataset ID: {datasetId()}</div>
@@ -38,6 +75,12 @@ export const DatasetHomepage = () => {
           <div>Chunk Count: {chunkCountQuery.data?.chunk_count}</div>
         </>
       </MagicSuspense>
+      <Spacer h={12} />
+      <CodeExamples />
+      <AddSampleDataModal
+        openModal={openSampleDataModal}
+        closeModal={() => setOpenSampleDataModal(false)}
+      />
     </div>
   );
 };
