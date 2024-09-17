@@ -21,6 +21,9 @@ import { OrgBillingPage } from "./pages/orgs/OrgBillingPage.tsx";
 import { OrgSettings } from "./pages/orgs/OrgSettings.tsx";
 import { HomeRedirect } from "./pages/HomeRedirect.tsx";
 import { LegacySettingsWrapper } from "./components/dataset-settings/LegacySettingsWrapper.tsx";
+import { GeneralServerSettings } from "./components/dataset-settings/GeneralSettings.tsx";
+import { LLMSettings } from "./components/dataset-settings/LLMSettings.tsx";
+import { DangerZoneForm } from "./components/dataset-settings/DangerZone.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -110,7 +113,17 @@ const routes: RouteDefinition[] = [
               },
               {
                 path: "/options",
-                component: LegacySettingsWrapper,
+                component: () => (
+                  <LegacySettingsWrapper page={GeneralServerSettings} />
+                ),
+              },
+              {
+                path: "/llm-settings",
+                component: () => <LegacySettingsWrapper page={LLMSettings} />,
+              },
+              {
+                path: "/manage",
+                component: DangerZoneForm,
               },
             ],
           },
