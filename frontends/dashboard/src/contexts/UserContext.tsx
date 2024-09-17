@@ -47,20 +47,11 @@ export const UserContext = createContext<UserStore>({
   selectedOrg: () => null as unknown as SlimUser["orgs"][0],
 });
 
-const getInitalUser = () => {
-  const user = window.localStorage.getItem("trieve:user");
-  if (user) {
-    return JSON.parse(user) as SlimUser;
-  }
-};
-
 export const UserContextWrapper = (props: UserStoreContextProps) => {
   const [searchParams] = useSearchParams();
   const trieve = useContext(ApiContext);
 
-  const [user, setUser] = createSignal<SlimUser | null>(
-    getInitalUser() ?? null,
-  );
+  const [user, setUser] = createSignal<SlimUser | null>(null);
   const [isNewUser, setIsNewUser] = createSignal(false);
   const [selectedOrganization, setSelectedOrganization] = createSignal<
     SlimUser["orgs"][0] | null
