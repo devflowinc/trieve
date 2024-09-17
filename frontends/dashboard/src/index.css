@@ -38,3 +38,7 @@ pre.shiki {
   border-collapse: collapse;
   width: 100%
 }
+
+.debug {
+  outline: 1px solid red;
+}

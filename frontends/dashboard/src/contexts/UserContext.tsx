@@ -10,10 +10,10 @@ import {
   useContext,
 } from "solid-js";
 import { createToast } from "../components/ShowToasts";
-import { SlimUser } from "shared/types";
 import { redirect, useSearchParams } from "@solidjs/router";
 import { ApiContext } from "..";
-import { DatasetAndUsage } from "trieve-ts-sdk";
+import { DatasetAndUsage, SlimUser } from "trieve-ts-sdk";
+import { OrgSelectPage } from "../pages/OrgSelect";
 
 export interface UserStoreContextProps {
   children?: JSX.Element;
@@ -31,6 +31,7 @@ export interface UserStore {
   selectedOrg: Accessor<SlimUser["orgs"][0]>;
   setSelectedOrg: (orgId: string) => void;
   orgDatasets: Resource<DatasetAndUsage[]>;
+  deselectOrg: () => void;
   login: () => void;
   logout: () => void;
 }
@@ -41,6 +42,7 @@ export const UserContext = createContext<UserStore>({
   login: () => {},
   setSelectedOrg: () => {},
   orgDatasets: null as unknown as Resource<DatasetAndUsage[]>,
+  deselectOrg: () => {},
   logout: () => {},
   selectedOrg: () => null as unknown as SlimUser["orgs"][0],
 });
@@ -161,6 +163,10 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     login();
   });
 
+  const deselectOrg = () => {
+    setSelectedOrganization(null);
+  };
+
   return (
     <>
       <Show
@@ -172,12 +178,18 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
         when={user()}
       >
         {(user) => (
-          <Show when={selectedOrganization()}>
+          <Show
+            fallback={
+              <OrgSelectPage selectOrg={setSelectedOrg} orgs={user().orgs} />
+            }
+            when={selectedOrganization()}
+          >
             {(org) => (
               <UserContext.Provider
                 value={{
                   user: user,
                   orgDatasets: orgDatasets,
+                  deselectOrg,
                   selectedOrg: org,
                   setSelectedOrg: setSelectedOrg,
                   logout,
