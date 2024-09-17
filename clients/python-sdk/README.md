@@ -1,0 +1,361 @@
+## Documentation for API Endpoints
+
+All URIs are relative to *https://api.trieve.ai*
+
+Class | Method | HTTP request | Description
+------------ | ------------- | ------------- | -------------
+*AnalyticsApi* | [**get_cluster_analytics**](docs/AnalyticsApi.md#get_cluster_analytics) | **POST** /api/analytics/search/cluster | Get Cluster Analytics
+*AnalyticsApi* | [**get_ctr_analytics**](docs/AnalyticsApi.md#get_ctr_analytics) | **POST** /api/analytics/ctr | Get CTR Analytics
+*AnalyticsApi* | [**get_rag_analytics**](docs/AnalyticsApi.md#get_rag_analytics) | **POST** /api/analytics/rag | Get RAG Analytics
+*AnalyticsApi* | [**get_recommendation_analytics**](docs/AnalyticsApi.md#get_recommendation_analytics) | **POST** /api/analytics/recommendations | Get Recommendation Analytics
+*AnalyticsApi* | [**get_search_analytics**](docs/AnalyticsApi.md#get_search_analytics) | **POST** /api/analytics/search | Get Search Analytics
+*AnalyticsApi* | [**get_top_datasets**](docs/AnalyticsApi.md#get_top_datasets) | **POST** /api/analytics/top | Get Top Datasets
+*AnalyticsApi* | [**send_ctr_data**](docs/AnalyticsApi.md#send_ctr_data) | **PUT** /api/analytics/ctr | Send CTR Data
+*AnalyticsApi* | [**send_event_data**](docs/AnalyticsApi.md#send_event_data) | **PUT** /api/analytics/events | Send Event Data
+*AnalyticsApi* | [**set_query_rating**](docs/AnalyticsApi.md#set_query_rating) | **PUT** /api/analytics/search | Rate Query
+*AuthApi* | [**callback**](docs/AuthApi.md#callback) | **GET** /api/auth/callback | OpenID Connect callback
+*AuthApi* | [**get_me**](docs/AuthApi.md#get_me) | **GET** /api/auth/me | Get Me
+*AuthApi* | [**login**](docs/AuthApi.md#login) | **GET** /api/auth | Login
+*AuthApi* | [**logout**](docs/AuthApi.md#logout) | **DELETE** /api/auth | Logout
+*ChunkApi* | [**autocomplete**](docs/ChunkApi.md#autocomplete) | **POST** /api/chunk/autocomplete | Autocomplete
+*ChunkApi* | [**count_chunks**](docs/ChunkApi.md#count_chunks) | **POST** /api/chunk/count | Count chunks above threshold
+*ChunkApi* | [**create_chunk**](docs/ChunkApi.md#create_chunk) | **POST** /api/chunk | Create or Upsert Chunk or Chunks
+*ChunkApi* | [**delete_chunk**](docs/ChunkApi.md#delete_chunk) | **DELETE** /api/chunk/{chunk_id} | Delete Chunk
+*ChunkApi* | [**delete_chunk_by_tracking_id**](docs/ChunkApi.md#delete_chunk_by_tracking_id) | **DELETE** /api/chunk/tracking_id/{tracking_id} | Delete Chunk By Tracking Id
+*ChunkApi* | [**generate_off_chunks**](docs/ChunkApi.md#generate_off_chunks) | **POST** /api/chunk/generate | RAG on Specified Chunks
+*ChunkApi* | [**get_chunk_by_id**](docs/ChunkApi.md#get_chunk_by_id) | **GET** /api/chunk/{chunk_id} | Get Chunk By Id
+*ChunkApi* | [**get_chunk_by_tracking_id**](docs/ChunkApi.md#get_chunk_by_tracking_id) | **GET** /api/chunk/tracking_id/{tracking_id} | Get Chunk By Tracking Id
+*ChunkApi* | [**get_chunks_by_ids**](docs/ChunkApi.md#get_chunks_by_ids) | **POST** /api/chunks | Get Chunks By Ids
+*ChunkApi* | [**get_chunks_by_tracking_ids**](docs/ChunkApi.md#get_chunks_by_tracking_ids) | **POST** /api/chunks/tracking | Get Chunks By Tracking Ids
+*ChunkApi* | [**get_recommended_chunks**](docs/ChunkApi.md#get_recommended_chunks) | **POST** /api/chunk/recommend | Get Recommended Chunks
+*ChunkApi* | [**get_suggested_queries**](docs/ChunkApi.md#get_suggested_queries) | **POST** /api/chunk/suggestions | Generate suggested queries
+*ChunkApi* | [**scroll_dataset_chunks**](docs/ChunkApi.md#scroll_dataset_chunks) | **POST** /api/chunks/scroll | Scroll Chunks
+*ChunkApi* | [**search_chunks**](docs/ChunkApi.md#search_chunks) | **POST** /api/chunk/search | Search
+*ChunkApi* | [**update_chunk**](docs/ChunkApi.md#update_chunk) | **PUT** /api/chunk | Update Chunk
+*ChunkApi* | [**update_chunk_by_tracking_id**](docs/ChunkApi.md#update_chunk_by_tracking_id) | **PUT** /api/chunk/tracking_id/update | Update Chunk By Tracking Id
+*ChunkGroupApi* | [**add_chunk_to_group**](docs/ChunkGroupApi.md#add_chunk_to_group) | **POST** /api/chunk_group/chunk/{group_id} | Add Chunk to Group
+*ChunkGroupApi* | [**add_chunk_to_group_by_tracking_id**](docs/ChunkGroupApi.md#add_chunk_to_group_by_tracking_id) | **POST** /api/chunk_group/tracking_id/{tracking_id} | Add Chunk to Group by Tracking ID
+*ChunkGroupApi* | [**create_chunk_group**](docs/ChunkGroupApi.md#create_chunk_group) | **POST** /api/chunk_group | Create or Upsert Group or Groups
+*ChunkGroupApi* | [**delete_chunk_group**](docs/ChunkGroupApi.md#delete_chunk_group) | **DELETE** /api/chunk_group/{group_id} | Delete Group
+*ChunkGroupApi* | [**delete_group_by_tracking_id**](docs/ChunkGroupApi.md#delete_group_by_tracking_id) | **DELETE** /api/chunk_group/tracking_id/{tracking_id} | Delete Group by Tracking ID
+*ChunkGroupApi* | [**get_chunk_group**](docs/ChunkGroupApi.md#get_chunk_group) | **GET** /api/chunk_group/{group_id} | Get Group
+*ChunkGroupApi* | [**get_chunks_in_group**](docs/ChunkGroupApi.md#get_chunks_in_group) | **GET** /api/chunk_group/{group_id}/{page} | Get Chunks in Group
+*ChunkGroupApi* | [**get_chunks_in_group_by_tracking_id**](docs/ChunkGroupApi.md#get_chunks_in_group_by_tracking_id) | **GET** /api/chunk_group/tracking_id/{group_tracking_id}/{page} | Get Chunks in Group by Tracking ID
+*ChunkGroupApi* | [**get_group_by_tracking_id**](docs/ChunkGroupApi.md#get_group_by_tracking_id) | **GET** /api/chunk_group/tracking_id/{tracking_id} | Get Group by Tracking ID
+*ChunkGroupApi* | [**get_groups_for_chunks**](docs/ChunkGroupApi.md#get_groups_for_chunks) | **POST** /api/chunk_group/chunks | Get Groups for Chunks
+*ChunkGroupApi* | [**get_groups_for_dataset**](docs/ChunkGroupApi.md#get_groups_for_dataset) | **GET** /api/dataset/groups/{dataset_id}/{page} | Get Groups for Dataset
+*ChunkGroupApi* | [**get_recommended_groups**](docs/ChunkGroupApi.md#get_recommended_groups) | **POST** /api/chunk_group/recommend | Get Recommended Groups
+*ChunkGroupApi* | [**remove_chunk_from_group**](docs/ChunkGroupApi.md#remove_chunk_from_group) | **DELETE** /api/chunk_group/chunk/{group_id} | Remove Chunk from Group
+*ChunkGroupApi* | [**search_over_groups**](docs/ChunkGroupApi.md#search_over_groups) | **POST** /api/chunk_group/group_oriented_search | Search Over Groups
+*ChunkGroupApi* | [**search_within_group**](docs/ChunkGroupApi.md#search_within_group) | **POST** /api/chunk_group/search | Search Within Group
+*ChunkGroupApi* | [**update_chunk_group**](docs/ChunkGroupApi.md#update_chunk_group) | **PUT** /api/chunk_group | Update Group
+*ChunkGroupApi* | [**update_group_by_tracking_id**](docs/ChunkGroupApi.md#update_group_by_tracking_id) | **PUT** /api/chunk_group/tracking_id/{tracking_id} | Update Group by Tracking ID
+*DatasetApi* | [**clear_dataset**](docs/DatasetApi.md#clear_dataset) | **PUT** /api/dataset/clear/{dataset_id} | Clear Dataset
+*DatasetApi* | [**create_dataset**](docs/DatasetApi.md#create_dataset) | **POST** /api/dataset | Create Dataset
+*DatasetApi* | [**delete_dataset**](docs/DatasetApi.md#delete_dataset) | **DELETE** /api/dataset/{dataset_id} | Delete Dataset
+*DatasetApi* | [**delete_dataset_by_tracking_id**](docs/DatasetApi.md#delete_dataset_by_tracking_id) | **DELETE** /api/dataset/tracking_id/{tracking_id} | Delete Dataset by Tracking ID
+*DatasetApi* | [**get_all_tags**](docs/DatasetApi.md#get_all_tags) | **POST** /api/dataset/get_all_tags | Get All Tags
+*DatasetApi* | [**get_dataset**](docs/DatasetApi.md#get_dataset) | **GET** /api/dataset/{dataset_id} | Get Dataset By ID
+*DatasetApi* | [**get_datasets_from_organization**](docs/DatasetApi.md#get_datasets_from_organization) | **GET** /api/dataset/organization/{organization_id} | Get Datasets from Organization
+*DatasetApi* | [**get_usage_by_dataset_id**](docs/DatasetApi.md#get_usage_by_dataset_id) | **GET** /api/dataset/usage/{dataset_id} | Get Usage By Dataset ID
+*DatasetApi* | [**update_dataset**](docs/DatasetApi.md#update_dataset) | **PUT** /api/dataset | Update Dataset by ID or Tracking ID
+*EventsApi* | [**get_events**](docs/EventsApi.md#get_events) | **POST** /api/events | Get events for the dataset
+*FileApi* | [**delete_file_handler**](docs/FileApi.md#delete_file_handler) | **DELETE** /api/file/{file_id} | Delete File
+*FileApi* | [**get_dataset_files_handler**](docs/FileApi.md#get_dataset_files_handler) | **GET** /api/dataset/files/{dataset_id}/{page} | Get Files for Dataset
+*FileApi* | [**get_file_handler**](docs/FileApi.md#get_file_handler) | **GET** /api/file/{file_id} | Get File
+*FileApi* | [**upload_file_handler**](docs/FileApi.md#upload_file_handler) | **POST** /api/file | Upload File
+*HealthApi* | [**health_check**](docs/HealthApi.md#health_check) | **GET** /api/health | Health Check
+*InvitationApi* | [**post_invitation**](docs/InvitationApi.md#post_invitation) | **POST** /api/invitation | Send Invitation
+*MessageApi* | [**create_message**](docs/MessageApi.md#create_message) | **POST** /api/message | Create message
+*MessageApi* | [**edit_message**](docs/MessageApi.md#edit_message) | **PUT** /api/message | Edit message
+*MessageApi* | [**get_all_topic_messages**](docs/MessageApi.md#get_all_topic_messages) | **GET** /api/messages/{messages_topic_id} | Get all messages for a given topic
+*MessageApi* | [**regenerate_message**](docs/MessageApi.md#regenerate_message) | **DELETE** /api/message | Regenerate message
+*MessageApi* | [**regenerate_message_patch**](docs/MessageApi.md#regenerate_message_patch) | **PATCH** /api/message | Regenerate message
+*MetricsApi* | [**get_metrics**](docs/MetricsApi.md#get_metrics) | **POST** /metrics | Get Prometheus Metrics
+*OrganizationApi* | [**create_organization**](docs/OrganizationApi.md#create_organization) | **POST** /api/organization | Create Organization
+*OrganizationApi* | [**delete_organization**](docs/OrganizationApi.md#delete_organization) | **DELETE** /api/organization/{organization_id} | Delete Organization
+*OrganizationApi* | [**get_organization**](docs/OrganizationApi.md#get_organization) | **GET** /api/organization/{organization_id} | Get Organization
+*OrganizationApi* | [**get_organization_usage**](docs/OrganizationApi.md#get_organization_usage) | **GET** /api/organization/usage/{organization_id} | Get Organization Usage
+*OrganizationApi* | [**get_organization_users**](docs/OrganizationApi.md#get_organization_users) | **GET** /api/organization/users/{organization_id} | Get Organization Users
+*OrganizationApi* | [**update_all_org_dataset_configs**](docs/OrganizationApi.md#update_all_org_dataset_configs) | **POST** /api/organization/update_dataset_configs | Update All Dataset Configurations
+*OrganizationApi* | [**update_organization**](docs/OrganizationApi.md#update_organization) | **PUT** /api/organization | Update Organization
+*StripeApi* | [**cancel_subscription**](docs/StripeApi.md#cancel_subscription) | **DELETE** /api/stripe/subscription/{subscription_id} | Cancel Subscription
+*StripeApi* | [**create_setup_checkout_session**](docs/StripeApi.md#create_setup_checkout_session) | **POST** /api/stripe/checkout/setup/{organization_id} | Create checkout session setup
+*StripeApi* | [**direct_to_payment_link**](docs/StripeApi.md#direct_to_payment_link) | **GET** /api/stripe/payment_link/{plan_id}/{organization_id} | Checkout
+*StripeApi* | [**get_all_invoices**](docs/StripeApi.md#get_all_invoices) | **GET** /api/stripe/invoices/{organization_id} | Get All Invoices
+*StripeApi* | [**get_all_plans**](docs/StripeApi.md#get_all_plans) | **GET** /api/stripe/plans | Get All Plans
+*StripeApi* | [**update_subscription_plan**](docs/StripeApi.md#update_subscription_plan) | **PATCH** /api/stripe/subscription_plan/{subscription_id}/{plan_id} | Update Subscription Plan
+*TopicApi* | [**create_topic**](docs/TopicApi.md#create_topic) | **POST** /api/topic | Create Topic
+*TopicApi* | [**delete_topic**](docs/TopicApi.md#delete_topic) | **DELETE** /api/topic/{topic_id} | Delete Topic
+*TopicApi* | [**get_all_topics_for_owner_id**](docs/TopicApi.md#get_all_topics_for_owner_id) | **GET** /api/topic/owner/{owner_id} | Get All Topics for Owner ID
+*TopicApi* | [**update_topic**](docs/TopicApi.md#update_topic) | **PUT** /api/topic | Update Topic
+*UserApi* | [**delete_user_api_key**](docs/UserApi.md#delete_user_api_key) | **DELETE** /api/user/api_key/{api_key_id} | Delete User Api Key
+*UserApi* | [**set_user_api_key**](docs/UserApi.md#set_user_api_key) | **POST** /api/user/api_key | Set User Api Key
+*UserApi* | [**update_user**](docs/UserApi.md#update_user) | **PUT** /api/user | Update User
+
+
+## Documentation For Models
+
+ - [APIVersion](docs/APIVersion.md)
+ - [AddChunkToGroupReqPayload](docs/AddChunkToGroupReqPayload.md)
+ - [ApiKeyRespBody](docs/ApiKeyRespBody.md)
+ - [AuthQuery](docs/AuthQuery.md)
+ - [AutocompleteReqPayload](docs/AutocompleteReqPayload.md)
+ - [BatchQueuedChunkResponse](docs/BatchQueuedChunkResponse.md)
+ - [CTRAnalytics](docs/CTRAnalytics.md)
+ - [CTRAnalyticsResponse](docs/CTRAnalyticsResponse.md)
+ - [CTRDataRequestBody](docs/CTRDataRequestBody.md)
+ - [CTRRecommendationsWithClicksResponse](docs/CTRRecommendationsWithClicksResponse.md)
+ - [CTRRecommendationsWithoutClicksResponse](docs/CTRRecommendationsWithoutClicksResponse.md)
+ - [CTRSearchQueryWithClicksResponse](docs/CTRSearchQueryWithClicksResponse.md)
+ - [CTRSearchQueryWithoutClicksResponse](docs/CTRSearchQueryWithoutClicksResponse.md)
+ - [CTRType](docs/CTRType.md)
+ - [ChatMessageProxy](docs/ChatMessageProxy.md)
+ - [ChunkFilter](docs/ChunkFilter.md)
+ - [ChunkGroup](docs/ChunkGroup.md)
+ - [ChunkGroupAndFileId](docs/ChunkGroupAndFileId.md)
+ - [ChunkMetadata](docs/ChunkMetadata.md)
+ - [ChunkMetadataStringTagSet](docs/ChunkMetadataStringTagSet.md)
+ - [ChunkMetadataTypes](docs/ChunkMetadataTypes.md)
+ - [ChunkMetadataWithScore](docs/ChunkMetadataWithScore.md)
+ - [ChunkReqPayload](docs/ChunkReqPayload.md)
+ - [ChunkReturnTypes](docs/ChunkReturnTypes.md)
+ - [ChunksWithPositions](docs/ChunksWithPositions.md)
+ - [ClusterAnalytics](docs/ClusterAnalytics.md)
+ - [ClusterAnalyticsFilter](docs/ClusterAnalyticsFilter.md)
+ - [ClusterAnalyticsResponse](docs/ClusterAnalyticsResponse.md)
+ - [ClusterQueries](docs/ClusterQueries.md)
+ - [ClusterTopics](docs/ClusterTopics.md)
+ - [ConditionType](docs/ConditionType.md)
+ - [ContentChunkMetadata](docs/ContentChunkMetadata.md)
+ - [CountChunkQueryResponseBody](docs/CountChunkQueryResponseBody.md)
+ - [CountChunksReqPayload](docs/CountChunksReqPayload.md)
+ - [CountQueries](docs/CountQueries.md)
+ - [CountSearchMethod](docs/CountSearchMethod.md)
+ - [CreateChunkGroupReqPayloadEnum](docs/CreateChunkGroupReqPayloadEnum.md)
+ - [CreateChunkGroupResponseEnum](docs/CreateChunkGroupResponseEnum.md)
+ - [CreateChunkReqPayloadEnum](docs/CreateChunkReqPayloadEnum.md)
+ - [CreateDatasetRequest](docs/CreateDatasetRequest.md)
+ - [CreateMessageReqPayload](docs/CreateMessageReqPayload.md)
+ - [CreateOrganizationReqPayload](docs/CreateOrganizationReqPayload.md)
+ - [CreateSetupCheckoutSessionResPayload](docs/CreateSetupCheckoutSessionResPayload.md)
+ - [CreateSingleChunkGroupReqPayload](docs/CreateSingleChunkGroupReqPayload.md)
+ - [CreateTopicReqPayload](docs/CreateTopicReqPayload.md)
+ - [Dataset](docs/Dataset.md)
+ - [DatasetAnalytics](docs/DatasetAnalytics.md)
+ - [DatasetAndUsage](docs/DatasetAndUsage.md)
+ - [DatasetConfigurationDTO](docs/DatasetConfigurationDTO.md)
+ - [DatasetDTO](docs/DatasetDTO.md)
+ - [DatasetUsageCount](docs/DatasetUsageCount.md)
+ - [DateRange](docs/DateRange.md)
+ - [DeleteTopicData](docs/DeleteTopicData.md)
+ - [DeleteUserApiKeyRequest](docs/DeleteUserApiKeyRequest.md)
+ - [DeprecatedSearchOverGroupsResponseBody](docs/DeprecatedSearchOverGroupsResponseBody.md)
+ - [DistanceMetric](docs/DistanceMetric.md)
+ - [EditMessageReqPayload](docs/EditMessageReqPayload.md)
+ - [ErrorResponseBody](docs/ErrorResponseBody.md)
+ - [EventReturn](docs/EventReturn.md)
+ - [EventTypeRequest](docs/EventTypeRequest.md)
+ - [EventTypes](docs/EventTypes.md)
+ - [EventTypesOneOf](docs/EventTypesOneOf.md)
+ - [EventTypesOneOf1](docs/EventTypesOneOf1.md)
+ - [EventTypesOneOf2](docs/EventTypesOneOf2.md)
+ - [EventTypesOneOf3](docs/EventTypesOneOf3.md)
+ - [EventTypesOneOf4](docs/EventTypesOneOf4.md)
+ - [FieldCondition](docs/FieldCondition.md)
+ - [File](docs/File.md)
+ - [FileDTO](docs/FileDTO.md)
+ - [FullTextBoost](docs/FullTextBoost.md)
+ - [GenerateOffChunksReqPayload](docs/GenerateOffChunksReqPayload.md)
+ - [GeoInfo](docs/GeoInfo.md)
+ - [GeoInfoWithBias](docs/GeoInfoWithBias.md)
+ - [GeoTypes](docs/GeoTypes.md)
+ - [GetAllTagsReqPayload](docs/GetAllTagsReqPayload.md)
+ - [GetAllTagsResponse](docs/GetAllTagsResponse.md)
+ - [GetChunksData](docs/GetChunksData.md)
+ - [GetChunksInGroupResponse](docs/GetChunksInGroupResponse.md)
+ - [GetChunksInGroupsResponseBody](docs/GetChunksInGroupsResponseBody.md)
+ - [GetDatasetsPagination](docs/GetDatasetsPagination.md)
+ - [GetEventsData](docs/GetEventsData.md)
+ - [GetGroupsForChunksReqPayload](docs/GetGroupsForChunksReqPayload.md)
+ - [GetTopDatasetsRequestBody](docs/GetTopDatasetsRequestBody.md)
+ - [GetTrackingChunksData](docs/GetTrackingChunksData.md)
+ - [Granularity](docs/Granularity.md)
+ - [GroupData](docs/GroupData.md)
+ - [GroupScoreChunk](docs/GroupScoreChunk.md)
+ - [GroupsBookmarkQueryResult](docs/GroupsBookmarkQueryResult.md)
+ - [GroupsForChunk](docs/GroupsForChunk.md)
+ - [HasIDCondition](docs/HasIDCondition.md)
+ - [HeadQueries](docs/HeadQueries.md)
+ - [HeadQueries1](docs/HeadQueries1.md)
+ - [HeadQueryResponse](docs/HeadQueryResponse.md)
+ - [HighlightOptions](docs/HighlightOptions.md)
+ - [HighlightStrategy](docs/HighlightStrategy.md)
+ - [InvitationData](docs/InvitationData.md)
+ - [LLMOptions](docs/LLMOptions.md)
+ - [LatencyGraph](docs/LatencyGraph.md)
+ - [LatencyGraphResponse](docs/LatencyGraphResponse.md)
+ - [LocationBoundingBox](docs/LocationBoundingBox.md)
+ - [LocationPolygon](docs/LocationPolygon.md)
+ - [LocationRadius](docs/LocationRadius.md)
+ - [LowConfidenceQueries](docs/LowConfidenceQueries.md)
+ - [LowConfidenceRecommendations](docs/LowConfidenceRecommendations.md)
+ - [MatchCondition](docs/MatchCondition.md)
+ - [Message](docs/Message.md)
+ - [MultiQuery](docs/MultiQuery.md)
+ - [NewChunkMetadataTypes](docs/NewChunkMetadataTypes.md)
+ - [NoResultQueries](docs/NoResultQueries.md)
+ - [Organization](docs/Organization.md)
+ - [OrganizationUsageCount](docs/OrganizationUsageCount.md)
+ - [PopularFilters](docs/PopularFilters.md)
+ - [PopularFilters1](docs/PopularFilters1.md)
+ - [PopularFiltersResponse](docs/PopularFiltersResponse.md)
+ - [QdrantSortBy](docs/QdrantSortBy.md)
+ - [QueryCountResponse](docs/QueryCountResponse.md)
+ - [QueryDetails](docs/QueryDetails.md)
+ - [QueryTypes](docs/QueryTypes.md)
+ - [RAGAnalytics](docs/RAGAnalytics.md)
+ - [RAGAnalyticsFilter](docs/RAGAnalyticsFilter.md)
+ - [RAGAnalyticsResponse](docs/RAGAnalyticsResponse.md)
+ - [RAGQueries](docs/RAGQueries.md)
+ - [RAGSortBy](docs/RAGSortBy.md)
+ - [RAGUsage](docs/RAGUsage.md)
+ - [RAGUsageGraph](docs/RAGUsageGraph.md)
+ - [RAGUsageGraphResponse](docs/RAGUsageGraphResponse.md)
+ - [RAGUsageResponse](docs/RAGUsageResponse.md)
+ - [RagQueryEvent](docs/RagQueryEvent.md)
+ - [RagQueryResponse](docs/RagQueryResponse.md)
+ - [RagTypes](docs/RagTypes.md)
+ - [Range](docs/Range.md)
+ - [RangeCondition](docs/RangeCondition.md)
+ - [RateQueryRequest](docs/RateQueryRequest.md)
+ - [ReRankOptions](docs/ReRankOptions.md)
+ - [RecommendChunksRequest](docs/RecommendChunksRequest.md)
+ - [RecommendChunksResponseBody](docs/RecommendChunksResponseBody.md)
+ - [RecommendGroupsReqPayload](docs/RecommendGroupsReqPayload.md)
+ - [RecommendGroupsResponse](docs/RecommendGroupsResponse.md)
+ - [RecommendGroupsResponseBody](docs/RecommendGroupsResponseBody.md)
+ - [RecommendResponseTypes](docs/RecommendResponseTypes.md)
+ - [RecommendType](docs/RecommendType.md)
+ - [RecommendationAnalytics](docs/RecommendationAnalytics.md)
+ - [RecommendationAnalyticsFilter](docs/RecommendationAnalyticsFilter.md)
+ - [RecommendationAnalyticsResponse](docs/RecommendationAnalyticsResponse.md)
+ - [RecommendationCTRMetrics](docs/RecommendationCTRMetrics.md)
+ - [RecommendationCTRMetrics1](docs/RecommendationCTRMetrics1.md)
+ - [RecommendationEvent](docs/RecommendationEvent.md)
+ - [RecommendationQueries](docs/RecommendationQueries.md)
+ - [RecommendationStrategy](docs/RecommendationStrategy.md)
+ - [RecommendationType](docs/RecommendationType.md)
+ - [RecommendationsEventResponse](docs/RecommendationsEventResponse.md)
+ - [RecommendationsWithClicks](docs/RecommendationsWithClicks.md)
+ - [RecommendationsWithClicksCTRResponse](docs/RecommendationsWithClicksCTRResponse.md)
+ - [RecommendationsWithoutClicks](docs/RecommendationsWithoutClicks.md)
+ - [RecommendationsWithoutClicksCTRResponse](docs/RecommendationsWithoutClicksCTRResponse.md)
+ - [RegenerateMessageReqPayload](docs/RegenerateMessageReqPayload.md)
+ - [RemoveChunkFromGroupReqPayload](docs/RemoveChunkFromGroupReqPayload.md)
+ - [ReturnQueuedChunk](docs/ReturnQueuedChunk.md)
+ - [RoleProxy](docs/RoleProxy.md)
+ - [ScoreChunk](docs/ScoreChunk.md)
+ - [ScoreChunkDTO](docs/ScoreChunkDTO.md)
+ - [ScoringOptions](docs/ScoringOptions.md)
+ - [ScrollChunksReqPayload](docs/ScrollChunksReqPayload.md)
+ - [ScrollChunksResponseBody](docs/ScrollChunksResponseBody.md)
+ - [SearchAnalytics](docs/SearchAnalytics.md)
+ - [SearchAnalyticsFilter](docs/SearchAnalyticsFilter.md)
+ - [SearchAnalyticsResponse](docs/SearchAnalyticsResponse.md)
+ - [SearchCTRMetrics](docs/SearchCTRMetrics.md)
+ - [SearchCTRMetrics1](docs/SearchCTRMetrics1.md)
+ - [SearchChunkQueryResponseBody](docs/SearchChunkQueryResponseBody.md)
+ - [SearchChunksReqPayload](docs/SearchChunksReqPayload.md)
+ - [SearchClusterResponse](docs/SearchClusterResponse.md)
+ - [SearchClusterTopics](docs/SearchClusterTopics.md)
+ - [SearchGroupResponseTypes](docs/SearchGroupResponseTypes.md)
+ - [SearchLatencyGraph](docs/SearchLatencyGraph.md)
+ - [SearchMethod](docs/SearchMethod.md)
+ - [SearchMetrics](docs/SearchMetrics.md)
+ - [SearchOverGroupsReqPayload](docs/SearchOverGroupsReqPayload.md)
+ - [SearchOverGroupsResponseBody](docs/SearchOverGroupsResponseBody.md)
+ - [SearchOverGroupsResponseTypes](docs/SearchOverGroupsResponseTypes.md)
+ - [SearchOverGroupsResults](docs/SearchOverGroupsResults.md)
+ - [SearchQueries](docs/SearchQueries.md)
+ - [SearchQueriesWithClicksCTRResponse](docs/SearchQueriesWithClicksCTRResponse.md)
+ - [SearchQueriesWithoutClicksCTRResponse](docs/SearchQueriesWithoutClicksCTRResponse.md)
+ - [SearchQueryEvent](docs/SearchQueryEvent.md)
+ - [SearchQueryResponse](docs/SearchQueryResponse.md)
+ - [SearchResponseBody](docs/SearchResponseBody.md)
+ - [SearchResponseTypes](docs/SearchResponseTypes.md)
+ - [SearchResultType](docs/SearchResultType.md)
+ - [SearchSortBy](docs/SearchSortBy.md)
+ - [SearchType](docs/SearchType.md)
+ - [SearchTypeCount](docs/SearchTypeCount.md)
+ - [SearchUsageGraph](docs/SearchUsageGraph.md)
+ - [SearchUsageGraphResponse](docs/SearchUsageGraphResponse.md)
+ - [SearchWithinGroupReqPayload](docs/SearchWithinGroupReqPayload.md)
+ - [SearchWithinGroupResponseBody](docs/SearchWithinGroupResponseBody.md)
+ - [SearchWithinGroupResults](docs/SearchWithinGroupResults.md)
+ - [SearchesWithClicks](docs/SearchesWithClicks.md)
+ - [SearchesWithoutClicks](docs/SearchesWithoutClicks.md)
+ - [SemanticBoost](docs/SemanticBoost.md)
+ - [SetUserApiKeyRequest](docs/SetUserApiKeyRequest.md)
+ - [SetUserApiKeyResponse](docs/SetUserApiKeyResponse.md)
+ - [SingleQueuedChunkResponse](docs/SingleQueuedChunkResponse.md)
+ - [SlimChunkMetadata](docs/SlimChunkMetadata.md)
+ - [SlimChunkMetadataWithArrayTagSet](docs/SlimChunkMetadataWithArrayTagSet.md)
+ - [SlimChunkMetadataWithScore](docs/SlimChunkMetadataWithScore.md)
+ - [SlimUser](docs/SlimUser.md)
+ - [SortByField](docs/SortByField.md)
+ - [SortBySearchType](docs/SortBySearchType.md)
+ - [SortOptions](docs/SortOptions.md)
+ - [SortOrder](docs/SortOrder.md)
+ - [StripeInvoice](docs/StripeInvoice.md)
+ - [StripePlan](docs/StripePlan.md)
+ - [SuggestType](docs/SuggestType.md)
+ - [SuggestedQueriesReqPayload](docs/SuggestedQueriesReqPayload.md)
+ - [SuggestedQueriesResponse](docs/SuggestedQueriesResponse.md)
+ - [TagsWithCount](docs/TagsWithCount.md)
+ - [TopDatasetsRequestTypes](docs/TopDatasetsRequestTypes.md)
+ - [TopDatasetsResponse](docs/TopDatasetsResponse.md)
+ - [Topic](docs/Topic.md)
+ - [TypoOptions](docs/TypoOptions.md)
+ - [TypoRange](docs/TypoRange.md)
+ - [UpdateAllOrgDatasetConfigsReqPayload](docs/UpdateAllOrgDatasetConfigsReqPayload.md)
+ - [UpdateChunkByTrackingIdData](docs/UpdateChunkByTrackingIdData.md)
+ - [UpdateChunkGroupReqPayload](docs/UpdateChunkGroupReqPayload.md)
+ - [UpdateChunkReqPayload](docs/UpdateChunkReqPayload.md)
+ - [UpdateDatasetRequest](docs/UpdateDatasetRequest.md)
+ - [UpdateGroupByTrackingIDReqPayload](docs/UpdateGroupByTrackingIDReqPayload.md)
+ - [UpdateOrganizationReqPayload](docs/UpdateOrganizationReqPayload.md)
+ - [UpdateTopicReqPayload](docs/UpdateTopicReqPayload.md)
+ - [UpdateUserOrgRoleData](docs/UpdateUserOrgRoleData.md)
+ - [UploadFileReqPayload](docs/UploadFileReqPayload.md)
+ - [UploadFileResult](docs/UploadFileResult.md)
+ - [UsageGraphPoint](docs/UsageGraphPoint.md)
+ - [UserOrganization](docs/UserOrganization.md)
+ - [WorkerEvent](docs/WorkerEvent.md)
+
+
+<a id="documentation-for-authorization"></a>
+## Documentation For Authorization
+
+
+Authentication schemes defined for the API:
+<a id="ApiKey"></a>
+### ApiKey
+
+- **Type**: API key
+- **API key parameter name**: Authorization
+- **Location**: HTTP header
+
+<a id="X-API-KEY"></a>
+### X-API-KEY
+
+- **Type**: API key
+- **API key parameter name**: X-API-KEY
+- **Location**: HTTP header
+
+
+## Author
+
+developers@trieve.ai
+
+
