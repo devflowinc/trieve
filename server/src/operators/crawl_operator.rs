@@ -24,7 +24,7 @@ pub struct IngestResult {
     #[serde(rename = "expiresAt")]
     pub expires_at: String,
     pub next: Option<String>,
-    pub data: Vec<Document>,
+    pub data: Option<Vec<Option<Document>>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -125,7 +125,16 @@ pub async fn get_crawl_request(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     let request = crawl_requests
-        .select((id, url, status, scrape_id, dataset_id, created_at))
+        .select((
+            id,
+            url,
+            status,
+            next_crawl_at,
+            interval,
+            scrape_id,
+            dataset_id,
+            created_at,
+        ))
         .filter(scrape_id.eq(crawl_id))
         .first::<CrawlRequestPG>(&mut conn)
         .await
@@ -133,22 +142,54 @@ pub async fn get_crawl_request(
     Ok(request.into())
 }
 
+pub async fn get_crawl_requests_to_rerun(
+    pool: web::Data<Pool>,
+) -> Result<Vec<CrawlRequest>, ServiceError> {
+    use crate::data::schema::crawl_requests::dsl::*;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let requests = crawl_requests
+        .select((
+            id,
+            url,
+            status,
+            next_crawl_at,
+            interval,
+            scrape_id,
+            dataset_id,
+            created_at,
+        ))
+        .filter(next_crawl_at.le(chrono::Utc::now().naive_utc()))
+        .load::<CrawlRequestPG>(&mut conn)
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    Ok(requests.into_iter().map(|r| r.into()).collect())
+}
+
 pub async fn create_crawl_request(
     url: String,
     dataset_id: uuid::Uuid,
     scrape_id: uuid::Uuid,
+    interval: std::time::Duration,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
-    let new_crawl_request = CrawlRequestPG {
+    let new_crawl_request: CrawlRequestPG = CrawlRequest {
         id: uuid::Uuid::new_v4(),
         url,
-        status: CrawlStatus::Pending.to_string(),
+        status: CrawlStatus::Pending,
+        interval,
+        next_crawl_at: chrono::Utc::now().naive_utc(),
         scrape_id,
         dataset_id,
         created_at: chrono::Utc::now().naive_utc(),
-    };
+        attempt_number: 0,
+    }
+    .into();
+
     let mut conn = pool
         .get()
         .await
@@ -195,7 +236,49 @@ pub async fn update_crawl_status(
     Ok(())
 }
 
-pub async fn get_crawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceError> {
+pub async fn update_next_crawl_at(
+    crawl_id: uuid::Uuid,
+    next_crawl_at: chrono::NaiveDateTime,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    diesel::update(
+        crawl_requests_table::crawl_requests.filter(crawl_requests_table::scrape_id.eq(crawl_id)),
+    )
+    .set(crawl_requests_table::next_crawl_at.eq(next_crawl_at))
+    .execute(&mut conn)
+    .await
+    .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    Ok(())
+}
+
+pub async fn update_scrape_id(
+    scrape_id: uuid::Uuid,
+    new_scrape_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<CrawlRequest, ServiceError> {
+    use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let updated_request = diesel::update(
+        crawl_requests_table::crawl_requests.filter(crawl_requests_table::scrape_id.eq(scrape_id)),
+    )
+    .set(crawl_requests_table::scrape_id.eq(new_scrape_id))
+    .returning(CrawlRequestPG::as_returning())
+    .get_result(&mut conn)
+    .await
+    .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    Ok(updated_request.into())
+}
+
+pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceError> {
     let firecrawl_url =
         std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "http://localhost:3002".to_string());
     let firecrawl_url = format!("{}/v1/crawl/{}", firecrawl_url, scrape_id);
@@ -228,9 +311,11 @@ pub async fn crawl_site(url: String) -> Result<uuid::Uuid, ServiceError> {
     let client = reqwest::Client::new();
     let response = client
         .post(&firecrawl_url)
-        .json(&json!({ "url": url, "maxDepth": 20, "limit": 20, "allowBackwardLinks": true, "scrapeOptions": {
+        .json(
+            &json!({ "url": url, "allowBackwardLinks": true, "scrapeOptions": {
             "onlyMainContent": true,
-        } }))
+        } }),
+        )
         .send()
         .await
         .map_err(|e| {
@@ -402,7 +487,7 @@ impl Cleaners {
 }
 
 pub fn get_images(markdown_content: &str) -> Vec<String> {
-    let image_pattern = Regex::new(r"!\[.*?\]\((.*?\.(?:png|webp|jpeg|jpg))\)").unwrap();
+    let image_pattern = Regex::new(r"\((https?://.*?\.(?:png|jpg|jpeg|gif|bmp|webp))\)").unwrap();
     image_pattern
         .captures_iter(markdown_content)
         .filter_map(|cap| cap.get(1))

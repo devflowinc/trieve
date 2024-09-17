@@ -188,7 +188,7 @@ pub fn hash_argon2_api_key(password: &str) -> Result<String, ServiceError> {
 }
 
 #[tracing::instrument]
-pub fn hash_api_key(password: &str) -> String {
+pub fn hash_function(password: &str) -> String {
     blake3::hash(password.as_bytes()).to_string()
 }
 
@@ -203,7 +203,7 @@ pub async fn set_user_api_key_query(
     pool: web::Data<Pool>,
 ) -> Result<String, ServiceError> {
     let raw_api_key = generate_api_key();
-    let hashed_api_key = hash_api_key(&raw_api_key);
+    let hashed_api_key = hash_function(&raw_api_key);
 
     let mut conn = pool.get().await.map_err(|_e| {
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
@@ -238,7 +238,7 @@ pub async fn get_user_from_api_key_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let api_key_hash = hash_api_key(api_key);
+    let api_key_hash = hash_function(api_key);
 
     let mut conn = pool.get().await.map_err(|_e| {
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
@@ -504,7 +504,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let api_key_hash = hash_api_key(api_key);
+    let api_key_hash = hash_function(api_key);
 
     let mut conn = pool.get_ref().get().await.unwrap();
 

@@ -5918,6 +5918,8 @@ pub struct CrawlRequestPG {
     pub id: uuid::Uuid,
     pub url: String,
     pub status: String,
+    pub next_crawl_at: chrono::NaiveDateTime,
+    pub interval: i32,
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
@@ -5928,6 +5930,8 @@ pub struct CrawlRequest {
     pub id: uuid::Uuid,
     pub url: String,
     pub status: CrawlStatus,
+    pub next_crawl_at: chrono::NaiveDateTime,
+    pub interval: std::time::Duration,
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
@@ -5940,10 +5944,27 @@ impl From<CrawlRequestPG> for CrawlRequest {
             id: crawl_request.id,
             url: crawl_request.url,
             status: crawl_request.status.into(),
+            next_crawl_at: crawl_request.next_crawl_at,
+            interval: std::time::Duration::from_secs(crawl_request.interval as u64),
             scrape_id: crawl_request.scrape_id,
             dataset_id: crawl_request.dataset_id,
             created_at: crawl_request.created_at,
             attempt_number: 0,
+        }
+    }
+}
+
+impl From<CrawlRequest> for CrawlRequestPG {
+    fn from(crawl_request: CrawlRequest) -> Self {
+        Self {
+            id: crawl_request.id,
+            url: crawl_request.url,
+            status: crawl_request.status.to_string(),
+            next_crawl_at: crawl_request.next_crawl_at,
+            interval: crawl_request.interval.as_secs() as i32,
+            scrape_id: crawl_request.scrape_id,
+            dataset_id: crawl_request.dataset_id,
+            created_at: crawl_request.created_at,
         }
     }
 }
