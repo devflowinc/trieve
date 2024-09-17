@@ -80,7 +80,7 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
                     <div class="flex items-center justify-between">
                       <DialogTitle
                         as="h3"
-                        class="text-lg font-medium leading-6 text-neutral-900 mb-4"
+                        class="text-lg font-medium leading-6 text-neutral-900 mb-4 max-w-[80%] text-ellipsis truncate"
                       >
                         {title()}
                       </DialogTitle>
