@@ -67,7 +67,7 @@ const ShowToasts = () => {
   });
 
   return (
-    <div class="fixed right-5 top-10 z-50 flex flex-col space-y-2 rounded">
+    <div class="fixed bottom-5 left-5 z-50 flex flex-col space-y-2 rounded">
       <For each={toastDetails()}>
         {(toastDetail) => (
           <div class="pointer-events-auto min-w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">

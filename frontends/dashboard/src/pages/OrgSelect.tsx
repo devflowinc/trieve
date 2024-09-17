@@ -1,7 +1,6 @@
-import { createQuery } from "@tanstack/solid-query";
-import { useTrieve } from "../hooks/useTrieve";
 import { Organization } from "trieve-ts-sdk";
 import { For } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 
 interface OrgsSelectProps {
   orgs: Organization[];
@@ -9,6 +8,7 @@ interface OrgsSelectProps {
 }
 
 export const OrgSelectPage = (props: OrgsSelectProps) => {
+  const navigate = useNavigate();
   return (
     <div class="relative flex min-h-screen flex-col items-center bg-neutral-200 py-36">
       <div class="absolute left-4 top-2 mb-8 flex items-center gap-1">
@@ -25,7 +25,10 @@ export const OrgSelectPage = (props: OrgsSelectProps) => {
           <For each={props.orgs}>
             {(org) => (
               <button
-                onClick={() => props.selectOrg(org.id)}
+                onClick={() => {
+                  props.selectOrg(org.id);
+                  navigate("/org");
+                }}
                 class="flex cursor-pointer items-center justify-between rounded-md border-b border-b-neutral-200 p-2 last:border-b-transparent hover:bg-neutral-100"
               >
                 <div class="flex w-full items-center justify-between">
