@@ -1,12 +1,16 @@
-use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
+use super::{
+    auth_handler::{AdminOnly, LoggedUser, OwnerOnly},
+    chunk_handler::CrawlInterval,
+};
 use crate::{
     data::models::{
-        Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO, Pool,
-        RedisPool, StripePlan, UnifiedId,
+        Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO,
+        DatasetWithCrawlSite, Pool, RedisPool, StripePlan, UnifiedId,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
     operators::{
+        crawl_operator::{crawl, update_crawl_settings_for_dataset},
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, get_dataset_by_id_query,
             get_dataset_usage_query, get_datasets_by_organization_id, get_tags_in_dataset_query,
@@ -81,6 +85,10 @@ pub struct CreateDatasetRequest {
     pub tracking_id: Option<String>,
     /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
     pub server_configuration: Option<DatasetConfigurationDTO>,
+    /// Optional site to crawl for the dataset. If provided, the dataset will be populated with the contents of the site.
+    pub crawl_site: Option<String>,
+    /// Optional crawl interval for the site. If provided, the dataset will be populated with the contents of the site on a recurring basis.
+    pub crawl_interval: Option<CrawlInterval>,
 }
 
 /// Create Dataset
@@ -107,6 +115,8 @@ pub struct CreateDatasetRequest {
 pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let org_id = data.organization_id;
@@ -138,9 +148,23 @@ pub async fn create_dataset(
             .unwrap_or_default(),
     );
 
-    let d = create_dataset_query(dataset, pool).await?;
+    let d = create_dataset_query(dataset, pool.clone()).await?;
 
-    Ok(HttpResponse::Ok().json(d))
+    if let Some(site) = data.crawl_site.clone() {
+        crawl(
+            site,
+            data.crawl_interval.clone(),
+            pool.clone(),
+            redis_pool.clone(),
+            dataset_org_plan_sub,
+        )
+        .await?;
+    };
+
+    let dataset =
+        DatasetWithCrawlSite::from_details(d, data.crawl_site.clone(), data.crawl_interval.clone());
+
+    Ok(HttpResponse::Ok().json(dataset))
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -185,6 +209,10 @@ pub struct UpdateDatasetRequest {
     pub server_configuration: Option<DatasetConfigurationDTO>,
     /// Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
     pub new_tracking_id: Option<String>,
+    /// New site to crawl for the dataset. If provided, the dataset will be populated with the contents of the site.
+    pub crawl_site: Option<String>,
+    /// New crawl interval for the site. If provided, the dataset will be populated with the contents of the site on a recurring basis.
+    pub crawl_interval: Option<CrawlInterval>,
 }
 
 /// Update Dataset by ID or Tracking ID
@@ -238,6 +266,14 @@ pub async fn update_dataset(
             .map(|c| c.from_curr_dataset(curr_dataset_config.clone()))
             .unwrap_or(curr_dataset_config),
         data.new_tracking_id.clone(),
+        pool.clone(),
+    )
+    .await?;
+
+    update_crawl_settings_for_dataset(
+        curr_dataset.id,
+        data.crawl_site.clone(),
+        data.crawl_interval.clone(),
         pool.clone(),
     )
     .await?;
