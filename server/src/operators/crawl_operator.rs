@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use ureq::json;
 
 use crate::data::models::CrawlStatus;
-use crate::data::models::DatasetAndOrgWithSubAndPlan;
 use crate::data::models::RedisPool;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::{
@@ -123,7 +122,7 @@ pub async fn crawl(
     interval: Option<CrawlInterval>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    dataset_id: uuid::Uuid,
 ) -> Result<uuid::Uuid, ServiceError> {
     let scrape_id = crawl_site(site.clone())
         .await
@@ -133,12 +132,12 @@ pub async fn crawl(
         Some(CrawlInterval::Daily) => std::time::Duration::from_secs(60 * 60 * 24),
         Some(CrawlInterval::Weekly) => std::time::Duration::from_secs(60 * 60 * 24 * 7),
         Some(CrawlInterval::Monthly) => std::time::Duration::from_secs(60 * 60 * 24 * 30),
-        None => std::time::Duration::from_secs(0),
+        None => std::time::Duration::from_secs(60 * 60 * 24),
     };
 
     let scrape_id = create_crawl_request(
         site,
-        dataset_org_plan_sub.dataset.id,
+        dataset_id,
         scrape_id,
         interval,
         pool,
