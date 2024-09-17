@@ -2677,8 +2677,17 @@ pub fn check_completion_param_validity(
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CrawlInterval {
+    Daily,
+    Weekly,
+    Monthly,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct CrawlRequestBody {
     pub site: String,
+    pub interval: Option<CrawlInterval>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
@@ -2718,10 +2727,18 @@ pub async fn crawl(
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?;
 
+    let interval = match data.interval {
+        Some(CrawlInterval::Daily) => std::time::Duration::from_secs(60 * 60 * 24),
+        Some(CrawlInterval::Weekly) => std::time::Duration::from_secs(60 * 60 * 24 * 7),
+        Some(CrawlInterval::Monthly) => std::time::Duration::from_secs(60 * 60 * 24 * 30),
+        None => std::time::Duration::from_secs(0),
+    };
+
     let scrape_id = create_crawl_request(
         data.site,
         dataset_org_plan_sub.dataset.id,
         scrape_id,
+        interval,
         pool,
         redis_pool,
     )

@@ -56,6 +56,8 @@ diesel::table! {
         id -> Uuid,
         url -> Text,
         status -> Text,
+        interval -> Int4,
+        next_crawl_at -> Timestamp,
         scrape_id -> Uuid,
         dataset_id -> Uuid,
         created_at -> Timestamp,

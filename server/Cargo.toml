@@ -65,6 +65,13 @@ path = "src/bin/reindex-worker.rs"
 name = "clone-qdrant"
 path = "src/bin/clone-qdrant.rs"
 
+[[bin]]
+name = "crawl-worker"
+path = "src/bin/crawl-worker.rs"
+
+[[bin]]
+name = "crawl-cron-job"
+path = "src/bin/crawl-cron-job.rs"
 
 [dependencies]
 actix-identity = { version = "0.7.1" }

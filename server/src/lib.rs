@@ -335,6 +335,7 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::UpdateDatasetRequest,
             handlers::dataset_handler::GetDatasetsPagination,
             data::models::DatasetConfigurationDTO,
+            handlers::chunk_handler::CrawlInterval,
             handlers::analytics_handler::GetTopDatasetsRequestBody,
             handlers::analytics_handler::CTRDataRequestBody,
             data::models::CTRType,

@@ -8,11 +8,15 @@ use std::sync::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
 use actix_web::web;
-use trieve_server::operators::chunk_operator::create_chunk_metadata;
-use trieve_server::operators::dataset_operator::get_dataset_by_id_query;
+use trieve_server::operators::{
+    chunk_operator::create_chunk_metadata, crawl_operator::update_next_crawl_at,
+};
+use trieve_server::operators::{
+    dataset_operator::get_dataset_by_id_query, user_operator::hash_function,
+};
 use trieve_server::{
     data::models::{CrawlRequest, DatasetConfiguration, RedisPool},
-    operators::crawl_operator::{get_crawl, Status},
+    operators::crawl_operator::{get_crawl_from_firecrawl, Status},
 };
 use trieve_server::{
     data::models::{CrawlStatus, Pool},
@@ -32,10 +36,12 @@ async fn crawl(
 ) -> Result<uuid::Uuid, ServiceError> {
     let ingest_result;
     loop {
-        let temp_result = get_crawl(scrape_request.scrape_id).await.map_err(|e| {
-            log::error!("Error getting scrape request: {:?}", e);
-            ServiceError::InternalServerError("Error getting scrape request".to_string())
-        })?;
+        let temp_result = get_crawl_from_firecrawl(scrape_request.scrape_id)
+            .await
+            .map_err(|e| {
+                log::error!("Error getting scrape request: {:?}", e);
+                ServiceError::InternalServerError("Error getting scrape request".to_string())
+            })?;
         if temp_result.status == Status::Completed {
             ingest_result = temp_result;
             break;
@@ -55,6 +61,7 @@ async fn crawl(
             ));
         }
     }
+
     update_crawl_status(
         scrape_request.id,
         CrawlStatus::GotResponseBackFromFirecrawl,
@@ -74,9 +81,15 @@ async fn crawl(
 
     let mut chunks = vec![];
 
-    log::info!("Processing {} chunks", ingest_result.data.len());
+    let data = ingest_result.data.unwrap_or_default();
 
-    for page in ingest_result.data {
+    log::info!("Processing {} chunks", data.len());
+
+    for page in data {
+        if page.is_none() {
+            continue;
+        }
+        let page = page.unwrap();
         if page.metadata.status_code != Some(200) {
             log::error!("Error getting metadata for chunk: {:?}", page.metadata);
             update_crawl_status(scrape_request.id, CrawlStatus::Failed, pool.clone())
@@ -115,6 +128,8 @@ async fn crawl(
                     "description": page_description.clone(),
                     "url": page_link.clone(),
                 })),
+                tracking_id: Some(hash_function(&chunk.clone())),
+                upsert_by_tracking_id: Some(true),
                 ..Default::default()
             };
             chunks.push(chunk);
@@ -159,6 +174,20 @@ async fn crawl(
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     }
+
+    update_crawl_status(
+        scrape_request.scrape_id,
+        CrawlStatus::Completed,
+        pool.clone(),
+    )
+    .await?;
+
+    update_next_crawl_at(
+        scrape_request.scrape_id,
+        scrape_request.next_crawl_at + scrape_request.interval,
+        pool.clone(),
+    )
+    .await?;
 
     Ok(scrape_request.id)
 }
@@ -241,6 +270,14 @@ async fn scrape_worker(
         let transaction = sentry::start_transaction(processing_chunk_ctx);
         let crawl_request: CrawlRequest =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
+
+        update_crawl_status(crawl_request.scrape_id, CrawlStatus::Pending, pool.clone())
+            .await
+            .map_err(|e| {
+                log::error!("Error updating crawl status: {:?}", e);
+                ServiceError::InternalServerError("Error updating crawl status".to_string())
+            })
+            .unwrap();
 
         match crawl(crawl_request.clone(), pool.clone(), redis_pool.clone()).await {
             Ok(scrape_id) => {
