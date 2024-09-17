@@ -16,7 +16,7 @@ export const NewUserOrgName = () => {
   createEffect(() => {
     // Try to load the placeholder org name
     // Get the org name
-    const selectedOrg = orgContext.selectedOrganizationId?.();
+    const selectedOrg = orgContext.selectedOrg().id;
     if (selectedOrg) {
       setPlaceholder(
         orgContext.user?.()?.orgs.find((org) => org.id === selectedOrg)?.name ||
@@ -28,7 +28,7 @@ export const NewUserOrgName = () => {
 
   const submitForm = (e: SubmitEvent) => {
     e.preventDefault();
-    const selectedOrg = orgContext.selectedOrganizationId?.();
+    const selectedOrg = orgContext.selectedOrg().id;
     if (orgNameInput().length > 0 && selectedOrg) {
       setLoading(true);
       trieve

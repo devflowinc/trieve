@@ -29,6 +29,7 @@ export interface UserStore {
   user: Accessor<SlimUser>;
   isNewUser: Accessor<boolean>;
   selectedOrg: Accessor<SlimUser["orgs"][0]>;
+  setSelectedOrg: (orgId: string) => void;
   orgDatasets: Resource<DatasetAndUsage[]>;
   login: () => void;
   logout: () => void;
@@ -38,6 +39,7 @@ export const UserContext = createContext<UserStore>({
   user: () => null as unknown as SlimUser,
   isNewUser: () => false,
   login: () => {},
+  setSelectedOrg: () => {},
   orgDatasets: null as unknown as Resource<DatasetAndUsage[]>,
   logout: () => {},
   selectedOrg: () => null as unknown as SlimUser["orgs"][0],
@@ -146,6 +148,15 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     return result;
   });
 
+  const setSelectedOrg = (orgId: string) => {
+    localStorage.setItem(`${user()?.id}:selectedOrg`, orgId);
+    const org = user()?.orgs.find((org) => org.id === orgId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+    setSelectedOrganization(org);
+  };
+
   createEffect(() => {
     login();
   });
@@ -168,6 +179,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
                   user: user,
                   orgDatasets: orgDatasets,
                   selectedOrg: org,
+                  setSelectedOrg: setSelectedOrg,
                   logout,
                   isNewUser: isNewUser,
                   login,

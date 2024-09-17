@@ -18,7 +18,7 @@ import { formatDate } from "../utils/formatters";
 import NewDatasetModal from "./NewDatasetModal";
 import { UserContext } from "../contexts/UserContext";
 import { MagicSuspense } from "./MagicBox";
-import { A, useNavigate } from "@solidjs/router";
+import { useNavigate } from "@solidjs/router";
 
 export const DatasetOverview = () => {
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
