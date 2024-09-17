@@ -20,6 +20,7 @@ import { OrgUserPage } from "./pages/orgs/OrgUserPage.tsx";
 import { OrgBillingPage } from "./pages/orgs/OrgBillingPage.tsx";
 import { OrgSettings } from "./pages/orgs/OrgSettings.tsx";
 import { HomeRedirect } from "./pages/HomeRedirect.tsx";
+import { LegacySettingsWrapper } from "./components/dataset-settings/LegacySettingsWrapper.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -106,6 +107,10 @@ const routes: RouteDefinition[] = [
               {
                 path: "/keys",
                 component: ApiKeys,
+              },
+              {
+                path: "/options",
+                component: LegacySettingsWrapper,
               },
             ],
           },
