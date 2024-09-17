@@ -18,6 +18,7 @@ import { OrganizationLayout } from "./layouts/OrganizationLayout.tsx";
 import { OrganizationHomepage } from "./pages/orgs/OrganizationHomepage.tsx";
 import { OrgUserPage } from "./pages/orgs/OrgUserPage.tsx";
 import { OrgBillingPage } from "./pages/orgs/OrgBillingPage.tsx";
+import { OrgSettings } from "./pages/orgs/OrgSettings.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -72,6 +73,10 @@ const routes: RouteDefinition[] = [
               {
                 path: "/keys",
                 component: ApiKeys,
+              },
+              {
+                path: "/settings",
+                component: OrgSettings,
               },
               {
                 path: "*404",
