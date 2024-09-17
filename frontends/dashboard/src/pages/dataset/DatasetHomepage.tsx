@@ -7,7 +7,7 @@ export const DatasetHomepage = () => {
   return (
     <div class="p-4">
       <div>Dataset Homepage</div>
-      <div class="m-3 bg-orange-700">ID: {datasetId}</div>
+      <div class="m-3 bg-orange-700">ID: {datasetId()}</div>
     </div>
   );
 };

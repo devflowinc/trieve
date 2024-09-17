@@ -14,7 +14,7 @@ import {
   fromI32ToApiKeyRole,
   fromI32ToUserRole,
 } from "shared/types";
-import { formatDate } from "../formatters";
+import { formatDate } from "../utils/formatters";
 
 export const ApiKeys = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -24,8 +24,7 @@ export const ApiKeys = () => {
   const [openModal, setOpenModal] = createSignal<boolean>(false);
 
   const currentUserRole = createMemo(() => {
-    const selectedOrgId = userContext.selectedOrganizationId?.();
-    if (!selectedOrgId) return 0;
+    const selectedOrgId = userContext.selectedOrg().id;
     return (
       userContext
         .user?.()
@@ -172,15 +171,7 @@ export const ApiKeys = () => {
                         <For each={apiKey.organization_ids}>
                           {(org_id, index) => (
                             <>
-                              <a
-                                class="text-fuchsia-600 hover:underline"
-                                href={`/dashboard/${org_id}/overview`}
-                                onClick={() =>
-                                  userContext.setSelectedOrganizationId(org_id)
-                                }
-                              >
-                                {org_id}
-                              </a>
+                              <div>{org_id}</div>
                               <Show
                                 when={
                                   index() <

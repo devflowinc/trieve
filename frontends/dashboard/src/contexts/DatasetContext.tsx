@@ -7,13 +7,13 @@ import { UserContext } from "./UserContext";
 type DatasetStore = {
   dataset: Accessor<DatasetAndUsage | null>;
   selectDataset: (id: string) => void;
-  datasetId: string;
+  datasetId: Accessor<string>;
 };
 
 export const DatasetContext = createContext<DatasetStore>({
   dataset: () => null as unknown as DatasetAndUsage,
   selectDataset: (_id: string) => {},
-  datasetId: "",
+  datasetId: () => "" as unknown as string,
 });
 
 export const DatasetContextProvider = (props: { children: JSX.Element }) => {
@@ -37,12 +37,14 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
     navigate(`/dataset/${id}`);
   };
 
+  const datasetId = createMemo(() => params.id);
+
   return (
     <DatasetContext.Provider
       value={{
         selectDataset,
         dataset: dataset,
-        datasetId: params.id,
+        datasetId: datasetId,
       }}
     >
       {props.children}
