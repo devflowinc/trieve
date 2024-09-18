@@ -4,6 +4,7 @@ import { OrganizationAndSubAndPlan } from "shared/types";
 import { PlansTable } from "../../components/PlansTable";
 import { createToast } from "../../components/ShowToasts";
 import { InvoicesTable } from "../../components/InvoicesTable";
+import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
 
 export const OrgBillingPage = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -45,9 +46,10 @@ export const OrgBillingPage = () => {
   });
 
   return (
-    <div class="flex w-full flex-col gap-y-12">
-      <PlansTable currentOrgSubPlan={orgSubPlan()} />
+    <div class="">
+      <OrganizationUsageOverview />
       <InvoicesTable />
+      <PlansTable currentOrgSubPlan={orgSubPlan()} />
     </div>
   );
 };
