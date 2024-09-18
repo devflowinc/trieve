@@ -13,7 +13,7 @@ import { DatasetHomepage } from "./pages/dataset/DatasetHomepage.tsx";
 import { DatasetLayout } from "./layouts/DatasetSidebarLayout.tsx";
 import { DatasetContextProvider } from "./contexts/DatasetContext.tsx";
 import { DatasetEvents } from "./pages/dataset/Events.tsx";
-import { ApiKeys } from "./pages/dataset/ApiKeys.tsx";
+import { ApiKeys } from "./components/ApiKeys.tsx";
 import { OrganizationLayout } from "./layouts/OrganizationLayout.tsx";
 import { OrganizationHomepage } from "./pages/orgs/OrganizationHomepage.tsx";
 import { OrgUserPage } from "./pages/orgs/OrgUserPage.tsx";

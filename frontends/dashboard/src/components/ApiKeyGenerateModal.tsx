@@ -18,7 +18,6 @@ import {
   DisclosurePanel,
 } from "terracotta";
 import {
-  ApiKeyRespBody,
   DatasetAndUsage,
   fromI32ToUserRole,
   SetUserApiKeyResponse,
@@ -39,9 +38,7 @@ export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
   closeModal: () => void;
 
-  refetch: (
-    info?: unknown,
-  ) => ApiKeyRespBody[] | Promise<ApiKeyRespBody[]> | null | undefined;
+  onCreated: () => void;
 }) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
 
@@ -91,12 +88,6 @@ export const ApiKeyGenerateModal = (props: {
     { initialValue: [] },
   );
 
-  createEffect(() => {
-    if (generated()) {
-      void props.refetch();
-    }
-  });
-
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
 
@@ -124,12 +115,14 @@ export const ApiKeyGenerateModal = (props: {
                 .flat()
             : undefined,
       }),
+      // eslint-disable-next-line solid/reactivity
     }).then((res) => {
       if (res.ok) {
         void res.json().then((data) => {
           setApiKey((data as SetUserApiKeyResponse).api_key);
         });
         setGenerated(true);
+        props.onCreated();
       } else {
         createToast({ type: "error", title: "Failed to generate API key" });
       }
