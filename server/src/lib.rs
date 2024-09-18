@@ -151,6 +151,7 @@ impl Modify for SecurityAddon {
     modifiers(&SecurityAddon),
     paths(
         handlers::invitation_handler::post_invitation,
+        handlers::invitation_handler::delete_invitation,
         handlers::invitation_handler::get_invitations,
         handlers::auth_handler::login,
         handlers::auth_handler::logout,
