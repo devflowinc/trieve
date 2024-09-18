@@ -1,27 +1,54 @@
-import {
-  For,
-  Show,
-  createEffect,
-  createMemo,
-  createSignal,
-  useContext,
-} from "solid-js";
+import { Show, createMemo, createSignal, useContext } from "solid-js";
 import { UserContext } from "../../contexts/UserContext";
-import { fromI32ToUserRole, Invitation, isInvitation } from "shared/types";
+import { fromI32ToUserRole, Invitation } from "shared/types";
 import { InviteUserModal } from "../../components/InviteUserModal";
 import { EditUserModal } from "../../components/EditUserModal";
 import { createToast } from "../../components/ShowToasts";
-import { FaRegularTrashCan } from "solid-icons/fa";
 import { SlimUser } from "trieve-ts-sdk";
+import { createMutation, createQuery } from "@tanstack/solid-query";
+import { useTrieve } from "../../hooks/useTrieve";
+import {
+  createColumnHelper,
+  createSolidTable,
+  getCoreRowModel,
+} from "@tanstack/solid-table";
+import { TanStackTable } from "shared/ui";
+import { FaRegularTrashCan } from "solid-icons/fa";
+
+const userCol = createColumnHelper<SlimUser>();
+const inviteCol = createColumnHelper<Invitation>();
 
 export const OrgUserPage = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
+
   const userContext = useContext(UserContext);
-  const [users, setUsers] = createSignal<SlimUser[]>([]);
+
+  const trieve = useTrieve();
+
+  const userQuery = createQuery(() => ({
+    queryKey: ["users", userContext.selectedOrg().id],
+    queryFn: async () => {
+      await new Promise((r) => setTimeout(r, 1000));
+      return trieve.fetch("/api/organization/users/{organization_id}", "get", {
+        organizationId: userContext.selectedOrg().id,
+      });
+    },
+  }));
+
+  const invitationQuery = createQuery(() => ({
+    queryKey: ["invitations", userContext.selectedOrg().id],
+    queryFn: () => {
+      // @ts-ignore eject doesn't include routes atm
+      return trieve.fetch<"eject">("/api/invitation/{organization_id}", "get", {
+        organizationId: userContext.selectedOrg().id,
+      }) as Promise<Invitation[]>;
+    },
+  }));
+
   const [inviteUserModalOpen, setInviteUserModalOpen] =
     createSignal<boolean>(false);
   const [editingUser, setEditingUser] = createSignal<SlimUser | null>(null);
-  const [invitations, setInvitations] = createSignal<Invitation[]>([]);
+
   const currentUserRole = createMemo(() => {
     return (
       userContext.user().user_orgs.find((val) => {
@@ -30,142 +57,187 @@ export const OrgUserPage = () => {
     );
   });
 
-  const getUsers = () => {
-    fetch(`${apiHost}/organization/users/${userContext.selectedOrg().id}`, {
-      headers: {
-        "TR-Organization": userContext.selectedOrg().id,
-      },
-      credentials: "include",
-    })
-      .then((res) => {
-        if (res.status === 403) {
-          createToast({
-            title: "Error",
-            type: "error",
-            message:
-              "It is likely that an admin or owner recently increased your role to admin or owner. Please sign out and sign back in to see the changes.",
-            timeout: 10000,
-          });
-          return null;
-        }
+  const removeUserMutation = createMutation(() => ({
+    mutationFn: async (id: string) => {
+      const res = await fetch(
+        `${apiHost}/organization/${userContext.selectedOrg().id}/user/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "TR-Organization": userContext.selectedOrg().id,
+          },
+          credentials: "include",
+        },
+      );
 
-        return res.json();
-      })
-      .then((data) => {
-        setUsers(data);
-      })
-      .catch((err) => {
-        console.error(err);
+      if (!res.ok) {
+        throw new Error("Error deleting user");
+      }
+    },
+    onSuccess: () => {
+      userQuery.refetch();
+      createToast({
+        title: "Success",
+        type: "success",
+        message: "User removed successfully!",
       });
-  };
-
-  const getInvitations = () => {
-    fetch(`${apiHost}/invitation/${userContext.selectedOrg().id}`, {
-      headers: {
-        "TR-Organization": userContext.selectedOrg().id,
-      },
-      credentials: "include",
-    })
-      .then((res) => {
-        if (res.status === 403) {
-          createToast({
-            title: "Error",
-            type: "error",
-            message:
-              "It is likely that an admin or owner recently increased your role to admin or owner. Please sign out and sign back in to see the changes.",
-            timeout: 10000,
-          });
-          return null;
-        }
-
-        return res.json();
-      })
-      .then((data) => {
-        if (!Array.isArray(data)) {
-          setInvitations([]);
-          return;
-        }
-        if (isInvitation(data[0])) {
-          setInvitations(data);
-        } else {
-          setInvitations([]);
-        }
-      })
-      .catch((err) => {
-        console.error(err);
+    },
+    onError: () => {
+      createToast({
+        title: "Error",
+        type: "error",
+        message: "Error removing user!",
       });
-  };
+    },
+  }));
 
-  const removeUser = (id: string) => {
-    const confirm = window.confirm(
-      "Are you sure you want to remove this user?",
-    );
-    if (!confirm) {
-      return;
+  const userCols = [
+    userCol.accessor("name", {
+      header: "Name",
+    }),
+    userCol.accessor("email", {
+      header: "Email",
+    }),
+    userCol.accessor("user_orgs", {
+      header: "Organizations",
+      cell: (info) => {
+        const row = info.row.original;
+        return row.orgs.map((org) => org.name).join(", ");
+      },
+    }),
+    userCol.accessor("user_orgs.role", {
+      header: "Role",
+      cell: (info) => {
+        const role = info.row.original.user_orgs[0].role;
+        return fromI32ToUserRole(role);
+      },
+    }),
+    userCol.display({
+      header: " ",
+      id: "actions",
+      cell(props) {
+        return (
+          <>
+            <button
+              onClick={() => {
+                setEditingUser(props.row.original);
+              }}
+              disabled={props.row.original.id === userContext.user?.()?.id}
+              classList={{
+                "text-sm": true,
+                "text-neutral-200 cursor-not-allowed":
+                  props.row.original.id === userContext.user?.()?.id,
+                "text-magenta-500 hover:text-magenta-900":
+                  props.row.original.id !== userContext.user?.()?.id,
+              }}
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => {
+                removeUserMutation.mutate(props.row.original.id);
+              }}
+              disabled={props.row.original.id === userContext.user?.()?.id}
+              classList={{
+                "text-neutral-200 cursor-not-allowed":
+                  props.row.original.id === userContext.user?.()?.id,
+                "text-red-500 hover:text-red-900":
+                  props.row.original.id !== userContext.user?.()?.id,
+              }}
+            >
+              <FaRegularTrashCan />
+            </button>
+          </>
+        );
+      },
+    }),
+  ];
+
+  const userTable = createMemo(() => {
+    if (!userQuery.data) {
+      return null;
     }
+    return createSolidTable({
+      columns: userCols,
+      data: userQuery.data,
+      getCoreRowModel: getCoreRowModel(),
+    });
+  });
 
-    fetch(
-      `${apiHost}/organization/${userContext.selectedOrg().id}/user/${id}`,
-      {
+  const inviteCols = [
+    inviteCol.accessor("email", {
+      header: "Email",
+    }),
+    inviteCol.accessor("role", {
+      header: "Role",
+      cell: (info) => {
+        return fromI32ToUserRole(info.getValue());
+      },
+    }),
+    inviteCol.display({
+      header: " ",
+      id: "actions",
+      cell(props) {
+        return (
+          <button
+            onClick={() => {
+              deleteInvitationMutation.mutate(props.row.original.id);
+            }}
+            disabled={props.row.original.used}
+            classList={{
+              "text-sm": true,
+              "text-neutral-200 cursor-not-allowed": props.row.original.used,
+              "text-magenta-500 hover:text-magenta-900":
+                !props.row.original.used,
+            }}
+          >
+            Delete
+          </button>
+        );
+      },
+    }),
+  ];
+
+  const inviteTable = createMemo(() => {
+    if (!invitationQuery.data) {
+      return null;
+    }
+    return createSolidTable({
+      columns: inviteCols,
+      data: invitationQuery.data,
+      getCoreRowModel: getCoreRowModel(),
+    });
+  });
+
+  const deleteInvitationMutation = createMutation(() => ({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${apiHost}/invitation/${id}`, {
         method: "DELETE",
         headers: {
           "TR-Organization": userContext.selectedOrg().id,
         },
         credentials: "include",
-      },
-    )
-      .then((res) => {
-        if (res.ok) {
-          getUsers();
-          createToast({
-            title: "Success",
-            type: "success",
-            message: "User removed successfully!",
-          });
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        createToast({
-          title: "Error",
-          type: "error",
-          message: "Error removing user!",
-        });
       });
-  };
-
-  const deleteInvitation = (id: string) => {
-    fetch(`${apiHost}/invitation/${id}`, {
-      method: "DELETE",
-      headers: {
-        "TR-Organization": userContext.selectedOrg().id,
-      },
-      credentials: "include",
-    })
-      .then((res) => {
-        if (res.ok) {
-          getInvitations();
-          createToast({
-            title: "Success",
-            type: "success",
-            message: "Invitation deleted successfully!",
-          });
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        createToast({
-          title: "Error",
-          type: "error",
-          message: "Error deleting invitation!",
-        });
+      if (!res.ok) {
+        throw new Error("Error deleting invitation");
+      }
+    },
+    onSuccess: () => {
+      invitationQuery.refetch();
+      createToast({
+        title: "Success",
+        type: "success",
+        message: "Invitation deleted successfully!",
       });
-  };
-
-  createEffect(() => {
-    getInvitations();
-    getUsers();
-  });
+    },
+    onError: () => {
+      createToast({
+        title: "Error",
+        type: "error",
+        message: "Error deleting invitation!",
+      });
+    },
+  }));
 
   return (
     <div class="mt-4">
@@ -199,95 +271,22 @@ export const OrgUserPage = () => {
           </Show>
         </div>
       </div>
-      <div class="overflow-hidden rounded shadow-sm ring-1 ring-black ring-opacity-5">
-        <table class="min-w-full divide-y divide-neutral-300 bg-white">
-          <thead class="bg-neutral-100">
-            <tr>
-              <th
-                scope="col"
-                class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
-              >
-                Name
-              </th>
-              <th
-                scope="col"
-                class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
-              >
-                Email
-              </th>
-              <th
-                scope="col"
-                class="px-3 py-3.5 text-left text-sm font-semibold"
-              >
-                Role
-              </th>
-              <th
-                scope="col"
-                class="px-3 py-3.5 text-left text-sm font-semibold"
-              >
-                <span class="sr-only">Edit</span>
-              </th>
-              <th
-                scope="col"
-                class="px-3 py-3.5 text-left text-sm font-semibold"
-              >
-                <span class="sr-only">Delete</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <For each={users()}>
-              {(user) => (
-                <tr>
-                  <td class="whitespace-nowrap border-b border-neutral-200 py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8">
-                    {user.name}
-                  </td>
-                  <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
-                    {user.email}
-                  </td>
-                  <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
-                    {fromI32ToUserRole(user.user_orgs[0].role) as string}
-                  </td>
-                  <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 text-right font-medium">
-                    <button
-                      onClick={() => {
-                        setEditingUser(user);
-                      }}
-                      disabled={user.id === userContext.user?.()?.id}
-                      classList={{
-                        "text-sm": true,
-                        "text-neutral-200 cursor-not-allowed":
-                          user.id === userContext.user?.()?.id,
-                        "text-magenta-500 hover:text-magenta-900":
-                          user.id !== userContext.user?.()?.id,
-                      }}
-                    >
-                      Edit
-                    </button>
-                  </td>
-                  <td class="whitespace-nowrap border-b border-neutral-200 py-4 pr-4 text-right text-sm font-medium">
-                    <button
-                      onClick={() => {
-                        removeUser(user.id);
-                      }}
-                      disabled={user.id === userContext.user?.()?.id}
-                      classList={{
-                        "text-neutral-200 cursor-not-allowed":
-                          user.id === userContext.user?.()?.id,
-                        "text-red-500 hover:text-red-900":
-                          user.id !== userContext.user?.()?.id,
-                      }}
-                    >
-                      <FaRegularTrashCan />
-                    </button>
-                  </td>
-                </tr>
-              )}
-            </For>
-          </tbody>
-        </table>
-      </div>
-      <Show when={currentUserRole() === 2}>
+      <Show when={userTable()}>
+        {(userTable) => (
+          <TanStackTable
+            headerClass="bg-neutral-100"
+            class="mt-2 rounded-md border border-neutral-300 bg-white shadow-sm"
+            table={userTable()}
+          />
+        )}
+      </Show>
+      <Show
+        when={
+          currentUserRole() === 2 &&
+          invitationQuery.data?.length &&
+          invitationQuery.data?.length > 0
+        }
+      >
         <>
           <h1 class="pt-8 text-base font-semibold text-neutral-900">
             Invitations
@@ -296,78 +295,27 @@ export const OrgUserPage = () => {
             A list of all the invitations you have sent out to users to join
             your organization.
           </p>
-          <div class="overflow-hidden rounded shadow-sm ring-1 ring-black ring-opacity-5">
-            <table class="min-w-full divide-y divide-neutral-300 bg-white">
-              <thead class="bg-neutral-100">
-                <tr>
-                  <th
-                    scope="col"
-                    class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
-                  >
-                    Email
-                  </th>
-                  <th
-                    scope="col"
-                    class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
-                  >
-                    Role
-                  </th>
-                  <th
-                    scope="col"
-                    class="px-3 py-3.5 text-left text-sm font-semibold"
-                  >
-                    Status
-                  </th>
-                  <th
-                    scope="col"
-                    class="px-3 py-3.5 text-left text-sm font-semibold"
-                  >
-                    <span class="sr-only">Delete</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <For each={invitations()}>
-                  {(invitation) => (
-                    <tr>
-                      <td class="whitespace-nowrap border-b border-neutral-200 py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6 lg:pl-8">
-                        {invitation.email}
-                      </td>
-                      <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
-                        {fromI32ToUserRole(invitation.role) as string}
-                      </td>
-                      <td class="whitespace-nowrap border-b border-neutral-200 px-3 py-4 text-sm text-neutral-900">
-                        {invitation.used ? "Accepted" : "Not Accepted"}
-                      </td>
-                      <td class="relative whitespace-nowrap border-b border-neutral-200 py-4 pr-4 text-right font-medium sm:pr-8 lg:pr-36 xl:pr-48">
-                        <button
-                          onClick={() => {
-                            deleteInvitation(invitation.id);
-                          }}
-                          class="text-sm text-magenta-500 hover:text-magenta-900"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                </For>
-              </tbody>
-            </table>
-          </div>
+          <Show when={inviteTable()}>
+            {(inviteTable) => (
+              <TanStackTable
+                class="bg-white"
+                headerClass="bg-neutral-100"
+                table={inviteTable()}
+              />
+            )}
+          </Show>
           <InviteUserModal
             isOpen={inviteUserModalOpen}
             closeModal={() => {
               setInviteUserModalOpen(false);
-              getInvitations();
-              getUsers();
+              invitationQuery.refetch();
             }}
           />
           <EditUserModal
             editingUser={editingUser()}
             closeModal={() => {
               setEditingUser(null);
-              getUsers();
+              userQuery.refetch();
             }}
           />
         </>
