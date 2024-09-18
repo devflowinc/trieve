@@ -38,7 +38,7 @@ export const OrgUserPage = () => {
   const invitationQuery = createQuery(() => ({
     queryKey: ["invitations", userContext.selectedOrg().id],
     queryFn: () => {
-      // @ts-ignore eject doesn't include routes atm
+      // @ts-expect-error eject doesn't include routes atm
       return trieve.fetch<"eject">("/api/invitation/{organization_id}", "get", {
         organizationId: userContext.selectedOrg().id,
       }) as Promise<Invitation[]>;
@@ -75,7 +75,7 @@ export const OrgUserPage = () => {
       }
     },
     onSuccess: () => {
-      userQuery.refetch();
+      void userQuery.refetch();
       createToast({
         title: "Success",
         type: "success",
@@ -223,7 +223,7 @@ export const OrgUserPage = () => {
       }
     },
     onSuccess: () => {
-      invitationQuery.refetch();
+      void invitationQuery.refetch();
       createToast({
         title: "Success",
         type: "success",
@@ -308,14 +308,14 @@ export const OrgUserPage = () => {
             isOpen={inviteUserModalOpen}
             closeModal={() => {
               setInviteUserModalOpen(false);
-              invitationQuery.refetch();
+              void invitationQuery.refetch();
             }}
           />
           <EditUserModal
             editingUser={editingUser()}
             closeModal={() => {
               setEditingUser(null);
-              userQuery.refetch();
+              void userQuery.refetch();
             }}
           />
         </>
