@@ -1900,7 +1900,6 @@ impl Dataset {
     }
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Queryable, Clone, ToSchema)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -6034,7 +6033,7 @@ pub struct FirecrawlScraperOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exclude_tags: Option<Vec<String>>,
 }
- impl From<CrawlOptions> for FirecrawlCrawlRequest {
+impl From<CrawlOptions> for FirecrawlCrawlRequest {
     fn from(crawl_options: CrawlOptions) -> Self {
         Self {
             url: crawl_options.site_url,

@@ -1,8 +1,8 @@
-use super::
-    auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
+use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
-        CrawlOptions, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO, Pool, RedisPool, StripePlan, UnifiedId
+        CrawlOptions, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
+        DatasetConfigurationDTO, Pool, RedisPool, StripePlan, UnifiedId,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -258,15 +258,15 @@ pub async fn update_dataset(
         pool.clone(),
     )
     .await?;
-    
+
     if let Some(crawl_options) = data.crawl_options.clone() {
-    update_crawl_settings_for_dataset(
-        crawl_options.clone(),
-        curr_dataset.id,
-        pool.clone(),
-        redis_pool.clone(),
-    )
-    .await?;
+        update_crawl_settings_for_dataset(
+            crawl_options.clone(),
+            curr_dataset.id,
+            pool.clone(),
+            redis_pool.clone(),
+        )
+        .await?;
     };
 
     Ok(HttpResponse::Ok().json(d))

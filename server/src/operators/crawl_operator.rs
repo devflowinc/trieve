@@ -128,10 +128,7 @@ pub async fn crawl(
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?;
 
-    
-
     create_crawl_request(crawl_options, dataset_id, scrape_id, pool, redis_pool).await?;
-    
 
     Ok(scrape_id)
 }
@@ -383,10 +380,15 @@ pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestRes
     let firecrawl_api_key = std::env::var("FIRECRAWL_API_KEY").unwrap_or_else(|_| "".to_string());
     let firecrawl_url = format!("{}/v1/crawl/{}", firecrawl_url, scrape_id);
     let client = reqwest::Client::new();
-    let response = client.get(&firecrawl_url).header("Authorization", format!("Bearer {}", firecrawl_api_key)).send().await.map_err(|e| {
-        log::error!("Error sending request to firecrawl: {:?}", e);
-        ServiceError::InternalServerError("Error sending request to firecrawl".to_string())
-    })?;
+    let response = client
+        .get(&firecrawl_url)
+        .header("Authorization", format!("Bearer {}", firecrawl_api_key))
+        .send()
+        .await
+        .map_err(|e| {
+            log::error!("Error sending request to firecrawl: {:?}", e);
+            ServiceError::InternalServerError("Error sending request to firecrawl".to_string())
+        })?;
 
     if response.status().is_success() {
         let json = response.json::<IngestResult>().await.map_err(|e| {
@@ -397,7 +399,10 @@ pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestRes
         log::info!("Got response from firecrawl: {:?}", json.status);
         Ok(json)
     } else {
-        log::error!("Error getting response from firecrawl: {:?}", response.text().await);
+        log::error!(
+            "Error getting response from firecrawl: {:?}",
+            response.text().await
+        );
         Err(ServiceError::InternalServerError(
             "Error getting response from firecrawl".to_string(),
         ))
@@ -412,9 +417,7 @@ pub async fn crawl_site(crawl_options: CrawlOptions) -> Result<uuid::Uuid, Servi
     let client = reqwest::Client::new();
     let response = client
         .post(&firecrawl_url)
-        .json(
-            &FirecrawlCrawlRequest::from(crawl_options)
-        )
+        .json(&FirecrawlCrawlRequest::from(crawl_options))
         .header("Authorization", format!("Bearer {}", firecrawl_api_key))
         .send()
         .await
@@ -431,7 +434,10 @@ pub async fn crawl_site(crawl_options: CrawlOptions) -> Result<uuid::Uuid, Servi
 
         Ok(json.get("id").unwrap().as_str().unwrap().parse().unwrap())
     } else {
-        log::error!("Error getting response from firecrawl: {:?}", response.text().await);
+        log::error!(
+            "Error getting response from firecrawl: {:?}",
+            response.text().await
+        );
         Err(ServiceError::InternalServerError(
             "Error getting response from firecrawl".to_string(),
         ))
@@ -594,27 +600,30 @@ pub fn get_images(markdown_content: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn chunk_markdown(markdown: &str) -> Vec<String> {
+pub fn chunk_markdown(markdown: &str) -> Vec<(String, String)> {
     let re = Regex::new(r"(?m)^(#{1,6}\s.+)$").unwrap();
     let mut chunks = Vec::new();
-    let mut current_chunk = String::new();
+    let mut current_chunk = (String::new(), String::new());
 
     for line in markdown.lines() {
         if re.is_match(line) {
-            if !current_chunk.is_empty() {
-                chunks.push(current_chunk.trim().to_string());
-                current_chunk = String::new();
+            if !current_chunk.1.is_empty() {
+                current_chunk.1 = current_chunk.1.trim().to_string();
+                chunks.push(current_chunk);
+                current_chunk = (String::new(), String::new());
             }
-            current_chunk.push_str(line);
-            current_chunk.push('\n');
+            current_chunk.0.push_str(line);
+            current_chunk.1.push_str(line);
+            current_chunk.1.push('\n');
         } else {
-            current_chunk.push_str(line);
-            current_chunk.push('\n');
+            current_chunk.1.push_str(line);
+            current_chunk.1.push('\n');
         }
     }
 
-    if !current_chunk.is_empty() {
-        chunks.push(current_chunk.trim().to_string());
+    if !current_chunk.1.is_empty() {
+        current_chunk.1 = current_chunk.1.trim().to_string();
+        chunks.push(current_chunk);
     }
 
     chunks
