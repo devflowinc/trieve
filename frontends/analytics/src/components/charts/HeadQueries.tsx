@@ -1,5 +1,5 @@
 import { AnalyticsFilter, HeadQuery } from "shared/types";
-import { Show } from "solid-js";
+import { createMemo, Show } from "solid-js";
 import { SortableColumnDef, TanStackTable } from "shared/ui";
 import { useHeadQueries } from "../../hooks/data/useHeadQueries";
 import { createSolidTable, getCoreRowModel } from "@tanstack/solid-table";
@@ -20,31 +20,44 @@ const columns: SortableColumnDef<HeadQuery>[] = [
 ];
 
 export const HeadQueries = (props: HeadQueriesProps) => {
-  const { headQueriesQuery, pages } = useHeadQueries({
-    params: props.params,
+  const headQueriesData = createMemo(() => {
+    return useHeadQueries({
+      params: props.params,
+    });
   });
-  const table = createSolidTable({
-    get data() {
-      return headQueriesQuery.data || [];
-    },
-    state: {
-      pagination: {
-        pageIndex: pages.page(),
-        pageSize: 10,
+
+  const tableMemo = createMemo(() => {
+    const { headQueriesQuery, pages } = headQueriesData();
+    const table = createSolidTable({
+      get data() {
+        return headQueriesQuery.data || [];
       },
-    },
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
+      state: {
+        pagination: {
+          pageIndex: pages.page(),
+          pageSize: 10,
+        },
+      },
+      columns,
+      getCoreRowModel: getCoreRowModel(),
+      manualPagination: true,
+    });
+
+    return table;
   });
 
   return (
     <>
       <Show
         fallback={<div class="py-8">Loading...</div>}
-        when={headQueriesQuery.data}
+        when={headQueriesData().headQueriesQuery.data}
       >
-        <TanStackTable small pages={pages} perPage={10} table={table} />
+        <TanStackTable
+          small
+          pages={headQueriesData().pages}
+          perPage={10}
+          table={tableMemo()}
+        />
       </Show>
     </>
   );

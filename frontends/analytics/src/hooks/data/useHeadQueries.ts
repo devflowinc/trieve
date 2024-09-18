@@ -1,15 +1,24 @@
-import { createQuery, useQueryClient } from "@tanstack/solid-query";
+import {
+  createQuery,
+  CreateQueryResult,
+  useQueryClient,
+} from "@tanstack/solid-query";
 import { createEffect, useContext } from "solid-js";
 import { getHeadQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../../hooks/usePagination";
-import { AnalyticsFilter } from "shared/types";
+import { AnalyticsFilter, HeadQuery } from "shared/types";
+
+export interface HeadQueriesData {
+  headQueriesQuery: CreateQueryResult<HeadQuery[], Error>;
+  pages: ReturnType<typeof usePagination>;
+}
 
 export const useHeadQueries = ({
   params,
 }: {
   params: { filter: AnalyticsFilter };
-}) => {
+}): HeadQueriesData => {
   const dataset = useContext(DatasetContext);
   const pages = usePagination();
   const queryClient = useQueryClient();

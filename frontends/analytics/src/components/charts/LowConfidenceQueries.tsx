@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AnalyticsParams, SearchQueryEvent } from "shared/types";
 import { createSignal, Show } from "solid-js";
 import { FullScreenModal, SortableColumnDef, TanStackTable } from "shared/ui";
