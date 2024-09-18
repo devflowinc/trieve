@@ -13,12 +13,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "cva": "npm:class-variance-authority",
     "@nozbe/microfuzz": "^1.0.0",
     "@sentry/browser": "^7.110.0",
     "@solidjs/router": "^0.10.1",
     "@tanstack/solid-query": "^5.55.4",
     "@tanstack/solid-query-devtools": "^5.55.4",
+    "@tanstack/solid-table": "^8.20.5",
+    "cva": "npm:class-variance-authority",
     "papaparse": "^5.4.1",
     "shared": "*",
     "shiki": "^1.10.0",
