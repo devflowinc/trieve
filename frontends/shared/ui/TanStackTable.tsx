@@ -24,7 +24,8 @@ type TableProps<T> = {
   };
   total?: number;
   perPage?: number;
-  classNames?: string;
+  class?: string;
+  headerClass?: string;
   onRowClick?: (row: Row<T>["original"]) => void;
 };
 
@@ -32,10 +33,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
   return (
     <>
       <table
-        class={cn(
-          "min-w-full border-separate border-spacing-0",
-          props.classNames ?? "",
-        )}
+        class={cn("min-w-full border-separate border-spacing-0", props.class)}
       >
         <thead>
           <For each={props.table.getHeaderGroups()}>
@@ -47,6 +45,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                       class={cn(
                         props.small ? "py-2 pl-3 pr-2" : "py-3.5 pl-4 pr-3",
                         "sticky top-0 z-10 border-b border-neutral-300 bg-white bg-opacity-75 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8",
+                        props.headerClass,
                       )}
                     >
                       {(header.column.columnDef as SortableColumnDef<unknown>)

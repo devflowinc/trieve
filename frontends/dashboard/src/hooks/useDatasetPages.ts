@@ -1,6 +1,6 @@
 import { Accessor, createEffect, createMemo, createSignal } from "solid-js";
-import { DatasetAndUsage } from "shared/types";
 import createFuzzySearch from "@nozbe/microfuzz";
+import { DatasetAndUsage } from "trieve-ts-sdk";
 
 const FETCHING_SIZE = 1000;
 const PAGE_SIZE = 20;
