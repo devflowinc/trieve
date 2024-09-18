@@ -135,15 +135,8 @@ pub async fn crawl(
         None => std::time::Duration::from_secs(60 * 60 * 24),
     };
 
-    let scrape_id = create_crawl_request(
-        site,
-        dataset_id,
-        scrape_id,
-        interval,
-        pool,
-        redis_pool,
-    )
-    .await?;
+    let scrape_id =
+        create_crawl_request(site, dataset_id, scrape_id, interval, pool, redis_pool).await?;
 
     Ok(scrape_id)
 }

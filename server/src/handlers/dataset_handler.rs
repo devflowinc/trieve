@@ -116,7 +116,6 @@ pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let org_id = data.organization_id;
