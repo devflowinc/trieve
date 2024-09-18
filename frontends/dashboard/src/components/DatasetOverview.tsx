@@ -1,7 +1,6 @@
 import { TbDatabasePlus } from "solid-icons/tb";
 import {
   Show,
-  For,
   Setter,
   Accessor,
   createSignal,
@@ -10,15 +9,25 @@ import {
   Match,
   onCleanup,
   useContext,
+  createMemo,
 } from "solid-js";
-import { FaRegularClipboard } from "solid-icons/fa";
 import { useDatasetPages } from "../hooks/useDatasetPages";
 import { AiFillCaretLeft, AiFillCaretRight } from "solid-icons/ai";
-import { formatDate } from "../utils/formatters";
 import NewDatasetModal from "./NewDatasetModal";
 import { UserContext } from "../contexts/UserContext";
 import { MagicSuspense } from "./MagicBox";
 import { useNavigate } from "@solidjs/router";
+import {
+  createColumnHelper,
+  createSolidTable,
+  getCoreRowModel,
+} from "@tanstack/solid-table";
+import { DatasetAndUsage } from "trieve-ts-sdk";
+import { TanStackTable } from "shared/ui";
+import { CopyButton } from "./CopyButton";
+import { formatDate } from "../utils/formatters";
+
+const colHelp = createColumnHelper<DatasetAndUsage>();
 
 export const DatasetOverview = () => {
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
@@ -38,6 +47,49 @@ export const DatasetOverview = () => {
       page: page,
       setPage,
     });
+
+  const table = createMemo(() => {
+    const curUsage = usage();
+
+    const columns = [
+      colHelp.accessor("dataset.name", {
+        header: "Name",
+      }),
+      colHelp.display({
+        header: "Chunk Count",
+        cell(info) {
+          return curUsage[info.row.original.dataset.id]?.chunk_count ?? 0;
+        },
+      }),
+
+      colHelp.accessor("dataset.id", {
+        header: "ID",
+        cell(props) {
+          return (
+            <div class="flex gap-1">
+              {props.row.original.dataset.id}
+              <CopyButton text={props.row.original.dataset.id} />
+            </div>
+          );
+        },
+      }),
+      colHelp.accessor("dataset.created_at", {
+        header: "Created",
+        cell(props) {
+          // eslint-disable-next-line solid/reactivity
+          return formatDate(new Date(props.getValue()));
+        },
+      }),
+    ];
+
+    const table = createSolidTable({
+      columns,
+      data: datasets(),
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return table;
+  });
 
   createEffect(() => {
     const finishedLoading = hasLoaded();
@@ -178,110 +230,27 @@ export const DatasetOverview = () => {
                 </span>
               </button>
             </Match>
-            <Match when={!hasLoaded()}>
-              <div class="flex flex-col items-center justify-center gap-2">
-                <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
-                <p class="animate-pulse">Loading datasets...</p>
-              </div>
-            </Match>
           </Switch>
         </Show>
         <Show when={maxDatasets() > 0 && hasLoaded()}>
           <div class="mt-4">
-            <div class="overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5">
-              <table class="min-w-full divide-y divide-neutral-300">
-                <thead class="w-full min-w-full bg-neutral-100">
-                  <tr>
-                    <th
-                      scope="col"
-                      class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
-                    >
-                      Name
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-3 py-3.5 text-left text-sm font-semibold"
-                    >
-                      Chunk Count
-                    </th>
-                    <th
-                      scope="col"
-                      class="hidden w-full px-3 py-3.5 text-left text-sm font-semibold lg:block"
-                    >
-                      ID
-                    </th>
-                    <th
-                      scope="col"
-                      class="py-3.5 text-left text-sm font-semibold"
-                    >
-                      Created
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-200 bg-white">
-                  <For each={datasets()}>
-                    {(datasetAndUsage) => (
-                      <tr
-                        onClick={() => {
-                          navigate(`/dataset/${datasetAndUsage.dataset.id}`);
-                        }}
-                        class="cursor-pointer hover:bg-neutral-100/30"
-                      >
-                        <td class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium">
-                          <div class="inline-flex items-center">
-                            {datasetAndUsage.dataset.name}
-                          </div>
-                        </td>
-                        <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-600">
-                          <span class="inline-flex items-center">
-                            {usage()[datasetAndUsage.dataset.id]?.chunk_count ??
-                              datasetAndUsage.dataset_usage.chunk_count}{" "}
-                          </span>
-                        </td>
-                        <td class="hidden whitespace-nowrap px-3 py-4 text-sm text-neutral-600 lg:block">
-                          <span class="inline-flex items-center">
-                            {datasetAndUsage.dataset.id}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                void navigator.clipboard.writeText(
-                                  datasetAndUsage.dataset?.id ?? "",
-                                );
-                                window.dispatchEvent(
-                                  new CustomEvent("show-toast", {
-                                    detail: {
-                                      type: "info",
-                                      title: "Copied",
-                                      message: "Dataset ID copied to clipboard",
-                                    },
-                                  }),
-                                );
-                              }}
-                              class="ml-2 hover:text-fuchsia-500"
-                            >
-                              <FaRegularClipboard />
-                            </button>
-                          </span>
-                        </td>
-                        <td class="whitespace-nowrap py-4 text-sm text-neutral-600">
-                          {formatDate(
-                            new Date(datasetAndUsage.dataset.created_at),
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </For>
-                </tbody>
-              </table>
-              <Show when={maxPageDiscovered() > 1}>
-                <PaginationArrows
-                  page={page}
-                  setPage={setPage}
-                  maxPageDiscovered={maxPageDiscovered}
+            <Show when={table()}>
+              {(table) => (
+                <TanStackTable
+                  onRowClick={(r) => navigate(`/dataset/${r.dataset.id}`)}
+                  class="rounded-md border border-neutral-300 bg-white"
+                  headerClass="bg-neutral-200"
+                  table={table()}
                 />
-              </Show>
-            </div>
+              )}
+            </Show>
+            <Show when={maxPageDiscovered() > 1}>
+              <PaginationArrows
+                page={page}
+                setPage={setPage}
+                maxPageDiscovered={maxPageDiscovered}
+              />
+            </Show>
           </div>
         </Show>
       </MagicSuspense>
