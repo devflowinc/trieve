@@ -59,7 +59,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
     <Transition appear show={props.isOpen()}>
       <Dialog
         isOpen
-        class="fixed inset-0 z-10 overflow-y-auto"
+        class="fixed inset-0 z-20 overflow-y-auto"
         onClose={props.closeModal}
       >
         <div class="flex min-h-screen items-center justify-center px-4">
