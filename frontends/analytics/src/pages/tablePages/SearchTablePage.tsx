@@ -13,6 +13,7 @@ import {
   createSolidTable,
   getCoreRowModel,
   SortingState,
+  Table,
 } from "@tanstack/solid-table";
 import { Card } from "../../components/charts/Card";
 import { formatSearchMethod } from "../../utils/searchType";
@@ -117,7 +118,7 @@ export const SearchTablePage = () => {
             <TanStackTable
               pages={pages}
               perPage={10}
-              table={table}
+              table={table as unknown as Table<SearchQueryEvent>}
               onRowClick={(row: SearchQueryEvent) =>
                 navigate(`/query/${row.id}`)
               }

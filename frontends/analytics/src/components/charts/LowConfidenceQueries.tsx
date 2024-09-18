@@ -21,6 +21,7 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
     accessorKey: "top_score",
     header: "Score",
     cell(props) {
+      // eslint-disable-next-line solid/reactivity
       return props.getValue<number>().toFixed(5);
     },
   },
@@ -32,6 +33,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   const [current, setCurrent] = createSignal<SearchQueryEvent | null>(null);
   const navigate = useBetterNav();
   const { pages, lowConfidenceQueriesQuery } = useLowConfidenceQueries({
+    // eslint-disable-next-line solid/reactivity
     params: props.params,
     thresholdText: thresholdText,
   });
@@ -99,7 +101,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
           perPage={10}
           table={table}
           onRowClick={(row) => {
-            setCurrent(row);
+            setCurrent(row as any);
             setOpen(true);
           }}
         />
