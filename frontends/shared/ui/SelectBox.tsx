@@ -79,13 +79,13 @@ export const Select = <T,>(props: SelectProps<T>) => {
                 <ListboxOptions
                   unmount={false}
                   tabIndex={0}
-                  class="absolute z-40 shadow mt-1 max-h-[70vh] w-full overflow-y-auto overflow-x-none rounded-md bg-white text-base outline outline-1 outline-gray-300 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                  class="absolute z-40 shadow mt-1 max-h-[70vh] w-fit max-w-[300px] overflow-y-auto overflow-x-none rounded-md bg-white text-base outline outline-1 outline-gray-300 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
                 >
                   <Show when={props.options.length > 5}>
                     <input
                       id={`${props.id}-search`}
                       placeholder="Search..."
-                      class="mb-2 flex mx-auto items-center rounded bg-neutral-200 p-1 mt-2 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
+                      class="mb-2 flex mx-auto items-center rounded bg-neutral-100 p-1 mt-2 text-sm text-black outline-none dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
                       onInput={(e) => {
                         setSearchTerm(e.target.value);
                       }}
