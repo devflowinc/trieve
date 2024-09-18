@@ -28,7 +28,6 @@ export const OrgUserPage = () => {
   const userQuery = createQuery(() => ({
     queryKey: ["users", userContext.selectedOrg().id],
     queryFn: async () => {
-      await new Promise((r) => setTimeout(r, 1000));
       return trieve.fetch("/api/organization/users/{organization_id}", "get", {
         organizationId: userContext.selectedOrg().id,
       });
