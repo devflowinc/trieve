@@ -9,9 +9,6 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 
 use actix_web::web;
 use trieve_server::operators::{
-    chunk_operator::create_chunk_metadata, crawl_operator::update_next_crawl_at,
-};
-use trieve_server::operators::{
     dataset_operator::get_dataset_by_id_query, user_operator::hash_function,
 };
 use trieve_server::{
@@ -26,6 +23,10 @@ use trieve_server::{
 };
 use trieve_server::{
     handlers::chunk_handler::ChunkReqPayload, operators::crawl_operator::chunk_markdown,
+};
+use trieve_server::{
+    handlers::chunk_handler::{FullTextBoost, SemanticBoost},
+    operators::{chunk_operator::create_chunk_metadata, crawl_operator::update_next_crawl_at},
 };
 use ureq::json;
 
@@ -118,6 +119,8 @@ async fn crawl(
         let chunked_markdown = chunk_markdown(&chunk_html.clone());
 
         for chunk in chunked_markdown {
+            let heading = chunk.0.clone();
+            let chunk = chunk.1.clone();
             let chunk = ChunkReqPayload {
                 chunk_html: Some(chunk.clone()),
                 link: Some(page_link.clone()),
@@ -130,6 +133,14 @@ async fn crawl(
                 })),
                 tracking_id: Some(hash_function(&chunk.clone())),
                 upsert_by_tracking_id: Some(true),
+                fulltext_boost: Some(FullTextBoost {
+                    phrase: heading.clone(),
+                    boost_factor: 1.3,
+                }),
+                semantic_boost: Some(SemanticBoost {
+                    phrase: heading,
+                    distance_factor: 0.3,
+                }),
                 ..Default::default()
             };
             chunks.push(chunk);
