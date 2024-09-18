@@ -1,6 +1,7 @@
 import {
   flexRender,
   type Table as TableType,
+  type Row,
   type ColumnDef,
 } from "@tanstack/solid-table";
 import { Accessor, For, Show } from "solid-js";
@@ -8,15 +9,14 @@ import { cn } from "shared/utils";
 import { Pagination } from "shared/ui";
 import { FaSolidAngleDown, FaSolidAngleUp } from "solid-icons/fa";
 
-export type SortableColumnDef<TValue> = ColumnDef<any, TValue> & {
+export type SortableColumnDef<TValue> = ColumnDef<unknown, TValue> & {
   sortable?: boolean;
 };
 
-type TableProps = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  table: TableType<any>;
+type TableProps<T> = {
+  table: TableType<T>;
   small?: boolean;
-  pages: {
+  pages?: {
     page: Accessor<number>;
     nextPage: () => void;
     prevPage: () => void;
@@ -25,16 +25,16 @@ type TableProps = {
   total?: number;
   perPage?: number;
   classNames?: string;
-  onRowClick?: (row: any) => void;
+  onRowClick?: (row: Row<T>["original"]) => void;
 };
 
-export const TanStackTable = (props: TableProps) => {
+export const TanStackTable = <T,>(props: TableProps<T>) => {
   return (
     <>
       <table
         class={cn(
           "min-w-full border-separate border-spacing-0",
-          props.classNames ?? ""
+          props.classNames ?? "",
         )}
       >
         <thead>
@@ -46,10 +46,10 @@ export const TanStackTable = (props: TableProps) => {
                     <th
                       class={cn(
                         props.small ? "py-2 pl-3 pr-2" : "py-3.5 pl-4 pr-3",
-                        "sticky top-0 z-10 border-b border-neutral-300 bg-white bg-opacity-75 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8"
+                        "sticky top-0 z-10 border-b border-neutral-300 bg-white bg-opacity-75 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8",
                       )}
                     >
-                      {(header.column.columnDef as SortableColumnDef<any>)
+                      {(header.column.columnDef as SortableColumnDef<unknown>)
                         .sortable ? (
                         <button
                           class="flex items-center gap-1"
@@ -59,7 +59,7 @@ export const TanStackTable = (props: TableProps) => {
                             ? null
                             : flexRender(
                                 header.column.columnDef.header,
-                                header.getContext()
+                                header.getContext(),
                               )}
                           <Show when={header.column.getIsSorted() === "desc"}>
                             <FaSolidAngleDown />
@@ -74,7 +74,7 @@ export const TanStackTable = (props: TableProps) => {
                             ? null
                             : flexRender(
                                 header.column.columnDef.header,
-                                header.getContext()
+                                header.getContext(),
                               )}
                         </div>
                       )}
@@ -106,14 +106,14 @@ export const TanStackTable = (props: TableProps) => {
                         idx() !== props.table.getRowModel().rows.length - 1
                           ? "border-b border-neutral-200"
                           : "",
-                        "whitespace-nowrap text-sm font-medium text-neutral-900"
+                        "whitespace-nowrap text-sm font-medium text-neutral-900",
                       )}
                     >
                       <span class="max-w-[300px] truncate 2xl:max-w-full text-ellipsis block">
                         {" "}
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </span>
                     </td>
@@ -124,7 +124,7 @@ export const TanStackTable = (props: TableProps) => {
           </For>
         </tbody>
       </table>
-      {props.pages.canGoNext() || props.pages.page() !== 1 ? (
+      {props.pages && (props.pages.canGoNext() || props.pages.page() !== 1) ? (
         <Pagination
           pages={props.pages}
           perPage={props.perPage}
