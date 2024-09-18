@@ -344,7 +344,7 @@ pub struct UpdateSubscriptionData {
         ("plan_id" = uuid::Uuid, Path, description = "id of the plan you want to subscribe to"),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["owner"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -412,6 +412,9 @@ pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_
     params (
         ("organization_id" = uuid::Uuid, Path, description = "The id of the organization to get invoices for."),
     ),
+    security(
+        ("ApiKey" = ["owner"]),
+    )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_all_invoices(
@@ -444,6 +447,9 @@ pub struct CreateSetupCheckoutSessionResPayload {
     params (
         ("organization_id" = uuid::Uuid, Path, description = "The id of the organization to create setup checkout session for."),
     ),
+    security(
+        ("ApiKey" = ["owner"]),
+    )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn create_setup_checkout_session(

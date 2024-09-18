@@ -163,27 +163,32 @@ pub async fn create_invitation(
 /// Get all invitations for the organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
-    path = "/invitation/{organization_id}",
+    path = "/invitations/{organization_id}",
     context_path = "/api",
     tag = "Invitation",
     responses(
         (status = 200, description = "Invitations for the dataset", body = Vec<Invitation>),
         (status = 400, description = "Service error relating to getting invitations for the dataset", body = ErrorResponseBody),
     ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("organization_id" = uuid, Path, description = "The organization id to get invitations for"),
+    ),
     security(
-        ("ApiKey" = ["admin"]),
+        ("ApiKey" = ["readonly"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_invitations(
     user: AdminOnly,
-    org_id: web::Path<uuid::Uuid>,
+    organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
-    if !verify_admin(&user, &org_id.clone()) {
+    if !verify_admin(&user, &organization_id.clone()) {
         return Err(ServiceError::Forbidden);
     }
-    let invitations = get_invitations_for_organization_query(org_id.into_inner(), pool).await?;
+    let invitations =
+        get_invitations_for_organization_query(organization_id.into_inner(), pool).await?;
     Ok(HttpResponse::Ok().json(invitations))
 }
 
@@ -198,6 +203,10 @@ pub async fn get_invitations(
     responses(
         (status = 204, description = "Ok response. Indicates that invitation was deleted."),
         (status = 400, description = "Service error relating to deleting invitation", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("invitation_id" = uuid, Path, description = "The id of the invitation to delete"),
     ),
     security(
         ("ApiKey" = ["admin"]),

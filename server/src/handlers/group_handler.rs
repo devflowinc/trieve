@@ -390,7 +390,6 @@ pub struct GetGroupData {
 /// Get Group
 ///
 /// Fetch the group with the given id.
-
 #[utoipa::path(
     get,
     path = "/chunk_group/{group_id}",
@@ -409,7 +408,6 @@ pub struct GetGroupData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-/// get_group
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_group(
     group_id: web::Path<uuid::Uuid>,
