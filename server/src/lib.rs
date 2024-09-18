@@ -1088,6 +1088,13 @@ pub fn main() -> std::io::Result<()> {
                                 ),
                             )
                         .service(
+                            web::scope("/invitations")
+                                .service(
+                                    web::resource("/{organization_id}")
+                                        .route(web::get().to(handlers::invitation_handler::get_invitations)),
+                                ),
+                            )
+                        .service(
                             web::scope("/stripe")
                                 .service(
                                     web::resource("/webhook")
