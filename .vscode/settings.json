@@ -12,6 +12,7 @@
     "./frontends/dashboard",
     "./frontends/search",
     "./frontends/analytics",
+    "./frontends/shared",
     "./clients/ts-sdk",
     "./clients/search-component"
   ],
