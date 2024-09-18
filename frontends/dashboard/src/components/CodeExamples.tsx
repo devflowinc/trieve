@@ -22,7 +22,6 @@ export const CodeExamples = () => {
         <div class="flex w-fit space-x-4 rounded-md border border-blue-600/20 bg-blue-50 px-4 py-4">
           <div class="flex">
             <div class="flex-shrink-0">
-              {/* <FiAlertTriangle class="h-4 w-4 text-yellow-400" /> */}
               <BiRegularInfoCircle class="h-5 w-5 text-blue-400" />
             </div>
             <div class="ml-3">
@@ -52,7 +51,6 @@ export const CodeExamples = () => {
         <div class="flex w-fit space-x-4 rounded-md border border-blue-600/20 bg-blue-50 px-4 py-4">
           <div class="flex">
             <div class="flex-shrink-0">
-              {/* <FiAlertTriangle class="h-4 w-4 text-yellow-400" /> */}
               <BiRegularInfoCircle class="h-5 w-5 text-blue-400" />
             </div>
             <div class="ml-3">

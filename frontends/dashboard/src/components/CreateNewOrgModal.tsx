@@ -1,4 +1,4 @@
-import { Accessor, createEffect, createSignal, useContext } from "solid-js";
+import { Accessor, createSignal, useContext } from "solid-js";
 import {
   Dialog,
   DialogPanel,
@@ -9,8 +9,9 @@ import {
 } from "terracotta";
 import { createToast } from "./ShowToasts";
 import { UserContext } from "../contexts/UserContext";
-import { Organization } from "shared/types";
 import { useNavigate } from "@solidjs/router";
+import { createMutation } from "@tanstack/solid-query";
+import { useTrieve } from "../hooks/useTrieve";
 
 export interface NewOrgModalProps {
   isOpen: Accessor<boolean>;
@@ -18,61 +19,41 @@ export interface NewOrgModalProps {
 }
 
 export const NewOrgModal = (props: NewOrgModalProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
-
   const navigate = useNavigate();
 
   const userContext = useContext(UserContext);
 
   const [name, setName] = createSignal<string>("");
 
-  const createDataset = () => {
-    fetch(`${apiHost}/organization`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: name(),
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          createToast({
-            type: "error",
-            title: "Error creating new organization",
-          });
-          throw new Error("Error creating new organization");
-        }
-
-        // eslint-disable-next-line solid/reactivity
-        void res.json().then(async (data) => {
-          // Refresh the user context with the new organization
-          userContext.setSelectedOrg((data as Organization).id);
-          await userContext.login();
-          navigate("/org");
-
-          createToast({
-            title: "Success",
-            type: "success",
-            message: "Successfully created new organization",
-          });
-
-          props.closeModal();
-        });
-      })
-      .catch(() => {
-        createToast({
-          title: "Error",
-          type: "error",
-          message:
-            "There was an issue creating the new organization; likely the organization name is already taken.",
-        });
-
-        createEffect(() => props.closeModal());
+  const trieve = useTrieve();
+  const createNewOrgMutation = createMutation(() => ({
+    mutationFn: (name: string) => {
+      return trieve.fetch("/api/organization", "post", {
+        data: {
+          name,
+        },
       });
-  };
+    },
+    onError: () => {
+      createToast({
+        type: "error",
+        title: "Error creating new organization",
+      });
+    },
+    onSuccess: async (data) => {
+      userContext.setSelectedOrg(data.id);
+      await userContext.login();
+      navigate("/org");
+
+      createToast({
+        title: "Success",
+        type: "success",
+        message: "Successfully created new organization",
+      });
+
+      props.closeModal();
+    },
+  }));
 
   return (
     <Transition appear show={props.isOpen()}>
@@ -109,7 +90,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  createDataset();
+                  createNewOrgMutation.mutate(name());
                 }}
               >
                 <div class="space-y-12 sm:space-y-16">
