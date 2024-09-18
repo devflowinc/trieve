@@ -165,7 +165,7 @@ export const DatasetOverview = () => {
           setNewDatasetModalOpen(false);
         }}
       />
-      <div class="flex items-center">
+      <div class="flex items-center py-2">
         <div class="flex w-full items-end justify-between pt-2">
           <div>
             <div class="flex items-center gap-2">

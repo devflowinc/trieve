@@ -45,7 +45,7 @@ export const DatasetHomepage = () => {
   };
 
   return (
-    <div class="p-4">
+    <div>
       <div class="flex items-end justify-between pb-2">
         <MagicSuspense skeletonHeight="36px" unstyled>
           <div class="flex items-center gap-2">
