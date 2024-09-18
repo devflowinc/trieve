@@ -1,3 +1,4 @@
+/* eslint-disable solid/reactivity */
 import { AnalyticsFilter, SearchQueryEvent } from "shared/types";
 import { Show } from "solid-js";
 import { SortableColumnDef, TanStackTable } from "shared/ui";

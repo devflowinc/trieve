@@ -1,3 +1,4 @@
+/* eslint-disable solid/reactivity */
 import { format } from "date-fns";
 import { SearchQueryEvent } from "shared/types";
 import { FilterBar } from "../../components/FilterBar";

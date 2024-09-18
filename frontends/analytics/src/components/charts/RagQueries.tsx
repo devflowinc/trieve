@@ -132,20 +132,27 @@ export const RagQueries = (props: RagQueriesProps) => {
     },
   ]);
 
-  const table = createSolidTable({
-    get data() {
-      return ragQueriesQuery.data || [];
-    },
-    state: {
-      pagination: {
-        pageIndex: pages.page(),
-        pageSize: 10,
+  const table = createMemo(() => {
+    const curColumns = columns();
+
+    const table = createSolidTable({
+      get data() {
+        return ragQueriesQuery.data || [];
       },
-    },
-    columns: columns(),
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
+      state: {
+        pagination: {
+          pageIndex: pages.page(),
+          pageSize: 10,
+        },
+      },
+      columns: curColumns,
+      getCoreRowModel: getCoreRowModel(),
+      manualPagination: true,
+    });
+
+    return table;
   });
+
   const usage = createQuery(() => ({
     queryKey: ["rag-usage", { filter: props }],
     queryFn: () => {
@@ -194,7 +201,7 @@ export const RagQueries = (props: RagQueriesProps) => {
                 pages={pages}
                 perPage={10}
                 total={usage?.data?.total_queries}
-                table={table}
+                table={table()}
               />
             </>
           );
