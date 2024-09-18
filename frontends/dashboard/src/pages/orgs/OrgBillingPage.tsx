@@ -46,7 +46,7 @@ export const OrgBillingPage = () => {
   });
 
   return (
-    <div class="">
+    <div class="pb-4">
       <OrganizationUsageOverview />
       <InvoicesTable />
       <PlansTable currentOrgSubPlan={orgSubPlan()} />
