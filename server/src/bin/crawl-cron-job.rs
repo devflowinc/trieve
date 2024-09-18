@@ -84,7 +84,7 @@ async fn main() -> Result<(), ServiceError> {
 
     for request in new_requests {
         log::info!("Re-crawling site: {}", request.url);
-        let new_scrape_id = crawl_site(request.url.clone())
+        let new_scrape_id = crawl_site(request.crawl_options.clone())
             .await
             .expect("Failed to crawl site");
 

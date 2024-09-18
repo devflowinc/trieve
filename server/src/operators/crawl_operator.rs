@@ -5,9 +5,10 @@ use diesel_async::RunQueryDsl;
 use regex::Regex;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use ureq::json;
 
+use crate::data::models::CrawlOptions;
 use crate::data::models::CrawlStatus;
+use crate::data::models::FirecrawlCrawlRequest;
 use crate::data::models::RedisPool;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::{
@@ -118,25 +119,19 @@ pub struct Sitemap {
 }
 
 pub async fn crawl(
-    site: String,
-    interval: Option<CrawlInterval>,
+    crawl_options: CrawlOptions,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     dataset_id: uuid::Uuid,
 ) -> Result<uuid::Uuid, ServiceError> {
-    let scrape_id = crawl_site(site.clone())
+    let scrape_id = crawl_site(crawl_options.clone())
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?;
 
-    let interval = match interval {
-        Some(CrawlInterval::Daily) => std::time::Duration::from_secs(60 * 60 * 24),
-        Some(CrawlInterval::Weekly) => std::time::Duration::from_secs(60 * 60 * 24 * 7),
-        Some(CrawlInterval::Monthly) => std::time::Duration::from_secs(60 * 60 * 24 * 30),
-        None => std::time::Duration::from_secs(60 * 60 * 24),
-    };
+    
 
-    let scrape_id =
-        create_crawl_request(site, dataset_id, scrape_id, interval, pool, redis_pool).await?;
+    create_crawl_request(crawl_options, dataset_id, scrape_id, pool, redis_pool).await?;
+    
 
     Ok(scrape_id)
 }
@@ -157,6 +152,7 @@ pub async fn get_crawl_request(
             status,
             next_crawl_at,
             interval,
+            crawl_options,
             scrape_id,
             dataset_id,
             created_at,
@@ -183,6 +179,7 @@ pub async fn get_crawl_requests_to_rerun(
             status,
             next_crawl_at,
             interval,
+            crawl_options,
             scrape_id,
             dataset_id,
             created_at,
@@ -195,20 +192,28 @@ pub async fn get_crawl_requests_to_rerun(
 }
 
 pub async fn create_crawl_request(
-    url: String,
+    crawl_options: CrawlOptions,
     dataset_id: uuid::Uuid,
     scrape_id: uuid::Uuid,
-    interval: std::time::Duration,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+
+    let interval = match crawl_options.interval {
+        Some(CrawlInterval::Daily) => std::time::Duration::from_secs(60 * 60 * 24),
+        Some(CrawlInterval::Weekly) => std::time::Duration::from_secs(60 * 60 * 24 * 7),
+        Some(CrawlInterval::Monthly) => std::time::Duration::from_secs(60 * 60 * 24 * 30),
+        None => std::time::Duration::from_secs(60 * 60 * 24),
+    };
+
     let new_crawl_request: CrawlRequestPG = CrawlRequest {
         id: uuid::Uuid::new_v4(),
-        url,
+        url: crawl_options.site_url.clone().unwrap_or_default(),
         status: CrawlStatus::Pending,
         interval,
         next_crawl_at: chrono::Utc::now().naive_utc(),
+        crawl_options,
         scrape_id,
         dataset_id,
         created_at: chrono::Utc::now().naive_utc(),
@@ -283,10 +288,10 @@ pub async fn update_next_crawl_at(
 }
 
 pub async fn update_crawl_settings_for_dataset(
+    crawl_options: CrawlOptions,
     dataset_id: uuid::Uuid,
-    url: Option<String>,
-    interval: Option<CrawlInterval>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
     let mut conn = pool
@@ -294,7 +299,33 @@ pub async fn update_crawl_settings_for_dataset(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    if let Some(url) = url {
+    let crawl_req = crawl_requests_table::crawl_requests
+        .select((
+            crawl_requests_table::id,
+            crawl_requests_table::url,
+            crawl_requests_table::status,
+            crawl_requests_table::next_crawl_at,
+            crawl_requests_table::interval,
+            crawl_requests_table::crawl_options,
+            crawl_requests_table::scrape_id,
+            crawl_requests_table::dataset_id,
+            crawl_requests_table::created_at,
+        ))
+        .filter(crawl_requests_table::dataset_id.eq(dataset_id))
+        .first::<CrawlRequestPG>(&mut conn)
+        .await;
+
+    if let Some(ref url) = crawl_options.site_url {
+        if crawl_req.is_err() {
+            crawl(
+                crawl_options.clone(),
+                pool.clone(),
+                redis_pool.clone(),
+                dataset_id,
+            )
+            .await?;
+        }
+
         diesel::update(
             crawl_requests_table::crawl_requests
                 .filter(crawl_requests_table::dataset_id.eq(dataset_id)),
@@ -305,7 +336,7 @@ pub async fn update_crawl_settings_for_dataset(
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     }
 
-    if let Some(interval) = interval {
+    if let Some(interval) = crawl_options.interval {
         let interval = match interval {
             CrawlInterval::Daily => std::time::Duration::from_secs(60 * 60 * 24),
             CrawlInterval::Weekly => std::time::Duration::from_secs(60 * 60 * 24 * 7),
@@ -348,10 +379,11 @@ pub async fn update_scrape_id(
 
 pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceError> {
     let firecrawl_url =
-        std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "http://localhost:3002".to_string());
+        std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "https://api.firecrawl.dev".to_string());
+    let firecrawl_api_key = std::env::var("FIRECRAWL_API_KEY").unwrap_or_else(|_| "".to_string());
     let firecrawl_url = format!("{}/v1/crawl/{}", firecrawl_url, scrape_id);
     let client = reqwest::Client::new();
-    let response = client.get(&firecrawl_url).send().await.map_err(|e| {
+    let response = client.get(&firecrawl_url).header("Authorization", format!("Bearer {}", firecrawl_api_key)).send().await.map_err(|e| {
         log::error!("Error sending request to firecrawl: {:?}", e);
         ServiceError::InternalServerError("Error sending request to firecrawl".to_string())
     })?;
@@ -365,25 +397,25 @@ pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestRes
         log::info!("Got response from firecrawl: {:?}", json.status);
         Ok(json)
     } else {
-        log::error!("Error getting response from firecrawl: {:?}", response);
+        log::error!("Error getting response from firecrawl: {:?}", response.text().await);
         Err(ServiceError::InternalServerError(
             "Error getting response from firecrawl".to_string(),
         ))
     }
 }
 
-pub async fn crawl_site(url: String) -> Result<uuid::Uuid, ServiceError> {
+pub async fn crawl_site(crawl_options: CrawlOptions) -> Result<uuid::Uuid, ServiceError> {
     let firecrawl_url =
-        std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "http://localhost:3002".to_string());
+        std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "https://api.firecrawl.dev".to_string());
+    let firecrawl_api_key = std::env::var("FIRECRAWL_API_KEY").unwrap_or_else(|_| "".to_string());
     let firecrawl_url = format!("{}/v1/crawl", firecrawl_url);
     let client = reqwest::Client::new();
     let response = client
         .post(&firecrawl_url)
         .json(
-            &json!({ "url": url, "allowBackwardLinks": true, "scrapeOptions": {
-            "onlyMainContent": true,
-        } }),
+            &FirecrawlCrawlRequest::from(crawl_options)
         )
+        .header("Authorization", format!("Bearer {}", firecrawl_api_key))
         .send()
         .await
         .map_err(|e| {
@@ -396,11 +428,10 @@ pub async fn crawl_site(url: String) -> Result<uuid::Uuid, ServiceError> {
             log::error!("Error parsing response from firecrawl: {:?}", e);
             ServiceError::InternalServerError("Error parsing response from firecrawl".to_string())
         })?;
-        log::info!("Got response from firecrawl: {:?}", json);
 
         Ok(json.get("id").unwrap().as_str().unwrap().parse().unwrap())
     } else {
-        log::error!("Error getting response from firecrawl: {:?}", response);
+        log::error!("Error getting response from firecrawl: {:?}", response.text().await);
         Err(ServiceError::InternalServerError(
             "Error getting response from firecrawl".to_string(),
         ))

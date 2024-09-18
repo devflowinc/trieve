@@ -61,6 +61,7 @@ diesel::table! {
         scrape_id -> Uuid,
         dataset_id -> Uuid,
         created_at -> Timestamp,
+        crawl_options -> Jsonb,
     }
 }
 
@@ -282,6 +283,7 @@ diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_metadata -> datasets (dataset_id));
 diesel::joinable!(chunk_metadata_tags -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_metadata_tags -> dataset_tags (tag_id));
+diesel::joinable!(crawl_requests -> datasets (dataset_id));
 diesel::joinable!(dataset_event_counts -> datasets (dataset_uuid));
 diesel::joinable!(dataset_tags -> datasets (dataset_id));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));

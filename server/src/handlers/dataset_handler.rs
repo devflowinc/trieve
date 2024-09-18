@@ -1,11 +1,8 @@
-use super::{
-    auth_handler::{AdminOnly, LoggedUser, OwnerOnly},
-    chunk_handler::CrawlInterval,
-};
+use super::
+    auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
-        Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO,
-        DatasetWithCrawlSite, Pool, RedisPool, StripePlan, UnifiedId,
+        CrawlOptions, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO, Pool, RedisPool, StripePlan, UnifiedId
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -86,9 +83,7 @@ pub struct CreateDatasetRequest {
     /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
     pub server_configuration: Option<DatasetConfigurationDTO>,
     /// Optional site to crawl for the dataset. If provided, the dataset will be populated with the contents of the site.
-    pub crawl_site: Option<String>,
-    /// Optional crawl interval for the site. If provided, the dataset will be populated with the contents of the site on a recurring basis.
-    pub crawl_interval: Option<CrawlInterval>,
+    pub crawl_options: Option<CrawlOptions>,
 }
 
 /// Create Dataset
@@ -149,10 +144,9 @@ pub async fn create_dataset(
 
     let d = create_dataset_query(dataset.clone(), pool.clone()).await?;
 
-    if let Some(site) = data.crawl_site.clone() {
+    if let Some(crawl_options) = data.crawl_options.clone() {
         crawl(
-            site,
-            data.crawl_interval.clone(),
+            crawl_options.clone(),
             pool.clone(),
             redis_pool.clone(),
             dataset.id,
@@ -160,10 +154,7 @@ pub async fn create_dataset(
         .await?;
     };
 
-    let dataset =
-        DatasetWithCrawlSite::from_details(d, data.crawl_site.clone(), data.crawl_interval.clone());
-
-    Ok(HttpResponse::Ok().json(dataset))
+    Ok(HttpResponse::Ok().json(d))
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -208,10 +199,8 @@ pub struct UpdateDatasetRequest {
     pub server_configuration: Option<DatasetConfigurationDTO>,
     /// Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
     pub new_tracking_id: Option<String>,
-    /// New site to crawl for the dataset. If provided, the dataset will be populated with the contents of the site.
-    pub crawl_site: Option<String>,
-    /// New crawl interval for the site. If provided, the dataset will be populated with the contents of the site on a recurring basis.
-    pub crawl_interval: Option<CrawlInterval>,
+    /// Update crawler settings for the dataset. If provided, the dataset will be populated with the contents of the site.
+    pub crawl_options: Option<CrawlOptions>,
 }
 
 /// Update Dataset by ID or Tracking ID
@@ -239,6 +228,7 @@ pub struct UpdateDatasetRequest {
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetRequest>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let curr_dataset = if let Some(dataset_id) = data.dataset_id {
@@ -268,14 +258,16 @@ pub async fn update_dataset(
         pool.clone(),
     )
     .await?;
-
+    
+    if let Some(crawl_options) = data.crawl_options.clone() {
     update_crawl_settings_for_dataset(
+        crawl_options.clone(),
         curr_dataset.id,
-        data.crawl_site.clone(),
-        data.crawl_interval.clone(),
         pool.clone(),
+        redis_pool.clone(),
     )
     .await?;
+    };
 
     Ok(HttpResponse::Ok().json(d))
 }
