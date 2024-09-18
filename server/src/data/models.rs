@@ -1900,40 +1900,6 @@ impl Dataset {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct DatasetWithCrawlSite {
-    pub id: uuid::Uuid,
-    pub name: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-    pub organization_id: uuid::Uuid,
-    pub tracking_id: Option<String>,
-    pub deleted: i32,
-    pub server_configuration: serde_json::Value,
-    pub crawl_site: Option<String>,
-    pub crawl_interval: Option<CrawlInterval>,
-}
-
-impl DatasetWithCrawlSite {
-    pub fn from_details(
-        dataset: Dataset,
-        crawl_site: Option<String>,
-        crawl_interval: Option<CrawlInterval>,
-    ) -> Self {
-        DatasetWithCrawlSite {
-            id: dataset.id,
-            name: dataset.name,
-            created_at: dataset.created_at,
-            updated_at: dataset.updated_at,
-            organization_id: dataset.organization_id,
-            tracking_id: dataset.tracking_id,
-            server_configuration: dataset.server_configuration,
-            deleted: dataset.deleted,
-            crawl_site,
-            crawl_interval,
-        }
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Clone, ToSchema)]
 #[schema(example=json!({
@@ -5956,6 +5922,7 @@ pub struct CrawlRequestPG {
     pub status: String,
     pub next_crawl_at: chrono::NaiveDateTime,
     pub interval: i32,
+    pub crawl_options: serde_json::Value,
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
@@ -5968,6 +5935,7 @@ pub struct CrawlRequest {
     pub status: CrawlStatus,
     pub next_crawl_at: chrono::NaiveDateTime,
     pub interval: std::time::Duration,
+    pub crawl_options: CrawlOptions,
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
@@ -5982,6 +5950,7 @@ impl From<CrawlRequestPG> for CrawlRequest {
             status: crawl_request.status.into(),
             next_crawl_at: crawl_request.next_crawl_at,
             interval: std::time::Duration::from_secs(crawl_request.interval as u64),
+            crawl_options: serde_json::from_value(crawl_request.crawl_options).unwrap(),
             scrape_id: crawl_request.scrape_id,
             dataset_id: crawl_request.dataset_id,
             created_at: crawl_request.created_at,
@@ -5998,9 +5967,88 @@ impl From<CrawlRequest> for CrawlRequestPG {
             status: crawl_request.status.to_string(),
             next_crawl_at: crawl_request.next_crawl_at,
             interval: crawl_request.interval.as_secs() as i32,
+            crawl_options: serde_json::to_value(crawl_request.crawl_options).unwrap(),
             scrape_id: crawl_request.scrape_id,
             dataset_id: crawl_request.dataset_id,
             created_at: crawl_request.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example=json!({
+    "site_url": "https://example.com",
+    "interval": "daily",
+    "limit": 20,
+    "exclude_paths": ["https://example.com/exclude"],
+    "include_paths": ["https://example.com/include"],
+    "max_depth": 2,
+    "include_tags": ["h1", "p", "a", ".main-content"],
+    "exclude_tags": ["#ad", "#footer"],
+}))]
+pub struct CrawlOptions {
+    /// The URL to crawl
+    pub site_url: Option<String>,
+    /// The interval to crawl the site, defaults to daily
+    pub interval: Option<CrawlInterval>,
+    /// How many pages to crawl, defaults to 20
+    pub limit: Option<i32>,
+    /// URL Patterns to exclude from the crawl
+    pub exclude_paths: Option<Vec<String>>,
+    /// URL Patterns to include in the crawl
+    pub include_paths: Option<Vec<String>>,
+    /// How many levels deep to crawl, defaults to 2
+    pub max_depth: Option<i32>,
+    /// Specify the HTML tags, classes and ids to include in the response.
+    pub include_tags: Option<Vec<String>>,
+    /// Specify the HTML tags, classes and ids to exclude from the response.
+    pub exclude_tags: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct FirecrawlCrawlRequest {
+    pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exclude_paths: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_paths: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_depth: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ignore_sitemap: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_external_links: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_backward_links: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scrape_options: Option<FirecrawlScraperOptions>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct FirecrawlScraperOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exclude_tags: Option<Vec<String>>,
+}
+ impl From<CrawlOptions> for FirecrawlCrawlRequest {
+    fn from(crawl_options: CrawlOptions) -> Self {
+        Self {
+            url: crawl_options.site_url,
+            exclude_paths: crawl_options.exclude_paths,
+            include_paths: crawl_options.include_paths,
+            max_depth: Some(crawl_options.max_depth.unwrap_or(2)),
+            ignore_sitemap: None,
+            limit: Some(crawl_options.limit.unwrap_or(20)),
+            allow_external_links: None,
+            allow_backward_links: Some(true),
+            scrape_options: Some(FirecrawlScraperOptions {
+                include_tags: crawl_options.include_tags,
+                exclude_tags: crawl_options.exclude_tags,
+            }),
         }
     }
 }
