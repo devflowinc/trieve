@@ -5,7 +5,6 @@
   "main": "index.js",
   "workspaces": [
     "frontends/search",
-    "frontends/old-dashboard",
     "frontends/chat",
     "frontends/analytics",
     "frontends/dashboard",
