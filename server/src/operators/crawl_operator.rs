@@ -16,7 +16,7 @@ use crate::{
     errors::ServiceError,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestResult {
     pub status: Status,
     pub completed: u32,
@@ -29,7 +29,7 @@ pub struct IngestResult {
     pub data: Option<Vec<Option<Document>>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
     Scraping,
@@ -38,7 +38,7 @@ pub enum Status {
     Cancelled,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Document {
     pub markdown: Option<String>,
     pub extract: Option<String>,
@@ -50,7 +50,7 @@ pub struct Document {
     pub metadata: Metadata,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Metadata {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -113,7 +113,7 @@ pub struct Metadata {
     pub site_map: Option<Sitemap>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Sitemap {
     pub changefreq: String,
 }
@@ -250,10 +250,12 @@ pub async fn update_crawl_status(
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+
     let mut conn = pool
         .get()
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
     diesel::update(
         crawl_requests_table::crawl_requests.filter(crawl_requests_table::scrape_id.eq(crawl_id)),
     )
@@ -261,6 +263,7 @@ pub async fn update_crawl_status(
     .execute(&mut conn)
     .await
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
     Ok(())
 }
 
@@ -375,37 +378,85 @@ pub async fn update_scrape_id(
 }
 
 pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceError> {
+    log::info!("Getting crawl from firecrawl");
+
     let firecrawl_url =
         std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "https://api.firecrawl.dev".to_string());
     let firecrawl_api_key = std::env::var("FIRECRAWL_API_KEY").unwrap_or_else(|_| "".to_string());
-    let firecrawl_url = format!("{}/v1/crawl/{}", firecrawl_url, scrape_id);
-    let client = reqwest::Client::new();
-    let response = client
-        .get(&firecrawl_url)
-        .header("Authorization", format!("Bearer {}", firecrawl_api_key))
-        .send()
-        .await
-        .map_err(|e| {
-            log::error!("Error sending request to firecrawl: {:?}", e);
-            ServiceError::InternalServerError("Error sending request to firecrawl".to_string())
-        })?;
+    let mut firecrawl_url = format!("{}/v1/crawl/{}", firecrawl_url, scrape_id);
 
-    if response.status().is_success() {
-        let json = response.json::<IngestResult>().await.map_err(|e| {
+    let mut collected_docs: Vec<Option<Document>> = vec![];
+    let mut resp = None;
+
+    let client = reqwest::Client::new();
+
+    while resp.is_none() {
+        let response = client
+            .get(&firecrawl_url)
+            .header("Authorization", format!("Bearer {}", firecrawl_api_key))
+            .send()
+            .await
+            .map_err(|e| {
+                log::error!("Error sending request to firecrawl: {:?}", e);
+                ServiceError::InternalServerError("Error sending request to firecrawl".to_string())
+            })?;
+
+        if !response.status().is_success() {
+            log::error!(
+                "Error getting response from firecrawl: {:?}",
+                response.text().await
+            );
+            return Err(ServiceError::InternalServerError(
+                "Error getting response from firecrawl".to_string(),
+            ));
+        };
+
+        let ingest_result = response.json::<IngestResult>().await.map_err(|e| {
             log::error!("Error parsing response from firecrawl: {:?}", e);
             ServiceError::InternalServerError("Error parsing response from firecrawl".to_string())
         })?;
+        if ingest_result.status != Status::Completed {
+            log::info!("Crawl status: {:?}", ingest_result.status);
+            return Ok(ingest_result);
+        }
 
-        log::info!("Got response from firecrawl: {:?}", json.status);
-        Ok(json)
-    } else {
-        log::error!(
-            "Error getting response from firecrawl: {:?}",
-            response.text().await
-        );
-        Err(ServiceError::InternalServerError(
+        let cur_docs = ingest_result.clone().data.unwrap_or_default();
+        collected_docs.extend(cur_docs);
+
+        if let Some(ref next_ingest_result) = ingest_result.next {
+            let next_ingest_result =
+                next_ingest_result.replace("https://localhost", "http://localhost");
+
+            log::info!(
+                "Next ingest url: {} | prev {}",
+                next_ingest_result,
+                firecrawl_url
+            );
+            if next_ingest_result == firecrawl_url {
+                log::info!("Breaking loop");
+                resp = Some(ingest_result.clone());
+                break;
+            }
+
+            firecrawl_url = next_ingest_result;
+        } else {
+            resp = Some(ingest_result.clone());
+        }
+    }
+
+    match resp {
+        Some(resp) => Ok(IngestResult {
+            status: resp.status,
+            completed: resp.completed,
+            total: resp.total,
+            credits_used: resp.credits_used,
+            expires_at: resp.expires_at,
+            next: None,
+            data: Some(collected_docs),
+        }),
+        None => Err(ServiceError::InternalServerError(
             "Error getting response from firecrawl".to_string(),
-        ))
+        )),
     }
 }
 

@@ -977,7 +977,7 @@ pub async fn insert_chunk_metadata_query(
             .execute(&mut conn)
             .await
             .map_err(|e| {
-                log::error!("Failed to insert chunk into groups {:?}", e);
+                println!("Failed to insert chunk into groups {:?}", e);
                 ServiceError::BadRequest("Failed to insert chunk into groups".to_string())
             })?;
     }
