@@ -6027,6 +6027,7 @@ pub struct FirecrawlCrawlRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct FirecrawlScraperOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub include_tags: Option<Vec<String>>,
