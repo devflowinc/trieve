@@ -1,3 +1,4 @@
+use actix_web::web;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
@@ -6,8 +7,6 @@ use std::sync::{
     Arc,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
-
-use actix_web::web;
 use trieve_server::operators::{
     dataset_operator::get_dataset_by_id_query, user_operator::hash_function,
 };
@@ -54,8 +53,7 @@ async fn crawl(
                 .map_err(|e| {
                     log::error!("Error updating crawl status: {:?}", e);
                     ServiceError::InternalServerError("Error updating crawl status".to_string())
-                })
-                .unwrap();
+                })?;
 
             return Err(ServiceError::InternalServerError(
                 "Scrape failed".to_string(),
@@ -72,8 +70,7 @@ async fn crawl(
     .map_err(|e| {
         log::error!("Error updating crawl status: {:?}", e);
         ServiceError::InternalServerError("Error updating crawl status".to_string())
-    })
-    .unwrap();
+    })?;
 
     log::info!(
         "Got response back from firecrawl for scrape_id: {}",
@@ -84,22 +81,22 @@ async fn crawl(
 
     let data = ingest_result.data.unwrap_or_default();
 
-    log::info!("Processing {} chunks", data.len());
+    log::info!("Processing {} documents from scrape", data.len());
 
     for page in data {
-        if page.is_none() {
-            continue;
-        }
-        let page = page.unwrap();
+        let page = match page {
+            Some(page) => page,
+            None => continue,
+        };
+
         if page.metadata.status_code != Some(200) {
-            log::error!("Error getting metadata for chunk: {:?}", page.metadata);
+            log::error!("Error getting page metadata for chunk: {:?}", page.metadata);
             update_crawl_status(scrape_request.id, CrawlStatus::Failed, pool.clone())
                 .await
                 .map_err(|e| {
                     log::error!("Error updating crawl status: {:?}", e);
                     ServiceError::InternalServerError("Error updating crawl status".to_string())
-                })
-                .unwrap();
+                })?;
         }
 
         let page_link = page.metadata.og_url.clone().unwrap_or_default();
@@ -133,6 +130,7 @@ async fn crawl(
                 })),
                 tracking_id: Some(hash_function(&chunk.clone())),
                 upsert_by_tracking_id: Some(true),
+                group_tracking_ids: Some(vec![page_link.clone()]),
                 fulltext_boost: Some(FullTextBoost {
                     phrase: heading.clone(),
                     boost_factor: 1.3,
@@ -282,25 +280,26 @@ async fn scrape_worker(
         let crawl_request: CrawlRequest =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
-        update_crawl_status(crawl_request.scrape_id, CrawlStatus::Pending, pool.clone())
-            .await
-            .map_err(|e| {
-                log::error!("Error updating crawl status: {:?}", e);
-                ServiceError::InternalServerError("Error updating crawl status".to_string())
-            })
-            .unwrap();
+        match update_crawl_status(crawl_request.scrape_id, CrawlStatus::Pending, pool.clone()).await
+        {
+            Ok(_) => {}
+            Err(err) => {
+                log::error!("Failed to update crawl status: {:?}", err);
+                continue;
+            }
+        }
 
         match crawl(crawl_request.clone(), pool.clone(), redis_pool.clone()).await {
             Ok(scrape_id) => {
                 log::info!("Scrape job completed: {:?}", scrape_id);
 
-                update_crawl_status(scrape_id, CrawlStatus::Completed, pool.clone())
-                    .await
-                    .map_err(|e| {
-                        log::error!("Error updating crawl status: {:?}", e);
-                        ServiceError::InternalServerError("Error updating crawl status".to_string())
-                    })
-                    .unwrap();
+                match update_crawl_status(scrape_id, CrawlStatus::Completed, pool.clone()).await {
+                    Ok(_) => {}
+                    Err(err) => {
+                        log::error!("Failed to update crawl status: {:?}", err);
+                        continue;
+                    }
+                }
 
                 let _ = redis::cmd("LREM")
                     .arg("scrape_processing")

@@ -1,5 +1,6 @@
 #![allow(clippy::get_first)]
 #![allow(deprecated)]
+#![allow(clippy::print_stdout)]
 
 #[macro_use]
 extern crate diesel;
