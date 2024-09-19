@@ -18,7 +18,7 @@ use trieve_server::{
     data::models::{CrawlStatus, Pool},
     errors::ServiceError,
     establish_connection, get_env,
-    operators::crawl_operator::{get_images, get_tags, update_crawl_status},
+    operators::crawl_operator::{get_tags, update_crawl_status},
 };
 use trieve_server::{
     handlers::chunk_handler::ChunkReqPayload, operators::crawl_operator::chunk_html,
@@ -128,7 +128,6 @@ async fn crawl(
                 chunk_html: Some(chunk_html.clone()),
                 link: Some(page_link.clone()),
                 tag_set: Some(page_tags.clone()),
-                image_urls: Some(get_images(&chunk_html.clone())),
                 metadata: Some(json!({
                     "title": page_title.clone(),
                     "description": page_description.clone(),
