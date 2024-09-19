@@ -18,10 +18,10 @@ use trieve_server::{
     data::models::{CrawlStatus, Pool},
     errors::ServiceError,
     establish_connection, get_env,
-    operators::crawl_operator::{get_chunk_html, get_images, get_tags, update_crawl_status},
+    operators::crawl_operator::{get_images, get_tags, update_crawl_status},
 };
 use trieve_server::{
-    handlers::chunk_handler::ChunkReqPayload, operators::crawl_operator::chunk_markdown,
+    handlers::chunk_handler::ChunkReqPayload, operators::crawl_operator::chunk_html,
 };
 use trieve_server::{
     handlers::chunk_handler::{FullTextBoost, SemanticBoost},
@@ -102,22 +102,14 @@ async fn crawl(
         let page_link = page.metadata.og_url.clone().unwrap_or_default();
         let page_title = page.metadata.og_title.clone().unwrap_or_default();
         let page_description = page.metadata.og_description.clone().unwrap_or_default();
-        let page_markdown = page.markdown.clone().unwrap_or_default();
+        let page_html = page.html.clone().unwrap_or_default();
         let page_tags = get_tags(page_link.clone());
 
-        let chunk_html = get_chunk_html(
-            page_markdown.clone(),
-            page_title.clone(),
-            "".to_string(),
-            0,
-            None,
-        );
+        let chunked_html = chunk_html(&page_html.clone());
 
-        let chunked_markdown = chunk_markdown(&chunk_html.clone());
-
-        for chunk in chunked_markdown {
+        for chunk in chunked_html {
             let heading = chunk.0.clone();
-            let chunk_markdown = chunk.1.clone();
+            let chunk_html = chunk.1.clone();
 
             let mut semantic_boost_phrase = heading.clone();
             let mut fulltext_boost_phrase = heading.clone();
@@ -133,16 +125,16 @@ async fn crawl(
             }
 
             let chunk = ChunkReqPayload {
-                chunk_html: Some(chunk_markdown.clone()),
+                chunk_html: Some(chunk_html.clone()),
                 link: Some(page_link.clone()),
                 tag_set: Some(page_tags.clone()),
-                image_urls: Some(get_images(&chunk_markdown.clone())),
+                image_urls: Some(get_images(&chunk_html.clone())),
                 metadata: Some(json!({
                     "title": page_title.clone(),
                     "description": page_description.clone(),
                     "url": page_link.clone(),
                 })),
-                tracking_id: Some(hash_function(&chunk_markdown.clone())),
+                tracking_id: Some(hash_function(&chunk_html.clone())),
                 upsert_by_tracking_id: Some(true),
                 group_tracking_ids: Some(vec![page_link.clone()]),
                 fulltext_boost: Some(FullTextBoost {
@@ -153,6 +145,7 @@ async fn crawl(
                     phrase: semantic_boost_phrase,
                     distance_factor: 0.3,
                 }),
+                convert_html_to_text: Some(true),
                 ..Default::default()
             };
             chunks.push(chunk);
@@ -171,31 +164,35 @@ async fn crawl(
 
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let (chunk_ingestion_message, chunk_metadatas) = create_chunk_metadata(
-        chunks,
-        scrape_request.dataset_id,
-        dataset_config.clone(),
-        pool.clone(),
-    )
-    .await?;
+    let chunks_to_upload = chunks.chunks(120);
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    for chunk in chunks_to_upload {
+        let (chunk_ingestion_message, chunk_metadatas) = create_chunk_metadata(
+            chunk.to_vec(),
+            scrape_request.dataset_id,
+            dataset_config.clone(),
+            pool.clone(),
+        )
+        .await?;
 
-    if !chunk_metadatas.is_empty() {
-        let serialized_message: String =
-            serde_json::to_string(&chunk_ingestion_message).map_err(|_| {
-                ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
-            })?;
-
-        redis::cmd("lpush")
-            .arg("ingestion")
-            .arg(&serialized_message)
-            .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+        let mut redis_conn = redis_pool
+            .get()
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        if !chunk_metadatas.is_empty() {
+            let serialized_message: String = serde_json::to_string(&chunk_ingestion_message)
+                .map_err(|_| {
+                    ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+                })?;
+
+            redis::cmd("lpush")
+                .arg("ingestion")
+                .arg(&serialized_message)
+                .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        }
     }
 
     update_crawl_status(

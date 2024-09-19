@@ -511,118 +511,6 @@ pub fn get_tags(url: String) -> Vec<String> {
     Vec::new()
 }
 
-pub fn get_chunk_html(
-    content: String,
-    page_title: String,
-    heading_text: String,
-    start_index: usize,
-    chunk_end: Option<usize>,
-) -> String {
-    let chunk_content = match chunk_end {
-        Some(end) => &content[start_index..end],
-        None => &content[start_index..],
-    };
-
-    let mut chunk_markdown = chunk_content
-        .split('\n')
-        .collect::<Vec<&str>>()
-        .join("\n")
-        .trim()
-        .replace('-', "");
-
-    chunk_markdown = Cleaners::clean_multi_column_links(chunk_markdown);
-    chunk_markdown = Cleaners::clean_anchortag_headings(chunk_markdown);
-    chunk_markdown = Cleaners::clean_extra_newlines_after_links(chunk_markdown);
-    chunk_markdown = Cleaners::clean_double_asterisk_whitespace_gaps(chunk_markdown);
-    chunk_markdown = Cleaners::clean_newline_and_spaces_after_links(chunk_markdown);
-
-    // Skip heading-only chunks
-    if chunk_markdown.trim().split('\n').count() <= 1 {
-        return format!("{{\"HEADING_ONLY\": \"{}\"}}", chunk_markdown.trim());
-    }
-
-    if heading_text.is_empty() {
-        chunk_markdown = chunk_markdown.trim().replace('-', "");
-    } else {
-        let heading_line = format!("{}: {}", page_title, heading_text);
-        let mut lines: Vec<&str> = chunk_markdown.split('\n').collect();
-        lines[0] = heading_line.as_str();
-        chunk_markdown = lines.join("\n");
-    }
-
-    chunk_markdown
-}
-
-pub struct Cleaners;
-
-impl Cleaners {
-    pub fn clean_double_newline_markdown_links(text: String) -> String {
-        let re = Regex::new(r"\[(.*?\\\s*\n\s*\\\s*\n\s*.*?)\]\((.*?)\)").unwrap();
-        re.replace_all(&text, |caps: &regex::Captures| {
-            let full_content = &caps[1];
-            let url = &caps[2];
-            let cleaned_content = Regex::new(r"\\\s*\n\s*\\\s*\n\s*")
-                .unwrap()
-                .replace_all(full_content, " ");
-            format!("[{}]({})", cleaned_content, url)
-        })
-        .to_string()
-    }
-
-    pub fn clean_anchortag_headings(text: String) -> String {
-        let re = Regex::new(r"\[\]\((#.*?)\)\n(.*?)($|\n)").unwrap();
-        re.replace_all(&text, "## $2").to_string()
-    }
-
-    pub fn clean_double_asterisk_whitespace_gaps(text: String) -> String {
-        let re = Regex::new(r"\*\*(\[.*?\]\(.*?\))\n\s*\*\*").unwrap();
-        re.replace_all(&text, "**$1**").to_string()
-    }
-
-    pub fn clean_newline_and_spaces_after_links(text: String) -> String {
-        let re = Regex::new(r"(\[.*?\]\(.*?\))\n\s*([a-z].*)").unwrap();
-        re.replace_all(&text, "$1 $2").to_string()
-    }
-
-    pub fn clean_multi_column_links(markdown_text: String) -> String {
-        let link_pattern = Regex::new(r"(\n\n)(\[(?:[^\]]+\\\s*)+[^\]]+\]\([^\)]+\)(?:\s*\[(?:[^\]]+\\\s*)+[^\]]+\]\([^\)]+\))*)\s*").unwrap();
-        let link_re = Regex::new(r"\[([^\]]+)\]\(([^\)]+)\)").unwrap();
-
-        link_pattern
-            .replace_all(&markdown_text, |caps: &regex::Captures| {
-                let newlines = &caps[1];
-                let links = &caps[2];
-                let cleaned_links: Vec<String> = link_re
-                    .captures_iter(links)
-                    .map(|link_cap| {
-                        let link_text = &link_cap[1];
-                        let link_url = &link_cap[2];
-                        let clean_text = Regex::new(r"\\\s*\n\s*\\\s*\n\s*")
-                            .unwrap()
-                            .replace_all(link_text, ": ");
-                        let clean_text = Regex::new(r"\s*\\\s*\n\s*")
-                            .unwrap()
-                            .replace_all(&clean_text, " ");
-                        let clean_text = Regex::new(r"\\ \\ ")
-                            .unwrap()
-                            .replace_all(&clean_text, ": ");
-                        format!("- [{}]({})", clean_text.trim(), link_url)
-                    })
-                    .collect();
-                format!("{}{}", newlines, cleaned_links.join("\n"))
-            })
-            .trim()
-            .to_string()
-    }
-
-    pub fn clean_extra_newlines_after_links(text: String) -> String {
-        let re1 = Regex::new(r"(\[.*?\]\(.*?\))\n\.").unwrap();
-        let re2 = Regex::new(r"(\[.*?\]\(.*?\))\n").unwrap();
-        let text = re1.replace_all(&text, "$1.");
-        re2.replace_all(&text, "$1 ").to_string()
-    }
-}
-
 pub fn get_images(markdown_content: &str) -> Vec<String> {
     let image_pattern = Regex::new(r"\((https?://.*?\.(?:png|jpg|jpeg|gif|bmp|webp))\)").unwrap();
     image_pattern
@@ -632,25 +520,31 @@ pub fn get_images(markdown_content: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn chunk_markdown(markdown: &str) -> Vec<(String, String)> {
-    let re = Regex::new(r"(?m)^(#{1,6}\s.+)$").unwrap();
+pub fn chunk_html(html: &str) -> Vec<(String, String)> {
+    let re = Regex::new(r"(?i)<h[1-6].*?>").unwrap();
     let mut chunks = Vec::new();
     let mut current_chunk = (String::new(), String::new());
+    let mut last_end = 0;
 
-    for line in markdown.lines() {
-        if re.is_match(line) {
-            if !current_chunk.1.is_empty() {
-                current_chunk.1 = current_chunk.1.trim().to_string();
-                chunks.push(current_chunk);
-                current_chunk = (String::new(), String::new());
-            }
-            current_chunk.0.push_str(line);
-            current_chunk.1.push_str(line);
-            current_chunk.1.push('\n');
-        } else {
-            current_chunk.1.push_str(line);
-            current_chunk.1.push('\n');
+    for cap in re.find_iter(html) {
+        if last_end != cap.start() {
+            current_chunk.1.push_str(&html[last_end..cap.start()]);
         }
+
+        if !current_chunk.1.is_empty() {
+            current_chunk.1 = current_chunk.1.trim().to_string();
+            chunks.push(current_chunk);
+
+            current_chunk = (String::new(), String::new());
+        }
+
+        current_chunk.0 = cap.as_str().to_string();
+        current_chunk.1 = cap.as_str().to_string();
+        last_end = cap.end();
+    }
+
+    if last_end < html.len() {
+        current_chunk.1.push_str(&html[last_end..]);
     }
 
     if !current_chunk.1.is_empty() {

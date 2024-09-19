@@ -2291,44 +2291,46 @@ pub async fn create_chunk_metadata(
         .unique()
         .collect();
 
-    get_group_ids_from_tracking_ids_query(
-        all_group_tracking_ids.clone(),
-        dataset_uuid,
-        pool.clone(),
-    )
-    .await?
-    .iter()
-    .for_each(|(group_id, tracking_id)| {
-        if let Some(tracking_id) = tracking_id {
-            group_tracking_ids_to_group_ids.insert(tracking_id.clone(), *group_id);
-        }
-    });
-
-    let new_groups: Vec<ChunkGroup> = all_group_tracking_ids
+    if !all_group_tracking_ids.is_empty() {
+        get_group_ids_from_tracking_ids_query(
+            all_group_tracking_ids.clone(),
+            dataset_uuid,
+            pool.clone(),
+        )
+        .await?
         .iter()
-        .filter_map(|group_tracking_id| {
-            if !group_tracking_ids_to_group_ids.contains_key(group_tracking_id) {
-                Some(ChunkGroup::from_details(
-                    Some(group_tracking_id.clone()),
-                    None,
-                    dataset_uuid,
-                    Some(group_tracking_id.to_string()),
-                    None,
-                    None,
-                ))
-            } else {
-                None
+        .for_each(|(group_id, tracking_id)| {
+            if let Some(tracking_id) = tracking_id {
+                group_tracking_ids_to_group_ids.insert(tracking_id.clone(), *group_id);
             }
-        })
-        .collect();
+        });
 
-    let created_groups = create_groups_query(new_groups, true, pool.clone()).await?;
+        let new_groups: Vec<ChunkGroup> = all_group_tracking_ids
+            .iter()
+            .filter_map(|group_tracking_id| {
+                if !group_tracking_ids_to_group_ids.contains_key(group_tracking_id) {
+                    Some(ChunkGroup::from_details(
+                        Some(group_tracking_id.clone()),
+                        None,
+                        dataset_uuid,
+                        Some(group_tracking_id.to_string()),
+                        None,
+                        None,
+                    ))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-    created_groups.iter().for_each(|group| {
-        if let Some(tracking_id) = &group.tracking_id {
-            group_tracking_ids_to_group_ids.insert(tracking_id.clone(), group.id);
-        }
-    });
+        let created_groups = create_groups_query(new_groups, true, pool.clone()).await?;
+
+        created_groups.iter().for_each(|group| {
+            if let Some(tracking_id) = &group.tracking_id {
+                group_tracking_ids_to_group_ids.insert(tracking_id.clone(), group.id);
+            }
+        });
+    }
 
     for chunk in chunks {
         let chunk_tag_set = chunk
