@@ -15,6 +15,8 @@ use regex::Regex;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
+use super::parse_operator::convert_html_to_text;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestResult {
     pub status: Status,
@@ -414,6 +416,7 @@ pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestRes
             log::error!("Error parsing response from firecrawl: {:?}", e);
             ServiceError::InternalServerError("Error parsing response from firecrawl".to_string())
         })?;
+
         if ingest_result.status != Status::Completed {
             log::info!("Crawl status: {:?}", ingest_result.status);
             return Ok(ingest_result);
@@ -511,34 +514,42 @@ pub fn get_tags(url: String) -> Vec<String> {
     Vec::new()
 }
 
-pub fn get_images(markdown_content: &str) -> Vec<String> {
-    let image_pattern = Regex::new(r"\((https?://.*?\.(?:png|jpg|jpeg|gif|bmp|webp))\)").unwrap();
-    image_pattern
-        .captures_iter(markdown_content)
-        .filter_map(|cap| cap.get(1))
-        .map(|m| m.as_str().to_string())
-        .collect()
-}
-
 pub fn chunk_html(html: &str) -> Vec<(String, String)> {
     let re = Regex::new(r"(?i)<h[1-6].*?>").unwrap();
     let mut chunks = Vec::new();
     let mut current_chunk = (String::new(), String::new());
     let mut last_end = 0;
+    let mut short_chunk: Option<(String, String)> = None;
 
     for cap in re.find_iter(html) {
         if last_end != cap.start() {
             current_chunk.1.push_str(&html[last_end..cap.start()]);
         }
 
-        if !current_chunk.1.is_empty() {
+        if !current_chunk.1.is_empty() && current_chunk.0 != current_chunk.1 {
             current_chunk.1 = current_chunk.1.trim().to_string();
-            chunks.push(current_chunk);
 
-            current_chunk = (String::new(), String::new());
+            if let Some(prev_short_chunk) = short_chunk.take() {
+                current_chunk.1 = format!("{} {}", prev_short_chunk.1, current_chunk.1);
+                current_chunk.0 = prev_short_chunk.0;
+            }
+
+            if convert_html_to_text(&current_chunk.1)
+                .split_whitespace()
+                .count()
+                > 5
+            {
+                chunks.push(current_chunk);
+                current_chunk = (String::new(), String::new());
+            } else {
+                short_chunk = Some(current_chunk);
+                current_chunk = (String::new(), String::new());
+            }
         }
 
-        current_chunk.0 = cap.as_str().to_string();
+        if current_chunk.0.is_empty() {
+            current_chunk.0 = cap.as_str().to_string();
+        }
         current_chunk.1 = cap.as_str().to_string();
         last_end = cap.end();
     }
@@ -549,7 +560,15 @@ pub fn chunk_html(html: &str) -> Vec<(String, String)> {
 
     if !current_chunk.1.is_empty() {
         current_chunk.1 = current_chunk.1.trim().to_string();
+
+        if let Some(prev_short_chunk) = short_chunk.take() {
+            current_chunk.1 = format!("{} {}", prev_short_chunk.1, current_chunk.1);
+            current_chunk.0 = prev_short_chunk.0;
+        }
+
         chunks.push(current_chunk);
+    } else if let Some(last_short_chunk) = short_chunk {
+        chunks.push(last_short_chunk);
     }
 
     chunks
