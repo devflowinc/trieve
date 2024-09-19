@@ -117,26 +117,40 @@ async fn crawl(
 
         for chunk in chunked_markdown {
             let heading = chunk.0.clone();
-            let chunk = chunk.1.clone();
+            let chunk_markdown = chunk.1.clone();
+
+            let mut semantic_boost_phrase = heading.clone();
+            let mut fulltext_boost_phrase = heading.clone();
+
+            if !page_title.is_empty() {
+                semantic_boost_phrase.push_str("\n\n");
+                semantic_boost_phrase.push_str(&page_title);
+                fulltext_boost_phrase.push_str(&page_title);
+            }
+            if !page_description.is_empty() {
+                semantic_boost_phrase.push_str("\n\n");
+                semantic_boost_phrase.push_str(&page_description);
+            }
+
             let chunk = ChunkReqPayload {
-                chunk_html: Some(chunk.clone()),
+                chunk_html: Some(chunk_markdown.clone()),
                 link: Some(page_link.clone()),
                 tag_set: Some(page_tags.clone()),
-                image_urls: Some(get_images(&chunk.clone())),
+                image_urls: Some(get_images(&chunk_markdown.clone())),
                 metadata: Some(json!({
                     "title": page_title.clone(),
                     "description": page_description.clone(),
                     "url": page_link.clone(),
                 })),
-                tracking_id: Some(hash_function(&chunk.clone())),
+                tracking_id: Some(hash_function(&chunk_markdown.clone())),
                 upsert_by_tracking_id: Some(true),
                 group_tracking_ids: Some(vec![page_link.clone()]),
                 fulltext_boost: Some(FullTextBoost {
-                    phrase: heading.clone(),
+                    phrase: fulltext_boost_phrase,
                     boost_factor: 1.3,
                 }),
                 semantic_boost: Some(SemanticBoost {
-                    phrase: heading,
+                    phrase: semantic_boost_phrase,
                     distance_factor: 0.3,
                 }),
                 ..Default::default()

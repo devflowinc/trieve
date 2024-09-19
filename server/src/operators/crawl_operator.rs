@@ -1,11 +1,3 @@
-use actix_web::web;
-use diesel::prelude::*;
-use diesel::QueryDsl;
-use diesel_async::RunQueryDsl;
-use regex::Regex;
-use reqwest::Url;
-use serde::{Deserialize, Serialize};
-
 use crate::data::models::CrawlOptions;
 use crate::data::models::CrawlStatus;
 use crate::data::models::FirecrawlCrawlRequest;
@@ -15,6 +7,13 @@ use crate::{
     data::models::{CrawlRequest, CrawlRequestPG, Pool},
     errors::ServiceError,
 };
+use actix_web::web;
+use diesel::prelude::*;
+use diesel::QueryDsl;
+use diesel_async::RunQueryDsl;
+use regex::Regex;
+use reqwest::Url;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestResult {
@@ -498,15 +497,16 @@ pub async fn crawl_site(crawl_options: CrawlOptions) -> Result<uuid::Uuid, Servi
 pub fn get_tags(url: String) -> Vec<String> {
     if let Ok(parsed_url) = Url::parse(&url) {
         let path_parts: Vec<&str> = parsed_url.path().split('/').collect();
-        if let Some(docs_index) = path_parts.iter().position(|&part| part == "docs") {
-            return path_parts
-                .iter()
-                .skip(docs_index + 1)
-                .take(path_parts.len() - docs_index - 2)
-                .filter(|&&part| !part.is_empty())
-                .map(|&part| part.to_string())
-                .collect();
-        }
+        return path_parts
+            .iter()
+            .filter_map(|part| {
+                if !part.is_empty() {
+                    Some(part.to_string())
+                } else {
+                    None
+                }
+            })
+            .collect();
     }
     Vec::new()
 }
@@ -523,34 +523,34 @@ pub fn get_chunk_html(
         None => &content[start_index..],
     };
 
-    let mut chunk_html = chunk_content
+    let mut chunk_markdown = chunk_content
         .split('\n')
         .collect::<Vec<&str>>()
         .join("\n")
         .trim()
         .replace('-', "");
 
-    chunk_html = Cleaners::clean_multi_column_links(chunk_html);
-    chunk_html = Cleaners::clean_anchortag_headings(chunk_html);
-    chunk_html = Cleaners::clean_extra_newlines_after_links(chunk_html);
-    chunk_html = Cleaners::clean_double_asterisk_whitespace_gaps(chunk_html);
-    chunk_html = Cleaners::clean_newline_and_spaces_after_links(chunk_html);
+    chunk_markdown = Cleaners::clean_multi_column_links(chunk_markdown);
+    chunk_markdown = Cleaners::clean_anchortag_headings(chunk_markdown);
+    chunk_markdown = Cleaners::clean_extra_newlines_after_links(chunk_markdown);
+    chunk_markdown = Cleaners::clean_double_asterisk_whitespace_gaps(chunk_markdown);
+    chunk_markdown = Cleaners::clean_newline_and_spaces_after_links(chunk_markdown);
 
     // Skip heading-only chunks
-    if chunk_html.trim().split('\n').count() <= 1 {
-        return format!("{{\"HEADING_ONLY\": \"{}\"}}", chunk_html.trim());
+    if chunk_markdown.trim().split('\n').count() <= 1 {
+        return format!("{{\"HEADING_ONLY\": \"{}\"}}", chunk_markdown.trim());
     }
 
     if heading_text.is_empty() {
-        chunk_html = chunk_html.trim().replace('-', "");
+        chunk_markdown = chunk_markdown.trim().replace('-', "");
     } else {
         let heading_line = format!("{}: {}", page_title, heading_text);
-        let mut lines: Vec<&str> = chunk_html.split('\n').collect();
+        let mut lines: Vec<&str> = chunk_markdown.split('\n').collect();
         lines[0] = heading_line.as_str();
-        chunk_html = lines.join("\n");
+        chunk_markdown = lines.join("\n");
     }
 
-    chunk_html
+    chunk_markdown
 }
 
 pub struct Cleaners;
@@ -620,25 +620,6 @@ impl Cleaners {
         let re2 = Regex::new(r"(\[.*?\]\(.*?\))\n").unwrap();
         let text = re1.replace_all(&text, "$1.");
         re2.replace_all(&text, "$1 ").to_string()
-    }
-
-    pub fn remove_end_matter(text: String) -> String {
-        let patterns = [
-            r"\[]\(#get-help\)",
-            r"\[Prev",
-            r"If you have any questions or need any help in setting things up, join our slack community and ping us in `#help` channel.",
-        ];
-
-        let indices: Vec<_> = patterns
-            .iter()
-            .filter_map(|&pattern| Regex::new(pattern).ok()?.find(&text).map(|m| m.start()))
-            .collect();
-
-        if let Some(&remove_index) = indices.iter().min() {
-            text[..remove_index].trim().to_string()
-        } else {
-            text.to_string()
-        }
     }
 }
 

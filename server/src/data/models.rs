@@ -6026,14 +6026,19 @@ pub struct FirecrawlCrawlRequest {
     pub scrape_options: Option<FirecrawlScraperOptions>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FirecrawlScraperOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub include_tags: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exclude_tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wait_for: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub formats: Option<Vec<String>>,
 }
+
 impl From<CrawlOptions> for FirecrawlCrawlRequest {
     fn from(crawl_options: CrawlOptions) -> Self {
         Self {
@@ -6048,6 +6053,8 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
             scrape_options: Some(FirecrawlScraperOptions {
                 include_tags: crawl_options.include_tags,
                 exclude_tags: crawl_options.exclude_tags,
+                formats: Some(vec!["html".to_string()]),
+                wait_for: Some(1000),
             }),
         }
     }
