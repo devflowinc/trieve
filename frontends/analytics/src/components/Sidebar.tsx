@@ -61,8 +61,8 @@ export const Sidebar = (props: NavbarProps) => {
   const domainNavbarRoutes = createMemo(() => {
     const domainNavbarRoutes = [
       {
-        href: `${dashboardURL}/dashboard/dataset/${props.selectedDataset
-          ?.dataset.id}/start?org=${orgContext.selectedOrg().id}`,
+        href: `${dashboardURL}/dataset/${props.selectedDataset?.dataset
+          .id}?org=${orgContext.selectedOrg().id}`,
         label: "Dashboard",
         icon: TbLayoutDashboard,
       },
