@@ -1,7 +1,7 @@
 use ndarray::Array2;
 use regex::Regex;
 use regex_split::RegexSplit;
-use scraper::Html;
+use scraper::{Html, Selector};
 use std::cmp;
 
 use crate::errors::ServiceError;
@@ -11,6 +11,19 @@ pub fn convert_html_to_text(html: &str) -> String {
     let dom = Html::parse_fragment(html);
     let text = dom.root_element().text().collect::<String>();
     text
+}
+
+pub fn extract_text_from_html(html: &str) -> String {
+    let document = Html::parse_document(html);
+    let selector = Selector::parse("body").unwrap();
+
+    document
+        .select(&selector)
+        .flat_map(|element| element.text())
+        .map(|text| text.trim())
+        .filter(|text| !text.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 #[tracing::instrument]
