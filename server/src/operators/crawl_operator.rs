@@ -537,7 +537,7 @@ pub fn chunk_html(html: &str) -> Vec<(String, String)> {
             if convert_html_to_text(&current_chunk.1)
                 .split_whitespace()
                 .count()
-                > 5
+                > 10
             {
                 chunks.push(current_chunk);
                 current_chunk = (String::new(), String::new());

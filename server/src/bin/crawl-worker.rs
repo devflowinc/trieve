@@ -8,7 +8,8 @@ use std::sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::operators::{
-    dataset_operator::get_dataset_by_id_query, user_operator::hash_function,
+    dataset_operator::get_dataset_by_id_query, parse_operator::extract_text_from_html,
+    user_operator::hash_function,
 };
 use trieve_server::{
     data::models::{CrawlRequest, DatasetConfiguration, RedisPool},
@@ -124,6 +125,10 @@ async fn crawl(
                 semantic_boost_phrase.push_str(&page_description);
             }
 
+            let cleaned_html = extract_text_from_html(&chunk_html.clone())
+                .trim()
+                .replace("\n", "");
+
             let chunk = ChunkReqPayload {
                 chunk_html: Some(chunk_html.clone()),
                 link: Some(page_link.clone()),
@@ -133,7 +138,11 @@ async fn crawl(
                     "description": page_description.clone(),
                     "url": page_link.clone(),
                 })),
-                tracking_id: Some(hash_function(&chunk_html.clone())),
+                tracking_id: Some(hash_function(&format!(
+                    "{}{}",
+                    page_link.clone(),
+                    cleaned_html.clone()
+                ))),
                 upsert_by_tracking_id: Some(true),
                 group_tracking_ids: Some(vec![page_link.clone()]),
                 fulltext_boost: Some(FullTextBoost {
