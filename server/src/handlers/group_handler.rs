@@ -604,12 +604,10 @@ pub async fn delete_chunk_group(
     )
     .await?;
 
-    let deleted_at = chrono::Utc::now().naive_utc();
-
     delete_group_by_id_query(
         group_id,
         dataset_org_plan_sub.dataset,
-        deleted_at,
+        chrono::Utc::now().naive_utc(),
         data.delete_chunks,
         delete_group_pool,
         dataset_config,
