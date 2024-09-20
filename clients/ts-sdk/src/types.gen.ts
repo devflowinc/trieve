@@ -393,6 +393,40 @@ export type CountChunksReqPayload = {
 
 export type CountSearchMethod = 'fulltext' | 'semantic' | 'bm25';
 
+export type CrawlInterval = 'daily' | 'weekly' | 'monthly';
+
+export type CrawlOptions = {
+    /**
+     * URL Patterns to exclude from the crawl
+     */
+    exclude_paths?: Array<(string)> | null;
+    /**
+     * Specify the HTML tags, classes and ids to exclude from the response.
+     */
+    exclude_tags?: Array<(string)> | null;
+    /**
+     * URL Patterns to include in the crawl
+     */
+    include_paths?: Array<(string)> | null;
+    /**
+     * Specify the HTML tags, classes and ids to include in the response.
+     */
+    include_tags?: Array<(string)> | null;
+    interval?: ((CrawlInterval) | null);
+    /**
+     * How many pages to crawl, defaults to 20
+     */
+    limit?: (number) | null;
+    /**
+     * How many levels deep to crawl, defaults to 2
+     */
+    max_depth?: (number) | null;
+    /**
+     * The URL to crawl
+     */
+    site_url?: (string) | null;
+};
+
 export type CreateBatchChunkGroupReqPayload = Array<CreateSingleChunkGroupReqPayload>;
 
 export type CreateBatchChunkReqPayload = Array<ChunkReqPayload>;
@@ -404,6 +438,7 @@ export type CreateChunkGroupResponseEnum = ChunkGroup | ChunkGroups;
 export type CreateChunkReqPayloadEnum = ChunkReqPayload | CreateBatchChunkReqPayload;
 
 export type CreateDatasetRequest = {
+    crawl_options?: ((CrawlOptions) | null);
     /**
      * Name of the dataset.
      */
@@ -1130,6 +1165,16 @@ export type HighlightOptions = {
 
 export type HighlightStrategy = 'exactmatch' | 'v1';
 
+export type Invitation = {
+    created_at: string;
+    email: string;
+    id: string;
+    organization_id: string;
+    role: number;
+    updated_at: string;
+    used: boolean;
+};
+
 export type InvitationData = {
     /**
      * The url of the app that the user will be directed to in order to set their password. Usually admin.trieve.ai, but may differ for local dev or self-hosted setups.
@@ -1259,6 +1304,12 @@ export type OrganizationUsageCount = {
     message_count: number;
     org_id: string;
     user_count: number;
+};
+
+export type OrganizationWithSubAndPlan = {
+    organization: Organization;
+    plan?: ((StripePlan) | null);
+    subscription?: ((StripeSubscription) | null);
 };
 
 export type PopularFilters = {
@@ -2087,6 +2138,16 @@ export type StripePlan = {
     user_count: number;
 };
 
+export type StripeSubscription = {
+    created_at: string;
+    current_period_end?: (string) | null;
+    id: string;
+    organization_id: string;
+    plan_id: string;
+    stripe_id: string;
+    updated_at: string;
+};
+
 export type SuggestType = 'question' | 'keyword' | 'semantic';
 
 export type SuggestedQueriesReqPayload = {
@@ -2143,6 +2204,10 @@ export type TypoOptions = {
      */
     disable_on_word?: Array<(string)> | null;
     one_typo_word_range?: ((TypoRange) | null);
+    /**
+     * Auto-require non-english words present in the dataset to exist in each results chunk_html text. If not specified, this defaults to true.
+     */
+    prioritize_domain_specifc_words?: (boolean) | null;
     two_typo_word_range?: ((TypoRange) | null);
 };
 
@@ -2301,6 +2366,7 @@ export type UpdateChunkReqPayload = {
 };
 
 export type UpdateDatasetRequest = {
+    crawl_options?: ((CrawlOptions) | null);
     /**
      * The id of the dataset you want to update.
      */
@@ -3291,6 +3357,10 @@ export type GetFileHandlerResponse = (FileDTO);
 
 export type DeleteFileHandlerData = {
     /**
+     * Delete the chunks within the group
+     */
+    deleteChunks: boolean;
+    /**
      * The id of the file to delete
      */
     fileId: string;
@@ -3316,6 +3386,32 @@ export type PostInvitationData = {
 };
 
 export type PostInvitationResponse = (void);
+
+export type DeleteInvitationData = {
+    /**
+     * The id of the invitation to delete
+     */
+    invitationId: string;
+    /**
+     * The organization id to use for the request
+     */
+    trOrganization: string;
+};
+
+export type DeleteInvitationResponse = (void);
+
+export type GetInvitationsData = {
+    /**
+     * The organization id to get invitations for
+     */
+    organizationId: string;
+    /**
+     * The organization id to use for the request
+     */
+    trOrganization: string;
+};
+
+export type GetInvitationsResponse = (Array<Invitation>);
 
 export type CreateMessageData = {
     /**
@@ -3454,7 +3550,7 @@ export type GetOrganizationData = {
     trOrganization: string;
 };
 
-export type GetOrganizationResponse = (Organization);
+export type GetOrganizationResponse = (OrganizationWithSubAndPlan);
 
 export type DeleteOrganizationData = {
     /**
@@ -4576,6 +4672,36 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/invitation/{invitation_id}': {
+        delete: {
+            req: DeleteInvitationData;
+            res: {
+                /**
+                 * Ok response. Indicates that invitation was deleted.
+                 */
+                204: void;
+                /**
+                 * Service error relating to deleting invitation
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/invitations/{organization_id}': {
+        get: {
+            req: GetInvitationsData;
+            res: {
+                /**
+                 * Invitations for the dataset
+                 */
+                200: Array<Invitation>;
+                /**
+                 * Service error relating to getting invitations for the dataset
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
     '/api/message': {
         post: {
             req: CreateMessageData;
@@ -4725,7 +4851,7 @@ export type $OpenApiTs = {
                 /**
                  * Organization with the id that was requested
                  */
-                200: Organization;
+                200: OrganizationWithSubAndPlan;
                 /**
                  * Service error relating to finding the organization by id
                  */

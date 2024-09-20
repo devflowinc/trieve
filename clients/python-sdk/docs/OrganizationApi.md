@@ -174,7 +174,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_organization**
-> Organization get_organization(tr_organization, organization_id)
+> OrganizationWithSubAndPlan get_organization(tr_organization, organization_id)
 
 Get Organization
 
@@ -186,7 +186,7 @@ Fetch the details of an organization by its id. Auth'ed user or api key must hav
 
 ```python
 import trieve_py_client
-from trieve_py_client.models.organization import Organization
+from trieve_py_client.models.organization_with_sub_and_plan import OrganizationWithSubAndPlan
 from trieve_py_client.rest import ApiException
 from pprint import pprint
 
@@ -235,7 +235,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**Organization**](Organization.md)
+[**OrganizationWithSubAndPlan**](OrganizationWithSubAndPlan.md)
 
 ### Authorization
 

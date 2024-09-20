@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**crawl_options** | [**CrawlOptions**](CrawlOptions.md) |  | [optional] 
 **dataset_name** | **str** | Name of the dataset. | 
 **organization_id** | **str** | Organization ID that the dataset will belong to. | 
 **server_configuration** | [**DatasetConfigurationDTO**](DatasetConfigurationDTO.md) |  | [optional] 

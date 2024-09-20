@@ -438,7 +438,7 @@ void (empty response body)
 
 Get Group
 
-Fetch the group with the given id. get_group
+Fetch the group with the given id.
 
 ### Example
 
