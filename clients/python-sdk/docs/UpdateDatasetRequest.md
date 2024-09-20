@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**crawl_options** | [**CrawlOptions**](CrawlOptions.md) |  | [optional] 
 **dataset_id** | **str** | The id of the dataset you want to update. | [optional] 
 **dataset_name** | **str** | The new name of the dataset. Must be unique within the organization. If not provided, the name will not be updated. | [optional] 
 **new_tracking_id** | **str** | Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header. | [optional] 
