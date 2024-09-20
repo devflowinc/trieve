@@ -1,4 +1,7 @@
-use super::auth_handler::{AdminOnly, LoggedUser};
+use super::{
+    auth_handler::{AdminOnly, LoggedUser},
+    group_handler::DeleteGroupData,
+};
 use crate::{
     data::models::{
         DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, FileAndGroupId, FileWorkerMessage,
@@ -336,6 +339,7 @@ pub async fn get_dataset_files_handler(
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
+        ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -344,14 +348,17 @@ pub async fn get_dataset_files_handler(
 #[tracing::instrument(skip(pool))]
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
+    query: web::Query<DeleteGroupData>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
+
     delete_file_query(
         file_id.into_inner(),
+        query.delete_chunks,
         dataset_org_plan_sub.dataset,
         pool,
         dataset_config,

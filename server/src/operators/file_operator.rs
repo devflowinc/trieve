@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use super::chunk_operator::{create_chunk_metadata, get_row_count_for_organization_id_query};
 use super::clickhouse_operator::{ClickHouseEvent, EventQueue};
 use super::group_operator::{create_group_from_file_query, create_groups_query};
@@ -9,6 +7,7 @@ use crate::data::models::FileDTO;
 use crate::data::models::{Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, EventType};
 use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::file_handler::UploadFileReqPayload;
+use crate::operators::group_operator::delete_group_by_file_id_query;
 use crate::{data::models::WorkerEvent, get_env};
 use crate::{
     data::models::{File, Pool},
@@ -18,11 +17,11 @@ use actix_web::web;
 use diesel::dsl::sql;
 use diesel::prelude::*;
 use diesel::sql_types::BigInt;
-use diesel_async::scoped_futures::ScopedFutureExt;
-use diesel_async::{AsyncConnection, RunQueryDsl};
+use diesel_async::RunQueryDsl;
 use redis::aio::MultiplexedConnection;
 use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
+use std::collections::HashMap;
 
 #[tracing::instrument]
 pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
@@ -359,6 +358,7 @@ pub async fn get_dataset_file_query(
 #[tracing::instrument(skip(pool))]
 pub async fn delete_file_query(
     file_uuid: uuid::Uuid,
+    delete_chunks: Option<bool>,
     dataset: Dataset,
     pool: web::Data<Pool>,
     dataset_config: DatasetConfiguration,
@@ -383,29 +383,28 @@ pub async fn delete_file_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not delete file from S3".to_string()))?;
 
-    let transaction_result = conn
-        .transaction::<_, diesel::result::Error, _>(|conn| {
-            async {
-                diesel::delete(
-                    files_columns::files
-                        .filter(files_columns::id.eq(file_uuid))
-                        .filter(files_columns::dataset_id.eq(dataset.clone().id)),
-                )
-                .execute(conn)
-                .await?;
+    diesel::delete(
+        files_columns::files
+            .filter(files_columns::id.eq(file_uuid))
+            .filter(files_columns::dataset_id.eq(dataset.clone().id)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Error deleting file {:?}", e);
+        ServiceError::BadRequest("Could not delete file".to_string())
+    })?;
 
-                Ok(())
-            }
-            .scope_boxed()
-        })
-        .await;
-
-    match transaction_result {
-        Ok(_) => (),
-        Err(e) => {
-            log::error!("Error deleting file with transaction {:?}", e);
-            return Err(ServiceError::BadRequest("Could not delete file".to_string()).into());
-        }
+    if delete_chunks.is_some_and(|delete_chunks| delete_chunks) {
+        delete_group_by_file_id_query(
+            file_uuid,
+            dataset,
+            chrono::Utc::now().naive_utc(),
+            Some(true),
+            pool.clone(),
+            dataset_config,
+        )
+        .await?;
     }
 
     Ok(())
