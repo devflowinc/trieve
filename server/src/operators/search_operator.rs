@@ -3049,7 +3049,14 @@ pub async fn autocomplete_chunks_query(
         .get(0)
         .unwrap_or(&0) as usize;
 
-    let (before_increase, after_increase) = result_chunks.score_chunks.split_at(first_increase);
+    let (before_increase, after_increase) = if first_increase < result_chunks.score_chunks.len() {
+        result_chunks.score_chunks.split_at(first_increase)
+    } else {
+        let empty_vec: &[ScoreChunkDTO] = &[];
+
+        (result_chunks.score_chunks.as_slice(), empty_vec)
+    };
+
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),
         sort_by.clone(),
