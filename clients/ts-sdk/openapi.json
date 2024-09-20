@@ -12,7 +12,7 @@
       "name": "BSL",
       "url": "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt"
     },
-    "version": "0.11.8"
+    "version": "0.11.9"
   },
   "servers": [
     {
@@ -2455,7 +2455,7 @@
           "Chunk Group"
         ],
         "summary": "Get Group",
-        "description": "Fetch the group with the given id.\nget_group",
+        "description": "Fetch the group with the given id.",
         "operationId": "get_chunk_group",
         "parameters": [
           {
@@ -3875,6 +3875,15 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "delete_chunks",
+            "in": "query",
+            "description": "Delete the chunks within the group",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -3975,6 +3984,122 @@
           {
             "ApiKey": [
               "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/invitation/{invitation_id}": {
+      "delete": {
+        "tags": [
+          "Invitation"
+        ],
+        "summary": "Delete Invitation",
+        "description": "Delete an invitation by id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
+        "operationId": "delete_invitation",
+        "parameters": [
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invitation_id",
+            "in": "path",
+            "description": "The id of the invitation to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Ok response. Indicates that invitation was deleted."
+          },
+          "400": {
+            "description": "Service error relating to deleting invitation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/invitations/{organization_id}": {
+      "get": {
+        "tags": [
+          "Invitation"
+        ],
+        "summary": "Get Invitations",
+        "description": "Get all invitations for the organization. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
+        "operationId": "get_invitations",
+        "parameters": [
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "description": "The organization id to get invitations for",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitations for the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Invitation"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting invitations for the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
             ]
           }
         ]
@@ -4596,7 +4721,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Organization"
+                  "$ref": "#/components/schemas/OrganizationWithSubAndPlan"
                 }
               }
             }
@@ -4723,7 +4848,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
       }
     },
     "/api/stripe/invoices/{organization_id}": {
@@ -4770,7 +4902,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
       }
     },
     "/api/stripe/payment_link/{plan_id}/{organization_id}": {
@@ -4965,7 +5104,7 @@
         "security": [
           {
             "ApiKey": [
-              "readonly"
+              "owner"
             ]
           }
         ]
@@ -6919,6 +7058,98 @@
           "bm25"
         ]
       },
+      "CrawlInterval": {
+        "type": "string",
+        "enum": [
+          "daily",
+          "weekly",
+          "monthly"
+        ]
+      },
+      "CrawlOptions": {
+        "type": "object",
+        "properties": {
+          "exclude_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "URL Patterns to exclude from the crawl",
+            "nullable": true
+          },
+          "exclude_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Specify the HTML tags, classes and ids to exclude from the response.",
+            "nullable": true
+          },
+          "include_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "URL Patterns to include in the crawl",
+            "nullable": true
+          },
+          "include_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Specify the HTML tags, classes and ids to include in the response.",
+            "nullable": true
+          },
+          "interval": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CrawlInterval"
+              }
+            ],
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many pages to crawl, defaults to 20",
+            "nullable": true
+          },
+          "max_depth": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many levels deep to crawl, defaults to 2",
+            "nullable": true
+          },
+          "site_url": {
+            "type": "string",
+            "description": "The URL to crawl",
+            "nullable": true
+          }
+        },
+        "example": {
+          "exclude_paths": [
+            "https://example.com/exclude"
+          ],
+          "exclude_tags": [
+            "#ad",
+            "#footer"
+          ],
+          "include_paths": [
+            "https://example.com/include"
+          ],
+          "include_tags": [
+            "h1",
+            "p",
+            "a",
+            ".main-content"
+          ],
+          "interval": "daily",
+          "limit": 20,
+          "max_depth": 2,
+          "site_url": "https://example.com"
+        }
+      },
       "CreateBatchChunkGroupReqPayload": {
         "type": "array",
         "items": {
@@ -7056,6 +7287,14 @@
           "organization_id"
         ],
         "properties": {
+          "crawl_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CrawlOptions"
+              }
+            ],
+            "nullable": true
+          },
           "dataset_name": {
             "type": "string",
             "description": "Name of the dataset."
@@ -7300,8 +7539,8 @@
           "created_at",
           "updated_at",
           "organization_id",
-          "server_configuration",
-          "deleted"
+          "deleted",
+          "server_configuration"
         ],
         "properties": {
           "created_at": {
@@ -8938,6 +9177,55 @@
           "v1"
         ]
       },
+      "Invitation": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "organization_id",
+          "used",
+          "created_at",
+          "updated_at",
+          "role"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "used": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "created_at": "2021-01-01 00:00:00.000",
+          "email": "trieve@trieve.ai",
+          "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "role": 1,
+          "updated_at": "2021-01-01 00:00:00.000",
+          "used": false
+        }
+      },
       "InvitationData": {
         "type": "object",
         "required": [
@@ -9305,6 +9593,64 @@
           "message_count": 1000,
           "org_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "user_count": 5
+        }
+      },
+      "OrganizationWithSubAndPlan": {
+        "type": "object",
+        "required": [
+          "organization"
+        ],
+        "properties": {
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
+          "plan": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StripePlan"
+              }
+            ],
+            "nullable": true
+          },
+          "subscription": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StripeSubscription"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "example": {
+          "organization": {
+            "created_at": "2021-01-01 00:00:00.000",
+            "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "name": "Trieve",
+            "registerable": true,
+            "updated_at": "2021-01-01 00:00:00.000"
+          },
+          "plan": {
+            "amount": 1000,
+            "chunk_count": 1000,
+            "created_at": "2021-01-01 00:00:00.000",
+            "dataset_count": 1,
+            "file_storage": 512,
+            "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "message_count": 1000,
+            "name": "Free",
+            "stripe_id": "plan_123",
+            "updated_at": "2021-01-01 00:00:00.000",
+            "user_count": 5
+          },
+          "subscription": {
+            "created_at": "2021-01-01 00:00:00.000",
+            "current_period_end": "2021-01-01 00:00:00.000",
+            "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "stripe_id": "sub_123",
+            "updated_at": "2021-01-01 00:00:00.000"
+          }
         }
       },
       "PopularFilters": {
@@ -12353,6 +12699,56 @@
           "user_count": 5
         }
       },
+      "StripeSubscription": {
+        "type": "object",
+        "required": [
+          "id",
+          "stripe_id",
+          "plan_id",
+          "organization_id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current_period_end": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plan_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stripe_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "example": {
+          "created_at": "2021-01-01 00:00:00.000",
+          "current_period_end": "2021-01-01 00:00:00.000",
+          "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "stripe_id": "sub_123",
+          "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
       "SuggestType": {
         "type": "string",
         "enum": [
@@ -12530,6 +12926,11 @@
                 "$ref": "#/components/schemas/TypoRange"
               }
             ],
+            "nullable": true
+          },
+          "prioritize_domain_specifc_words": {
+            "type": "boolean",
+            "description": "Auto-require non-english words present in the dataset to exist in each results chunk_html text. If not specified, this defaults to true.",
             "nullable": true
           },
           "two_typo_word_range": {
@@ -12841,6 +13242,14 @@
       "UpdateDatasetRequest": {
         "type": "object",
         "properties": {
+          "crawl_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CrawlOptions"
+              }
+            ],
+            "nullable": true
+          },
           "dataset_id": {
             "type": "string",
             "format": "uuid",
