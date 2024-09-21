@@ -269,19 +269,19 @@ export interface ApiKeyRespBody {
 export const availableEmbeddingModels = [
   {
     id: "jina-base-en",
-    name: "jina-base-en (securely hosted by Trieve)",
+    name: "jina-base-en (hosted by Trieve)",
     url: "https://embedding.trieve.ai",
     dimension: 768,
   },
   {
     id: "bge-m3",
-    name: "bge-m3 (securely hosted by Trieve)",
+    name: "bge-m3 (hosted by Trieve)",
     url: "https://embedding.trieve.ai/bge-m3",
     dimension: 1024,
   },
   {
     id: "jina-embeddings-v2-base-code",
-    name: "jina-embeddings-v2-base-code (securely hosted by Trieve)",
+    name: "jina-embeddings-v2-base-code (hosted by Trieve)",
     url: "https://embedding.trieve.ai/jina-code",
     dimension: 768,
   },
