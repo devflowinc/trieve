@@ -100,7 +100,15 @@ async fn crawl(
                 })?;
         }
 
-        let page_link = page.metadata.og_url.clone().unwrap_or_default();
+        let page_link = page.metadata.source_url.clone().unwrap_or_default();
+        if page_link.is_empty() {
+            println!(
+                "Error page source_url is not present for page_metadata: {:?}",
+                page.metadata
+            );
+            continue;
+        }
+
         let page_title = page.metadata.og_title.clone().unwrap_or_default();
         let page_description = page.metadata.og_description.clone().unwrap_or_default();
         let page_html = page.html.clone().unwrap_or_default();
@@ -112,6 +120,15 @@ async fn crawl(
             let heading = chunk.0.clone();
             let chunk_html = chunk.1.clone();
 
+            if chunk_html.is_empty() {
+                println!("Skipping empty chunk for page: {}", page_link);
+                continue;
+            }
+
+            let mut metadata = json!({
+                "url": page_link.clone(),
+            });
+
             let mut semantic_boost_phrase = heading.clone();
             let mut fulltext_boost_phrase = heading.clone();
 
@@ -119,10 +136,14 @@ async fn crawl(
                 semantic_boost_phrase.push_str("\n\n");
                 semantic_boost_phrase.push_str(&page_title);
                 fulltext_boost_phrase.push_str(&page_title);
+
+                metadata["title"] = json!(page_title.clone());
             }
             if !page_description.is_empty() {
                 semantic_boost_phrase.push_str("\n\n");
                 semantic_boost_phrase.push_str(&page_description);
+
+                metadata["description"] = json!(page_description.clone());
             }
 
             let cleaned_html = extract_text_from_html(&chunk_html.clone())
@@ -220,6 +241,7 @@ async fn crawl(
     Ok(scrape_request.id)
 }
 
+#[allow(clippy::print_stdout)]
 async fn scrape_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: web::Data<RedisPool>,
