@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Accessor,
   createSignal,
@@ -25,7 +28,7 @@ import { createToast } from "./ShowToasts";
 import { createNewDataset } from "../api/createDataset";
 import { uploadSampleData } from "../api/uploadSampleData";
 import { defaultServerEnvsConfiguration } from "../utils/serverEnvs";
-import { DistanceMetric } from "trieve-ts-sdk";
+import { CrawlInterval, CrawlOptions, DistanceMetric } from "trieve-ts-sdk";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { Tooltip } from "shared/ui";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
@@ -42,8 +45,10 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const [serverConfig, setServerConfig] = createSignal(
     defaultServerEnvsConfiguration,
   );
+  const [crawlOptions, setCrawlOptions] = createSignal<CrawlOptions>();
   const [name, setName] = createSignal<string>("");
   const [showAdvanced, setShowAdvanced] = createSignal(false);
+  const [showScraping, setShowScraping] = createSignal(false);
   const [isLoading, setIsLoading] = createSignal(false);
   const [fillWithExampleData, setFillWithExampleData] = createSignal(false);
 
@@ -56,6 +61,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
         name: name(),
         organizationId: userContext.selectedOrg().id,
         serverConfig: curServerConfig,
+        crawlOptions: crawlOptions(),
       });
 
       if (fillWithExampleData()) {
@@ -87,7 +93,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
     <Transition appear show={props.isOpen()}>
       <Dialog
         isOpen
-        class="fixed inset-0 z-10 overflow-y-auto"
+        class="fixed inset-0 z-20 overflow-y-auto"
         onClose={props.closeModal}
       >
         <div class="flex min-h-screen items-center justify-center px-4">
@@ -221,7 +227,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             <FiChevronUp />
                           </Match>
                         </Switch>
-                        Advanced options
+                        Configuration
                         <Tooltip
                           body={
                             <FaRegularCircleQuestion class="h-4 w-4 text-black" />
@@ -349,6 +355,345 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                   </option>
                                 )}
                               </For>
+                            </select>
+                          </div>
+                        </div>
+                      </Show>
+
+                      <button
+                        class="flex w-full flex-row items-center gap-2 py-4 text-sm font-medium"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowScraping((prev) => !prev);
+                        }}
+                      >
+                        <Switch>
+                          <Match when={!showScraping()}>
+                            <FiChevronDown />
+                          </Match>
+                          <Match when={showScraping()}>
+                            <FiChevronUp />
+                          </Match>
+                        </Switch>
+                        Scraping
+                        <Tooltip
+                          body={
+                            <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                          }
+                          tooltipText="Configure your dataset to be populated by scraping a particular website."
+                          direction="right"
+                        />
+                      </button>
+                      <Show when={showScraping()}>
+                        <div class="ml-4 flex flex-col space-y-2 border-neutral-900/10 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t">
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="scrapingUrl"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Scraping URL
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="The URL of the website you would like to scrape."
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              id="scrapingUrl"
+                              name="scrapingUrl"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={crawlOptions()?.site_url ?? ""}
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      site_url: e.currentTarget.value,
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    site_url: e.currentTarget.value,
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="excludePaths"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Exclude Paths
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="URL Patterns to exclude from the crawl."
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              id="excludePaths"
+                              name="excludePaths"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={crawlOptions()?.exclude_paths ?? ""}
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      exclude_paths:
+                                        e.currentTarget.value.split(","),
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    exclude_paths:
+                                      e.currentTarget.value.split(","),
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="includePaths"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Include Paths
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="URL Patterns to include in the crawl."
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              id="includePaths"
+                              name="includePaths"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={crawlOptions()?.include_paths ?? ""}
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      include_paths:
+                                        e.currentTarget.value.split(","),
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    include_paths:
+                                      e.currentTarget.value.split(","),
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="excludeTags"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Exclude Tags
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="Specify the HTML tags, classes and ids to exclude from the response."
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              id="excludeTags"
+                              name="excludeTags"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={crawlOptions()?.exclude_tags ?? ""}
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      exclude_tags:
+                                        e.currentTarget.value.split(","),
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    exclude_tags:
+                                      e.currentTarget.value.split(","),
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="includeTags"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Include Tags
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="Specify the HTML tags, classes and ids to include in the response."
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              id="includeTags"
+                              name="includeTags"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={crawlOptions()?.include_tags ?? ""}
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      include_tags:
+                                        e.currentTarget.value.split(","),
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    include_tags:
+                                      e.currentTarget.value.split(","),
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="maxDepth"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Max Depth
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="How many levels deep to crawl, defaults to 10"
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="number"
+                              id="maxDepth"
+                              name="maxDepth"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={crawlOptions()?.max_depth ?? ""}
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      max_depth: parseInt(
+                                        e.currentTarget.value,
+                                      ),
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    max_depth: parseInt(e.currentTarget.value),
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="pageLimit"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Limit (Max Pages to Crawl)
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="Maximum number of pages to crawl, defaults to 1000"
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="number"
+                              id="pageLimit"
+                              name="pageLimit"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={crawlOptions()?.limit ?? ""}
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      limit: parseInt(e.currentTarget.value),
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    limit: parseInt(e.currentTarget.value),
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="interval"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Interval
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="How often to scrape the website. Defaults to daily."
+                                direction="right"
+                              />
+                            </label>
+                            <select
+                              id="interval"
+                              name="interval"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={crawlOptions()?.interval ?? ""}
+                              onChange={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      interval: e.currentTarget
+                                        .value as CrawlInterval,
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    interval: e.currentTarget
+                                      .value as CrawlInterval,
+                                  };
+                                })
+                              }
+                            >
+                              <option value="daily">daily</option>
+                              <option value="weekly">weekly</option>
+                              <option value="monthly">monthly</option>
                             </select>
                           </div>
                         </div>
