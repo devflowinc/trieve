@@ -30,6 +30,7 @@ use trieve_server::{
 };
 use ureq::json;
 
+#[allow(clippy::print_stdout)]
 async fn crawl(
     scrape_request: CrawlRequest,
     pool: web::Data<Pool>,
