@@ -86,7 +86,7 @@ const routes: RouteDefinition[] = [
               },
               {
                 path: "*404",
-                component: () => <div>404</div>,
+                component: HomeRedirect,
               },
             ],
           },
@@ -138,7 +138,7 @@ const routes: RouteDefinition[] = [
 
   {
     path: "*404",
-    component: () => <div>404</div>,
+    component: HomeRedirect,
   },
 ];
 
