@@ -426,8 +426,7 @@ pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestRes
         collected_docs.extend(cur_docs);
 
         if let Some(ref next_ingest_result) = ingest_result.next {
-            let next_ingest_result =
-                next_ingest_result.replace("https://localhost", "http://localhost");
+            let next_ingest_result = next_ingest_result.replace("https://", "http://");
 
             log::info!(
                 "Next ingest url: {} | prev {}",
