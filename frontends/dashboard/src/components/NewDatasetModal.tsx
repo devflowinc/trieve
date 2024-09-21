@@ -1,4 +1,12 @@
-import { Accessor, createSignal, useContext, For } from "solid-js";
+import {
+  Accessor,
+  createSignal,
+  useContext,
+  For,
+  Switch,
+  Match,
+  Show,
+} from "solid-js";
 import {
   Dialog,
   DialogPanel,
@@ -18,6 +26,9 @@ import { createNewDataset } from "../api/createDataset";
 import { uploadSampleData } from "../api/uploadSampleData";
 import { defaultServerEnvsConfiguration } from "../utils/serverEnvs";
 import { DistanceMetric } from "trieve-ts-sdk";
+import { FaRegularCircleQuestion } from "solid-icons/fa";
+import { Tooltip } from "shared/ui";
+import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 
 export interface NewDatasetModalProps {
   isOpen: Accessor<boolean>;
@@ -25,13 +36,14 @@ export interface NewDatasetModalProps {
 }
 
 export const NewDatasetModal = (props: NewDatasetModalProps) => {
+  const userContext = useContext(UserContext);
+  const navigate = useNavigate();
+
   const [serverConfig, setServerConfig] = createSignal(
     defaultServerEnvsConfiguration,
   );
-  const userContext = useContext(UserContext);
   const [name, setName] = createSignal<string>("");
-  const navigate = useNavigate();
-
+  const [showAdvanced, setShowAdvanced] = createSignal(false);
   const [isLoading, setIsLoading] = createSignal(false);
   const [fillWithExampleData, setFillWithExampleData] = createSignal(false);
 
@@ -118,14 +130,6 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                       Create New Dataset
                     </DialogTitle>
 
-                    <p class="max-w-2xl text-sm leading-6 text-neutral-600">
-                      Your datset will be created and hosted on our servers.
-                      <br />
-                      You can upload your data to the dataset after it is
-                      created or you can create a dataset with data already in
-                      it.
-                    </p>
-
                     <div class="mt-4 space-y-8 border-b border-neutral-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t sm:pb-0">
                       <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
                         <label
@@ -171,120 +175,27 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                         </div>
                       </div>
 
-                      <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                        <label
-                          for="embeddingSize"
-                          class="block h-full pt-1.5 text-sm font-medium leading-6"
-                        >
-                          Embedding Model
-                        </label>
-                        <select
-                          id="embeddingSize"
-                          name="embeddingSize"
-                          class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                          value={
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                            availableEmbeddingModels.find(
-                              (model) =>
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                                model.id ===
-                                serverConfig().EMBEDDING_MODEL_NAME,
-                              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                            )?.name ?? availableEmbeddingModels[0].name
-                          }
-                          onChange={(e) => {
-                            const selectedModel = availableEmbeddingModels.find(
-                              (model) => model.name === e.currentTarget.value,
-                            );
-
-                            const embeddingSize =
-                              selectedModel?.dimension ?? 1536;
-
-                            setServerConfig((prev) => {
-                              return {
-                                ...prev,
-                                EMBEDDING_SIZE: embeddingSize,
-                                EMBEDDING_MODEL_NAME:
-                                  selectedModel?.id ?? "jina-base-en",
-                                EMBEDDING_QUERY_PREFIX:
-                                  selectedModel?.id === "jina-base-en"
-                                    ? "Search for:"
-                                    : "",
-                                EMBEDDING_BASE_URL:
-                                  selectedModel?.url ??
-                                  "https://api.openai.com/v1",
-                              };
-                            });
-                          }}
-                        >
-                          <For each={availableEmbeddingModels}>
-                            {(model) => (
-                              <option value={model.name}>{model.name}</option>
-                            )}
-                          </For>
-                        </select>
-                      </div>
-
-                      <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                        <label
-                          for="distanceMetric"
-                          class="block h-full pt-1.5 text-sm font-medium leading-6"
-                        >
-                          Distance Metric
-                        </label>
-                        <select
-                          id="distanceMetric"
-                          name="distanceMetric"
-                          class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                          value={
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                            availableDistanceMetrics.find(
-                              (model) =>
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                                model.id === serverConfig().DISTANCE_METRIC,
-                              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                            )?.name ?? availableDistanceMetrics[0].name
-                          }
-                          onChange={(e) => {
-                            const distanceMetric =
-                              availableDistanceMetrics.find(
-                                (metric) =>
-                                  metric.name === e.currentTarget.value,
-                              );
-
-                            // @ts-expect-error circular type import fix later
-                            setServerConfig((prev) => {
-                              return {
-                                ...prev,
-                                DISTANCE_METRIC:
-                                  distanceMetric?.id ??
-                                  ("cosine" as DistanceMetric),
-                              };
-                            });
-                          }}
-                        >
-                          <For each={availableDistanceMetrics}>
-                            {(metric) => (
-                              <option value={metric.name}>{metric.name}</option>
-                            )}
-                          </For>
-                        </select>
-                      </div>
-
                       <div>
                         <div class="py-4 sm:grid sm:grid-cols-3 sm:items-baseline sm:gap-4">
                           <label
                             for="fill-with-example-data"
-                            class="block h-full pt-1.5 text-sm font-medium leading-6"
+                            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
                           >
                             Fill with Example Data
+                            <Tooltip
+                              body={
+                                <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                              }
+                              tooltipText="If selected, we will pre-fill the dataset with a random selection of Y-Combinator companies so you can immediately test the product."
+                              direction="right"
+                            />
                           </label>
                           <div class="mt-4 sm:col-span-2 sm:mt-0">
                             <input
                               type="checkbox"
                               name="fill-with-example-data"
                               id="fill-with-example-data"
-                              class="rounded-md border border-neutral-300 bg-white py-1.5 pl-2 pr-10 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                              class="rounded-md border border-neutral-300 bg-white py-1.5 pl-2 pr-10 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
                               checked={fillWithExampleData()}
                               onChange={(e) =>
                                 setFillWithExampleData(e.currentTarget.checked)
@@ -293,6 +204,155 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                           </div>
                         </div>
                       </div>
+
+                      <button
+                        class="flex w-full flex-row items-center gap-2 py-4 text-sm font-medium"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowAdvanced(!showAdvanced());
+                        }}
+                      >
+                        <Switch>
+                          <Match when={!showAdvanced()}>
+                            <FiChevronDown />
+                          </Match>
+                          <Match when={showAdvanced()}>
+                            <FiChevronUp />
+                          </Match>
+                        </Switch>
+                        Advanced options
+                        <Tooltip
+                          body={
+                            <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                          }
+                          tooltipText="Change your default embedding model and distance metric."
+                          direction="right"
+                        />
+                      </button>
+                      <Show when={showAdvanced()}>
+                        <div class="ml-4 flex flex-col space-y-2 border-neutral-900/10 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t">
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="embeddingSize"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Embedding Model{" "}
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="jina-base-en provides the best balance of latency and relevance quality. Only change this if you have a specific requirement."
+                                direction="right"
+                              />
+                            </label>
+                            <select
+                              id="embeddingSize"
+                              name="embeddingSize"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                              value={
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                                availableEmbeddingModels.find(
+                                  (model) =>
+                                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                                    model.id ===
+                                    serverConfig().EMBEDDING_MODEL_NAME,
+                                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                                )?.name ?? availableEmbeddingModels[0].name
+                              }
+                              onChange={(e) => {
+                                const selectedModel =
+                                  availableEmbeddingModels.find(
+                                    (model) =>
+                                      model.name === e.currentTarget.value,
+                                  );
+
+                                const embeddingSize =
+                                  selectedModel?.dimension ?? 1536;
+
+                                setServerConfig((prev) => {
+                                  return {
+                                    ...prev,
+                                    EMBEDDING_SIZE: embeddingSize,
+                                    EMBEDDING_MODEL_NAME:
+                                      selectedModel?.id ?? "jina-base-en",
+                                    EMBEDDING_QUERY_PREFIX:
+                                      selectedModel?.id === "jina-base-en"
+                                        ? "Search for:"
+                                        : "",
+                                    EMBEDDING_BASE_URL:
+                                      selectedModel?.url ??
+                                      "https://api.openai.com/v1",
+                                  };
+                                });
+                              }}
+                            >
+                              <For each={availableEmbeddingModels}>
+                                {(model) => (
+                                  <option value={model.name}>
+                                    {model.name}
+                                  </option>
+                                )}
+                              </For>
+                            </select>
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="distanceMetric"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Distance Metric
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="Cosine will almost always be best. Only change if you are confident that your data is unique and requires a different metric."
+                                direction="right"
+                              />
+                            </label>
+                            <select
+                              id="distanceMetric"
+                              name="distanceMetric"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              value={
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                                availableDistanceMetrics.find(
+                                  (model) =>
+                                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                                    model.id === serverConfig().DISTANCE_METRIC,
+                                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                                )?.name ?? availableDistanceMetrics[0].name
+                              }
+                              onChange={(e) => {
+                                const distanceMetric =
+                                  availableDistanceMetrics.find(
+                                    (metric) =>
+                                      metric.name === e.currentTarget.value,
+                                  );
+
+                                // @ts-expect-error circular type import fix later
+                                setServerConfig((prev) => {
+                                  return {
+                                    ...prev,
+                                    DISTANCE_METRIC:
+                                      distanceMetric?.id ??
+                                      ("cosine" as DistanceMetric),
+                                  };
+                                });
+                              }}
+                            >
+                              <For each={availableDistanceMetrics}>
+                                {(metric) => (
+                                  <option value={metric.name}>
+                                    {metric.name}
+                                  </option>
+                                )}
+                              </For>
+                            </select>
+                          </div>
+                        </div>
+                      </Show>
                     </div>
                   </div>
                 </div>
@@ -300,7 +360,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                 <div class="mt-4 flex items-center justify-between">
                   <button
                     type="button"
-                    class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-magenta-500"
+                    class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-fuchsia-500"
                     onClick={() => props.closeModal()}
                   >
                     Cancel
@@ -308,7 +368,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                   <button
                     type="submit"
                     disabled={name() === "" || isLoading()}
-                    class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-magenta-700 disabled:bg-magenta-200"
+                    class="inline-flex justify-center rounded-md bg-fuchsia-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-fuchsia-700 disabled:bg-fuchsia-200"
                   >
                     Create New Dataset
                   </button>

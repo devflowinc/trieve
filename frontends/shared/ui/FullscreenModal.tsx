@@ -25,13 +25,13 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
   return (
     <Portal>
       <Transition
-        class="fixed inset-0 z-10 overflow-y-auto"
+        class="fixed inset-0 z-50 overflow-y-auto"
         appear
         show={props.show()}
       >
         <Dialog
           isOpen
-          class="fixed inset-0 z-10 overflow-y-auto"
+          class="fixed inset-0 z-50 overflow-y-auto"
           onClose={() => props.setShow(false)}
         >
           <div class="min-h-screen px-4 flex items-center justify-center">
@@ -61,7 +61,7 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
               <DialogPanel
                 class={cn(
                   "inline-block w-full max-w-[80vw] p-6 my-8 text-left border border-neutral-100 align-middle transition-all transform bg-white shadow-xl rounded max-h-[80vh] overflow-auto",
-                  props.class
+                  props.class,
                 )}
               >
                 <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:flex items-center gap-4 ext-neutral-400 ">
