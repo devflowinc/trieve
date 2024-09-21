@@ -82,6 +82,7 @@ data/*
 clients/ts-sdk/dist
 clients/ts-sdk/docs
 clients/search-component/dist
+eslint_report.json
 
 
 server/src/trieve_protobufs/*
