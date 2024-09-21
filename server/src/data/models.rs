@@ -5990,13 +5990,13 @@ pub struct CrawlOptions {
     pub site_url: Option<String>,
     /// The interval to crawl the site, defaults to daily
     pub interval: Option<CrawlInterval>,
-    /// How many pages to crawl, defaults to 20
+    /// How many pages to crawl, defaults to 1000
     pub limit: Option<i32>,
     /// URL Patterns to exclude from the crawl
     pub exclude_paths: Option<Vec<String>>,
     /// URL Patterns to include in the crawl
     pub include_paths: Option<Vec<String>>,
-    /// How many levels deep to crawl, defaults to 2
+    /// How many levels deep to crawl, defaults to 10
     pub max_depth: Option<i32>,
     /// Specify the HTML tags, classes and ids to include in the response.
     pub include_tags: Option<Vec<String>>,
@@ -6045,9 +6045,9 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
             url: crawl_options.site_url,
             exclude_paths: crawl_options.exclude_paths,
             include_paths: crawl_options.include_paths,
-            max_depth: Some(crawl_options.max_depth.unwrap_or(2)),
+            max_depth: Some(crawl_options.max_depth.unwrap_or(10)),
             ignore_sitemap: None,
-            limit: Some(crawl_options.limit.unwrap_or(20)),
+            limit: Some(crawl_options.limit.unwrap_or(1000)),
             allow_external_links: None,
             allow_backward_links: Some(true),
             scrape_options: Some(FirecrawlScraperOptions {
