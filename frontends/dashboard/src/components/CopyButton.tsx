@@ -16,7 +16,7 @@ export const CopyButton = (props: CopyButtonProps) => {
       }}
     >
       <Show when={copied()}>
-        <FiCheck size={props.size ?? 16} />
+        <FiCheck class="text-green-500" size={props.size ?? 16} />
       </Show>
       <Show when={!copied()}>
         <FiClipboard size={props.size ?? 16} class="text-gray-500" />

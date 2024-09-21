@@ -96,10 +96,7 @@ export const DatasetHomepage = () => {
     <div>
       <div class="flex items-end justify-between pb-2">
         <MagicSuspense skeletonHeight="36px" unstyled>
-          <div class="flex items-center gap-2">
-            <div class="text-lg font-medium">{datasetQuery.data?.name}</div>
-            <CopyButton text={datasetId()} />
-          </div>
+          <div class="text-xl font-medium">{datasetQuery.data?.name}</div>
         </MagicSuspense>
         <div class="flex gap-2">
           <a
@@ -119,15 +116,32 @@ export const DatasetHomepage = () => {
       </div>
       <MagicSuspense>
         <>
-          <div>
-            <span class="font-semibold">Dataset ID:</span> {datasetId()}
+          <div class="flex content-center items-center gap-1.5">
+            <span class="font-medium">Dataset ID:</span> {datasetId()}
+            <CopyButton size={15} text={datasetId()} />
+          </div>
+          <div class="flex content-center items-center gap-1.5">
+            <span class="font-medium">Organization ID:</span>{" "}
+            {userContext.selectedOrg().id}{" "}
+            <CopyButton size={15} text={userContext.selectedOrg().id} />
           </div>
           <div>
-            <span class="font-semibold">Created At:</span>{" "}
-            {datasetQuery.data?.created_at}
+            <div>
+              <span class="font-medium">Created At:</span>{" "}
+              {datasetQuery.data?.created_at
+                ? (() => {
+                    const date = new Date(datasetQuery.data.created_at);
+                    return `${date.toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}`;
+                  })()
+                : "N/A"}
+            </div>
           </div>
           <div class="flex flex-row content-center items-center gap-1">
-            <span class="font-semibold">Chunk Count:</span>{" "}
+            <span class="font-medium">Chunk Count:</span>{" "}
             {chunkCountQuery.data?.chunk_count}
             <button
               class="text-sm opacity-80 hover:text-fuchsia-500"
