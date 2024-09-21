@@ -75,6 +75,9 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
         type: "success",
         message: "Successfully created dataset",
       });
+
+      props.closeModal();
+
       setIsLoading(false);
       await userContext.login();
       navigate(`/dataset/${dataset.id}`);

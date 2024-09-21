@@ -14,11 +14,14 @@ import {
 import { Spacer } from "./Spacer";
 import { Portal } from "solid-js/web";
 import { NavbarDatasetSelector } from "../layouts/NavbarDatasetSelector";
+import { NavbarOrganizationSelector } from "../layouts/NavbarOrganizationSelector";
 import { FiExternalLink, FiTrash } from "solid-icons/fi";
 import { UserContext } from "../contexts/UserContext";
 import { IconTypes } from "solid-icons";
 import { IoOptionsOutline } from "solid-icons/io";
 import { TbSparkles } from "solid-icons/tb";
+import { createSignal } from "solid-js";
+import NewDatasetModal from "../components/NewDatasetModal";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
@@ -28,6 +31,9 @@ export const DashboardSidebar = () => {
   const { datasetId } = useContext(DatasetContext);
   const userContext = useContext(UserContext);
   const pathname = useLocation();
+
+  const [newDatasetModalOpen, setNewDatasetModalOpen] =
+    createSignal<boolean>(false);
 
   const orgDatasetParams = createMemo(() => {
     const orgId = userContext.selectedOrg().id;
@@ -42,6 +48,11 @@ export const DashboardSidebar = () => {
       {props.children}
     </div>
   );
+
+  const orgDatasets = createMemo(() => {
+    const datasets = userContext.orgDatasets?.();
+    return datasets || [];
+  });
 
   const Link = (props: {
     href: string;
@@ -69,9 +80,36 @@ export const DashboardSidebar = () => {
 
   return (
     <>
+      <Portal mount={document.body}>
+        <NewDatasetModal
+          isOpen={newDatasetModalOpen}
+          closeModal={() => {
+            setNewDatasetModalOpen(false);
+          }}
+        />
+      </Portal>
+      {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
+      <Portal mount={document.querySelector("#organization-slot")!}>
+        <div class="flex flex-row content-center items-center">
+          <NavbarOrganizationSelector />
+          <span class="ml-2 font-bold text-neutral-600">/</span>
+        </div>
+      </Portal>
       {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
       <Portal mount={document.querySelector("#dataset-slot")!}>
-        <NavbarDatasetSelector />
+        <div class="ml-1 flex flex-row">
+          <Show when={orgDatasets().length > 0}>
+            <NavbarDatasetSelector />
+          </Show>
+          <Show when={orgDatasets().length == 0}>
+            <button
+              class="flex content-center items-center rounded bg-magenta-500 px-3 py-1 text-sm font-semibold text-white"
+              onClick={() => setNewDatasetModalOpen(true)}
+            >
+              Create Dataset +
+            </button>
+          </Show>
+        </div>
       </Portal>
       <div class="border-r border-r-neutral-300 bg-neutral-50 px-4 pt-2">
         <A

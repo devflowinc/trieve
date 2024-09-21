@@ -7,6 +7,7 @@ import ShowToasts from "../components/ShowToasts";
 interface NavbarLayoutProps {
   children?: JSX.Element;
 }
+
 export const NavbarLayout = (props: NavbarLayoutProps) => {
   return (
     <>
@@ -23,7 +24,10 @@ export const NavbarLayout = (props: NavbarLayoutProps) => {
               <span class="text-2xl font-semibold">Trieve</span>
             </A>
             {/* This is portaled by the DatasetSidebarLayout so you can only select a dataset when you are in the dataset view*/}
-            <div id="dataset-slot" />
+            <div class="flex flex-row content-center items-center justify-center gap-1">
+              <div id="organization-slot" />
+              <div id="dataset-slot" />
+            </div>
           </div>
           <div class="flex items-center justify-end gap-3">
             <a
