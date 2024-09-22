@@ -24,9 +24,9 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
 
   const dataset = createMemo(() => {
     const possDatasets = orgContext.orgDatasets();
-    if (possDatasets) {
+    if (Array.isArray(possDatasets)) {
       return (
-        possDatasets.find((dataset) => dataset.dataset.id === params.id) || null
+        possDatasets.find((dataset) => dataset.dataset.id === params.id) ?? null
       );
     } else {
       return null;
