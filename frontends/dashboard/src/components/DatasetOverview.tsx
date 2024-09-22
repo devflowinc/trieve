@@ -28,22 +28,27 @@ import { CopyButton } from "./CopyButton";
 import { formatDate } from "../utils/formatters";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "../components/ShowToasts";
+import { OnboardingSteps } from "./OnboardingSteps";
+import { createQuery } from "@tanstack/solid-query";
+import { ApiContext } from "..";
 
 const colHelp = createColumnHelper<DatasetAndUsage>();
 
 export const DatasetOverview = () => {
-  const [newDatasetModalOpen, setNewDatasetModalOpen] =
-    createSignal<boolean>(false);
   const userContext = useContext(UserContext) as {
     selectedOrg: () => { id: string };
   };
-
+  const trieve = useContext(ApiContext);
   const navigate = useNavigate();
+
+  const [newDatasetModalOpen, setNewDatasetModalOpen] =
+    createSignal<boolean>(false);
   const [page, setPage] = createSignal(0);
   const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
   const [usage, setUsage] = createSignal<
     Record<string, { chunk_count: number }>
   >({});
+
   const { datasets, maxPageDiscovered, maxDatasets, hasLoaded } =
     useDatasetPages({
       org: userContext.selectedOrg().id,
@@ -51,6 +56,15 @@ export const DatasetOverview = () => {
       page: page,
       setPage,
     });
+
+  const usageQuery = createQuery(() => ({
+    queryKey: ["org-usage", userContext.selectedOrg().id],
+    queryFn: async () => {
+      return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
+        organizationId: userContext.selectedOrg().id,
+      });
+    },
+  }));
 
   const refetchChunks = async (datasetId: string) => {
     try {
@@ -243,6 +257,7 @@ export const DatasetOverview = () => {
           setNewDatasetModalOpen(false);
         }}
       />
+      <OnboardingSteps usageQuery={usageQuery} />
       <div class="flex items-center py-2">
         <div class="flex w-full items-end justify-between pt-2">
           <div>
