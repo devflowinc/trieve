@@ -62,7 +62,11 @@ const routes: RouteDefinition[] = [
           },
           {
             path: "/org",
-            component: OrganizationLayout,
+            component: (props) => (
+              <DatasetContextProvider>
+                <OrganizationLayout>{props.children}</OrganizationLayout>
+              </DatasetContextProvider>
+            ),
             children: [
               {
                 path: "/",
@@ -125,17 +129,16 @@ const routes: RouteDefinition[] = [
                 path: "/manage",
                 component: DangerZoneForm,
               },
+              {
+                path: "*404",
+                component: HomeRedirect,
+              },
             ],
           },
         ],
       },
     ],
   },
-  {
-    path: "/no-org",
-    component: () => <div>No Org</div>,
-  },
-
   {
     path: "*404",
     component: HomeRedirect,

@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "@solidjs/router";
+import { useLocation, useNavigate, useParams } from "@solidjs/router";
 import { Accessor, createContext, createMemo, useContext } from "solid-js";
 import { JSX } from "solid-js";
 import { DatasetAndUsage } from "trieve-ts-sdk";
@@ -19,6 +19,7 @@ export const DatasetContext = createContext<DatasetStore>({
 export const DatasetContextProvider = (props: { children: JSX.Element }) => {
   const params = useParams();
   const orgContext = useContext(UserContext);
+  const location = useLocation();
   const navigate = useNavigate();
 
   const dataset = createMemo(() => {
@@ -33,7 +34,12 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
   });
 
   const selectDataset = (id: string) => {
-    // replace the pathname
+    const curPath = location.pathname;
+    if (curPath.includes(id)) {
+      navigate(curPath);
+      return;
+    }
+
     navigate(`/dataset/${id}`);
   };
 

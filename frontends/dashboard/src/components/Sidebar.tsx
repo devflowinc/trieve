@@ -62,7 +62,7 @@ export const DashboardSidebar = () => {
   }) => (
     <A
       href={props.href}
-      target="_blank"
+      target={props.isExternal ? "_blank" : undefined}
       class="flex items-center justify-between gap-2 rounded-md p-1 px-2 hover:underline"
       classList={{
         "bg-magenta-200/30": pathname.pathname === props.href,
