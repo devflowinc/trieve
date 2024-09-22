@@ -38,7 +38,7 @@ export const NavbarOrganizationSelector = () => {
             display={(id) => id}
             displayElement={(id) => (
               <div class="flex w-full items-center gap-2">
-                <FiUsers class="text-neutral-800" />{" "}
+                <FiUsers />{" "}
                 <div class="w-full text-sm">{organizationNameFromId(id)}</div>
               </div>
             )}

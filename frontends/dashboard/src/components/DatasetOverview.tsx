@@ -263,14 +263,16 @@ export const DatasetOverview = () => {
                     </p>
                   )
                 ) : (
-                  <p class="text-sm text-neutral-700">
-                    This organization does not have any datasets.
+                  <p class="text-sm text-fuchsia-600">
+                    Get started by clicking the button below to create a dataset
                   </p>
                 )
               }
               when={datasets().length > 0}
             >
-              <p class="text-sm text-neutral-700">A list of all the datasets</p>
+              <p class="text-sm text-neutral-700">
+                All datasets belonging to this organization
+              </p>
             </Show>
           </div>
           <div class="flex gap-2">
