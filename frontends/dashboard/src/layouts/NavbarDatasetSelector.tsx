@@ -7,6 +7,7 @@ import { FiDatabase } from "solid-icons/fi";
 export const NavbarDatasetSelector = () => {
   const userContext = useContext(UserContext);
   const datasetContext = useContext(DatasetContext);
+
   const datasetIds = createMemo(
     () => userContext.orgDatasets()?.map((dataset) => dataset.dataset.id),
   );
@@ -18,6 +19,8 @@ export const NavbarDatasetSelector = () => {
     if (dataset) {
       return dataset.dataset.name;
     }
+
+    return "Click to Select Dataset";
   };
 
   return (
@@ -25,12 +28,14 @@ export const NavbarDatasetSelector = () => {
       <Show when={datasetIds()}>
         {(datasets) => (
           <Select
-            class="bg-white"
+            class={`bg-white ${
+              !datasetContext.datasetId() ? "text-neutral-600" : "text-black"
+            }`}
             onSelected={datasetContext.selectDataset}
             display={(id) => id}
             displayElement={(id) => (
               <div class="flex items-center gap-2">
-                <FiDatabase class="text-neutral-800" />
+                <FiDatabase />
                 <div class="text-sm">{datasetNameFromId(id)}</div>
               </div>
             )}
