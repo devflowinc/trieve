@@ -8,9 +8,14 @@ export const NavbarDatasetSelector = () => {
   const userContext = useContext(UserContext);
   const datasetContext = useContext(DatasetContext);
 
-  const datasetIds = createMemo(
-    () => userContext.orgDatasets()?.map((dataset) => dataset.dataset.id),
-  );
+  const datasetIds = createMemo(() => {
+    const orgDatasets = userContext.orgDatasets();
+    if (Array.isArray(orgDatasets)) {
+      return orgDatasets.map((dataset) => dataset.dataset.id);
+    }
+
+    return undefined;
+  });
 
   const datasetNameFromId = (id: string) => {
     const dataset = userContext
