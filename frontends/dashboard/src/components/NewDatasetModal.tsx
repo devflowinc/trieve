@@ -246,12 +246,12 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               for="embeddingSize"
                               class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
                             >
-                              Embedding Model{" "}
+                              Dense Vector Embedding Model{" "}
                               <Tooltip
                                 body={
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
-                                tooltipText="jina-base-en provides the best balance of latency and relevance quality. Only change this if you have a specific requirement."
+                                tooltipText="Dense vector models are used for semantic search. jina-base-en provides the best balance of latency and relevance quality. Only change this if you have a specific requirement. Custom models are supported on the enterprise plan."
                                 direction="right"
                               />
                             </label>
@@ -360,6 +360,61 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               </For>
                             </select>
                           </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="sparseVector"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Sparse Vector Model{" "}
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="Sparse vector models are used for fulltext search. In contrast to keyword bm25, fulltext is aware of the most important terms in your query. Currently only splade-v3 is offered."
+                                direction="right"
+                              />
+                            </label>
+                            <p
+                              id="sparseVector"
+                              class="col-span-2 block w-full bg-white px-3 py-1.5 text-sm text-neutral-700"
+                            >
+                              Dataset will be configured with{" "}
+                              <a
+                                href="https://huggingface.co/naver/splade-v3"
+                                target="_blank"
+                                class="underline"
+                              >
+                                splade-v3
+                              </a>
+                              . Other sparse encoders, including custom models,
+                              are supported on the enterprise plan.
+                            </p>
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="bm25"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              BM25{" "}
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="BM25 is used for keyword search. It is enabled on all datasets by default."
+                                direction="right"
+                              />
+                            </label>
+                            <p
+                              id="bm25"
+                              class="col-span-2 block w-full bg-white px-3 py-1.5 text-sm text-neutral-700"
+                            >
+                              Dataset will have BM25 for keyword search. B, K,
+                              and average token length can be configured via the
+                              dataset options after creation.
+                            </p>
+                          </div>
                         </div>
                       </Show>
 
@@ -436,7 +491,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                 body={
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
-                                tooltipText="URL Patterns to exclude from the crawl."
+                                tooltipText="URL Patterns to exclude from the crawl. Example: '/admin/*, /login/*"
                                 direction="right"
                               />
                             </label>
@@ -475,7 +530,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                 body={
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
-                                tooltipText="URL Patterns to include in the crawl."
+                                tooltipText="URL Patterns to include in the crawl. Example: '/docs/*, /blog/*'"
                                 direction="right"
                               />
                             </label>
@@ -514,7 +569,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                 body={
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
-                                tooltipText="Specify the HTML tags, classes and ids to exclude from the response."
+                                tooltipText="Specify the HTML tags, classes and ids to exclude from the response. Example 'header, .table-of-contents'"
                                 direction="right"
                               />
                             </label>
@@ -553,7 +608,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                 body={
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
-                                tooltipText="Specify the HTML tags, classes and ids to include in the response."
+                                tooltipText="Specify the HTML tags, classes and ids to include in the response. Example 'article, .inner-content'"
                                 direction="right"
                               />
                             </label>

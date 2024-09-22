@@ -125,21 +125,6 @@ export const DatasetHomepage = () => {
             {userContext.selectedOrg().id}{" "}
             <CopyButton size={15} text={userContext.selectedOrg().id} />
           </div>
-          <div>
-            <div>
-              <span class="font-medium">Created At:</span>{" "}
-              {datasetQuery.data?.created_at
-                ? (() => {
-                    const date = new Date(datasetQuery.data.created_at);
-                    return `${date.toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}`;
-                  })()
-                : "N/A"}
-            </div>
-          </div>
           <div class="flex flex-row content-center items-center gap-1">
             <span class="font-medium">Chunk Count:</span>{" "}
             {chunkCountQuery.data?.chunk_count}
