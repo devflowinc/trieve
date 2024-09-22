@@ -1,4 +1,4 @@
-import { createSignal, useContext } from "solid-js";
+import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { createQuery } from "@tanstack/solid-query";
 import { useTrieve } from "../../hooks/useTrieve";
@@ -9,6 +9,8 @@ import { UserContext } from "../../contexts/UserContext";
 import { CodeExamples } from "../../components/CodeExamples";
 import { Spacer } from "../../components/Spacer";
 import { BuildingSomething } from "../../components/BuildingSomething";
+import { TbReload } from "solid-icons/tb";
+import { createToast } from "../../components/ShowToasts";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 
@@ -44,6 +46,52 @@ export const DatasetHomepage = () => {
       : "";
   };
 
+  const refetchChunkCount = async (showForDeltaZero: boolean) => {
+    try {
+      const currentUsage = chunkCountQuery.data;
+      const prevCount = currentUsage?.chunk_count || 0;
+
+      const newData = await chunkCountQuery.refetch();
+
+      const newCount: number = newData.data?.chunk_count as number;
+      const countDifference = newCount - prevCount;
+
+      if (countDifference == 0 && !showForDeltaZero) {
+        return;
+      }
+
+      createToast({
+        title: "Updated",
+        type: "success",
+        message: `Successfully updated chunk count: ${countDifference} chunk${
+          Math.abs(countDifference) === 1 ? " has" : "s have"
+        } been ${
+          countDifference > 0
+            ? "added"
+            : countDifference < 0
+              ? "removed"
+              : "added or removed"
+        } since last update.`,
+        timeout: 3000,
+      });
+    } catch (error) {
+      createToast({
+        title: "Error",
+        type: "error",
+        message: `Failed to reload chunk count: ${(error as Error).message}`,
+      });
+    }
+  };
+
+  createEffect(() => {
+    const refreshChunkCountId = setInterval(
+      () => void refetchChunkCount(false),
+      30000,
+    );
+
+    onCleanup(() => clearInterval(refreshChunkCountId));
+  });
+
   return (
     <div>
       <div class="flex items-end justify-between pb-2">
@@ -71,9 +119,25 @@ export const DatasetHomepage = () => {
       </div>
       <MagicSuspense>
         <>
-          <div>Dataset ID: {datasetId()}</div>
-          <div>Created At: {datasetQuery.data?.created_at}</div>
-          <div>Chunk Count: {chunkCountQuery.data?.chunk_count}</div>
+          <div>
+            <span class="font-semibold">Dataset ID:</span> {datasetId()}
+          </div>
+          <div>
+            <span class="font-semibold">Created At:</span>{" "}
+            {datasetQuery.data?.created_at}
+          </div>
+          <div class="flex flex-row content-center items-center gap-1">
+            <span class="font-semibold">Chunk Count:</span>{" "}
+            {chunkCountQuery.data?.chunk_count}
+            <button
+              class="text-sm opacity-80 hover:text-fuchsia-500"
+              onClick={() => {
+                void refetchChunkCount(true);
+              }}
+            >
+              <TbReload />
+            </button>
+          </div>
         </>
       </MagicSuspense>
       <Spacer h={12} />

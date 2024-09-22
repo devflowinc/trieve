@@ -22,17 +22,21 @@ import {
   createSolidTable,
   getCoreRowModel,
 } from "@tanstack/solid-table";
-import { DatasetAndUsage } from "trieve-ts-sdk";
+import { DatasetAndUsage, DatasetUsageCount } from "trieve-ts-sdk";
 import { TanStackTable } from "shared/ui";
 import { CopyButton } from "./CopyButton";
 import { formatDate } from "../utils/formatters";
+import { TbReload } from "solid-icons/tb";
+import { createToast } from "../components/ShowToasts";
 
 const colHelp = createColumnHelper<DatasetAndUsage>();
 
 export const DatasetOverview = () => {
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
     createSignal<boolean>(false);
-  const userContext = useContext(UserContext);
+  const userContext = useContext(UserContext) as {
+    selectedOrg: () => { id: string };
+  };
 
   const navigate = useNavigate();
   const [page, setPage] = createSignal(0);
@@ -48,6 +52,58 @@ export const DatasetOverview = () => {
       setPage,
     });
 
+  const refetchChunks = async (datasetId: string) => {
+    try {
+      const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+      const currentUsage = usage();
+      const prevCount = currentUsage[datasetId]?.chunk_count || 0;
+
+      const response = await fetch(`${api_host}/dataset/usage/${datasetId}`, {
+        method: "GET",
+        headers: {
+          "TR-Dataset": datasetId,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch dataset usage");
+      }
+
+      const newData = (await response.json()) as DatasetUsageCount;
+      const newCount = newData.chunk_count;
+
+      const countDifference = newCount - prevCount;
+
+      setUsage((prevUsage) => ({
+        ...prevUsage,
+        [datasetId]: { chunk_count: newCount },
+      }));
+
+      createToast({
+        title: "Updated",
+        type: "success",
+        message: `Successfully updated chunk count: ${countDifference} chunk${
+          Math.abs(countDifference) === 1 ? " has" : "s have"
+        } been ${
+          countDifference > 0
+            ? "added"
+            : countDifference < 0
+              ? "removed"
+              : "added or removed"
+        } since last update.`,
+        timeout: 3000,
+      });
+    } catch (_) {
+      createToast({
+        title: "Error",
+        type: "error",
+        message: `Failed to reload chunk count.`,
+      });
+    }
+  };
+
   const table = createMemo(() => {
     const curUsage = usage();
 
@@ -58,7 +114,22 @@ export const DatasetOverview = () => {
       colHelp.display({
         header: "Chunk Count",
         cell(info) {
-          return curUsage[info.row.original.dataset.id]?.chunk_count ?? 0;
+          const datasetId = info.row.original.dataset.id;
+
+          return (
+            <div class="flex flex-row content-center items-center gap-1">
+              {curUsage[datasetId]?.chunk_count ?? 0}{" "}
+              <button
+                class="text-sm opacity-80 hover:text-fuchsia-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void refetchChunks(datasetId);
+                }}
+              >
+                <TbReload />
+              </button>
+            </div>
+          );
         },
       }),
 
@@ -66,9 +137,16 @@ export const DatasetOverview = () => {
         header: "ID",
         cell(props) {
           return (
-            <div class="flex gap-1">
+            <div class="flex gap-2">
               {props.row.original.dataset.id}
-              <CopyButton text={props.row.original.dataset.id} />
+              <button
+                class="flex flex-row content-center text-sm opacity-80"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <CopyButton text={props.row.original.dataset.id} />
+              </button>
             </div>
           );
         },
