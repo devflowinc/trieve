@@ -37,6 +37,7 @@ export const Select = <T,>(props: SelectProps<T>) => {
         },
       });
       const results = fuzzy(searchTerm());
+      console.log("RESULTS", results);
       setSearchResults(results.map((result) => result.item));
 
       const input = document.getElementById(`${props.id}-search`);
