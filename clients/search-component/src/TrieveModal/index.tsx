@@ -1,115 +1,24 @@
-import React, { useEffect, useRef, useState } from "react";
-import { AutocompleteReqPayload, TrieveSDK } from "trieve-ts-sdk";
-import { Chunk, ChunkWithHighlights } from "../utils/types";
+import React, { useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
-import { searchWithTrieve, sendCtrData } from "../utils/trieve";
 import { SearchMode } from "./SearchMode";
 import { ChatMode } from "./ChatMode";
 import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "./icons";
 
-type Props = {
-  trieve: TrieveSDK;
-  onResultClick?: (chunk: Chunk) => void;
-  showImages?: boolean;
-  theme?: "light" | "dark";
-  searchOptions?: Omit<
-    Omit<AutocompleteReqPayload, "query">,
-    "highlight_options"
-  >;
-  placeholder?: string;
-  chat?: boolean;
-  analytics?: boolean;
-  ButtonEl?: JSX.ElementType;
-};
+import {
+  ModalProps,
+  ModalProvider,
+  useModalState,
+} from "../utils/hooks/modal-context";
 
-export const TrieveModalSearch = ({
-  placeholder = "Search...",
-  onResultClick,
-  showImages,
-  trieve,
-  theme = "light",
-  searchOptions = {
-    search_type: "fulltext",
-  },
-  analytics = true,
-  chat = true,
-  ButtonEl,
-}: Props) => {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ChunkWithHighlights[]>([]);
-  const [open, setOpen] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState("search");
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  const search = async () => {
-    const results = await searchWithTrieve({
-      query,
-      searchOptions,
-      trieve,
-    });
-    setResults(results);
-  };
+const Modal = (p: ModalProps) => {
   useEffect(() => {
-    if (query) {
-      search();
-    }
-  }, [query]);
-
-  const checkForInteractions = (e: KeyboardEvent) => {
-    if (e.code === "KeyK" && !open && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      e.stopPropagation();
-      setOpen(true);
-    }
-
-    if (e.code === "ArrowDown" && inputRef.current === document.activeElement) {
-      document.getElementById(`trieve-search-item-0`)?.focus();
-    }
-  };
-
-  const onClick = async (chunk: Chunk & { position: number }) => {
-    if (onResultClick) {
-      onResultClick(chunk);
-    }
-
-    if (analytics) {
-      await sendCtrData({
-        trieve,
-        index: chunk.position,
-        chunkID: chunk.id,
-      });
-    }
-    if (chunk.link) {
-      location.href = chunk.link;
-    }
-  };
-
-  const onUpOrDownClicked = (index: number, code: string) => {
-    if (code === "ArrowDown") {
-      if (index < results.length - 1) {
-        document.getElementById(`trieve-search-item-${index + 1}`)?.focus();
-      } else {
-        document.getElementById(`trieve-search-item-0`)?.focus();
-      }
-    }
-
-    if (code === "ArrowUp") {
-      if (index > 0) {
-        document.getElementById(`trieve-search-item-${index - 1}`)?.focus();
-      } else {
-        inputRef.current?.focus();
-      }
-    }
-  };
-
-  useEffect(() => {
-    document.addEventListener("keydown", checkForInteractions);
-    return () => {
-      document.removeEventListener("keydown", checkForInteractions);
-    };
+    setContextProps(p);
   }, []);
+  const { setContextProps, mode, modalRef, open, setOpen, setMode, props } =
+    useModalState();
+
+  const ButtonEl = props.ButtonEl;
 
   return (
     <Dialog.Root
@@ -128,7 +37,7 @@ export const TrieveModalSearch = ({
           <button
             id="open-trieve-modal"
             type="button"
-            className={theme === "dark" ? "dark" : ""}
+            className={props.theme === "dark" ? "dark" : ""}
           >
             <div>
               <svg
@@ -145,7 +54,7 @@ export const TrieveModalSearch = ({
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.3-4.3"></path>
               </svg>
-              <div>{placeholder}</div>
+              <div>{props.placeholder}</div>
             </div>
             <span className="open">
               <span className="mac">⌘</span>
@@ -163,32 +72,10 @@ export const TrieveModalSearch = ({
         <Dialog.Content
           id="trieve-search-modal"
           ref={modalRef}
-          className={theme === "dark" ? "dark" : ""}
+          className={props.theme === "dark" ? "dark" : ""}
           style={{ overflow: "auto" }}
         >
-          {mode === "search" ? (
-            <SearchMode
-              results={results}
-              setQuery={setQuery}
-              query={query}
-              setMode={setMode}
-              onUpOrDownClicked={onUpOrDownClicked}
-              showImages={showImages}
-              onResultClick={onClick}
-              placeholder={placeholder}
-              inputRef={inputRef}
-              chat={chat}
-            />
-          ) : (
-            <ChatMode
-              onNewMessage={() =>
-                modalRef.current?.scroll({ top: 0, behavior: "smooth" })
-              }
-              query={query}
-              setMode={setMode}
-              trieve={trieve}
-            />
-          )}
+          {mode === "search" ? <SearchMode /> : <ChatMode />}
           <div className="footer">
             <ul className="commands">
               <li>
@@ -229,10 +116,20 @@ export const TrieveModalSearch = ({
   );
 };
 
-export const initTrieveModalSearch = (props: Props) => {
+export const initTrieveModalSearch = (props: ModalProps) => {
   const ModalSearchWC = r2wc(() => <TrieveModalSearch {...props} />);
 
   if (!customElements.get("trieve-modal-search")) {
     customElements.define("trieve-modal-search", ModalSearchWC);
   }
+};
+
+export const TrieveModalSearch = (props: ModalProps) => {
+  useEffect(() => {});
+
+  return (
+    <ModalProvider>
+      <Modal {...props} />
+    </ModalProvider>
+  );
 };
