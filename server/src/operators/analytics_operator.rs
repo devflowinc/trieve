@@ -1348,6 +1348,21 @@ pub async fn get_top_datasets_query(
 ) -> Result<Vec<TopDatasetsResponse>, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let organization_dataset_ids = datasets_columns::datasets
+        .select(datasets_columns::id)
+        .filter(datasets_columns::organization_id.eq(data.organization_id))
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching dataset ids: {:?}", e);
+            ServiceError::InternalServerError("Error fetching dataset ids".to_string())
+        })?;
+
     let mut query_string = format!(
         "SELECT 
             dataset_id,
@@ -1374,6 +1389,8 @@ pub async fn get_top_datasets_query(
 
     query_string.push_str(
         "
+        WHERE 
+            dataset_id IN ?
         GROUP BY 
             dataset_id
         ORDER BY 
@@ -1383,6 +1400,7 @@ pub async fn get_top_datasets_query(
 
     let clickhouse_resp_data = clickhouse_client
         .query(query_string.as_str())
+        .bind(organization_dataset_ids)
         .fetch_all::<TopDatasetsResponseClickhouse>()
         .await
         .map_err(|e| {
