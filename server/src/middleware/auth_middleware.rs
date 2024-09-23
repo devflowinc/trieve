@@ -6,6 +6,7 @@ use crate::{
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
         organization_operator::{
             get_arbitrary_org_owner_from_dataset_id, get_arbitrary_org_owner_from_org_id,
+            get_org_from_id_query,
         },
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
@@ -148,16 +149,21 @@ where
                     }
 
                     req.extensions_mut().insert(dataset_org_plan_sub.clone());
+                    req.extensions_mut()
+                        .insert(dataset_org_plan_sub.organization.clone());
 
                     dataset_org_plan_sub.organization.organization.id
                 }
                 None => {
                     if let Some(org_header) = get_org_id_from_headers(req.headers()) {
-                        org_header.parse::<uuid::Uuid>().map_err(|_| {
+                        let org_id = org_header.parse::<uuid::Uuid>().map_err(|_| {
                             Into::<Error>::into(ServiceError::BadRequest(
                                 "Could not convert Organization to UUID".to_string(),
                             ))
-                        })?
+                        })?;
+                        let org_plan_and_sub = get_org_from_id_query(org_id, pool.clone()).await?;
+                        req.extensions_mut().insert(org_plan_and_sub.clone());
+                        org_id
                     } else {
                         let res = srv.call(req).await?;
                         return Ok(res);

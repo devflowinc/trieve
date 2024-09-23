@@ -17,7 +17,6 @@ export const OnboardingSteps = (props: OnboardingStepsProps) => {
         organizationId: props.usageQuery.data?.org_id as string,
         data: {
           type: "search",
-          organization_id: props.usageQuery.data?.org_id as string,
         },
       });
     },
@@ -30,7 +29,6 @@ export const OnboardingSteps = (props: OnboardingStepsProps) => {
         organizationId: props.usageQuery.data?.org_id as string,
         data: {
           type: "rag",
-          organization_id: props.usageQuery.data?.org_id as string,
         },
       });
     },

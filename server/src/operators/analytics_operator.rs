@@ -1343,6 +1343,7 @@ pub async fn set_query_rating_query(
 
 pub async fn get_top_datasets_query(
     data: GetTopDatasetsRequestBody,
+    organization_id: uuid::Uuid,
     clickhouse_client: &clickhouse::Client,
     pool: web::Data<Pool>,
 ) -> Result<Vec<TopDatasetsResponse>, ServiceError> {
@@ -1355,7 +1356,7 @@ pub async fn get_top_datasets_query(
 
     let organization_dataset_ids = datasets_columns::datasets
         .select(datasets_columns::id)
-        .filter(datasets_columns::organization_id.eq(data.organization_id))
+        .filter(datasets_columns::organization_id.eq(organization_id))
         .load::<uuid::Uuid>(&mut conn)
         .await
         .map_err(|e| {

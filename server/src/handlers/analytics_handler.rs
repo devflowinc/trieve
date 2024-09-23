@@ -2,10 +2,10 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        DatasetAndOrgWithSubAndPlan, DateRange, EventDataClickhouse, EventTypes, Pool,
-        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
-        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
-        TopDatasetsRequestTypes,
+        DatasetAndOrgWithSubAndPlan, DateRange, EventDataClickhouse, EventTypes,
+        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
+        SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::analytics_operator::*,
@@ -602,7 +602,6 @@ pub async fn get_ctr_analytics(
 #[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
 pub struct GetTopDatasetsRequestBody {
     pub r#type: TopDatasetsRequestTypes,
-    pub organization_id: uuid::Uuid,
     pub date_range: Option<DateRange>,
 }
 
@@ -627,19 +626,19 @@ pub struct GetTopDatasetsRequestBody {
     )
 )]
 pub async fn get_top_datasets(
-    user: AdminOnly,
+    _user: AdminOnly,
     data: web::Json<GetTopDatasetsRequestBody>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
-    user.0
-        .user_orgs
-        .iter()
-        .find(|org| org.organization_id == data.organization_id)
-        .ok_or(ServiceError::Forbidden)?;
-
-    let top_datasets =
-        get_top_datasets_query(data.into_inner(), clickhouse_client.get_ref(), pool).await?;
+    let top_datasets = get_top_datasets_query(
+        data.into_inner(),
+        org_with_plan_and_sub.organization.id,
+        clickhouse_client.get_ref(),
+        pool,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(top_datasets))
 }

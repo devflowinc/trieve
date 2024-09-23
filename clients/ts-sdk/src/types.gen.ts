@@ -443,10 +443,6 @@ export type CreateDatasetRequest = {
      * Name of the dataset.
      */
     dataset_name: string;
-    /**
-     * Organization ID that the dataset will belong to.
-     */
-    organization_id: string;
     server_configuration?: ((DatasetConfigurationDTO) | null);
     /**
      * Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
@@ -1079,7 +1075,6 @@ export type GetGroupsForChunksReqPayload = {
 
 export type GetTopDatasetsRequestBody = {
     date_range?: ((DateRange) | null);
-    organization_id: string;
     type: TopDatasetsRequestTypes;
 };
 
@@ -1185,10 +1180,6 @@ export type InvitationData = {
      * The email of the user to invite. Must be a valid email as they will be sent an email to register.
      */
     email: string;
-    /**
-     * The id of the organization to invite the user to.
-     */
-    organization_id: string;
     /**
      * The url that the user will be redirected to after setting their password.
      */
@@ -2231,10 +2222,6 @@ export type UpdateAllOrgDatasetConfigsReqPayload = {
      * The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values.
      */
     dataset_config: unknown;
-    /**
-     * The id of the organization to update the dataset configurations for.
-     */
-    organization_id: string;
 };
 
 export type UpdateChunkByTrackingIdData = {
@@ -2415,10 +2402,6 @@ export type UpdateOrganizationReqPayload = {
      * The new name of the organization. If not provided, the name will not be updated.
      */
     name?: (string) | null;
-    /**
-     * The id of the organization to update.
-     */
-    organization_id: string;
 };
 
 export type UpdateTopicReqPayload = {
@@ -2433,10 +2416,6 @@ export type UpdateTopicReqPayload = {
 };
 
 export type UpdateUserOrgRoleData = {
-    /**
-     * The id of the organization to update the user for.
-     */
-    organization_id: string;
     /**
      * Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
      */

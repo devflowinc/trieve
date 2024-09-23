@@ -2,7 +2,8 @@ use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
         CrawlOptions, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        DatasetConfigurationDTO, Pool, RedisPool, StripePlan, UnifiedId,
+        DatasetConfigurationDTO, OrganizationWithSubAndPlan, Pool, RedisPool, StripePlan,
+        UnifiedId,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -33,6 +34,25 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
         ready(
             req.extensions()
                 .get::<DatasetAndOrgWithSubAndPlan>()
+                .cloned()
+                .ok_or(ServiceError::InternalServerError(
+                    "Could not get dataset from request".to_string(),
+                )),
+        )
+    }
+}
+
+impl FromRequest for OrganizationWithSubAndPlan {
+    type Error = ServiceError;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(
+        req: &actix_web::HttpRequest,
+        _payload: &mut actix_web::dev::Payload,
+    ) -> Self::Future {
+        ready(
+            req.extensions()
+                .get::<OrganizationWithSubAndPlan>()
                 .cloned()
                 .ok_or(ServiceError::InternalServerError(
                     "Could not get dataset from request".to_string(),
@@ -76,8 +96,6 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
 pub struct CreateDatasetRequest {
     /// Name of the dataset.
     pub dataset_name: String,
-    /// Organization ID that the dataset will belong to.
-    pub organization_id: uuid::Uuid,
     /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
     pub tracking_id: Option<String>,
     /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
@@ -111,9 +129,10 @@ pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
+    org_with_sub_and_plan: OrganizationWithSubAndPlan,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let org_id = data.organization_id;
+    let org_id = org_with_sub_and_plan.organization.id;
 
     let organization_sub_plan = get_org_from_id_query(org_id, pool.clone()).await?;
 
@@ -134,7 +153,7 @@ pub async fn create_dataset(
 
     let dataset = Dataset::from_details(
         data.dataset_name.clone(),
-        data.organization_id,
+        org_id,
         data.tracking_id.clone(),
         data.server_configuration
             .clone()
