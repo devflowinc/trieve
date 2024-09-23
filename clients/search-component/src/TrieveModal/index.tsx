@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
 import { SearchMode } from "./SearchMode";
@@ -11,12 +11,8 @@ import {
   useModalState,
 } from "../utils/hooks/modal-context";
 
-const Modal = (p: ModalProps) => {
-  useEffect(() => {
-    setContextProps(p);
-  }, [p]);
-  const { setContextProps, mode, modalRef, open, setOpen, setMode, props } =
-    useModalState();
+const Modal = () => {
+  const { mode, modalRef, open, setOpen, setMode, props } = useModalState();
 
   const ButtonEl = props.ButtonEl;
 
@@ -125,11 +121,9 @@ export const initTrieveModalSearch = (props: ModalProps) => {
 };
 
 export const TrieveModalSearch = (props: ModalProps) => {
-  useEffect(() => {});
-
   return (
-    <ModalProvider>
-      <Modal {...props} />
+    <ModalProvider onLoadProps={props}>
+      <Modal />
     </ModalProvider>
   );
 };

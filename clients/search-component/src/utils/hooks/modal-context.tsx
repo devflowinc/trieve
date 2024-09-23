@@ -68,14 +68,30 @@ const ModalContext = createContext<{
   setContextProps: () => {},
 });
 
-function ModalProvider({ children }: { children: React.ReactNode }) {
-  const [props, setProps] = useState<ModalProps>(defaultProps);
+function ModalProvider({
+  children,
+  onLoadProps,
+}: {
+  children: React.ReactNode;
+  onLoadProps: ModalProps;
+}) {
+  const [props, setProps] = useState<ModalProps>({
+    ...defaultProps,
+    ...onLoadProps,
+  });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState("search");
   const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setProps((p) => ({
+      ...p,
+      ...onLoadProps,
+    }));
+  }, [onLoadProps]);
 
   const search = async () => {
     const results = await searchWithTrieve({
