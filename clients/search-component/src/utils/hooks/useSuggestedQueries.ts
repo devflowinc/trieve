@@ -19,15 +19,15 @@ export const useSuggestedQueries = () => {
     });
     setSuggestedQueries(queries.queries.splice(0, 2));
     setIsLoading(false);
-  }, 300);
+  }, 1000);
 
   useEffect(() => {
-    if (props.suggestedQueries) {
+    if (props.suggestedQueries && !isLoading) {
       if (query) {
         getQueries();
       } else {
         if (props.defaultQueries?.length) {
-          setSuggestedQueries(props.defaultQueries);
+          setSuggestedQueries(props.defaultQueries.splice(0, 2));
         } else {
           getQueries();
         }
