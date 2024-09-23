@@ -40,24 +40,26 @@ export const SearchMode = () => {
             <kbd>ESC</kbd>
           </div>
         </div>
-        <div className="suggested-queries-wrapper">
-          <p>Suggested Queries: </p>
-          {isFetchingSuggestedQueries
-            ? Array.from(Array(2).keys()).map((k) => (
-                <button key={k} disabled className="suggested-query">
-                  <LoadingIcon className="w-5 h-4" />
-                </button>
-              ))
-            : suggestedQueries.map((q) => (
-                <button
-                  onClick={() => setQuery(q)}
-                  key={q}
-                  className="suggested-query"
-                >
-                  {q}
-                </button>
-              ))}
-        </div>
+        {props.suggestedQueries && (
+          <div className="suggested-queries-wrapper">
+            <p>Suggested Queries: </p>
+            {isFetchingSuggestedQueries
+              ? Array.from(Array(2).keys()).map((k) => (
+                  <button key={k} disabled className="suggested-query">
+                    <LoadingIcon className="w-5 h-4" />
+                  </button>
+                ))
+              : suggestedQueries.map((q) => (
+                  <button
+                    onClick={() => setQuery(q)}
+                    key={q}
+                    className="suggested-query"
+                  >
+                    {q}
+                  </button>
+                ))}
+          </div>
+        )}
       </div>
 
       <ul className="trieve-elements-search">

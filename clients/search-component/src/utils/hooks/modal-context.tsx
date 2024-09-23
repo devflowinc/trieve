@@ -23,6 +23,7 @@ export type ModalProps = {
   chat?: boolean;
   analytics?: boolean;
   ButtonEl?: JSX.ElementType;
+  suggestedQueries?: boolean;
 };
 
 const defaultProps = {
@@ -33,6 +34,7 @@ const defaultProps = {
   } as searchOptions,
   analytics: true,
   chat: true,
+  suggestedQueries: true,
   trieve: (() => {}) as unknown as TrieveSDK,
 };
 
