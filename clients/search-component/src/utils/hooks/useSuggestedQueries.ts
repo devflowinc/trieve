@@ -22,7 +22,7 @@ export const useSuggestedQueries = () => {
   }, 300);
 
   useEffect(() => {
-    getQueries();
+    if (props.suggestedQueries) getQueries();
   }, [query]);
 
   return {

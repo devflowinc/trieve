@@ -73,17 +73,18 @@ declare module "solid-js" {
 
 #### Props
 
-| Name          | Type                                                                                           | Default                       |
-| ------------- | ---------------------------------------------------------------------------------------------- | ----------------------------- |
-| trieve        | TrieveSDK                                                                                      | null                          |
-| chat          | boolean                                                                                        | true                          |
-| analytics     | boolean                                                                                        | true                          |
-| showImages    | boolean                                                                                        | false                         |
-| placeholder   | string                                                                                         | "Search..."                   |
-| onResultClick | () => void                                                                                     | () => {}                      |
-| theme         | "light" or "dark"                                                                              | "light"                       |
-| searchOptions | [AutocompleteReqPayload](https://ts-sdk.trieve.ai/types/types_gen.AutocompleteReqPayload.html) | `{ search_type: "fulltext" }` |
-| ButtonEl      | JSX.ElementType                                                                                | null                          |
+| Name             | Type                                                                                           | Default                       |
+| ---------------- | ---------------------------------------------------------------------------------------------- | ----------------------------- |
+| trieve           | TrieveSDK                                                                                      | null                          |
+| chat             | boolean                                                                                        | true                          |
+| analytics        | boolean                                                                                        | true                          |
+| showImages       | boolean                                                                                        | false                         |
+| placeholder      | string                                                                                         | "Search..."                   |
+| onResultClick    | () => void                                                                                     | () => {}                      |
+| theme            | "light" or "dark"                                                                              | "light"                       |
+| searchOptions    | [AutocompleteReqPayload](https://ts-sdk.trieve.ai/types/types_gen.AutocompleteReqPayload.html) | `{ search_type: "fulltext" }` |
+| ButtonEl         | JSX.ElementType                                                                                | null                          |
+| suggestedQueries | boolean                                                                                        | true                          |
 
 ### Search Results
 
