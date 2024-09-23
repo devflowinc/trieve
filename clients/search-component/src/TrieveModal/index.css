@@ -122,7 +122,7 @@ body {
       }
 
       .suggested-query {
-        @apply inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-600 text-left;
+        @apply inline-flex items-center rounded-md bg-magenta-100 px-2 py-1 text-xs font-medium text-magenta-800 text-left;
 
         &:disabled {
           @apply px-8;
@@ -259,6 +259,15 @@ body {
 
       .input-wrapper {
         @apply bg-zinc-900;
+
+        .suggested-queries-wrapper {
+          .suggested-query {
+            @apply bg-magenta-900 text-magenta-100;
+          }
+          > p {
+            @apply text-xs text-zinc-400;
+          }
+        }
 
         &::after {
           @apply bg-gradient-to-b from-zinc-900 via-zinc-900 to-transparent;

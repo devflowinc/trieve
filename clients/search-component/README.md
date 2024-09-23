@@ -85,6 +85,7 @@ declare module "solid-js" {
 | searchOptions    | [AutocompleteReqPayload](https://ts-sdk.trieve.ai/types/types_gen.AutocompleteReqPayload.html) | `{ search_type: "fulltext" }` |
 | ButtonEl         | JSX.ElementType                                                                                | null                          |
 | suggestedQueries | boolean                                                                                        | true                          |
+| defaultQueries   | string[]                                                                                       | []                            |
 
 ### Search Results
 
