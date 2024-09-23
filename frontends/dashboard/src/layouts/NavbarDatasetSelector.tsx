@@ -37,7 +37,7 @@ export const NavbarDatasetSelector = () => {
               !datasetContext.datasetId() ? "text-neutral-600" : "text-black"
             }`}
             onSelected={datasetContext.selectDataset}
-            display={(id) => id}
+            display={(id) => datasetNameFromId(id)}
             displayElement={(id) => (
               <div class="flex items-center gap-2">
                 <FiDatabase />
