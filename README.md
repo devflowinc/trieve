@@ -32,6 +32,8 @@
 - [API Reference + Docs](https://docs.trieve.ai/api-reference)
 - [OpenAPI specification](https://api.trieve.ai/redoc)
 - [Typescript SDK](https://ts-sdk.trieve.ai/)
+- [Python SDK](https://pypi.org/project/trieve-py-client/)
+
 ## Features
 
 - **🔒 Self-Hosting in your VPC or on-prem**: We have full self-hosting guides for AWS, GCP, Kubernetes generally, and docker compose available on our [documentation page here](https://docs.trieve.ai/self-hosting/docker-compose).
@@ -45,7 +47,6 @@
 - **📆 Recency Biasing**: Easily bias search results for what was most recent to prevent staleness
 - **🛠️ Tunable Merchandizing**: Adjust relevance using signals like clicks, add-to-carts, or citations
 - **🕳️ Filtering**: Date-range, substring match, tag, numeric, and other filter types are supported.
-- **🧐 Duplicate Detection**: Check out our docs on [collision-based dup detection](https://docs.trieve.ai/duplicate_detection) to learn about how we handle duplicates. This is a setting you can turn on or off.
 - **👥 Grouping**: Mark multiple chunks as being part of the same file and search on the file-level such that the same top-level result never appears twice
 
 **Are we missing a feature that your use case would need?** - call us at [628-222-4090](mailto:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:trieve.ai) and tell us! We are a small company who is still very hands-on and eager to build what you need; professional services are available.
