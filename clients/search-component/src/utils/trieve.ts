@@ -57,3 +57,15 @@ export const sendCtrData = async ({
 
   return null;
 };
+
+export const getSuggestedQueries = async ({
+  trieve,
+  query,
+}: {
+  query: string;
+  trieve: TrieveSDK;
+}) => {
+  return trieve.suggestedQueries({
+    ...(query && { query }),
+  });
+};

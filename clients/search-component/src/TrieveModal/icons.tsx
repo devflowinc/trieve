@@ -1,13 +1,13 @@
-import React from "react";
-export const LoadingIcon = () => (
+import React, { SVGAttributes } from "react";
+export const LoadingIcon = (props: SVGAttributes<SVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="120"
     height="30"
-    className="loading-system"
+    className={props.className}
     viewBox="0 0 120 30"
   >
-    <circle cx="15" cy="15" r="15">
+    <circle cx="15" cy="15" r="15" fill="currentColor">
       <animate
         attributeName="r"
         begin="0s"
@@ -29,7 +29,7 @@ export const LoadingIcon = () => (
         values="1;.5;1"
       ></animate>
     </circle>
-    <circle cx="60" cy="15" r="9" fillOpacity="0.3">
+    <circle cx="60" cy="15" r="9" fillOpacity="0.3" fill="currentColor">
       <animate
         attributeName="r"
         begin="0s"
@@ -51,7 +51,7 @@ export const LoadingIcon = () => (
         values=".5;1;.5"
       ></animate>
     </circle>
-    <circle cx="105" cy="15" r="15">
+    <circle cx="105" cy="15" r="15" fill="currentColor">
       <animate
         attributeName="r"
         begin="0s"

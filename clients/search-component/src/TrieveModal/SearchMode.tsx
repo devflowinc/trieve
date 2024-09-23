@@ -1,61 +1,67 @@
 import React from "react";
 import { Item } from "./item";
-import { Chunk, ChunkWithHighlights } from "../utils/types";
-import { AIIcon, ArrowIcon } from "./icons";
+import { AIIcon, ArrowIcon, LoadingIcon } from "./icons";
+import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
+import { useModalState } from "../utils/hooks/modal-context";
 
-export const SearchMode = ({
-  results,
-  query,
-  setQuery,
-  setMode,
-  onUpOrDownClicked,
-  onResultClick,
-  showImages,
-  placeholder,
-  inputRef,
-  chat,
-}: {
-  results: ChunkWithHighlights[];
-  query: string;
-  setQuery: (value: string) => void;
-  setMode: (value: string) => void;
-  onUpOrDownClicked: (index: number, code: string) => void;
-  onResultClick: (chunk: Chunk & { position: number }) => void;
-  showImages?: boolean;
-  placeholder?: string;
-  inputRef: React.RefObject<HTMLInputElement>;
-  chat: boolean;
-}) => {
+export const SearchMode = () => {
+  const { props, results, query, setQuery, inputRef, setMode } =
+    useModalState();
+  const { suggestedQueries, isFetchingSuggestedQueries } =
+    useSuggestedQueries();
+
   return (
     <>
       <div className="input-wrapper">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="search-icon"
-        >
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.3-4.3"></path>
-        </svg>
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={placeholder || "Search for anything"}
-        />
-        <div className="kbd-wrapper">
-          <kbd>ESC</kbd>
+        <div className="input-flex">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="search-icon"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={props.placeholder || "Search for anything"}
+          />
+
+          <div className="kbd-wrapper">
+            <kbd>ESC</kbd>
+          </div>
+        </div>
+        <div className="suggested-queries-wrapper">
+          <p>Suggested Queries: </p>
+          {isFetchingSuggestedQueries
+            ? Array.from(Array(2).keys()).map((k) => (
+                <button key={k} disabled className="suggested-query">
+                  <LoadingIcon className="w-5 h-4" />
+                </button>
+              ))
+            : suggestedQueries.map((q) => (
+                <button
+                  onClick={() => setQuery(q)}
+                  key={q}
+                  className="suggested-query"
+                >
+                  {q}
+                </button>
+              ))}
         </div>
       </div>
+
       <ul className="trieve-elements-search">
-        {results.length && chat ? (
+        {results.length && props.chat ? (
           <li>
             <button className="item start-chat" onClick={() => setMode("chat")}>
               <div>
@@ -72,14 +78,7 @@ export const SearchMode = ({
           </li>
         ) : null}
         {results.map((result, index) => (
-          <Item
-            onUpOrDownClicked={onUpOrDownClicked}
-            item={result}
-            index={index}
-            onResultClick={onResultClick}
-            showImages={showImages}
-            key={result.chunk.id}
-          />
+          <Item item={result} index={index} key={result.chunk.id} />
         ))}
       </ul>
     </>

@@ -1,23 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { TrieveSDK } from "trieve-ts-sdk";
 import Markdown from "react-markdown";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { BackIcon, CheckIcon, LoadingAIIcon, LoadingIcon } from "./icons";
 import { Chunk } from "../utils/types";
+import { useModalState } from "../utils/hooks/modal-context";
 
-export const ChatMode = ({
-  query,
-  setMode,
-  trieve,
-  onNewMessage,
-}: {
-  query: string;
-  setMode: (value: string) => void;
-  trieve: TrieveSDK;
-  onNewMessage: () => void;
-}) => {
+export const ChatMode = () => {
+  const { query, setMode, props, modalRef } = useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
   const called = useRef(false);
@@ -43,7 +34,7 @@ export const ChatMode = ({
       called.current = true;
       setIsLoading(true);
       const fingerprint = await getFingerprint();
-      const topic = await trieve.createTopic({
+      const topic = await props.trieve.createTopic({
         name: currentQuestion,
         owner_id: fingerprint.toString(),
       });
@@ -95,7 +86,7 @@ export const ChatMode = ({
 
   const createQuestion = async (id?: string) => {
     setIsLoading(true);
-    const reader = await trieve.createMessageReader({
+    const reader = await props.trieve.createMessageReader({
       topic_id: id || currentTopic,
       new_message_content: currentQuestion,
       llm_options: {
@@ -124,7 +115,7 @@ export const ChatMode = ({
             ]);
             createQuestion();
             setCurrentQuestion("");
-            onNewMessage();
+            modalRef.current?.scroll({ top: 0, behavior: "smooth" });
           }}
         >
           <input
