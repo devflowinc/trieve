@@ -10,13 +10,16 @@ export const NavbarOrganizationSelector = () => {
   const datasetContext = useContext(DatasetContext);
   const location = useLocation();
 
-  const organizationIds = createMemo(
-    () => userContext.user()?.orgs.map((org) => org.id),
+  const organizationIds = createMemo(() =>
+    userContext.user().orgs.map((org) => org.id),
   );
 
   const organizationNameFromId = (id: string) => {
-    const organization = userContext.user()?.orgs.find((org) => org.id === id);
-    return organization?.name;
+    const organization = userContext.user().orgs.find((org) => org.id === id);
+    if (!organization) {
+      return "No Organization";
+    }
+    return organization.name;
   };
 
   createEffect(() => {
@@ -44,14 +47,14 @@ export const NavbarOrganizationSelector = () => {
           <Select
             class="w-full bg-white"
             onSelected={userContext.setSelectedOrg}
-            display={(id) => id}
+            display={(id) => organizationNameFromId(id)}
             displayElement={(id) => (
               <div class="flex w-full items-center gap-2">
                 <FiUsers />{" "}
                 <div class="w-full text-sm">{organizationNameFromId(id)}</div>
               </div>
             )}
-            selected={userContext.selectedOrg()?.id}
+            selected={userContext.selectedOrg().id}
             options={organizations()}
           />
         )}
