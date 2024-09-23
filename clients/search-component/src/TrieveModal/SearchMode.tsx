@@ -1,14 +1,17 @@
 import React from "react";
 import { Item } from "./item";
-import { AIIcon, ArrowIcon, LoadingIcon } from "./icons";
+import { AIIcon, ArrowIcon, LoadingIcon, ReloadIcon } from "./icons";
 import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../utils/hooks/modal-context";
 
 export const SearchMode = () => {
   const { props, results, query, setQuery, inputRef, setMode } =
     useModalState();
-  const { suggestedQueries, isFetchingSuggestedQueries } =
-    useSuggestedQueries();
+  const {
+    suggestedQueries,
+    isFetchingSuggestedQueries,
+    refetchSuggestedQueries,
+  } = useSuggestedQueries();
 
   return (
     <>
@@ -40,16 +43,18 @@ export const SearchMode = () => {
             <kbd>ESC</kbd>
           </div>
         </div>
-        {props.suggestedQueries && (
+        {props.suggestedQueries && (!query || (query && !results.length)) && (
           <div className="suggested-queries-wrapper">
             <p>Suggested Queries: </p>
-            {isFetchingSuggestedQueries
-              ? Array.from(Array(2).keys()).map((k) => (
-                  <button key={k} disabled className="suggested-query">
-                    <LoadingIcon className="w-5 h-4" />
-                  </button>
-                ))
-              : suggestedQueries.map((q) => (
+            {isFetchingSuggestedQueries ? (
+              Array.from(Array(3).keys()).map((k) => (
+                <button key={k} disabled className="suggested-query">
+                  <LoadingIcon width="20" height="16" />
+                </button>
+              ))
+            ) : (
+              <>
+                {suggestedQueries.map((q) => (
                   <button
                     onClick={() => setQuery(q)}
                     key={q}
@@ -58,6 +63,15 @@ export const SearchMode = () => {
                     {q}
                   </button>
                 ))}
+                <button
+                  onClick={refetchSuggestedQueries}
+                  className="suggested-query"
+                  title="Refresh suggested queries"
+                >
+                  <ReloadIcon width="14" height="14" />
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -79,9 +93,14 @@ export const SearchMode = () => {
             </button>
           </li>
         ) : null}
-        {results.map((result, index) => (
-          <Item item={result} index={index} key={result.chunk.id} />
-        ))}
+        {results.length
+          ? results.map((result, index) => (
+              <Item item={result} index={index} key={result.chunk.id} />
+            ))
+          : null}
+        {query && !results.length ? (
+          <p className="no-results">No results found</p>
+        ) : null}
       </ul>
     </>
   );

@@ -21,6 +21,8 @@ export const useSuggestedQueries = () => {
     setIsLoading(false);
   }, 1000);
 
+  const refetchSuggestedQueries = getQueries;
+
   useEffect(() => {
     if (props.suggestedQueries && !isLoading) {
       if (query) {
@@ -38,5 +40,6 @@ export const useSuggestedQueries = () => {
   return {
     isFetchingSuggestedQueries: isLoading,
     suggestedQueries,
+    refetchSuggestedQueries,
   };
 };

@@ -10,6 +10,10 @@ body {
       @apply pr-2;
     }
 
+    .no-results {
+      @apply text-sm text-center my-8;
+    }
+
     .footer {
       @apply flex border-t sticky -bottom-2 items-center pt-3 border-zinc-200 px-2 pb-1 bg-transparent;
 
