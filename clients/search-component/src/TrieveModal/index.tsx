@@ -14,7 +14,7 @@ import {
 const Modal = (p: ModalProps) => {
   useEffect(() => {
     setContextProps(p);
-  }, []);
+  }, [p]);
   const { setContextProps, mode, modalRef, open, setOpen, setMode, props } =
     useModalState();
 

@@ -24,6 +24,7 @@ export type ModalProps = {
   analytics?: boolean;
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
+  defaultQueries?: string[];
 };
 
 const defaultProps = {
@@ -36,6 +37,7 @@ const defaultProps = {
   chat: true,
   suggestedQueries: true,
   trieve: (() => {}) as unknown as TrieveSDK,
+  defaultQueries: [],
 };
 
 const ModalContext = createContext<{
@@ -83,6 +85,7 @@ function ModalProvider({ children }: { children: React.ReactNode }) {
     });
     setResults(results);
   };
+
   useEffect(() => {
     if (query) {
       search();

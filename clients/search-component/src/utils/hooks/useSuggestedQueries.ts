@@ -22,7 +22,17 @@ export const useSuggestedQueries = () => {
   }, 300);
 
   useEffect(() => {
-    if (props.suggestedQueries) getQueries();
+    if (props.suggestedQueries) {
+      if (query) {
+        getQueries();
+      } else {
+        if (props.defaultQueries?.length) {
+          setSuggestedQueries(props.defaultQueries);
+        } else {
+          getQueries();
+        }
+      }
+    }
   }, [query]);
 
   return {
