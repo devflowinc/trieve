@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    data::models::{Pool, RedisPool, UserOrganization, UserRole},
+    data::models::{OrganizationWithSubAndPlan, Pool, RedisPool, UserOrganization, UserRole},
     errors::ServiceError,
     middleware::auth_middleware::{get_role_for_org, verify_admin, verify_owner},
     operators::{
@@ -101,8 +101,6 @@ pub async fn delete_organization(
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct UpdateOrganizationReqPayload {
-    /// The id of the organization to update.
-    organization_id: uuid::Uuid,
     /// The new name of the organization. If not provided, the name will not be updated.
     name: Option<String>,
 }
@@ -132,17 +130,18 @@ pub async fn update_organization(
     organization: web::Json<UpdateOrganizationReqPayload>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
     user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_owner(&user, &organization.organization_id) {
+    if !verify_owner(&user, &org_with_plan_and_sub.organization.id) {
         return Ok(HttpResponse::Forbidden().finish());
     }
     let organization_update_data = organization.into_inner();
     let old_organization =
-        get_org_from_id_query(organization_update_data.organization_id, pool.clone()).await?;
+        get_org_from_id_query(org_with_plan_and_sub.organization.id, pool.clone()).await?;
 
     let updated_organization = update_organization_query(
-        organization_update_data.organization_id,
+        org_with_plan_and_sub.organization.id,
         organization_update_data
             .name
             .unwrap_or(old_organization.organization.name)
@@ -279,8 +278,6 @@ pub async fn get_organization_users(
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct RemoveUserFromOrgPathParams {
-    /// The id of the organization to remove the user from.
-    organization_id: uuid::Uuid,
     /// The id of the user to remove from the organization.
     user_id: uuid::Uuid,
 }
@@ -310,13 +307,14 @@ pub async fn remove_user_from_org(
     data: web::Path<RemoveUserFromOrgPathParams>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_admin(&user, &data.organization_id) {
+    if !verify_admin(&user, &org_with_plan_and_sub.organization.id) {
         return Ok(HttpResponse::Forbidden().finish());
     };
 
-    let org_id = data.organization_id;
+    let org_id = org_with_plan_and_sub.organization.id;
     let user_role = match get_role_for_org(&user.0, &org_id.clone()) {
         Some(role) => role,
         None => return Err(ServiceError::Forbidden.into()),
@@ -358,8 +356,6 @@ pub async fn remove_user_from_org(
     }
 }))]
 pub struct UpdateAllOrgDatasetConfigsReqPayload {
-    /// The id of the organization to update the dataset configurations for.
-    pub organization_id: uuid::Uuid,
     /// The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values.
     pub dataset_config: serde_json::Value,
 }
@@ -388,9 +384,10 @@ pub struct UpdateAllOrgDatasetConfigsReqPayload {
 pub async fn update_all_org_dataset_configs(
     req_payload: web::Json<UpdateAllOrgDatasetConfigsReqPayload>,
     pool: web::Data<Pool>,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
     user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let organization_id = req_payload.organization_id;
+    let organization_id = org_with_plan_and_sub.organization.id;
     if !verify_owner(&user, &organization_id) {
         return Ok(HttpResponse::Forbidden().finish());
     };

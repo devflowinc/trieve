@@ -35,7 +35,6 @@ export const NewUserOrgName = () => {
         .fetch("/api/organization", "put", {
           organizationId: selectedOrg,
           data: {
-            organization_id: selectedOrg,
             name: orgNameInput(),
           },
         })

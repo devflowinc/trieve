@@ -1,6 +1,6 @@
 use super::auth_handler::AdminOnly;
 use crate::{
-    data::models::{Invitation, Pool, RedisPool},
+    data::models::{Invitation, OrganizationWithSubAndPlan, Pool, RedisPool},
     errors::ServiceError,
     middleware::auth_middleware::verify_admin,
     operators::{
@@ -30,8 +30,6 @@ pub struct InvitationResponse {
 
 #[derive(Deserialize, ToSchema, Serialize, Clone, Debug)]
 pub struct InvitationData {
-    /// The id of the organization to invite the user to.
-    pub organization_id: uuid::Uuid,
     /// The role the user will have in the organization. 0 = User, 1 = Admin, 2 = Owner.
     pub user_role: i32,
     /// The email of the user to invite. Must be a valid email as they will be sent an email to register.
@@ -67,6 +65,7 @@ pub async fn post_invitation(
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
     user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let invitation_data = invitation_data.into_inner();
@@ -81,11 +80,12 @@ pub async fn post_invitation(
         ));
     }
 
+    let existing_user_org_id = org_with_plan_and_sub.organization.id;
     let org_role = user
         .0
         .user_orgs
         .iter()
-        .find(|org| org.organization_id == invitation_data.organization_id);
+        .find(|org| org.organization_id == existing_user_org_id);
 
     if org_role.is_none() || org_role.expect("cannot be none").role < invitation_data.user_role {
         return Err(ServiceError::BadRequest(
@@ -93,9 +93,8 @@ pub async fn post_invitation(
         ));
     }
 
-    let existing_user_org_id = invitation_data.organization_id;
     let existing_user_role = invitation_data.user_role;
-    let organization = get_org_from_id_query(invitation_data.organization_id, pool.clone()).await?;
+    let organization = get_org_from_id_query(existing_user_org_id, pool.clone()).await?;
     let added_user_to_org = add_existing_user_to_org(
         email.clone(),
         existing_user_org_id,
@@ -113,7 +112,7 @@ pub async fn post_invitation(
     let invitation = create_invitation(
         invitation_data.app_url,
         email,
-        invitation_data.organization_id,
+        existing_user_org_id,
         invitation_data.redirect_uri,
         invitation_data.user_role,
         pool,

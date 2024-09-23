@@ -7294,8 +7294,7 @@
       "CreateDatasetRequest": {
         "type": "object",
         "required": [
-          "dataset_name",
-          "organization_id"
+          "dataset_name"
         ],
         "properties": {
           "crawl_options": {
@@ -7309,11 +7308,6 @@
           "dataset_name": {
             "type": "string",
             "description": "Name of the dataset."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Organization ID that the dataset will belong to."
           },
           "server_configuration": {
             "allOf": [
@@ -8912,8 +8906,7 @@
       "GetTopDatasetsRequestBody": {
         "type": "object",
         "required": [
-          "type",
-          "organization_id"
+          "type"
         ],
         "properties": {
           "date_range": {
@@ -8923,10 +8916,6 @@
               }
             ],
             "nullable": true
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid"
           },
           "type": {
             "$ref": "#/components/schemas/TopDatasetsRequestTypes"
@@ -9245,7 +9234,6 @@
       "InvitationData": {
         "type": "object",
         "required": [
-          "organization_id",
           "user_role",
           "email",
           "app_url",
@@ -9259,11 +9247,6 @@
           "email": {
             "type": "string",
             "description": "The email of the user to invite. Must be a valid email as they will be sent an email to register."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The id of the organization to invite the user to."
           },
           "redirect_uri": {
             "type": "string",
@@ -12984,17 +12967,11 @@
       "UpdateAllOrgDatasetConfigsReqPayload": {
         "type": "object",
         "required": [
-          "organization_id",
           "dataset_config"
         ],
         "properties": {
           "dataset_config": {
             "description": "The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The id of the organization to update the dataset configurations for."
           }
         },
         "example": {
@@ -13366,19 +13343,11 @@
       },
       "UpdateOrganizationReqPayload": {
         "type": "object",
-        "required": [
-          "organization_id"
-        ],
         "properties": {
           "name": {
             "type": "string",
             "description": "The new name of the organization. If not provided, the name will not be updated.",
             "nullable": true
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The id of the organization to update."
           }
         }
       },
@@ -13403,15 +13372,9 @@
       "UpdateUserOrgRoleData": {
         "type": "object",
         "required": [
-          "organization_id",
           "role"
         ],
         "properties": {
-          "organization_id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The id of the organization to update the user for."
-          },
           "role": {
             "type": "integer",
             "format": "int32",

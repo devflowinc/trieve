@@ -1,6 +1,6 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{Pool, RedisPool, UserRole},
+    data::models::{OrganizationWithSubAndPlan, Pool, RedisPool, UserRole},
     errors::ServiceError,
     operators::user_operator::{
         delete_user_api_keys_query, get_user_api_keys_query, get_user_by_id_query,
@@ -13,8 +13,6 @@ use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct UpdateUserOrgRoleData {
-    /// The id of the organization to update the user for.
-    pub organization_id: uuid::Uuid,
     /// The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the role of the auth'ed user or api key must be an admin (1) or owner (2) of the organization.
     pub user_id: Option<uuid::Uuid>,
     /// Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
@@ -51,6 +49,7 @@ pub async fn update_user(
     data: web::Json<UpdateUserOrgRoleData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, ServiceError> {
     let update_user_data = data.into_inner();
@@ -58,7 +57,7 @@ pub async fn update_user(
         .clone()
         .user_orgs
         .into_iter()
-        .find(|org| org.organization_id == update_user_data.organization_id)
+        .find(|org| org.organization_id == org_with_plan_and_sub.organization.id)
         .ok_or(ServiceError::BadRequest(
             "You are not a member of this organization".into(),
         ))?
@@ -82,7 +81,7 @@ pub async fn update_user(
         let already_in_org = user_info
             .1
             .iter()
-            .any(|org| org.organization_id == update_user_data.organization_id);
+            .any(|org| org.organization_id == org_with_plan_and_sub.organization.id);
 
         if !already_in_org {
             return Err(ServiceError::BadRequest(
@@ -95,7 +94,7 @@ pub async fn update_user(
 
     update_user_org_role_query(
         update_user_data.user_id.unwrap_or(user.id),
-        update_user_data.organization_id,
+        org_with_plan_and_sub.organization.id,
         user_role,
         pool,
         redis_pool,
