@@ -12,7 +12,7 @@
       "name": "BSL",
       "url": "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt"
     },
-    "version": "0.11.9"
+    "version": "0.11.11"
   },
   "servers": [
     {
@@ -497,6 +497,17 @@
         "summary": "Get Top Datasets",
         "description": "This route allows you to view the top datasets for a given type.",
         "operationId": "get_top_datasets",
+        "parameters": [
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "description": "JSON request payload to filter the top datasets",
           "content": {
@@ -7112,13 +7123,13 @@
           "limit": {
             "type": "integer",
             "format": "int32",
-            "description": "How many pages to crawl, defaults to 20",
+            "description": "How many pages to crawl, defaults to 1000",
             "nullable": true
           },
           "max_depth": {
             "type": "integer",
             "format": "int32",
-            "description": "How many levels deep to crawl, defaults to 2",
+            "description": "How many levels deep to crawl, defaults to 10",
             "nullable": true
           },
           "site_url": {
@@ -8901,7 +8912,8 @@
       "GetTopDatasetsRequestBody": {
         "type": "object",
         "required": [
-          "type"
+          "type",
+          "organization_id"
         ],
         "properties": {
           "date_range": {
@@ -8911,6 +8923,10 @@
               }
             ],
             "nullable": true
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid"
           },
           "type": {
             "$ref": "#/components/schemas/TopDatasetsRequestTypes"

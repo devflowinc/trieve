@@ -615,9 +615,11 @@ pub struct GetTopDatasetsRequestBody {
     context_path = "/api",
     tag = "Analytics",
     request_body(content = GetTopDatasetsRequestBody, description = "JSON request payload to filter the top datasets", content_type = "application/json"),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+    ),
     responses(
         (status = 200, description = "The top datasets for the request", body = Vec<TopDatasetsResponse>),
-
         (status = 400, description = "Service error relating to getting top datasets", body = ErrorResponseBody),
     ),
     security(

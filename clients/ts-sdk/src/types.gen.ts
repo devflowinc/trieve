@@ -414,11 +414,11 @@ export type CrawlOptions = {
     include_tags?: Array<(string)> | null;
     interval?: ((CrawlInterval) | null);
     /**
-     * How many pages to crawl, defaults to 20
+     * How many pages to crawl, defaults to 1000
      */
     limit?: (number) | null;
     /**
-     * How many levels deep to crawl, defaults to 2
+     * How many levels deep to crawl, defaults to 10
      */
     max_depth?: (number) | null;
     /**
@@ -1079,6 +1079,7 @@ export type GetGroupsForChunksReqPayload = {
 
 export type GetTopDatasetsRequestBody = {
     date_range?: ((DateRange) | null);
+    organization_id: string;
     type: TopDatasetsRequestTypes;
 };
 
@@ -2632,6 +2633,10 @@ export type GetTopDatasetsData = {
      * JSON request payload to filter the top datasets
      */
     requestBody: GetTopDatasetsRequestBody;
+    /**
+     * The organization id to use for the request
+     */
+    trOrganization: string;
 };
 
 export type GetTopDatasetsResponse = (Array<TopDatasetsResponse>);
