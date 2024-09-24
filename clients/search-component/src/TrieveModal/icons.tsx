@@ -4,8 +4,8 @@ export const LoadingIcon = (props: SVGAttributes<SVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     width="120"
     height="30"
-    className={props.className}
     viewBox="0 0 120 30"
+    {...props}
   >
     <circle cx="15" cy="15" r="15" fill="currentColor">
       <animate
