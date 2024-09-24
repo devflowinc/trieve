@@ -2,7 +2,7 @@
 import { format } from "date-fns";
 import { SearchQueryEvent } from "shared/types";
 import { FilterBar } from "../../components/FilterBar";
-import { createEffect, createSignal, Show } from "solid-js";
+import { createEffect, createSignal, Show, useContext } from "solid-js";
 import { SortableColumnDef, TanStackTable } from "shared/ui";
 import { parseCustomDateString } from "../../utils/formatDate";
 import { useBetterNav } from "../../utils/useBetterNav";
@@ -18,6 +18,8 @@ import {
 } from "@tanstack/solid-table";
 import { Card } from "../../components/charts/Card";
 import { formatSearchMethod } from "../../utils/searchType";
+import { DatasetContext } from "../../../contexts/DatasetContext";
+import { MagicSuspense } from "../../../components/MagicBox";
 
 const columns: SortableColumnDef<SearchQueryEvent>[] = [
   {
@@ -63,6 +65,7 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
 
 export const SearchTablePage = () => {
   const navigate = useBetterNav();
+  const datasetContext = useContext(DatasetContext);
 
   const {
     pages,
@@ -109,21 +112,30 @@ export const SearchTablePage = () => {
 
   return (
     <div>
-      <div class="my-4 rounded-md bg-white">
-        <Show
-          fallback={<div class="py-8 text-center">Loading...</div>}
-          when={searchTableQuery.data}
-        >
+      <div class="pb-1 text-lg">All Searches</div>
+      <div class="mb-4 rounded-md bg-white">
+        <Show when={searchTableQuery.data}>
           <Card>
             <FilterBar noPadding filters={filters} setFilters={setFilters} />
-            <TanStackTable
-              pages={pages}
-              perPage={10}
-              table={table as unknown as Table<SearchQueryEvent>}
-              onRowClick={(row: SearchQueryEvent) =>
-                navigate(`/query/${row.id}`)
-              }
-            />
+            <div class="mt-4">
+              <MagicSuspense skeletonKey="allsearchestable" unstyled>
+                <TanStackTable
+                  pages={pages}
+                  perPage={10}
+                  table={table as unknown as Table<SearchQueryEvent>}
+                  onRowClick={(row: SearchQueryEvent) =>
+                    navigate(
+                      `/dataset/${datasetContext.datasetId()}/analytics/query/${
+                        row.id
+                      }`,
+                    )
+                  }
+                />
+                <Show when={searchTableQuery.data?.length === 0}>
+                  <div class="py-8 text-center">No Data.</div>
+                </Show>
+              </MagicSuspense>
+            </div>
           </Card>
         </Show>
       </div>

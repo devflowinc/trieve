@@ -7,6 +7,7 @@ import { createSolidTable, getCoreRowModel } from "@tanstack/solid-table";
 import { format } from "date-fns";
 import { parseCustomDateString } from "../../utils/formatDate";
 import { formatSearchMethod } from "../../utils/searchType";
+import { MagicSuspense } from "../../../components/MagicBox";
 
 interface NoResultQueriesProps {
   params: {
@@ -73,18 +74,15 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
   console.log(notResultQuery.data);
 
   return (
-    <>
+    <MagicSuspense skeletonKey="noresultqueries" unstyled>
       <div>
         <Show when={notResultQuery.data?.length === 0}>
           <div class="py-8 text-center opacity-80">No Data.</div>
         </Show>
-        <Show
-          fallback={<div class="py-8 text-center">Loading...</div>}
-          when={notResultQuery.data}
-        >
+        <Show when={notResultQuery.data && notResultQuery.data.length > 0}>
           <TanStackTable table={table} pages={pages} perPage={10} />
         </Show>
       </div>
-    </>
+    </MagicSuspense>
   );
 };

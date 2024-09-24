@@ -3,6 +3,7 @@ import { createMemo, Show } from "solid-js";
 import { SortableColumnDef, TanStackTable } from "shared/ui";
 import { useHeadQueries } from "../../hooks/data/useHeadQueries";
 import { createSolidTable, getCoreRowModel } from "@tanstack/solid-table";
+import { MagicSuspense } from "../../../components/MagicBox";
 
 interface HeadQueriesProps {
   params: { filter: AnalyticsFilter };
@@ -47,10 +48,13 @@ export const HeadQueries = (props: HeadQueriesProps) => {
   });
 
   return (
-    <>
+    <MagicSuspense unstyled skeletonKey="headqueries">
       <Show
-        fallback={<div class="py-8">Loading...</div>}
-        when={headQueriesData().headQueriesQuery.data}
+        fallback={<div class="py-8 text-center">No Data.</div>}
+        when={
+          headQueriesData()?.headQueriesQuery.data &&
+          headQueriesData().headQueriesQuery.data?.length
+        }
       >
         <TanStackTable
           small
@@ -59,6 +63,6 @@ export const HeadQueries = (props: HeadQueriesProps) => {
           table={tableMemo()}
         />
       </Show>
-    </>
+    </MagicSuspense>
   );
 };

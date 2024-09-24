@@ -35,7 +35,7 @@ const routes: RouteDefinition[] = [
       },
       {
         path: "/data",
-        component: DataExplorerTabs,
+        // component: DataExplorerTabs, // Add back when rag table page is implemented
         children: [
           {
             path: "/searches",

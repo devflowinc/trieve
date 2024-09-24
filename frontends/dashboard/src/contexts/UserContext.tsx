@@ -7,13 +7,12 @@ import {
   createEffect,
   createResource,
   createSignal,
-  useContext,
 } from "solid-js";
 import { createToast } from "../components/ShowToasts";
 import { redirect, useSearchParams } from "@solidjs/router";
-import { ApiContext } from "..";
 import { DatasetAndUsage, SlimUser } from "trieve-ts-sdk";
 import { OrgSelectPage } from "../pages/OrgSelect";
+import { useTrieve } from "../hooks/useTrieve";
 
 export interface UserStoreContextProps {
   children?: JSX.Element;
@@ -52,7 +51,7 @@ export const UserContext = createContext<UserStore>({
 export const UserContextWrapper = (props: UserStoreContextProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
 
-  const trieve = useContext(ApiContext);
+  const trieve = useTrieve();
   const [searchParams] = useSearchParams();
 
   const [user, setUser] = createSignal<SlimUser | null>(null);

@@ -8,7 +8,7 @@ interface Props {
 // Needs to ensure dataset and org don't desync
 export const DatasetLayout = (props: Props) => {
   return (
-    <div class="grid max-h-full grow grid-cols-[300px_calc(100vw-316px)] overflow-hidden">
+    <div class="grid max-h-full grow grid-cols-[300px_calc(100vw-300px)] overflow-hidden">
       <DashboardSidebar />
       <div class="p-4">{props.children}</div>
     </div>

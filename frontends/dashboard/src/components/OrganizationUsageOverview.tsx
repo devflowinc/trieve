@@ -3,12 +3,12 @@ import { ProgressBar } from "./ProgressBar";
 import { formatNumberWithCommas, formatStorage } from "../utils/formatNumbers";
 import { createQuery } from "@tanstack/solid-query";
 import { UserContext } from "../contexts/UserContext";
-import { ApiContext } from "..";
 import { OrganizationAndSubAndPlan } from "shared/types";
+import { useTrieve } from "../hooks/useTrieve";
 
 export const OrganizationUsageOverview = () => {
   const userContext = useContext(UserContext);
-  const trieve = useContext(ApiContext);
+  const trieve = useTrieve();
 
   const usageQuery = createQuery(() => ({
     queryKey: ["org-usage", userContext.selectedOrg().id],

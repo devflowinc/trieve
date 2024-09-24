@@ -28,6 +28,7 @@ pre.shiki {
   background-size: 200% 50px;
   animation: preloadAnimation 2s infinite;
   border-collapse: collapse;
+  border-radius: 8px;
   width: 100%
 }
 

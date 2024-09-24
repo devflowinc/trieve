@@ -8,9 +8,11 @@ import { Card } from "./Card";
 import { useBetterNav } from "../../utils/useBetterNav";
 import { useLowConfidenceQueries } from "../../hooks/data/useLowConfidenceQueries";
 import { createSolidTable, getCoreRowModel } from "@tanstack/solid-table";
+import { MagicSuspense } from "../../../components/MagicBox";
 
 interface LowConfidenceQueriesProps {
   params: AnalyticsParams;
+  width?: number;
 }
 
 const columns: SortableColumnDef<SearchQueryEvent>[] = [
@@ -68,45 +70,50 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
         />
       }
       class="px-4"
-      width={5}
+      width={props.width || 2}
     >
-      <Show
-        fallback={<div class="py-8">Loading...</div>}
-        when={lowConfidenceQueriesQuery.data}
-      >
-        <Show when={current()}>
-          {(data) => (
-            <FullScreenModal
-              title={data().query}
-              show={open}
-              setShow={setOpen}
-              icon={
-                <button
-                  type="button"
-                  class="hover:text-fuchsia-500"
-                  onClick={() => {
-                    navigate("/query/" + data().id);
-                  }}
-                >
-                  <IoOpenOutline />
-                </button>
-              }
-            >
-              <SearchQueryEventModal searchEvent={data()} />
-            </FullScreenModal>
-          )}
+      <MagicSuspense unstyled skeletonKey="lowconfidencequeries">
+        <Show
+          fallback={<div class="py-8 text-center">No Data.</div>}
+          when={
+            lowConfidenceQueriesQuery.data &&
+            lowConfidenceQueriesQuery.data.length
+          }
+        >
+          <Show when={current()}>
+            {(data) => (
+              <FullScreenModal
+                title={data().query}
+                show={open}
+                setShow={setOpen}
+                icon={
+                  <button
+                    type="button"
+                    class="hover:text-fuchsia-500"
+                    onClick={() => {
+                      navigate("/query/" + data().id);
+                    }}
+                  >
+                    <IoOpenOutline />
+                  </button>
+                }
+              >
+                <SearchQueryEventModal searchEvent={data()} />
+              </FullScreenModal>
+            )}
+          </Show>
+          <TanStackTable
+            small
+            pages={pages}
+            perPage={10}
+            table={table}
+            onRowClick={(row) => {
+              setCurrent(row as any);
+              setOpen(true);
+            }}
+          />
         </Show>
-        <TanStackTable
-          small
-          pages={pages}
-          perPage={10}
-          table={table}
-          onRowClick={(row) => {
-            setCurrent(row as any);
-            setOpen(true);
-          }}
-        />
-      </Show>
+      </MagicSuspense>
     </Card>
   );
 };
