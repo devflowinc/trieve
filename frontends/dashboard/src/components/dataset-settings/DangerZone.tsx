@@ -21,7 +21,7 @@ export const DangerZoneForm = () => {
   const dataset_id = datasetContext.dataset()?.dataset.id;
   const organization_id = userContext.selectedOrg().id;
 
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const deleteDataset = () => {
     if (!dataset_id) return;
@@ -33,7 +33,7 @@ export const DangerZoneForm = () => {
     if (!confirmBox) return;
 
     setDeleting(true);
-    fetch(`${api_host}/dataset/${dataset_id}`, {
+    fetch(`${apiHost}/dataset/${dataset_id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export const DangerZoneForm = () => {
     const confirmBox = confirm("This action is not reversible. Proceed?");
     if (!confirmBox) return;
 
-    fetch(`${api_host}/dataset/clear/${dataset_id}`, {
+    fetch(`${apiHost}/dataset/clear/${dataset_id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

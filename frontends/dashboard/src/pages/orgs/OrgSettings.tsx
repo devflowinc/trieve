@@ -3,7 +3,7 @@ import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../../components/ShowToasts";
 
 const OrgSettingsForm = () => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const userContext = useContext(UserContext);
 
@@ -13,7 +13,7 @@ const OrgSettingsForm = () => {
 
   const updateOrganization = () => {
     const newOrgName = organizationName();
-    void fetch(`${api_host}/organization`, {
+    void fetch(`${apiHost}/organization`, {
       credentials: "include",
       method: "PUT",
       headers: {

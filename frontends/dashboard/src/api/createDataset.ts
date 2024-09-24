@@ -1,7 +1,7 @@
 import { Dataset, DefaultError } from "shared/types";
 import { CrawlOptions, DatasetConfigurationDTO } from "trieve-ts-sdk";
 
-const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
 export const createNewDataset = async ({
   name,
@@ -14,7 +14,7 @@ export const createNewDataset = async ({
   serverConfig: DatasetConfigurationDTO;
   crawlOptions?: CrawlOptions;
 }) => {
-  const response = await fetch(`${api_host}/dataset`, {
+  const response = await fetch(`${apiHost}/dataset`, {
     method: "POST",
     credentials: "include",
     headers: {

@@ -68,11 +68,11 @@ export const DatasetOverview = () => {
 
   const refetchChunks = async (datasetId: string) => {
     try {
-      const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+      const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
       const currentUsage = usage();
       const prevCount = currentUsage[datasetId]?.chunk_count || 0;
 
-      const response = await fetch(`${api_host}/dataset/usage/${datasetId}`, {
+      const response = await fetch(`${apiHost}/dataset/usage/${datasetId}`, {
         method: "GET",
         headers: {
           "TR-Dataset": datasetId,
@@ -189,13 +189,13 @@ export const DatasetOverview = () => {
       return;
     }
 
-    const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+    const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
     const newUsage: Record<string, { chunk_count: number }> = {};
     const abortController = new AbortController();
 
     const fetchUsage = (datasetId: string) => {
       return new Promise((resolve, reject) => {
-        fetch(`${api_host}/dataset/usage/${datasetId}`, {
+        fetch(`${apiHost}/dataset/usage/${datasetId}`, {
           method: "GET",
           headers: {
             "TR-Dataset": datasetId,

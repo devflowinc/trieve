@@ -148,7 +148,7 @@ const routes: RouteDefinition[] = [
 const apiHost = import.meta.env.VITE_API_HOST as string;
 
 const trieve = new TrieveFetchClient({
-  baseUrl: apiHost.replace("/api", ""),
+  baseUrl: apiHost.replace(/\/api$/, ""),
   debug: true,
 });
 

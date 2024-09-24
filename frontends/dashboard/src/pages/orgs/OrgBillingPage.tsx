@@ -7,7 +7,7 @@ import { InvoicesTable } from "../../components/InvoicesTable";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
 
 export const OrgBillingPage = () => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const userContext = useContext(UserContext);
   const [orgSubPlan, setOrgSubPlan] =
@@ -15,7 +15,7 @@ export const OrgBillingPage = () => {
 
   createEffect(() => {
     const orgSubPlanAbortController = new AbortController();
-    void fetch(`${api_host}/organization/${userContext.selectedOrg().id}`, {
+    void fetch(`${apiHost}/organization/${userContext.selectedOrg().id}`, {
       credentials: "include",
       headers: {
         "TR-Organization": userContext.selectedOrg().id,
