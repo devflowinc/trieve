@@ -6,31 +6,37 @@ import { useModalState } from "./modal-context";
 
 export const useSuggestedQueries = () => {
   const { props, query } = useModalState();
-  // const [isLoading, setIsLoading] = useState(false);
-  const isLoading = useRef(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const isFetching = useRef(false);
   const [suggestedQueries, setSuggestedQueries] = useState<
     SuggestedQueriesResponse["queries"]
   >([]);
 
   const getQueries = throttle(async () => {
-    isLoading.current = true;
+    isFetching.current = true;
+    setIsLoading(true);
     const queries = await getSuggestedQueries({
       trieve: props.trieve,
       query,
     });
-    setSuggestedQueries(queries.queries.splice(0, 2));
-    isLoading.current = false;
+    setSuggestedQueries(queries.queries.splice(0, 3));
+    isFetching.current = false;
+    setIsFirstLoad(false);
+    setIsLoading(false);
   }, 1000);
 
-  const refetchSuggestedQueries = getQueries;
+  const refetchSuggestedQueries = () => {
+    getQueries();
+  };
 
   useEffect(() => {
-    if (props.suggestedQueries && !isLoading.current) {
+    if (props.suggestedQueries && !isFetching.current) {
       if (query) {
         getQueries();
       } else {
         if (props.defaultQueries?.length) {
-          setSuggestedQueries(props.defaultQueries.splice(0, 2));
+          setSuggestedQueries(props.defaultQueries.splice(0, 3));
         } else {
           getQueries();
         }
@@ -39,8 +45,9 @@ export const useSuggestedQueries = () => {
   }, [query]);
 
   return {
-    isFetchingSuggestedQueries: isLoading,
+    isFirstLoad,
     suggestedQueries,
     refetchSuggestedQueries,
+    isLoadingSuggestedQueries: isLoading,
   };
 };

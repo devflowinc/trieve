@@ -103,7 +103,7 @@ export const ChatMode = () => {
   return (
     <>
       <div className="input-wrapper chat">
-        <button onClick={() => setMode("search")}>
+        <button onClick={() => setMode("search")} className="back-icon">
           <BackIcon />
         </button>
         <form
