@@ -30,7 +30,7 @@ import { TbReload } from "solid-icons/tb";
 import { createToast } from "../components/ShowToasts";
 import { OnboardingSteps } from "./OnboardingSteps";
 import { createQuery } from "@tanstack/solid-query";
-import { ApiContext } from "..";
+import { useTrieve } from "../hooks/useTrieve";
 
 const colHelp = createColumnHelper<DatasetAndUsage>();
 
@@ -38,7 +38,7 @@ export const DatasetOverview = () => {
   const userContext = useContext(UserContext) as {
     selectedOrg: () => { id: string };
   };
-  const trieve = useContext(ApiContext);
+  const trieve = useTrieve();
   const navigate = useNavigate();
 
   const [newDatasetModalOpen, setNewDatasetModalOpen] =

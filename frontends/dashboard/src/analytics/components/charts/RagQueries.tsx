@@ -211,49 +211,50 @@ export const RagQueries = (props: RagQueriesProps) => {
       }
     >
       <Show
-        fallback={<div class="py-8 text-center">Loading...</div>}
+        fallback={<div class="py-8 text-center">No Data.</div>}
         when={ragQueriesQuery.data}
       >
-        {(data) => {
-          return (
-            <>
-              <FullScreenModal
-                show={openRagResults}
-                setShow={setOpenRagResults}
-                title={`Results found for "${data()[current()].user_message}"`}
-              >
-                <JSONMetadata
-                  monospace
-                  copyJSONButton
-                  class="text-sm"
-                  data={data()[current()].results}
-                />
-              </FullScreenModal>
-              <TanStackTable
-                pages={pages}
-                perPage={10}
-                total={usage?.data?.total_queries}
-                table={table()}
+        {(data) => (
+          <Show
+            fallback={<div class="py-8 text-center">No Data.</div>}
+            when={data.length > 0}
+          >
+            <FullScreenModal
+              show={openRagResults}
+              setShow={setOpenRagResults}
+              title={`Results found for "${data()[current()].user_message}"`}
+            >
+              <JSONMetadata
+                monospace
+                copyJSONButton
+                class="text-sm"
+                data={data()[current()].results}
               />
+            </FullScreenModal>
+            <TanStackTable
+              pages={pages}
+              perPage={10}
+              total={usage?.data?.total_queries}
+              table={table()}
+            />
 
-              <FullScreenModal
-                show={openLLMCompletion}
-                setShow={setOpenLLMCompletion}
-                title="LLM Completion"
-              >
-                <p>{data()[current()].llm_response}</p>
-              </FullScreenModal>
+            <FullScreenModal
+              show={openLLMCompletion}
+              setShow={setOpenLLMCompletion}
+              title="LLM Completion"
+            >
+              <p>{data()[current()].llm_response}</p>
+            </FullScreenModal>
 
-              <FullScreenModal
-                show={openUserMessage}
-                setShow={setOpenUserMessage}
-                title="Query"
-              >
-                <p>{data()[current()].user_message}</p>
-              </FullScreenModal>
-            </>
-          );
-        }}
+            <FullScreenModal
+              show={openUserMessage}
+              setShow={setOpenUserMessage}
+              title="Query"
+            >
+              <p>{data()[current()].user_message}</p>
+            </FullScreenModal>
+          </Show>
+        )}
       </Show>
     </Card>
   );

@@ -1,15 +1,15 @@
 import { createQuery, CreateQueryResult } from "@tanstack/solid-query";
 import { FaSolidCheck } from "solid-icons/fa";
-import { createMemo, Show, useContext } from "solid-js";
+import { createMemo, Show } from "solid-js";
 import { OrganizationUsageCount } from "trieve-ts-sdk";
-import { ApiContext } from "..";
+import { useTrieve } from "../hooks/useTrieve";
 
 export interface OnboardingStepsProps {
   usageQuery: CreateQueryResult<OrganizationUsageCount, Error>;
 }
 
 export const OnboardingSteps = (props: OnboardingStepsProps) => {
-  const trieve = useContext(ApiContext);
+  const trieve = useTrieve();
   const searchAnalyticsQuery = createQuery(() => ({
     queryKey: ["top-datasets", props.usageQuery.data?.org_id],
     queryFn: async () => {

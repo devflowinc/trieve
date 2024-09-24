@@ -2,12 +2,11 @@
 import "./index.css";
 import { render } from "solid-js/web";
 import * as Sentry from "@sentry/browser";
-import { createContext, DEV, Show } from "solid-js";
+import { DEV, Show } from "solid-js";
 import { Router, RouteDefinition } from "@solidjs/router";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 import { UserContextWrapper } from "./contexts/UserContext.tsx";
-import { TrieveFetchClient } from "trieve-ts-sdk";
 import { NavbarLayout } from "./layouts/NavbarLayout.tsx";
 import { DatasetHomepage } from "./pages/dataset/DatasetHomepage.tsx";
 import { DatasetLayout } from "./layouts/DatasetSidebarLayout.tsx";
@@ -33,6 +32,7 @@ import { SingleQueryPage } from "./analytics/pages/SingleQueryPage.tsx";
 import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
 import { SearchTablePage } from "./analytics/pages/tablePages/SearchTablePage.tsx";
 import { RAGTablePage } from "./analytics/pages/tablePages/RAGTablePage.tsx";
+import { ApiContext, trieve } from "./api/trieve.ts";
 
 if (!DEV) {
   Sentry.init({
@@ -166,7 +166,7 @@ const routes: RouteDefinition[] = [
                   },
                   {
                     path: "/data",
-                    component: DataExplorerTabs,
+                    // component: DataExplorerTabs, // Add back when rag table page is implemented
                     children: [
                       {
                         path: "/searches",
@@ -196,15 +196,6 @@ const routes: RouteDefinition[] = [
     component: HomeRedirect,
   },
 ];
-
-const apiHost = import.meta.env.VITE_API_HOST as string;
-
-const trieve = new TrieveFetchClient({
-  baseUrl: apiHost.replace(/\/api$/, ""),
-  debug: true,
-});
-
-export const ApiContext = createContext<TrieveFetchClient>(trieve);
 
 render(
   () => (

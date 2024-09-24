@@ -44,7 +44,7 @@ export const RagAnalyticsPage = () => {
 
   return (
     <>
-      <div class="flex justify-between border-neutral-400 px-3 py-2">
+      <div class="flex justify-between border-neutral-400">
         <div>
           <Select
             class="min-w-[200px] !bg-white"
@@ -66,7 +66,7 @@ export const RagAnalyticsPage = () => {
           />
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4 p-2 pt-3">
+      <div class="grid grid-cols-2 gap-4 pt-3">
         <RAGUsageGraph
           params={{
             filter,

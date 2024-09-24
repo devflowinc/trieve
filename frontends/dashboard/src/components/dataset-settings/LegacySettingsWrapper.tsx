@@ -11,7 +11,7 @@ import {
   Show,
   useContext,
 } from "solid-js";
-import { ApiContext } from "../..";
+import { ApiContext } from "../../api/trieve";
 
 export type DatasetConfig = DatasetConfigurationDTO & {
   LLM_API_KEY?: string | null;

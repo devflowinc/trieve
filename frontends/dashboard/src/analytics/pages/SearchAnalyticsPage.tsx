@@ -23,12 +23,16 @@ export const SearchAnalyticsPage = () => {
 
   return (
     <>
-      <FilterBar filters={analyticsFilters} setFilters={setAnalyticsFilters} />
-      <div class="grid grid-cols-10 items-start gap-2 p-2 pt-3">
-        <Card title="Search Usage" width={5}>
+      <FilterBar
+        noPadding
+        filters={analyticsFilters}
+        setFilters={setAnalyticsFilters}
+      />
+      <div class="grid grid-cols-2 gap-2 pt-3">
+        <Card title="Search Usage" width={1}>
           <SearchUsageGraph params={analyticsFilters} />
         </Card>
-        <Card title="Search Latency" width={5}>
+        <Card title="Search Latency" width={1}>
           <LatencyGraph params={analyticsFilters} />
         </Card>
 
@@ -36,18 +40,18 @@ export const SearchAnalyticsPage = () => {
           subtitle="The most popular searches"
           title="Head Queries"
           class="px-4"
-          width={5}
+          width={1}
         >
           <HeadQueries params={analyticsFilters} />
         </Card>
 
-        <LowConfidenceQueries params={analyticsFilters} />
+        <LowConfidenceQueries width={1} params={analyticsFilters} />
 
         <Card
           class="flex flex-col justify-between px-4"
           title="No Result Queries"
           subtitle="Searches with no results"
-          width={12}
+          width={2}
         >
           <NoResultQueries params={analyticsFilters} />
         </Card>

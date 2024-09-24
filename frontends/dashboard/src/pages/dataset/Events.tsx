@@ -9,8 +9,8 @@ import { FiInfo } from "solid-icons/fi";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { MultiSelect } from "../../components/MultiSelect";
 import { createQuery } from "@tanstack/solid-query";
-import { ApiContext } from "../..";
 import { EventTypeRequest } from "trieve-ts-sdk";
+import { ApiContext } from "../../api/trieve";
 
 export const DatasetEvents = () => {
   const { datasetId } = useContext(DatasetContext);

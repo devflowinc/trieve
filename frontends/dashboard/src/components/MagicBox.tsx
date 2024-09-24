@@ -121,6 +121,9 @@ export const MagicSuspense = (props: MagicSuspenseProps) => {
   });
 
   onMount(() => {
+    setTimeout(() => {
+      setIsLoaded(true); // There are some cases where the mutation observer doesn't trigger if the data has not changed and is available on render
+    }, 1000);
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.type === "childList") {

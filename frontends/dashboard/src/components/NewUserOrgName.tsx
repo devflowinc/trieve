@@ -2,10 +2,10 @@ import { createEffect, createSignal, Show, useContext } from "solid-js";
 import { UserContext } from "../contexts/UserContext";
 import { A, useNavigate } from "@solidjs/router";
 import { FullScreenModal } from "shared/ui";
-import { ApiContext } from "..";
+import { useTrieve } from "../hooks/useTrieve";
 
 export const NewUserOrgName = () => {
-  const trieve = useContext(ApiContext);
+  const trieve = useTrieve();
   const orgContext = useContext(UserContext);
 
   const [orgNameInput, setOrgNameInput] = createSignal("");
