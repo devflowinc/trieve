@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AnalyticsParams, SearchQueryEvent } from "shared/types";
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, useContext } from "solid-js";
 import { FullScreenModal, SortableColumnDef, TanStackTable } from "shared/ui";
 import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { IoOpenOutline } from "solid-icons/io";
@@ -9,6 +9,7 @@ import { useBetterNav } from "../../utils/useBetterNav";
 import { useLowConfidenceQueries } from "../../hooks/data/useLowConfidenceQueries";
 import { createSolidTable, getCoreRowModel } from "@tanstack/solid-table";
 import { MagicSuspense } from "../../../components/MagicBox";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 interface LowConfidenceQueriesProps {
   params: AnalyticsParams;
@@ -31,6 +32,7 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
 ];
 
 export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
+  const datasetContext = useContext(DatasetContext);
   const [thresholdText, setThresholdText] = createSignal("");
   const [open, setOpen] = createSignal(false);
   const [current, setCurrent] = createSignal<SearchQueryEvent | null>(null);
@@ -91,7 +93,10 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
                     type="button"
                     class="hover:text-fuchsia-500"
                     onClick={() => {
-                      navigate("/query/" + data().id);
+                      navigate(
+                        `/dataset/${datasetContext.datasetId()}/analytics/query/` +
+                          data().id,
+                      );
                     }}
                   >
                     <IoOpenOutline />

@@ -123,7 +123,7 @@ export const SearchQueryEventModal = (props: SearchQueryEventModalProps) => {
         value={parseCustomDateString(
           props.searchEvent.created_at,
         ).toLocaleString()}
-        label="Results Obtained"
+        label="Searched At"
       />
       <SmallCol
         value={props.searchEvent.results.length}
