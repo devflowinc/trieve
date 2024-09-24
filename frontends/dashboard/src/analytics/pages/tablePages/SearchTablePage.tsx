@@ -118,23 +118,21 @@ export const SearchTablePage = () => {
           <Card>
             <FilterBar noPadding filters={filters} setFilters={setFilters} />
             <div class="mt-4">
-              <MagicSuspense skeletonKey="allsearchestable" unstyled>
-                <TanStackTable
-                  pages={pages}
-                  perPage={10}
-                  table={table as unknown as Table<SearchQueryEvent>}
-                  onRowClick={(row: SearchQueryEvent) =>
-                    navigate(
-                      `/dataset/${datasetContext.datasetId()}/analytics/query/${
-                        row.id
-                      }`,
-                    )
-                  }
-                />
-                <Show when={searchTableQuery.data?.length === 0}>
-                  <div class="py-8 text-center">No Data.</div>
-                </Show>
-              </MagicSuspense>
+              <TanStackTable
+                pages={pages}
+                perPage={10}
+                table={table as unknown as Table<SearchQueryEvent>}
+                onRowClick={(row: SearchQueryEvent) =>
+                  navigate(
+                    `/dataset/${datasetContext.datasetId()}/analytics/query/${
+                      row.id
+                    }`,
+                  )
+                }
+              />
+              <Show when={searchTableQuery.data?.length === 0}>
+                <div class="py-8 text-center">No Data.</div>
+              </Show>
             </div>
           </Card>
         </Show>
