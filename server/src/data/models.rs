@@ -5978,10 +5978,10 @@ impl From<CrawlRequest> for CrawlRequestPG {
 #[schema(example=json!({
     "site_url": "https://example.com",
     "interval": "daily",
-    "limit": 20,
+    "limit": 1000,
     "exclude_paths": ["https://example.com/exclude"],
     "include_paths": ["https://example.com/include"],
-    "max_depth": 2,
+    "max_depth": 10,
     "include_tags": ["h1", "p", "a", ".main-content"],
     "exclude_tags": ["#ad", "#footer"],
 }))]
@@ -6002,6 +6002,8 @@ pub struct CrawlOptions {
     pub include_tags: Option<Vec<String>>,
     /// Specify the HTML tags, classes and ids to exclude from the response.
     pub exclude_tags: Option<Vec<String>>,
+    /// Boost titles such that keyword matches in titles are prioritized in search results. Strongly recommended to leave this on. Defaults to true.
+    pub boost_titles: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]

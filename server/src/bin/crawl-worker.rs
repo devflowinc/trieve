@@ -167,14 +167,22 @@ async fn crawl(
                 ))),
                 upsert_by_tracking_id: Some(true),
                 group_tracking_ids: Some(vec![page_link.clone()]),
-                fulltext_boost: Some(FullTextBoost {
-                    phrase: fulltext_boost_phrase,
-                    boost_factor: 1.3,
-                }),
-                semantic_boost: Some(SemanticBoost {
-                    phrase: semantic_boost_phrase,
-                    distance_factor: 0.3,
-                }),
+                fulltext_boost: if scrape_request.crawl_options.boost_titles.unwrap_or(true) {
+                    Some(FullTextBoost {
+                        phrase: fulltext_boost_phrase,
+                        boost_factor: 1.3,
+                    })
+                } else {
+                    None
+                },
+                semantic_boost: if scrape_request.crawl_options.boost_titles.unwrap_or(true) {
+                    Some(SemanticBoost {
+                        phrase: semantic_boost_phrase,
+                        distance_factor: 0.3,
+                    })
+                } else {
+                    None
+                },
                 convert_html_to_text: Some(true),
                 ..Default::default()
             };
