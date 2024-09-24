@@ -24,6 +24,7 @@ import { LegacySettingsWrapper } from "./components/dataset-settings/LegacySetti
 import { GeneralServerSettings } from "./components/dataset-settings/GeneralSettings.tsx";
 import { LLMSettings } from "./components/dataset-settings/LLMSettings.tsx";
 import { DangerZoneForm } from "./components/dataset-settings/DangerZone.tsx";
+import { Chart, registerables } from "chart.js";
 
 if (!DEV) {
   Sentry.init({
@@ -41,6 +42,8 @@ if (!DEV) {
     replaysOnErrorSampleRate: 1.0,
   });
 }
+
+Chart.register(...registerables);
 
 const root = document.getElementById("root");
 
