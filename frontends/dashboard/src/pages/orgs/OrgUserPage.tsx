@@ -116,7 +116,7 @@ export const OrgUserPage = () => {
       id: "actions",
       cell(props) {
         return (
-          <>
+          <div class="flex items-center gap-2">
             <button
               onClick={() => {
                 setEditingUser(props.row.original);
@@ -146,7 +146,7 @@ export const OrgUserPage = () => {
             >
               <FaRegularTrashCan />
             </button>
-          </>
+          </div>
         );
       },
     }),
