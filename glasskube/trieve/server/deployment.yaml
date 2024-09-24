@@ -9,7 +9,8 @@ spec:
         - name: server
           resources:
             requests:
-              cpu: "1"
+              cpu: 50m
+              memory: 100Mi
           image: trieve/server
           ports:
             - containerPort: 8090
@@ -27,3 +28,4 @@ spec:
           envFrom:
             - configMapRef:
                 name: trieve-server-config
+  selector: {}

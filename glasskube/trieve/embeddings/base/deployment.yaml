@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: trieve-embedding
 spec:
+  replicas: 1
   selector: {}
   template:
     spec:
@@ -15,3 +16,4 @@ spec:
           image: ghcr.io/huggingface/text-embeddings-inference
           ports:
             - containerPort: 80
+
