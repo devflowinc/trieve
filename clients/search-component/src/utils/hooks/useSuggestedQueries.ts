@@ -6,7 +6,6 @@ import { useModalState } from "./modal-context";
 
 export const useSuggestedQueries = () => {
   const { props, query } = useModalState();
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const isFetching = useRef(false);
   const [suggestedQueries, setSuggestedQueries] = useState<
@@ -22,7 +21,6 @@ export const useSuggestedQueries = () => {
     });
     setSuggestedQueries(queries.queries.splice(0, 3));
     isFetching.current = false;
-    setIsFirstLoad(false);
     setIsLoading(false);
   }, 1000);
 
@@ -45,7 +43,6 @@ export const useSuggestedQueries = () => {
   }, [query]);
 
   return {
-    isFirstLoad,
     suggestedQueries,
     refetchSuggestedQueries,
     isLoadingSuggestedQueries: isLoading,

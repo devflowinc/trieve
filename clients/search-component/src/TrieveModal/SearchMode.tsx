@@ -9,7 +9,6 @@ export const SearchMode = () => {
     useModalState();
   const {
     suggestedQueries,
-    isFirstLoad,
     refetchSuggestedQueries,
     isLoadingSuggestedQueries,
   } = useSuggestedQueries();
@@ -46,38 +45,33 @@ export const SearchMode = () => {
         </div>
         {props.suggestedQueries && (!query || (query && !results.length)) && (
           <div className="suggested-queries-wrapper">
-            {isFirstLoad ? (
-              <button disabled className="suggested-query">
-                Loading random query suggestions...
+            <>
+              <button
+                onClick={refetchSuggestedQueries}
+                disabled={isLoadingSuggestedQueries}
+                className="suggested-query"
+                title="Refresh suggested queries"
+              >
+                <ReloadIcon width="14" height="14" />
               </button>
-            ) : isLoadingSuggestedQueries ? (
-              <>
-                <p>Suggested Queries: </p>
-                {Array.from(Array(4).keys()).map((k) => (
-                  <button key={k} disabled className="suggested-query" />
-                ))}
-              </>
-            ) : (
-              <>
-                <p>Suggested Queries: </p>
-                {suggestedQueries.map((q) => (
-                  <button
-                    onClick={() => setQuery(q)}
-                    key={q}
-                    className="suggested-query"
-                  >
-                    {q}
-                  </button>
-                ))}
+              <p>Suggested Queries: </p>
+              {!suggestedQueries.length && (
+                <p className="suggested-query empty-state-loading">
+                  Loading random query suggestions...
+                </p>
+              )}
+              {suggestedQueries.map((q) => (
                 <button
-                  onClick={refetchSuggestedQueries}
-                  className="suggested-query"
-                  title="Refresh suggested queries"
+                  onClick={() => setQuery(q)}
+                  key={q}
+                  className={`suggested-query${
+                    isLoadingSuggestedQueries ? " loading" : ""
+                  }`}
                 >
-                  <ReloadIcon width="14" height="14" />
+                  {q}
                 </button>
-              </>
-            )}
+              ))}
+            </>
           </div>
         )}
       </div>

@@ -126,10 +126,26 @@ body {
       }
 
       .suggested-query {
-        @apply inline-flex items-center rounded-md bg-magenta-100 px-2 py-1 text-xs font-medium text-magenta-800 text-left;
+        @apply inline-flex items-center rounded-md px-2 py-1 text-xs text-zinc-900 text-left;
 
-        &:disabled {
-          @apply px-8 animate-pulse min-w-8 h-6;
+        &:not(p) {
+          @apply bg-zinc-100 border-zinc-300 border;
+        }
+
+        &:not(:disabled):not(p):hover {
+          @apply bg-zinc-200;
+        }
+
+        &:not(p):disabled {
+          @apply bg-zinc-50 text-zinc-400 border-zinc-200 cursor-not-allowed;
+        }
+
+        &.loading {
+          @apply animate-pulse;
+        }
+
+        &.empty-state-loading {
+          @apply animate-pulse;
         }
       }
 
@@ -268,10 +284,20 @@ body {
 
         .suggested-queries-wrapper {
           .suggested-query {
-            @apply bg-magenta-900 text-magenta-100;
+            &:not(p) {
+              @apply bg-zinc-900 border-zinc-700 text-zinc-300;
+            }
+
+            &:not(:disabled):not(p):hover {
+              @apply bg-zinc-800;
+            }
+
+            &:not(p):disabled {
+              @apply bg-zinc-900 text-zinc-400 border-zinc-700 cursor-not-allowed;
+            }
           }
           > p {
-            @apply text-xs text-zinc-400;
+            @apply text-xs text-zinc-300;
           }
         }
 
