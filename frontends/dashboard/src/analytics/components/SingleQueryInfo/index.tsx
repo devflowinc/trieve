@@ -24,19 +24,12 @@ export const SingleQuery = (props: SingleQueryProps) => {
     },
   }));
 
-  const utils = useQueryClient();
-
-  const selectedOrg = useContext(UserContext);
-
   const DataDisplay = (props: { data: NonNullable<typeof query.data> }) => {
     const datasetName = createMemo(() => {
-      const datasets = utils.getQueryData<DatasetAndUsage[]>([
-        "datasets",
-        selectedOrg.selectedOrg().id, // Will hide if user switches orgs, should be rare
-      ]);
-
-      return datasets?.find((d) => d.dataset.id === props.data.dataset_id)
-        ?.dataset.name;
+      const userContext = useContext(UserContext);
+      return userContext
+        .orgDatasets()
+        ?.find((d) => d.dataset.id === props.data.dataset_id)?.dataset.name;
     });
 
     return (
@@ -70,7 +63,10 @@ export const SingleQuery = (props: SingleQueryProps) => {
         </div>
         <Card title="Results">
           <div class="grid gap-4 sm:grid-cols-2">
-            <For each={props.data.results}>
+            <For
+              fallback={<div class="py-8 text-center">No Data.</div>}
+              each={props.data.results}
+            >
               {(result) => <ResultCard result={result} />}
             </For>
           </div>

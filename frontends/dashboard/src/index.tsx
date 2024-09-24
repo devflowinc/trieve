@@ -29,7 +29,6 @@ import { SearchAnalyticsPage } from "./analytics/pages/SearchAnalyticsPage.tsx";
 import { RagAnalyticsPage } from "./analytics/pages/RagAnalyticsPage.tsx";
 import { TrendExplorer } from "./analytics/pages/TrendExplorer.tsx";
 import { SingleQueryPage } from "./analytics/pages/SingleQueryPage.tsx";
-import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
 import { SearchTablePage } from "./analytics/pages/tablePages/SearchTablePage.tsx";
 import { RAGTablePage } from "./analytics/pages/tablePages/RAGTablePage.tsx";
 import { ApiContext, trieve } from "./api/trieve.ts";
