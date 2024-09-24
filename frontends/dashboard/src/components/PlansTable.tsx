@@ -35,7 +35,7 @@ export interface PlansTableProps {
 }
 
 export const PlansTable = (props: PlansTableProps) => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [availablePlans, setAvailablePlans] = createSignal<StripePlan[]>([]);
   const [currentPlan, setCurrentPlan] = createSignal<StripePlan | null>(null);
@@ -53,7 +53,7 @@ export const PlansTable = (props: PlansTableProps) => {
 
   createEffect(() => {
     const availablePlansAbortController = new AbortController();
-    void fetch(`${api_host}/stripe/plans`, {
+    void fetch(`${apiHost}/stripe/plans`, {
       credentials: "include",
       headers: {
         "TR-Organization": props.currentOrgSubPlan?.organization.id ?? "",
@@ -98,7 +98,7 @@ export const PlansTable = (props: PlansTableProps) => {
     }
 
     const checkoutSessionAbortController = new AbortController();
-    void fetch(`${api_host}/stripe/checkout/setup/${selectedOrgId}`, {
+    void fetch(`${apiHost}/stripe/checkout/setup/${selectedOrgId}`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -117,7 +117,7 @@ export const PlansTable = (props: PlansTableProps) => {
   const refetchOrgSubPlan = async () => {
     const selectedOrgId = props.currentOrgSubPlan?.organization.id ?? "";
 
-    const resp = await fetch(`${api_host}/organization/${selectedOrgId}`, {
+    const resp = await fetch(`${apiHost}/organization/${selectedOrgId}`, {
       credentials: "include",
       headers: {
         "TR-Organization": selectedOrgId,
@@ -134,7 +134,7 @@ export const PlansTable = (props: PlansTableProps) => {
   const cancelPlan = async () => {
     setCanceling(true);
     await fetch(
-      `${api_host}/stripe/subscription/${
+      `${apiHost}/stripe/subscription/${
         props.currentOrgSubPlan?.subscription?.id ?? ""
       }`,
       {
@@ -157,7 +157,7 @@ export const PlansTable = (props: PlansTableProps) => {
     setProcessingPlanId(plan.id);
 
     const resp = await fetch(
-      `${api_host}/stripe/subscription_plan/${
+      `${apiHost}/stripe/subscription_plan/${
         props.currentOrgSubPlan?.subscription?.id ?? ""
       }/${plan.id}`,
       {
@@ -405,7 +405,7 @@ export const PlansTable = (props: PlansTableProps) => {
                     } else {
                       actionButton = (
                         <a
-                          href={`${api_host}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}`}
+                          href={`${apiHost}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}`}
                           class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
                         >
                           Subscribe

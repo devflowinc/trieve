@@ -14,14 +14,14 @@ import { StripeInvoice } from "trieve-ts-sdk";
 import { UserContext } from "../contexts/UserContext";
 
 export const InvoicesTable = () => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
   const userContext = useContext(UserContext);
 
   const [orgInvoices, setOrgInvoices] = createSignal<StripeInvoice[]>([]);
 
   createEffect(() => {
     const orgInvoiceAbortController = new AbortController();
-    void fetch(`${api_host}/stripe/invoices/${userContext.selectedOrg().id}`, {
+    void fetch(`${apiHost}/stripe/invoices/${userContext.selectedOrg().id}`, {
       credentials: "include",
       headers: {
         "TR-Organization": userContext.selectedOrg().id,

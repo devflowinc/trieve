@@ -40,7 +40,7 @@ export const ApiKeyGenerateModal = (props: {
 
   onCreated: () => void;
 }) => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const userContext = useContext(UserContext);
 
@@ -64,7 +64,7 @@ export const ApiKeyGenerateModal = (props: {
       const datasetsAndUsages: Item[] = [];
       const resolved = await Promise.all(
         selected.map((org) =>
-          fetch(`${api_host}/dataset/organization/${org.id}`, {
+          fetch(`${apiHost}/dataset/organization/${org.id}`, {
             credentials: "include",
             headers: {
               "TR-Organization": org.id,
@@ -91,7 +91,7 @@ export const ApiKeyGenerateModal = (props: {
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
 
-    void fetch(`${api_host}/user/api_key`, {
+    void fetch(`${apiHost}/user/api_key`, {
       credentials: "include",
       method: "POST",
       headers: {

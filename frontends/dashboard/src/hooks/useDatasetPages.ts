@@ -8,7 +8,7 @@ const PAGE_SIZE = 20;
 const getDatasets = async ({ orgId }: { orgId: string }) => {
   let page = 0;
   const results: DatasetAndUsage[] = [];
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
   let canFetchAgain = true;
   while (canFetchAgain) {
     try {
@@ -17,7 +17,7 @@ const getDatasets = async ({ orgId }: { orgId: string }) => {
         offset: (page * FETCHING_SIZE).toString(),
       });
       const response = await fetch(
-        `${api_host}/dataset/organization/${orgId}?${params.toString()}`,
+        `${apiHost}/dataset/organization/${orgId}?${params.toString()}`,
         {
           credentials: "include",
           headers: {

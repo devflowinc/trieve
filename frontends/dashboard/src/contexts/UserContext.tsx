@@ -50,16 +50,16 @@ export const UserContext = createContext<UserStore>({
 });
 
 export const UserContextWrapper = (props: UserStoreContextProps) => {
-  const [searchParams] = useSearchParams();
+  const apiHost = import.meta.env.VITE_API_HOST as string;
+
   const trieve = useContext(ApiContext);
+  const [searchParams] = useSearchParams();
 
   const [user, setUser] = createSignal<SlimUser | null>(null);
   const [isNewUser, setIsNewUser] = createSignal(false);
   const [selectedOrganization, setSelectedOrganization] = createSignal<
     SlimUser["orgs"][0] | null
   >(null);
-
-  const apiHost = import.meta.env.VITE_API_HOST as string;
 
   const logout = () => {
     void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {

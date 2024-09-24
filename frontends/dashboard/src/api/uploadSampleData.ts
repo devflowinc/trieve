@@ -19,7 +19,7 @@ type Data = {
 
 type UploadDataArray = Data[][];
 
-const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
 const sendDataToTrieve = async (
   data: UploadDataArray,
@@ -27,7 +27,7 @@ const sendDataToTrieve = async (
   reportProgress?: (progress: number) => void,
 ) => {
   for (let i = 0; i < data.length; i++) {
-    await fetch(`${api_host}/chunk`, {
+    await fetch(`${apiHost}/chunk`, {
       method: "POST",
       headers: {
         "TR-Dataset": datasetId,
