@@ -1,30 +1,31 @@
 import throttle from "lodash.throttle";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SuggestedQueriesResponse } from "trieve-ts-sdk";
 import { getSuggestedQueries } from "../trieve";
 import { useModalState } from "./modal-context";
 
 export const useSuggestedQueries = () => {
   const { props, query } = useModalState();
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
+  const isLoading = useRef(false);
   const [suggestedQueries, setSuggestedQueries] = useState<
     SuggestedQueriesResponse["queries"]
   >([]);
 
   const getQueries = throttle(async () => {
-    setIsLoading(true);
+    isLoading.current = true;
     const queries = await getSuggestedQueries({
       trieve: props.trieve,
       query,
     });
     setSuggestedQueries(queries.queries.splice(0, 2));
-    setIsLoading(false);
+    isLoading.current = false;
   }, 1000);
 
   const refetchSuggestedQueries = getQueries;
 
   useEffect(() => {
-    if (props.suggestedQueries && !isLoading) {
+    if (props.suggestedQueries && !isLoading.current) {
       if (query) {
         getQueries();
       } else {
