@@ -10,6 +10,12 @@ spec:
       database: trieve
       owner: trieve
   storage:
-    size: 2Gi
+    size: 10Gi
   monitoring:
     enablePodMonitor: true
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 10m
+      memory: 128Mi

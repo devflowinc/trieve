@@ -26,6 +26,8 @@ spec:
             - configMapRef:
                 name: trieve-server-config
           resources:
+            requests:
+              cpu: 50m
             limits:
               cpu: "1"
               memory: 200Mi

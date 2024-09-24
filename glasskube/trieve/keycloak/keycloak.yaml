@@ -4,6 +4,12 @@ metadata:
   name: trieve-keycloak
 spec:
   instances: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 500Mi
+    limits:
+      memory: 2Gi
   db:
     vendor: postgres
     host: trieve-keycloak-db-rw

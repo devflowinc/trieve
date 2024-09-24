@@ -35,6 +35,12 @@ spec:
           containers:
             - name: clickhouse
               image: clickhouse/clickhouse-server:24.8
+              resources:
+                requests:
+                  memory: 500Mi
+                  cpu: 100m
+                limits:
+                  memory: 2Gi
               volumeMounts:
                 - name: trieve-clickhouse-userscripts
                   mountPath: /opt/user_scripts
