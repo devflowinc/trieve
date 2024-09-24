@@ -46,7 +46,7 @@ const getDatasets = async ({ orgId }: { orgId: string }) => {
 };
 
 export const useDatasetPages = (props: {
-  org: string;
+  org: () => { id: string };
   page: Accessor<number>;
   searchQuery: Accessor<string>;
   setPage: (page: number) => void;
@@ -55,7 +55,7 @@ export const useDatasetPages = (props: {
   const [realDatasets, setRealDatasets] = createSignal<DatasetAndUsage[]>([]);
 
   createEffect(() => {
-    const org_id = props.org;
+    const org_id = props.org().id;
 
     if (!org_id) {
       return;
@@ -91,6 +91,7 @@ export const useDatasetPages = (props: {
       props.page() * PAGE_SIZE,
       (props.page() + 1) * PAGE_SIZE,
     );
+
     return sliced;
   });
 

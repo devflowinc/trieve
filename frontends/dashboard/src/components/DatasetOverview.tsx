@@ -51,7 +51,7 @@ export const DatasetOverview = () => {
 
   const { datasets, maxPageDiscovered, maxDatasets, hasLoaded } =
     useDatasetPages({
-      org: userContext.selectedOrg().id,
+      org: userContext.selectedOrg,
       searchQuery: datasetSearchQuery,
       page: page,
       setPage,
