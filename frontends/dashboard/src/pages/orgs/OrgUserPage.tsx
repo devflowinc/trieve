@@ -303,22 +303,22 @@ export const OrgUserPage = () => {
               />
             )}
           </Show>
-          <InviteUserModal
-            isOpen={inviteUserModalOpen}
-            closeModal={() => {
-              setInviteUserModalOpen(false);
-              void invitationQuery.refetch();
-            }}
-          />
-          <EditUserModal
-            editingUser={editingUser()}
-            closeModal={() => {
-              setEditingUser(null);
-              void userQuery.refetch();
-            }}
-          />
         </>
       </Show>
+      <InviteUserModal
+        isOpen={inviteUserModalOpen}
+        closeModal={() => {
+          setInviteUserModalOpen(false);
+          void invitationQuery.refetch();
+        }}
+      />
+      <EditUserModal
+        editingUser={editingUser()}
+        closeModal={() => {
+          setEditingUser(null);
+          void userQuery.refetch();
+        }}
+      />
     </div>
   );
 };
