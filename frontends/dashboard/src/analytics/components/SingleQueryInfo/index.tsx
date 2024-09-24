@@ -1,9 +1,8 @@
-import { createQuery, useQueryClient } from "@tanstack/solid-query";
+import { createQuery } from "@tanstack/solid-query";
 import { getSearchQuery } from "../../api/analytics";
 import { createMemo, For, Show, useContext } from "solid-js";
 import { format } from "date-fns";
 import { parseCustomDateString } from "../../utils/formatDate";
-import { DatasetAndUsage } from "shared/types";
 import { QueryStringDisplay } from "../QueryStringDisplay";
 import { Card } from "../charts/Card";
 import { ResultCard } from "./ResultCard";

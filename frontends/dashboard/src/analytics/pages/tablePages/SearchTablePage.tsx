@@ -19,7 +19,6 @@ import {
 import { Card } from "../../components/charts/Card";
 import { formatSearchMethod } from "../../utils/searchType";
 import { DatasetContext } from "../../../contexts/DatasetContext";
-import { MagicSuspense } from "../../../components/MagicBox";
 
 const columns: SortableColumnDef<SearchQueryEvent>[] = [
   {

@@ -1,6 +1,5 @@
 import { cn } from "shared/utils";
 import { JSX, Show, splitProps } from "solid-js";
-import { MagicSuspense } from "../../../components/MagicBox";
 
 interface CardProps extends JSX.HTMLAttributes<HTMLDivElement> {
   title?: string;

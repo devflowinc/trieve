@@ -11,7 +11,6 @@ import {
   AiOutlineMessage,
   AiOutlineSearch,
   AiOutlineTable,
-  AiOutlineWechat,
 } from "solid-icons/ai";
 import { Spacer } from "./Spacer";
 import { Portal } from "solid-js/web";
@@ -20,11 +19,10 @@ import { NavbarOrganizationSelector } from "../layouts/NavbarOrganizationSelecto
 import { FiExternalLink, FiTrash } from "solid-icons/fi";
 import { UserContext } from "../contexts/UserContext";
 import { IconTypes } from "solid-icons";
-import { IoNewspaperOutline, IoOptionsOutline } from "solid-icons/io";
+import { IoOptionsOutline } from "solid-icons/io";
 import { TbSparkles } from "solid-icons/tb";
 import { createSignal } from "solid-js";
 import NewDatasetModal from "../components/NewDatasetModal";
-import { FaSolidMagnifyingGlass } from "solid-icons/fa";
 import { ImNewspaper } from "solid-icons/im";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
