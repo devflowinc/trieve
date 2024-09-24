@@ -8,7 +8,7 @@ import {
   useSimpleTimeRange,
 } from "../components/SimpleTimeRangeSelector";
 
-export const OverviewPage = () => {
+export const AnalyticsOverviewPage = () => {
   const rpsDate = useSimpleTimeRange();
   const headQueriesDate = useSimpleTimeRange();
   return (

@@ -2,7 +2,7 @@ import "./index.css";
 import { RouteDefinition } from "@solidjs/router";
 import { SearchAnalyticsPage } from "./pages/SearchAnalyticsPage";
 import { TrendExplorer } from "./pages/TrendExplorer";
-import { OverviewPage } from "./pages/OverviewPage";
+import { AnalyticsOverviewPage } from "./pages/AnalyticsOverviewPage";
 import { RagAnalyticsPage } from "./pages/RagAnalyticsPage";
 import { DataExplorerTabs } from "./layouts/DataExplorerTabs";
 import { SearchTablePage } from "./pages/tablePages/SearchTablePage";
@@ -15,7 +15,7 @@ const routes: RouteDefinition[] = [
     children: [
       {
         path: "/",
-        component: OverviewPage,
+        component: AnalyticsOverviewPage,
       },
       {
         path: "/analytics",
