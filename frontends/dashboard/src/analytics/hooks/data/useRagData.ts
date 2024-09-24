@@ -1,10 +1,10 @@
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createSignal, useContext } from "solid-js";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { SortOrder } from "trieve-ts-sdk";
 import { usePagination } from "../usePagination";
 import { getRAGQueries, getRAGUsage } from "../../api/analytics";
 import { RAGAnalyticsFilter, AnalyticsParams } from "shared/types";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 export interface RagQueriesProps {
   filter: RAGAnalyticsFilter;
@@ -18,7 +18,7 @@ export const useRagData = (props: RagQueriesProps) => {
   const pages = usePagination();
 
   createEffect(() => {
-    const datasetId = dataset()?.dataset.id;
+    const datasetId = dataset.datasetId();
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: [
@@ -55,7 +55,7 @@ export const useRagData = (props: RagQueriesProps) => {
     ],
     queryFn: () => {
       return getRAGQueries({
-        datasetId: dataset().dataset.id,
+        datasetId: dataset.datasetId(),
         page: pages.page(),
         sort_order: sortOrder(),
         filter: props.filter,
@@ -65,7 +65,7 @@ export const useRagData = (props: RagQueriesProps) => {
   const usage = createQuery(() => ({
     queryKey: ["rag-usage", { filter: props }],
     queryFn: () => {
-      return getRAGUsage(dataset().dataset.id, props.filter);
+      return getRAGUsage(dataset.datasetId(), props.filter);
     },
   }));
 
