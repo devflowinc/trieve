@@ -111,6 +111,7 @@ export async function autocomplete(
     {
       data: props,
       datasetId: this.datasetId,
+      xApiVersion: "V2",
     },
     signal
   );
