@@ -129,12 +129,12 @@ body {
         @apply inline-flex items-center rounded-md bg-magenta-100 px-2 py-1 text-xs font-medium text-magenta-800 text-left;
 
         &:disabled {
-          @apply px-8;
+          @apply px-8 animate-pulse min-w-8 h-6;
         }
       }
 
       &::after {
-        @apply absolute h-[17px] w-full z-50 block -bottom-[16px] bg-gradient-to-b from-zinc-50 via-zinc-50 to-transparent;
+        @apply absolute h-[17px] w-full z-50 block -bottom-[18px] bg-gradient-to-b from-zinc-50 via-zinc-50 to-transparent;
         content: "";
       }
 
@@ -143,11 +143,13 @@ body {
       }
 
       &.chat {
+        @apply flex-row;
+
         form {
           @apply w-full;
         }
-        .search-icon {
-          @apply top-5 left-1;
+        .back-icon {
+          @apply top-5 left-1 absolute z-20;
         }
       }
     }

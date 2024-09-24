@@ -1,6 +1,6 @@
 import React from "react";
 import { Item } from "./item";
-import { AIIcon, ArrowIcon, LoadingIcon, ReloadIcon } from "./icons";
+import { AIIcon, ArrowIcon, ReloadIcon } from "./icons";
 import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../utils/hooks/modal-context";
 
@@ -9,8 +9,9 @@ export const SearchMode = () => {
     useModalState();
   const {
     suggestedQueries,
-    isFetchingSuggestedQueries,
+    isFirstLoad,
     refetchSuggestedQueries,
+    isLoadingSuggestedQueries,
   } = useSuggestedQueries();
 
   return (
@@ -45,15 +46,20 @@ export const SearchMode = () => {
         </div>
         {props.suggestedQueries && (!query || (query && !results.length)) && (
           <div className="suggested-queries-wrapper">
-            <p>Suggested Queries: </p>
-            {isFetchingSuggestedQueries ? (
-              Array.from(Array(3).keys()).map((k) => (
-                <button key={k} disabled className="suggested-query">
-                  <LoadingIcon width="20" height="16" />
-                </button>
-              ))
+            {isFirstLoad ? (
+              <button disabled className="suggested-query">
+                Loading random query suggestions...
+              </button>
+            ) : isLoadingSuggestedQueries ? (
+              <>
+                <p>Suggested Queries: </p>
+                {Array.from(Array(4).keys()).map((k) => (
+                  <button key={k} disabled className="suggested-query" />
+                ))}
+              </>
             ) : (
               <>
+                <p>Suggested Queries: </p>
                 {suggestedQueries.map((q) => (
                   <button
                     onClick={() => setQuery(q)}
