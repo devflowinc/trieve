@@ -1,5 +1,4 @@
 import { createQuery } from "@tanstack/solid-query";
-import { DatasetContext } from "../layouts/TopBarLayout";
 import { getQueriesForTopic, getTrendsBubbles } from "../api/trends";
 import { createSignal, For, Show, useContext } from "solid-js";
 import { SearchClusterTopics, SearchQueryEvent } from "shared/types";
@@ -7,6 +6,7 @@ import { toTitleCase } from "../utils/titleCase";
 import { FullScreenModal, Table, Tr } from "shared/ui";
 import { parseCustomDateString } from "../utils/formatDate";
 import { QueryStringDisplay } from "../components/QueryStringDisplay";
+import { DatasetContext } from "../../contexts/DatasetContext";
 
 const WIPWarning = () => {
   return (
@@ -32,9 +32,9 @@ export const TrendExplorer = () => {
   const dataset = useContext(DatasetContext);
 
   const trendsQuery = createQuery(() => ({
-    queryKey: ["trends", { dataset: dataset().dataset.id }],
+    queryKey: ["trends", { dataset: dataset.datasetId() }],
     queryFn: async () => {
-      return getTrendsBubbles(dataset().dataset.id);
+      return getTrendsBubbles(dataset.datasetId());
     },
   }));
 
@@ -62,10 +62,7 @@ export const TrendExplorer = () => {
               class="mt-2 w-full"
             >
               {(topic) => (
-                <TopicRow
-                  datasetId={dataset().dataset.id || ""}
-                  topic={topic}
-                />
+                <TopicRow datasetId={dataset.datasetId()} topic={topic} />
               )}
             </Table>
           )}

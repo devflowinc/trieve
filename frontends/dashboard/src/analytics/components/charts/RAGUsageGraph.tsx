@@ -8,7 +8,6 @@ import {
   Show,
   useContext,
 } from "solid-js";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getRAGUsage, getRagUsageGraph } from "../../api/analytics";
 import { Chart } from "chart.js";
 
@@ -22,6 +21,7 @@ interface RAGUsageProps {
 import "chartjs-adapter-date-fns";
 import { Card } from "./Card";
 import { fillDate } from "../../utils/graphDatesFiller";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 export const RAGUsageGraph = (props: RAGUsageProps) => {
   const dataset = useContext(DatasetContext);
@@ -30,13 +30,13 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
   const usageQuery = createQuery(() => ({
     queryKey: [
       "rag-usage-graph",
-      { params: props.params, dataset: dataset().dataset.id },
+      { params: props.params, dataset: dataset.datasetId() },
     ],
     queryFn: async () => {
       return await getRagUsageGraph(
         props.params.filter,
         props.params.granularity,
-        dataset().dataset.id,
+        dataset.datasetId(),
       );
     },
   }));
@@ -44,7 +44,7 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
   const ragTotalQuery = createQuery(() => ({
     queryKey: ["rag-usage", { filter: props.params }],
     queryFn: () => {
-      return getRAGUsage(dataset().dataset.id, props.params.filter);
+      return getRAGUsage(dataset.datasetId(), props.params.filter);
     },
   }));
 

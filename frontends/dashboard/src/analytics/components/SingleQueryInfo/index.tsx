@@ -1,15 +1,15 @@
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { getSearchQuery } from "../../api/analytics";
 import { createMemo, For, Show, useContext } from "solid-js";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { format } from "date-fns";
 import { parseCustomDateString } from "../../utils/formatDate";
-import { OrgContext } from "../../contexts/OrgContext";
 import { DatasetAndUsage } from "shared/types";
 import { QueryStringDisplay } from "../QueryStringDisplay";
 import { Card } from "../charts/Card";
 import { ResultCard } from "./ResultCard";
 import { DataSquare } from "./DataSquare";
+import { DatasetContext } from "../../../contexts/DatasetContext";
+import { UserContext } from "../../../contexts/UserContext";
 
 interface SingleQueryProps {
   queryId: string;
@@ -20,13 +20,13 @@ export const SingleQuery = (props: SingleQueryProps) => {
   const query = createQuery(() => ({
     queryKey: ["single_query", props.queryId],
     queryFn: () => {
-      return getSearchQuery(dataset().dataset.id, props.queryId);
+      return getSearchQuery(dataset.datasetId(), props.queryId);
     },
   }));
 
   const utils = useQueryClient();
 
-  const selectedOrg = useContext(OrgContext);
+  const selectedOrg = useContext(UserContext);
 
   const DataDisplay = (props: { data: NonNullable<typeof query.data> }) => {
     const datasetName = createMemo(() => {

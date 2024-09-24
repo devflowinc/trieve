@@ -1,13 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   SearchClusterResponse,
   SearchClusterTopics,
   SearchQueryEvent,
   SearchQueryResponse,
 } from "shared/types";
-import { apiHost } from "../utils/apiHost";
+
+const apiHost = import.meta.env.VITE_API_HOST as string;
 
 export const getTrendsBubbles = async (
   datasetId: string,

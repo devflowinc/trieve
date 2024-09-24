@@ -5,9 +5,9 @@ import {
 } from "@tanstack/solid-query";
 import { createEffect, useContext } from "solid-js";
 import { getHeadQueries } from "../../api/analytics";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../usePagination";
 import { AnalyticsFilter, HeadQuery } from "shared/types";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 export interface HeadQueriesData {
   headQueriesQuery: CreateQueryResult<HeadQuery[], Error>;
@@ -24,17 +24,17 @@ export const useHeadQueries = ({
   const queryClient = useQueryClient();
 
   createEffect((prevDatasetId) => {
-    const datasetId = dataset().dataset.id;
+    const datasetId = dataset.datasetId;
     if (prevDatasetId !== undefined && prevDatasetId !== datasetId) {
       void queryClient.invalidateQueries();
     }
 
     return datasetId;
-  }, dataset().dataset.id);
+  }, dataset.datasetId);
 
   createEffect(() => {
     // Preload the next page
-    const datasetId = dataset().dataset.id;
+    const datasetId = dataset.datasetId;
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: [
@@ -44,7 +44,7 @@ export const useHeadQueries = ({
       queryFn: async () => {
         const results = await getHeadQueries(
           params.filter,
-          datasetId,
+          datasetId(),
           curPage + 1,
         );
         if (results.length === 0) {
@@ -58,7 +58,7 @@ export const useHeadQueries = ({
   const headQueriesQuery = createQuery(() => ({
     queryKey: ["head-queries", { filters: params, page: pages.page() }],
     queryFn: () => {
-      return getHeadQueries(params.filter, dataset().dataset.id, pages.page());
+      return getHeadQueries(params.filter, dataset.datasetId(), pages.page());
     },
   }));
 

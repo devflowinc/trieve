@@ -1,12 +1,12 @@
 import { SearchTypeCount } from "shared/types";
 import { createSignal, For, Show, useContext } from "solid-js";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { createQuery } from "@tanstack/solid-query";
 import { getQueryCounts } from "../../api/analytics";
 import { toTitleCase } from "../../utils/titleCase";
 import { Select } from "shared/ui";
 import { DateRangeOption, dateRanges } from "../FilterBar";
 import { CTRSummary } from "./CTRSummary";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 const displaySearchType = (type: SearchTypeCount["search_type"]) => {
   switch (type) {
@@ -34,7 +34,7 @@ export const QueryCounts = () => {
   const queryCountsQuery = createQuery(() => ({
     queryKey: ["queryCounts", { gt_date: dateSelection().date }],
     queryFn: () => {
-      return getQueryCounts(dateSelection().date, dataset().dataset.id);
+      return getQueryCounts(dateSelection().date, dataset.datasetId());
     },
   }));
 

@@ -3,12 +3,12 @@ import { createQuery } from "@tanstack/solid-query";
 import { AnalyticsFilter, AnalyticsParams } from "shared/types";
 import { enUS } from "date-fns/locale";
 import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getLatency } from "../../api/analytics";
 import { Chart } from "chart.js";
 
 import "chartjs-adapter-date-fns";
 import { fillDate } from "../../utils/graphDatesFiller";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 interface LatencyGraphProps {
   params: {
@@ -22,15 +22,12 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
   const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
   let chartInstance: Chart | null = null;
   const latencyQuery = createQuery(() => ({
-    queryKey: [
-      "latency",
-      { params: props.params, dataset: dataset().dataset.id },
-    ],
+    queryKey: ["latency", { params: props.params, dataset: dataset.datasetId }],
     queryFn: async () => {
       return await getLatency(
         props.params.filter,
         props.params.granularity,
-        dataset().dataset.id,
+        dataset.datasetId(),
       );
     },
   }));

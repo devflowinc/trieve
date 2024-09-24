@@ -25,6 +25,14 @@ import { GeneralServerSettings } from "./components/dataset-settings/GeneralSett
 import { LLMSettings } from "./components/dataset-settings/LLMSettings.tsx";
 import { DangerZoneForm } from "./components/dataset-settings/DangerZone.tsx";
 import { Chart, registerables } from "chart.js";
+import { AnalyticsOverviewPage } from "./analytics/pages/AnalyticsOverviewPage.tsx";
+import { SearchAnalyticsPage } from "./analytics/pages/SearchAnalyticsPage.tsx";
+import { RagAnalyticsPage } from "./analytics/pages/RagAnalyticsPage.tsx";
+import { TrendExplorer } from "./analytics/pages/TrendExplorer.tsx";
+import { SingleQueryPage } from "./analytics/pages/SingleQueryPage.tsx";
+import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
+import { SearchTablePage } from "./analytics/pages/tablePages/SearchTablePage.tsx";
+import { RAGTablePage } from "./analytics/pages/tablePages/RAGTablePage.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -132,6 +140,47 @@ const routes: RouteDefinition[] = [
                 path: "/manage",
                 component: DangerZoneForm,
               },
+
+              {
+                path: "/analytics",
+                children: [
+                  {
+                    path: "/",
+                    component: AnalyticsOverviewPage,
+                  },
+                  {
+                    path: "/search",
+                    component: SearchAnalyticsPage,
+                  },
+                  {
+                    path: "/rag",
+                    component: RagAnalyticsPage,
+                  },
+                  {
+                    path: "/trends",
+                    component: TrendExplorer,
+                  },
+                  {
+                    path: "/query/:queryId",
+                    component: SingleQueryPage,
+                  },
+                  {
+                    path: "/data",
+                    component: DataExplorerTabs,
+                    children: [
+                      {
+                        path: "/searches",
+                        component: SearchTablePage,
+                      },
+                      {
+                        path: "/messages",
+                        component: RAGTablePage,
+                      },
+                    ],
+                  },
+                ],
+              },
+
               {
                 path: "*404",
                 component: HomeRedirect,

@@ -1,18 +1,18 @@
 import { createMemo, useContext } from "solid-js";
-import { DatasetContext } from "../layouts/TopBarLayout";
 import { createQuery } from "@tanstack/solid-query";
 import { getSearchCTRSummary } from "../api/ctr";
+import { DatasetContext } from "../../contexts/DatasetContext";
 
 export const useCTRNeedsSetup = () => {
   const dataset = useContext(DatasetContext);
   const searchSummaryQuery = createQuery(() => ({
-    queryKey: ["search-ctr-summary-info", { dataset: dataset().dataset.id }],
+    queryKey: ["search-ctr-summary-info", { dataset: dataset.datasetId() }],
     queryFn: async () => {
-      return getSearchCTRSummary(dataset().dataset.id);
+      return getSearchCTRSummary(dataset.datasetId());
     },
   }));
   const ctrNeedsSetup = createMemo(() => {
-    dataset().dataset.id;
+    dataset.datasetId();
     if (searchSummaryQuery.isSuccess) {
       if (
         !searchSummaryQuery.data.avg_position_of_click &&

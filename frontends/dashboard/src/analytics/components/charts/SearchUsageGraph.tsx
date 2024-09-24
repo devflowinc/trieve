@@ -2,7 +2,6 @@ import { createQuery } from "@tanstack/solid-query";
 import { enUS } from "date-fns/locale";
 import { AnalyticsFilter, AnalyticsParams } from "shared/types";
 import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { getRpsUsageGraph } from "../../api/analytics";
 import { Chart } from "chart.js";
 
@@ -15,6 +14,7 @@ interface SearchUsageProps {
 
 import "chartjs-adapter-date-fns";
 import { fillDate } from "../../utils/graphDatesFiller";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 export const SearchUsageGraph = (props: SearchUsageProps) => {
   const dataset = useContext(DatasetContext);
@@ -23,13 +23,13 @@ export const SearchUsageGraph = (props: SearchUsageProps) => {
   const usageQuery = createQuery(() => ({
     queryKey: [
       "search-usage",
-      { params: props.params, dataset: dataset().dataset.id },
+      { params: props.params, dataset: dataset.datasetId() },
     ],
     queryFn: async () => {
       return await getRpsUsageGraph(
         props.params.filter,
         props.params.granularity,
-        dataset().dataset.id,
+        dataset.datasetId(),
       );
     },
   }));

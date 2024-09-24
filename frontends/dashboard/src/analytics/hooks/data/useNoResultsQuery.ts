@@ -1,9 +1,9 @@
 import { getNoResultQueries } from "../../api/analytics";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, on, useContext } from "solid-js";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../usePagination";
 import { AnalyticsFilter } from "shared/types";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 export const useNoResultsQueries = ({
   params,
@@ -18,7 +18,7 @@ export const useNoResultsQueries = ({
 
   createEffect(
     on(
-      () => [params, dataset().dataset.id],
+      () => [params, dataset.datasetId()],
       () => {
         pages.resetMaxPageDiscovered();
       },
@@ -27,7 +27,7 @@ export const useNoResultsQueries = ({
 
   createEffect(() => {
     // Preload the next page
-    const datasetId = dataset().dataset.id;
+    const datasetId = dataset.datasetId();
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: [
@@ -62,7 +62,7 @@ export const useNoResultsQueries = ({
     queryFn: () => {
       return getNoResultQueries(
         params.filter,
-        dataset().dataset.id,
+        dataset.datasetId(),
         pages.page(),
       );
     },

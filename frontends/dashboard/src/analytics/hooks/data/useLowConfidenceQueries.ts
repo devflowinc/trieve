@@ -1,9 +1,9 @@
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { Accessor, createEffect, on, useContext } from "solid-js";
 import { getLowConfidenceQueries } from "../../api/analytics";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { usePagination } from "../usePagination";
 import { AnalyticsParams } from "shared/types";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 const parseThreshold = (text: string): number | undefined => {
   const num = parseFloat(text);
@@ -26,7 +26,7 @@ export const useLowConfidenceQueries = ({
   const queryClient = useQueryClient();
   createEffect(
     on(
-      () => [params, dataset().dataset.id, thresholdText()],
+      () => [params, dataset.datasetId(), thresholdText()],
       () => {
         pages.resetMaxPageDiscovered();
       },
@@ -35,7 +35,7 @@ export const useLowConfidenceQueries = ({
 
   createEffect(() => {
     // Preload the next page
-    const datasetId = dataset().dataset.id;
+    const datasetId = dataset.datasetId();
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: [
@@ -73,7 +73,7 @@ export const useLowConfidenceQueries = ({
     queryFn: () => {
       return getLowConfidenceQueries(
         params.filter,
-        dataset().dataset.id,
+        dataset.datasetId(),
         pages.page(),
         parseThreshold(thresholdText()),
       );

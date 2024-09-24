@@ -4,8 +4,8 @@ import { createEffect, createSignal, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { subDays } from "date-fns";
 import { usePagination } from "../usePagination";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { AnalyticsParams } from "shared/types";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 export type sortByCols = "created_at" | "latency" | "top_score";
 
@@ -40,7 +40,7 @@ export const useDataExplorerSearch = () => {
           page: pages.page() + 1,
           sortBy: sortBy(),
           sortOrder: sortOrder(),
-          datasetId: dataset().dataset.id,
+          datasetId: dataset.datasetId(),
         },
       ],
       queryFn: async () => {
@@ -51,7 +51,7 @@ export const useDataExplorerSearch = () => {
             sortBy: sortBy(),
             sortOrder: sortOrder(),
           },
-          dataset().dataset.id,
+          dataset.datasetId(),
         );
         if (results.length === 0) {
           pages.setMaxPageDiscovered(pages.page());
@@ -69,7 +69,7 @@ export const useDataExplorerSearch = () => {
         page: pages.page(),
         sortBy: sortBy(),
         sortOrder: sortOrder(),
-        datasetId: dataset().dataset.id,
+        datasetId: dataset.datasetId(),
       },
     ],
 
@@ -81,7 +81,7 @@ export const useDataExplorerSearch = () => {
           sortBy: sortBy(),
           sortOrder: sortOrder(),
         },
-        dataset().dataset.id,
+        dataset.datasetId(),
       );
     },
   }));

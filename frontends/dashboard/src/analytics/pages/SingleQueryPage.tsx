@@ -5,7 +5,7 @@ export const SingleQueryPage = () => {
   const params = useParams();
   return (
     <div>
-      <SingleQuery queryId={params.id} />
+      <SingleQuery queryId={params.queryId} />
     </div>
   );
 };
