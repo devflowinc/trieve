@@ -8,23 +8,28 @@ export const searchWithTrieve = async ({
   searchOptions = {
     search_type: "fulltext",
   },
+  abortController,
 }: {
   trieve: TrieveSDK;
   query: string;
   searchOptions: Props["searchOptions"];
+  abortController?: AbortController;
 }) => {
-  const results = (await trieve.autocomplete({
-    query,
-    highlight_options: {
-      ...highlightOptions,
-      highlight_delimiters: ["?", ",", ".", "!", "\n"],
+  const results = (await trieve.autocomplete(
+    {
+      query,
+      highlight_options: {
+        ...highlightOptions,
+        highlight_delimiters: ["?", ",", ".", "!", "\n"],
+      },
+      extend_results: true,
+      score_threshold: 0.2,
+      page_size: 20,
+      ...searchOptions,
     },
-    extend_results: true,
-    score_threshold: 0.2,
-    page_size: 20,
-    ...searchOptions,
-  })) as SearchResponseBody;
-  console.log(results);
+    abortController?.signal
+  )) as SearchResponseBody;
+
   const resultsWithHighlight = results.chunks.map((chunk) => {
     const c = chunk.chunk as unknown as Chunk;
     return {

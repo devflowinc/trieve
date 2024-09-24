@@ -14,6 +14,10 @@ body {
       @apply text-sm text-center my-8;
     }
 
+    .no-results-loading {
+      @apply text-sm text-center my-8 animate-pulse;
+    }
+
     .footer {
       @apply flex border-t sticky -bottom-2 items-center pt-3 border-zinc-200 px-2 pb-1 bg-zinc-50;
 

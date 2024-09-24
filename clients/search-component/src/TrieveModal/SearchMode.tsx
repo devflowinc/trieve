@@ -5,7 +5,7 @@ import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../utils/hooks/modal-context";
 
 export const SearchMode = () => {
-  const { props, results, query, setQuery, inputRef, setMode } =
+  const { props, results, loadingResults, query, setQuery, inputRef, setMode } =
     useModalState();
   const {
     suggestedQueries,
@@ -98,8 +98,10 @@ export const SearchMode = () => {
               <Item item={result} index={index} key={result.chunk.id} />
             ))
           : null}
-        {query && !results.length ? (
+        {query && !results.length && !loadingResults ? (
           <p className="no-results">No results found</p>
+        ) : query && !results.length && loadingResults ? (
+          <p className="no-results-loading">Searching...</p>
         ) : null}
       </ul>
     </>

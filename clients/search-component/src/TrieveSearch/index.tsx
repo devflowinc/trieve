@@ -16,6 +16,7 @@ export const TrieveSearch = ({
     search_type: "hybrid",
   },
 }: Props) => {
+  const [loadingResults, setLoadingResults] = useState(false);
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
   const input = useRef<HTMLDivElement>(null);
   const { isOpen, getLabelProps, getMenuProps, getInputProps, getItemProps } =
@@ -48,13 +49,26 @@ export const TrieveSearch = ({
         }
       },
     });
+
   const search = async (inputValue: string) => {
-    const results = await searchWithTrieve({
-      query: inputValue,
-      searchOptions,
-      trieve,
-    });
-    setResults(results);
+    if (!inputValue) {
+      setResults([]);
+      return;
+    }
+
+    setLoadingResults(true);
+    try {
+      const results = await searchWithTrieve({
+        query: inputValue,
+        searchOptions,
+        trieve,
+      });
+      setResults(results);
+    } catch (e) {
+      console.error(e);
+    }
+
+    setLoadingResults(false);
   };
 
   const checkForCMDK = (e: KeyboardEvent) => {
@@ -92,7 +106,10 @@ export const TrieveSearch = ({
         </div>
       </div>
 
-      <ul {...getMenuProps()} className="items-menu">
+      <ul
+        {...getMenuProps()}
+        className={`items-menu${loadingResults ? " items-loading" : ""}`}
+      >
         {isOpen && results.length ? (
           <>
             <div className="results">
