@@ -2,8 +2,8 @@ import { AnalyticsFilter } from "shared/types";
 import { createQuery } from "@tanstack/solid-query";
 import { getSearchCTRSummary } from "../../api/ctr";
 import { Show, useContext } from "solid-js";
-import { DatasetContext } from "../../layouts/TopBarLayout";
 import { useCTRNeedsSetup } from "../../hooks/useCTRNeedsSetup";
+import { DatasetContext } from "../../../contexts/DatasetContext";
 
 interface SearchCTRStatsProps {
   filter: AnalyticsFilter;
@@ -13,10 +13,10 @@ export const CTRSummary = (props: SearchCTRStatsProps) => {
   const searchSummaryQuery = createQuery(() => ({
     queryKey: [
       "search-ctr-summary",
-      { filters: props.filter, dataset: dataset().dataset.id },
+      { filters: props.filter, dataset: dataset.datasetId() },
     ],
     queryFn: async () => {
-      return getSearchCTRSummary(dataset().dataset.id, props.filter);
+      return getSearchCTRSummary(dataset.datasetId(), props.filter);
     },
   }));
 

@@ -18,8 +18,9 @@ import {
   UsageDatapoint,
   UsageGraphResponse,
 } from "shared/types";
-import { apiHost } from "../utils/apiHost";
 import { transformAnalyticsFilter } from "../utils/formatDate";
+
+const apiHost = import.meta.env.VITE_API_HOST as string;
 
 export const getLatency = async (
   filters: AnalyticsFilter,

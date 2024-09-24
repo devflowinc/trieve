@@ -5,7 +5,8 @@ import {
   SortOrder,
 } from "shared/types";
 import { transformAnalyticsFilter } from "../utils/formatDate";
-import { apiHost } from "../utils/apiHost";
+
+const apiHost = import.meta.env.VITE_API_HOST as string;
 
 type SearchQueriesTablesParams = {
   filter?: AnalyticsFilter;
