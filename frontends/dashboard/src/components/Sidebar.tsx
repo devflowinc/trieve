@@ -10,6 +10,8 @@ import {
   AiOutlineLeft,
   AiOutlineMessage,
   AiOutlineSearch,
+  AiOutlineTable,
+  AiOutlineWechat,
 } from "solid-icons/ai";
 import { Spacer } from "./Spacer";
 import { Portal } from "solid-js/web";
@@ -18,10 +20,12 @@ import { NavbarOrganizationSelector } from "../layouts/NavbarOrganizationSelecto
 import { FiExternalLink, FiTrash } from "solid-icons/fi";
 import { UserContext } from "../contexts/UserContext";
 import { IconTypes } from "solid-icons";
-import { IoOptionsOutline } from "solid-icons/io";
+import { IoNewspaperOutline, IoOptionsOutline } from "solid-icons/io";
 import { TbSparkles } from "solid-icons/tb";
 import { createSignal } from "solid-js";
 import NewDatasetModal from "../components/NewDatasetModal";
+import { FaSolidMagnifyingGlass } from "solid-icons/fa";
+import { ImNewspaper } from "solid-icons/im";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
@@ -139,6 +143,39 @@ export const DashboardSidebar = () => {
               href={`/dataset/${datasetId()}/keys`}
               icon={AiOutlineKey}
               label="API Keys"
+            />
+          </div>
+          <div class="gap flex flex-col pt-4">
+            <SectionLabel>Analytics</SectionLabel>
+            <Link
+              isExternal={false}
+              icon={ImNewspaper}
+              href={`/dataset/${datasetId()}/analytics`}
+              label="Overview"
+            />
+            <Link
+              isExternal={false}
+              icon={AiOutlineSearch}
+              href={`/dataset/${datasetId()}/analytics/search`}
+              label="Search"
+            />
+            <Link
+              isExternal={false}
+              icon={AiOutlineMessage}
+              href={`/dataset/${datasetId()}/analytics/rag`}
+              label="RAG"
+            />
+            <Link
+              isExternal={false}
+              icon={AiOutlineBarChart}
+              href={`/dataset/${datasetId()}/analytics/trends`}
+              label="Trend Explorer"
+            />
+            <Link
+              isExternal={false}
+              icon={AiOutlineTable}
+              href={`/dataset/${datasetId()}/analytics/data/searches`}
+              label="Data Explorer"
             />
           </div>
           <div class="gap flex flex-col pt-4">
