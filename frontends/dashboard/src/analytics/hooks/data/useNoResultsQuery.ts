@@ -2,7 +2,7 @@ import { getNoResultQueries } from "../../api/analytics";
 import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, on, useContext } from "solid-js";
 import { DatasetContext } from "../../layouts/TopBarLayout";
-import { usePagination } from "../../hooks/usePagination";
+import { usePagination } from "../usePagination";
 import { AnalyticsFilter } from "shared/types";
 
 export const useNoResultsQueries = ({

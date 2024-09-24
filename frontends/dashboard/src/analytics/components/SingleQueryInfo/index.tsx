@@ -6,8 +6,8 @@ import { format } from "date-fns";
 import { parseCustomDateString } from "../../utils/formatDate";
 import { OrgContext } from "../../contexts/OrgContext";
 import { DatasetAndUsage } from "shared/types";
-import { QueryStringDisplay } from "./../QueryStringDisplay";
-import { Card } from "./../charts/Card";
+import { QueryStringDisplay } from "../QueryStringDisplay";
+import { Card } from "../charts/Card";
 import { ResultCard } from "./ResultCard";
 import { DataSquare } from "./DataSquare";
 

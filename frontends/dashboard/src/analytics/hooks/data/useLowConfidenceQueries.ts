@@ -2,7 +2,7 @@ import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { Accessor, createEffect, on, useContext } from "solid-js";
 import { getLowConfidenceQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
-import { usePagination } from "../../hooks/usePagination";
+import { usePagination } from "../usePagination";
 import { AnalyticsParams } from "shared/types";
 
 const parseThreshold = (text: string): number | undefined => {

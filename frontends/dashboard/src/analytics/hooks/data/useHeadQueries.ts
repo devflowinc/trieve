@@ -6,7 +6,7 @@ import {
 import { createEffect, useContext } from "solid-js";
 import { getHeadQueries } from "../../api/analytics";
 import { DatasetContext } from "../../layouts/TopBarLayout";
-import { usePagination } from "../../hooks/usePagination";
+import { usePagination } from "../usePagination";
 import { AnalyticsFilter, HeadQuery } from "shared/types";
 
 export interface HeadQueriesData {
