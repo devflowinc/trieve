@@ -6,7 +6,6 @@
   "workspaces": [
     "frontends/search",
     "frontends/chat",
-    "frontends/analytics",
     "frontends/dashboard",
     "frontends/shared",
     "frontends/config",

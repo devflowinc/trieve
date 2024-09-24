@@ -45,9 +45,3 @@ jobs:
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           report-json: "./frontends/dashboard/eslint_report.json"
-      - name: Annotate Analytics Linting Results
-        uses: ataylorme/eslint-annotate-action@1.0.4
-        if: always()
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          report-json: "./frontends/analytics/eslint_report.json"
