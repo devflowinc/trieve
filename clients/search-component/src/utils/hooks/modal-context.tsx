@@ -46,6 +46,8 @@ const ModalContext = createContext<{
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   results: ChunkWithHighlights[];
   setResults: React.Dispatch<React.SetStateAction<ChunkWithHighlights[]>>;
+  loadingResults: boolean;
+  setLoadingResults: React.Dispatch<React.SetStateAction<boolean>>;
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   inputRef: React.RefObject<HTMLInputElement>;
@@ -56,6 +58,7 @@ const ModalContext = createContext<{
 }>({
   query: "",
   results: [],
+  loadingResults: false,
   props: defaultProps,
   open: false,
   inputRef: { current: null },
@@ -65,6 +68,7 @@ const ModalContext = createContext<{
   setOpen: () => {},
   setQuery: () => {},
   setResults: () => {},
+  setLoadingResults: () => {},
   setContextProps: () => {},
 });
 
@@ -81,6 +85,7 @@ function ModalProvider({
   });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
+  const [loadingResults, setLoadingResults] = useState(false);
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState("search");
@@ -93,19 +98,37 @@ function ModalProvider({
     }));
   }, [onLoadProps]);
 
-  const search = async () => {
-    const results = await searchWithTrieve({
-      query: query,
-      searchOptions: props.searchOptions,
-      trieve: props.trieve,
-    });
-    setResults(results);
+  const search = async (abortController: AbortController) => {
+    if (!query) {
+      setResults([]);
+      return;
+    }
+
+    setLoadingResults(true);
+
+    try {
+      const results = await searchWithTrieve({
+        query: query,
+        searchOptions: props.searchOptions,
+        trieve: props.trieve,
+        abortController,
+      });
+      setResults(results);
+    } catch (e) {
+      console.error(e);
+    }
+
+    setLoadingResults(false);
   };
 
   useEffect(() => {
-    if (query) {
-      search();
-    }
+    const abortController = new AbortController();
+
+    search(abortController);
+
+    return () => {
+      abortController.abort();
+    };
   }, [query]);
 
   return (
@@ -124,6 +147,8 @@ function ModalProvider({
         inputRef,
         results,
         setResults,
+        loadingResults,
+        setLoadingResults,
         mode,
         setMode,
         modalRef,
