@@ -4,12 +4,18 @@ metadata:
   name: trieve-keycloak-db
 spec:
   enableSuperuserAccess: false
-  instances: 1 # TODO: increase to 3 for prod
+  instances: 2
   bootstrap:
     initdb:
       database: keycloak
       owner: keycloak
   storage:
-    size: 2Gi
+    size: 10Gi
   monitoring:
     enablePodMonitor: true
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 10m
+      memory: 128Mi
