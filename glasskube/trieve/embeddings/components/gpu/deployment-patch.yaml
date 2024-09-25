@@ -1,9 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: trieve-embedding
+  name: not-used
 spec:
-  selector: {}
   template:
     spec:
       containers:
