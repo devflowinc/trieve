@@ -13,3 +13,8 @@ spec:
             - BAAI/bge-reranker-base
             - --revision
             - main
+          resources:
+            requests:
+              memory: 2Gi
+            limits:
+              memory: 2Gi

@@ -15,3 +15,9 @@ spec:
             - main
             - --pooling
             - splade
+          resources:
+            requests:
+              memory: 1Gi
+            limits:
+              memory: 1Gi
+
