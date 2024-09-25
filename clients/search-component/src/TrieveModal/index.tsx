@@ -10,8 +10,10 @@ import {
   ModalProvider,
   useModalState,
 } from "../utils/hooks/modal-context";
+import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
 
 const Modal = () => {
+  useKeyboardNavigation();
   const { mode, modalRef, open, setOpen, setMode, props } = useModalState();
 
   const ButtonEl = props.ButtonEl;
@@ -53,8 +55,22 @@ const Modal = () => {
               <div>{props.placeholder}</div>
             </div>
             <span className="open">
-              <span className="mac">⌘</span>
-              <span className="not-mac">Ctrl</span>+ K
+              {props.openKeyCombination.map((key) => (
+                <>
+                  {key.ctrl ? (
+                    <>
+                      <span className="mac">⌘ </span>
+                      <span className="not-mac">Ctrl </span>
+                    </>
+                  ) : (
+                    <span>
+                      {" "}
+                      {props.openKeyCombination.length > 1 ? "+" : null}{" "}
+                      {key.label || key.key}
+                    </span>
+                  )}
+                </>
+              ))}
             </span>
           </button>
         )}

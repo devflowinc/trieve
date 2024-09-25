@@ -2,12 +2,19 @@ import { useEffect } from "react";
 import { useModalState } from "./modal-context";
 
 export const useKeyboardNavigation = () => {
-  const { results, setOpen, inputRef } = useModalState();
+  const { results, setOpen, inputRef, props, open } = useModalState();
+
   const checkForInteractions = (e: KeyboardEvent) => {
-    if (e.code === "KeyK" && !open && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      e.stopPropagation();
-      setOpen(true);
+    if (!open) {
+      const hasCtrl = props.openKeyCombination.find((k) => k.ctrl);
+      if ((hasCtrl && (e.metaKey || e.ctrlKey)) || !hasCtrl) {
+        const otherKeys = props.openKeyCombination.filter((k) => !k.ctrl);
+        if (otherKeys.every((k) => e.key === k.key)) {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(true);
+        }
+      }
     }
 
     if (e.code === "ArrowDown" && inputRef.current === document.activeElement) {
