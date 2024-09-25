@@ -623,3 +623,63 @@ pub async fn remove_user_from_org_query(
 
     Ok(())
 }
+
+pub async fn get_all_users_query(pool: web::Data<Pool>) -> Result<Vec<SlimUser>, ServiceError> {
+    use crate::data::schema::organizations::dsl as organization_columns;
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let user_orgs_orgs: Vec<(User, UserOrganization, Organization)> = users_columns::users
+        .inner_join(user_organizations_columns::user_organizations)
+        .inner_join(
+            organization_columns::organizations
+                .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
+        )
+        .filter(organization_columns::deleted.eq(0))
+        .select((
+            User::as_select(),
+            UserOrganization::as_select(),
+            Organization::as_select(),
+        ))
+        .load::<(User, UserOrganization, Organization)>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Error loading user".to_string()))?;
+
+    let mut slim_users: Vec<SlimUser> = Vec::new();
+    let mut current_user: Option<User> = None;
+    let mut user_orgs: Vec<UserOrganization> = Vec::new();
+    let mut orgs: Vec<Organization> = Vec::new();
+
+    for (user, user_org, org) in user_orgs_orgs {
+        if let Some(current_user) = current_user {
+            if current_user.id != user.id {
+                slim_users.push(SlimUser::from_details(
+                    current_user.clone(),
+                    user_orgs.clone(),
+                    orgs.clone(),
+                ));
+                user_orgs.clear();
+                orgs.clear();
+            }
+        }
+        current_user = Some(user);
+        user_orgs.push(user_org);
+        orgs.push(org);
+    }
+
+    if let Some(user) = current_user {
+        slim_users.push(SlimUser::from_details(
+            user.clone(),
+            user_orgs.clone(),
+            orgs.clone(),
+        ));
+    } else {
+        return Err(ServiceError::BadRequest("No users found".to_string()));
+    }
+
+    Ok(slim_users)
+}

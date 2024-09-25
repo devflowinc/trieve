@@ -1354,6 +1354,7 @@ pub struct SlimUser {
     pub id: uuid::Uuid,
     pub name: Option<String>,
     pub email: String,
+    pub created_at: chrono::NaiveDateTime,
     pub user_orgs: Vec<UserOrganization>,
     pub orgs: Vec<Organization>,
 }
@@ -1368,6 +1369,7 @@ impl SlimUser {
             id: user.id,
             name: user.name,
             email: user.email,
+            created_at: user.created_at,
             user_orgs,
             orgs,
         }
@@ -3353,7 +3355,7 @@ pub struct Range {
     pub lt: Option<RangeCondition>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[schema(example = json!({
     "gte": "2021-01-01 00:00:00.000",
     "lte": "2021-01-01 00:00:00.000",
