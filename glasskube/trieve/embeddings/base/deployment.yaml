@@ -16,4 +16,8 @@ spec:
           image: ghcr.io/huggingface/text-embeddings-inference
           ports:
             - containerPort: 80
-
+          resources:
+            requests:
+              memory: 3Gi
+            limits:
+              memory: 3Gi

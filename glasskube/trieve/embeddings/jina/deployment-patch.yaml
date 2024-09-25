@@ -13,3 +13,8 @@ spec:
             - jinaai/jina-embeddings-v2-base-en
             - --revision
             - main
+          resources:
+            requests:
+              memory: 7Gi
+            limits:
+              memory: 7Gi

@@ -12,12 +12,12 @@ spec:
       memory: 2Gi
   db:
     vendor: postgres
-    host: trieve-keycloak-db-rw
+    host: trieve-keycloak-db-cluster-rw
     usernameSecret:
-      name: trieve-keycloak-db-app
+      name: trieve-keycloak-db-cluster-app
       key: username
     passwordSecret:
-      name: trieve-keycloak-db-app
+      name: trieve-keycloak-db-cluster-app
       key: password
   http:
     httpEnabled: true
