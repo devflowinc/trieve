@@ -8,6 +8,7 @@
   --tv-zinc-700: rgb(63 63 70);
   --tv-zinc-900: rgb(24, 24, 27);
   --tv-zinc-400: rgb(161, 161, 170);
+  --tv-zinc-600: rgb(82 82 91);
   --tv-primary-500: rgb(163 62 181);
 }
 
@@ -154,7 +155,8 @@ body {
         @apply flex gap-2 items-center flex-wrap;
 
         > p {
-          @apply text-xs text-zinc-600;
+          @apply text-xs;
+          color: var(--tv-zinc-600);
         }
       }
 
@@ -219,13 +221,22 @@ body {
       @apply block w-full rounded-md border-0 py-1.5 pr-14 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset outline-none sm:text-sm sm:leading-6 px-4 pl-8 h-12 z-10 relative;
       color: var(--tv-zinc-900);
       background-color: var(--tv-zinc-50);
-
+      border: 1px solid var(--tv-zinc-300);
+      box-shadow:
+        rgb(255, 255, 255) 0px 0px 0px 0px inset,
+        var(--tv-zinc-300) 0px 0px 1px inset,
+        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       &::placeholder {
         color: var(--tv-zinc-400);
       }
 
       &:focus {
-        outline-color: var(--tv-primary-500);
+        outline: none;
+        border: 1px solid var(--tv-primary-500);
+        box-shadow:
+          rgb(255, 255, 255) 0px 0px 0px 0px inset,
+          var(--tv-primary-500) 0px 0px 1px inset,
+          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
     }
     ul {
@@ -268,7 +279,7 @@ body {
 
       &:hover .arrow-link,
       &:focus .arrow-link {
-        @apply text-zinc-600;
+        color: var(--tv-zinc-600);
       }
 
       .arrow-link {
@@ -280,7 +291,8 @@ body {
       }
 
       .description {
-        @apply font-normal text-xs text-zinc-600 m-0;
+        color: var(--tv-zinc-600);
+        @apply font-normal text-xs m-0;
       }
     }
 
@@ -330,7 +342,7 @@ body {
             background-color: var(--tv-zinc-700);
 
             &:hover {
-              @apply text-white;
+              color: var(--tv-zinc-50);
             }
           }
         }
@@ -352,9 +364,20 @@ body {
       input {
         background-color: var(--tv-zinc-900);
         color: var(--tv-zinc-50);
+        outline: none;
+        box-shadow:
+          rgb(255, 255, 255) 0px 0px 0px 0px inset,
+          var(--tv-zinc-600) 0px 0px 1px inset,
+          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+        border: 1px solid var(--tv-zinc-600);
 
         &:focus {
-          outline-color: var(--tv-zinc-700);
+          outline: none;
+          border: 1px solid var(--tv-primary-500);
+          box-shadow:
+            rgb(255, 255, 255) 0px 0px 0px 0px inset,
+            var(--tv-primary-500) 0px 0px 1px inset,
+            rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
         }
       }
 
@@ -422,9 +445,20 @@ body {
     @apply w-full flex items-center text-sm leading-6 ring-1 shadow-sm justify-between  rounded-md border-0 py-1.5 px-2 sm:text-sm truncate gap-2 min-w-[43px]  max-w-[300px];
     color: var(--tv-zinc-400);
     background-color: var(--tv-zinc-50);
+    outline: none;
+    border: 1px solid var(--tv-zinc-300);
+    box-shadow:
+      rgb(255, 255, 255) 0px 0px 0px 0px inset,
+      var(--tv-zinc-300) 0px 0px 1px inset,
+      rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
 
-    &:focus {
-      outline-color: var(--tv-primary-500);
+    &:hover {
+      outline: none;
+      border: 1px solid var(--tv-primary-500);
+      box-shadow:
+        rgb(255, 255, 255) 0px 0px 0px 0px inset,
+        var(--tv-primary-500) 0px 0px 1px inset,
+        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
     }
 
     > div {
@@ -468,16 +502,30 @@ body {
       }
     }
     &.dark {
-      @apply text-white/50   hover:brightness-[1.25] ring-zinc-600/30;
+      @apply hover:brightness-[1.25];
       background-color: var(--tv-zinc-900);
-
+      color: var(--tv-zinc-600);
+      outline: none;
+      border: 1px solid var(--tv-zinc-600);
+      box-shadow:
+        rgb(255, 255, 255) 0px 0px 0px 0px inset,
+        var(--tv-zinc-600) 0px 0px 1px inset,
+        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       &:hover {
-        outline-color: var(--tv-primary-500);
+        outline: none;
+        border: 1px solid var(--tv-primary-500);
+        box-shadow:
+          rgb(255, 255, 255) 0px 0px 0px 0px inset,
+          var(--tv-primary-500) 0px 0px 1px inset,
+          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
 
       svg {
-        @apply hover:text-zinc-200;
         color: var(--tv-zinc-300);
+
+        &:hover {
+          color: var(--tv-zinc-100);
+        }
       }
 
       span {
