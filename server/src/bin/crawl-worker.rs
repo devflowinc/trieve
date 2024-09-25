@@ -162,7 +162,7 @@ async fn crawl(
                 })),
                 tracking_id: Some(hash_function(&format!(
                     "{}{}",
-                    page_link.clone(),
+                    page_link.trim_end_matches("/"),
                     cleaned_html.clone()
                 ))),
                 upsert_by_tracking_id: Some(true),
