@@ -25,6 +25,7 @@ export type ModalProps = {
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
   defaultQueries?: string[];
+  openKeyCombination: { key?: string; label?: string; ctrl?: boolean }[];
 };
 
 const defaultProps = {
@@ -38,6 +39,7 @@ const defaultProps = {
   suggestedQueries: true,
   trieve: (() => {}) as unknown as TrieveSDK,
   defaultQueries: [],
+  openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
 };
 
 const ModalContext = createContext<{
