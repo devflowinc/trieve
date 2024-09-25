@@ -3,6 +3,7 @@ pub mod chunk_operator;
 pub mod clickhouse_operator;
 pub mod crawl_operator;
 pub mod dataset_operator;
+pub mod dittofeed_operator;
 pub mod email_operator;
 pub mod event_operator;
 pub mod file_operator;

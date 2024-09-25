@@ -596,7 +596,7 @@ pub async fn update_dataset_query(
 
 #[tracing::instrument(skip(pool))]
 pub async fn get_datasets_by_organization_id(
-    org_id: web::Path<uuid::Uuid>,
+    org_id: uuid::Uuid,
     pagination: GetDatasetsPagination,
     pool: web::Data<Pool>,
 ) -> Result<Vec<DatasetAndUsage>, ServiceError> {
@@ -611,7 +611,7 @@ pub async fn get_datasets_by_organization_id(
     let get_datasets_query = datasets_columns::datasets
         .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
         .filter(datasets_columns::deleted.eq(0))
-        .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
+        .filter(datasets_columns::organization_id.eq(org_id))
         .order(datasets_columns::created_at.desc())
         .select((Dataset::as_select(), DatasetUsageCount::as_select()))
         .into_boxed();

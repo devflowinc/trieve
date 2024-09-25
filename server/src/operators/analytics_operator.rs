@@ -1369,7 +1369,9 @@ pub async fn get_top_datasets_query(
             dataset_id,
             COUNT(*) as total_queries
         FROM 
-            default.{}",
+            default.{}
+        WHERE 
+            dataset_id IN ?",
         data.r#type
     );
 
@@ -1390,8 +1392,6 @@ pub async fn get_top_datasets_query(
 
     query_string.push_str(
         "
-        WHERE 
-            dataset_id IN ?
         GROUP BY 
             dataset_id
         ORDER BY 

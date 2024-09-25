@@ -541,7 +541,7 @@ pub async fn get_dataset_by_tracking_id(
     Ok(HttpResponse::Ok().json(d))
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema, Default)]
 pub struct GetDatasetsPagination {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -593,10 +593,9 @@ pub async fn get_datasets_from_organization(
         .into());
     }
 
-    let dataset_and_usages =
-        get_datasets_by_organization_id(organization_id.into(), pagination, pool)
-            .await
-            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let dataset_and_usages = get_datasets_by_organization_id(organization_id, pagination, pool)
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(dataset_and_usages))
 }
