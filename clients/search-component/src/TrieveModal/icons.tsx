@@ -1,13 +1,13 @@
-import React from "react";
-export const LoadingIcon = () => (
+import React, { SVGAttributes } from "react";
+export const LoadingIcon = (props: SVGAttributes<SVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="120"
     height="30"
-    className="loading-system"
     viewBox="0 0 120 30"
+    {...props}
   >
-    <circle cx="15" cy="15" r="15">
+    <circle cx="15" cy="15" r="15" fill="currentColor">
       <animate
         attributeName="r"
         begin="0s"
@@ -29,7 +29,7 @@ export const LoadingIcon = () => (
         values="1;.5;1"
       ></animate>
     </circle>
-    <circle cx="60" cy="15" r="9" fillOpacity="0.3">
+    <circle cx="60" cy="15" r="9" fillOpacity="0.3" fill="currentColor">
       <animate
         attributeName="r"
         begin="0s"
@@ -51,7 +51,7 @@ export const LoadingIcon = () => (
         values=".5;1;.5"
       ></animate>
     </circle>
-    <circle cx="105" cy="15" r="15">
+    <circle cx="105" cy="15" r="15" fill="currentColor">
       <animate
         attributeName="r"
         begin="0s"
@@ -76,10 +76,9 @@ export const LoadingIcon = () => (
   </svg>
 );
 
-export const ArrowIcon = () => {
+export const ArrowIcon = (props: SVGAttributes<SVGElement>) => {
   return (
     <svg
-      className="arrow-link"
       xmlns="http://www.w3.org/2000/svg"
       width="24"
       height="24"
@@ -89,6 +88,7 @@ export const ArrowIcon = () => {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      {...props}
     >
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M9 6l6 6l-6 6" />
@@ -96,7 +96,7 @@ export const ArrowIcon = () => {
   );
 };
 
-export const AIIcon = () => {
+export const AIIcon = (props: SVGAttributes<SVGElement>) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -108,6 +108,7 @@ export const AIIcon = () => {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      {...props}
     >
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z" />
@@ -115,20 +116,21 @@ export const AIIcon = () => {
   );
 };
 
-export const CheckIcon = () => (
+export const CheckIcon = (props: SVGAttributes<SVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
     viewBox="0 0 24 24"
     fill="currentColor"
+    {...props}
   >
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-1.293 5.953a1 1 0 0 0 -1.32 -.083l-.094 .083l-3.293 3.292l-1.293 -1.292l-.094 -.083a1 1 0 0 0 -1.403 1.403l.083 .094l2 2l.094 .083a1 1 0 0 0 1.226 0l.094 -.083l4 -4l.083 -.094a1 1 0 0 0 -.083 -1.32z" />
   </svg>
 );
 
-export const BackIcon = () => (
+export const BackIcon = (props: SVGAttributes<SVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -139,20 +141,21 @@ export const BackIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="search-icon"
+    {...props}
   >
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M15 6l-6 6l6 6" />
   </svg>
 );
 
-export const LoadingAIIcon = () => {
+export const LoadingAIIcon = (props: SVGAttributes<SVGElement>) => {
   return (
     <svg
       width="23"
       height="23"
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
+      {...props}
     >
       <path
         d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
@@ -169,8 +172,8 @@ export const LoadingAIIcon = () => {
     </svg>
   );
 };
-export const EscKeyIcon = () => (
-  <svg width="15" height="15" aria-label="Escape key" role="img">
+export const EscKeyIcon = (props: SVGAttributes<SVGElement>) => (
+  <svg width="15" height="15" aria-label="Escape key" role="img" {...props}>
     <g
       fill="none"
       stroke="currentColor"
@@ -183,8 +186,8 @@ export const EscKeyIcon = () => (
   </svg>
 );
 
-export const ArrowDownKey = () => (
-  <svg width="15" height="15" aria-label="Arrow down" role="img">
+export const ArrowDownKey = (props: SVGAttributes<SVGElement>) => (
+  <svg width="15" height="15" aria-label="Arrow down" role="img" {...props}>
     <g
       fill="none"
       stroke="currentColor"
@@ -197,8 +200,8 @@ export const ArrowDownKey = () => (
   </svg>
 );
 
-export const ArrowUpIcon = () => (
-  <svg width="15" height="15" aria-label="Arrow up" role="img">
+export const ArrowUpIcon = (props: SVGAttributes<SVGElement>) => (
+  <svg width="15" height="15" aria-label="Arrow up" role="img" {...props}>
     <g
       fill="none"
       stroke="currentColor"
@@ -211,8 +214,8 @@ export const ArrowUpIcon = () => (
   </svg>
 );
 
-export const EnterKeyIcon = () => (
-  <svg width="15" height="15" aria-label="Enter key" role="img">
+export const EnterKeyIcon = (props: SVGAttributes<SVGElement>) => (
+  <svg width="15" height="15" aria-label="Enter key" role="img" {...props}>
     <g
       fill="none"
       stroke="currentColor"
@@ -222,5 +225,24 @@ export const EnterKeyIcon = () => (
     >
       <path d="M12 3.53088v3c0 1-1 2-2 2H4M7 11.53088l-3-3 3-3"></path>
     </g>
+  </svg>
+);
+
+export const ReloadIcon = (props: SVGAttributes<SVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <path d="M19.933 13.041a8 8 0 1 1 -9.925 -8.788c3.899 -1 7.935 1.007 9.425 4.747" />
+    <path d="M20 4v5h-5" />
   </svg>
 );

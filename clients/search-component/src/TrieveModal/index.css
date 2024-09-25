@@ -1,17 +1,43 @@
+:root {
+  --tv-zinc-950: rgb(9 9 11);
+  --tv-zinc-200: rgb(228 228 231);
+  --tv-zinc-50: rgb(250 250 250);
+  --tv-zinc-100: rgb(244 244 245);
+  --tv-zinc-800: rgb(39 39 42);
+  --tv-zinc-300: rgb(212 212 216);
+  --tv-zinc-700: rgb(63 63 70);
+  --tv-zinc-900: rgb(24, 24, 27);
+  --tv-zinc-400: rgb(161, 161, 170);
+  --tv-zinc-600: rgb(82 82 91);
+  --tv-primary-500: rgb(163 62 181);
+}
+
 body {
   #trieve-search-modal-overlay {
     @apply bg-black/60 w-screen fixed inset-0 h-screen data-[state=open]:animate-overlayShow backdrop-blur-sm z-[998];
   }
 
   #trieve-search-modal {
-    @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg bg-zinc-50 p-2 pt-0 shadow-2xl focus:outline-none text-zinc-950 font-sans z-[999];
+    @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg p-2 pt-0 shadow-2xl focus:outline-none font-sans z-[999];
+    color: var(--tv-zinc-950);
+    background-color: var(--tv-zinc-50);
 
     .trieve-elements-search {
       @apply pr-2;
     }
 
+    .no-results {
+      @apply text-sm text-center my-8;
+    }
+
+    .no-results-loading {
+      @apply text-sm text-center my-8 animate-pulse;
+    }
+
     .footer {
-      @apply flex border-t sticky -bottom-2 items-center pt-3 border-zinc-200 px-2 pb-1 bg-transparent;
+      @apply flex border-t sticky -bottom-2 items-center pt-3 px-2 pb-1;
+      background-color: var(--tv-zinc-50);
+      border-color: var(--tv-zinc-200);
 
       .commands {
         @apply flex text-xs grow gap-4 m-0;
@@ -20,14 +46,18 @@ body {
           @apply flex items-center gap-1;
 
           > kbd {
-            @apply inline-flex justify-center items-center py-0.5 px-1 bg-zinc-100 border border-zinc-200 font-mono text-zinc-800 rounded-md shadow-sm;
+            @apply inline-flex justify-center items-center py-0.5 px-1 border font-mono rounded-md shadow-sm;
+            border-color: var(--tv-zinc-200);
+            color: var(--tv-zinc-800);
+            background-color: var(--tv-zinc-100);
           }
         }
       }
     }
 
     .trieve-powered {
-      @apply flex items-center justify-end gap-2 select-none cursor-pointer text-sm  bg-zinc-50;
+      @apply flex items-center justify-end gap-2 select-none cursor-pointer text-sm;
+      background-color: var(--bg-color);
 
       img {
         @apply h-4 w-4 cursor-pointer;
@@ -38,27 +68,32 @@ body {
       @apply flex flex-col gap-4 relative mt-1;
 
       .chat-ul {
-        @apply border-zinc-300 rounded border p-4;
+        @apply rounded border p-4;
+        border-color: var(--tv-zinc-300);
       }
 
       .additional-links {
         @apply flex flex-wrap gap-2 mt-4;
 
         a {
-          @apply bg-zinc-300 rounded px-2 text-xs py-1 text-zinc-700;
+          @apply rounded px-2 text-xs py-1;
+          color: var(--tv-zinc-700);
+          background-color: var(--tv-zinc-300);
 
           &:hover {
-            @apply text-zinc-950;
+            color: var(--tv-zinc-950);
           }
         }
       }
 
       .user {
-        @apply font-medium text-magenta-500 flex gap-1;
+        @apply font-medium flex gap-1;
+        color: var(--tv-primary-500);
       }
 
       .loading-system {
-        @apply fill-zinc-950 w-12;
+        @apply w-12;
+        fill: var(--text-color);
       }
 
       .system {
@@ -87,10 +122,10 @@ body {
     }
 
     a {
-      @apply text-zinc-950;
+      color: var(--tv-zinc-950);
 
       &:hover {
-        @apply text-zinc-950;
+        color: var(--tv-zinc-950);
       }
     }
 
@@ -98,7 +133,9 @@ body {
       @apply absolute  right-2 flex py-1.5 pr-1.5;
 
       kbd {
-        @apply inline-flex items-center rounded border border-zinc-200 px-1 font-sans text-xs text-zinc-400;
+        @apply inline-flex items-center rounded border  px-1 font-sans text-xs;
+        color: var(--tv-zinc-400);
+        border-color: var(--tv-zinc-200);
       }
     }
 
@@ -107,29 +144,100 @@ body {
     }
 
     .input-wrapper {
-      @apply sticky top-0 bg-zinc-50 pt-2 flex items-center z-10 mt-1;
+      @apply sticky top-0 pt-2 z-10 mt-1 flex flex-col gap-2;
+      background-color: var(--bg-color);
+
+      .input-flex {
+        @apply flex items-center;
+      }
+
+      .suggested-queries-wrapper {
+        @apply flex gap-2 items-center flex-wrap;
+
+        > p {
+          @apply text-xs;
+          color: var(--tv-zinc-600);
+        }
+      }
+
+      .suggested-query {
+        @apply inline-flex items-center rounded-md px-2 py-1 text-xs text-left;
+        color: var(--tv-zinc-900);
+
+        &:not(p) {
+          @apply border;
+          border-color: var(--tv-zinc-300);
+          background-color: var(--tv-zinc-100);
+        }
+
+        &:not(:disabled):not(p):hover {
+          background-color: var(--tv-zinc-200);
+        }
+
+        &:not(p):disabled {
+          @apply cursor-not-allowed;
+          color: var(--tv-zinc-400);
+          border-color: var(--tv-zinc-200);
+          background-color: var(--bg-color);
+        }
+
+        &.loading {
+          @apply animate-pulse;
+        }
+
+        &.empty-state-loading {
+          @apply animate-pulse;
+        }
+      }
 
       &::after {
-        @apply absolute h-[17px] w-full z-50 block top-[56px] bg-gradient-to-b from-zinc-50 via-zinc-50 to-transparent;
+        @apply absolute h-[17px] w-full z-50 block -bottom-[17px] bg-gradient-to-b;
+        background-color: linear-gradient(
+          var(--tv-zinc-50),
+          var(--tv-zinc-50),
+          rgba(0, 0, 0, 0)
+        );
         content: "";
       }
 
       .search-icon {
-        @apply absolute z-[51] left-2 text-zinc-400;
+        @apply absolute z-[51] left-2;
+        color: var(--tv-zinc-400);
       }
 
       &.chat {
+        @apply flex-row;
+
         form {
           @apply w-full;
         }
-        .search-icon {
-          @apply top-5 left-1;
+        .back-icon {
+          @apply top-5 left-1 absolute z-20;
         }
       }
     }
 
     input {
-      @apply block w-full rounded-md border-0 py-1.5 pr-14 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-200 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-magenta-500 outline-none sm:text-sm sm:leading-6 bg-zinc-50 px-4 pl-8 h-12 z-10 relative;
+      @apply block w-full rounded-md border-0 py-1.5 pr-14 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset outline-none sm:text-sm sm:leading-6 px-4 pl-8 h-12 z-10 relative;
+      color: var(--tv-zinc-900);
+      background-color: var(--tv-zinc-50);
+      border: 1px solid var(--tv-zinc-300);
+      box-shadow:
+        rgb(255, 255, 255) 0px 0px 0px 0px inset,
+        var(--tv-zinc-300) 0px 0px 1px inset,
+        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      &::placeholder {
+        color: var(--tv-zinc-400);
+      }
+
+      &:focus {
+        outline: none;
+        border: 1px solid var(--tv-primary-500);
+        box-shadow:
+          rgb(255, 255, 255) 0px 0px 0px 0px inset,
+          var(--tv-primary-500) 0px 0px 1px inset,
+          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      }
     }
     ul {
       @apply mt-4;
@@ -140,7 +248,8 @@ body {
     }
 
     .item {
-      @apply select-none cursor-pointer px-4 py-2 text-left flex items-start gap-2 w-full text-sm bg-zinc-50 outline-none rounded-lg;
+      @apply select-none cursor-pointer px-4 py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
+      background-color: var(--tv-zinc-50);
 
       &.start-chat {
         @apply items-center flex;
@@ -149,7 +258,7 @@ body {
           @apply p-0;
 
           span {
-            @apply text-magenta-500;
+            color: var(--tv-primary-500);
           }
         }
 
@@ -157,19 +266,20 @@ body {
           @apply justify-start gap-4;
 
           > svg {
-            @apply text-magenta-500;
+            color: var(--tv-primary-500);
           }
         }
       }
 
       &:hover,
       &:focus {
-        @apply bg-zinc-100 outline-none ring-0;
+        @apply outline-none ring-0;
+        background-color: var(--tv-zinc-100);
       }
 
       &:hover .arrow-link,
       &:focus .arrow-link {
-        @apply text-zinc-600 dark:text-zinc-400;
+        color: var(--tv-zinc-600);
       }
 
       .arrow-link {
@@ -181,24 +291,38 @@ body {
       }
 
       .description {
-        @apply font-normal text-xs text-zinc-600 m-0;
+        color: var(--tv-zinc-600);
+        @apply font-normal text-xs m-0;
       }
     }
+
     &.dark {
+      background-color: var(--tv-zinc-900);
+      color: var(--tv-zinc-100);
+
       .footer {
-        @apply border-zinc-700;
+        border-color: var(--tv-zinc-700);
+        background-color: var(--tv-zinc-900);
 
         .commands {
           @apply flex text-xs grow gap-4 m-0;
+          color: var(--tv-zinc-300);
 
           kbd {
-            @apply bg-zinc-800 border border-zinc-700 text-zinc-300;
+            @apply border;
+            border-color: var(--tv-zinc-700);
+            color: var(--tv-zinc-300);
+            background-color: var(--tv-zinc-800);
           }
         }
       }
       .chat-modal-wrapper {
+        background-color: var(--tv-zinc-900);
+        color: var(--tv-zinc-100);
+
         .loading-system {
-          @apply fill-zinc-400 w-12;
+          @apply w-12;
+          fill: var(--tv-zinc-400);
         }
 
         .user {
@@ -206,55 +330,111 @@ body {
         }
 
         .chat-ul {
-          @apply border-zinc-700 mb-0;
+          @apply mb-0;
+          border-color: var(--tv-zinc-700);
         }
 
         .additional-links {
           @apply flex flex-wrap gap-2 mt-4;
 
           a {
-            @apply bg-zinc-700 text-zinc-300;
+            color: var(--tv-zinc-300);
+            background-color: var(--tv-zinc-700);
 
             &:hover {
-              @apply text-white;
+              color: var(--tv-zinc-50);
             }
           }
         }
       }
       .kbd-wrapper {
         kbd {
-          @apply border-zinc-400  text-zinc-400;
+          color: var(--tv-zinc-400);
+          border-color: var(--tv-zinc-400);
         }
       }
 
       a {
-        @apply text-white hover:text-white;
+        color: var(--tv-zinc-50);
+        &:hover {
+          color: var(--tv-zinc-50);
+        }
       }
 
-      @apply text-white bg-zinc-900;
-
       input {
-        @apply bg-zinc-900 text-zinc-50 ring-zinc-700;
+        background-color: var(--tv-zinc-900);
+        color: var(--tv-zinc-50);
+        outline: none;
+        box-shadow:
+          rgb(255, 255, 255) 0px 0px 0px 0px inset,
+          var(--tv-zinc-600) 0px 0px 1px inset,
+          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+        border: 1px solid var(--tv-zinc-600);
+
+        &:focus {
+          outline: none;
+          border: 1px solid var(--tv-primary-500);
+          box-shadow:
+            rgb(255, 255, 255) 0px 0px 0px 0px inset,
+            var(--tv-primary-500) 0px 0px 1px inset,
+            rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+        }
       }
 
       .input-wrapper {
-        @apply bg-zinc-900;
+        background-color: var(--tv-zinc-900);
+
+        .suggested-queries-wrapper {
+          .suggested-query {
+            &:not(p) {
+              background-color: var(--tv-zinc-900);
+              border-color: var(--tv-zinc-700);
+              color: var(--tv-zinc-300);
+            }
+
+            &:not(:disabled):not(p):hover {
+              background-color: var(--tv-zinc-800);
+            }
+            &:not(p):disabled {
+              @apply cursor-not-allowed;
+              color: var(--tv-zinc-400);
+              border-color: var(--tv-zinc-700);
+              background-color: var(--tv-zinc-900);
+            }
+          }
+          > p {
+            @apply text-xs;
+            color: var(--tv-zinc-300);
+          }
+        }
 
         &::after {
-          @apply bg-gradient-to-b from-zinc-900 via-zinc-900 to-transparent;
+          @apply bg-gradient-to-b;
+          background-color: linear-gradient(
+            var(--tv-zinc-900),
+            var(--tv-zinc-900),
+            rgba(0, 0, 0, 0)
+          );
           content: "";
         }
       }
 
       .trieve-powered {
-        @apply bg-zinc-900;
+        background-color: var(--tv-zinc-900);
       }
 
       .item {
-        @apply hover:bg-zinc-800 border-zinc-700 focus:bg-zinc-800 bg-zinc-900;
+        color: var(--tv-zinc-50);
+        background-color: var(--tv-zinc-900);
+        border-color: var(--tv-zinc-700);
+
+        &:hover,
+        &:focus {
+          background-color: var(--tv-zinc-800);
+        }
 
         .description {
-          @apply text-zinc-400;
+          color: var(--tv-zinc-400);
         }
       }
     }
@@ -262,14 +442,35 @@ body {
 }
 body {
   #open-trieve-modal {
-    @apply w-full flex items-center text-sm leading-6 ring-1 shadow-sm text-zinc-400 bg-zinc-50  focus:outline-magenta-500 justify-between  rounded-md border-0 py-1.5 px-2
-          sm:text-sm truncate gap-2 min-w-[43px] ring-zinc-200  max-w-[300px];
+    @apply w-full flex items-center text-sm leading-6 ring-1 shadow-sm justify-between  rounded-md border-0 py-1.5 px-2 sm:text-sm truncate gap-2 min-w-[43px]  max-w-[300px];
+    color: var(--tv-zinc-400);
+    background-color: var(--tv-zinc-50);
+    outline: none;
+    border: 1px solid var(--tv-zinc-300);
+    box-shadow:
+      rgb(255, 255, 255) 0px 0px 0px 0px inset,
+      var(--tv-zinc-300) 0px 0px 1px inset,
+      rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+
+    &:hover {
+      outline: none;
+      border: 1px solid var(--tv-primary-500);
+      box-shadow:
+        rgb(255, 255, 255) 0px 0px 0px 0px inset,
+        var(--tv-primary-500) 0px 0px 1px inset,
+        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    }
 
     > div {
       @apply flex items-center gap-3 min-w-[42px];
 
       svg {
-        @apply min-w-4 flex-none text-zinc-700 hover:text-zinc-800;
+        @apply min-w-4 flex-none;
+        color: var(--tv-zinc-700);
+
+        &:hover {
+          color: var(--tv-zinc-800);
+        }
       }
 
       > div {
@@ -278,7 +479,9 @@ body {
     }
 
     .open {
-      @apply inline-flex items-center rounded border border-zinc-200 px-1 font-sans text-xs text-zinc-400 py-0.5;
+      @apply inline-flex items-center rounded border px-1 font-sans text-xs py-0.5 gap-1;
+      color: var(--tv-zinc-400);
+      border-color: var(--tv-zinc-200);
 
       @media screen and (-webkit-font-smoothing: antialiased) {
         .mac {
@@ -299,14 +502,35 @@ body {
       }
     }
     &.dark {
-      @apply bg-zinc-900 text-white/50   hover:brightness-[1.25] ring-zinc-600/30 hover:ring-magenta-500;
+      @apply hover:brightness-[1.25];
+      background-color: var(--tv-zinc-900);
+      color: var(--tv-zinc-600);
+      outline: none;
+      border: 1px solid var(--tv-zinc-600);
+      box-shadow:
+        rgb(255, 255, 255) 0px 0px 0px 0px inset,
+        var(--tv-zinc-600) 0px 0px 1px inset,
+        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      &:hover {
+        outline: none;
+        border: 1px solid var(--tv-primary-500);
+        box-shadow:
+          rgb(255, 255, 255) 0px 0px 0px 0px inset,
+          var(--tv-primary-500) 0px 0px 1px inset,
+          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      }
 
       svg {
-        @apply text-zinc-300 hover:text-zinc-200;
+        color: var(--tv-zinc-300);
+
+        &:hover {
+          color: var(--tv-zinc-100);
+        }
       }
 
       span {
-        @apply border-zinc-400  text-zinc-400;
+        border-color: var(--tv-zinc-400);
+        color: var(--tv-zinc-400);
       }
     }
   }

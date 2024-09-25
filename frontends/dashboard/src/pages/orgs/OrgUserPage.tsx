@@ -14,6 +14,7 @@ import {
 } from "@tanstack/solid-table";
 import { TanStackTable } from "shared/ui";
 import { FaRegularTrashCan } from "solid-icons/fa";
+import { FiPlus } from "solid-icons/fi";
 
 const userCol = createColumnHelper<SlimUser>();
 const inviteCol = createColumnHelper<Invitation>();
@@ -116,7 +117,7 @@ export const OrgUserPage = () => {
       id: "actions",
       cell(props) {
         return (
-          <>
+          <div class="flex items-center gap-2">
             <button
               onClick={() => {
                 setEditingUser(props.row.original);
@@ -146,7 +147,7 @@ export const OrgUserPage = () => {
             >
               <FaRegularTrashCan />
             </button>
-          </>
+          </div>
         );
       },
     }),
@@ -263,8 +264,9 @@ export const OrgUserPage = () => {
                 setInviteUserModalOpen(true);
               }}
               type="button"
-              class="block rounded-md border bg-magenta-500 px-3 py-2 text-center text-sm font-medium text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600"
+              class="flex items-center gap-2 rounded-md border bg-magenta-500 px-3 py-2 text-center text-sm font-medium text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600"
             >
+              <FiPlus />
               Add User
             </button>
           </Show>
@@ -303,22 +305,22 @@ export const OrgUserPage = () => {
               />
             )}
           </Show>
-          <InviteUserModal
-            isOpen={inviteUserModalOpen}
-            closeModal={() => {
-              setInviteUserModalOpen(false);
-              void invitationQuery.refetch();
-            }}
-          />
-          <EditUserModal
-            editingUser={editingUser()}
-            closeModal={() => {
-              setEditingUser(null);
-              void userQuery.refetch();
-            }}
-          />
         </>
       </Show>
+      <InviteUserModal
+        isOpen={inviteUserModalOpen}
+        closeModal={() => {
+          setInviteUserModalOpen(false);
+          void invitationQuery.refetch();
+        }}
+      />
+      <EditUserModal
+        editingUser={editingUser()}
+        closeModal={() => {
+          setEditingUser(null);
+          void userQuery.refetch();
+        }}
+      />
     </div>
   );
 };

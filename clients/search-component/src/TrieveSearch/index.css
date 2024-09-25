@@ -28,6 +28,10 @@ body {
     .items-menu {
       @apply absolute top-10 w-full z-10 bg-white border-zinc-200 border rounded;
 
+      &.items-loading {
+        @apply animate-pulse;
+      }
+
       .results {
         @apply max-h-[300px] overflow-auto;
 
