@@ -1,0 +1,4 @@
+resources:
+  - ../trieve
+components:
+  - ../trieve/embeddings/components/gpu
