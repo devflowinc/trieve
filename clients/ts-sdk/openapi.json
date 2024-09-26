@@ -26,65 +26,6 @@
   ],
   "paths": {
     "/api/analytics/ctr": {
-      "post": {
-        "tags": [
-          "Analytics"
-        ],
-        "summary": "Get CTR Analytics",
-        "description": "This route allows you to view the CTR analytics for a dataset.",
-        "operationId": "get_ctr_analytics",
-        "parameters": [
-          {
-            "name": "TR-Dataset",
-            "in": "header",
-            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "JSON request payload to filter the graph",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CTRAnalytics"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The CTR analytics for the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CTRAnalyticsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Service error relating to getting CTR analytics",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": [
-              "admin"
-            ]
-          }
-        ]
-      },
       "put": {
         "tags": [
           "Analytics"
@@ -140,6 +81,54 @@
       }
     },
     "/api/analytics/events": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get All Events",
+        "description": "This route allows you to view all events.",
+        "operationId": "get_all_events",
+        "requestBody": {
+          "description": "JSON request payload to filter the events",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetEventsRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The events for the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetEventsResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Analytics"
@@ -175,6 +164,67 @@
           },
           "400": {
             "description": "Service error relating to sending event data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/analytics/events/ctr": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get CTR Analytics",
+        "description": "This route allows you to view the CTR analytics for a dataset.",
+        "operationId": "get_ctr_analytics",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to filter the graph",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CTRAnalytics"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The CTR analytics for the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CTRAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting CTR analytics",
             "content": {
               "application/json": {
                 "schema": {
@@ -6090,6 +6140,7 @@
       },
       "CTRRecommendationsWithClicksResponse": {
         "type": "object",
+        "title": "RecommendationsWithClicks",
         "required": [
           "recommendations"
         ],
@@ -6104,6 +6155,7 @@
       },
       "CTRRecommendationsWithoutClicksResponse": {
         "type": "object",
+        "title": "RecommendationsWithoutClicks",
         "required": [
           "recommendations"
         ],
@@ -6118,6 +6170,7 @@
       },
       "CTRSearchQueryWithClicksResponse": {
         "type": "object",
+        "title": "SearchesWithClicks",
         "required": [
           "queries"
         ],
@@ -6132,6 +6185,7 @@
       },
       "CTRSearchQueryWithoutClicksResponse": {
         "type": "object",
+        "title": "SearchesWithoutClicks",
         "required": [
           "queries"
         ],
@@ -7623,6 +7677,7 @@
       },
       "DatasetAnalytics": {
         "type": "object",
+        "title": "SearchMetricsResponse",
         "required": [
           "total_queries",
           "search_rps",
@@ -8133,6 +8188,122 @@
           "message": "Bad Request"
         }
       },
+      "EventAnalyticsFilter": {
+        "type": "object",
+        "properties": {
+          "date_range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateRange"
+              }
+            ],
+            "nullable": true
+          },
+          "event_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventTypesFilter"
+              }
+            ],
+            "nullable": true
+          },
+          "is_conversion": {
+            "type": "boolean",
+            "description": "Filter by conversions",
+            "nullable": true
+          },
+          "metadata_filter": {
+            "type": "string",
+            "description": "Filter by metadata path i.e. path.attribute = \\\"value\\\"",
+            "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "Filter by user ID",
+            "nullable": true
+          }
+        },
+        "example": {
+          "date_range": {
+            "gt": "2021-08-10T00:00:00Z",
+            "lt": "2021-08-11T00:00:00Z"
+          },
+          "event_type": "view",
+          "is_conversion": true,
+          "metadata_filter": "path = \"value\"",
+          "user_id": "user1"
+        }
+      },
+      "EventData": {
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "event_name",
+          "items",
+          "dataset_id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_name": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_conversion": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "nullable": true
+          },
+          "request_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "example": {
+          "created_at": "2021-08-10T00:00:00Z",
+          "dataset_id": "00000000-0000-0000-0000-000000000000",
+          "event_name": "Viewed Home Page",
+          "event_type": "view",
+          "is_conversion": true,
+          "items": [
+            "item1",
+            "item2"
+          ],
+          "metadata": "metadata",
+          "request_id": "00000000-0000-0000-0000-000000000000",
+          "updated_at": "2021-08-10T00:00:00Z",
+          "user_id": "user1"
+        }
+      },
       "EventReturn": {
         "type": "object",
         "required": [
@@ -8201,7 +8372,6 @@
               },
               "request_id": {
                 "type": "string",
-                "format": "uuid",
                 "description": "The request id of the event to associate it with a request",
                 "nullable": true
               },
@@ -8248,7 +8418,6 @@
               },
               "request_id": {
                 "type": "string",
-                "format": "uuid",
                 "description": "The request id of the event to associate it with a request",
                 "nullable": true
               },
@@ -8287,7 +8456,6 @@
               },
               "request_id": {
                 "type": "string",
-                "format": "uuid",
                 "description": "The request id of the event to associate it with a request",
                 "nullable": true
               },
@@ -8335,7 +8503,6 @@
               },
               "request_id": {
                 "type": "string",
-                "format": "uuid",
                 "description": "The request id of the event to associate it with a request",
                 "nullable": true
               },
@@ -8384,7 +8551,6 @@
               },
               "request_id": {
                 "type": "string",
-                "format": "uuid",
                 "description": "The request id of the event to associate it with a request",
                 "nullable": true
               },
@@ -8399,6 +8565,16 @@
         "discriminator": {
           "propertyName": "event_type"
         }
+      },
+      "EventTypesFilter": {
+        "type": "string",
+        "enum": [
+          "add_to_cart",
+          "purchase",
+          "view",
+          "click",
+          "filter_clicked"
+        ]
       },
       "FieldCondition": {
         "type": "object",
@@ -8893,6 +9069,33 @@
           ]
         }
       },
+      "GetEventsRequestBody": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventAnalyticsFilter"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "GetEventsResponseBody": {
+        "type": "object",
+        "required": [
+          "events"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventData"
+            }
+          }
+        }
+      },
       "GetGroupsForChunksReqPayload": {
         "type": "object",
         "required": [
@@ -9114,6 +9317,7 @@
       },
       "HeadQueryResponse": {
         "type": "object",
+        "title": "HeadQueryResponse",
         "required": [
           "queries"
         ],
@@ -9320,6 +9524,7 @@
       },
       "LatencyGraphResponse": {
         "type": "object",
+        "title": "LatencyGraphResponse",
         "required": [
           "latency_points"
         ],
@@ -9702,6 +9907,7 @@
       },
       "PopularFiltersResponse": {
         "type": "object",
+        "title": "PopularFiltersResponse",
         "required": [
           "popular_filters"
         ],
@@ -9727,6 +9933,7 @@
       },
       "QueryCountResponse": {
         "type": "object",
+        "title": "QueryCountResponse",
         "required": [
           "total_queries"
         ],
@@ -9902,6 +10109,7 @@
       },
       "RAGUsageGraphResponse": {
         "type": "object",
+        "title": "RAGUsageGraphResponse",
         "required": [
           "usage_points"
         ],
@@ -9916,6 +10124,7 @@
       },
       "RAGUsageResponse": {
         "type": "object",
+        "title": "RAGUsageResponse",
         "required": [
           "total_queries"
         ],
@@ -9936,6 +10145,7 @@
           "search_id",
           "results",
           "dataset_id",
+          "llm_response",
           "created_at",
           "user_id"
         ],
@@ -9950,6 +10160,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "llm_response": {
+            "type": "string"
           },
           "rag_type": {
             "type": "string"
@@ -10436,6 +10649,7 @@
       },
       "RecommendationCTRMetrics": {
         "type": "object",
+        "title": "Recommendation CTR Metrics",
         "required": [
           "recommendations_with_clicks",
           "percent_recommendations_with_clicks",
@@ -10549,6 +10763,7 @@
       },
       "RecommendationsEventResponse": {
         "type": "object",
+        "title": "RecommendationsWithClicks",
         "required": [
           "queries"
         ],
@@ -11278,6 +11493,7 @@
       },
       "SearchCTRMetrics": {
         "type": "object",
+        "title": "Search CTR Metrics",
         "required": [
           "searches_with_clicks",
           "percent_searches_with_clicks",
@@ -11480,6 +11696,7 @@
       },
       "SearchClusterResponse": {
         "type": "object",
+        "title": "SearchClusterResponse",
         "required": [
           "clusters"
         ],
@@ -11763,6 +11980,7 @@
       },
       "SearchQueryEvent": {
         "type": "object",
+        "title": "SearchQueryEvent",
         "required": [
           "id",
           "search_type",
@@ -11817,6 +12035,7 @@
       },
       "SearchQueryResponse": {
         "type": "object",
+        "title": "SearchQueryResponse",
         "required": [
           "queries"
         ],
@@ -11921,6 +12140,7 @@
       },
       "SearchUsageGraphResponse": {
         "type": "object",
+        "title": "SearchUsageGraphResponse",
         "required": [
           "usage_points"
         ],
@@ -12445,10 +12665,15 @@
         "required": [
           "id",
           "email",
+          "created_at",
           "user_orgs",
           "orgs"
         ],
         "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
           "email": {
             "type": "string"
           },
