@@ -27,6 +27,7 @@ use ureq::json;
 use utoipa::ToSchema;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "SearchClusterResponse")]
 pub struct SearchClusterResponse {
     pub clusters: Vec<SearchClusterTopics>,
 }
@@ -63,6 +64,7 @@ pub async fn get_clusters_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "SearchQueryResponse")]
 pub struct SearchQueryResponse {
     pub queries: Vec<SearchQueryEvent>,
 }
@@ -173,6 +175,7 @@ pub async fn get_search_metrics_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "HeadQueryResponse")]
 pub struct HeadQueryResponse {
     pub queries: Vec<HeadQueries>,
 }
@@ -369,6 +372,7 @@ pub async fn get_all_queries_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "QueryCountResponse")]
 pub struct QueryCountResponse {
     pub total_queries: Vec<SearchTypeCount>,
 }
@@ -416,6 +420,7 @@ pub async fn get_query_counts_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "PopularFiltersResponse")]
 pub struct PopularFiltersResponse {
     pub popular_filters: Vec<PopularFilters>,
 }
@@ -556,6 +561,7 @@ pub async fn get_popular_filter_values_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "SearchUsageGraphResponse")]
 pub struct SearchUsageGraphResponse {
     pub usage_points: Vec<UsageGraphPoint>,
 }
@@ -622,6 +628,7 @@ pub async fn get_search_usage_graph_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "LatencyGraphResponse")]
 pub struct LatencyGraphResponse {
     pub latency_points: Vec<SearchLatencyGraph>,
 }
@@ -842,6 +849,7 @@ pub async fn get_rag_usage_graph_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "RecommendationsWithClicks")]
 pub struct RecommendationsEventResponse {
     pub queries: Vec<RecommendationEvent>,
 }
@@ -971,11 +979,13 @@ pub async fn send_event_data_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "SearchesWithClicks")]
 pub struct CTRSearchQueryWithClicksResponse {
     pub queries: Vec<SearchQueriesWithClicksCTRResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "SearchesWithoutClicks")]
 pub struct CTRSearchQueryWithoutClicksResponse {
     pub queries: Vec<SearchQueriesWithoutClicksCTRResponse>,
 }
@@ -1187,11 +1197,13 @@ pub async fn get_recommendation_ctr_metrics_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "RecommendationsWithClicks")]
 pub struct CTRRecommendationsWithClicksResponse {
     pub recommendations: Vec<RecommendationsWithClicksCTRResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "RecommendationsWithoutClicks")]
 pub struct CTRRecommendationsWithoutClicksResponse {
     pub recommendations: Vec<RecommendationsWithoutClicksCTRResponse>,
 }
