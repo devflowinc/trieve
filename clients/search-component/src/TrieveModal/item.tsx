@@ -33,12 +33,14 @@ export const Item = ({ item, index }: Props) => {
     .toArray();
 
   const $firstHeading = load(chunkHtmlHeadings[0]);
+  const firstHeadingId = $firstHeading.html()?.match(/id="([^"]*)"/)?.[1];
   const cleanFirstHeadingHtml = $firstHeading("*")
     .not("mark")
     .replaceWith(function () {
       return $firstHeading(this).text();
     });
   const cleanFirstHeading = cleanFirstHeadingHtml.html();
+  const titleInnerText = $firstHeading.text();
 
   descriptionHtml = descriptionHtml
     .replace(" </mark>", "</mark> ")
@@ -76,9 +78,6 @@ export const Item = ({ item, index }: Props) => {
         chunkID: chunk.id,
       });
     }
-    if (chunk.link) {
-      location.href = chunk.link;
-    }
   };
 
   useEffect(() => {
@@ -88,14 +87,27 @@ export const Item = ({ item, index }: Props) => {
     };
   }, []);
 
+  const linkSuffix = firstHeadingId
+    ? `#${firstHeadingId}`
+    : `#:~:text=${encodeURIComponent(titleInnerText)}`;
+
   return (
     <li>
       <Component
         ref={itemRef}
         id={`trieve-search-item-${index}`}
         className="item"
-        onClick={() => onResultClick({ ...item.chunk, position: index })}
-        {...(item.chunk.link ? { href: item.chunk.link } : {})}
+        onClick={() =>
+          onResultClick({
+            ...item.chunk,
+            position: index,
+          })
+        }
+        {...(item.chunk.link
+          ? {
+              href: `${item.chunk.link}${linkSuffix}`,
+            }
+          : {})}
       >
         <div>
           {props.showImages &&
