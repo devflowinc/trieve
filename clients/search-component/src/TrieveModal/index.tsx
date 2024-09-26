@@ -11,6 +11,7 @@ import {
   useModalState,
 } from "../utils/hooks/modal-context";
 import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
+import { ModeSwitch } from "./ModeSwitch";
 
 const Modal = () => {
   useKeyboardNavigation();
@@ -88,6 +89,7 @@ const Modal = () => {
           className={props.theme === "dark" ? "dark" : ""}
           style={{ overflow: "auto" }}
         >
+          <ModeSwitch />
           {mode === "search" ? <SearchMode /> : <ChatMode />}
           <div className="footer">
             <ul className="commands">
