@@ -3730,6 +3730,7 @@ impl Default for SearchQueryEvent {
 #[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
 pub struct SearchQueriesWithClicksCTRResponseClickhouse {
     pub query: String,
+    pub results: Vec<String>,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
     pub chunks_with_position: String,
@@ -3740,8 +3741,8 @@ pub struct SearchQueriesWithClicksCTRResponseClickhouse {
 #[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
 pub struct SearchQueriesWithClicksCTRResponse {
     pub query: String,
-    pub clicked_chunks: Vec<ChunkMetadata>,
-    pub positions: Vec<i32>,
+    pub results: Vec<serde_json::Value>,
+    pub clicked_chunks: Vec<ChunkMetadatasWithPositions>,
     pub created_at: String,
 }
 
@@ -3764,19 +3765,26 @@ impl SearchQueriesWithClicksCTRResponseClickhouse {
                 .await
                 .unwrap_or_default();
 
-                (chunk, chunk_with_position.position)
+                ChunkMetadatasWithPositions {
+                    chunk,
+                    position: chunk_with_position.position,
+                }
             })
             .collect();
 
-        let results = futures::future::join_all(futures).await;
-
-        let (clicked_chunks, positions): (Vec<ChunkMetadata>, Vec<i32>) =
-            results.into_iter().unzip();
+        let clicked_chunks = futures::future::join_all(futures).await;
 
         SearchQueriesWithClicksCTRResponse {
             query: self.query,
+            results: self
+                .results
+                .iter()
+                .map(|r| {
+                    serde_json::from_str(&r.replace("|q", "?").replace('\n', ""))
+                        .unwrap_or_default()
+                })
+                .collect::<Vec<serde_json::Value>>(),
             clicked_chunks,
-            positions,
             created_at: self.created_at.to_string(),
         }
     }
@@ -3812,6 +3820,7 @@ pub struct RecommendationsWithClicksCTRResponseClickhouse {
     pub negative_ids: Vec<String>,
     pub positive_tracking_ids: Vec<String>,
     pub negative_tracking_ids: Vec<String>,
+    pub results: Vec<String>,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
     pub chunks_with_position: String,
@@ -3825,8 +3834,8 @@ pub struct RecommendationsWithClicksCTRResponse {
     pub negative_ids: Option<Vec<String>>,
     pub positive_tracking_ids: Option<Vec<String>>,
     pub negative_tracking_ids: Option<Vec<String>>,
-    pub clicked_chunks: Vec<ChunkMetadata>,
-    pub positions: Vec<i32>,
+    pub results: Vec<serde_json::Value>,
+    pub clicked_chunks: Vec<ChunkMetadatasWithPositions>,
     pub created_at: String,
 }
 
@@ -3849,14 +3858,14 @@ impl RecommendationsWithClicksCTRResponseClickhouse {
                 .await
                 .unwrap_or_default();
 
-                (chunk, chunk_with_position.position)
+                ChunkMetadatasWithPositions {
+                    chunk,
+                    position: chunk_with_position.position,
+                }
             })
             .collect();
 
-        let results = futures::future::join_all(futures).await;
-
-        let (clicked_chunks, positions): (Vec<ChunkMetadata>, Vec<i32>) =
-            results.into_iter().unzip();
+        let clicked_chunks = futures::future::join_all(futures).await;
 
         //only return the vecs that are not empty everything else should be None
         let positive_ids = if !self.positive_ids.is_empty() {
@@ -3888,8 +3897,15 @@ impl RecommendationsWithClicksCTRResponseClickhouse {
             negative_ids,
             positive_tracking_ids,
             negative_tracking_ids,
+            results: self
+                .results
+                .iter()
+                .map(|r| {
+                    serde_json::from_str(&r.replace("|q", "?").replace('\n', ""))
+                        .unwrap_or_default()
+                })
+                .collect::<Vec<serde_json::Value>>(),
             clicked_chunks,
-            positions,
             created_at: self.created_at.to_string(),
         }
     }
@@ -5392,6 +5408,12 @@ pub enum ReRankOptions {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct ChunksWithPositions {
     pub chunk_id: uuid::Uuid,
+    pub position: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct ChunkMetadatasWithPositions {
+    pub chunk: ChunkMetadata,
     pub position: i32,
 }
 
