@@ -240,6 +240,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::send_ctr_data,
         handlers::analytics_handler::set_query_rating,
         handlers::analytics_handler::get_top_datasets,
+        handlers::analytics_handler::get_all_events,
         handlers::metrics_handler::get_metrics,
     ),
     components(
@@ -363,6 +364,11 @@ impl Modify for SecurityAddon {
             data::models::SearchLatencyGraph,
             data::models::SearchAnalyticsFilter,
             data::models::RAGAnalyticsFilter,
+            data::models::EventAnalyticsFilter,
+            data::models::GetEventsRequestBody,
+            data::models::GetEventsResponseBody,
+            data::models::EventData,
+            data::models::EventTypesFilter,
             data::models::RagTypes,
             data::models::RagQueryEvent,
             data::models::CountSearchMethod,
@@ -1154,13 +1160,20 @@ pub fn main() -> std::io::Result<()> {
                                 web::resource("/top")
                                 .route(web::post().to(handlers::analytics_handler::get_top_datasets)),)
                             .service(
-                                web::resource("/events")
-                                .route(web::post().to(handlers::analytics_handler::send_event_data)),
+                                web::scope("/events")
+                                .service(
+                                    web::resource("")
+                                        .route(web::put().to(handlers::analytics_handler::send_event_data))
+                                        .route(web::post().to(handlers::analytics_handler::get_all_events)),
+                                )
+                                .service(
+                                    web::resource("/ctr")
+                                        .route(web::post().to(handlers::analytics_handler::get_ctr_analytics)),
+                                )
                             )
                             .service(
                                 web::resource("/ctr")
-                                .route(web::put().to(handlers::analytics_handler::send_ctr_data))
-                                .route(web::post().to(handlers::analytics_handler::get_ctr_analytics)),
+                                    .route(web::put().to(handlers::analytics_handler::send_ctr_data))
                             )
                         ),
                 )

@@ -3,7 +3,7 @@ use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
         DatasetAndOrgWithSubAndPlan, DateRange, EventDataClickhouse, EventTypes,
-        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        GetEventsRequestBody, OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
         SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
@@ -504,7 +504,7 @@ pub async fn send_event_data(
 /// This route allows you to view the CTR analytics for a dataset.
 #[utoipa::path(
     post,
-    path = "/analytics/ctr",
+    path = "/analytics/events/ctr",
     context_path = "/api",
     tag = "Analytics",
     request_body(content = CTRAnalytics, description = "JSON request payload to filter the graph", content_type = "application/json"),
@@ -597,6 +597,37 @@ pub async fn get_ctr_analytics(
     };
 
     Ok(HttpResponse::Ok().json(response))
+}
+
+/// Get All Events
+///
+/// This route allows you to view all events.
+#[utoipa::path(
+    post,
+    path = "/analytics/events",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = GetEventsRequestBody, description = "JSON request payload to filter the events", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The events for the request", body = GetEventsResponseBody),
+
+        (status = 400, description = "Service error relating to getting events", body = ErrorResponseBody),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_all_events(
+    _user: AdminOnly,
+    data: web::Json<GetEventsRequestBody>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+    let events =
+        get_all_events_query(dataset_id, data.filter.clone(), clickhouse_client.get_ref()).await?;
+
+    Ok(HttpResponse::Ok().json(events))
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, ToSchema)]
