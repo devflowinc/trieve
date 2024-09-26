@@ -6,7 +6,7 @@ export const getSearchCTRSummary = async (
   datasetId: string,
   filters?: AnalyticsFilter,
 ) => {
-  const response = await fetch(`${apiHost}/analytics/ctr`, {
+  const response = await fetch(`${apiHost}/analytics/events/ctr`, {
     credentials: "include",
     method: "POST",
     body: JSON.stringify({
