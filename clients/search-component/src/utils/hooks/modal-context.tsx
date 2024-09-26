@@ -6,8 +6,14 @@ import React, {
   useState,
 } from "react";
 import { Chunk, ChunkWithHighlights } from "../types";
-import { AutocompleteReqPayload, TrieveSDK } from "trieve-ts-sdk";
-import { searchWithTrieve } from "../trieve";
+import {
+  AutocompleteReqPayload,
+  CountChunkQueryResponseBody,
+  TrieveSDK,
+} from "trieve-ts-sdk";
+import { countChunks, searchWithTrieve } from "../trieve";
+
+export const ALL_TAG = { tag: "all", label: "All", icon: null };
 
 type searchOptions = Omit<
   Omit<AutocompleteReqPayload, "query">,
@@ -66,6 +72,7 @@ const ModalContext = createContext<{
   setContextProps: (props: ModalProps) => void;
   currentTag: string;
   setCurrentTag: React.Dispatch<React.SetStateAction<string>>;
+  tagCounts: CountChunkQueryResponseBody[];
 }>({
   query: "",
   results: [],
@@ -84,6 +91,7 @@ const ModalContext = createContext<{
   setLoadingResults: () => {},
   setCurrentTag: () => {},
   currentTag: "all",
+  tagCounts: [],
   setContextProps: () => {},
 });
 
@@ -106,6 +114,7 @@ function ModalProvider({
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState("search");
   const modalRef = useRef<HTMLDivElement>(null);
+  const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState("all");
 
   useEffect(() => {
@@ -148,6 +157,35 @@ function ModalProvider({
     };
   }, [query, currentTag]);
 
+  const getTagCounts = async (abortController: AbortController) => {
+    if (!query) {
+      setTagCounts([]);
+      return;
+    }
+    if (props.tags?.length) {
+      const numberOfRecords = await Promise.all(
+        [ALL_TAG, ...props.tags].map((tag) =>
+          countChunks({
+            query: query,
+            trieve: props.trieve,
+            abortController,
+            ...(tag.tag !== "all" && { tag: tag.tag }),
+          })
+        )
+      );
+      setTagCounts(numberOfRecords);
+    }
+  };
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    getTagCounts(abortController);
+
+    return () => {
+      abortController.abort();
+    };
+  }, [query]);
+
   return (
     <ModalContext.Provider
       value={{
@@ -173,6 +211,7 @@ function ModalProvider({
         modalRef,
         currentTag,
         setCurrentTag,
+        tagCounts,
       }}
     >
       {children}

@@ -2,7 +2,7 @@ import React from "react";
 import { Item } from "./item";
 import { AIIcon, ArrowIcon, ReloadIcon } from "./icons";
 import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
-import { useModalState } from "../utils/hooks/modal-context";
+import { ALL_TAG, useModalState } from "../utils/hooks/modal-context";
 
 export const SearchMode = () => {
   const {
@@ -16,6 +16,7 @@ export const SearchMode = () => {
     requestID,
     inputRef,
     setMode,
+    tagCounts,
   } = useModalState();
   const {
     suggestedQueries,
@@ -114,19 +115,17 @@ export const SearchMode = () => {
           <p className="no-results-loading">Searching...</p>
         ) : null}
       </ul>
-      {props.tags?.length && results.length ? (
+      {props.tags?.length && (query || (query && !results.length)) ? (
         <ul className="tags">
-          <li className={currentTag === "all" ? "active" : ""}>
-            <button onClick={() => setCurrentTag("all")}>All</button>
-          </li>
-          {props.tags.map((tag) => (
+          {[ALL_TAG, ...props.tags].map((tag, idx) => (
             <li
               className={currentTag === tag.tag ? "active" : ""}
               key={tag.tag}
             >
               <button onClick={() => setCurrentTag(tag.tag)}>
                 {tag.icon && typeof tag.icon === "function" && tag.icon()}
-                {tag.label || tag.tag}
+                {tag.label || tag.tag}{" "}
+                {tagCounts[idx] ? `(${tagCounts[idx].count})` : ""}
               </button>
             </li>
           ))}
