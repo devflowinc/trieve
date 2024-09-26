@@ -25,7 +25,7 @@ export type ModalProps = {
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
   defaultQueries?: string[];
-  openKeyCombination: { key?: string; label?: string; ctrl?: boolean }[];
+  openKeyCombination?: { key?: string; label?: string; ctrl?: boolean }[];
 };
 
 const defaultProps = {
