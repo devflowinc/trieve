@@ -8,8 +8,7 @@ use std::sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::operators::{
-    dataset_operator::get_dataset_by_id_query, parse_operator::extract_text_from_html,
-    user_operator::hash_function,
+    dataset_operator::get_dataset_by_id_query, user_operator::hash_function,
 };
 use trieve_server::{
     data::models::{CrawlRequest, DatasetConfiguration, RedisPool},
@@ -132,38 +131,29 @@ async fn crawl(
 
             let mut semantic_boost_phrase = heading.clone();
             let mut fulltext_boost_phrase = heading.clone();
+            metadata["heading"] = json!(heading.clone());
 
             if !page_title.is_empty() {
-                semantic_boost_phrase.push_str("\n\n");
-                semantic_boost_phrase.push_str(&page_title);
-                fulltext_boost_phrase.push_str(&page_title);
+                semantic_boost_phrase.push_str(format!("\n\n{}", page_title).as_str());
+                fulltext_boost_phrase.push_str(format!("\n\n{}", page_title).as_str());
 
                 metadata["title"] = json!(page_title.clone());
             }
             if !page_description.is_empty() {
-                semantic_boost_phrase.push_str("\n\n");
-                semantic_boost_phrase.push_str(&page_description);
+                semantic_boost_phrase.push_str(format!("\n\n{}", page_description).as_str());
 
                 metadata["description"] = json!(page_description.clone());
             }
-
-            let cleaned_html = extract_text_from_html(&chunk_html.clone())
-                .trim()
-                .replace("\n", "");
 
             let chunk = ChunkReqPayload {
                 chunk_html: Some(chunk_html.clone()),
                 link: Some(page_link.clone()),
                 tag_set: Some(page_tags.clone()),
-                metadata: Some(json!({
-                    "title": page_title.clone(),
-                    "description": page_description.clone(),
-                    "url": page_link.clone(),
-                })),
+                metadata: Some(json!(metadata)),
                 tracking_id: Some(hash_function(&format!(
                     "{}{}",
                     page_link.trim_end_matches("/"),
-                    cleaned_html.clone()
+                    heading.clone()
                 ))),
                 upsert_by_tracking_id: Some(true),
                 group_tracking_ids: Some(vec![page_link.clone()]),
