@@ -1,7 +1,7 @@
 import { JSX } from "solid-js";
 import { A } from "@solidjs/router";
 import { BiRegularLinkExternal } from "solid-icons/bi";
-import { NavbarOrgWidget } from "../components/NavbarOrgWidget";
+import { UserNavWidget } from "../components/UserNavWidget";
 import ShowToasts from "../components/ShowToasts";
 
 interface NavbarLayoutProps {
@@ -38,7 +38,7 @@ export const NavbarLayout = (props: NavbarLayoutProps) => {
               <p>API Docs</p>
               <BiRegularLinkExternal class="opacity-80" />
             </a>
-            <NavbarOrgWidget />
+            <UserNavWidget />
           </div>
         </div>
         <div class="flex grow flex-col bg-neutral-100">{props.children}</div>
