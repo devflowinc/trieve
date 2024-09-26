@@ -767,6 +767,37 @@ export type ErrorResponseBody = {
     message: string;
 };
 
+export type EventAnalyticsFilter = {
+    date_range?: ((DateRange) | null);
+    event_type?: ((EventTypesFilter) | null);
+    /**
+     * Filter by conversions
+     */
+    is_conversion?: (boolean) | null;
+    /**
+     * Filter by metadata path i.e. path.attribute = \"value\"
+     */
+    metadata_filter?: (string) | null;
+    /**
+     * Filter by user ID
+     */
+    user_id?: (string) | null;
+};
+
+export type EventData = {
+    created_at: string;
+    dataset_id: string;
+    event_name: string;
+    event_type: string;
+    id: string;
+    is_conversion?: (boolean) | null;
+    items: Array<(string)>;
+    metadata?: unknown;
+    request_id?: (string) | null;
+    updated_at: string;
+    user_id?: (string) | null;
+};
+
 export type EventReturn = {
     events: Array<WorkerEvent>;
     page_count: number;
@@ -898,6 +929,8 @@ export type EventTypes = {
 };
 
 export type event_type = 'view';
+
+export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'click' | 'filter_clicked';
 
 export type FieldCondition = {
     date_range?: ((DateRange) | null);
@@ -1071,6 +1104,14 @@ export type GetEventsData = {
      * The number of items per page. Default is 10.
      */
     page_size?: (number) | null;
+};
+
+export type GetEventsRequestBody = {
+    filter?: ((EventAnalyticsFilter) | null);
+};
+
+export type GetEventsResponseBody = {
+    events: Array<EventData>;
 };
 
 export type GetGroupsForChunksReqPayload = {
@@ -1374,6 +1415,7 @@ export type RagQueryEvent = {
     created_at: string;
     dataset_id: string;
     id: string;
+    llm_response: string;
     rag_type: string;
     results: Array<ChunkMetadataStringTagSet>;
     search_id: string;
@@ -2059,6 +2101,7 @@ export type SlimChunkMetadataWithScore = {
 };
 
 export type SlimUser = {
+    created_at: string;
     email: string;
     id: string;
     name?: (string) | null;
@@ -2507,19 +2550,6 @@ export type WorkerEvent = {
     id: string;
 };
 
-export type GetCtrAnalyticsData = {
-    /**
-     * JSON request payload to filter the graph
-     */
-    requestBody: CTRAnalytics;
-    /**
-     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
-     */
-    trDataset: string;
-};
-
-export type GetCtrAnalyticsResponse = (CTRAnalyticsResponse);
-
 export type SendCtrDataData = {
     /**
      * JSON request payload to send CTR data
@@ -2533,6 +2563,15 @@ export type SendCtrDataData = {
 
 export type SendCtrDataResponse = (void);
 
+export type GetAllEventsData = {
+    /**
+     * JSON request payload to filter the events
+     */
+    requestBody: GetEventsRequestBody;
+};
+
+export type GetAllEventsResponse = (GetEventsResponseBody);
+
 export type SendEventDataData = {
     /**
      * JSON request payload to send event data
@@ -2545,6 +2584,19 @@ export type SendEventDataData = {
 };
 
 export type SendEventDataResponse = (void);
+
+export type GetCtrAnalyticsData = {
+    /**
+     * JSON request payload to filter the graph
+     */
+    requestBody: CTRAnalytics;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetCtrAnalyticsResponse = (CTRAnalyticsResponse);
 
 export type GetRagAnalyticsData = {
     /**
@@ -3697,19 +3749,6 @@ export type GetMetricsResponse = (string);
 
 export type $OpenApiTs = {
     '/api/analytics/ctr': {
-        post: {
-            req: GetCtrAnalyticsData;
-            res: {
-                /**
-                 * The CTR analytics for the dataset
-                 */
-                200: CTRAnalyticsResponse;
-                /**
-                 * Service error relating to getting CTR analytics
-                 */
-                400: ErrorResponseBody;
-            };
-        };
         put: {
             req: SendCtrDataData;
             res: {
@@ -3725,6 +3764,19 @@ export type $OpenApiTs = {
         };
     };
     '/api/analytics/events': {
+        post: {
+            req: GetAllEventsData;
+            res: {
+                /**
+                 * The events for the request
+                 */
+                200: GetEventsResponseBody;
+                /**
+                 * Service error relating to getting events
+                 */
+                400: ErrorResponseBody;
+            };
+        };
         put: {
             req: SendEventDataData;
             res: {
@@ -3734,6 +3786,21 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to sending event data
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/analytics/events/ctr': {
+        post: {
+            req: GetCtrAnalyticsData;
+            res: {
+                /**
+                 * The CTR analytics for the dataset
+                 */
+                200: CTRAnalyticsResponse;
+                /**
+                 * Service error relating to getting CTR analytics
                  */
                 400: ErrorResponseBody;
             };

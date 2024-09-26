@@ -41,7 +41,7 @@ export async function getCTRAnalytics(
   signal?: AbortSignal
 ) {
   return await this.trieve.fetch(
-    "/api/analytics/ctr",
+    "/api/analytics/events/ctr",
     "post",
     {
       data,
