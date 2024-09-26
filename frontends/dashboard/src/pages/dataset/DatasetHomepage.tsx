@@ -1,4 +1,10 @@
-import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  onCleanup,
+  useContext,
+  Show,
+} from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { createQuery } from "@tanstack/solid-query";
 import { useTrieve } from "../../hooks/useTrieve";
@@ -11,8 +17,10 @@ import { Spacer } from "../../components/Spacer";
 import { BuildingSomething } from "../../components/BuildingSomething";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "../../components/ShowToasts";
+import { BiRegularPencil, BiRegularCheck, BiRegularX } from "solid-icons/bi";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
+const apiHost: string = import.meta.env.VITE_API_HOST as string;
 
 export const DatasetHomepage = () => {
   const { datasetId } = useContext(DatasetContext);
@@ -21,6 +29,9 @@ export const DatasetHomepage = () => {
 
   const [openSampleDataModal, setOpenSampleDataModal] =
     createSignal<boolean>(false);
+
+  const [showEditTitle, setShowEditTitle] = createSignal<boolean>(false);
+  const [newDatasetName, setNewDatasetName] = createSignal<string>("");
 
   const datasetQuery = createQuery(() => ({
     queryKey: ["dataset", datasetId()],
@@ -92,11 +103,87 @@ export const DatasetHomepage = () => {
     onCleanup(() => clearInterval(refreshChunkCountId));
   });
 
+  const editTitle = async () => {
+    await fetch(`${apiHost}/dataset`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "TR-Dataset": datasetId(),
+      },
+      body: JSON.stringify({
+        dataset_id: datasetId(),
+        dataset_name: newDatasetName(),
+      }),
+    })
+      .then(() => {
+        createToast({
+          title: "Success",
+          type: "success",
+          message: "Dataset name has been updated",
+        });
+
+        setShowEditTitle(false);
+        datasetQuery.refetch().catch(() => {
+          createToast({
+            title: "Error",
+            type: "error",
+            message: "Could not fetch dataset name",
+          });
+        });
+      })
+      .catch(() => {
+        createToast({
+          title: "Error",
+          type: "error",
+          message: "Failed to update dataset name",
+        });
+      });
+  };
+
+  const handleSaveTitle = () => {
+    editTitle().catch((err) => {
+      console.error(err);
+    });
+  };
+
   return (
     <div>
       <div class="flex items-end justify-between pb-2">
         <MagicSuspense skeletonHeight="36px" unstyled>
-          <div class="text-xl font-medium">{datasetQuery.data?.name}</div>
+          <Show when={!showEditTitle()}>
+            <div class="flex items-center justify-center gap-2 text-xl font-medium">
+              {datasetQuery.data?.name}
+              <button
+                class="text-base opacity-80 hover:text-fuchsia-500"
+                onClick={() => setShowEditTitle(true)}
+              >
+                <BiRegularPencil />
+              </button>
+            </div>
+          </Show>
+          <Show when={showEditTitle()}>
+            <div class="align-center mb-1 flex flex-row gap-1">
+              <input
+                type="text"
+                name="dataset-name"
+                id="dataset-name"
+                placeholder="Enter the new dataset name"
+                class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
+                value={newDatasetName()}
+                onInput={(e) => setNewDatasetName(e.currentTarget.value)}
+              />
+              <button class="text-base opacity-80 hover:text-green-500">
+                <BiRegularCheck class="text-2xl" onClick={handleSaveTitle} />
+              </button>
+              <button
+                class="text-base opacity-80 hover:text-red-500"
+                onClick={() => setShowEditTitle(false)}
+              >
+                <BiRegularX class="text-2xl" />
+              </button>
+            </div>
+          </Show>
         </MagicSuspense>
         <div class="flex gap-2">
           <a
