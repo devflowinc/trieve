@@ -2,7 +2,10 @@ use actix_web::web;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::models::{Dataset, DatasetDTO, DateRange, Organization, Pool, SlimUser, UnifiedId},
+    data::models::{
+        Dataset, DatasetDTO, DateRange, HeadQueries, Organization, Pool, SearchQueryEvent,
+        SlimUser, UnifiedId,
+    },
     errors::ServiceError,
     handlers::{
         analytics_handler::GetTopDatasetsRequestBody, dataset_handler::GetDatasetsPagination,
@@ -10,7 +13,10 @@ use crate::{
 };
 
 use super::{
-    analytics_operator::{get_rag_usage_query, get_search_metrics_query, get_top_datasets_query},
+    analytics_operator::{
+        get_head_queries_query, get_low_confidence_queries_query, get_rag_usage_query,
+        get_search_metrics_query, get_top_datasets_query,
+    },
     dataset_operator::{get_dataset_by_id_query, get_datasets_by_organization_id},
     organization_operator::get_org_usage_by_id_query,
 };
@@ -48,6 +54,8 @@ pub struct DittoOrgUsage {
 #[serde(rename_all = "camelCase")]
 pub struct DittoDatasetUsage {
     pub dataset: DatasetDTO,
+    pub top_search_queries: Vec<HeadQueries>,
+    pub low_confidence_search_queries: Vec<SearchQueryEvent>,
     pub chunk_count: i32,
     pub search_count: i32,
     pub rag_count: u32,
@@ -162,8 +170,20 @@ pub async fn get_user_ditto_identity(
                 get_search_metrics_query(dataset.dataset.id, None, clickhouse_client).await?;
             let rag_metrics =
                 get_rag_usage_query(dataset.dataset.id, None, clickhouse_client).await?;
+            let top_search_queries =
+                get_head_queries_query(dataset.dataset.id, None, None, clickhouse_client).await?;
+            let low_confidence_search_queries = get_low_confidence_queries_query(
+                dataset.dataset.id,
+                None,
+                None,
+                None,
+                clickhouse_client,
+            )
+            .await?;
             let usage = DittoDatasetUsage {
                 dataset: dataset.dataset,
+                top_search_queries: top_search_queries.queries,
+                low_confidence_search_queries: low_confidence_search_queries.queries,
                 chunk_count: dataset.dataset_usage.chunk_count,
                 search_count: search_metrics.total_queries,
                 rag_count: rag_metrics.total_queries,
