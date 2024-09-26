@@ -112,7 +112,7 @@ function ModalProvider({
   const [loadingResults, setLoadingResults] = useState(false);
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState("search");
+  const [mode, setMode] = useState("chat");
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState("all");
