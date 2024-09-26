@@ -2885,7 +2885,7 @@ pub async fn hybrid_search_over_groups(
 
         cross_encoder_results
             .iter()
-            .chain(split_results.get(1).unwrap().iter())
+            .chain(split_results.iter().skip(1).flat_map(|chunk| chunk.iter()))
             .cloned()
             .collect::<Vec<GroupScoreChunk>>()
     } else {
@@ -2901,23 +2901,28 @@ pub async fn hybrid_search_over_groups(
     timer.add("reranking");
 
     if let Some(score_threshold) = data.score_threshold {
-        reranked_chunks.retain(|chunk| {
-            chunk.metadata.get(0).map(|m| m.score).unwrap_or(0.0) >= score_threshold.into()
+        reranked_chunks.retain(|group_score_chunk| {
+            group_score_chunk
+                .metadata
+                .get(0)
+                .map(|m| m.score)
+                .unwrap_or(0.0)
+                >= score_threshold.into()
         });
-        reranked_chunks.iter_mut().for_each(|chunk| {
-            chunk
+        reranked_chunks.iter_mut().for_each(|group_score_chunk| {
+            group_score_chunk
                 .metadata
                 .retain(|metadata| metadata.score >= score_threshold.into())
         });
     }
+
+    reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
 
     let result_chunks = DeprecatedSearchOverGroupsResponseBody {
         group_chunks: reranked_chunks,
         corrected_query: corrected_query.map(|c| c.query),
         total_chunk_pages: combined_search_chunk_query_results.total_chunk_pages,
     };
-
-    //TODO: rerank for groups
 
     Ok(result_chunks)
 }
