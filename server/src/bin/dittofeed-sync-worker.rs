@@ -90,15 +90,19 @@ async fn main() -> Result<(), ServiceError> {
     log::info!("Fetched {} users", users.len());
 
     for user in users {
-        let identify_request =
-            get_user_ditto_identity(user, pool.clone(), &clickhouse_client).await?;
+        match get_user_ditto_identity(user.clone(), pool.clone(), &clickhouse_client).await {
+            Ok(identify_request) => {
+                log::info!(
+                    "Sending ditto identity for user {}",
+                    identify_request.traits.email
+                );
 
-        log::info!(
-            "Sending ditto identity for user {}",
-            identify_request.traits.email
-        );
-
-        send_user_ditto_identity(identify_request).await?;
+                send_user_ditto_identity(identify_request).await?;
+            }
+            Err(e) => {
+                log::info!("No ditto identity for user {}. Error: {}", user.email, e);
+            }
+        }
     }
 
     log::info!("Finished sending ditto identities");
