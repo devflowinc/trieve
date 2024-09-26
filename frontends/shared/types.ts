@@ -518,6 +518,7 @@ export interface RagQueryEvent {
   user_message: string;
   search_id: string;
   results: ChunkMetadataStringTagSet[];
+  llm_response: string;
   dataset_id: string;
   created_at: string;
 }
