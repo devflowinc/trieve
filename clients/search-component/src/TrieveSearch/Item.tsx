@@ -5,17 +5,19 @@ import React from "react";
 type Props = {
   index: number;
   item: ChunkWithHighlights;
+  requestID: string;
   getItemProps: (opts: {
     item: ChunkWithHighlights;
     index: number;
   }) => object | null | undefined;
-  onResultClick?: (chunk: Chunk) => void;
+  onResultClick?: (chunk: Chunk, requestID: string) => void;
   showImages?: boolean;
 };
 
 export const Item = ({
   item,
   index,
+  requestID,
   getItemProps,
   onResultClick,
   showImages,
@@ -30,7 +32,7 @@ export const Item = ({
     <li {...omit(getItemProps({ item, index }), ["onClick", "ref"])}>
       <Component
         className="item"
-        onClick={() => onResultClick && onResultClick(item.chunk)}
+        onClick={() => onResultClick && onResultClick(item.chunk, requestID)}
         {...(item.chunk.link ? { href: item.chunk.link } : {})}
       >
         <div>

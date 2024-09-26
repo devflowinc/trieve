@@ -6,9 +6,9 @@ import SyntaxHighlighter from "react-syntax-highlighter";
 import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 const trieve = new TrieveSDK({
-  apiKey: "tr-RUtpKC2ImeItOY17b5gJ4cEmASsjWhK5",
-  datasetId: "d4bcda6c-ffa5-4b28-93cb-3d7c4e395c7b",
-});
+  apiKey: 'tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI',
+  datasetId: '4650e231-7857-45aa-beb1-cb52006a2460',
+})
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");

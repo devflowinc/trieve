@@ -15,9 +15,11 @@ export type Chunk = Omit<ChunkMetadata, "metadata"> & {
 
 export type ChunkWithHighlights = { chunk: Chunk; highlights: string[] };
 
+export type SearchResults = {chunks: ChunkWithHighlights[], requestID: string};
+
 export type Props = {
   trieve: TrieveSDK;
-  onResultClick?: (chunk: Chunk) => void;
+  onResultClick?: (chunk: Chunk, requestID: string) => void;
   showImages?: boolean;
   theme?: "light" | "dark";
   searchOptions?: Omit<

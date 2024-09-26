@@ -8,10 +8,11 @@ import { load } from "cheerio";
 
 type Props = {
   item: ChunkWithHighlights;
+  requestID: string;
   index: number;
 };
 
-export const Item = ({ item, index }: Props) => {
+export const Item = ({ item, requestID, index }: Props) => {
   const { onUpOrDownClicked } = useKeyboardNavigation();
   const { props } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
@@ -66,7 +67,7 @@ export const Item = ({ item, index }: Props) => {
     [item]
   );
 
-  const onResultClick = async (chunk: Chunk & { position: number }) => {
+  const onResultClick = async (chunk: Chunk & { position: number }, requestID: string) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
     }
@@ -75,6 +76,7 @@ export const Item = ({ item, index }: Props) => {
       await sendCtrData({
         trieve: props.trieve,
         index: chunk.position,
+        requestID: requestID,
         chunkID: chunk.id,
       });
     }
@@ -100,8 +102,9 @@ export const Item = ({ item, index }: Props) => {
         onClick={() =>
           onResultClick({
             ...item.chunk,
-            position: index,
-          })
+            position: index
+          }, 
+          requestID)
         }
         {...(item.chunk.link
           ? {

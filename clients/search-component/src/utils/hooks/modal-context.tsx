@@ -48,6 +48,8 @@ const ModalContext = createContext<{
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   results: ChunkWithHighlights[];
   setResults: React.Dispatch<React.SetStateAction<ChunkWithHighlights[]>>;
+  requestID: string;
+  setRequestID: React.Dispatch<React.SetStateAction<string>>;
   loadingResults: boolean;
   setLoadingResults: React.Dispatch<React.SetStateAction<boolean>>;
   open: boolean;
@@ -70,6 +72,8 @@ const ModalContext = createContext<{
   setOpen: () => {},
   setQuery: () => {},
   setResults: () => {},
+  requestID: "",
+  setRequestID: () => {},
   setLoadingResults: () => {},
   setContextProps: () => {},
 });
@@ -87,6 +91,7 @@ function ModalProvider({
   });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
+  const [requestID, setRequestID] = useState("");
   const [loadingResults, setLoadingResults] = useState(false);
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -115,7 +120,8 @@ function ModalProvider({
         trieve: props.trieve,
         abortController,
       });
-      setResults(results);
+      setResults(results.chunks);
+      setRequestID(results.requestID);
     } catch (e) {
       console.error(e);
     }
@@ -149,6 +155,8 @@ function ModalProvider({
         inputRef,
         results,
         setResults,
+        requestID,
+        setRequestID,
         loadingResults,
         setLoadingResults,
         mode,
