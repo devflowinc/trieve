@@ -140,3 +140,15 @@ export const getSuggestedQueries = async ({
     context: "You are a user searching through a docs website",
   });
 };
+
+export const getSuggestedQuestions = async ({
+  trieve,
+}: {
+  trieve: TrieveSDK;
+}) => {
+  return trieve.suggestedQueries({
+    suggestion_type: "question",
+    search_type: "semantic",
+    context: "You are a user searching through a docs website",
+  });
+};

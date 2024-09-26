@@ -186,51 +186,85 @@ body {
       @apply absolute top-4 right-4 cursor-pointer;
     }
 
+    .suggested-queries-wrapper {
+      @apply flex gap-2 items-center flex-wrap;
+
+      > p {
+        @apply text-xs;
+        color: var(--tv-zinc-600);
+      }
+    }
+
+    .suggested-query {
+      @apply inline-flex items-center rounded-md px-2 py-1 text-xs text-left;
+      color: var(--tv-zinc-900);
+
+      &:not(p) {
+        @apply border;
+        border-color: var(--tv-zinc-300);
+        background-color: var(--tv-zinc-100);
+      }
+
+      &:not(:disabled):not(p):hover {
+        background-color: var(--tv-zinc-200);
+      }
+
+      &:not(p):disabled {
+        @apply cursor-not-allowed;
+        color: var(--tv-zinc-400);
+        border-color: var(--tv-zinc-200);
+        background-color: var(--bg-color);
+      }
+
+      &.loading {
+        @apply animate-pulse;
+      }
+
+      &.empty-state-loading {
+        @apply animate-pulse;
+      }
+    }
+
+    .chat-outer-wrapper {
+      @apply mt-12;
+    }
+    /* SUGGESTED QUESTIONS */
+
+    .suggested-questions-wrapper {
+      @apply p-8;
+
+      p {
+        @apply text-sm mb-4;
+      }
+
+      h6 {
+        @apply text-base font-medium mb-4;
+      }
+
+      .questions {
+        @apply text-sm flex flex-wrap gap-2;
+
+        .suggested-question {
+          @apply p-2 text-left rounded-md border transition-all;
+          border-color: var(--tv-zinc-200);
+
+          &:hover {
+            background-color: var(--tv-zinc-200);
+          }
+
+          &.refetch {
+            @apply flex gap-1 items-center;
+          }
+        }
+      }
+    }
+
     .input-wrapper {
       @apply sticky top-0 pt-2 z-10 mt-1 flex flex-col gap-2;
       background-color: var(--bg-color);
 
       .input-flex {
         @apply flex items-center;
-      }
-
-      .suggested-queries-wrapper {
-        @apply flex gap-2 items-center flex-wrap;
-
-        > p {
-          @apply text-xs;
-          color: var(--tv-zinc-600);
-        }
-      }
-
-      .suggested-query {
-        @apply inline-flex items-center rounded-md px-2 py-1 text-xs text-left;
-        color: var(--tv-zinc-900);
-
-        &:not(p) {
-          @apply border;
-          border-color: var(--tv-zinc-300);
-          background-color: var(--tv-zinc-100);
-        }
-
-        &:not(:disabled):not(p):hover {
-          background-color: var(--tv-zinc-200);
-        }
-
-        &:not(p):disabled {
-          @apply cursor-not-allowed;
-          color: var(--tv-zinc-400);
-          border-color: var(--tv-zinc-200);
-          background-color: var(--bg-color);
-        }
-
-        &.loading {
-          @apply animate-pulse;
-        }
-
-        &.empty-state-loading {
-          @apply animate-pulse;
-        }
       }
 
       &::after {
@@ -249,7 +283,11 @@ body {
       }
 
       &.chat {
-        @apply flex-row;
+        @apply mb-2 flex-row sticky bottom-9;
+
+        &::after {
+          @apply -top-[7px];
+        }
 
         form {
           @apply w-full;
