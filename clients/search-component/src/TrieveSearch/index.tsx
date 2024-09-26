@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useCombobox } from "downshift";
 import { Item } from "./Item";
 import { Chunk, ChunkWithHighlights, Props } from "../utils/types";
-import throttle from "lodash.throttle";
+import { throttle } from "lodash-es";
 import r2wc from "@r2wc/react-to-web-component";
 import { searchWithTrieve } from "../utils/trieve";
 

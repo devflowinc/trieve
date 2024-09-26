@@ -34,6 +34,25 @@ body {
       @apply text-sm text-center my-8 animate-pulse;
     }
 
+    ul.tags {
+      @apply flex flex-wrap items-center text-sm border-t  !px-2 !-ml-2 !-mr-2 relative !mt-0;
+      color: var(--tv-zinc-800);
+      border-color: var(--tv-zinc-200);
+
+      li {
+        button {
+          @apply flex gap-1 items-center py-2 px-4;
+        }
+        @apply border-t-2;
+        border-color: transparent;
+        &:hover,
+        &.active {
+          background-color: var(--tv-zinc-100);
+          border-color: var(--tv-primary-500);
+        }
+      }
+    }
+
     .footer {
       @apply flex border-t sticky -bottom-2 items-center pt-3 px-2 pb-1;
       background-color: var(--tv-zinc-50);
@@ -299,6 +318,19 @@ body {
     &.dark {
       background-color: var(--tv-zinc-900);
       color: var(--tv-zinc-100);
+
+      ul.tags {
+        color: var(--tv-zinc-200);
+        border-color: var(--tv-zinc-700);
+
+        li {
+          &:hover,
+          &.active {
+            background-color: var(--tv-zinc-800);
+            border-color: var(--tv-primary-500);
+          }
+        }
+      }
 
       .footer {
         border-color: var(--tv-zinc-700);

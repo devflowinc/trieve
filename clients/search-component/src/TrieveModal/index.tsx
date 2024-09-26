@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Fragment } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
 import { SearchMode } from "./SearchMode";
@@ -58,7 +58,7 @@ const Modal = () => {
             </div>
             <span className="open">
               {keyCombo.map((key) => (
-                <>
+                <Fragment key={key.key}>
                   {key.ctrl ? (
                     <>
                       <span className="mac">⌘ </span>
@@ -70,7 +70,7 @@ const Modal = () => {
                       {keyCombo.length > 1 ? "+" : null} {key.label || key.key}
                     </span>
                   )}
-                </>
+                </Fragment>
               ))}
             </span>
           </button>
