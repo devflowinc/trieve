@@ -1057,6 +1057,7 @@ pub async fn get_searches_with_clicks_query(
     let mut query_string = String::from(
         "SELECT 
             search_queries.query,
+            search_queries.results,
             events.dataset_id,
             events.metadata,
             events.created_at
@@ -1222,6 +1223,7 @@ pub async fn get_recommendations_with_clicks_query(
             recommendations.negative_ids,
             recommendations.positive_tracking_ids,
             recommendations.negative_tracking_ids,
+            recommendations.results,
             events.dataset_id,
             events.metadata,
             events.created_at

@@ -32,6 +32,7 @@ use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
 use postgres_openssl::MakeTlsConnector;
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
+use ureq::json;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -657,6 +658,7 @@ pub fn main() -> std::io::Result<()> {
             std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create metrics {:?}", e))
         })?;
 
+
         HttpServer::new(move || {
             App::new()
                 .wrap(Cors::permissive())
@@ -711,7 +713,7 @@ pub fn main() -> std::io::Result<()> {
                     .exclude("/api/health")
                     .exclude("/metrics")
                 )
-                .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
+                .service(Redoc::with_url_and_config("/redoc", ApiDoc::openapi(), || json!({"requiredPropsFirst": true,"simpleOneOfTypeLabel": true})))
                 .service(
                     SwaggerUi::new("/swagger-ui/{_:.*}")
                         .url("/api-docs/openapi.json", ApiDoc::openapi())
