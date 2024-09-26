@@ -543,15 +543,13 @@ pub fn chunk_html(html: &str) -> Vec<(String, String)> {
             {
                 let heading = extract_first_heading(&current_chunk);
                 chunks.push((heading, current_chunk));
-                current_chunk = String::new();
             } else {
                 short_chunk = Some(current_chunk);
-                current_chunk = String::new();
             }
-        } else {
-            current_chunk = cap.as_str().to_string();
-            last_end = cap.end();
         }
+
+        current_chunk = cap.as_str().to_string();
+        last_end = cap.end();
     }
 
     if last_end < html.len() {
@@ -559,7 +557,14 @@ pub fn chunk_html(html: &str) -> Vec<(String, String)> {
     }
 
     if !current_chunk.is_empty() {
-        let current_chunk = current_chunk.trim().to_string();
+        let trimmed_chunk = current_chunk.trim().to_string();
+
+        if let Some(prev_short_chunk) = short_chunk.take() {
+            current_chunk = format!("{} {}", prev_short_chunk, trimmed_chunk);
+        } else {
+            current_chunk = trimmed_chunk;
+        }
+
         let heading = extract_first_heading(&current_chunk);
         chunks.push((heading, current_chunk));
     } else if let Some(last_short_chunk) = short_chunk {
