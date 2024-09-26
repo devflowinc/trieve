@@ -1,5 +1,5 @@
 import { Chunk, ChunkWithHighlights } from "../utils/types";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, {useEffect, useRef } from "react";
 import { ArrowIcon } from "./icons";
 import { useModalState } from "../utils/hooks/modal-context";
 import { sendCtrData } from "../utils/trieve";
@@ -58,14 +58,12 @@ export const Item = ({ item, requestID, index }: Props) => {
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name;
 
-  const checkForUpAndDown = useCallback(
+  const checkForUpAndDown = 
     (e: KeyboardEvent) => {
       if (e.code === "ArrowDown" || e.code === "ArrowUp") {
         onUpOrDownClicked(index, e.code);
       }
-    },
-    [item]
-  );
+    }
 
   const onResultClick = async (chunk: Chunk & { position: number }, requestID: string) => {
     if (props.onResultClick) {
