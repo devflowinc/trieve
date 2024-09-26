@@ -3733,7 +3733,7 @@ pub struct SearchQueriesWithClicksCTRResponseClickhouse {
     pub results: Vec<String>,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
-    pub chunks_with_position: String,
+    pub chunk_with_position: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
 }
@@ -3742,7 +3742,7 @@ pub struct SearchQueriesWithClicksCTRResponseClickhouse {
 pub struct SearchQueriesWithClicksCTRResponse {
     pub query: String,
     pub results: Vec<serde_json::Value>,
-    pub clicked_chunks: Vec<ChunkMetadatasWithPositions>,
+    pub clicked_chunk: ChunkMetadataWithPosition,
     pub created_at: String,
 }
 
@@ -3751,28 +3751,18 @@ impl SearchQueriesWithClicksCTRResponseClickhouse {
         self,
         pool: web::Data<Pool>,
     ) -> SearchQueriesWithClicksCTRResponse {
-        let chunks_with_positions: Vec<ChunksWithPositions> =
-            serde_json::from_str(&self.chunks_with_position).unwrap();
+        let chunk_with_position: ChunkWithPosition =
+            serde_json::from_str(&self.chunk_with_position).unwrap();
 
-        let futures: Vec<_> = chunks_with_positions
-            .iter()
-            .map(|chunk_with_position| async {
-                let chunk = get_metadata_from_id_query(
-                    chunk_with_position.chunk_id,
-                    self.dataset_id,
-                    pool.clone(),
-                )
+        let chunk =
+            get_metadata_from_id_query(chunk_with_position.chunk_id, self.dataset_id, pool.clone())
                 .await
                 .unwrap_or_default();
 
-                ChunkMetadatasWithPositions {
-                    chunk,
-                    position: chunk_with_position.position,
-                }
-            })
-            .collect();
-
-        let clicked_chunks = futures::future::join_all(futures).await;
+        let clicked_chunk = ChunkMetadataWithPosition {
+            chunk,
+            position: chunk_with_position.position,
+        };
 
         SearchQueriesWithClicksCTRResponse {
             query: self.query,
@@ -3784,7 +3774,7 @@ impl SearchQueriesWithClicksCTRResponseClickhouse {
                         .unwrap_or_default()
                 })
                 .collect::<Vec<serde_json::Value>>(),
-            clicked_chunks,
+            clicked_chunk,
             created_at: self.created_at.to_string(),
         }
     }
@@ -3823,7 +3813,7 @@ pub struct RecommendationsWithClicksCTRResponseClickhouse {
     pub results: Vec<String>,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
-    pub chunks_with_position: String,
+    pub chunk_with_position: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
 }
@@ -3835,7 +3825,7 @@ pub struct RecommendationsWithClicksCTRResponse {
     pub positive_tracking_ids: Option<Vec<String>>,
     pub negative_tracking_ids: Option<Vec<String>>,
     pub results: Vec<serde_json::Value>,
-    pub clicked_chunks: Vec<ChunkMetadatasWithPositions>,
+    pub clicked_chunk: ChunkMetadataWithPosition,
     pub created_at: String,
 }
 
@@ -3844,28 +3834,18 @@ impl RecommendationsWithClicksCTRResponseClickhouse {
         self,
         pool: web::Data<Pool>,
     ) -> RecommendationsWithClicksCTRResponse {
-        let chunks_with_positions: Vec<ChunksWithPositions> =
-            serde_json::from_str(&self.chunks_with_position).unwrap();
+        let chunk_with_position: ChunkWithPosition =
+            serde_json::from_str(&self.chunk_with_position).unwrap();
 
-        let futures: Vec<_> = chunks_with_positions
-            .iter()
-            .map(|chunk_with_position| async {
-                let chunk = get_metadata_from_id_query(
-                    chunk_with_position.chunk_id,
-                    self.dataset_id,
-                    pool.clone(),
-                )
+        let chunk =
+            get_metadata_from_id_query(chunk_with_position.chunk_id, self.dataset_id, pool.clone())
                 .await
                 .unwrap_or_default();
 
-                ChunkMetadatasWithPositions {
-                    chunk,
-                    position: chunk_with_position.position,
-                }
-            })
-            .collect();
-
-        let clicked_chunks = futures::future::join_all(futures).await;
+        let clicked_chunk = ChunkMetadataWithPosition {
+            chunk,
+            position: chunk_with_position.position,
+        };
 
         //only return the vecs that are not empty everything else should be None
         let positive_ids = if !self.positive_ids.is_empty() {
@@ -3905,7 +3885,7 @@ impl RecommendationsWithClicksCTRResponseClickhouse {
                         .unwrap_or_default()
                 })
                 .collect::<Vec<serde_json::Value>>(),
-            clicked_chunks,
+            clicked_chunk,
             created_at: self.created_at.to_string(),
         }
     }
@@ -4715,7 +4695,7 @@ impl EventDataClickhouse {
             EventTypes::Click {
                 event_name,
                 request_id,
-                clicked_items,
+                clicked_items: clicked_item,
                 user_id,
                 is_conversion,
             } => EventDataClickhouse {
@@ -4724,7 +4704,7 @@ impl EventDataClickhouse {
                 event_name,
                 request_id: request_id.unwrap_or_default(),
                 items: vec![],
-                metadata: serde_json::to_string(&clicked_items).unwrap_or_default(),
+                metadata: serde_json::to_string(&clicked_item).unwrap_or_default(),
                 user_id: user_id.unwrap_or_default(),
                 is_conversion: is_conversion.unwrap_or(true),
                 dataset_id,
@@ -5406,13 +5386,13 @@ pub enum ReRankOptions {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-pub struct ChunksWithPositions {
+pub struct ChunkWithPosition {
     pub chunk_id: uuid::Uuid,
     pub position: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-pub struct ChunkMetadatasWithPositions {
+pub struct ChunkMetadataWithPosition {
     pub chunk: ChunkMetadata,
     pub position: i32,
 }
@@ -5456,7 +5436,7 @@ pub enum EventTypes {
         /// The request id of the event to associate it with a request
         request_id: Option<String>,
         /// The items that were clicked and their positons in a hashmap ie. {item_id: position}
-        clicked_items: ChunksWithPositions,
+        clicked_items: ChunkWithPosition,
         /// The user id of the user who clicked the items
         user_id: Option<String>,
         /// Whether the event is a conversion event
@@ -5499,7 +5479,7 @@ impl From<CTRDataRequestBody> for EventTypes {
         EventTypes::Click {
             event_name: String::from("click"),
             request_id: Some(data.request_id.to_string()),
-            clicked_items: ChunksWithPositions {
+            clicked_items: ChunkWithPosition {
                 chunk_id: data.clicked_chunk_id.unwrap_or_default(),
                 position: data.position,
             },
