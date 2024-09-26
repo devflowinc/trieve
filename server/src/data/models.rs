@@ -4569,21 +4569,54 @@ pub struct PopularFiltersClickhouse {
     pub common_values: String,
 }
 
+#[derive(Debug, ToSchema, Serialize, Deserialize, Clone)]
+#[schema(example = json!({
+    "event_type": "view",
+    "event_name": "Viewed Home Page",
+    "request_id": "00000000-0000-0000-0000-000000000000",
+    "items": ["item1", "item2"],
+    "user_id": "user1",
+    "metadata": "metadata",
+    "is_conversion": true,
+    "user_id": "user1",
+    "dataset_id": "00000000-0000-0000-0000-000000000000",
+    "created_at": "2021-08-10T00:00:00Z",
+    "updated_at": "2021-08-10T00:00:00Z"
+}))]
+pub struct EventData {
+    pub id: uuid::Uuid,
+    pub event_type: String,
+    pub event_name: String,
+    pub request_id: Option<String>,
+    pub items: Vec<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub user_id: Option<String>,
+    pub is_conversion: Option<bool>,
+    pub dataset_id: uuid::Uuid,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
 #[schema(example = json!({
-    "clause": "must",
-    "field": "metadata.ep_num",
-    "filter_type": "match_any",
-    "count": 8,
-    "common_values": "['130']: 2, ['198']: 11"
+    "event_type": "view",
+    "event_name": "Viewed Home Page",
+    "request_id": "00000000-0000-0000-0000-000000000000",
+    "items": ["item1", "item2"],
+    "user_id": "user1",
+    "metadata": "metadata",
+    "is_conversion": true,
+    "user_id": "user1",
+    "dataset_id": "00000000-0000-0000-0000-000000000000",
+    "created_at": "2021-08-10T00:00:00Z",
+    "updated_at": "2021-08-10T00:00:00Z"
 }))]
 pub struct EventDataClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub id: uuid::Uuid,
     pub event_type: String,
     pub event_name: String,
-    #[serde(with = "clickhouse::serde::uuid")]
-    pub request_id: uuid::Uuid,
+    pub request_id: String,
     pub items: Vec<String>,
     pub metadata: String,
     pub user_id: String,
@@ -4703,6 +4736,188 @@ impl EventDataClickhouse {
             },
         }
     }
+}
+
+impl From<EventDataClickhouse> for EventData {
+    fn from(clickhouse_response: EventDataClickhouse) -> EventData {
+        let request_id = if clickhouse_response.request_id.is_empty() {
+            None
+        } else {
+            Some(clickhouse_response.request_id)
+        };
+
+        let user_id = if clickhouse_response.user_id.is_empty() {
+            None
+        } else {
+            Some(clickhouse_response.user_id)
+        };
+
+        EventData {
+            id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
+            event_type: clickhouse_response.event_type,
+            event_name: clickhouse_response.event_name,
+            request_id,
+            items: clickhouse_response.items,
+            metadata: serde_json::from_str(&clickhouse_response.metadata).unwrap_or_default(),
+            user_id,
+            is_conversion: Some(clickhouse_response.is_conversion),
+            dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
+            created_at: clickhouse_response.created_at.to_string(),
+            updated_at: clickhouse_response.updated_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[schema(example = json!({
+    "date_range": {
+        "gt": "2021-08-10T00:00:00Z",
+        "lt": "2021-08-11T00:00:00Z"
+    },
+    "event_type": "view",
+    "is_conversion": true,
+    "user_id": "user1",
+    "metadata_filter": "path = \"value\""
+}))]
+pub struct EventAnalyticsFilter {
+    /// Filter by date range
+    pub date_range: Option<DateRange>,
+    /// Filter by event type
+    pub event_type: Option<EventTypesFilter>,
+    /// Filter by conversions
+    pub is_conversion: Option<bool>,
+    /// Filter by user ID
+    pub user_id: Option<String>,
+    /// Filter by metadata path i.e. path.attribute = \"value\"
+    pub metadata_filter: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display)]
+#[serde(rename_all = "snake_case")]
+pub enum EventTypesFilter {
+    #[display(fmt = "add_to_cart")]
+    AddToCart,
+    #[display(fmt = "purchase")]
+    Purchase,
+    #[display(fmt = "view")]
+    View,
+    #[display(fmt = "click")]
+    Click,
+    #[display(fmt = "filter_clicked")]
+    FilterClicked,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct GetEventsRequestBody {
+    /// Filter to apply to the events
+    pub filter: Option<EventAnalyticsFilter>,
+}
+
+fn convert_filter(
+    json_column: &str,
+    json_filter: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    // Parse the JSON filter
+    let parts: Vec<&str> = json_filter.split('=').collect();
+    if parts.len() != 2 {
+        return Err("Invalid filter format. Expected 'path = value'".into());
+    }
+
+    let path = parts[0].trim();
+    let value = parts[1].trim();
+
+    // Parse the value as JSON to handle different types
+    let json_value: Value = serde_json::from_str(value)?;
+
+    // Convert dot notation to nested JSON extraction
+    let json_path = path.split('.').collect::<Vec<&str>>();
+    let json_extract_path = json_path.join("', '");
+
+    // Generate ClickHouse filter based on value type
+    let clickhouse_filter = match json_value {
+        Value::String(s) => {
+            format!(
+                "JSONExtractString({}, '{}') = '{}'",
+                json_column,
+                json_extract_path,
+                s.replace("'", "\\'")
+            )
+        }
+        Value::Number(n) => {
+            if n.is_i64() {
+                format!(
+                    "JSONExtractInt({}, '{}') = {}",
+                    json_column, json_extract_path, n
+                )
+            } else {
+                format!(
+                    "JSONExtractFloat({}, '{}') = {}",
+                    json_column, json_extract_path, n
+                )
+            }
+        }
+        Value::Bool(b) => {
+            format!(
+                "JSONExtractBool({}, '{}') = {}",
+                json_column,
+                json_extract_path,
+                if b { "true" } else { "false" }
+            )
+        }
+        Value::Null => format!(
+            "JSONExtractString({}, '{}') IS NULL",
+            json_column, json_extract_path
+        ),
+        _ => return Err("Unsupported value type".into()),
+    };
+
+    Ok(clickhouse_filter)
+}
+
+impl EventAnalyticsFilter {
+    pub fn add_to_query(
+        &self,
+        mut query_string: String,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(event_type) = &self.event_type {
+            query_string.push_str(&format!(" AND event_type = '{}'", event_type));
+        }
+
+        if let Some(metadata_filter) = &self.metadata_filter {
+            let filter = convert_filter("metadata", metadata_filter)?;
+            query_string.push_str(&format!(" AND {}", filter));
+        }
+
+        if let Some(is_conversion) = &self.is_conversion {
+            query_string.push_str(&format!(" AND is_conversion = {}", is_conversion));
+        }
+
+        if let Some(user_id) = &self.user_id {
+            query_string.push_str(&format!(" AND user_id = '{}'", user_id));
+        }
+
+        Ok(query_string)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct GetEventsResponseBody {
+    pub events: Vec<EventData>,
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
@@ -5180,15 +5395,16 @@ pub struct ChunksWithPositions {
     pub position: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "event_type")]
 pub enum EventTypes {
+    #[display(fmt = "view")]
     View {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<uuid::Uuid>,
+        request_id: Option<String>,
         /// The items that were viewed
         items: Vec<String>,
         /// The user id of the user who viewed the items
@@ -5196,11 +5412,12 @@ pub enum EventTypes {
         /// Any other metadata associated with the event
         metadata: Option<serde_json::Value>,
     },
+    #[display(fmt = "add_to_cart")]
     AddToCart {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<uuid::Uuid>,
+        request_id: Option<String>,
         /// The items that were added to the cart
         items: Vec<String>,
         /// The user id of the user who added the items to the cart
@@ -5210,11 +5427,12 @@ pub enum EventTypes {
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
     },
+    #[display(fmt = "click")]
     Click {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<uuid::Uuid>,
+        request_id: Option<String>,
         /// The items that were clicked and their positons in a hashmap ie. {item_id: position}
         clicked_items: ChunksWithPositions,
         /// The user id of the user who clicked the items
@@ -5222,11 +5440,12 @@ pub enum EventTypes {
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
     },
+    #[display(fmt = "purchase")]
     Purchase {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<uuid::Uuid>,
+        request_id: Option<String>,
         /// The items that were purchased
         items: Vec<String>,
         /// The user id of the user who purchased the items
@@ -5238,11 +5457,12 @@ pub enum EventTypes {
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
     },
+    #[display(fmt = "filter_clicked")]
     FilterClicked {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<uuid::Uuid>,
+        request_id: Option<String>,
         /// The filter items that were clicked in a hashmap ie. {filter_name: filter_value} where filter_name is filter_type::field_name
         items: HashMap<String, String>,
         /// The user id of the user who clicked the items
@@ -5256,7 +5476,7 @@ impl From<CTRDataRequestBody> for EventTypes {
     fn from(data: CTRDataRequestBody) -> Self {
         EventTypes::Click {
             event_name: String::from("click"),
-            request_id: Some(data.request_id),
+            request_id: Some(data.request_id.to_string()),
             clicked_items: ChunksWithPositions {
                 chunk_id: data.clicked_chunk_id.unwrap_or_default(),
                 position: data.position,

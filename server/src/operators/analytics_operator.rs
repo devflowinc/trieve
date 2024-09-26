@@ -1,10 +1,11 @@
 use crate::{
     data::models::{
-        ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, EventDataClickhouse,
-        Granularity, HeadQueries, Pool, PopularFilters, PopularFiltersClickhouse,
-        RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent,
-        RagQueryEventClickhouse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
-        RecommendationEvent, RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
+        ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, EventAnalyticsFilter,
+        EventData, EventDataClickhouse, GetEventsResponseBody, Granularity, HeadQueries, Pool,
+        PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
+        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
+        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
+        RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
         RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
         RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
         SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
@@ -1452,4 +1453,56 @@ pub async fn get_top_datasets_query(
         .collect::<Vec<_>>();
 
     Ok(response)
+}
+
+pub async fn get_all_events_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<EventAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<GetEventsResponseBody, ServiceError> {
+    let mut query_string = format!(
+        "SELECT 
+            id,
+            event_type,
+            event_name,
+            request_id,
+            items,
+            metadata,
+            user_id,
+            is_conversion,
+            dataset_id,
+            created_at,
+            updated_at
+        FROM 
+            default.events
+        WHERE dataset_id = '{}'",
+        dataset_id
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string).map_err(|e| {
+            log::error!("Error adding filter to query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+    }
+
+    query_string.push_str(
+        "
+        ORDER BY 
+            created_at DESC
+        LIMIT 10",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .fetch_all::<EventDataClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let events: Vec<EventData> = clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
+
+    Ok(GetEventsResponseBody { events })
 }
