@@ -872,7 +872,8 @@ pub async fn search_over_groups_query(
 
     let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
 
-    let count_future = count_qdrant_query(count_limit, vec![qdrant_query], dataset_config.clone());
+    let count_future =
+        count_qdrant_group_query(count_limit, vec![qdrant_query], dataset_config.clone());
 
     let (qdrant_search_results, count) =
         futures::future::join(point_id_futures, count_future).await;
@@ -1563,6 +1564,135 @@ pub async fn scroll_qdrant_collection_ids(
         });
 
     Ok((point_ids, offset))
+}
+
+pub async fn count_qdrant_group_query(
+    limit: u64,
+    queries: Vec<QdrantSearchQuery>,
+    dataset_config: DatasetConfiguration,
+) -> Result<u64, ServiceError> {
+    if limit == 0 {
+        return Ok(0);
+    }
+
+    let limit = if limit > dataset_config.MAX_LIMIT {
+        dataset_config.MAX_LIMIT
+    } else {
+        limit
+    };
+
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
+
+    let qdrant_client = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+
+    let search_point_req_payloads: Vec<SearchPointGroups> = queries
+        .into_iter()
+        .map(|query| match query.vector {
+            VectorType::SpladeSparse(vector) => {
+                let sparse_vector: Vector = vector.into();
+                Ok(SearchPointGroups {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: sparse_vector.data,
+                    sparse_indices: sparse_vector.indices,
+                    vector_name: Some("sparse_vectors".to_string()),
+                    limit: limit as u32,
+                    score_threshold: query.score_threshold,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    filter: Some(query.filter.clone()),
+                    group_by: "group_ids".to_string(),
+                    group_size: 1,
+                    timeout: Some(60),
+                    params: None,
+                    ..Default::default()
+                })
+            }
+            VectorType::BM25Sparse(vector) => {
+                let sparse_vector: Vector = vector.into();
+                Ok(SearchPointGroups {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: sparse_vector.data,
+                    sparse_indices: sparse_vector.indices,
+                    vector_name: Some("bm25_vectors".to_string()),
+                    limit: limit as u32,
+                    score_threshold: query.score_threshold,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    filter: Some(query.filter.clone()),
+                    group_by: "group_ids".to_string(),
+                    group_size: 1,
+                    timeout: Some(60),
+                    params: None,
+                    ..Default::default()
+                })
+            }
+            VectorType::Dense(embedding_vector) => {
+                let vector_name = match embedding_vector.len() {
+                    384 => "384_vectors",
+                    512 => "512_vectors",
+                    768 => "768_vectors",
+                    1024 => "1024_vectors",
+                    3072 => "3072_vectors",
+                    1536 => "1536_vectors",
+                    _ => {
+                        return Err(ServiceError::BadRequest(
+                            "Invalid embedding vector size".to_string(),
+                        ))
+                    }
+                };
+
+                Ok(SearchPointGroups {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: embedding_vector,
+                    vector_name: Some(vector_name.to_string()),
+                    limit: limit as u32,
+                    score_threshold: query.score_threshold,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    filter: Some(query.filter.clone()),
+                    group_by: "group_ids".to_string(),
+                    group_size: 1,
+                    timeout: Some(60),
+                    params: Some(SearchParams {
+                        exact: Some(false),
+                        indexed_only: Some(dataset_config.INDEXED_ONLY),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            }
+        })
+        .collect::<Result<Vec<SearchPointGroups>, ServiceError>>()?;
+
+    let search_futures = search_point_req_payloads
+        .iter()
+        .map(|search_point_req_payload| {
+            qdrant_client.search_groups(search_point_req_payload.clone())
+        })
+        .collect::<Vec<_>>();
+
+    let search_responses = futures::future::join_all(search_futures).await;
+
+    let max_count = search_responses
+        .into_iter()
+        .map(|search_response| match search_response {
+            Ok(search_response) => match search_response.result {
+                Some(result) => result.groups.len() as u64,
+                None => 0,
+            },
+            Err(e) => {
+                log::error!("Failed to search points on Qdrant to get count {:?}", e);
+                0
+            }
+        })
+        .max()
+        .unwrap_or(0);
+
+    Ok(max_count)
 }
 
 pub async fn count_qdrant_query(
