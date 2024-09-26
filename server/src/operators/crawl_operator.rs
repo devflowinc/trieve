@@ -13,6 +13,8 @@ use diesel::QueryDsl;
 use diesel_async::RunQueryDsl;
 use regex::Regex;
 use reqwest::Url;
+use scraper::Html;
+use scraper::Selector;
 use serde::{Deserialize, Serialize};
 
 use super::parse_operator::convert_html_to_text;
@@ -516,59 +518,72 @@ pub fn get_tags(url: String) -> Vec<String> {
 pub fn chunk_html(html: &str) -> Vec<(String, String)> {
     let re = Regex::new(r"(?i)<h[1-6].*?>").unwrap();
     let mut chunks = Vec::new();
-    let mut current_chunk = (String::new(), String::new());
+    let mut current_chunk = String::new();
     let mut last_end = 0;
-    let mut short_chunk: Option<(String, String)> = None;
+    let mut short_chunk: Option<String> = None;
 
     for cap in re.find_iter(html) {
         if last_end != cap.start() {
-            current_chunk.1.push_str(&html[last_end..cap.start()]);
+            current_chunk.push_str(&html[last_end..cap.start()]);
         }
 
-        if !current_chunk.1.is_empty() && current_chunk.0 != current_chunk.1 {
-            current_chunk.1 = current_chunk.1.trim().to_string();
+        if !current_chunk.is_empty() {
+            let trimmed_chunk = current_chunk.trim().to_string();
 
             if let Some(prev_short_chunk) = short_chunk.take() {
-                current_chunk.1 = format!("{} {}", prev_short_chunk.1, current_chunk.1);
-                current_chunk.0 = prev_short_chunk.0;
+                current_chunk = format!("{} {}", prev_short_chunk, trimmed_chunk);
+            } else {
+                current_chunk = trimmed_chunk;
             }
 
-            if convert_html_to_text(&current_chunk.1)
+            if convert_html_to_text(&current_chunk)
                 .split_whitespace()
                 .count()
-                > 10
+                > 5
             {
-                chunks.push(current_chunk);
-                current_chunk = (String::new(), String::new());
+                let heading = extract_first_heading(&current_chunk);
+                chunks.push((heading, current_chunk));
+                current_chunk = String::new();
             } else {
                 short_chunk = Some(current_chunk);
-                current_chunk = (String::new(), String::new());
+                current_chunk = String::new();
             }
+        } else {
+            current_chunk = cap.as_str().to_string();
+            last_end = cap.end();
         }
-
-        if current_chunk.0.is_empty() {
-            current_chunk.0 = cap.as_str().to_string();
-        }
-        current_chunk.1 = cap.as_str().to_string();
-        last_end = cap.end();
     }
 
     if last_end < html.len() {
-        current_chunk.1.push_str(&html[last_end..]);
+        current_chunk.push_str(&html[last_end..]);
     }
 
-    if !current_chunk.1.is_empty() {
-        current_chunk.1 = current_chunk.1.trim().to_string();
+    if !current_chunk.is_empty() {
+        let trimmed_chunk = current_chunk.trim().to_string();
 
         if let Some(prev_short_chunk) = short_chunk.take() {
-            current_chunk.1 = format!("{} {}", prev_short_chunk.1, current_chunk.1);
-            current_chunk.0 = prev_short_chunk.0;
+            current_chunk = format!("{} {}", prev_short_chunk, trimmed_chunk);
+        } else {
+            current_chunk = trimmed_chunk;
         }
 
-        chunks.push(current_chunk);
+        let heading = extract_first_heading(&current_chunk);
+        chunks.push((heading, current_chunk));
     } else if let Some(last_short_chunk) = short_chunk {
-        chunks.push(last_short_chunk);
+        let heading = extract_first_heading(&last_short_chunk);
+        chunks.push((heading, last_short_chunk));
     }
 
     chunks
+}
+
+fn extract_first_heading(html: &str) -> String {
+    let fragment = Html::parse_fragment(html);
+    let heading_selector = Selector::parse("h1, h2, h3, h4, h5, h6").unwrap();
+
+    fragment
+        .select(&heading_selector)
+        .next()
+        .map(|element| element.text().collect::<String>())
+        .unwrap_or_default()
 }
