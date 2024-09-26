@@ -33,7 +33,7 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
             value={value}
           />
         );
-      }
+      },
     );
   });
 
@@ -50,7 +50,7 @@ export const JSONMetadata = (props: JSONMetadataProps) => {
       class={cn(
         "flex flex-col items-start rounded-md",
         // "outline-magenta-200 outline outline-[0.5px]",
-        props.class
+        props.class,
       )}
     >
       <Show when={props.copyJSONButton}>

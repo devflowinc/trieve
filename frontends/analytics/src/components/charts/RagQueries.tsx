@@ -38,7 +38,10 @@ export const RagQueries = (props: RagQueriesProps) => {
   const dataset = useContext(DatasetContext);
   const pages = usePagination();
   const queryClient = useQueryClient();
-  const [open, setOpen] = createSignal<boolean>(false);
+  const [openUserMessage, setOpenUserMessage] = createSignal<boolean>(false);
+  const [openLLMCompletion, setOpenLLMCompletion] =
+    createSignal<boolean>(false);
+  const [openRagResults, setOpenRagResults] = createSignal<boolean>(false);
   const [current, setCurrent] = createSignal<number>(0);
 
   const [sortOrder, setSortOrder] = createSignal<SortOrder>("asc");
@@ -92,6 +95,20 @@ export const RagQueries = (props: RagQueriesProps) => {
     {
       accessorKey: "user_message",
       header: "User Message",
+      cell(props) {
+        return (
+          <button
+            class="flex items-center gap-2 text-left"
+            onClick={() => {
+              setOpenUserMessage(true);
+              setCurrent(props.row.index);
+            }}
+          >
+            <IoOpenOutline />
+            {props.getValue<string>()}
+          </button>
+        );
+      },
     },
     {
       accessorKey: "rag_type",
@@ -103,6 +120,21 @@ export const RagQueries = (props: RagQueriesProps) => {
               (rag) => rag.value === props.getValue<string>(),
             )?.label || props.getValue<string>()}
           </>
+        );
+      },
+    },
+    {
+      accessorKey: "llm_response",
+      header: "LLM Response",
+      cell(props) {
+        return (
+          <button
+            class="flex items-center gap-2 text-left"
+            onClick={() => setOpenLLMCompletion(true)}
+          >
+            <IoOpenOutline />
+            {props.getValue<RagQueryEvent["llm_response"]>()}
+          </button>
         );
       },
     },
@@ -119,12 +151,12 @@ export const RagQueries = (props: RagQueriesProps) => {
             <button
               class="flex items-center gap-2 text-left"
               onClick={() => {
-                setOpen(true);
+                setOpenRagResults(true);
                 setCurrent(props.row.index);
               }}
             >
-              {props.getValue<RagQueryEvent["results"]>().length}
               <IoOpenOutline />
+              {props.getValue<RagQueryEvent["results"]>().length}
             </button>
           </Show>
         );
@@ -186,8 +218,8 @@ export const RagQueries = (props: RagQueriesProps) => {
           return (
             <>
               <FullScreenModal
-                show={open}
-                setShow={setOpen}
+                show={openRagResults}
+                setShow={setOpenRagResults}
                 title={`Results found for "${data()[current()].user_message}"`}
               >
                 <JSONMetadata
@@ -203,6 +235,22 @@ export const RagQueries = (props: RagQueriesProps) => {
                 total={usage?.data?.total_queries}
                 table={table()}
               />
+
+              <FullScreenModal
+                show={openLLMCompletion}
+                setShow={setOpenLLMCompletion}
+                title="LLM Completion"
+              >
+                <p>{data()[current()].llm_response}</p>
+              </FullScreenModal>
+
+              <FullScreenModal
+                show={openUserMessage}
+                setShow={setOpenUserMessage}
+                title="Query"
+              >
+                <p>{data()[current()].user_message}</p>
+              </FullScreenModal>
             </>
           );
         }}
