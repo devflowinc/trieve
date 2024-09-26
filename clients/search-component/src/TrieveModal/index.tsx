@@ -16,6 +16,8 @@ const Modal = () => {
   useKeyboardNavigation();
   const { mode, modalRef, open, setOpen, setMode, props } = useModalState();
 
+  const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
+
   const ButtonEl = props.ButtonEl;
 
   return (
@@ -55,7 +57,7 @@ const Modal = () => {
               <div>{props.placeholder}</div>
             </div>
             <span className="open">
-              {props.openKeyCombination.map((key) => (
+              {keyCombo.map((key) => (
                 <>
                   {key.ctrl ? (
                     <>
@@ -65,8 +67,7 @@ const Modal = () => {
                   ) : (
                     <span>
                       {" "}
-                      {props.openKeyCombination.length > 1 ? "+" : null}{" "}
-                      {key.label || key.key}
+                      {keyCombo.length > 1 ? "+" : null} {key.label || key.key}
                     </span>
                   )}
                 </>

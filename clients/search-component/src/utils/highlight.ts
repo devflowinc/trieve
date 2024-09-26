@@ -18,7 +18,7 @@ export function highlightText(
 
 export const highlightOptions = {
   highlight_delimiters: ["?", ",", ".", "!", "↵"],
-  highlight_max_length: 2,
+  highlight_max_length: 3,
   highlight_max_num: 1,
   highlight_strategy: "exactmatch",
   highlight_window: 10,

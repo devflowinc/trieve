@@ -4,11 +4,13 @@ import { useModalState } from "./modal-context";
 export const useKeyboardNavigation = () => {
   const { results, setOpen, inputRef, props, open } = useModalState();
 
+  const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
+
   const checkForInteractions = (e: KeyboardEvent) => {
     if (!open) {
-      const hasCtrl = props.openKeyCombination.find((k) => k.ctrl);
+      const hasCtrl = keyCombo.find((k) => k.ctrl);
       if ((hasCtrl && (e.metaKey || e.ctrlKey)) || !hasCtrl) {
-        const otherKeys = props.openKeyCombination.filter((k) => !k.ctrl);
+        const otherKeys = keyCombo.filter((k) => !k.ctrl);
         if (otherKeys.every((k) => e.key === k.key)) {
           e.preventDefault();
           e.stopPropagation();

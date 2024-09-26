@@ -4,6 +4,7 @@ import { ArrowIcon } from "./icons";
 import { useModalState } from "../utils/hooks/modal-context";
 import { sendCtrData } from "../utils/trieve";
 import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
+import { load } from "cheerio";
 
 type Props = {
   item: ChunkWithHighlights;
@@ -16,7 +17,40 @@ export const Item = ({ item, index }: Props) => {
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
+
+  let descriptionHtml = item.highlights
+    ? item.highlights.join("...")
+    : item.chunk.chunk_html || "";
+  const $descriptionHtml = load(descriptionHtml);
+  $descriptionHtml("b").replaceWith(function () {
+    return $descriptionHtml(this).text();
+  });
+  descriptionHtml = $descriptionHtml.html() || "";
+
+  const chunkHtmlHeadings = load(item.chunk.chunk_html || "")
+    .root()
+    .find("h1, h2, h3, h4, h5, h6")
+    .toArray();
+
+  const $firstHeading = load(chunkHtmlHeadings[0]);
+  const cleanFirstHeadingHtml = $firstHeading("*")
+    .not("mark")
+    .replaceWith(function () {
+      return $firstHeading(this).text();
+    });
+  const cleanFirstHeading = cleanFirstHeadingHtml.html();
+
+  descriptionHtml = descriptionHtml
+    .replace(" </mark>", "</mark> ")
+    .replace(cleanFirstHeading || "", "");
+
+  for (const heading of chunkHtmlHeadings) {
+    descriptionHtml = descriptionHtml.replace(load(heading).text() || "", "");
+  }
+  descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
+
   const title =
+    cleanFirstHeading ||
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name;
@@ -71,16 +105,22 @@ export const Item = ({ item, index }: Props) => {
           ) : null}
           {title ? (
             <div>
-              <h4>{title}</h4>
+              <h4
+                dangerouslySetInnerHTML={{
+                  __html: title,
+                }}
+              />
               <p
                 className="description"
-                dangerouslySetInnerHTML={{ __html: item.highlights[0] }}
+                dangerouslySetInnerHTML={{
+                  __html: descriptionHtml,
+                }}
               />
             </div>
           ) : (
             <p
               dangerouslySetInnerHTML={{
-                __html: item.highlights[0] || item.chunk.highlight || "",
+                __html: descriptionHtml,
               }}
             />
           )}
