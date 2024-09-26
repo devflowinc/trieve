@@ -559,14 +559,7 @@ pub fn chunk_html(html: &str) -> Vec<(String, String)> {
     }
 
     if !current_chunk.is_empty() {
-        let trimmed_chunk = current_chunk.trim().to_string();
-
-        if let Some(prev_short_chunk) = short_chunk.take() {
-            current_chunk = format!("{} {}", prev_short_chunk, trimmed_chunk);
-        } else {
-            current_chunk = trimmed_chunk;
-        }
-
+        let current_chunk = current_chunk.trim().to_string();
         let heading = extract_first_heading(&current_chunk);
         chunks.push((heading, current_chunk));
     } else if let Some(last_short_chunk) = short_chunk {
