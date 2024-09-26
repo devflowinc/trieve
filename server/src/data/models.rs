@@ -3694,6 +3694,7 @@ impl FieldCondition {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "SearchQueryEvent")]
 pub struct SearchQueryEvent {
     pub id: uuid::Uuid,
     pub search_type: String,
@@ -4019,6 +4020,7 @@ pub struct RagQueryEvent {
     pub search_id: uuid::Uuid,
     pub results: Vec<ChunkMetadataStringTagSet>,
     pub dataset_id: uuid::Uuid,
+    pub llm_response: String,
     pub created_at: String,
     pub user_id: String,
 }
@@ -4047,6 +4049,7 @@ impl RagQueryEventClickhouse {
             search_id: uuid::Uuid::from_bytes(*self.search_id.as_bytes()),
             results: chunk_string_tag_sets,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+            llm_response: self.llm_response,
             created_at: self.created_at.to_string(),
             user_id: self.user_id,
         }
@@ -4428,6 +4431,7 @@ impl RecommendationAnalyticsFilter {
 }
 
 #[derive(Debug, Row, ToSchema, Serialize, Deserialize)]
+#[schema(title = "SearchMetricsResponse")]
 pub struct DatasetAnalytics {
     pub total_queries: i32,
     pub search_rps: f64,
@@ -4496,6 +4500,7 @@ pub struct SearchCTRMetricsClickhouse {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Search CTR Metrics")]
 pub struct SearchCTRMetrics {
     pub searches_with_clicks: i64,
     pub percent_searches_with_clicks: f64,
@@ -4519,6 +4524,7 @@ impl From<SearchCTRMetricsClickhouse> for SearchCTRMetrics {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Recommendation CTR Metrics")]
 pub struct RecommendationCTRMetrics {
     pub recommendations_with_clicks: i64,
     pub percent_recommendations_with_clicks: f64,
@@ -4989,11 +4995,13 @@ pub enum CTRAnalytics {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+#[schema(title = "RAGUsageResponse")]
 pub struct RAGUsageResponse {
     pub total_queries: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "RAGUsageGraphResponse")]
 pub struct RAGUsageGraphResponse {
     pub usage_points: Vec<UsageGraphPoint>,
 }
