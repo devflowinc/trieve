@@ -108,7 +108,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                         "whitespace-nowrap text-sm font-medium text-neutral-900",
                       )}
                     >
-                      <span class="max-w-[400px] truncate 2xl:max-w-full text-ellipsis block">
+                      <span class="max-w-[400px] truncate text-ellipsis block">
                         {" "}
                         {flexRender(
                           cell.column.columnDef.cell,
