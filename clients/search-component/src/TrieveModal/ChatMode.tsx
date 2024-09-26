@@ -170,17 +170,18 @@ export const ChatMode = () => {
                       >
                         {message.text}
                       </Markdown>
-                      {message.additional && i === 0 ? (
+                      {message.additional && i % 2 == 0 ? (
                         <div className="additional-links">
                           {message.additional
                             .filter(
                               (m) =>
-                                m.metadata.title ||
-                                (m.metadata.page_title && m.link)
+                                (m.metadata.title || m.metadata.page_title) &&
+                                m.link
                             )
                             .map((link) => (
                               <a href={link.link as string}>
-                                {link.metadata.page_title}
+                                {link.metadata.title ||
+                                  link.metadata.page_title}
                               </a>
                             ))}
                         </div>

@@ -403,7 +403,7 @@ body {
             }
           }
           > p {
-            @apply text-xs;
+            @apply text-xs m-0;
             color: var(--tv-zinc-300);
           }
         }
