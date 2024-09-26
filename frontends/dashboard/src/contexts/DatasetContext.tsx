@@ -1,5 +1,11 @@
 import { useLocation, useNavigate, useParams } from "@solidjs/router";
-import { Accessor, createContext, createMemo, useContext } from "solid-js";
+import {
+  Accessor,
+  createContext,
+  createEffect,
+  createMemo,
+  useContext,
+} from "solid-js";
 import { JSX } from "solid-js";
 import { DatasetAndUsage } from "trieve-ts-sdk";
 import { UserContext } from "./UserContext";
@@ -22,6 +28,30 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  createEffect(() => {
+    const selectedOrg = orgContext.selectedOrg();
+    const orgDatasets = orgContext.orgDatasets();
+    if (!orgDatasets) {
+      return;
+    }
+    if (selectedOrg) {
+      console.log("selected org", selectedOrg);
+      if (
+        orgDatasets &&
+        location.pathname.includes("/dataset") &&
+        !orgDatasets.find((orgDataset) => orgDataset.dataset.id === params.id)
+      ) {
+        const firstDataset = orgDatasets[0]?.dataset;
+        if (!firstDataset) {
+          console.log("no first dataset");
+          return navigate("/org");
+        }
+        selectDataset(firstDataset.id);
+        // Set the new params in the url
+      }
+    }
+  });
+
   const dataset = createMemo(() => {
     const possDatasets = orgContext.orgDatasets();
     if (Array.isArray(possDatasets)) {
@@ -35,6 +65,7 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
 
   const selectDataset = (id: string) => {
     const curPath = location.pathname;
+    // Get the part after the /dataset/
     if (curPath.includes(id)) {
       navigate(curPath);
       return;

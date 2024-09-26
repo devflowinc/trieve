@@ -89,13 +89,6 @@ export const DashboardSidebar = () => {
         />
       </Portal>
       {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-      <Portal mount={document.querySelector("#organization-slot")!}>
-        <div class="flex flex-row content-center items-center">
-          <NavbarOrganizationSelector />
-          <span class="ml-2 font-bold text-neutral-600">/</span>
-        </div>
-      </Portal>
-      {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
       <Portal mount={document.querySelector("#dataset-slot")!}>
         <div class="ml-1 flex flex-row">
           <Show when={orgDatasets().length > 0}>

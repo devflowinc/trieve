@@ -3,6 +3,7 @@ import { A } from "@solidjs/router";
 import { BiRegularLinkExternal } from "solid-icons/bi";
 import { UserNavWidget } from "../components/UserNavWidget";
 import ShowToasts from "../components/ShowToasts";
+import { NavbarOrganizationSelector } from "./NavbarOrganizationSelector";
 
 interface NavbarLayoutProps {
   children?: JSX.Element;
@@ -23,9 +24,9 @@ export const NavbarLayout = (props: NavbarLayoutProps) => {
               />
               <span class="text-2xl font-semibold">Trieve</span>
             </A>
-            {/* This is portaled by the DatasetSidebarLayout so you can only select a dataset when you are in the dataset view*/}
             <div class="flex flex-row content-center items-center justify-center gap-1">
-              <div id="organization-slot" />
+              <NavbarOrganizationSelector />
+              <span class="ml-2 font-bold text-neutral-600">/</span>
               <div id="dataset-slot" />
             </div>
           </div>

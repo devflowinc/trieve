@@ -1,14 +1,10 @@
-import { createMemo, Show, useContext, createEffect } from "solid-js";
+import { createMemo, Show, useContext } from "solid-js";
 import { UserContext } from "../contexts/UserContext";
-import { DatasetContext } from "../contexts/DatasetContext";
 import { Select } from "shared/ui";
 import { FiUsers } from "solid-icons/fi";
-import { useLocation } from "@solidjs/router";
 
 export const NavbarOrganizationSelector = () => {
   const userContext = useContext(UserContext);
-  const datasetContext = useContext(DatasetContext);
-  const location = useLocation();
 
   const organizationIds = createMemo(() =>
     userContext.user().orgs.map((org) => org.id),
@@ -21,24 +17,6 @@ export const NavbarOrganizationSelector = () => {
     }
     return organization.name;
   };
-
-  createEffect(() => {
-    const selectedOrg = userContext.selectedOrg();
-    if (selectedOrg) {
-      const orgDatasets = userContext.orgDatasets();
-      if (
-        orgDatasets &&
-        orgDatasets.length > 0 &&
-        !location.pathname.includes("/org") &&
-        !orgDatasets.find(
-          (orgDataset) => datasetContext.datasetId() == orgDataset.dataset.id,
-        )
-      ) {
-        const firstDataset = orgDatasets[0].dataset;
-        datasetContext.selectDataset(firstDataset.id);
-      }
-    }
-  });
 
   return (
     <div>
