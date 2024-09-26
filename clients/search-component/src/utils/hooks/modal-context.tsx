@@ -26,6 +26,11 @@ export type ModalProps = {
   suggestedQueries?: boolean;
   defaultQueries?: string[];
   openKeyCombination?: { key?: string; label?: string; ctrl?: boolean }[];
+  tags?: {
+    tag: string;
+    label?: string;
+    icon?: () => JSX.Element;
+  }[];
 };
 
 const defaultProps = {
@@ -59,6 +64,8 @@ const ModalContext = createContext<{
   setMode: React.Dispatch<React.SetStateAction<string>>;
   modalRef: React.RefObject<HTMLDivElement>;
   setContextProps: (props: ModalProps) => void;
+  currentTag: string;
+  setCurrentTag: React.Dispatch<React.SetStateAction<string>>;
 }>({
   query: "",
   results: [],
@@ -75,6 +82,8 @@ const ModalContext = createContext<{
   requestID: "",
   setRequestID: () => {},
   setLoadingResults: () => {},
+  setCurrentTag: () => {},
+  currentTag: "all",
   setContextProps: () => {},
 });
 
@@ -97,6 +106,7 @@ function ModalProvider({
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState("search");
   const modalRef = useRef<HTMLDivElement>(null);
+  const [currentTag, setCurrentTag] = useState("all");
 
   useEffect(() => {
     setProps((p) => ({
@@ -111,33 +121,32 @@ function ModalProvider({
       return;
     }
 
-    setLoadingResults(true);
-
     try {
+      setLoadingResults(true);
       const results = await searchWithTrieve({
         query: query,
         searchOptions: props.searchOptions,
         trieve: props.trieve,
         abortController,
+        ...(currentTag !== "all" && { tag: currentTag }),
       });
       setResults(results.chunks);
       setRequestID(results.requestID);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoadingResults(false);
     }
-
-    setLoadingResults(false);
   };
 
   useEffect(() => {
     const abortController = new AbortController();
-
     search(abortController);
 
     return () => {
       abortController.abort();
     };
-  }, [query]);
+  }, [query, currentTag]);
 
   return (
     <ModalContext.Provider
@@ -162,6 +171,8 @@ function ModalProvider({
         mode,
         setMode,
         modalRef,
+        currentTag,
+        setCurrentTag,
       }}
     >
       {children}

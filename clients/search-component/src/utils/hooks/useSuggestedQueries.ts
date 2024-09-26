@@ -1,4 +1,4 @@
-import throttle from "lodash.throttle";
+import { throttle } from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { SuggestedQueriesResponse } from "trieve-ts-sdk";
 import { getSuggestedQueries } from "../trieve";

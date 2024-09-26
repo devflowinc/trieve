@@ -5,8 +5,18 @@ import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../utils/hooks/modal-context";
 
 export const SearchMode = () => {
-  const { props, results, loadingResults, query, setQuery, requestID, inputRef, setMode } =
-    useModalState();
+  const {
+    props,
+    currentTag,
+    setCurrentTag,
+    results,
+    loadingResults,
+    query,
+    setQuery,
+    requestID,
+    inputRef,
+    setMode,
+  } = useModalState();
   const {
     suggestedQueries,
     refetchSuggestedQueries,
@@ -104,6 +114,24 @@ export const SearchMode = () => {
           <p className="no-results-loading">Searching...</p>
         ) : null}
       </ul>
+      {props.tags?.length && results.length ? (
+        <ul className="tags">
+          <li className={currentTag === "all" ? "active" : ""}>
+            <button onClick={() => setCurrentTag("all")}>All</button>
+          </li>
+          {props.tags.map((tag) => (
+            <li
+              className={currentTag === tag.tag ? "active" : ""}
+              key={tag.tag}
+            >
+              <button onClick={() => setCurrentTag(tag.tag)}>
+                {tag.icon && typeof tag.icon === "function" && tag.icon()}
+                {tag.label || tag.tag}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </>
   );
 };

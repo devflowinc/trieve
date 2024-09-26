@@ -9,11 +9,13 @@ export const searchWithTrieve = async ({
     search_type: "fulltext",
   },
   abortController,
+  tag,
 }: {
   trieve: TrieveSDK;
   query: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
+  tag?: string;
 }) => {
   const results = (await trieve.autocomplete(
     {
@@ -25,6 +27,11 @@ export const searchWithTrieve = async ({
       extend_results: true,
       score_threshold: 0.2,
       page_size: 20,
+      ...(tag && {
+        filters: {
+          must: [{ field: "tag_set", match_any: [tag] }],
+        },
+      }),
       ...searchOptions,
     },
     abortController?.signal
