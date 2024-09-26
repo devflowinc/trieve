@@ -1,5 +1,5 @@
 import { SearchResponseBody, TrieveSDK } from "trieve-ts-sdk";
-import { Chunk, ChunkWithHighlights, Props } from "./types";
+import { Chunk, Props, SearchResults } from "./types";
 import { highlightOptions, highlightText } from "./highlight";
 
 export const searchWithTrieve = async ({
@@ -41,22 +41,24 @@ export const searchWithTrieve = async ({
     };
   });
 
-  return resultsWithHighlight as unknown as ChunkWithHighlights[];
+  return {chunks: resultsWithHighlight, requestID: results.id} as unknown as SearchResults;
 };
 
 export const sendCtrData = async ({
   trieve,
   chunkID,
+  requestID,
   index,
 }: {
   trieve: TrieveSDK;
   chunkID: string;
+  requestID: string;
   index: number;
 }) => {
   await trieve.sendCTRAnalytics({
     ctr_type: "search",
     clicked_chunk_id: chunkID,
-    request_id: chunkID,
+    request_id: requestID,
     position: index,
   });
 

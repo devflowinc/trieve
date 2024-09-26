@@ -13,11 +13,12 @@ export const TrieveSearch = ({
   theme = "light",
   placeholder = "Search for anything",
   searchOptions = {
-    search_type: "hybrid",
+    search_type: "fulltext",
   },
 }: Props) => {
   const [loadingResults, setLoadingResults] = useState(false);
   const [results, setResults] = useState<ChunkWithHighlights[]>([]);
+  const [requestID, setRequestID] = useState("");
   const input = useRef<HTMLDivElement>(null);
   const { isOpen, getLabelProps, getMenuProps, getInputProps, getItemProps } =
     useCombobox({
@@ -33,7 +34,7 @@ export const TrieveSearch = ({
             if (state.selectedItem?.chunk.link) {
               window.open(state.selectedItem?.chunk.link);
             } else {
-              onResultClick?.(state.selectedItem?.chunk as Chunk);
+              onResultClick?.(state.selectedItem?.chunk as Chunk, requestID);
             }
             return state;
           }
@@ -63,7 +64,8 @@ export const TrieveSearch = ({
         searchOptions,
         trieve,
       });
-      setResults(results);
+      setResults(results.chunks);
+      setRequestID(results.requestID);
     } catch (e) {
       console.error(e);
     }
@@ -118,6 +120,7 @@ export const TrieveSearch = ({
                   key={`${item.chunk.id}${index}`}
                   index={index}
                   item={item}
+                  requestID={requestID}
                   getItemProps={getItemProps}
                   onResultClick={onResultClick}
                   showImages={showImages}
