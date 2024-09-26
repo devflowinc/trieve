@@ -1,6 +1,6 @@
 import React from "react";
 import { Item } from "./item";
-import { AIIcon, ArrowIcon, ReloadIcon } from "./icons";
+import { ReloadIcon } from "./icons";
 import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
 import { ALL_TAG, useModalState } from "../utils/hooks/modal-context";
 
@@ -15,7 +15,6 @@ export const SearchMode = () => {
     setQuery,
     requestID,
     inputRef,
-    setMode,
     tagCounts,
   } = useModalState();
   const {
@@ -88,22 +87,6 @@ export const SearchMode = () => {
       </div>
 
       <ul className="trieve-elements-search">
-        {results.length && props.chat ? (
-          <li>
-            <button className="item start-chat" onClick={() => setMode("chat")}>
-              <div>
-                <AIIcon />
-                <div>
-                  <h4>
-                    Can you tell me about <span>{query}</span>
-                  </h4>
-                  <p className="description">Use AI to answer your question</p>
-                </div>
-              </div>
-              <ArrowIcon />
-            </button>
-          </li>
-        ) : null}
         {results.length
           ? results.map((result, index) => (
               <Item item={result} index={index} requestID={requestID} key={result.chunk.id} />

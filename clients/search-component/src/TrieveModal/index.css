@@ -34,6 +34,30 @@ body {
       @apply text-sm text-center my-8 animate-pulse;
     }
 
+    .mode-switch-wrapper {
+      @apply flex items-center justify-end mt-2 absolute top-3 right-4 z-30 font-medium;
+
+      > div {
+        @apply p-1 text-xs rounded-md flex;
+        background-color: var(--tv-zinc-200);
+
+        button {
+          @apply px-3 py-1 rounded-md  flex gap-1 items-center transition-all;
+          color: var(--tv-zinc-600);
+
+          &.active {
+            @apply shadow-sm;
+            background-color: var(--tv-zinc-50);
+            color: var(--tv-zinc-800);
+          }
+
+          svg {
+            @apply h-3 w-3;
+          }
+        }
+      }
+    }
+
     ul.tags {
       @apply flex flex-wrap items-center text-sm border-t  !px-2 !-ml-2 !-mr-2 relative !mt-0;
       color: var(--tv-zinc-800);
