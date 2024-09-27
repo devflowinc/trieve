@@ -478,7 +478,7 @@ export interface SearchQueryEvent {
   top_score: number;
   results: {
     highlights: unknown;
-    metadata: Record<string, unknown>[];
+    metadata: ChunkMetadataStringTagSet[];
     score: number;
   }[];
   dataset_id: string;
@@ -518,7 +518,7 @@ export interface RAGAnalyticsFilter {
   date_range?: DateRangeFilter;
 }
 
-export type RAGSortBy = "created_at" | "latency" | "top_score";
+export type RAGSortBy = "created_at" | "latency";
 export type SearchSortBy = "created_at" | "latency" | "top_score";
 
 export type SortOrder = "desc" | "asc";

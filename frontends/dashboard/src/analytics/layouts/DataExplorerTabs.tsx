@@ -6,12 +6,14 @@ import { usePathname } from "../hooks/usePathname";
 const pages: { name: string; path: string }[] = [
   {
     name: "Searches",
-    path: "/data/searches",
+    path:
+      window.location.pathname.split("/").slice(0, -1).join("/") + "/searches",
   },
-  // {
-  //   name: "RAG Messages",
-  //   path: "/data/messages",
-  // },
+  {
+    name: "RAG Messages",
+    path:
+      window.location.pathname.split("/").slice(0, -1).join("/") + "/messages",
+  },
 ];
 
 export const DataExplorerTabs: ParentComponent = (props) => {

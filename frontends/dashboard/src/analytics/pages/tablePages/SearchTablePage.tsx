@@ -19,6 +19,7 @@ import {
 import { Card } from "../../components/charts/Card";
 import { formatSearchMethod } from "../../utils/searchType";
 import { DatasetContext } from "../../../contexts/DatasetContext";
+import { getSearchQueries } from "../../api/tables";
 
 const columns: SortableColumnDef<SearchQueryEvent>[] = [
   {
@@ -49,7 +50,6 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
   {
     accessorKey: "latency",
     header: "Latency",
-
     sortable: true,
     cell(props) {
       return props.getValue<string>() + "ms";
@@ -126,6 +126,17 @@ export const SearchTablePage = () => {
                     `/dataset/${datasetContext.datasetId()}/analytics/query/${
                       row.id
                     }`,
+                  )
+                }
+                exportFn={(page: number) =>
+                  getSearchQueries(
+                    {
+                      filter: filters.filter,
+                      page: page,
+                      sortBy: sortBy(),
+                      sortOrder: sortOrder(),
+                    },
+                    datasetContext.datasetId(),
                   )
                 }
               />
