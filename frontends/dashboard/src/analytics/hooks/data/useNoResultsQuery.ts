@@ -51,6 +51,9 @@ export const useNoResultsQueries = ({
     });
   });
 
+  const queryFn = (page: number) =>
+    getNoResultQueries(params.filter, dataset.datasetId(), page);
+
   const notResultQuery = createQuery(() => ({
     queryKey: [
       "no-result-queries",
@@ -60,16 +63,13 @@ export const useNoResultsQueries = ({
       },
     ],
     queryFn: () => {
-      return getNoResultQueries(
-        params.filter,
-        dataset.datasetId(),
-        pages.page(),
-      );
+      return queryFn(pages.page());
     },
   }));
 
   return {
     pages,
     notResultQuery,
+    queryFn,
   };
 };
