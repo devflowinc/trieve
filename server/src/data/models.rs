@@ -5117,7 +5117,7 @@ pub enum SearchAnalytics {
         filter: Option<SearchAnalyticsFilter>,
     },
     #[schema(title = "QueryDetails")]
-    QueryDetails { search_id: uuid::Uuid },
+    QueryDetails { request_id: uuid::Uuid },
     #[schema(title = "PopularFilters")]
     PopularFilters {
         filter: Option<SearchAnalyticsFilter>,
@@ -5145,6 +5145,9 @@ pub enum RAGAnalytics {
         filter: Option<RAGAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "QueryDetails")]
+    #[serde(rename = "rag_query_details")]
+    RAGQueryDetails { request_id: uuid::Uuid },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -5263,6 +5266,8 @@ pub enum RAGAnalyticsResponse {
     RAGUsage(RAGUsageResponse),
     #[schema(title = "RAGUsageGraph")]
     RAGUsageGraph(RAGUsageGraphResponse),
+    #[schema(title = "RAGQueryDetails")]
+    RAGQueryDetails(RagQueryEvent),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

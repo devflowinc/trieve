@@ -32,6 +32,8 @@ import { SingleQueryPage } from "./analytics/pages/SingleQueryPage.tsx";
 import { SearchTablePage } from "./analytics/pages/tablePages/SearchTablePage.tsx";
 import { RAGTablePage } from "./analytics/pages/tablePages/RAGTablePage.tsx";
 import { ApiContext, trieve } from "./api/trieve.ts";
+import { SingleRAGQueryPage } from "./analytics/pages/SingleRAGQueryPage.tsx";
+import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -164,8 +166,12 @@ const routes: RouteDefinition[] = [
                     component: SingleQueryPage,
                   },
                   {
+                    path: "/rag/:queryId",
+                    component: SingleRAGQueryPage,
+                  },
+                  {
                     path: "/data",
-                    // component: DataExplorerTabs, // Add back when rag table page is implemented
+                    component: DataExplorerTabs, // Add back when rag table page is implemented
                     children: [
                       {
                         path: "/searches",

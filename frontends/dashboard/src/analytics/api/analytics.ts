@@ -297,7 +297,7 @@ export const getSearchQuery = async (
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      search_id: searchId,
+      request_id: searchId,
       type: "query_details",
     }),
   });
@@ -307,5 +307,30 @@ export const getSearchQuery = async (
   }
 
   const data = (await response.json()) as unknown as SearchQueryEvent;
+  return data;
+};
+
+export const getRagQuery = async (
+  datasetId: string,
+  searchId: string,
+): Promise<RagQueryEvent> => {
+  const response = await fetch(`${apiHost}/analytics/rag`, {
+    credentials: "include",
+    method: "POST",
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      request_id: searchId,
+      type: "rag_query_details",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch search event: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as unknown as RagQueryEvent;
   return data;
 };
