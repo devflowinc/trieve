@@ -3,6 +3,7 @@ import { DatasetContext } from "../../contexts/DatasetContext";
 import { useTrieve } from "../../hooks/useTrieve";
 import { createMutation, createQuery } from "@tanstack/solid-query";
 import { UserContext } from "../../contexts/UserContext";
+import { FiSave, FiX } from "solid-icons/fi";
 
 export const TrackingIdUpdater = () => {
   const datasetContext = useContext(DatasetContext);
@@ -58,20 +59,35 @@ export const TrackingIdUpdater = () => {
     <div class="flex flex-row content-center items-center gap-1">
       <span class="font-medium">Tracking ID:</span> {/* <button */}
       <input
-        placeholder="Tracking ID..."
+        placeholder="No Tracking ID..."
         class="rounded-md border px-2 py-1 text-sm"
         value={input() || ""}
         onInput={(e) => setInput(e.currentTarget.value)}
       />
-      <Show when={input() != datasetContext.dataset()?.dataset.tracking_id}>
-        <button
-          class="text-sm opacity-80 hover:text-fuchsia-500"
-          onClick={() => {
-            handleSave();
-          }}
-        >
-          Update
-        </button>
+      <Show
+        when={
+          (input() === "" ? input() : undefined) !=
+          datasetContext.dataset()?.dataset.tracking_id
+        }
+      >
+        <div class="flex items-center gap-3 pl-2">
+          <button
+            class="text-sm opacity-80 hover:text-fuchsia-500"
+            onClick={() => {
+              handleSave();
+            }}
+          >
+            <FiSave />
+          </button>
+          <button
+            class="text-sm opacity-80 hover:text-fuchsia-500"
+            onClick={() => {
+              cancel();
+            }}
+          >
+            <FiX />
+          </button>
+        </div>
       </Show>
     </div>
   );
