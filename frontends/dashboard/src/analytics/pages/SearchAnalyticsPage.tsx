@@ -8,6 +8,7 @@ import { HeadQueries } from "../components/charts/HeadQueries";
 import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries";
 import { NoResultQueries } from "../components/charts/NoResultQueries";
 import { Card } from "../components/charts/Card";
+import { CTRSearchQueries } from "../components/charts/CTRSearchQueries";
 
 export const SearchAnalyticsPage = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
@@ -47,11 +48,12 @@ export const SearchAnalyticsPage = () => {
 
         <LowConfidenceQueries width={1} params={analyticsFilters} />
 
+        <CTRSearchQueries width={1} params={analyticsFilters} />
         <Card
           class="flex flex-col justify-between px-4"
           title="No Result Queries"
           subtitle="Searches with no results"
-          width={2}
+          width={1}
         >
           <NoResultQueries params={analyticsFilters} />
         </Card>

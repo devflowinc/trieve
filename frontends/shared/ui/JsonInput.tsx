@@ -1,4 +1,4 @@
-import { Accessor, createEffect, createSignal, on, onMount } from "solid-js";
+import { Accessor, createEffect, onCleanup, onMount } from "solid-js";
 import "jsoneditor/dist/jsoneditor.min.css";
 import JSONEditor from "jsoneditor";
 import "./AceTheme";
@@ -13,45 +13,58 @@ interface JsonInputProps {
 }
 
 export const JsonInput = (props: JsonInputProps) => {
-  const [editor, _setEditor] = createSignal<JSONEditor | null>(null);
+  let editorRef: JSONEditor | null = null;
+  let containerRef: HTMLDivElement | undefined;
 
-  createEffect(
-    on(props.value, () => {
-      editor()?.set(props.value());
-    })
-  );
+  const initializeEditor = () => {
+    if (containerRef && !editorRef) {
+      editorRef = new JSONEditor(containerRef, {
+        theme:
+          props.theme === "light"
+            ? "ace/theme/github-light"
+            : "ace/theme/trieve",
+        statusBar: false,
+        mainMenuBar: false,
+        navigationBar: false,
+        mode: props.readonly ? "view" : "code",
+        onChangeText: (data) => {
+          try {
+            if (data === "") {
+              props.onValueChange?.(undefined);
+              return;
+            }
+            const jsonData = JSON.parse(data);
+            props.onValueChange?.(jsonData);
+          } catch (e) {
+            if (e instanceof Error) {
+              props.onError?.(e.message);
+            } else {
+              props.onError?.("Unknown error");
+            }
+          }
+        },
+      });
+      editorRef.set(props.value() ?? undefined);
+    }
+  };
 
   onMount(() => {
-    const container = document.getElementById(
-      "json-editor-container"
-    ) as HTMLElement;
-    console.log(props.readonly);
-    const jsonEditor = new JSONEditor(container, {
-      theme:
-        props.theme === "light" ? "ace/theme/github-light" : "ace/theme/trieve",
-      statusBar: false,
-      mainMenuBar: false,
-      navigationBar: false,
-      mode: props.readonly ? "view" : "code",
-      onChangeText: (data) => {
-        try {
-          if (data === "") {
-            props.onValueChange && props.onValueChange(undefined);
-            return;
-          }
-          const jsonData = JSON.parse(data);
-          props.onValueChange && props.onValueChange(jsonData);
-        } catch (e) {
-          if (e instanceof Error) {
-            props.onError && props.onError(e.message);
-          } else {
-            props.onError && props.onError("Unknown error");
-          }
-        }
-      },
-    });
-    jsonEditor.set(props.value() ?? undefined);
-    //setEditor(jsonEditor);
+    initializeEditor();
   });
-  return <div id="json-editor-container" class={props.class} />;
+
+  createEffect(() => {
+    const value = props.value();
+    if (editorRef && value !== undefined) {
+      editorRef.set(value);
+    }
+  });
+
+  onCleanup(() => {
+    if (editorRef) {
+      editorRef.destroy();
+      editorRef = null;
+    }
+  });
+
+  return <div ref={containerRef} class={props.class} />;
 };

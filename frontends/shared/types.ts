@@ -485,6 +485,17 @@ export interface SearchQueryEvent {
   created_at: string;
 }
 
+export interface CTRSearchQuery {
+  query: string;
+  results: ChunkMetadataStringTagSet[];
+  clicked_chunk: {
+    chunk: ChunkMetadataStringTagSet;
+    position: number;
+  };
+  request_id: string;
+  created_at: string;
+}
+
 export interface HeadQuery {
   query: string;
   count: number;
