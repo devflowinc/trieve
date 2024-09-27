@@ -97,7 +97,6 @@ export const FilterBar = (props: FilterBarProps) => {
             label="Date Range"
             value={props.filters.filter.date_range}
             onChange={(e) => props.setFilters("filter", "date_range", e)}
-            onGranularitySuggestion={(g) => props.setFilters("granularity", g)}
           />
         </div>
       </div>

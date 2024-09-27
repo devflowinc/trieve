@@ -233,10 +233,10 @@ pub async fn get_search_analytics(
 
             SearchAnalyticsResponse::SearchQueries(search_queries)
         }
-        SearchAnalytics::QueryDetails { search_id } => {
+        SearchAnalytics::QueryDetails { request_id } => {
             let query = get_search_query(
                 dataset_org_plan_sub.dataset.id,
-                search_id,
+                request_id,
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -337,6 +337,17 @@ pub async fn get_rag_analytics(
             )
             .await?;
             RAGAnalyticsResponse::RAGUsageGraph(rag)
+        }
+
+        RAGAnalytics::RAGQueryDetails { request_id } => {
+            let rag_query = get_rag_query(
+                dataset_org_plan_sub.dataset.id,
+                request_id,
+                pool.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::RAGQueryDetails(rag_query)
         }
     };
 

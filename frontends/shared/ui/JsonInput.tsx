@@ -18,12 +18,12 @@ export const JsonInput = (props: JsonInputProps) => {
   createEffect(
     on(props.value, () => {
       editor()?.set(props.value());
-    })
+    }),
   );
 
   onMount(() => {
     const container = document.getElementById(
-      "json-editor-container"
+      "json-editor-container",
     ) as HTMLElement;
     console.log(props.readonly);
     const jsonEditor = new JSONEditor(container, {

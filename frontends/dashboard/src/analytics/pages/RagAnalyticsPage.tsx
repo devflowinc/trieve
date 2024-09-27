@@ -2,7 +2,6 @@ import { RequiredRAGAnalyticsFilter } from "shared/types";
 import { createStore } from "solid-js/store";
 import { createEffect, createSignal } from "solid-js";
 import { DateRangePicker, Select } from "shared/ui";
-import { RagQueries } from "../components/charts/RagQueries";
 import { subDays } from "date-fns";
 import { RAGUsageGraph } from "../components/charts/RAGUsageGraph";
 
@@ -73,7 +72,6 @@ export const RagAnalyticsPage = () => {
             granularity: filter.granularity,
           }}
         />
-        <RagQueries filter={filter} granularity={filter.granularity} />
       </div>
     </>
   );

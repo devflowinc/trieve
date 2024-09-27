@@ -849,6 +849,28 @@ pub async fn get_rag_usage_graph_query(
     })
 }
 
+pub async fn get_rag_query(
+    dataset_id: uuid::Uuid,
+    request_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RagQueryEvent, ServiceError> {
+    let clickhouse_query = clickhouse_client
+        .query("SELECT ?fields FROM rag_queries WHERE id = ? AND dataset_id = ?")
+        .bind(request_id)
+        .bind(dataset_id)
+        .fetch_one::<RagQueryEventClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let query: RagQueryEvent = clickhouse_query.from_clickhouse(pool.clone()).await;
+
+    Ok(query)
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "RecommendationsWithClicks")]
 pub struct RecommendationsEventResponse {
