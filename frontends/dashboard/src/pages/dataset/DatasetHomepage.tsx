@@ -103,7 +103,7 @@ export const DatasetHomepage = () => {
     onCleanup(() => clearInterval(refreshChunkCountId));
   });
 
-  const editTitle = async () => {
+  const editDatasetTitle = async () => {
     await fetch(`${apiHost}/dataset`, {
       method: "PUT",
       credentials: "include",
@@ -142,7 +142,7 @@ export const DatasetHomepage = () => {
   };
 
   const handleSaveTitle = () => {
-    editTitle().catch((err) => {
+    editDatasetTitle().catch((err) => {
       console.error(err);
     });
   };
@@ -168,7 +168,7 @@ export const DatasetHomepage = () => {
                 type="text"
                 name="dataset-name"
                 id="dataset-name"
-                placeholder="Enter the new dataset name"
+                placeholder="Enter new dataset name"
                 class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
                 value={newDatasetName()}
                 onInput={(e) => setNewDatasetName(e.currentTarget.value)}
