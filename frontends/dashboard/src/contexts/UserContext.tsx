@@ -5,6 +5,7 @@ import {
   Show,
   createContext,
   createEffect,
+  createMemo,
   createResource,
   createSignal,
 } from "solid-js";
@@ -30,6 +31,7 @@ export interface UserStore {
   selectedOrg: Accessor<SlimUser["orgs"][0]>;
   setSelectedOrg: (orgId: string) => void;
   orgDatasets: Resource<DatasetAndUsage[]>;
+  invalidate: () => Promise<void>;
   deselectOrg: () => void;
   login: () => Promise<void>;
   logout: () => void;
@@ -41,6 +43,7 @@ export const UserContext = createContext<UserStore>({
   login: () => {
     return Promise.resolve();
   },
+  invalidate: async () => {},
   setSelectedOrg: () => {},
   orgDatasets: null as unknown as Resource<DatasetAndUsage[]>,
   deselectOrg: () => {},
@@ -56,9 +59,16 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
 
   const [user, setUser] = createSignal<SlimUser | null>(null);
   const [isNewUser, setIsNewUser] = createSignal(false);
-  const [selectedOrganization, setSelectedOrganization] = createSignal<
-    SlimUser["orgs"][0] | null
-  >(null);
+  const [selectedOrgId, setSelectedOrgId] = createSignal<string | null>(null);
+
+  const selectedOrganization = createMemo(() => {
+    const orgId = selectedOrgId();
+    if (!orgId) {
+      return null;
+    }
+
+    return user()?.orgs.find((org) => org.id === orgId) || null;
+  });
 
   const logout = () => {
     void fetch(`${apiHost}/auth?redirect_uri=${window.origin}`, {
@@ -72,7 +82,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
           window.location.href = res.logout_url;
           window.localStorage.removeItem("trieve:user");
           setUser(null);
-          setSelectedOrganization(null);
+          setSelectedOrgId(null);
         })
         .catch((error) => {
           console.error(error);
@@ -99,12 +109,12 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
       if (possibleOrgId) {
         const matchingOrg = data.orgs.find((org) => org.id === possibleOrgId);
         if (matchingOrg) {
-          setSelectedOrganization(matchingOrg);
+          setSelectedOrgId(matchingOrg.id);
         }
       } else {
         const firstOrg = data.orgs.at(0);
         if (firstOrg) {
-          setSelectedOrganization(firstOrg);
+          setSelectedOrgId(firstOrg.id);
         } else {
           redirect("/dashboard/new_user");
         }
@@ -127,16 +137,32 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     }
   });
 
-  const [orgDatasets, _] = createResource(selectedOrganization, async (org) => {
-    const result = await trieve.fetch(
-      "/api/dataset/organization/{organization_id}",
-      "get",
-      {
-        organizationId: org.id,
-      },
-    );
-    return result;
-  });
+  const [orgDatasets, orgDatasetActions] = createResource(
+    selectedOrganization,
+    async (org) => {
+      const result = await trieve.fetch(
+        "/api/dataset/organization/{organization_id}",
+        "get",
+        {
+          organizationId: org.id,
+        },
+      );
+      return result;
+    },
+  );
+
+  // Reset the user signal
+  const invalidate = async () => {
+    void orgDatasetActions.refetch();
+    const res = await fetch(`${apiHost}/auth/invalidate`, {
+      credentials: "include",
+    });
+    if (res.status === 200) {
+      window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/`;
+    }
+    const data = (await res.json()) as SlimUser;
+    setUser(data);
+  };
 
   const setSelectedOrg = (orgId: string) => {
     localStorage.setItem(`${user()?.id}:selectedOrg`, orgId);
@@ -144,7 +170,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     if (!org) {
       return;
     }
-    setSelectedOrganization(org);
+    setSelectedOrgId(org.id);
   };
 
   createEffect(() => {
@@ -152,7 +178,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   });
 
   const deselectOrg = () => {
-    setSelectedOrganization(null);
+    setSelectedOrgId(null);
   };
 
   return (
@@ -178,6 +204,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
                   user: user,
                   orgDatasets: orgDatasets,
                   deselectOrg,
+                  invalidate,
                   selectedOrg: org,
                   setSelectedOrg: setSelectedOrg,
                   logout,

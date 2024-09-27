@@ -11,6 +11,7 @@ import { Spacer } from "../../components/Spacer";
 import { BuildingSomething } from "../../components/BuildingSomething";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "../../components/ShowToasts";
+import { TrackingIdUpdater } from "../../components/dataset-settings/TrackingIdUpdater";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
 
@@ -137,6 +138,7 @@ export const DatasetHomepage = () => {
               <TbReload />
             </button>
           </div>
+          <TrackingIdUpdater />
         </>
       </MagicSuspense>
       <Spacer h={12} />
