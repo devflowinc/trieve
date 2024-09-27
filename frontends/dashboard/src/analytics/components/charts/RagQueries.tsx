@@ -130,7 +130,10 @@ export const RagQueries = (props: RagQueriesProps) => {
         return (
           <button
             class="flex items-center gap-2 text-left"
-            onClick={() => setOpenLLMCompletion(true)}
+            onClick={() => {
+              setOpenLLMCompletion(true);
+              setCurrent(props.row.index);
+            }}
           >
             <IoOpenOutline />
             {props.getValue<RagQueryEvent["llm_response"]>()}
@@ -217,7 +220,7 @@ export const RagQueries = (props: RagQueriesProps) => {
         {(data) => (
           <Show
             fallback={<div class="py-8 text-center">No Data.</div>}
-            when={data.length > 0}
+            when={data().length > 0}
           >
             <FullScreenModal
               show={openRagResults}
