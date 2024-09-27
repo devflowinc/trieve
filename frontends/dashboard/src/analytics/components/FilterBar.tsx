@@ -53,7 +53,7 @@ export const FilterBar = (props: FilterBarProps) => {
   return (
     <div
       class={cn(
-        "flex justify-between border-neutral-400",
+        "flex flex-col justify-between border-neutral-400 md:flex-row",
         !props.noPadding && "px-3 py-2",
       )}
     >

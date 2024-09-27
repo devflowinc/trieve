@@ -29,7 +29,7 @@ export const SearchAnalyticsPage = () => {
         filters={analyticsFilters}
         setFilters={setAnalyticsFilters}
       />
-      <div class="grid grid-cols-2 gap-2 pt-3">
+      <div class="grid grid-cols-1 gap-2 pt-3 lg:grid-cols-2">
         <Card title="Search Usage" width={1}>
           <SearchUsageGraph params={analyticsFilters} />
         </Card>
