@@ -59,7 +59,7 @@ export const DatasetOverview = () => {
 
   const usageQuery = createQuery(() => ({
     queryKey: ["org-usage", userContext.selectedOrg().id],
-    queryFn: async () => {
+    queryFn: () => {
       return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
         organizationId: userContext.selectedOrg().id,
       });
