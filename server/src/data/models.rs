@@ -3734,6 +3734,7 @@ pub struct SearchQueriesWithClicksCTRResponseClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
     pub chunk_with_position: String,
+    pub request_id: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
 }
@@ -3743,6 +3744,7 @@ pub struct SearchQueriesWithClicksCTRResponse {
     pub query: String,
     pub results: Vec<serde_json::Value>,
     pub clicked_chunk: ChunkMetadataWithPosition,
+    pub request_id: String,
     pub created_at: String,
 }
 
@@ -3775,6 +3777,7 @@ impl SearchQueriesWithClicksCTRResponseClickhouse {
                 })
                 .collect::<Vec<serde_json::Value>>(),
             clicked_chunk,
+            request_id: self.request_id,
             created_at: self.created_at.to_string(),
         }
     }
@@ -3783,6 +3786,7 @@ impl SearchQueriesWithClicksCTRResponseClickhouse {
 #[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
 pub struct SearchQueriesWithoutClicksCTRResponseClickhouse {
     pub query: String,
+    pub request_id: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
 }
@@ -3790,6 +3794,7 @@ pub struct SearchQueriesWithoutClicksCTRResponseClickhouse {
 #[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
 pub struct SearchQueriesWithoutClicksCTRResponse {
     pub query: String,
+    pub request_id: String,
     pub created_at: String,
 }
 
@@ -3799,6 +3804,7 @@ impl From<SearchQueriesWithoutClicksCTRResponseClickhouse>
     fn from(clickhouse: SearchQueriesWithoutClicksCTRResponseClickhouse) -> Self {
         SearchQueriesWithoutClicksCTRResponse {
             query: clickhouse.query,
+            request_id: clickhouse.request_id,
             created_at: clickhouse.created_at.to_string(),
         }
     }
@@ -3813,6 +3819,7 @@ pub struct RecommendationsWithClicksCTRResponseClickhouse {
     pub results: Vec<String>,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
+    pub request_id: String,
     pub chunk_with_position: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
@@ -3825,6 +3832,7 @@ pub struct RecommendationsWithClicksCTRResponse {
     pub positive_tracking_ids: Option<Vec<String>>,
     pub negative_tracking_ids: Option<Vec<String>>,
     pub results: Vec<serde_json::Value>,
+    pub request_id: String,
     pub clicked_chunk: ChunkMetadataWithPosition,
     pub created_at: String,
 }
@@ -3886,6 +3894,7 @@ impl RecommendationsWithClicksCTRResponseClickhouse {
                 })
                 .collect::<Vec<serde_json::Value>>(),
             clicked_chunk,
+            request_id: self.request_id,
             created_at: self.created_at.to_string(),
         }
     }
@@ -3897,6 +3906,7 @@ pub struct RecommendationsWithoutClicksCTRResponseClickhouse {
     pub negative_ids: Vec<String>,
     pub positive_tracking_ids: Vec<String>,
     pub negative_tracking_ids: Vec<String>,
+    pub request_id: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
 }
@@ -3907,6 +3917,7 @@ pub struct RecommendationsWithoutClicksCTRResponse {
     pub negative_ids: Option<Vec<String>>,
     pub positive_tracking_ids: Option<Vec<String>>,
     pub negative_tracking_ids: Option<Vec<String>>,
+    pub request_id: String,
     pub created_at: String,
 }
 
@@ -3944,6 +3955,7 @@ impl From<RecommendationsWithoutClicksCTRResponseClickhouse>
             negative_ids,
             positive_tracking_ids,
             negative_tracking_ids,
+            request_id: clickhouse.request_id,
             created_at: clickhouse.created_at.to_string(),
         }
     }

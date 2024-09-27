@@ -1060,6 +1060,7 @@ pub async fn get_searches_with_clicks_query(
             search_queries.results,
             events.dataset_id,
             events.metadata,
+            events.request_id,
             events.created_at
         FROM default.events 
         JOIN default.search_queries ON toUUID(events.request_id) = search_queries.id 
@@ -1106,7 +1107,7 @@ pub async fn get_searches_without_clicks_query(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<CTRSearchQueryWithoutClicksResponse, ServiceError> {
     let mut query_string = String::from(
-        "SELECT search_queries.query, search_queries.created_at
+        "SELECT search_queries.query, search.id, search_queries.created_at
         FROM default.search_queries sq
         LEFT JOIN default.events cd ON sq.id = toUUID(cd.request_id) AND 
             events.event_type = 'click'
@@ -1225,6 +1226,7 @@ pub async fn get_recommendations_with_clicks_query(
             recommendations.negative_tracking_ids,
             recommendations.results,
             events.dataset_id,
+            events.request_id,
             events.metadata,
             events.created_at
         FROM default.events 
@@ -1277,6 +1279,7 @@ pub async fn get_recommendations_without_clicks_query(
             recommendations.negative_ids,
             recommendations.positive_tracking_ids,
             recommendations.negative_tracking_ids,
+            recommendations.id,
             recommendations.created_at
         FROM default.recommendations r
         LEFT JOIN default.events cd ON r.id = toUUID(cd.request_id) AND 
