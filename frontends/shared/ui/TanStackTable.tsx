@@ -4,10 +4,11 @@ import {
   type Row,
   type ColumnDef,
 } from "@tanstack/solid-table";
-import { Accessor, createEffect, createSignal, For, Show } from "solid-js";
-import { cn } from "shared/utils";
+import { Accessor, createSignal, For, Show } from "solid-js";
+import { cn, jsonToCSV } from "shared/utils";
 import { Pagination } from "shared/ui";
 import { FaSolidAngleDown, FaSolidAngleUp } from "solid-icons/fa";
+import { saveAs } from "file-saver";
 
 export type SortableColumnDef<TValue> = ColumnDef<unknown, TValue> & {
   sortable?: boolean;
@@ -43,15 +44,15 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
         setAllData([...allData(), ...results]);
       }
       setIsCreatingCSV(false);
+      const csv = jsonToCSV(allData());
+      var blob = new Blob([csv], {
+        type: "text/plain;charset=utf-8",
+      });
+      saveAs(blob, "csv-export.csv");
     }
   };
   return (
     <>
-      {props.exportFn ? (
-        <button onClick={download}>
-          {isCreatingCSV() ? "Loading" : "Download"}
-        </button>
-      ) : null}
       <table
         class={cn("min-w-full border-separate border-spacing-0", props.class)}
       >
@@ -143,13 +144,25 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
           </For>
         </tbody>
       </table>
-      {props.pages && (props.pages.canGoNext() || props.pages.page() !== 1) ? (
-        <Pagination
-          pages={props.pages}
-          perPage={props.perPage}
-          total={props.total}
-        />
-      ) : null}
+      <div class="flex items-center justify-between pl-4">
+        {props.exportFn ? (
+          <button
+            onClick={download}
+            class="flex items-center gap-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
+            disabled={isCreatingCSV()}
+          >
+            {isCreatingCSV() ? "Creating your CSV..." : "Export as CSV"}
+          </button>
+        ) : null}
+        {props.pages &&
+        (props.pages.canGoNext() || props.pages.page() !== 1) ? (
+          <Pagination
+            pages={props.pages}
+            perPage={props.perPage}
+            total={props.total}
+          />
+        ) : null}
+      </div>
     </>
   );
 };

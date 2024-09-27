@@ -61,6 +61,14 @@ export const useLowConfidenceQueries = ({
     });
   });
 
+  const queryFn = (page: number) =>
+    getLowConfidenceQueries(
+      params.filter,
+      dataset.datasetId(),
+      page,
+      parseThreshold(thresholdText()),
+    );
+
   const lowConfidenceQueriesQuery = createQuery(() => ({
     queryKey: [
       "low-confidence-queries",
@@ -71,17 +79,13 @@ export const useLowConfidenceQueries = ({
       },
     ],
     queryFn: () => {
-      return getLowConfidenceQueries(
-        params.filter,
-        dataset.datasetId(),
-        pages.page(),
-        parseThreshold(thresholdText()),
-      );
+      return queryFn(pages.page());
     },
   }));
 
   return {
     pages,
     lowConfidenceQueriesQuery,
+    queryFn,
   };
 };
