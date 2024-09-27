@@ -92,6 +92,7 @@ export const ChatMode = () => {
       llm_options: {
         completion_first: true,
       },
+      concat_user_messages_query: true,
     });
     handleReader(reader);
   };
