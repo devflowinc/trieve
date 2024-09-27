@@ -36,12 +36,16 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
   const [isCreatingCSV, setIsCreatingCSV] = createSignal<boolean>(false);
 
   const download = async () => {
+    const startDate = +new Date();
+    let page = 1;
     if (props.exportFn) {
       setIsCreatingCSV(true);
-      for (let i = 1; i < 99999999; i++) {
-        const results = await props.exportFn(i);
+      // run this loop for a max of 60s
+      while (+new Date() < startDate + 60000) {
+        const results = await props.exportFn(page);
         if (!results.length) break;
         setAllData([...allData(), ...results]);
+        page = page + 1;
       }
       setIsCreatingCSV(false);
       const csv = jsonToCSV(allData());

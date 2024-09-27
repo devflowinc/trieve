@@ -54,7 +54,7 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
 ];
 
 export const NoResultQueries = (props: NoResultQueriesProps) => {
-  const { notResultQuery, pages } = useNoResultsQueries({
+  const { notResultQuery, pages, queryFn } = useNoResultsQueries({
     params: props.params,
   });
   const table = createSolidTable({
@@ -78,7 +78,12 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
           <div class="py-8 text-center opacity-80">No Data.</div>
         </Show>
         <Show when={notResultQuery.data && notResultQuery.data.length > 0}>
-          <TanStackTable table={table} pages={pages} perPage={10} />
+          <TanStackTable
+            exportFn={queryFn}
+            table={table}
+            pages={pages}
+            perPage={10}
+          />
         </Show>
       </div>
     </MagicSuspense>
