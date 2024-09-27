@@ -37,11 +37,13 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
   const [open, setOpen] = createSignal(false);
   const [current, setCurrent] = createSignal<SearchQueryEvent | null>(null);
   const navigate = useBetterNav();
-  const { pages, lowConfidenceQueriesQuery } = useLowConfidenceQueries({
-    // eslint-disable-next-line solid/reactivity
-    params: props.params,
-    thresholdText: thresholdText,
-  });
+  const { pages, lowConfidenceQueriesQuery, queryFn } = useLowConfidenceQueries(
+    {
+      // eslint-disable-next-line solid/reactivity
+      params: props.params,
+      thresholdText: thresholdText,
+    },
+  );
 
   const table = createSolidTable({
     get data() {
@@ -108,6 +110,7 @@ export const LowConfidenceQueries = (props: LowConfidenceQueriesProps) => {
             )}
           </Show>
           <TanStackTable
+            exportFn={queryFn}
             small
             pages={pages}
             perPage={10}

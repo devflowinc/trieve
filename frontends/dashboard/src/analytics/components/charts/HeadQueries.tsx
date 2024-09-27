@@ -94,11 +94,15 @@ export const HeadQueries = (props: HeadQueriesProps) => {
         fallback={<div class="py-8 text-center">No Data.</div>}
         when={headQueriesQuery.data && headQueriesQuery.data?.length}
       >
-        <TanStackTable small pages={pages} perPage={10} table={tableMemo()} exportFn={(page: number) => getHeadQueries(
-        props.params.filter,
-        dataset.datasetId(),
-        page,
-      )} />
+        <TanStackTable
+          small
+          pages={pages}
+          perPage={10}
+          table={tableMemo()}
+          exportFn={(page: number) =>
+            getHeadQueries(props.params.filter, dataset.datasetId(), page)
+          }
+        />
       </Show>
     </MagicSuspense>
   );
