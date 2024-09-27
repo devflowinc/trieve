@@ -71,8 +71,6 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
   });
-  console.log(notResultQuery.data);
-
   return (
     <MagicSuspense skeletonKey="noresultqueries" unstyled>
       <div>

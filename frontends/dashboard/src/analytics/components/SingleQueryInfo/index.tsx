@@ -9,6 +9,7 @@ import { ResultCard } from "./ResultCard";
 import { DataSquare } from "./DataSquare";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { UserContext } from "../../../contexts/UserContext";
+import { IoArrowBackOutline } from "solid-icons/io";
 
 interface SingleQueryProps {
   queryId: string;
@@ -34,6 +35,12 @@ export const SingleQuery = (props: SingleQueryProps) => {
     return (
       <div class="flex flex-col gap-8">
         <div>
+          <button
+            class="flex w-fit items-center space-x-4 rounded-md bg-fuchsia-200 p-1 text-base font-semibold leading-6 text-fuchsia-600"
+            onClick={() => history.back()}
+          >
+            <IoArrowBackOutline /> Back
+          </button>
           <h3 class="text-base font-semibold leading-6 text-gray-900">
             <QueryStringDisplay size="large">
               {props.data.query}
