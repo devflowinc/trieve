@@ -394,6 +394,33 @@ body {
         }
       }
 
+      .mode-switch-wrapper {
+        > div {
+          background-color: var(--tv-zinc-800);
+
+          button {
+            color: var(--tv-zinc-400);
+
+            &.active {
+              background-color: var(--tv-zinc-900);
+              color: var(--tv-zinc-200);
+            }
+          }
+        }
+      }
+
+      .suggested-questions-wrapper {
+        .questions {
+          .suggested-question {
+            border-color: var(--tv-zinc-700);
+
+            &:hover {
+              background-color: var(--tv-zinc-800);
+            }
+          }
+        }
+      }
+
       .footer {
         border-color: var(--tv-zinc-700);
         background-color: var(--tv-zinc-900);
