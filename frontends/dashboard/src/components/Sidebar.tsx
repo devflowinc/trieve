@@ -26,7 +26,6 @@ import NewDatasetModal from "../components/NewDatasetModal";
 import { ImNewspaper } from "solid-icons/im";
 
 const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
-const analyticsUiURL = import.meta.env.VITE_ANALYTICS_UI_URL as string;
 const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
 
 export const DashboardSidebar = () => {
@@ -210,12 +209,6 @@ export const DashboardSidebar = () => {
               icon={AiOutlineMessage}
               href={`${chatUiURL}${orgDatasetParams()}`}
               label="Chat"
-            />
-            <Link
-              isExternal={true}
-              icon={AiOutlineBarChart}
-              href={`${analyticsUiURL}${orgDatasetParams()}`}
-              label="Analytics"
             />
           </div>
         </div>
