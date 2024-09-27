@@ -25,7 +25,7 @@ export const NavbarDatasetSelector = () => {
       return dataset.dataset.name;
     }
 
-    return "Click to Select Dataset";
+    return "Select Dataset...";
   };
 
   return (
