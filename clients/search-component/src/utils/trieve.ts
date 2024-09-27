@@ -78,33 +78,6 @@ export const countChunks = async ({
   return results;
 };
 
-export const countChunks = async ({
-  trieve,
-  query,
-  abortController,
-  tag,
-}: {
-  trieve: TrieveSDK;
-  query: string;
-  abortController?: AbortController;
-  tag?: string;
-}) => {
-  const results = await trieve.countChunksAboveThreshold(
-    {
-      query,
-      score_threshold: 0.2,
-      ...(tag && {
-        filters: {
-          must: [{ field: "tag_set", match_any: [tag] }],
-        },
-      }),
-      search_type: "fulltext",
-    },
-    abortController?.signal
-  );
-  return results;
-};
-
 export const sendCtrData = async ({
   trieve,
   chunkID,
