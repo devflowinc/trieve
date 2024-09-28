@@ -65,6 +65,9 @@ export const ApiKeys = () => {
       colHelp.accessor("id", {
         header: "ID",
       }),
+      colHelp.accessor("name", {
+        header: "Name",
+      }),
       colHelp.accessor("role", {
         header: "Perms",
         cell: (info) => {
