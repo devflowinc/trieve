@@ -5,10 +5,9 @@ import { IconMoon, IconNext, IconPrevious, IconSun } from "./Icons";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
 const trieve = new TrieveSDK({
-  apiKey: 'tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI',
-  datasetId: '4650e231-7857-45aa-beb1-cb52006a2460',
-})
-
+  apiKey: "tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI",
+  datasetId: "4650e231-7857-45aa-beb1-cb52006a2460",
+});
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -96,6 +95,19 @@ export default function App() {
                   ),
                 },
               ]}
+              defaultSearchQueries={[
+                "App Service Diagnostic Settings EventHub",
+                "Logstash to SigNoz configuration tutorial",
+                "EventHub and App Service logging integration",
+              ]}
+              defaultAiQuestions={[
+                "What is SigNoz?",
+                "How to change retention period?",
+                "How do I install SigNoz?",
+              ]}
+              brandLogoImgSrcUrl="https://avatars.githubusercontent.com/u/76905799?s=200&v=4"
+              brandName="SigNoz"
+              brandColor="#E75536"
             />
 
             <div className="mt-8 text-sm rounded overflow-hidden">
