@@ -8,6 +8,7 @@
   --tv-zinc-700: rgb(63 63 70);
   --tv-zinc-900: rgb(24, 24, 27);
   --tv-zinc-400: rgb(161, 161, 170);
+  --tv-zinc-500: rgb(108 108 120);
   --tv-zinc-600: rgb(82 82 91);
   --tv-primary-500: rgb(163 62 181);
 }
@@ -18,7 +19,7 @@ body {
   }
 
   #trieve-search-modal {
-    @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg p-2 pt-0 shadow-2xl focus:outline-none font-sans z-[999];
+    @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg p-2 shadow-2xl focus:outline-none font-sans z-[999];
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
 
@@ -35,14 +36,14 @@ body {
     }
 
     .mode-switch-wrapper {
-      @apply flex items-center justify-end mt-2 absolute top-3 right-4 z-30 font-medium;
+      @apply flex items-center justify-end mt-2 absolute top-2 right-4 z-30 font-medium;
 
       > div {
         @apply p-1 text-xs rounded-md flex;
         background-color: var(--tv-zinc-200);
 
         button {
-          @apply px-3 py-1 rounded-md  flex gap-1 items-center transition-all;
+          @apply px-3 py-1 rounded-md flex gap-1 items-center transition-all;
           color: var(--tv-zinc-600);
 
           &.active {
@@ -59,7 +60,7 @@ body {
     }
 
     ul.tags {
-      @apply flex flex-wrap items-center text-sm border-t  !px-2 !-ml-2 !-mr-2 relative !mt-0;
+      @apply flex flex-wrap items-center text-sm border-t !px-2 !-ml-2 !-mr-2 relative !mt-0;
       color: var(--tv-zinc-800);
       border-color: var(--tv-zinc-200);
 
@@ -83,7 +84,7 @@ body {
       border-color: var(--tv-zinc-200);
 
       .commands {
-        @apply flex text-xs grow gap-4 m-0;
+        @apply hidden sm:flex text-xs grow gap-4 m-0;
 
         > li {
           @apply flex items-center gap-1;
@@ -227,18 +228,61 @@ body {
 
     .chat-outer-wrapper {
       @apply mt-12;
+
+      .ai-message {
+        @apply sm:grid sm:grid-cols-[48px,1fr] sm:gap-2;
+
+        .ai-avatar {
+          @apply sm:w-12 sm:h-12 rounded-full flex items-center space-x-2;
+
+          img {
+            @apply w-7 h-7 sm:w-3/4 sm:h-3/4 sm:mx-auto sm:mt-2;
+          }
+
+          .tag {
+            @apply text-sm w-fit px-1.5 py-1 mb-0 rounded-md sm:hidden;
+          }
+        }
+
+        .brand-name {
+          @apply text-white px-1.5 py-1 rounded-md font-[500];
+        }
+
+        .content {
+          p {
+            @apply text-base mt-6 sm:mt-0;
+          }
+        }
+      }
     }
     /* SUGGESTED QUESTIONS */
 
-    .suggested-questions-wrapper {
-      @apply p-8;
+    .system-information-wrapper {
+      @apply mb-8;
 
       p {
-        @apply text-sm mb-4;
+        @apply text-sm mb-6 sm:mb-4;
       }
 
       h6 {
         @apply text-base font-medium mb-4;
+      }
+
+      .header {
+        @apply m-0 uppercase text-xs pb-2 flex items-center gap-1;
+        color: var(--tv-zinc-500);
+
+        .refetch {
+          @apply cursor-pointer border rounded-md p-1 text-xs;
+
+          &:not(:disabled):hover {
+            background-color: var(--tv-zinc-200);
+          }
+
+          &:disabled {
+            @apply cursor-not-allowed;
+          }
+        }
       }
 
       .questions {
@@ -251,16 +295,12 @@ body {
           &:hover {
             background-color: var(--tv-zinc-200);
           }
-
-          &.refetch {
-            @apply flex gap-1 items-center;
-          }
         }
       }
     }
 
     .input-wrapper {
-      @apply sticky top-0 pt-2 z-10 mt-1 flex flex-col gap-2;
+      @apply sticky top-0 z-10 flex flex-col gap-2;
       background-color: var(--bg-color);
 
       .input-flex {
@@ -292,8 +332,9 @@ body {
         form {
           @apply w-full;
         }
+
         .back-icon {
-          @apply top-5 left-1 absolute z-20;
+          @apply top-3 left-1 absolute z-20;
         }
       }
     }
@@ -409,7 +450,7 @@ body {
         }
       }
 
-      .suggested-questions-wrapper {
+      .system-information-wrapper {
         .questions {
           .suggested-question {
             border-color: var(--tv-zinc-700);
@@ -426,7 +467,6 @@ body {
         background-color: var(--tv-zinc-900);
 
         .commands {
-          @apply flex text-xs grow gap-4 m-0;
           color: var(--tv-zinc-300);
 
           kbd {

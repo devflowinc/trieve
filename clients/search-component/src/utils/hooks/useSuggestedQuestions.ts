@@ -28,7 +28,12 @@ export const useSuggestedQuestions = () => {
   };
 
   useEffect(() => {
-    getQuestions();
+    if (props.defaultAiQuestions?.length) {
+      setSuggestedQuestions(props.defaultAiQuestions);
+      return;
+    }
+
+    refetchSuggestedQuestion();
   }, []);
 
   return {

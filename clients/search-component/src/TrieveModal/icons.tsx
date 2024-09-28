@@ -1,4 +1,5 @@
 import React, { SVGAttributes } from "react";
+
 export const LoadingIcon = (props: SVGAttributes<SVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

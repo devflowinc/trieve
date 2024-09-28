@@ -30,7 +30,11 @@ export type ModalProps = {
   analytics?: boolean;
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
-  defaultQueries?: string[];
+  defaultSearchQueries?: string[];
+  defaultAiQuestions?: string[];
+  brandLogoImgSrcUrl?: string;
+  brandName?: string;
+  brandColor?: string;
   openKeyCombination?: { key?: string; label?: string; ctrl?: boolean }[];
   tags?: {
     tag: string;
@@ -49,7 +53,6 @@ const defaultProps = {
   chat: true,
   suggestedQueries: true,
   trieve: (() => {}) as unknown as TrieveSDK,
-  defaultQueries: [],
   openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
 };
 
@@ -74,10 +77,10 @@ const ModalContext = createContext<{
   setCurrentTag: React.Dispatch<React.SetStateAction<string>>;
   tagCounts: CountChunkQueryResponseBody[];
 }>({
+  props: defaultProps,
   query: "",
   results: [],
   loadingResults: false,
-  props: defaultProps,
   open: false,
   inputRef: { current: null },
   modalRef: { current: null },

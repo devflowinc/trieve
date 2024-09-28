@@ -29,17 +29,20 @@ export const useSuggestedQueries = () => {
   };
 
   useEffect(() => {
-    if (props.suggestedQueries && !isFetching.current) {
+    if (!props.suggestedQueries) {
+      return;
+    }
+
+    if (props.defaultSearchQueries?.length) {
       if (query) {
         getQueries();
-      } else {
-        if (props.defaultQueries?.length) {
-          setSuggestedQueries(props.defaultQueries.splice(0, 3));
-        } else {
-          getQueries();
-        }
+        return;
       }
+      setSuggestedQueries(props.defaultSearchQueries);
+      return;
     }
+
+    getQueries();
   }, [query]);
 
   return {
