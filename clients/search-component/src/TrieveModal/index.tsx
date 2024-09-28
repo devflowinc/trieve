@@ -34,8 +34,7 @@ const Modal = () => {
       onOpenChange={(value) => {
         setOpen(value);
         setMode("search");
-      }}
-    >
+      }}>
       <Dialog.Trigger asChild>
         {ButtonEl ? (
           <button type="button">
@@ -45,8 +44,7 @@ const Modal = () => {
           <button
             id="open-trieve-modal"
             type="button"
-            className={props.theme === "dark" ? "dark" : ""}
-          >
+            className={props.theme === "dark" ? "dark" : ""}>
             <div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -57,8 +55,7 @@ const Modal = () => {
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+                strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.3-4.3"></path>
               </svg>
@@ -94,10 +91,14 @@ const Modal = () => {
           id="trieve-search-modal"
           ref={modalRef}
           className={props.theme === "dark" ? "dark" : ""}
-          style={{ overflow: "auto" }}
-        >
+          style={{ overflow: "auto" }}>
           <ModeSwitch />
-          {mode === "search" ? <SearchMode /> : <ChatMode />}
+          <div style={{ display: mode === "search" ? "block" : "none" }}>
+            <SearchMode />
+          </div>
+          <div style={{ display: mode === "chat" ? "block" : "none" }}>
+            <ChatMode />
+          </div>
           <div className="footer">
             <ul className="commands">
               <li>
@@ -126,8 +127,7 @@ const Modal = () => {
             <a
               className="trieve-powered"
               href="https://trieve.ai"
-              target="_blank"
-            >
+              target="_blank">
               <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
               Powered by Trieve
             </a>
