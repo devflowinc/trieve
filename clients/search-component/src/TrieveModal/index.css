@@ -109,11 +109,11 @@ body {
     }
 
     .chat-modal-wrapper {
-      @apply flex flex-col gap-4 relative mt-1;
+      @apply flex flex-col gap-4 mt-1;
+
 
       .chat-ul {
-        @apply rounded border p-4;
-        border-color: var(--tv-zinc-300);
+        @apply sm:grid sm:grid-cols-[48px,1fr] sm:gap-2 -mt-7;
       }
 
       .additional-links {
@@ -131,8 +131,7 @@ body {
       }
 
       .user {
-        @apply font-medium flex gap-1;
-        color: var(--tv-primary-500);
+        @apply flex gap-1 text-center items-center;
       }
 
       .loading-system {
@@ -141,12 +140,17 @@ body {
       }
 
       .system {
-        @apply text-sm mt-4;
+        @apply mt-2 items-center sm:max-w-[52vw] overflow-ellipsis;
         p {
           @apply pb-1;
         }
+
+        .loading {
+          @apply h-10 w-10;
+        }
+
         pre {
-          @apply my-4;
+          @apply my-4 max-w-fit;
         }
 
         ul {
@@ -230,13 +234,25 @@ body {
       @apply mt-12;
 
       .ai-message {
-        @apply sm:grid sm:grid-cols-[48px,1fr] sm:gap-2;
+        
+        &.initial-message {
+          @apply sm:grid sm:grid-cols-[48px,1fr] sm:gap-2;
+        }
+        
 
         .ai-avatar {
           @apply sm:w-12 sm:h-12 rounded-full flex items-center space-x-2;
 
+          &.user {
+            @apply sm:w-10 sm:h-10 ml-1 mb-2;
+          }
+
           img {
             @apply w-7 h-7 sm:w-3/4 sm:h-3/4 sm:mx-auto sm:mt-2;
+          }
+
+          svg {
+            @apply w-5 h-5 sm:w-3/4 sm:h-3/4 sm:mx-auto sm:mt-2;
           }
 
           .tag {
@@ -261,7 +277,7 @@ body {
       @apply mb-8;
 
       p {
-        @apply text-sm mb-6 sm:mb-4;
+        @apply mb-6 sm:mb-4;
       }
 
       h6 {
@@ -294,6 +310,10 @@ body {
 
           &:hover {
             background-color: var(--tv-zinc-200);
+          }
+
+          &.loading {
+            @apply animate-pulse;
           }
         }
       }

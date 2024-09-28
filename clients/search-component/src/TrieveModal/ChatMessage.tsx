@@ -1,6 +1,5 @@
 import * as React from "react";
-import { useChat } from "../utils/hooks/useChat";
-import { CheckIcon, LoadingAIIcon, LoadingIcon } from "./icons";
+import { LoadingIcon } from "./icons";
 import Markdown from "react-markdown";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
@@ -15,27 +14,18 @@ type Message = {
 export const ChatMessage = ({
   message,
   idx,
-  i,
 }: {
-  i: number;
   idx: number;
   message: Message;
 }) => {
-  const { isLoading } = useChat();
   return (
     <div>
-      {message.type == "user" ? (
-        <div className={message.type}>
-          {isLoading && i === 0 ? <LoadingAIIcon /> : <CheckIcon />}
-          <span> {message.text}</span>
-        </div>
-      ) : null}
-      {isLoading && i === 0 && !message.text ? (
+      {message.text == "Loading..." ? (
         <div className="system">
-          <LoadingIcon />
+          <LoadingIcon className="loading" />
         </div>
       ) : null}
-      {message.type === "system" ? (
+      {message.type === "system" && message.text != "Loading..." ? (
         <div className="system">
           <Markdown
             components={{
@@ -59,7 +49,7 @@ export const ChatMessage = ({
           >
             {message.text}
           </Markdown>
-          {message.additional && i % 2 == 0 ? (
+          {message.additional ? (
             <div className="additional-links">
               {message.additional
                 .filter(
