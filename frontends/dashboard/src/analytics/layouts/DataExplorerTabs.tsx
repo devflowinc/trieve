@@ -3,19 +3,6 @@ import { For, ParentComponent } from "solid-js";
 import { useBetterNav } from "../utils/useBetterNav";
 import { usePathname } from "../hooks/usePathname";
 
-const pages: { name: string; path: string }[] = [
-  {
-    name: "Searches",
-    path:
-      window.location.pathname.split("/").slice(0, -1).join("/") + "/searches",
-  },
-  {
-    name: "RAG Messages",
-    path:
-      window.location.pathname.split("/").slice(0, -1).join("/") + "/messages",
-  },
-];
-
 export const DataExplorerTabs: ParentComponent = (props) => {
   const betterNav = useBetterNav();
   const pathname = usePathname();
@@ -24,6 +11,17 @@ export const DataExplorerTabs: ParentComponent = (props) => {
     e.preventDefault();
     betterNav(path);
   };
+
+  const pages: { name: string; path: string }[] = [
+    {
+      name: "Searches",
+      path: pathname().split("/").slice(0, -1).join("/") + "/searches",
+    },
+    {
+      name: "RAG Messages",
+      path: pathname().split("/").slice(0, -1).join("/") + "/messages",
+    },
+  ];
 
   return (
     <>
