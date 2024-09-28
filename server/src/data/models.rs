@@ -1752,20 +1752,12 @@ pub enum EventType {
     FileUploadFailed { file_id: uuid::Uuid, error: String },
     #[display(fmt = "chunks_uploaded")]
     ChunksUploaded { chunk_ids: Vec<uuid::Uuid> },
-    #[display(fmt = "chunk_action_failed")]
-    ChunkActionFailed { chunk_id: uuid::Uuid, error: String },
     #[display(fmt = "chunk_updated")]
     ChunkUpdated { chunk_id: uuid::Uuid },
     #[display(fmt = "bulk_chunks_deleted")]
     BulkChunksDeleted { message: String },
     #[display(fmt = "dataset_delete_failed")]
     DatasetDeleteFailed { error: String },
-    #[display(fmt = "qdrant_index_failed")]
-    QdrantUploadFailed {
-        chunk_id: uuid::Uuid,
-        qdrant_point_id: uuid::Uuid,
-        error: String,
-    },
     #[display(fmt = "bulk_chunk_upload_failed")]
     BulkChunkUploadFailed {
         chunk_ids: Vec<uuid::Uuid>,
@@ -1787,7 +1779,6 @@ impl EventType {
             EventTypeRequest::ChunkUpdated,
             EventTypeRequest::BulkChunksDeleted,
             EventTypeRequest::DatasetDeleteFailed,
-            EventTypeRequest::QdrantUploadFailed,
             EventTypeRequest::BulkChunkUploadFailed,
             EventTypeRequest::GroupChunksUpdated,
             EventTypeRequest::GroupChunksActionFailed,
