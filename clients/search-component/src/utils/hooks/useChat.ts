@@ -16,6 +16,7 @@ export const useChat = () => {
     }[][]
   >([]);
   const [isLoading, setIsLoading] = useState(false);
+
   const createTopic = async ({ question }: { question: string }) => {
     if (!currentTopic && !called.current) {
       called.current = true;
@@ -32,7 +33,7 @@ export const useChat = () => {
   };
 
   const handleReader = async (
-    reader: ReadableStreamDefaultReader<Uint8Array>
+    reader: ReadableStreamDefaultReader<Uint8Array>,
   ) => {
     setIsLoading(true);
     let done = false;
@@ -51,21 +52,19 @@ export const useChat = () => {
         let json;
         try {
           json = JSON.parse(jsonData);
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (_) {
+        } catch {
           json = null;
         }
 
         setMessages((m) => [
+          ...m.slice(0, -1),
           [
-            m[0][0],
             {
               type: "system",
               text: text,
               additional: json ? json : null,
             },
           ],
-          ...m.slice(1),
         ]);
       }
     }
@@ -91,8 +90,8 @@ export const useChat = () => {
 
   const askQuestion = async (question?: string) => {
     setMessages((m) => [
-      [{ type: "user", text: question || currentQuestion, additional: null }],
       ...m,
+      [{ type: "user", text: question || currentQuestion, additional: null }],
     ]);
     if (!currentTopic) {
       await createTopic({ question: question || currentQuestion });
@@ -100,8 +99,16 @@ export const useChat = () => {
       await createQuestion({ question: question || currentQuestion });
     }
     setCurrentQuestion("");
-    modalRef.current?.scroll({ top: 0, behavior: "smooth" });
+    setMessages((m) => [
+      ...m,
+      [{ type: "system", text: "Loading...", additional: null }],
+    ]);
+    modalRef.current?.scroll({
+      top: modalRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   };
+
   return {
     askQuestion,
     isLoading,
