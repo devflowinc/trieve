@@ -92,12 +92,18 @@ async fn main() -> Result<(), ServiceError> {
     for user in users {
         match get_user_ditto_identity(user.clone(), pool.clone(), &clickhouse_client).await {
             Ok(identify_request) => {
-                log::info!(
-                    "Sending ditto identity for user {}",
-                    identify_request.traits.email
-                );
-
-                send_user_ditto_identity(identify_request).await?;
+                match send_user_ditto_identity(identify_request).await {
+                    Ok(_) => {
+                        log::info!("Sent ditto identity for user {}", user.email);
+                    }
+                    Err(e) => {
+                        log::info!(
+                            "Failed to send ditto identity for user {}. Error: {}",
+                            user.email,
+                            e
+                        );
+                    }
+                };
             }
             Err(e) => {
                 log::info!("No ditto identity for user {}. Error: {}", user.email, e);
