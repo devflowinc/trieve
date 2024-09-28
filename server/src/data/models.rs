@@ -4021,6 +4021,7 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "RagQueryEvent")]
 pub struct RagQueryEvent {
     pub id: uuid::Uuid,
     pub rag_type: String,

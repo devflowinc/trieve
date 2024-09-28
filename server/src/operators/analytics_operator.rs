@@ -703,6 +703,7 @@ pub async fn get_latency_graph_query(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "RagQueryResponse")]
 pub struct RagQueryResponse {
     pub queries: Vec<RagQueryEvent>,
 }
