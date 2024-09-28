@@ -50,6 +50,22 @@
           "${url.ssoLoginInOtherTabsUrl?no_esc}"
         );
     </script>
+    <script type="module">
+        let usernameInput = document.querySelector("input#username");
+        let passwordInput = document.querySelector("input#password");
+        let signInButton = document.querySelector(".pf-c-button.pf-m-primary");
+
+        function toggleColor() {
+            if (usernameInput.value.length > 0 && passwordInput.value.length > 0) {
+                signInButton.classList.add("signin-active")
+            } else {
+                signInButton.classList.remove("signin-active")
+            }
+        }
+
+        usernameInput.addEventListener('input', toggleColor);
+        passwordInput.addEventListener('input', toggleColor);
+    </script>
     <script defer data-domain="auth.trieve.ai" src="https://plausible.trieve.ai/js/script.js"></script>
 </head>
 

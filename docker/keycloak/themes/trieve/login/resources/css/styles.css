@@ -147,11 +147,15 @@ button#kc-login {
   background-color: purple !important;
 }
 
+.signin-active {
+  background-color: rgb(232 121 249) !important;
+}
+
 .pf-c-button.pf-m-primary {
   font-weight: 500;
   border-radius: 6px;
   color: black;
-  background-color: #E4C1EA !important;
+  background-color: #E4C1EA;
   border: 1px solid #DDB2E5 !important;
 }
 
