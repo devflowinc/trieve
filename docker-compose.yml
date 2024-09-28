@@ -301,7 +301,7 @@ services:
     volumes:
       - keycloak-data:/opt/keycloak/data
       - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./docker/keycloak/themes/trieve:/opt/keycloak/themes/treive
+      - ./docker/keycloak/themes/trieve:/opt/keycloak/themes/trieve
     ports:
       - 8080:8080
     networks:
