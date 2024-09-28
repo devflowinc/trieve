@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
 import { SearchMode } from "./SearchMode";
@@ -16,6 +16,13 @@ import { ModeSwitch } from "./ModeSwitch";
 const Modal = () => {
   useKeyboardNavigation();
   const { mode, modalRef, open, setOpen, setMode, props } = useModalState();
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--tv-prop-brand-color",
+      props.brandColor ?? "#CB53EB"
+    );
+  }, [props.brandColor]);
 
   const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
 
