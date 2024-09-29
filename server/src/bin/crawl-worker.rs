@@ -37,7 +37,8 @@ use ureq::json;
 #[derive(Debug)]
 struct ScrapeReport {
     request_id: uuid::Uuid,
-    pages_scraped: u32,
+    pages_scraped: usize,
+    chunks_created: usize,
 }
 
 #[allow(clippy::print_stdout)]
@@ -95,15 +96,13 @@ async fn crawl(
 
     log::info!("Processing {} documents from scrape", data.len());
 
-    let mut page_count = 0;
+    let page_count = data.len();
 
     for page in data {
         let page = match page {
             Some(page) => page,
             None => continue,
         };
-
-        page_count = page_count + 1;
 
         if page.metadata.status_code != Some(200) {
             log::error!("Error getting page metadata for chunk: {:?}", page.metadata);
@@ -255,6 +254,7 @@ async fn crawl(
     Ok(ScrapeReport {
         request_id: scrape_request.id,
         pages_scraped: page_count,
+        chunks_created: chunks.len(),
     })
 }
 
@@ -359,6 +359,7 @@ async fn scrape_worker(
                             models::EventType::CrawlCompleted {
                                 scrape_id: scrape_report.request_id,
                                 pages_crawled: scrape_report.pages_scraped,
+                                chunks_created: scrape_report.chunks_created,
                                 crawl_options: crawl_request.crawl_options,
                             },
                         )
