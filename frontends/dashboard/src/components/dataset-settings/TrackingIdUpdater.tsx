@@ -68,9 +68,10 @@ export const TrackingIdUpdater = () => {
     <div class="flex flex-row content-center items-center gap-1">
       <span class="font-medium">Tracking ID:</span> {/* <button */}
       <input
-        placeholder="No Tracking ID..."
+        placeholder="Enter Tracking ID..."
         class="rounded-md border px-2 py-1 text-sm"
         value={input() || ""}
+        onFocus={() => setHasEdited(true)}
         onInput={(e) => {
           setInput(e.currentTarget.value);
           setHasEdited(true);
