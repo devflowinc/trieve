@@ -35,7 +35,7 @@ export const GettingStartedDocsLinks = () => {
   return (
     <div>
       <div class="pb-2 font-medium">Introduction</div>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-2 gap-3 -md:grid-cols-1">
         <GettingStartedLink
           icon={AiFillApi}
           link="https://docs.trieve.ai/api-reference"

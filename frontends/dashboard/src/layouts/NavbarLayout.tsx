@@ -13,8 +13,8 @@ export const NavbarLayout = (props: NavbarLayoutProps) => {
     <>
       <ShowToasts />
       <div class="flex h-screen min-h-screen flex-col">
-        <div class="flex justify-between gap-3 border-b border-b-neutral-300 p-2 px-4 shadow-md">
-          <div class="flex items-center gap-8">
+        <div class="flex justify-between gap-3 border-b border-b-neutral-300 p-2 px-4 shadow-md -md:flex-col">
+          <div class="flex items-center md:gap-8 -md:flex-col">
             <A href="/" class="flex items-center gap-1">
               <img
                 class="h-12 w-12 cursor-pointer"
