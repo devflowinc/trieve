@@ -1770,7 +1770,8 @@ pub enum EventType {
     #[display(fmt = "crawl_completed")]
     CrawlCompleted {
         scrape_id: uuid::Uuid,
-        pages_crawled: u32,
+        pages_crawled: usize,
+        chunks_created: usize,
         crawl_options: CrawlOptions,
     },
     #[display(fmt = "crawl_failed")]
