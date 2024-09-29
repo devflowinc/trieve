@@ -1,20 +1,25 @@
-import { createQuery, CreateQueryResult } from "@tanstack/solid-query";
+import { createQuery } from "@tanstack/solid-query";
 import { FaSolidCheck } from "solid-icons/fa";
-import { createMemo, Show } from "solid-js";
-import { OrganizationUsageCount } from "trieve-ts-sdk";
+import { createMemo, Show, useContext } from "solid-js";
 import { useTrieve } from "../hooks/useTrieve";
+import { UserContext } from "../contexts/UserContext";
 
-export interface OnboardingStepsProps {
-  usageQuery: CreateQueryResult<OrganizationUsageCount, Error>;
-}
-
-export const OnboardingSteps = (props: OnboardingStepsProps) => {
+export const OnboardingSteps = () => {
+  const userContext = useContext(UserContext);
+  const usageQuery = createQuery(() => ({
+    queryKey: ["org-usage", userContext.selectedOrg().id],
+    queryFn: async () => {
+      return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
+        organizationId: userContext.selectedOrg().id,
+      });
+    },
+  }));
   const trieve = useTrieve();
   const searchAnalyticsQuery = createQuery(() => ({
-    queryKey: ["top-datasets", props.usageQuery.data?.org_id],
+    queryKey: ["top-datasets", userContext.selectedOrg().id],
     queryFn: async () => {
       return trieve.fetch("/api/analytics/top", "post", {
-        organizationId: props.usageQuery.data?.org_id as string,
+        organizationId: userContext.selectedOrg().id,
         data: {
           type: "search",
         },
@@ -23,10 +28,10 @@ export const OnboardingSteps = (props: OnboardingStepsProps) => {
   }));
 
   const ragAnalyticsQuery = createQuery(() => ({
-    queryKey: ["top-datasets", props.usageQuery.data?.org_id],
+    queryKey: ["top-datasets", userContext.selectedOrg().id],
     queryFn: async () => {
       return trieve.fetch("/api/analytics/top", "post", {
-        organizationId: props.usageQuery.data?.org_id as string,
+        organizationId: userContext.selectedOrg().id,
         data: {
           type: "rag",
         },
@@ -35,9 +40,12 @@ export const OnboardingSteps = (props: OnboardingStepsProps) => {
   }));
 
   const activeDataset = createMemo(() => {
-    if ((props.usageQuery?.data?.dataset_count ?? 0) == 0) {
+    if (!usageQuery.isSuccess) {
+      return 999;
+    }
+    if ((usageQuery.data?.dataset_count ?? 0) == 0) {
       return 1;
-    } else if ((props.usageQuery?.data?.chunk_count ?? 0) == 0) {
+    } else if ((usageQuery.data?.chunk_count ?? 0) == 0) {
       return 2;
     } else if (
       searchAnalyticsQuery.data?.find(
