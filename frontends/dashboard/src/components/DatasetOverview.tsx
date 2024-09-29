@@ -28,9 +28,6 @@ import { CopyButton } from "./CopyButton";
 import { formatDate } from "../utils/formatters";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "../components/ShowToasts";
-import { OnboardingSteps } from "./OnboardingSteps";
-import { createQuery } from "@tanstack/solid-query";
-import { useTrieve } from "../hooks/useTrieve";
 
 const colHelp = createColumnHelper<DatasetAndUsage>();
 
@@ -38,7 +35,6 @@ export const DatasetOverview = () => {
   const userContext = useContext(UserContext) as {
     selectedOrg: () => { id: string };
   };
-  const trieve = useTrieve();
   const navigate = useNavigate();
 
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
@@ -56,15 +52,6 @@ export const DatasetOverview = () => {
       page: page,
       setPage,
     });
-
-  const usageQuery = createQuery(() => ({
-    queryKey: ["org-usage", userContext.selectedOrg().id],
-    queryFn: () => {
-      return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
-        organizationId: userContext.selectedOrg().id,
-      });
-    },
-  }));
 
   const refetchChunks = async (datasetId: string) => {
     try {
@@ -257,9 +244,8 @@ export const DatasetOverview = () => {
           setNewDatasetModalOpen(false);
         }}
       />
-      <OnboardingSteps usageQuery={usageQuery} />
       <div class="flex items-center py-2">
-        <div class="flex w-full justify-between pt-2 md:items-end -md:flex-col">
+        <div class="-md:flex-col flex w-full justify-between pt-2 md:items-end">
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-base font-semibold leading-6">Datasets</h1>
