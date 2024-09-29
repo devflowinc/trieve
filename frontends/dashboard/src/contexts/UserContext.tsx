@@ -154,14 +154,12 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   // Reset the user signal
   const invalidate = async () => {
     void orgDatasetActions.refetch();
-    const res = await fetch(`${apiHost}/auth/invalidate`, {
-      credentials: "include",
-    });
-    if (res.status === 200) {
-      window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/`;
+    try {
+      const res = await trieve.fetch(`/api/auth/me`, "get");
+      setUser(res);
+    } catch (err) {
+      console.error(err);
     }
-    const data = (await res.json()) as SlimUser;
-    setUser(data);
   };
 
   const setSelectedOrg = (orgId: string) => {

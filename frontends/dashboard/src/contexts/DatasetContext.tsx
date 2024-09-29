@@ -22,6 +22,8 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const datasetId = createMemo(() => params.id);
+
   const dataset = createMemo(() => {
     const possDatasets = orgContext.orgDatasets();
     if (Array.isArray(possDatasets)) {
@@ -42,8 +44,6 @@ export const DatasetContextProvider = (props: { children: JSX.Element }) => {
 
     navigate(`/dataset/${id}`);
   };
-
-  const datasetId = createMemo(() => params.id);
 
   return (
     <DatasetContext.Provider
