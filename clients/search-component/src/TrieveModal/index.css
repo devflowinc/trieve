@@ -24,10 +24,10 @@ body {
     background-color: var(--tv-zinc-50);
 
     &.chat-modal-mobile {
-      @apply h-full sm:h-fit w-full max-h-[100vh] sm:max-h-[80vh] sm:w-[90vw] rounded-none sm:rounded-lg;
+      @apply flex flex-col h-full max-h-[100vh] sm:h-fit w-full sm:max-h-[80vh] sm:w-[90vw] rounded-none sm:rounded-lg;
 
       .chat-outer-wrapper {
-        @apply justify-between w-full h-full m-0 sm:mt-12;
+        @apply justify-between w-full h-full m-0 sm:mt-12 pb-4;
       }
       .system-information-wrapper {
         @apply sm:mb-8;
@@ -90,7 +90,7 @@ body {
     }
 
     .footer {
-      @apply flex border-t sticky -bottom-2 items-center pt-3 px-2 pb-1;
+      @apply flex border-t sticky bottom-2 items-center pt-3 px-2 pb-1;
       background-color: var(--tv-zinc-50);
       border-color: var(--tv-zinc-200);
 

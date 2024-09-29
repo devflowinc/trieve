@@ -44,6 +44,14 @@ export const useChat = () => {
       if (doneReading) {
         done = doneReading;
         setIsLoading(false);
+
+        // Get First Chat Container 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const chatContainer: any = modalRef.current?.querySelector("div.chat-container");
+        if (chatContainer) {
+          chatContainer.style.height = "fit-content";
+        }
+
       } else if (value) {
         const decoder = new TextDecoder();
         const newText = decoder.decode(value);
