@@ -54,9 +54,6 @@ export const TrackingIdUpdater = () => {
 
   const handleSave = () => {
     const newTrackingId = input();
-    if (!newTrackingId) {
-      return;
-    }
     updateTrackingIdMutation.mutate(newTrackingId);
   };
 

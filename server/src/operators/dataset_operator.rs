@@ -570,7 +570,13 @@ pub async fn update_dataset_query(
             .filter(datasets_columns::deleted.eq(0)),
     )
     .set((
-        new_tracking_id.map(|id| datasets_columns::tracking_id.eq(id)),
+        new_tracking_id.map(|id| {
+            if id.is_empty() {
+                datasets_columns::tracking_id.eq(None)
+            } else {
+                datasets_columns::tracking_id.eq(Some(id))
+            }
+        }),
         datasets_columns::name.eq(name),
         datasets_columns::updated_at.eq(diesel::dsl::now),
         datasets_columns::server_configuration.eq(configuration),
