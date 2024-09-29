@@ -28,11 +28,11 @@ type TableProps<T> = {
   class?: string;
   headerClass?: string;
   onRowClick?: (row: Row<T>["original"]) => void;
-  exportFn?: (page: number) => Promise<any[]>;
+  exportFn?: (page: number) => Promise<unknown[]>;
 };
 
 export const TanStackTable = <T,>(props: TableProps<T>) => {
-  const [allData, setAllData] = createSignal<any[]>([]);
+  const [allData, setAllData] = createSignal<unknown[]>([]);
   const [isCreatingCSV, setIsCreatingCSV] = createSignal<boolean>(false);
 
   const download = async () => {
@@ -44,6 +44,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
       while (+new Date() < startDate + 60000) {
         const results = await props.exportFn(page);
         if (!results.length) break;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         setAllData([...allData(), ...results]);
         page = page + 1;
       }
@@ -151,7 +152,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
       <div class="flex items-center justify-between pl-4">
         {props.exportFn ? (
           <button
-            onClick={download}
+            onClick={() => void download()}
             class="flex items-center gap-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
             disabled={isCreatingCSV()}
           >
