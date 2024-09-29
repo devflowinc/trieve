@@ -23,6 +23,17 @@ body {
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
 
+    &.chat-modal-mobile {
+      @apply h-full sm:h-fit w-full max-h-[100vh] sm:max-h-[80vh] sm:w-[90vw] rounded-none sm:rounded-lg;
+
+      .chat-outer-wrapper {
+        @apply justify-between w-full h-full m-0 sm:mt-12;
+      }
+      .system-information-wrapper {
+        @apply sm:mb-8;
+      }
+    }
+
     .trieve-elements-search {
       @apply pr-2;
     }
@@ -231,7 +242,7 @@ body {
     }
 
     .chat-outer-wrapper {
-      @apply mt-12;
+      @apply flex flex-col mt-12;
 
       .ai-message {
         
