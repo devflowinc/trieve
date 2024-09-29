@@ -1,4 +1,4 @@
-import { createSignal, Show, useContext } from "solid-js";
+import { createEffect, createSignal, Show, useContext } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { useTrieve } from "../../hooks/useTrieve";
 import { createMutation, createQuery } from "@tanstack/solid-query";
@@ -27,7 +27,7 @@ export const TrackingIdUpdater = () => {
       const result = await trieve.fetch("/api/dataset", "put", {
         data: {
           dataset_id: datasetQuery.data.id,
-          new_tracking_id: newTrackingId === "" ? null : newTrackingId,
+          new_tracking_id: newTrackingId,
         },
         organizationId: userContext.selectedOrg().id,
       });
@@ -40,8 +40,17 @@ export const TrackingIdUpdater = () => {
   }));
 
   const [input, setInput] = createSignal(
-    datasetContext.dataset()?.dataset.tracking_id,
+    "", // Replaced by context as soon as the memo syncs
   );
+  const [hasEdited, setHasEdited] = createSignal(false);
+
+  createEffect(() => {
+    // If the tracking id is the same as the current tracking id, then don't show the input
+    const orgTrackingId = datasetContext.dataset()?.dataset.tracking_id;
+    if (input() === "" && orgTrackingId && !hasEdited()) {
+      setInput(orgTrackingId);
+    }
+  });
 
   const handleSave = () => {
     const newTrackingId = input();
@@ -52,7 +61,7 @@ export const TrackingIdUpdater = () => {
   };
 
   const cancel = () => {
-    setInput(datasetContext.dataset()?.dataset.tracking_id);
+    setInput(datasetContext.dataset()?.dataset.tracking_id || "");
   };
 
   return (
@@ -62,11 +71,14 @@ export const TrackingIdUpdater = () => {
         placeholder="No Tracking ID..."
         class="rounded-md border px-2 py-1 text-sm"
         value={input() || ""}
-        onInput={(e) => setInput(e.currentTarget.value)}
+        onInput={(e) => {
+          setInput(e.currentTarget.value);
+          setHasEdited(true);
+        }}
       />
       <Show
         when={
-          (input() === "" ? input() : undefined) !=
+          (input() !== "" ? input() : undefined) !=
           datasetContext.dataset()?.dataset.tracking_id
         }
       >
