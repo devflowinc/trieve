@@ -33,11 +33,16 @@ export const ChatMessage = ({
                 const { className, children } = props || {};
                 if (!children) return null;
                 if (!className) {
-                  return <code className="single-line">{children}</code>;
+                  return (<SyntaxHighlighter
+                    language={"bash"}
+                    style={nightOwl}
+                  >
+                    {children?.toString()}
+                  </SyntaxHighlighter>);
                 }
                 return (
                   <SyntaxHighlighter
-                    language={className?.split("language")[1] || "sh"}
+                    language={className?.split("language")[1] || "bash"}
                     style={nightOwl}
                   >
                     {children?.toString()}
