@@ -43,14 +43,6 @@ export const useChat = () => {
       const { value, done: doneReading } = await reader.read();
       if (doneReading) {
         done = doneReading;
-        setIsLoading(false);
-
-        // Get First Chat Container 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const chatContainer: any = modalRef.current?.querySelector("div.chat-container");
-        if (chatContainer) {
-          chatContainer.style.height = "fit-content";
-        }
 
       } else if (value) {
         const decoder = new TextDecoder();
@@ -74,6 +66,13 @@ export const useChat = () => {
             },
           ],
         ]);
+      }
+
+      // eslint-disable-next-line 18048
+      if (modalRef.current?.scrollHeight > modalRef.current?.clientHeight) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const chatContainer: any = modalRef.current?.querySelector("div.chat-container");
+        chatContainer.style.height = "fit-content";
       }
     }
   };
