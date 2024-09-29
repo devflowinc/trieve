@@ -90,14 +90,14 @@ const Modal = () => {
         <Dialog.Content
           id="trieve-search-modal"
           ref={modalRef}
-          className={(mode === "chat"? "chat-modal-mobile " : " ") + (props.theme === "dark" ? "dark " : "")}
-          style={{ overflow: "auto" }}>
+          className={(mode === "chat" ? "chat-modal-mobile " : " ") + (props.theme === "dark" ? "dark " : "")}
+          style={{ "overflowY": "auto" }}>
           <ModeSwitch />
           <div style={{ display: mode === "search" ? "block" : "none" }}>
             <SearchMode />
           </div>
-          <div 
-            className={(mode === "chat"? "w-full h-[94%]" : " ")}
+          <div
+            className={(mode === "chat" ? "w-full h-full chat-container" : " ")}
             style={{ display: mode === "chat" ? "block" : "none" }}>
             <ChatMode />
           </div>
