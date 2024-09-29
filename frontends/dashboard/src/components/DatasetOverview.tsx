@@ -259,7 +259,7 @@ export const DatasetOverview = () => {
       />
       <OnboardingSteps usageQuery={usageQuery} />
       <div class="flex items-center py-2">
-        <div class="flex w-full items-end justify-between pt-2">
+        <div class="flex w-full justify-between pt-2 md:items-end -md:flex-col">
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-base font-semibold leading-6">Datasets</h1>
