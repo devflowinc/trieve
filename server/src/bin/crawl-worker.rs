@@ -7,8 +7,13 @@ use std::sync::{
     Arc,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
-use trieve_server::operators::{
-    dataset_operator::get_dataset_by_id_query, user_operator::hash_function,
+use trieve_server::{
+    data::models::{self, WorkerEvent},
+    operators::{
+        clickhouse_operator::{ClickHouseEvent, EventQueue},
+        dataset_operator::get_dataset_by_id_query,
+        user_operator::hash_function,
+    },
 };
 use trieve_server::{
     data::models::{CrawlRequest, DatasetConfiguration, RedisPool},
@@ -29,12 +34,18 @@ use trieve_server::{
 };
 use ureq::json;
 
+#[derive(Debug)]
+struct ScrapeReport {
+    request_id: uuid::Uuid,
+    pages_scraped: u32,
+}
+
 #[allow(clippy::print_stdout)]
 async fn crawl(
     scrape_request: CrawlRequest,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
-) -> Result<uuid::Uuid, ServiceError> {
+) -> Result<ScrapeReport, ServiceError> {
     let ingest_result;
     loop {
         let temp_result = get_crawl_from_firecrawl(scrape_request.scrape_id)
@@ -84,11 +95,15 @@ async fn crawl(
 
     log::info!("Processing {} documents from scrape", data.len());
 
+    let mut page_count = 0;
+
     for page in data {
         let page = match page {
             Some(page) => page,
             None => continue,
         };
+
+        page_count = page_count + 1;
 
         if page.metadata.status_code != Some(200) {
             log::error!("Error getting page metadata for chunk: {:?}", page.metadata);
@@ -237,7 +252,10 @@ async fn crawl(
     )
     .await?;
 
-    Ok(scrape_request.id)
+    Ok(ScrapeReport {
+        request_id: scrape_request.id,
+        pages_scraped: page_count,
+    })
 }
 
 #[allow(clippy::print_stdout)]
@@ -245,6 +263,7 @@ async fn scrape_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
+    event_queue: actix_web::web::Data<EventQueue>,
 ) {
     log::info!("Starting scrape worker service thread");
 
@@ -330,10 +349,30 @@ async fn scrape_worker(
         }
 
         match crawl(crawl_request.clone(), pool.clone(), redis_pool.clone()).await {
-            Ok(scrape_id) => {
-                log::info!("Scrape job completed: {:?}", scrape_id);
+            Ok(scrape_report) => {
+                log::info!("Scrape job completed: {:?}", scrape_report);
 
-                match update_crawl_status(scrape_id, CrawlStatus::Completed, pool.clone()).await {
+                event_queue
+                    .send(ClickHouseEvent::WorkerEvent(
+                        WorkerEvent::from_details(
+                            crawl_request.dataset_id,
+                            models::EventType::CrawlCompleted {
+                                scrape_id: scrape_report.request_id,
+                                pages_crawled: scrape_report.pages_scraped,
+                                crawl_options: crawl_request.crawl_options,
+                            },
+                        )
+                        .into(),
+                    ))
+                    .await;
+
+                match update_crawl_status(
+                    scrape_report.request_id,
+                    CrawlStatus::Completed,
+                    pool.clone(),
+                )
+                .await
+                {
                     Ok(_) => {}
                     Err(err) => {
                         log::error!("Failed to update crawl status: {:?}", err);
@@ -350,6 +389,20 @@ async fn scrape_worker(
             }
             Err(err) => {
                 log::error!("Failed to scrape website: {:?}", err);
+
+                event_queue
+                    .send(ClickHouseEvent::WorkerEvent(
+                        WorkerEvent::from_details(
+                            crawl_request.dataset_id,
+                            models::EventType::CrawlFailed {
+                                scrape_id: crawl_request.id,
+                                crawl_options: crawl_request.crawl_options.clone(),
+                                error: format!("{:?}", err),
+                            },
+                        )
+                        .into(),
+                    ))
+                    .await;
 
                 let _ = readd_error_to_queue(crawl_request, err, redis_pool.clone()).await;
             }
@@ -442,7 +495,39 @@ fn main() {
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
 
-                scrape_worker(should_terminate, web_redis_pool, web_pool).await
+                let event_queue = if std::env::var("USE_ANALYTICS")
+                    .unwrap_or("false".to_string())
+                    .parse()
+                    .unwrap_or(false)
+                {
+                    log::info!("Analytics enabled");
+
+                    let clickhouse_client = clickhouse::Client::default()
+                        .with_url(
+                            std::env::var("CLICKHOUSE_URL")
+                                .unwrap_or("http://localhost:8123".to_string()),
+                        )
+                        .with_user(
+                            std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()),
+                        )
+                        .with_password(
+                            std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()),
+                        )
+                        .with_database(
+                            std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
+                        )
+                        .with_option("async_insert", "1")
+                        .with_option("wait_for_async_insert", "0");
+
+                    let mut event_queue = EventQueue::new(clickhouse_client.clone());
+                    event_queue.start_service();
+                    event_queue
+                } else {
+                    log::info!("Analytics disabled");
+                    EventQueue::default()
+                };
+                let web_event_queue = actix_web::web::Data::new(event_queue);
+                scrape_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
