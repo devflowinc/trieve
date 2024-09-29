@@ -142,7 +142,7 @@ body {
       }
 
       .user {
-        @apply flex gap-1 text-center items-center;
+        @apply flex gap-1 text-center items-center mb-5;
       }
 
       .loading-system {
@@ -247,7 +247,7 @@ body {
       .ai-message {
         
         &.initial-message {
-          @apply sm:grid sm:grid-cols-[48px,1fr] sm:gap-2;
+          @apply sm:grid sm:grid-cols-[48px,1fr] gap-2;
         }
         
 
@@ -255,7 +255,7 @@ body {
           @apply sm:w-12 sm:h-12 rounded-full flex items-center space-x-2;
 
           &.user {
-            @apply sm:w-10 sm:h-10 ml-1 mb-2;
+            @apply mt-5 sm:mt-0 sm:w-10 h-10 ml-1 mb-2;
           }
 
           img {
@@ -274,12 +274,6 @@ body {
         .brand-name {
           @apply text-white px-1.5 py-1 rounded-md font-[500];
         }
-
-        .content {
-          p {
-            @apply text-base mt-6 sm:mt-0;
-          }
-        }
       }
     }
     /* SUGGESTED QUESTIONS */
@@ -289,6 +283,11 @@ body {
 
       p {
         @apply mb-6 sm:mb-4;
+      }
+      .content {
+        p {
+          @apply my-3;
+        }
       }
 
       h6 {
