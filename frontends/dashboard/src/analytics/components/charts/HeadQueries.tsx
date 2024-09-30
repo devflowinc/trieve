@@ -1,16 +1,12 @@
-import { AnalyticsFilter, HeadQuery } from "shared/types";
-import { createEffect, createMemo, Show, useContext } from "solid-js";
+import { HeadQuery } from "shared/types";
+import { createMemo, Show } from "solid-js";
 import { SortableColumnDef, TanStackTable } from "shared/ui";
 import { createSolidTable, getCoreRowModel } from "@tanstack/solid-table";
 import { MagicSuspense } from "../../../components/MagicBox";
-import { DatasetContext } from "../../../contexts/DatasetContext";
-import { usePagination } from "../../hooks/usePagination";
-import { createQuery, useQueryClient } from "@tanstack/solid-query";
-import { getHeadQueries } from "../../api/analytics";
-
-interface HeadQueriesProps {
-  params: { filter: AnalyticsFilter };
-}
+import {
+  HeadQueriesProps,
+  useHeadQueries,
+} from "../../hooks/data/useHeadQueries";
 
 const columns: SortableColumnDef<HeadQuery>[] = [
   {
@@ -24,51 +20,7 @@ const columns: SortableColumnDef<HeadQuery>[] = [
 ];
 
 export const HeadQueries = (props: HeadQueriesProps) => {
-  const dataset = useContext(DatasetContext);
-  const pages = usePagination();
-  const queryClient = useQueryClient();
-
-  createEffect(() => {
-    // Preload the next page
-    const datasetId = dataset.datasetId();
-    const curPage = pages.page();
-    void queryClient.prefetchQuery({
-      queryKey: [
-        "head-queries",
-        { filters: props.params.filter, page: curPage + 1, dataset: datasetId },
-      ],
-      queryFn: async () => {
-        const results = await getHeadQueries(
-          props.params.filter,
-          datasetId,
-          curPage + 1,
-        );
-        if (results.length === 0) {
-          pages.setMaxPageDiscovered(curPage);
-        }
-        return results;
-      },
-    });
-  });
-
-  const headQueriesQuery = createQuery(() => ({
-    queryKey: [
-      "head-queries",
-      {
-        filters: props.params.filter,
-        page: pages.page(),
-        dataset: dataset.datasetId(),
-      },
-    ],
-    queryFn: () => {
-      return getHeadQueries(
-        props.params.filter,
-        dataset.datasetId(),
-        pages.page(),
-      );
-    },
-  }));
-
+  const { headQueriesQuery, pages, queryFn } = useHeadQueries(props);
   const tableMemo = createMemo(() => {
     const table = createSolidTable({
       get data() {
@@ -99,9 +51,7 @@ export const HeadQueries = (props: HeadQueriesProps) => {
           pages={pages}
           perPage={10}
           table={tableMemo()}
-          exportFn={(page: number) =>
-            getHeadQueries(props.params.filter, dataset.datasetId(), page)
-          }
+          exportFn={queryFn}
         />
       </Show>
     </MagicSuspense>

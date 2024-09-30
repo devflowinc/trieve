@@ -27,7 +27,7 @@ export const CTRSearchQueries = (props: CTRSearchQueriesProps) => {
   const [current, setCurrent] = createSignal<number>(0);
   const [showClickedChunk, setShowClickedChunk] = createSignal(false);
   const navigate = useBetterNav();
-  const { pages, searchCTRQueriesQuery } = useCTRSearchQueries({
+  const { pages, searchCTRQueriesQuery, queryFn } = useCTRSearchQueries({
     // eslint-disable-next-line solid/reactivity
     params: props.params,
   });
@@ -149,7 +149,13 @@ export const CTRSearchQueries = (props: CTRSearchQueriesProps) => {
                   />
                 </Show>
               </FullScreenModal>
-              <TanStackTable small pages={pages} perPage={10} table={table()} />
+              <TanStackTable
+                exportFn={queryFn}
+                small
+                pages={pages}
+                perPage={10}
+                table={table()}
+              />
             </>
           )}
         </Show>
