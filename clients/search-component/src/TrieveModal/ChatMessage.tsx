@@ -33,12 +33,11 @@ export const ChatMessage = ({
                 const { className, children } = props || {};
                 if (!children) return null;
                 if (!className) {
-                  return (<SyntaxHighlighter
-                    language={"bash"}
-                    style={nightOwl}
-                  >
-                    {children?.toString()}
-                  </SyntaxHighlighter>);
+                  return (
+                    <SyntaxHighlighter language={"bash"} style={nightOwl}>
+                      {children?.toString()}
+                    </SyntaxHighlighter>
+                  );
                 }
                 return (
                   <SyntaxHighlighter
@@ -58,11 +57,24 @@ export const ChatMessage = ({
             <div className="additional-links">
               {message.additional
                 .filter(
-                  (m) => (m.metadata.title || m.metadata.page_title) && m.link
+                  (m) =>
+                    (m.metadata.heading ||
+                      m.metadata.title ||
+                      m.metadata.page_title) &&
+                    m.link
+                )
+                .map((m) => [
+                  m.metadata.heading ||
+                    m.metadata.title ||
+                    m.metadata.page_title,
+                  m.link,
+                ])
+                .filter(
+                  (v, i, a) => a.findIndex((t) => t[0] === v[0]) === i && v[0]
                 )
                 .map((link) => (
-                  <a href={link.link as string}>
-                    {link.metadata.title || link.metadata.page_title}
+                  <a key={link[1]} href={link[1] as string} target="_blank">
+                    {link[0]}
                   </a>
                 ))}
             </div>
