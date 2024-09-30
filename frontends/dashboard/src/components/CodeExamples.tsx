@@ -7,7 +7,7 @@ import {
   hybridSearchRequestTS,
 } from "../utils/createCodeSnippets";
 import { DatasetContext } from "../contexts/DatasetContext";
-import { createSignal, useContext } from "solid-js";
+import { createSignal, Show, useContext } from "solid-js";
 import { Button } from "terracotta";
 
 export const CodeExamples = () => {
@@ -111,9 +111,13 @@ const CodeExample = (props: { tsContent: string; fetchContent: string }) => {
           Using the TS SDK
         </Button>
       </div>
+      <Show when={selectedTab() === "ts"}>
+        <Codeblock content={`npm install trieve-ts-sdk`} />
+        <div class="h-3" />
+      </Show>
       <Codeblock
         content={selectedTab() === "ts" ? props.tsContent : props.fetchContent}
       />
-    </div>
+    </div >
   );
 };
