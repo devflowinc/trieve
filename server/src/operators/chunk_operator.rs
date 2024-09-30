@@ -2208,7 +2208,7 @@ fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> Chunk
     let mut replaced_phrases = HashSet::new();
     for phrase in phrases.clone() {
         let lower_case_trimmed_phrase = phrase.to_lowercase().trim().to_string();
-        if replaced_phrases.contains(&lower_case_trimmed_phrase) {
+        if replaced_phrases.contains(&lower_case_trimmed_phrase) || phrase.len() <= 1 {
             continue;
         }
         let replace_phrase = phrase.clone();
