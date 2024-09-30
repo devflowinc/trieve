@@ -67,13 +67,6 @@ export const useChat = () => {
           ],
         ]);
       }
-
-      // @ts-expect-error: Object is possibly 'null'
-      if (modalRef.current?.scrollHeight > modalRef.current?.clientHeight) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const chatContainer: any = modalRef.current?.querySelector("div.chat-container");
-        chatContainer.style.height = "fit-content";
-      }
     }
   };
 
