@@ -1,5 +1,5 @@
 import { Chunk, ChunkWithHighlights } from "../utils/types";
-import React, {useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { ArrowIcon } from "./icons";
 import { useModalState } from "../utils/hooks/modal-context";
 import { sendCtrData } from "../utils/trieve";
@@ -33,7 +33,7 @@ export const Item = ({ item, requestID, index }: Props) => {
     .find("h1, h2, h3, h4, h5, h6")
     .toArray();
 
-  const $firstHeading = load(chunkHtmlHeadings[0]);
+  const $firstHeading = load(chunkHtmlHeadings[0] ?? "");
   const firstHeadingId = $firstHeading.html()?.match(/id="([^"]*)"/)?.[1];
   const cleanFirstHeadingHtml = $firstHeading("*")
     .not("mark")
@@ -48,7 +48,10 @@ export const Item = ({ item, requestID, index }: Props) => {
     .replace(cleanFirstHeading || "", "");
 
   for (const heading of chunkHtmlHeadings) {
-    descriptionHtml = descriptionHtml.replace(load(heading).text() || "", "");
+    descriptionHtml = descriptionHtml.replace(
+      load(heading ?? "").text() || "",
+      ""
+    );
   }
   descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
 
@@ -58,14 +61,16 @@ export const Item = ({ item, requestID, index }: Props) => {
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name;
 
-  const checkForUpAndDown = 
-    (e: KeyboardEvent) => {
-      if (e.code === "ArrowDown" || e.code === "ArrowUp") {
-        onUpOrDownClicked(index, e.code);
-      }
+  const checkForUpAndDown = (e: KeyboardEvent) => {
+    if (e.code === "ArrowDown" || e.code === "ArrowUp") {
+      onUpOrDownClicked(index, e.code);
     }
+  };
 
-  const onResultClick = async (chunk: Chunk & { position: number }, requestID: string) => {
+  const onResultClick = async (
+    chunk: Chunk & { position: number },
+    requestID: string
+  ) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
     }
@@ -98,11 +103,13 @@ export const Item = ({ item, requestID, index }: Props) => {
         id={`trieve-search-item-${index}`}
         className="item"
         onClick={() =>
-          onResultClick({
-            ...item.chunk,
-            position: index
-          }, 
-          requestID)
+          onResultClick(
+            {
+              ...item.chunk,
+              position: index,
+            },
+            requestID
+          )
         }
         {...(item.chunk.link
           ? {

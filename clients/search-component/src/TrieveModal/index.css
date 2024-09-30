@@ -3,9 +3,10 @@
   --tv-zinc-200: rgb(228 228 231);
   --tv-zinc-50: rgb(250 250 250);
   --tv-zinc-100: rgb(244 244 245);
-  --tv-zinc-800: rgb(39 39 42);
+  --tv-zinc-200: rgb(228 228 231);
   --tv-zinc-300: rgb(212 212 216);
   --tv-zinc-700: rgb(63 63 70);
+  --tv-zinc-800: rgb(39 39 42);
   --tv-zinc-900: rgb(24, 24, 27);
   --tv-zinc-400: rgb(161, 161, 170);
   --tv-zinc-500: rgb(108 108 120);
@@ -23,11 +24,21 @@ body {
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
 
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      border-radius: 3px;
+      background-color: var(--tv-prop-scrollbar-thumb-color);
+    }
+
     &.chat-modal-mobile {
       @apply flex flex-col h-full max-h-[100vh] sm:h-fit w-full sm:max-h-[80vh] sm:w-[90vw] rounded-none sm:rounded-lg;
 
       .chat-outer-wrapper {
-        @apply justify-between w-full h-full m-0 sm:mt-12 pb-4;
+        @apply justify-between w-full h-full m-0 sm:mt-12;
       }
       .system-information-wrapper {
         @apply sm:mb-8;
@@ -47,14 +58,19 @@ body {
     }
 
     .mode-switch-wrapper {
-      @apply flex items-center justify-end mt-2 absolute top-2 right-4 z-30 font-medium;
+      @apply flex items-center justify-end mt-2 absolute top-2.5 right-7 z-30 font-medium;
+
+      /* apply hidden if both .search and .has-query are present */
+      &.search.has-query {
+        @apply hidden;
+      }
 
       > div {
-        @apply p-1 text-xs rounded-md flex;
+        @apply p-0.5 text-xs rounded-md flex;
         background-color: var(--tv-zinc-200);
 
         button {
-          @apply px-3 py-1 rounded-md flex gap-1 items-center transition-all;
+          @apply px-2 py-1 rounded-md flex gap-1 items-center transition-all;
           color: var(--tv-zinc-600);
 
           &.active {
@@ -71,31 +87,42 @@ body {
     }
 
     ul.tags {
-      @apply flex flex-wrap items-center text-sm border-t !px-2 !-ml-2 !-mr-2 relative !mt-0;
+      @apply flex flex-wrap items-center text-xs relative !mt-0;
       color: var(--tv-zinc-800);
       border-color: var(--tv-zinc-200);
 
       li {
         button {
-          @apply flex gap-1 items-center py-2 px-4;
+          @apply flex gap-1 items-center py-1 px-2;
         }
         @apply border-t-2;
         border-color: transparent;
         &:hover,
         &.active {
           background-color: var(--tv-zinc-100);
-          border-color: var(--tv-primary-500);
+        }
+
+        &.active {
+          border-color: var(--tv-prop-brand-color);
         }
       }
     }
 
     .footer {
-      @apply flex border-t sticky bottom-2 items-center pt-3 px-2 pb-1;
+      @apply sticky items-center;
       background-color: var(--tv-zinc-50);
       border-color: var(--tv-zinc-200);
 
+      &.search {
+        @apply border-t;
+      }
+
+      .bottom-row {
+        @apply flex justify-between;
+      }
+
       .commands {
-        @apply hidden sm:flex text-xs grow gap-4 m-0;
+        @apply hidden sm:flex text-xs grow gap-4 m-0 pt-1;
 
         > li {
           @apply flex items-center gap-1;
@@ -121,7 +148,6 @@ body {
 
     .chat-modal-wrapper {
       @apply flex flex-col gap-4 mt-1;
-
 
       .chat-ul {
         @apply sm:grid sm:grid-cols-[48px,1fr] sm:gap-2 -mt-7;
@@ -245,15 +271,14 @@ body {
       @apply flex flex-col mt-12;
 
       .ai-message {
-
         .message-wrapper {
           @apply col-span-2 border-t;
         }
-        
-        &.initial-message, .message-wrapper {
+
+        &.initial-message,
+        .message-wrapper {
           @apply sm:grid sm:grid-cols-[48px,1fr] gap-2;
         }
-        
 
         .ai-avatar {
           @apply sm:w-12 sm:h-12 rounded-full flex items-center space-x-2;
@@ -378,7 +403,7 @@ body {
     }
 
     input {
-      @apply block w-full rounded-md border-0 py-1.5 pr-14 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset outline-none sm:text-sm sm:leading-6 px-4 pl-8 h-12 z-10 relative;
+      @apply block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset outline-none sm:text-sm sm:leading-6 pl-8 pr-2 h-12 z-10 relative;
       color: var(--tv-zinc-900);
       background-color: var(--tv-zinc-50);
       border: 1px solid var(--tv-zinc-300);
@@ -392,10 +417,10 @@ body {
 
       &:focus {
         outline: none;
-        border: 1px solid var(--tv-primary-500);
+        border: 1px solid var(--tv-prop-brand-color);
         box-shadow:
           rgb(255, 255, 255) 0px 0px 0px 0px inset,
-          var(--tv-primary-500) 0px 0px 1px inset,
+          var(--tv-prop-brand-color) 0px 0px 1px inset,
           rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
     }
@@ -408,7 +433,7 @@ body {
     }
 
     .item {
-      @apply select-none cursor-pointer px-4 py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
+      @apply select-none cursor-pointer px-3 py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
       background-color: var(--tv-zinc-50);
 
       &.start-chat {
@@ -418,7 +443,7 @@ body {
           @apply p-0;
 
           span {
-            color: var(--tv-primary-500);
+            color: var(--tv-prop-brand-color);
           }
         }
 
@@ -426,7 +451,7 @@ body {
           @apply justify-start gap-4;
 
           > svg {
-            color: var(--tv-primary-500);
+            color: var(--tv-prop-brand-color);
           }
         }
       }
@@ -468,7 +493,10 @@ body {
           &:hover,
           &.active {
             background-color: var(--tv-zinc-800);
-            border-color: var(--tv-primary-500);
+          }
+
+          &.active {
+            border-color: var(--tv-prop-brand-color);
           }
         }
       }
@@ -572,10 +600,10 @@ body {
 
         &:focus {
           outline: none;
-          border: 1px solid var(--tv-primary-500);
+          border: 1px solid var(--tv-prop-brand-color);
           box-shadow:
             rgb(255, 255, 255) 0px 0px 0px 0px inset,
-            var(--tv-primary-500) 0px 0px 1px inset,
+            var(--tv-prop-brand-color) 0px 0px 1px inset,
             rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
         }
       }
@@ -700,6 +728,7 @@ body {
         display: block;
       }
     }
+
     &.dark {
       @apply hover:brightness-[1.25];
       background-color: var(--tv-zinc-900);
