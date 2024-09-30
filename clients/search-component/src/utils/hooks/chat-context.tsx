@@ -82,6 +82,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ],
         ]);
       }
+      modalRef.current?.scroll({
+        top: modalRef.current.scrollHeight + 50,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -119,7 +123,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ...m,
       [{ type: "system", text: "Loading...", additional: null }],
     ]);
-    console.log("HERE");
     modalRef.current?.scroll({
       top: modalRef.current.scrollHeight + 50,
       behavior: "smooth",

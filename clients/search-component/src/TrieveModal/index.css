@@ -35,7 +35,11 @@ body {
     }
 
     .chat-container {
-      @apply overflow-auto;
+      @apply h-full;
+
+      .chat-outer-wrapper {
+        @apply overflow-auto sm:max-h-[67vh] max-h-[87vh];
+      }
     }
 
     &.chat-modal-mobile {

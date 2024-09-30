@@ -6,13 +6,13 @@ import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
 
 export const ChatMode = () => {
-  const { setMode } = useModalState();
+  const { setMode, modalRef } = useModalState();
   const { askQuestion, messages, currentQuestion, setCurrentQuestion } =
     useChatState();
 
   return (
     <>
-      <div className="chat-outer-wrapper">
+      <div className="chat-outer-wrapper" ref={modalRef}>
         <div className="system-information-wrapper">
           <div className="ai-message">
             <div className="chat-modal-wrapper">
@@ -38,7 +38,9 @@ export const ChatMode = () => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              askQuestion(currentQuestion);
+              if (currentQuestion) {
+                askQuestion(currentQuestion);
+              }
             }}
           >
             <input

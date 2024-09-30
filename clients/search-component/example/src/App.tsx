@@ -111,7 +111,7 @@ export default function App() {
               brandColor="#E75536"
             />
 
-            <div className="mt-8 text-sm rounded overflow-hidden">
+            <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">
               <SyntaxHighlighter language={"jsx"} style={nightOwl}>
                 {`<TrieveModalSearch trieve={trieve} theme="${theme}" /> `}
               </SyntaxHighlighter>

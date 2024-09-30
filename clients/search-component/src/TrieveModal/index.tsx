@@ -16,7 +16,7 @@ import { ChatProvider } from "../utils/hooks/chat-context";
 
 const Modal = () => {
   useKeyboardNavigation();
-  const { mode, modalRef, open, setOpen, setMode, props } = useModalState();
+  const { mode, open, setOpen, setMode, props } = useModalState();
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -55,7 +55,6 @@ const Modal = () => {
         <Dialog.Overlay id="trieve-search-modal-overlay" />
         <Dialog.Content
           id="trieve-search-modal"
-          ref={modalRef}
           className={
             (mode === "chat" ? "chat-modal-mobile " : " ") +
             (props.theme === "dark" ? "dark " : "")
