@@ -46,7 +46,7 @@ export const AIInitialMessage = () => {
             }}
             className="brand-name"
           >
-            {props.brandName}
+            {props.brandName || "Trieve"}
           </span>
         </p>
       </span>
