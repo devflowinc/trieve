@@ -81,11 +81,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
           ],
         ]);
+        setTimeout(() => {
+          modalRef.current?.scroll({
+            top: modalRef.current.scrollHeight + 200,
+            behavior: "smooth",
+          });
+        });
       }
-      modalRef.current?.scroll({
-        top: modalRef.current.scrollHeight + 50,
-        behavior: "smooth",
-      });
     }
   };
 
@@ -112,6 +114,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ...m,
       [{ type: "user", text: question || currentQuestion, additional: null }],
     ]);
+
     if (!currentTopic) {
       await createTopic({ question: question || currentQuestion });
     } else {
