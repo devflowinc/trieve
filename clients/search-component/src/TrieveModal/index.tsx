@@ -66,7 +66,7 @@ const Modal = () => {
             <SearchMode />
           </div>
           <div
-            className={mode === "chat" ? "w-full h-full chat-container" : " "}
+            className={mode === "chat" ? " chat-container" : " "}
             style={{ display: mode === "chat" ? "block" : "none" }}
           >
             <ChatMode />

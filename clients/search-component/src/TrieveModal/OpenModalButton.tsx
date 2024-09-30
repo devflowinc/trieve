@@ -14,7 +14,7 @@ export const OpenModalButton = () => {
           <ButtonEl />
         </button>
       ) : (
-        <button id="open-trieve-modal" type="button">
+        <button id="open-trieve-modal" type="button" className={props.theme}>
           <div>
             <svg
               xmlns="http://www.w3.org/2000/svg"

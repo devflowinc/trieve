@@ -16,17 +16,15 @@ export const ChatMode = () => {
         <div className="system-information-wrapper">
           <div className="ai-message">
             <div className="chat-modal-wrapper">
-              <div className="scrollable-content">
-                <div className="ai-message initial-message">
-                  <AIInitialMessage />
-                  {messages.map((chat) => (
-                    <div className="message-wrapper">
-                      {chat.map((message, idx) => (
-                        <ChatMessage key={idx} idx={idx} message={message} />
-                      ))}
-                    </div>
-                  ))}
-                </div>
+              <div className="ai-message initial-message">
+                <AIInitialMessage />
+                {messages.map((chat) => (
+                  <div className="message-wrapper">
+                    {chat.map((message, idx) => (
+                      <ChatMessage key={idx} idx={idx} message={message} />
+                    ))}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
