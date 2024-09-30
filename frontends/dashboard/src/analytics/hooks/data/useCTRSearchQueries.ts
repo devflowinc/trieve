@@ -23,9 +23,11 @@ export const useCTRSearchQueries = ({
     ),
   );
 
+  const queryFn = (page: number) =>
+    getCTRSearchQueries(params.filter, dataset.datasetId(), page);
+
   createEffect(() => {
     // Preload the next page
-    const datasetId = dataset.datasetId();
     const curPage = pages.page();
     void queryClient.prefetchQuery({
       queryKey: [
@@ -36,11 +38,7 @@ export const useCTRSearchQueries = ({
         },
       ],
       queryFn: async () => {
-        const results = await getCTRSearchQueries(
-          params.filter,
-          datasetId,
-          curPage + 1,
-        );
+        const results = await queryFn(curPage + 1);
         if (results.length === 0) {
           pages.setMaxPageDiscovered(curPage);
         }
@@ -58,16 +56,13 @@ export const useCTRSearchQueries = ({
       },
     ],
     queryFn: () => {
-      return getCTRSearchQueries(
-        params.filter,
-        dataset.datasetId(),
-        pages.page(),
-      );
+      return queryFn(pages.page());
     },
   }));
 
   return {
     pages,
     searchCTRQueriesQuery,
+    queryFn,
   };
 };

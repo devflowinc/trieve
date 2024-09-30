@@ -57,39 +57,39 @@ export const Navbar = () => {
             <a
               href={`${dashboardUrl}/dataset/${orgDatasetParams()}`}
               target="_blank"
-              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
             >
               Dashboard
             </a>
             <a
               href="https://docs.trieve.ai/api-reference"
               target="_blank"
-              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
             >
               API Docs
             </a>
             <a
               href={`/?dataset=${datasetAndUserContext.currentDataset?.()
                 ?.dataset.id}`}
-              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
             >
               Search Chunks
             </a>
             <a
               href={`/group?dataset=${currentDatasetId()}`}
-              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
             >
               Groups
             </a>
             <a
               href={`/create?dataset=${currentDatasetId()}`}
-              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
             >
               Create Chunk
             </a>
             <a
               href={`/upload?dataset=${currentDatasetId()}`}
-              class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
             >
               Upload file(s)
             </a>

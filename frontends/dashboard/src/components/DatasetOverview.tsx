@@ -245,7 +245,7 @@ export const DatasetOverview = () => {
         }}
       />
       <div class="flex items-center py-2">
-        <div class="-md:flex-col flex w-full justify-between pt-2 md:items-end">
+        <div class="flex w-full justify-between pt-2 md:items-end -md:flex-col">
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-base font-semibold leading-6">Datasets</h1>

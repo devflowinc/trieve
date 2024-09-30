@@ -14,7 +14,7 @@ interface PaginationProps {
 export const Pagination = ({ pages, perPage, total }: PaginationProps) => {
   return (
     <nav
-      class="flex items-center justify-between border-t border-gray-200 bg-white py-3 sm:px-6"
+      class="flex items-center justify-between bg-white py-3 sm:px-6"
       aria-label="Pagination"
     >
       {perPage && total ? (

@@ -1,24 +1,13 @@
 import { AnalyticsFilter } from "shared/types";
-import { createQuery } from "@tanstack/solid-query";
-import { getSearchCTRSummary } from "../../api/ctr";
-import { Show, useContext } from "solid-js";
+import { Show } from "solid-js";
 import { useCTRNeedsSetup } from "../../hooks/useCTRNeedsSetup";
-import { DatasetContext } from "../../../contexts/DatasetContext";
+import { useCTRSummary } from "../../hooks/data/useCTRSummary";
 
 interface SearchCTRStatsProps {
   filter: AnalyticsFilter;
 }
 export const CTRSummary = (props: SearchCTRStatsProps) => {
-  const dataset = useContext(DatasetContext);
-  const searchSummaryQuery = createQuery(() => ({
-    queryKey: [
-      "search-ctr-summary",
-      { filters: props.filter, dataset: dataset.datasetId() },
-    ],
-    queryFn: async () => {
-      return getSearchCTRSummary(dataset.datasetId(), props.filter);
-    },
-  }));
+  const { searchSummaryQuery } = useCTRSummary(props);
 
   const ctrNeedsSetup = useCTRNeedsSetup();
 
