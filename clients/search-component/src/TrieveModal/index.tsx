@@ -59,7 +59,7 @@ const Modal = () => {
       open={open}
       onOpenChange={(value) => {
         setOpen(value);
-        setMode("search");
+        setMode(props.defaultSearchMode || "search");
       }}
     >
       <Dialog.Trigger asChild>

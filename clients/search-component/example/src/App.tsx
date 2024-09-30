@@ -37,6 +37,7 @@ export default function App() {
             </h2>
 
             <TrieveModalSearch
+              defaultSearchMode="chat"
               trieve={trieve}
               theme={theme}
               tags={[
