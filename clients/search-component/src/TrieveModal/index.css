@@ -107,9 +107,13 @@ body {
         }
       }
     }
+    .chat-footer-wrapper {
+      @apply sticky -bottom-2 pt-1 flex flex-col gap-2;
+      background-color: var(--tv-zinc-50);
+    }
 
     .footer {
-      @apply sticky items-center;
+      @apply sticky items-center bottom-0;
       background-color: var(--tv-zinc-50);
       border-color: var(--tv-zinc-200);
 

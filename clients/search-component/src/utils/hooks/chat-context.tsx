@@ -1,24 +1,40 @@
-import { useRef, useState } from "react";
+import React, { createContext, useContext, useRef, useState } from "react";
 import { useModalState } from "./modal-context";
 import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
-export const useChat = () => {
-  const { query, props, modalRef } = useModalState();
+type Messages = {
+  type: string;
+  text: string;
+  additional: Chunk[] | null;
+}[][];
+
+const ModalContext = createContext<{
+  askQuestion: (question?: string) => Promise<void>;
+  isLoading: boolean;
+  messages: Messages;
+  currentQuestion: string;
+  setCurrentQuestion: React.Dispatch<React.SetStateAction<string>>;
+  switchToChatAndAskQuestion: (query: string) => Promise<void>;
+}>({
+  askQuestion: async () => {},
+  currentQuestion: "",
+  isLoading: false,
+  messages: [],
+  setCurrentQuestion: () => {},
+  switchToChatAndAskQuestion: async () => {},
+});
+
+function ChatProvider({ children }: { children: React.ReactNode }) {
+  const { query, props, modalRef, setMode } = useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
   const called = useRef(false);
-  const [messages, setMessages] = useState<
-    {
-      type: string;
-      text: string;
-      additional: Chunk[] | null;
-    }[][]
-  >([]);
+  const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const createTopic = async ({ question }: { question: string }) => {
-    if (!currentTopic && !called.current) {
+    if (!currentTopic) {
       called.current = true;
       setIsLoading(true);
       const fingerprint = await getFingerprint();
@@ -33,7 +49,7 @@ export const useChat = () => {
   };
 
   const handleReader = async (
-    reader: ReadableStreamDefaultReader<Uint8Array>,
+    reader: ReadableStreamDefaultReader<Uint8Array>
   ) => {
     setIsLoading(true);
     let done = false;
@@ -43,7 +59,6 @@ export const useChat = () => {
       const { value, done: doneReading } = await reader.read();
       if (doneReading) {
         done = doneReading;
-
       } else if (value) {
         const decoder = new TextDecoder();
         const newText = decoder.decode(value);
@@ -98,22 +113,46 @@ export const useChat = () => {
     } else {
       await createQuestion({ question: question || currentQuestion });
     }
+
     setCurrentQuestion("");
     setMessages((m) => [
       ...m,
       [{ type: "system", text: "Loading...", additional: null }],
     ]);
+    console.log("HERE");
     modalRef.current?.scroll({
-      top: modalRef.current.scrollHeight,
+      top: modalRef.current.scrollHeight + 50,
       behavior: "smooth",
     });
   };
 
-  return {
-    askQuestion,
-    isLoading,
-    messages,
-    currentQuestion,
-    setCurrentQuestion,
+  const switchToChatAndAskQuestion = async (query: string) => {
+    setMode("chat");
+    await askQuestion(query);
   };
-};
+
+  return (
+    <ModalContext.Provider
+      value={{
+        askQuestion,
+        isLoading,
+        messages,
+        currentQuestion,
+        setCurrentQuestion,
+        switchToChatAndAskQuestion,
+      }}
+    >
+      {children}
+    </ModalContext.Provider>
+  );
+}
+
+function useChatState() {
+  const context = useContext(ModalContext);
+  if (!context) {
+    throw new Error("useChatState must be used within a ChatProvider");
+  }
+  return context;
+}
+
+export { ChatProvider, useChatState };

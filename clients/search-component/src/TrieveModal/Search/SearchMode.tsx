@@ -1,8 +1,10 @@
 import React from "react";
 import { Item } from "./item";
-import { AIIcon, ArrowIcon, ReloadIcon } from "./icons";
-import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
-import { useModalState } from "../utils/hooks/modal-context";
+import { AIIcon, ArrowIcon, ReloadIcon } from "../icons";
+import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
+import { useModalState } from "../../utils/hooks/modal-context";
+import { Tags } from "./Tags";
+import { useChatState } from "../../utils/hooks/chat-context";
 
 export const SearchMode = () => {
   const {
@@ -13,13 +15,13 @@ export const SearchMode = () => {
     setQuery,
     requestID,
     inputRef,
-    setMode,
   } = useModalState();
   const {
     suggestedQueries,
     refetchSuggestedQueries,
     isLoadingSuggestedQueries,
   } = useSuggestedQueries();
+  const { switchToChatAndAskQuestion } = useChatState();
 
   return (
     <>
@@ -87,7 +89,10 @@ export const SearchMode = () => {
       <ul className="trieve-elements-search">
         {results.length && props.chat ? (
           <li>
-            <button className="item start-chat" onClick={() => setMode("chat")}>
+            <button
+              className="item start-chat"
+              onClick={() => switchToChatAndAskQuestion(query)}
+            >
               <div>
                 <AIIcon />
                 <div>
@@ -117,6 +122,20 @@ export const SearchMode = () => {
           <p className="no-results-loading">Searching...</p>
         ) : null}
       </ul>
+      <div className={`footer search`}>
+        <div className="bottom-row">
+          <Tags />
+          <span className="spacer" />
+          <a
+            className="trieve-powered"
+            href="https://trieve.ai"
+            target="_blank"
+          >
+            <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
+            Powered by Trieve
+          </a>
+        </div>
+      </div>
     </>
   );
 };

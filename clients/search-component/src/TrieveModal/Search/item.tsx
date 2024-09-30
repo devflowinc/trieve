@@ -1,9 +1,9 @@
-import { Chunk, ChunkWithHighlights } from "../utils/types";
+import { Chunk, ChunkWithHighlights } from "../../utils/types";
 import React, { useEffect, useRef } from "react";
-import { ArrowIcon } from "./icons";
-import { useModalState } from "../utils/hooks/modal-context";
-import { sendCtrData } from "../utils/trieve";
-import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
+import { ArrowIcon } from "../icons";
+import { useModalState } from "../../utils/hooks/modal-context";
+import { sendCtrData } from "../../utils/trieve";
+import { useKeyboardNavigation } from "../../utils/hooks/useKeyboardNavigation";
 import { load } from "cheerio";
 
 type Props = {

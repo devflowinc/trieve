@@ -1,9 +1,10 @@
 import * as React from "react";
-import { LoadingIcon } from "./icons";
+import { AIIcon, LoadingIcon, UserIcon } from "../icons";
 import Markdown from "react-markdown";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import { Chunk } from "../utils/types";
+import { Chunk } from "../../utils/types";
+import { useModalState } from "../../utils/hooks/modal-context";
 
 type Message = {
   type: string;
@@ -12,6 +13,68 @@ type Message = {
 };
 
 export const ChatMessage = ({
+  message,
+  idx,
+}: {
+  message: Message;
+  idx: number;
+}) => {
+  const { props } = useModalState();
+  return (
+    <>
+      {message.type == "user" ? (
+        <>
+          <span className="ai-avatar user">
+            <UserIcon />
+            <p
+              className="tag"
+              // style mostly transparent brand color
+              style={{
+                backgroundColor: props.brandColor
+                  ? `${props.brandColor}18`
+                  : "#CB53EB18",
+                color: props.brandColor ?? "#CB53EB",
+              }}
+            >
+              User
+            </p>
+          </span>
+          <div className={message.type}>
+            <span> {message.text}</span>
+          </div>
+        </>
+      ) : (
+        <>
+          <span className="ai-avatar assistant">
+            {props.brandLogoImgSrcUrl ? (
+              <img
+                src={props.brandLogoImgSrcUrl}
+                alt={props.brandName || "Brand logo"}
+              />
+            ) : (
+              <AIIcon />
+            )}
+            <p
+              className="tag"
+              // style mostly transparent brand color
+              style={{
+                backgroundColor: props.brandColor
+                  ? `${props.brandColor}18`
+                  : "#CB53EB18",
+                color: props.brandColor ?? "#CB53EB",
+              }}
+            >
+              AI assistant
+            </p>
+          </span>
+          <Message key={idx} message={message} idx={idx} />
+        </>
+      )}
+    </>
+  );
+};
+
+export const Message = ({
   message,
   idx,
 }: {
