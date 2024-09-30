@@ -189,7 +189,7 @@ body {
       }
 
       .system {
-        @apply mt-2 mb-5 items-center sm:max-w-[52vw] overflow-ellipsis;
+        @apply mt-2 sm:mt-8 mb-5 items-center sm:max-w-[52vw] overflow-ellipsis;
         p {
           @apply pb-1;
         }
