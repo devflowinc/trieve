@@ -1,34 +1,22 @@
-import React, { Fragment, useEffect } from "react";
+import React, { useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
-import { SearchMode } from "./SearchMode";
-import { ChatMode } from "./ChatMode";
+import { SearchMode } from "./Search/SearchMode";
+import { ChatMode } from "./Chat/ChatMode";
 
 import {
   ModalProps,
   ModalProvider,
   useModalState,
-  ALL_TAG,
 } from "../utils/hooks/modal-context";
 import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
 import { ModeSwitch } from "./ModeSwitch";
-import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "./icons";
+import { OpenModalButton } from "./OpenModalButton";
+import { ChatProvider } from "../utils/hooks/chat-context";
 
 const Modal = () => {
   useKeyboardNavigation();
-  const {
-    mode,
-    modalRef,
-    open,
-    setOpen,
-    setMode,
-    props,
-    query,
-    results,
-    currentTag,
-    setCurrentTag,
-    tagCounts,
-  } = useModalState();
+  const { mode, modalRef, open, setOpen, setMode, props } = useModalState();
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -50,10 +38,6 @@ const Modal = () => {
     }
   }, [props.brandColor]);
 
-  const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
-
-  const ButtonEl = props.ButtonEl;
-
   return (
     <Dialog.Root
       open={open}
@@ -62,50 +46,7 @@ const Modal = () => {
         setMode(props.defaultSearchMode || "search");
       }}
     >
-      <Dialog.Trigger asChild>
-        {ButtonEl ? (
-          <button type="button">
-            <ButtonEl />
-          </button>
-        ) : (
-          <button id="open-trieve-modal" type="button">
-            <div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.3-4.3"></path>
-              </svg>
-              <div>{props.placeholder}</div>
-            </div>
-            <span className="open">
-              {keyCombo.map((key) => (
-                <Fragment key={key.key}>
-                  {key.ctrl ? (
-                    <>
-                      <span className="mac">⌘ </span>
-                      <span className="not-mac">Ctrl </span>
-                    </>
-                  ) : (
-                    <span>
-                      {" "}
-                      {keyCombo.length > 1 ? "+" : null} {key.label || key.key}
-                    </span>
-                  )}
-                </Fragment>
-              ))}
-            </span>
-          </button>
-        )}
-      </Dialog.Trigger>
+      <OpenModalButton />
       <Dialog.Portal>
         <Dialog.DialogTitle className="sr-only">Search</Dialog.DialogTitle>
         <Dialog.DialogDescription className="sr-only">
@@ -130,62 +71,6 @@ const Modal = () => {
           >
             <ChatMode />
           </div>
-          <div className={`footer ${mode}`}>
-            <div className="bottom-row">
-              {mode === "search" &&
-                (props.tags?.length && (query || (query && !results.length)) ? (
-                  <ul className="tags">
-                    {[ALL_TAG, ...props.tags].map((tag, idx) => (
-                      <li
-                        className={currentTag === tag.tag ? "active" : ""}
-                        key={tag.tag}
-                      >
-                        <button onClick={() => setCurrentTag(tag.tag)}>
-                          {tag.icon &&
-                            typeof tag.icon === "function" &&
-                            tag.icon()}
-                          {tag.label || tag.tag}{" "}
-                          {tagCounts[idx] ? `(${tagCounts[idx].count})` : ""}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <ul className="commands">
-                    <li>
-                      <kbd className="commands-key">
-                        <EnterKeyIcon />
-                      </kbd>
-                      <span className="label">to select</span>
-                    </li>
-                    <li>
-                      <kbd className="commands-key">
-                        <ArrowDownKey />
-                      </kbd>
-                      <kbd className="commands-key">
-                        <ArrowUpIcon />
-                      </kbd>
-                      <span className="label">to navigate</span>
-                    </li>
-                    <li>
-                      <kbd className="commands-key">
-                        <EscKeyIcon />
-                      </kbd>
-                      <span className="label">to close</span>
-                    </li>
-                  </ul>
-                ))}
-              <span className="spacer" />
-              <a
-                className="trieve-powered"
-                href="https://trieve.ai"
-                target="_blank"
-              >
-                <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
-                Powered by Trieve
-              </a>
-            </div>
-          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -203,7 +88,9 @@ export const initTrieveModalSearch = (props: ModalProps) => {
 export const TrieveModalSearch = (props: ModalProps) => {
   return (
     <ModalProvider onLoadProps={props}>
-      <Modal />
+      <ChatProvider>
+        <Modal />
+      </ChatProvider>
     </ModalProvider>
   );
 };
