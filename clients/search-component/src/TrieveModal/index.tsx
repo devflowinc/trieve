@@ -44,7 +44,7 @@ const Modal = () => {
           <button
             id="open-trieve-modal"
             type="button"
-            className={props.theme === "dark" ? "dark" : ""}>
+            className={props.theme === "dark" ? "dark scrollbar-track-rounded-md scrollbar-thumb-rounded-md" : "scrollbar-track-rounded-md scrollbar-thumb-rounded-md"}>
             <div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -90,8 +90,8 @@ const Modal = () => {
         <Dialog.Content
           id="trieve-search-modal"
           ref={modalRef}
-          className={(mode === "chat" ? "chat-modal-mobile " : " ") + (props.theme === "dark" ? "dark " : "")}
-          style={{ "overflowY": "auto" }}>
+          style={{scrollbarWidth: "thin" }}
+          className={(mode === "chat" ? "chat-modal-mobile " : " ") + (props.theme === "dark" ? "dark " : "")}>
           <ModeSwitch />
           <div style={{ display: mode === "search" ? "block" : "none" }}>
             <SearchMode />

@@ -68,7 +68,7 @@ export const useChat = () => {
         ]);
       }
 
-      // eslint-disable-next-line 18048
+      // @ts-expect-error: Object is possibly 'null'
       if (modalRef.current?.scrollHeight > modalRef.current?.clientHeight) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const chatContainer: any = modalRef.current?.querySelector("div.chat-container");
