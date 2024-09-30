@@ -2,10 +2,13 @@ import { BiRegularInfoCircle } from "solid-icons/bi";
 import { Codeblock } from "./Codeblock";
 import {
   createChunkRequest,
+  createChunkRequestTS,
   hybridSearchRequest,
+  hybridSearchRequestTS,
 } from "../utils/createCodeSnippets";
 import { DatasetContext } from "../contexts/DatasetContext";
-import { useContext } from "solid-js";
+import { createSignal, useContext } from "solid-js";
+import { Button } from "terracotta";
 
 export const CodeExamples = () => {
   const { datasetId } = useContext(DatasetContext);
@@ -18,7 +21,7 @@ export const CodeExamples = () => {
         Initial Request Examples
       </h2>
       <div class="flex flex-col space-y-4">
-        <p>1. Add a searchable chunk</p>
+        <p class="font-medium">1. Add a searchable chunk</p>
         <div class="flex w-fit space-x-4 rounded-md border border-blue-600/20 bg-blue-50 px-4 py-4">
           <div class="flex">
             <div class="flex-shrink-0">
@@ -44,10 +47,13 @@ export const CodeExamples = () => {
             </div>
           </div>
         </div>
-        <Codeblock content={createChunkRequest(datasetId())} />
+        <CodeExample
+          fetchContent={createChunkRequest(datasetId())}
+          tsContent={createChunkRequestTS(datasetId())}
+        />
       </div>
       <div class="flex flex-col space-y-4">
-        <p class="mt-3">2. Start Searching</p>
+        <p class="mt-3 font-medium">2. Start Searching</p>
         <div class="flex w-fit space-x-4 rounded-md border border-blue-600/20 bg-blue-50 px-4 py-4">
           <div class="flex">
             <div class="flex-shrink-0">
@@ -71,8 +77,43 @@ export const CodeExamples = () => {
             </div>
           </div>
         </div>
-        <Codeblock content={hybridSearchRequest(datasetId())} />
+        <CodeExample
+          fetchContent={hybridSearchRequest(datasetId())}
+          tsContent={hybridSearchRequestTS(datasetId())}
+        />
       </div>
     </section>
+  );
+};
+
+const CodeExample = (props: { tsContent: string; fetchContent: string }) => {
+  const [selectedTab, setSelectedTab] = createSignal("fetch");
+
+  return (
+    <div>
+      <div class="mb-4 flex gap-4 border-b pb-1">
+        <Button
+          classList={{
+            "font-medium": true,
+            "text-fuchsia-800": selectedTab() === "fetch",
+          }}
+          onClick={() => setSelectedTab("fetch")}
+        >
+          Using Fetch
+        </Button>
+        <Button
+          classList={{
+            "font-medium": true,
+            "text-fuchsia-800": selectedTab() === "ts",
+          }}
+          onClick={() => setSelectedTab("ts")}
+        >
+          Using the TS SDK
+        </Button>
+      </div>
+      <Codeblock
+        content={selectedTab() === "ts" ? props.tsContent : props.fetchContent}
+      />
+    </div>
   );
 };

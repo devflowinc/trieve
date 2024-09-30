@@ -560,7 +560,7 @@ export const GroupPage = (props: GroupPageProps) => {
         </div>
         <Show when={!editing()}>
           <div class="flex w-full items-center justify-center">
-            <h1 class="max-w-screen-2xl break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
+            <h1 class="min-[320px]:text-xl max-w-screen-2xl break-all text-center text-lg sm:text-3xl">
               {groupInfo()?.name}
             </h1>
           </div>
