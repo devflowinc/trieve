@@ -10,6 +10,7 @@ export default {
   content: ["src/**/*.tsx"],
   plugins: [
     require("@tailwindcss/forms"),
+    require("tailwind-scrollbar"),
     scopedPreflightStyles({
       isolationStrategy: isolateInsideOfContainer(
         [
