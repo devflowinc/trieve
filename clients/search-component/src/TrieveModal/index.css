@@ -284,7 +284,7 @@ body {
 
       .ai-message {
         .message-wrapper {
-          @apply col-span-2 border-t;
+          @apply col-span-2 border-t pr-4;
           border-color: var(--tv-zinc-200);
         }
 
@@ -332,7 +332,7 @@ body {
       }
       .content {
         p {
-          @apply my-3;
+          @apply m-3;
         }
       }
 
@@ -572,7 +572,7 @@ body {
         }
 
         .user {
-          @apply text-magenta-400;
+          color: var(--tv-prop-brand-color);
         }
 
         .chat-ul {
