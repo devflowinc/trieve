@@ -103,7 +103,7 @@ export const ChatMode = () => {
                     </>
                   ) : null}
                   {messages.map((chat) => (
-                    <>
+                    <div className="message-wrapper">
                       {chat.map((message, idx) => {
                         return (
                           <>
@@ -129,7 +129,7 @@ export const ChatMode = () => {
                               </>
                             ) : (
                               <>
-                                <span className="ai-avatar">
+                                <span className="ai-avatar assistant">
                                   {props.brandLogoImgSrcUrl ? (
                                     <img
                                       src={props.brandLogoImgSrcUrl}
@@ -160,7 +160,7 @@ export const ChatMode = () => {
                           </>
                         );
                       })}
-                    </>
+                    </div>
                   ))}
                 </div>
               </div>
