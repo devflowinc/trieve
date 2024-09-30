@@ -15,6 +15,7 @@ import { countChunks, searchWithTrieve } from "../trieve";
 
 export const ALL_TAG = { tag: "all", label: "All", icon: null };
 
+type SearchModes = "chat" | "search";
 type searchOptions = Omit<
   Omit<AutocompleteReqPayload, "query">,
   "highlight_options"
@@ -41,9 +42,11 @@ export type ModalProps = {
     label?: string;
     icon?: () => JSX.Element;
   }[];
+  defaultSearchMode?: SearchModes;
 };
 
 const defaultProps = {
+  defaultSearchMode: "search" as SearchModes,
   placeholder: "Search...",
   theme: "light" as "light" | "dark",
   searchOptions: {
@@ -70,7 +73,7 @@ const ModalContext = createContext<{
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   inputRef: React.RefObject<HTMLInputElement>;
   mode: string;
-  setMode: React.Dispatch<React.SetStateAction<string>>;
+  setMode: React.Dispatch<React.SetStateAction<SearchModes>>;
   modalRef: React.RefObject<HTMLDivElement>;
   setContextProps: (props: ModalProps) => void;
   currentTag: string;
@@ -115,7 +118,7 @@ function ModalProvider({
   const [loadingResults, setLoadingResults] = useState(false);
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState("chat");
+  const [mode, setMode] = useState(props.defaultSearchMode || "search");
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState("all");
