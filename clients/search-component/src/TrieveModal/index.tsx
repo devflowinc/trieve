@@ -3,25 +3,51 @@ import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
 import { SearchMode } from "./SearchMode";
 import { ChatMode } from "./ChatMode";
-import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "./icons";
 
 import {
   ModalProps,
   ModalProvider,
   useModalState,
+  ALL_TAG,
 } from "../utils/hooks/modal-context";
 import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
 import { ModeSwitch } from "./ModeSwitch";
+import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "./icons";
 
 const Modal = () => {
   useKeyboardNavigation();
-  const { mode, modalRef, open, setOpen, setMode, props } = useModalState();
+  const {
+    mode,
+    modalRef,
+    open,
+    setOpen,
+    setMode,
+    props,
+    query,
+    results,
+    currentTag,
+    setCurrentTag,
+    tagCounts,
+  } = useModalState();
 
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
       props.brandColor ?? "#CB53EB"
     );
+
+    // depending on the theme, set the background color of ::-webkit-scrollbar-thumb for #trieve-search-modal
+    if (props.theme === "dark") {
+      document.documentElement.style.setProperty(
+        "--tv-prop-scrollbar-thumb-color",
+        "var(--tv-zinc-700)"
+      );
+    } else {
+      document.documentElement.style.setProperty(
+        "--tv-prop-scrollbar-thumb-color",
+        "var(--tv-zinc-300)"
+      );
+    }
   }, [props.brandColor]);
 
   const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
@@ -34,17 +60,15 @@ const Modal = () => {
       onOpenChange={(value) => {
         setOpen(value);
         setMode("search");
-      }}>
+      }}
+    >
       <Dialog.Trigger asChild>
         {ButtonEl ? (
           <button type="button">
             <ButtonEl />
           </button>
         ) : (
-          <button
-            id="open-trieve-modal"
-            type="button"
-            className={props.theme === "dark" ? "dark scrollbar-track-rounded-md scrollbar-thumb-rounded-md" : "scrollbar-track-rounded-md scrollbar-thumb-rounded-md"}>
+          <button id="open-trieve-modal" type="button">
             <div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +79,8 @@ const Modal = () => {
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round">
+                strokeLinejoin="round"
+              >
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.3-4.3"></path>
               </svg>
@@ -90,49 +115,76 @@ const Modal = () => {
         <Dialog.Content
           id="trieve-search-modal"
           ref={modalRef}
-          style={{scrollbarWidth: "thin" }}
-          className={(mode === "chat" ? "chat-modal-mobile " : " ") + (props.theme === "dark" ? "dark " : "")}>
+          className={
+            (mode === "chat" ? "chat-modal-mobile " : " ") +
+            (props.theme === "dark" ? "dark " : "")
+          }
+        >
           <ModeSwitch />
           <div style={{ display: mode === "search" ? "block" : "none" }}>
             <SearchMode />
           </div>
           <div
-            className={(mode === "chat" ? "w-full h-full chat-container" : " ")}
-            style={{ display: mode === "chat" ? "block" : "none" }}>
+            className={mode === "chat" ? "w-full h-full chat-container" : " "}
+            style={{ display: mode === "chat" ? "block" : "none" }}
+          >
             <ChatMode />
           </div>
-          <div className="footer">
-            <ul className="commands">
-              <li>
-                <kbd className="commands-key">
-                  <EnterKeyIcon />
-                </kbd>
-                <span className="label">to select</span>
-              </li>
-              <li>
-                <kbd className="commands-key">
-                  <ArrowDownKey />
-                </kbd>
-                <kbd className="commands-key">
-                  <ArrowUpIcon />
-                </kbd>
-                <span className="label">to navigate</span>
-              </li>
-              <li>
-                <kbd className="commands-key">
-                  <EscKeyIcon />
-                </kbd>
-                <span className="label">to close</span>
-              </li>
-            </ul>
-
-            <a
-              className="trieve-powered"
-              href="https://trieve.ai"
-              target="_blank">
-              <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
-              Powered by Trieve
-            </a>
+          <div className={`footer ${mode}`}>
+            <div className="bottom-row">
+              {mode === "search" &&
+                (props.tags?.length && (query || (query && !results.length)) ? (
+                  <ul className="tags">
+                    {[ALL_TAG, ...props.tags].map((tag, idx) => (
+                      <li
+                        className={currentTag === tag.tag ? "active" : ""}
+                        key={tag.tag}
+                      >
+                        <button onClick={() => setCurrentTag(tag.tag)}>
+                          {tag.icon &&
+                            typeof tag.icon === "function" &&
+                            tag.icon()}
+                          {tag.label || tag.tag}{" "}
+                          {tagCounts[idx] ? `(${tagCounts[idx].count})` : ""}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <ul className="commands">
+                    <li>
+                      <kbd className="commands-key">
+                        <EnterKeyIcon />
+                      </kbd>
+                      <span className="label">to select</span>
+                    </li>
+                    <li>
+                      <kbd className="commands-key">
+                        <ArrowDownKey />
+                      </kbd>
+                      <kbd className="commands-key">
+                        <ArrowUpIcon />
+                      </kbd>
+                      <span className="label">to navigate</span>
+                    </li>
+                    <li>
+                      <kbd className="commands-key">
+                        <EscKeyIcon />
+                      </kbd>
+                      <span className="label">to close</span>
+                    </li>
+                  </ul>
+                ))}
+              <span className="spacer" />
+              <a
+                className="trieve-powered"
+                href="https://trieve.ai"
+                target="_blank"
+              >
+                <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
+                Powered by Trieve
+              </a>
+            </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

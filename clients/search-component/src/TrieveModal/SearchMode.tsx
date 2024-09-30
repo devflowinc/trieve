@@ -1,21 +1,19 @@
 import React from "react";
 import { Item } from "./item";
-import { ReloadIcon } from "./icons";
+import { AIIcon, ArrowIcon, ReloadIcon } from "./icons";
 import { useSuggestedQueries } from "../utils/hooks/useSuggestedQueries";
-import { ALL_TAG, useModalState } from "../utils/hooks/modal-context";
+import { useModalState } from "../utils/hooks/modal-context";
 
 export const SearchMode = () => {
   const {
     props,
-    currentTag,
-    setCurrentTag,
     results,
     loadingResults,
     query,
     setQuery,
     requestID,
     inputRef,
-    tagCounts,
+    setMode,
   } = useModalState();
   const {
     suggestedQueries,
@@ -87,9 +85,30 @@ export const SearchMode = () => {
       </div>
 
       <ul className="trieve-elements-search">
+        {results.length && props.chat ? (
+          <li>
+            <button className="item start-chat" onClick={() => setMode("chat")}>
+              <div>
+                <AIIcon />
+                <div>
+                  <h4>
+                    Can you tell me about <span>{query}</span>
+                  </h4>
+                  <p className="description">Use AI to answer your question</p>
+                </div>
+              </div>
+              <ArrowIcon />
+            </button>
+          </li>
+        ) : null}
         {results.length
           ? results.map((result, index) => (
-              <Item item={result} index={index} requestID={requestID} key={result.chunk.id} />
+              <Item
+                item={result}
+                index={index}
+                requestID={requestID}
+                key={result.chunk.id}
+              />
             ))
           : null}
         {query && !results.length && !loadingResults ? (
@@ -98,22 +117,6 @@ export const SearchMode = () => {
           <p className="no-results-loading">Searching...</p>
         ) : null}
       </ul>
-      {props.tags?.length && (query || (query && !results.length)) ? (
-        <ul className="tags">
-          {[ALL_TAG, ...props.tags].map((tag, idx) => (
-            <li
-              className={currentTag === tag.tag ? "active" : ""}
-              key={tag.tag}
-            >
-              <button onClick={() => setCurrentTag(tag.tag)}>
-                {tag.icon && typeof tag.icon === "function" && tag.icon()}
-                {tag.label || tag.tag}{" "}
-                {tagCounts[idx] ? `(${tagCounts[idx].count})` : ""}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </>
   );
 };
