@@ -128,3 +128,21 @@ declare module "solid-js" {
 ## License
 
 MIT
+
+## Development Guide
+
+The `example/` folder shows the example application for what rendering this would look like
+
+Start the listener to update the search-component's css and javascript
+```sh
+$clients/search-component yarn 
+$clients/search-component yarn dev
+```
+
+Run the example application
+
+```sh
+$clients/search-component cd example/
+$clients/search-component yarn
+$clients/search-component yarn dev
+```
