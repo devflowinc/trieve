@@ -29,7 +29,10 @@ import { formatDate } from "../utils/formatters";
 import { TbReload } from "solid-icons/tb";
 import { createToast } from "../components/ShowToasts";
 
+import { AiOutlineDelete, AiOutlineClear } from "solid-icons/ai";
+
 const colHelp = createColumnHelper<DatasetAndUsage>();
+const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
 export const DatasetOverview = () => {
   const userContext = useContext(UserContext) as {
@@ -105,6 +108,69 @@ export const DatasetOverview = () => {
     }
   };
 
+  const deleteDataset = async (datasetId: string) => {
+    const confirmBox = confirm(
+      "Deleting this dataset will remove all chunks which are contained within it. This action is not reversible.\n\nAre you sure you want to delete? ",
+    );
+    if (!confirmBox) return;
+
+    await fetch(`${apiHost}/dataset/${datasetId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "TR-Dataset": datasetId,
+      },
+      credentials: "include",
+    })
+      .then((res) => {
+        if (res.ok) {
+          navigate("/org");
+          createToast({
+            title: "Success",
+            message: "Dataset deleted successfully!",
+            type: "success",
+          });
+        }
+      })
+      .catch(() => {
+        createToast({
+          title: "Error",
+          message: "Error deleting dataset!",
+          type: "error",
+        });
+      });
+  };
+
+  const clearDataset = async (datasetId: string) => {
+    if (!datasetId) return;
+
+    const confirmBox = confirm("This action is not reversible. Proceed?");
+    if (!confirmBox) return;
+
+    await fetch(`${apiHost}/dataset/clear/${datasetId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(datasetId && { "TR-Dataset": datasetId }),
+      },
+      credentials: "include",
+    })
+      .then(() => {
+        createToast({
+          title: "Success",
+          message: "Cleared all chunks for this dataset!",
+          type: "success",
+        });
+      })
+      .catch(() => {
+        createToast({
+          title: "Error",
+          type: "error",
+          message: `Failed to clear dataset.`,
+        });
+      });
+  };
+
   const table = createMemo(() => {
     const curUsage = usage();
 
@@ -116,7 +182,6 @@ export const DatasetOverview = () => {
         header: "Chunk Count",
         cell(info) {
           const datasetId = info.row.original.dataset.id;
-
           return (
             <div class="flex flex-row content-center items-center gap-1">
               {curUsage[datasetId]?.chunk_count ?? 0}{" "}
@@ -157,6 +222,35 @@ export const DatasetOverview = () => {
         cell(props) {
           // eslint-disable-next-line solid/reactivity
           return formatDate(new Date(props.getValue()));
+        },
+      }),
+      colHelp.display({
+        header: "Dataset Actions",
+        cell(info) {
+          const datasetId = info.row.original.dataset.id;
+
+          return (
+            <div class="justify-left flex content-center gap-2">
+              <button
+                class="flex items-center gap-1 text-lg opacity-70 hover:text-fuchsia-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void deleteDataset(datasetId);
+                }}
+              >
+                <AiOutlineDelete />
+              </button>
+              <button
+                class="flex items-center gap-1 text-lg opacity-70 hover:text-fuchsia-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void clearDataset(datasetId);
+                }}
+              >
+                <AiOutlineClear />
+              </button>
+            </div>
+          );
         },
       }),
     ];
