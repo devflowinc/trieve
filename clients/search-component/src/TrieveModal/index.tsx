@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
 import { SearchMode } from "./SearchMode";
@@ -8,7 +8,7 @@ import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "./icons";
 import {
   ModalProps,
   ModalProvider,
-  useModalState,
+  useModalState
 } from "../utils/hooks/modal-context";
 import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
 
@@ -19,6 +19,15 @@ const Modal = () => {
   const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
 
   const ButtonEl = props.ButtonEl;
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkWindowSize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", checkWindowSize);
+    checkWindowSize();
+    return () => window.removeEventListener("resize", checkWindowSize);
+  }, []);
 
   return (
     <Dialog.Root
@@ -90,30 +99,31 @@ const Modal = () => {
         >
           {mode === "search" ? <SearchMode /> : <ChatMode />}
           <div className="footer">
-            <ul className="commands">
-              <li>
-                <kbd className="commands-key">
-                  <EnterKeyIcon />
-                </kbd>
-                <span className="label">to select</span>
-              </li>
-              <li>
-                <kbd className="commands-key">
-                  <ArrowDownKey />
-                </kbd>
-                <kbd className="commands-key">
-                  <ArrowUpIcon />
-                </kbd>
-                <span className="label">to navigate</span>
-              </li>
-              <li>
-                <kbd className="commands-key">
-                  <EscKeyIcon />
-                </kbd>
-                <span className="label">to close</span>
-              </li>
-            </ul>
-
+            {!isMobile && (
+              <ul className="commands">
+                <li>
+                  <kbd className="commands-key">
+                    <EnterKeyIcon />
+                  </kbd>
+                  <span className="label">to select</span>
+                </li>
+                <li>
+                  <kbd className="commands-key">
+                    <ArrowDownKey />
+                  </kbd>
+                  <kbd className="commands-key">
+                    <ArrowUpIcon />
+                  </kbd>
+                  <span className="label">to navigate</span>
+                </li>
+                <li>
+                  <kbd className="commands-key">
+                    <EscKeyIcon />
+                  </kbd>
+                  <span className="label">to close</span>
+                </li>
+              </ul>
+            )}
             <a
               className="trieve-powered"
               href="https://trieve.ai"
