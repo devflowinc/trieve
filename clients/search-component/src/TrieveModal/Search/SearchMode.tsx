@@ -122,7 +122,7 @@ export const SearchMode = () => {
           <p className="no-results-loading">Searching...</p>
         ) : null}
       </ul>
-      <div className={`footer search`}>
+      <div className={`trieve-footer search`}>
         <div className="bottom-row">
           <Tags />
           <span className="spacer" />

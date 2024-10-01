@@ -50,7 +50,7 @@ export const ChatMode = () => {
             />
           </form>
         </div>
-        <div className={`footer chat`}>
+        <div className={`trieve-footer chat`}>
           <div className="bottom-row">
             <span className="spacer" />
             <a

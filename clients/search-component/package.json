@@ -7,7 +7,7 @@
     "dist/*",
     "dist/**/*"
   ],
-  "version": "0.0.11",
+  "version": "0.0.13",
   "license": "MIT",
   "scripts": {
     "dev": "run-p watch:css watch:js",
