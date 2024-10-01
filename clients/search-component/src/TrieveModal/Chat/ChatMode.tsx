@@ -13,6 +13,8 @@ export const ChatMode = () => {
     currentQuestion,
     setCurrentQuestion,
     clearConversation,
+    isDoneReading,
+    stopGeneratingMessage,
   } = useChatState();
 
   return (
@@ -59,12 +61,14 @@ export const ChatMode = () => {
           <div className="bottom-row">
             {messages.length ? (
               <button
-                onClick={() => {
-                  clearConversation();
-                }}
+                onClick={() =>
+                  isDoneReading?.current
+                    ? clearConversation()
+                    : stopGeneratingMessage()
+                }
                 className="clear-button"
               >
-                Clear messages
+                {isDoneReading?.current ? "Clear messages" : "Stop Generating"}
               </button>
             ) : null}
             <span className="spacer" />
