@@ -20,6 +20,7 @@ const ModalContext = createContext<{
   clearConversation: () => void;
   switchToChatAndAskQuestion: (query: string) => Promise<void>;
   isDoneReading?: React.MutableRefObject<boolean>;
+  rateChatCompletion: (isPositive: boolean, queryId?: string) => void;
 }>({
   askQuestion: async () => {},
   currentQuestion: "",
@@ -29,6 +30,7 @@ const ModalContext = createContext<{
   clearConversation: () => {},
   switchToChatAndAskQuestion: async () => {},
   stopGeneratingMessage: () => {},
+  rateChatCompletion: () => {},
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
@@ -175,11 +177,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     await askQuestion(query);
   };
 
-<<<<<<< HEAD
-=======
   const rateChatCompletion = async(isPositive: boolean, queryId?: string) => {
     if (queryId) {
-      console.log("Rating query", queryId, isPositive);
       props.trieve.rateRagQuery({
         rating: isPositive ? 1: 0,
         query_id: queryId
@@ -187,7 +186,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
->>>>>>> 2e2c1159 (feat: added new function to trieveSDK to get queryID, and wrapping up)
   return (
     <ModalContext.Provider
       value={{
@@ -200,6 +198,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         clearConversation,
         stopGeneratingMessage,
         isDoneReading,
+        rateChatCompletion
       }}
     >
       {children}

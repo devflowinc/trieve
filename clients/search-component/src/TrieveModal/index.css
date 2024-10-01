@@ -175,6 +175,22 @@ body {
         @apply sm:grid sm:grid-cols-[48px,1fr] sm:gap-2 -mt-7;
       }
 
+      .feedback-wrapper {
+        @apply flex justify-between my-4;
+
+        .feedback-icons {
+          @apply flex space-x-2;
+          button {
+            opacity: 50%;
+            &:hover,
+            &.active {
+              opacity: 100%;
+
+            }
+          }
+        }
+      }
+
       .additional-links {
         @apply flex flex-wrap gap-2 mt-4;
 
