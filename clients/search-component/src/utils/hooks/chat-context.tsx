@@ -15,6 +15,7 @@ const ModalContext = createContext<{
   messages: Messages;
   currentQuestion: string;
   setCurrentQuestion: React.Dispatch<React.SetStateAction<string>>;
+  clearConversation: () => void;
   switchToChatAndAskQuestion: (query: string) => Promise<void>;
 }>({
   askQuestion: async () => {},
@@ -22,6 +23,7 @@ const ModalContext = createContext<{
   isLoading: false,
   messages: [],
   setCurrentQuestion: () => {},
+  clearConversation: () => {},
   switchToChatAndAskQuestion: async () => {},
 });
 
@@ -47,6 +49,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       createQuestion({ id: topic.id, question: question });
     }
   };
+
+  const clearConversation = () => {
+    setCurrentTopic("");
+    setMessages([])
+  }
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>
@@ -146,6 +153,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         currentQuestion,
         setCurrentQuestion,
         switchToChatAndAskQuestion,
+        clearConversation
       }}
     >
       {children}

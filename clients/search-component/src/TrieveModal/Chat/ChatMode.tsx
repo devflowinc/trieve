@@ -7,7 +7,7 @@ import { ChatMessage } from "./ChatMessage";
 
 export const ChatMode = () => {
   const { setMode, modalRef } = useModalState();
-  const { askQuestion, messages, currentQuestion, setCurrentQuestion } =
+  const { askQuestion, messages, currentQuestion, setCurrentQuestion, clearConversation } =
     useChatState();
 
   return (
@@ -52,6 +52,12 @@ export const ChatMode = () => {
         </div>
         <div className={`trieve-footer chat`}>
           <div className="bottom-row">
+            <button onClick={() => {
+                clearConversation();
+              }}
+              className="clear-button">
+              Clear
+            </button>
             <span className="spacer" />
             <a
               className="trieve-powered"
