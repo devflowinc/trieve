@@ -637,6 +637,9 @@ pub async fn stream_response(
         .unwrap_or(Some(false))
         .unwrap_or(false);
 
+    let query_id = uuid::Uuid::new_v4();
+    let query_id_arb = query_id;
+
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
@@ -658,7 +661,7 @@ pub async fn stream_response(
         );
 
         let clickhouse_rag_event = RagQueryEventClickhouse {
-            id: uuid::Uuid::new_v4(),
+            id: query_id_arb,
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
             search_id: clickhouse_search_event.id,
@@ -713,7 +716,9 @@ pub async fn stream_response(
         return Ok(HttpResponse::Ok().streaming(completion_stream.chain(chunk_stream)));
     }
 
-    Ok(HttpResponse::Ok().streaming(chunk_stream.chain(completion_stream)))
+    Ok(HttpResponse::Ok()
+        .insert_header(("TR-QueryID", query_id.to_string()))
+        .streaming(chunk_stream.chain(completion_stream)))
 }
 
 #[tracing::instrument]
