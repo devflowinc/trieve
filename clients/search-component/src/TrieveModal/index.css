@@ -120,7 +120,7 @@ body {
       background-color: var(--tv-zinc-50);
     }
 
-    .footer {
+    .trieve-footer {
       @apply sticky items-center bottom-0;
       background-color: var(--tv-zinc-50);
       border-color: var(--tv-zinc-200);
@@ -547,7 +547,7 @@ body {
       .chat-footer-wrapper {
         background-color: var(--tv-zinc-900);
       }
-      .footer {
+      .trieve-footer {
         border-color: var(--tv-zinc-700);
         background-color: var(--tv-zinc-900);
 
