@@ -132,9 +132,19 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     chatMessageAbortController.current = new AbortController();
     isDoneReading.current = true;
     setIsLoading(false);
+    // is the last message loading? If it is we need to delete it
+    if (messages.at(-1)?.[0]?.text === "Loading...") {
+      setMessages((messages) =>
+        [
+          ...messages.slice(0, -1),
+          messages[messages.length - 1]?.slice(0, -1),
+        ].filter((a) => a.length)
+      );
+    }
   };
 
   const askQuestion = async (question?: string) => {
+    isDoneReading.current = false;
     setMessages((m) => [
       ...m,
       [{ type: "user", text: question || currentQuestion, additional: null }],
