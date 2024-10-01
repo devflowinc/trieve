@@ -2,7 +2,6 @@ import { beforeAll, describe, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import {
   CTRAnalyticsResponse,
-  GetEventsResponseBody,
   RAGAnalyticsResponse,
   RecommendationAnalyticsResponse,
   SearchAnalyticsResponse,

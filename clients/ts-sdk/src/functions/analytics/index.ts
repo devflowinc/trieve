@@ -8,14 +8,12 @@ import {
   ClusterAnalytics,
   CTRAnalytics,
   CTRDataRequestBody,
-  GetAllEventsData,
   GetEventsRequestBody,
   GetTopDatasetsRequestBody,
   RAGAnalytics,
   RateQueryRequest,
   RecommendationAnalytics,
   SearchAnalytics,
-  TopDatasetsResponse,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
