@@ -62,6 +62,15 @@ describe("Analytics Tests", async () => {
 
     expectTypeOf(data).toBeVoid();
   });
+
+  test("rateSearchQuery", async () => {
+    const data = await trieve.rateSearchQuery({
+      rating: 1,
+      query_id: "9892d267-3dc7-43b7-8fc2-700903baa217",
+    });
+
+    expectTypeOf(data).toBeVoid();
+  });
   test("getTopDatasets", async () => {
     const data = await trieve.getTopDatasets({
       organizationId: "de73679c-707f-4fc2-853e-994c910d944c",

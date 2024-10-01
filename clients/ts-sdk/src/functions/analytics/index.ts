@@ -252,6 +252,34 @@ export async function rateRagQuery(
   signal?: AbortSignal
 ) {
   return this.trieve.fetch(
+    "/api/analytics/rag",
+    "put",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
+}
+
+/**
+ * Function that allows you  to rate a search query.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.rateSearchQuery({
+  query_id: 123,
+  rating: 1,
+});
+ * ```
+ */
+export async function rateSearchQuery(
+  /** @hidden */
+  this: TrieveSDK,
+  data: RateQueryRequest,
+  signal?: AbortSignal
+) {
+  return this.trieve.fetch(
     "/api/analytics/search",
     "put",
     {
