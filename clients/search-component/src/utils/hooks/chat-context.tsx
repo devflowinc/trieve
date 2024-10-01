@@ -15,8 +15,10 @@ const ModalContext = createContext<{
   messages: Messages;
   currentQuestion: string;
   setCurrentQuestion: React.Dispatch<React.SetStateAction<string>>;
+  stopGeneratingMessage: () => void;
   clearConversation: () => void;
   switchToChatAndAskQuestion: (query: string) => Promise<void>;
+  isDoneReading?: React.MutableRefObject<boolean>;
 }>({
   askQuestion: async () => {},
   currentQuestion: "",
@@ -25,6 +27,7 @@ const ModalContext = createContext<{
   setCurrentQuestion: () => {},
   clearConversation: () => {},
   switchToChatAndAskQuestion: async () => {},
+  stopGeneratingMessage: () => {},
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
@@ -34,7 +37,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const called = useRef(false);
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
-
+  const chatMessageAbortController = useRef<AbortController>(
+    new AbortController()
+  );
+  const isDoneReading = useRef<boolean>(true);
   const createTopic = async ({ question }: { question: string }) => {
     if (!currentTopic) {
       called.current = true;
@@ -52,13 +58,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const clearConversation = () => {
     setCurrentTopic("");
-    setMessages([])
-  }
+    setMessages([]);
+  };
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>
   ) => {
     setIsLoading(true);
+    isDoneReading.current = false;
     let done = false;
     let textInStream = "";
 
@@ -66,6 +73,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       const { value, done: doneReading } = await reader.read();
       if (doneReading) {
         done = doneReading;
+        isDoneReading.current = doneReading;
       } else if (value) {
         const decoder = new TextDecoder();
         const newText = decoder.decode(value);
@@ -106,14 +114,24 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     question?: string;
   }) => {
     setIsLoading(true);
-    const reader = await props.trieve.createMessageReader({
-      topic_id: id || currentTopic,
-      new_message_content: question || currentQuestion,
-      llm_options: {
-        completion_first: true,
+    const reader = await props.trieve.createMessageReader(
+      {
+        topic_id: id || currentTopic,
+        new_message_content: question || currentQuestion,
+        llm_options: {
+          completion_first: true,
+        },
       },
-    });
+      chatMessageAbortController.current.signal
+    );
     handleReader(reader);
+  };
+
+  const stopGeneratingMessage = () => {
+    chatMessageAbortController.current.abort();
+    chatMessageAbortController.current = new AbortController();
+    isDoneReading.current = true;
+    setIsLoading(false);
   };
 
   const askQuestion = async (question?: string) => {
@@ -153,7 +171,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         currentQuestion,
         setCurrentQuestion,
         switchToChatAndAskQuestion,
-        clearConversation
+        clearConversation,
+        stopGeneratingMessage,
+        isDoneReading,
       }}
     >
       {children}
