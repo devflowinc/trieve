@@ -133,15 +133,14 @@ body {
         @apply flex justify-between;
 
         button {
-          @apply rounded px-2 text-sm py-1;
+          @apply rounded px-2 text-sm py-1 border;
           color: var(--tv-zinc-700);
-          background-color: var(--tv-zinc-300);
+          border-color: var(--tv-zinc-300);
 
           &:hover {
             color: var(--tv-zinc-950);
           }
         }
-
       }
 
       .commands {
@@ -511,6 +510,17 @@ body {
 
       .ai-message .message-wrapper {
         border-color: var(--tv-zinc-600);
+      }
+
+      .bottom-row {
+        button {
+          color: var(--tv-zinc-300);
+          border-color: var(--tv-zinc-700);
+
+          &:hover {
+            color: var(--tv-zinc-50);
+          }
+        }
       }
 
       ul.tags {
