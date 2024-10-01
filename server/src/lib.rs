@@ -239,7 +239,8 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::send_event_data,
         handlers::analytics_handler::get_ctr_analytics,
         handlers::analytics_handler::send_ctr_data,
-        handlers::analytics_handler::set_query_rating,
+        handlers::analytics_handler::set_search_query_rating,
+        handlers::analytics_handler::set_rag_query_rating,
         handlers::analytics_handler::get_top_datasets,
         handlers::analytics_handler::get_all_events,
         handlers::metrics_handler::get_metrics,
@@ -372,6 +373,7 @@ impl Modify for SecurityAddon {
             data::models::EventTypesFilter,
             data::models::RagTypes,
             data::models::RagQueryEvent,
+            data::models::SearchQueryRating,
             data::models::CountSearchMethod,
             data::models::SearchMethod,
             data::models::SearchType,
@@ -1145,7 +1147,7 @@ pub fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/search")
                                 .route(web::post().to(handlers::analytics_handler::get_search_analytics))
-                                .route(web::put().to(handlers::analytics_handler::set_query_rating)),
+                                .route(web::put().to(handlers::analytics_handler::set_search_query_rating)),
                             )
                             .service(
                                 web::resource("/search/clusters")
@@ -1153,7 +1155,8 @@ pub fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/rag")
-                                .route(web::post().to(handlers::analytics_handler::get_rag_analytics)),
+                                .route(web::post().to(handlers::analytics_handler::get_rag_analytics))
+                                .route(web::put().to(handlers::analytics_handler::set_rag_query_rating)),
                             )
                             .service(
                                 web::resource("/recommendations")

@@ -73,19 +73,19 @@ pub struct RateQueryRequest {
     pub note: Option<String>,
 }
 
-/// Rate Query
+/// Rate Search
 ///
-/// This route allows you to Rate a query.
+/// This route allows you to Rate a search query.
 #[utoipa::path(
     put,
     path = "/analytics/search",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = RateQueryRequest, description = "JSON request payload to rate a query", content_type = "application/json"),
+    request_body(content = RateQueryRequest, description = "JSON request payload to rate a search query", content_type = "application/json"),
     responses(
-        (status = 204, description = "The query was successfully rated"),
+        (status = 204, description = "The search query was successfully rated"),
 
-        (status = 400, description = "Service error relating to rating a query", body = ErrorResponseBody),
+        (status = 400, description = "Service error relating to rating a search query", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
@@ -94,14 +94,52 @@ pub struct RateQueryRequest {
         ("ApiKey" = ["admin"]),
     )
 )]
-pub async fn set_query_rating(
+pub async fn set_search_query_rating(
     data: web::Json<RateQueryRequest>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let data = data.into_inner();
-    set_query_rating_query(
+    set_search_query_rating_query(
+        data,
+        dataset_org_plan_sub.dataset.id,
+        clickhouse_client.get_ref(),
+    )
+    .await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+/// Rate RAG
+///
+/// This route allows you to Rate a RAG query.
+#[utoipa::path(
+    put,
+    path = "/analytics/rag",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = RateQueryRequest, description = "JSON request payload to rate a RAG query", content_type = "application/json"),
+    responses(
+        (status = 204, description = "The RAG query was successfully rated"),
+
+        (status = 400, description = "Service error relating to rating a RAG query", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn set_rag_query_rating(
+    data: web::Json<RateQueryRequest>,
+    _user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let data = data.into_inner();
+    set_rag_query_rating_query(
         data,
         dataset_org_plan_sub.dataset.id,
         clickhouse_client.get_ref(),
