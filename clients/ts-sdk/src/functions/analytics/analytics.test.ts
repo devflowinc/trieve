@@ -2,9 +2,11 @@ import { beforeAll, describe, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import {
   CTRAnalyticsResponse,
+  GetEventsResponseBody,
   RAGAnalyticsResponse,
   RecommendationAnalyticsResponse,
   SearchAnalyticsResponse,
+  TopDatasetsResponse,
 } from "../../types.gen";
 import { CHUNK_EXAMPLE_ID, TRIEVE } from "../../__tests__/constants";
 import { test } from "../../__tests__/utils";
@@ -52,5 +54,21 @@ describe("Analytics Tests", async () => {
     });
 
     expectTypeOf(data).toEqualTypeOf<SearchAnalyticsResponse>();
+  });
+  test("rateRagQuery", async () => {
+    const data = await trieve.rateRagQuery({
+      rating: 1,
+      query_id: "0dc64b20-b565-478b-b259-de4cd8f8688a",
+    });
+
+    expectTypeOf(data).toBeVoid();
+  });
+  test("getTopDatasets", async () => {
+    const data = await trieve.getTopDatasets({
+      organizationId: "de73679c-707f-4fc2-853e-994c910d944c",
+      type: "rag",
+    });
+
+    expectTypeOf(data).toEqualTypeOf<TopDatasetsResponse[]>();
   });
 });

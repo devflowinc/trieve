@@ -8,9 +8,14 @@ import {
   ClusterAnalytics,
   CTRAnalytics,
   CTRDataRequestBody,
+  GetAllEventsData,
+  GetEventsRequestBody,
+  GetTopDatasetsRequestBody,
   RAGAnalytics,
+  RateQueryRequest,
   RecommendationAnalytics,
   SearchAnalytics,
+  TopDatasetsResponse,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
@@ -226,6 +231,97 @@ export async function getClusterAnalytics(
     {
       data,
       datasetId: this.datasetId,
+    },
+    signal
+  );
+}
+
+/**
+ * Function that allows you  to rate a RAG query.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.rateRagQuery({
+  query_id: 123,
+  rating: 1,
+});
+ * ```
+ */
+export async function rateRagQuery(
+  /** @hidden */
+  this: TrieveSDK,
+  data: RateQueryRequest,
+  signal?: AbortSignal
+) {
+  return this.trieve.fetch(
+    "/api/analytics/search",
+    "put",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
+}
+
+/**
+ * Function that allows you to fetch the top datasets for an organization
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getTopDatasets({
+  organizationId: 123,
+  type: "search"
+});
+ * ```
+ */
+export async function getTopDatasets(
+  /** @hidden */
+  this: TrieveSDK,
+  data: GetTopDatasetsRequestBody & { organizationId: string },
+  signal?: AbortSignal
+) {
+  return this.trieve.fetch(
+    "/api/analytics/top",
+    "post",
+    {
+      data,
+      organizationId: data.organizationId,
+    },
+    signal
+  );
+}
+
+/**
+ * Function that allows you to view the CTR analytics for a dataset.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getAllAnalyticsEvents({
+  filter: {
+    "date_range": {
+      "gt": "2021-08-10T00:00:00Z",
+      "lt": "2021-08-11T00:00:00Z"
+    },
+    "event_type": "view",
+    "is_conversion": true,
+    "metadata_filter": "path = \"value\"",
+    "user_id": "user1"
+  },
+});
+ * ```
+ */
+export async function getAllAnalyticsEvents(
+  /** @hidden */
+  this: TrieveSDK,
+  data: GetEventsRequestBody,
+  signal?: AbortSignal
+) {
+  return await this.trieve.fetch(
+    "/api/analytics/events",
+    "post",
+    {
+      data,
     },
     signal
   );
