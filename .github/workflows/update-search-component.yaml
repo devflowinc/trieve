@@ -27,10 +27,12 @@ jobs:
           cache: yarn
 
       - name: Install dependencies 📦️
+        working-directory: ./clients/search-component/
         run: yarn --frozen-lockfile
 
       - name: Build 🔨
-        run: yarn build:clean --filter trieve-search-component
+        working-directory: ./clients/search-component/
+        run: yarn prepublish --filter trieve-search-component
 
       - uses: simenandre/publish-with-yarn@v1
         with:

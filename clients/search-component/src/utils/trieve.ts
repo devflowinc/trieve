@@ -125,3 +125,11 @@ export const getSuggestedQuestions = async ({
     context: "You are a user searching through a docs website",
   });
 };
+
+export const sendFeedBack = async ({
+  trieve,
+}: {
+  trieve: TrieveSDK;
+}) => {
+  return trieve;
+};
