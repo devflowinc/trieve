@@ -289,6 +289,17 @@ body {
       }
     }
 
+    @media (max-height: 800px) {
+      .chat-outer-wrapper {
+        @apply pb-6;
+      }
+    }
+    @media (max-height: 600px) {
+      .chat-outer-wrapper {
+        @apply pb-16;
+      }
+    }
+
     .chat-outer-wrapper {
       @apply flex flex-col mt-12;
 
