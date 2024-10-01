@@ -713,7 +713,9 @@ pub async fn stream_response(
         return Ok(HttpResponse::Ok().streaming(completion_stream.chain(chunk_stream)));
     }
 
-    Ok(HttpResponse::Ok().streaming(chunk_stream.chain(completion_stream)))
+    Ok(HttpResponse::Ok()
+        .insert_header(("TR-QueryID", query_id.to_string()))
+        .streaming(chunk_stream.chain(completion_stream)))
 }
 
 #[tracing::instrument]
