@@ -717,7 +717,7 @@ pub async fn stream_response(
     }
 
     Ok(HttpResponse::Ok()
-        .insert_header(("X-TR-QueryID", query_id.to_string()))
+        .insert_header(("TR-QueryID", query_id.to_string()))
         .streaming(chunk_stream.chain(completion_stream)))
 }
 

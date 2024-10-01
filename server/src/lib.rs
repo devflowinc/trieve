@@ -664,7 +664,10 @@ pub fn main() -> std::io::Result<()> {
 
         HttpServer::new(move || {
             App::new()
-                .wrap(Cors::permissive())
+                .wrap(
+                    Cors::permissive()
+                        .allowed_header("TR-QueryId")
+                )
                 .app_data(PayloadConfig::new(134200000))
                 .wrap(middleware::json_middleware::JsonMiddlewareFactory)
                 .app_data(json_cfg.clone())
