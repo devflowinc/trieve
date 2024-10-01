@@ -3699,7 +3699,7 @@ impl FieldCondition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Default)]
 pub struct SearchQueryRating {
     pub rating: i32,
     pub note: Option<String>,
@@ -4001,7 +4001,7 @@ pub enum SearchResultType {
 impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
     fn from(clickhouse_response: SearchQueryEventClickhouse) -> SearchQueryEvent {
         let query_rating = if !clickhouse_response.query_rating.is_empty() {
-            Some(serde_json::from_str(&clickhouse_response.query_rating).unwrap())
+            Some(serde_json::from_str(&clickhouse_response.query_rating).unwrap_or_default())
         } else {
             None
         };
@@ -4071,7 +4071,7 @@ impl RagQueryEventClickhouse {
             .collect::<Vec<ChunkMetadataStringTagSet>>();
 
         let query_rating = if !self.query_rating.is_empty() {
-            Some(serde_json::from_str(&self.query_rating).unwrap())
+            Some(serde_json::from_str(&self.query_rating).unwrap_or_default())
         } else {
             None
         };
@@ -5543,6 +5543,8 @@ impl From<CTRDataRequestBody> for EventTypes {
 pub enum CTRType {
     Search,
     Recommendation,
+    #[serde(rename = "rag")]
+    RAG
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
