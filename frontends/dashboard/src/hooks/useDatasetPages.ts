@@ -103,11 +103,28 @@ export const useDatasetPages = (props: {
     return realDatasets().length;
   });
 
+  const refetchDatasets = async () => {
+    const org_id = props.org().id;
+
+    if (!org_id) {
+      return;
+    }
+
+    await getDatasets({ orgId: org_id }).then((datasets) => {
+      setRealDatasets(datasets);
+    });
+  };
+
+  createEffect(() => {
+    void refetchDatasets();
+  });
+
   return {
     datasets: currDatasets,
     maxPageDiscovered,
     maxDatasets,
     removeDataset,
     hasLoaded,
+    refetchDatasets,
   };
 };

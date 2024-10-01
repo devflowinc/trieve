@@ -48,13 +48,18 @@ export const DatasetOverview = () => {
     Record<string, { chunk_count: number }>
   >({});
 
-  const { datasets, maxPageDiscovered, maxDatasets, hasLoaded } =
-    useDatasetPages({
-      org: userContext.selectedOrg,
-      searchQuery: datasetSearchQuery,
-      page: page,
-      setPage,
-    });
+  const {
+    datasets,
+    maxPageDiscovered,
+    maxDatasets,
+    hasLoaded,
+    refetchDatasets,
+  } = useDatasetPages({
+    org: userContext.selectedOrg,
+    searchQuery: datasetSearchQuery,
+    page: page,
+    setPage,
+  });
 
   const refetchChunks = async (datasetId: string) => {
     try {
@@ -130,6 +135,8 @@ export const DatasetOverview = () => {
             message: "Dataset deleted successfully!",
             type: "success",
           });
+
+          void refetchDatasets();
         }
       })
       .catch(() => {
@@ -144,7 +151,9 @@ export const DatasetOverview = () => {
   const clearDataset = async (datasetId: string) => {
     if (!datasetId) return;
 
-    const confirmBox = confirm("This action is not reversible. Proceed?");
+    const confirmBox = confirm(
+      "This will delete all chunks, groups, and files in the dataset, but not the analytics or dataset itself. This action is not reversible.\n\nProceed?",
+    );
     if (!confirmBox) return;
 
     await fetch(`${apiHost}/dataset/clear/${datasetId}`, {
@@ -161,6 +170,8 @@ export const DatasetOverview = () => {
           message: "Cleared all chunks for this dataset!",
           type: "success",
         });
+
+        void refetchDatasets();
       })
       .catch(() => {
         createToast({
@@ -232,7 +243,7 @@ export const DatasetOverview = () => {
           return (
             <div class="justify-left flex content-center gap-2">
               <button
-                class="flex items-center gap-1 text-lg opacity-70 hover:text-fuchsia-500"
+                class="flex items-center gap-1 text-lg text-red-500 opacity-70 hover:text-red-800"
                 onClick={(e) => {
                   e.stopPropagation();
                   void deleteDataset(datasetId);
