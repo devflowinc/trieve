@@ -3699,6 +3699,12 @@ impl FieldCondition {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct SearchQueryRating {
+    pub rating: i32,
+    pub note: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "SearchQueryEvent")]
 pub struct SearchQueryEvent {
@@ -3711,7 +3717,7 @@ pub struct SearchQueryEvent {
     pub results: Vec<serde_json::Value>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
-    pub query_rating: String,
+    pub query_rating: Option<SearchQueryRating>,
     pub user_id: String,
 }
 
@@ -3727,7 +3733,7 @@ impl Default for SearchQueryEvent {
             results: vec![],
             dataset_id: uuid::Uuid::new_v4(),
             created_at: chrono::Utc::now().to_string(),
-            query_rating: String::from(""),
+            query_rating: None,
             user_id: String::from(""),
         }
     }
@@ -3994,6 +4000,12 @@ pub enum SearchResultType {
 
 impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
     fn from(clickhouse_response: SearchQueryEventClickhouse) -> SearchQueryEvent {
+        let query_rating = if !clickhouse_response.query_rating.is_empty() {
+            Some(serde_json::from_str(&clickhouse_response.query_rating).unwrap())
+        } else {
+            None
+        };
+
         SearchQueryEvent {
             id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
             search_type: clickhouse_response.search_type,
@@ -4020,7 +4032,7 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
                 .collect::<Vec<serde_json::Value>>(),
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),
-            query_rating: clickhouse_response.query_rating,
+            query_rating,
             user_id: clickhouse_response.user_id,
         }
     }
@@ -4036,6 +4048,7 @@ pub struct RagQueryEvent {
     pub results: Vec<ChunkMetadataStringTagSet>,
     pub dataset_id: uuid::Uuid,
     pub llm_response: String,
+    pub query_rating: Option<SearchQueryRating>,
     pub created_at: String,
     pub user_id: String,
 }
@@ -4057,12 +4070,19 @@ impl RagQueryEventClickhouse {
             .map(ChunkMetadataStringTagSet::from)
             .collect::<Vec<ChunkMetadataStringTagSet>>();
 
+        let query_rating = if !self.query_rating.is_empty() {
+            Some(serde_json::from_str(&self.query_rating).unwrap())
+        } else {
+            None
+        };
+
         RagQueryEvent {
             id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
             rag_type: self.rag_type,
             user_message: self.user_message,
             search_id: uuid::Uuid::from_bytes(*self.search_id.as_bytes()),
             results: chunk_string_tag_sets,
+            query_rating,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
             llm_response: self.llm_response,
             created_at: self.created_at.to_string(),
@@ -4080,6 +4100,7 @@ pub struct RagQueryEventClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub search_id: uuid::Uuid,
     pub results: Vec<String>,
+    pub query_rating: String,
     pub llm_response: String,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,

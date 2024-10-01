@@ -1,0 +1,1 @@
+ALTER TABLE rag_queries DROP COLUMN IF EXISTS query_rating;

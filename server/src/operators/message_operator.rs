@@ -609,6 +609,7 @@ pub async fn stream_response(
                 .map(|s| s.to_string())
                 .collect(),
             user_message: query.clone(),
+            query_rating: String::new(),
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion_content.clone(),
             user_id: create_message_req_payload
@@ -667,6 +668,7 @@ pub async fn stream_response(
                 .map(|s| s.to_string())
                 .collect(),
             user_message: query.clone(),
+            query_rating: String::new(),
             rag_type: "all_chunks".to_string(),
             llm_response: completion.clone(),
             user_id: create_message_req_payload

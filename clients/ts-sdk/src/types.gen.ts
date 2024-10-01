@@ -252,6 +252,11 @@ export type ChunkMetadataStringTagSet = {
 
 export type ChunkMetadataTypes = SlimChunkMetadata | ChunkMetadataStringTagSet | ContentChunkMetadata;
 
+export type ChunkMetadataWithPosition = {
+    chunk: ChunkMetadata;
+    position: number;
+};
+
 export type ChunkMetadataWithScore = {
     chunk_html?: (string) | null;
     created_at: string;
@@ -335,7 +340,7 @@ export type ChunkReqPayload = {
 
 export type ChunkReturnTypes = ChunkMetadata | ChunkMetadataStringTagSet;
 
-export type ChunksWithPositions = {
+export type ChunkWithPosition = {
     chunk_id: string;
     position: number;
 };
@@ -803,7 +808,7 @@ export type EventReturn = {
     page_count: number;
 };
 
-export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed';
+export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed';
 
 export type EventTypes = {
     /**
@@ -854,7 +859,7 @@ export type EventTypes = {
      */
     user_id?: (string) | null;
 } | {
-    clicked_items: ChunksWithPositions;
+    clicked_items: ChunkWithPosition;
     /**
      * The name of the event
      */
@@ -1093,7 +1098,7 @@ export type GetDatasetsPagination = {
 
 export type GetEventsData = {
     /**
-     * The types of events to get. Any combination of file_uploaded, chunk_uploaded, chunk_action_failed, chunk_updated, or qdrant_index_failed. Leave undefined to get all events.
+     * The types of events to get. Leave undefined to get all events.
      */
     event_types?: Array<EventTypeRequest> | null;
     /**
@@ -1390,6 +1395,9 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'rag_usage_graph';
+} | {
+    request_id: string;
+    type: 'rag_query_details';
 };
 
 export type type3 = 'rag_queries';
@@ -1399,7 +1407,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent;
 
 export type RAGSortBy = 'created_at' | 'latency';
 
@@ -1416,6 +1424,7 @@ export type RagQueryEvent = {
     dataset_id: string;
     id: string;
     llm_response: string;
+    query_rating?: ((SearchQueryRating) | null);
     rag_type: string;
     results: Array<ChunkMetadataStringTagSet>;
     search_id: string;
@@ -1593,13 +1602,14 @@ export type RecommendationsEventResponse = {
 };
 
 export type RecommendationsWithClicksCTRResponse = {
-    clicked_chunks: Array<ChunkMetadata>;
+    clicked_chunk: ChunkMetadataWithPosition;
     created_at: string;
     negative_ids?: Array<(string)> | null;
     negative_tracking_ids?: Array<(string)> | null;
-    positions: Array<(number)>;
     positive_ids?: Array<(string)> | null;
     positive_tracking_ids?: Array<(string)> | null;
+    request_id: string;
+    results: Array<unknown>;
 };
 
 export type RecommendationsWithoutClicksCTRResponse = {
@@ -1608,6 +1618,7 @@ export type RecommendationsWithoutClicksCTRResponse = {
     negative_tracking_ids?: Array<(string)> | null;
     positive_ids?: Array<(string)> | null;
     positive_tracking_ids?: Array<(string)> | null;
+    request_id: string;
 };
 
 export type RegenerateMessageReqPayload = {
@@ -1723,7 +1734,7 @@ export type SearchAnalytics = {
     filter?: ((SearchAnalyticsFilter) | null);
     type: 'count_queries';
 } | {
-    search_id: string;
+    request_id: string;
     type: 'query_details';
 } | {
     filter?: ((SearchAnalyticsFilter) | null);
@@ -1882,15 +1893,17 @@ export type SearchOverGroupsResults = {
 };
 
 export type SearchQueriesWithClicksCTRResponse = {
-    clicked_chunks: Array<ChunkMetadata>;
+    clicked_chunk: ChunkMetadataWithPosition;
     created_at: string;
-    positions: Array<(number)>;
     query: string;
+    request_id: string;
+    results: Array<unknown>;
 };
 
 export type SearchQueriesWithoutClicksCTRResponse = {
     created_at: string;
     query: string;
+    request_id: string;
 };
 
 export type SearchQueryEvent = {
@@ -1899,12 +1912,17 @@ export type SearchQueryEvent = {
     id: string;
     latency: number;
     query: string;
-    query_rating: string;
+    query_rating?: ((SearchQueryRating) | null);
     request_params: unknown;
     results: Array<unknown>;
     search_type: string;
     top_score: number;
     user_id: string;
+};
+
+export type SearchQueryRating = {
+    note?: (string) | null;
+    rating: number;
 };
 
 export type SearchQueryResponse = {
@@ -2611,6 +2629,19 @@ export type GetRagAnalyticsData = {
 
 export type GetRagAnalyticsResponse = (RAGAnalyticsResponse);
 
+export type SetRagQueryRatingData = {
+    /**
+     * JSON request payload to rate a RAG query
+     */
+    requestBody: RateQueryRequest;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type SetRagQueryRatingResponse = (void);
+
 export type GetRecommendationAnalyticsData = {
     /**
      * JSON request payload to filter the graph
@@ -2637,9 +2668,9 @@ export type GetSearchAnalyticsData = {
 
 export type GetSearchAnalyticsResponse = (SearchAnalyticsResponse);
 
-export type SetQueryRatingData = {
+export type SetSearchQueryRatingData = {
     /**
-     * JSON request payload to rate a query
+     * JSON request payload to rate a search query
      */
     requestBody: RateQueryRequest;
     /**
@@ -2648,7 +2679,7 @@ export type SetQueryRatingData = {
     trDataset: string;
 };
 
-export type SetQueryRatingResponse = (void);
+export type SetSearchQueryRatingResponse = (void);
 
 export type GetClusterAnalyticsData = {
     /**
@@ -3820,6 +3851,19 @@ export type $OpenApiTs = {
                 400: ErrorResponseBody;
             };
         };
+        put: {
+            req: SetRagQueryRatingData;
+            res: {
+                /**
+                 * The RAG query was successfully rated
+                 */
+                204: void;
+                /**
+                 * Service error relating to rating a RAG query
+                 */
+                400: ErrorResponseBody;
+            };
+        };
     };
     '/api/analytics/recommendations': {
         post: {
@@ -3851,14 +3895,14 @@ export type $OpenApiTs = {
             };
         };
         put: {
-            req: SetQueryRatingData;
+            req: SetSearchQueryRatingData;
             res: {
                 /**
-                 * The query was successfully rated
+                 * The search query was successfully rated
                  */
                 204: void;
                 /**
-                 * Service error relating to rating a query
+                 * Service error relating to rating a search query
                  */
                 400: ErrorResponseBody;
             };

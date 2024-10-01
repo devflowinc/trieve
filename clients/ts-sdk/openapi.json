@@ -12,7 +12,7 @@
       "name": "BSL",
       "url": "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt"
     },
-    "version": "0.11.11"
+    "version": "0.11.12"
   },
   "servers": [
     {
@@ -302,6 +302,58 @@
             ]
           }
         ]
+      },
+      "put": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Rate RAG",
+        "description": "This route allows you to Rate a RAG query.",
+        "operationId": "set_rag_query_rating",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to rate a RAG query",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RateQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The RAG query was successfully rated"
+          },
+          "400": {
+            "description": "Service error relating to rating a RAG query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
       }
     },
     "/api/analytics/recommendations": {
@@ -429,9 +481,9 @@
         "tags": [
           "Analytics"
         ],
-        "summary": "Rate Query",
-        "description": "This route allows you to Rate a query.",
-        "operationId": "set_query_rating",
+        "summary": "Rate Search",
+        "description": "This route allows you to Rate a search query.",
+        "operationId": "set_search_query_rating",
         "parameters": [
           {
             "name": "TR-Dataset",
@@ -444,7 +496,7 @@
           }
         ],
         "requestBody": {
-          "description": "JSON request payload to rate a query",
+          "description": "JSON request payload to rate a search query",
           "content": {
             "application/json": {
               "schema": {
@@ -456,10 +508,10 @@
         },
         "responses": {
           "204": {
-            "description": "The query was successfully rated"
+            "description": "The search query was successfully rated"
           },
           "400": {
-            "description": "Service error relating to rating a query",
+            "description": "Service error relating to rating a search query",
             "content": {
               "application/json": {
                 "schema": {
@@ -6650,6 +6702,22 @@
           }
         ]
       },
+      "ChunkMetadataWithPosition": {
+        "type": "object",
+        "required": [
+          "chunk",
+          "position"
+        ],
+        "properties": {
+          "chunk": {
+            "$ref": "#/components/schemas/ChunkMetadata"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ChunkMetadataWithScore": {
         "type": "object",
         "title": "V1",
@@ -6893,7 +6961,7 @@
           }
         ]
       },
-      "ChunksWithPositions": {
+      "ChunkWithPosition": {
         "type": "object",
         "required": [
           "chunk_id",
@@ -8336,7 +8404,9 @@
           "qdrant_upload_failed",
           "bulk_chunk_upload_failed",
           "group_chunks_updated",
-          "group_chunks_action_failed"
+          "group_chunks_action_failed",
+          "crawl_completed",
+          "crawl_failed"
         ]
       },
       "EventTypes": {
@@ -8437,7 +8507,7 @@
             ],
             "properties": {
               "clicked_items": {
-                "$ref": "#/components/schemas/ChunksWithPositions"
+                "$ref": "#/components/schemas/ChunkWithPosition"
               },
               "event_name": {
                 "type": "string",
@@ -9045,7 +9115,7 @@
             "items": {
               "$ref": "#/components/schemas/EventTypeRequest"
             },
-            "description": "The types of events to get. Any combination of file_uploaded, chunk_uploaded, chunk_action_failed, chunk_updated, or qdrant_index_failed. Leave undefined to get all events.",
+            "description": "The types of events to get. Leave undefined to get all events.",
             "nullable": true
           },
           "page": {
@@ -10060,6 +10130,26 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "QueryDetails",
+            "required": [
+              "request_id",
+              "type"
+            ],
+            "properties": {
+              "request_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "rag_query_details"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -10097,6 +10187,9 @@
           },
           {
             "$ref": "#/components/schemas/RAGUsageGraphResponse"
+          },
+          {
+            "$ref": "#/components/schemas/RagQueryEvent"
           }
         ]
       },
@@ -10138,6 +10231,7 @@
       },
       "RagQueryEvent": {
         "type": "object",
+        "title": "RagQueryEvent",
         "required": [
           "id",
           "rag_type",
@@ -10164,6 +10258,14 @@
           "llm_response": {
             "type": "string"
           },
+          "query_rating": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SearchQueryRating"
+              }
+            ],
+            "nullable": true
+          },
           "rag_type": {
             "type": "string"
           },
@@ -10187,6 +10289,7 @@
       },
       "RagQueryResponse": {
         "type": "object",
+        "title": "RagQueryResponse",
         "required": [
           "queries"
         ],
@@ -10779,16 +10882,14 @@
       "RecommendationsWithClicksCTRResponse": {
         "type": "object",
         "required": [
-          "clicked_chunks",
-          "positions",
+          "results",
+          "request_id",
+          "clicked_chunk",
           "created_at"
         ],
         "properties": {
-          "clicked_chunks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChunkMetadata"
-            }
+          "clicked_chunk": {
+            "$ref": "#/components/schemas/ChunkMetadataWithPosition"
           },
           "created_at": {
             "type": "string"
@@ -10807,13 +10908,6 @@
             },
             "nullable": true
           },
-          "positions": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
           "positive_ids": {
             "type": "array",
             "items": {
@@ -10827,12 +10921,20 @@
               "type": "string"
             },
             "nullable": true
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {}
           }
         }
       },
       "RecommendationsWithoutClicksCTRResponse": {
         "type": "object",
         "required": [
+          "request_id",
           "created_at"
         ],
         "properties": {
@@ -10866,6 +10968,9 @@
               "type": "string"
             },
             "nullable": true
+          },
+          "request_id": {
+            "type": "string"
           }
         }
       },
@@ -11384,11 +11489,11 @@
             "type": "object",
             "title": "QueryDetails",
             "required": [
-              "search_id",
+              "request_id",
               "type"
             ],
             "properties": {
-              "search_id": {
+              "request_id": {
                 "type": "string",
                 "format": "uuid"
               },
@@ -11937,29 +12042,27 @@
         "type": "object",
         "required": [
           "query",
-          "clicked_chunks",
-          "positions",
+          "results",
+          "clicked_chunk",
+          "request_id",
           "created_at"
         ],
         "properties": {
-          "clicked_chunks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChunkMetadata"
-            }
+          "clicked_chunk": {
+            "$ref": "#/components/schemas/ChunkMetadataWithPosition"
           },
           "created_at": {
             "type": "string"
           },
-          "positions": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
           "query": {
             "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {}
           }
         }
       },
@@ -11967,6 +12070,7 @@
         "type": "object",
         "required": [
           "query",
+          "request_id",
           "created_at"
         ],
         "properties": {
@@ -11974,6 +12078,9 @@
             "type": "string"
           },
           "query": {
+            "type": "string"
+          },
+          "request_id": {
             "type": "string"
           }
         }
@@ -11991,7 +12098,6 @@
           "results",
           "dataset_id",
           "created_at",
-          "query_rating",
           "user_id"
         ],
         "properties": {
@@ -12014,7 +12120,12 @@
             "type": "string"
           },
           "query_rating": {
-            "type": "string"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SearchQueryRating"
+              }
+            ],
+            "nullable": true
           },
           "request_params": {},
           "results": {
@@ -12030,6 +12141,22 @@
           },
           "user_id": {
             "type": "string"
+          }
+        }
+      },
+      "SearchQueryRating": {
+        "type": "object",
+        "required": [
+          "rating"
+        ],
+        "properties": {
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "rating": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

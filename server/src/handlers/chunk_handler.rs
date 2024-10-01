@@ -2569,6 +2569,7 @@ pub async fn generate_off_chunks(
                 .map(|s| s.to_string())
                 .collect(),
             user_message: prompt,
+            query_rating: String::new(),
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion_content.clone(),
             user_id: data.user_id.clone().unwrap_or_default(),
@@ -2605,6 +2606,7 @@ pub async fn generate_off_chunks(
                 .collect(),
             user_message: prompt,
             rag_type: "chosen_chunks".to_string(),
+            query_rating: String::new(),
             llm_response: completion,
             user_id: data.user_id.clone().unwrap_or_default(),
         };
