@@ -191,10 +191,7 @@ pub async fn get_crawl_request_by_dataset_id_query(
         .optional()
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    Ok(match request {
-        Some(request) => Some(request.into()),
-        None => None,
-    })
+    Ok(request.map(|req| req.into()))
 }
 
 pub async fn get_crawl_requests_to_rerun(
