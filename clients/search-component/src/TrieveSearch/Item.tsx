@@ -11,7 +11,6 @@ type Props = {
     index: number;
   }) => object | null | undefined;
   onResultClick?: (chunk: Chunk, requestID: string) => void;
-  showImages?: boolean;
 };
 
 export const Item = ({
@@ -20,7 +19,6 @@ export const Item = ({
   requestID,
   getItemProps,
   onResultClick,
-  showImages,
 }: Props) => {
   const Component = item.chunk.link ? "a" : "button";
   const title =
@@ -36,11 +34,6 @@ export const Item = ({
         {...(item.chunk.link ? { href: item.chunk.link } : {})}
       >
         <div>
-          {showImages &&
-          item.chunk.image_urls?.length &&
-          item.chunk.image_urls[0] ? (
-            <img src={item.chunk.image_urls[0]} />
-          ) : null}
           {title ? (
             <div>
               <h4>{title}</h4>

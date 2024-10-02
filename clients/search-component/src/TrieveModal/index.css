@@ -506,6 +506,7 @@ body {
           @apply justify-start gap-4;
 
           > svg {
+            @apply shrink-0 w-8;
             color: var(--tv-prop-brand-color);
           }
         }

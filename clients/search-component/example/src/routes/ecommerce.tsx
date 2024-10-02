@@ -44,78 +44,13 @@ export default function ECommerce() {
             </h2>
 
             <TrieveModalSearch
-              // defaultSearchMode="chat"
+              type="ecommerce"
+              defaultSearchMode="search"
               trieve={trieve}
               theme={theme}
-              // tags={[
-              //   {
-              //     tag: "userguide",
-              //     label: "User Guides",
-              //     icon: () => (
-              //       <svg
-              //         xmlns="http://www.w3.org/2000/svg"
-              //         width="24"
-              //         height="24"
-              //         viewBox="0 0 24 24"
-              //         fill="none"
-              //         stroke="currentColor"
-              //         strokeWidth="2"
-              //         strokeLinecap="round"
-              //         strokeLinejoin="round"
-              //         className="w-3 h-3"
-              //       >
-              //         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-              //         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-              //         <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-              //         <path d="M9 14v.01" />
-              //         <path d="M12 14v.01" />
-              //         <path d="M15 14v.01" />
-              //       </svg>
-              //     ),
-              //   },
-              //   {
-              //     tag: "docker",
-              //     label: "Docker",
-              //     icon: () => (
-              //       <svg
-              //         xmlns="http://www.w3.org/2000/svg"
-              //         width="24"
-              //         height="24"
-              //         viewBox="0 0 24 24"
-              //         strokeWidth="2"
-              //         fill="none"
-              //         stroke="currentColor"
-              //         strokeLinecap="round"
-              //         strokeLinejoin="round"
-              //         className="w-3 h-3"
-              //       >
-              //         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-              //         <path d="M22 12.54c-1.804 -.345 -2.701 -1.08 -3.523 -2.94c-.487 .696 -1.102 1.568 -.92 2.4c.028 .238 -.32 1 -.557 1h-14c0 5.208 3.164 7 6.196 7c4.124 .022 7.828 -1.376 9.854 -5c1.146 -.101 2.296 -1.505 2.95 -2.46z" />
-              //         <path d="M5 10h3v3h-3z" />
-              //         <path d="M8 10h3v3h-3z" />
-              //         <path d="M11 10h3v3h-3z" />
-              //         <path d="M8 7h3v3h-3z" />
-              //         <path d="M11 7h3v3h-3z" />
-              //         <path d="M11 4h3v3h-3z" />
-              //         <path d="M4.571 18c1.5 0 2.047 -.074 2.958 -.78" />
-              //         <path d="M10 16l0 .01" />
-              //       </svg>
-              //     ),
-              //   },
-              // ]}
-              // defaultSearchQueries={[
-              //   "App Service Diagnostic Settings EventHub",
-              //   "Logstash to SigNoz configuration tutorial",
-              //   "EventHub and App Service logging integration",
-              // ]}
-              // defaultAiQuestions={[
-              //   "What is SigNoz?",
-              //   "How to change retention period?",
-              //   "How do I install SigNoz?",
-              // ]}
-              // brandLogoImgSrcUrl="https://avatars.githubusercontent.com/u/76905799?s=200&v=4"
-              // brandName="SigNoz"
-              // brandColor="#E75536"
+              brandLogoImgSrcUrl="https://www.zedlabz.com/cdn/shop/t/2/assets/zedlabz-logo-retina.png?v=156539475513264331071650193684"
+              brandName="ZedLabs"
+              brandColor="#204364"
             />
 
             <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">
