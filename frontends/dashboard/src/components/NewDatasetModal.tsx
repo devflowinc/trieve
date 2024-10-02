@@ -80,6 +80,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
 
       setIsLoading(false);
       await userContext.login();
+      await new Promise((resolve) => setTimeout(resolve, 500));
       navigate(`/dataset/${dataset.id}`);
     } catch (e: unknown) {
       setIsLoading(false);
@@ -204,7 +205,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="checkbox"
                               name="fill-with-example-data"
                               id="fill-with-example-data"
-                              class="rounded-md border border-neutral-300 bg-white py-1.5 pl-2 pr-10 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="rounded-md border border-neutral-300 bg-white py-1.5 pl-2 pr-10 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               checked={fillWithExampleData()}
                               onChange={(e) =>
                                 setFillWithExampleData(e.currentTarget.checked)
@@ -323,7 +324,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             <select
                               id="distanceMetric"
                               name="distanceMetric"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={
                                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                                 availableDistanceMetrics.find(
@@ -463,7 +464,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="text"
                               id="scrapingUrl"
                               name="scrapingUrl"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={crawlOptions()?.site_url ?? ""}
                               onInput={(e) =>
                                 setCrawlOptions((prev) => {
@@ -499,7 +500,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="text"
                               id="excludePaths"
                               name="excludePaths"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={crawlOptions()?.exclude_paths ?? ""}
                               onInput={(e) =>
                                 setCrawlOptions((prev) => {
@@ -538,7 +539,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="text"
                               id="includePaths"
                               name="includePaths"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={crawlOptions()?.include_paths ?? ""}
                               onInput={(e) =>
                                 setCrawlOptions((prev) => {
@@ -577,7 +578,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="text"
                               id="excludeTags"
                               name="excludeTags"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={crawlOptions()?.exclude_tags ?? ""}
                               onInput={(e) =>
                                 setCrawlOptions((prev) => {
@@ -616,7 +617,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="text"
                               id="includeTags"
                               name="includeTags"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={crawlOptions()?.include_tags ?? ""}
                               onInput={(e) =>
                                 setCrawlOptions((prev) => {
@@ -655,7 +656,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="number"
                               id="maxDepth"
                               name="maxDepth"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={crawlOptions()?.max_depth ?? ""}
                               onInput={(e) =>
                                 setCrawlOptions((prev) => {
@@ -694,7 +695,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="number"
                               id="pageLimit"
                               name="pageLimit"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={crawlOptions()?.limit ?? ""}
                               onInput={(e) =>
                                 setCrawlOptions((prev) => {
@@ -730,7 +731,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             <select
                               id="interval"
                               name="interval"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={crawlOptions()?.interval ?? ""}
                               onChange={(e) =>
                                 setCrawlOptions((prev) => {
@@ -773,7 +774,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               type="checkbox"
                               id="boostTitles"
                               name="boostTitles"
-                              class="col-span-2 mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-fuchsia-500 sm:text-sm sm:leading-6"
+                              class="col-span-2 mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               checked={crawlOptions()?.boost_titles ?? true}
                               onChange={(e) =>
                                 setCrawlOptions((prev) => {
@@ -791,6 +792,102 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               }
                             />
                           </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="openapiSchemaUrl"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              OpenAPI Schema URL
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="URL that will return a *.json or *.yaml file with an OpenAPI schema which pairs with the docs."
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              id="openapiSchemaUrl"
+                              name="openapiSchemaUrl"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                              value={
+                                crawlOptions()?.openapi_options
+                                  ?.openapi_schema_url ?? ""
+                              }
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      openapi_options: {
+                                        openapi_schema_url:
+                                          e.currentTarget.value,
+                                        openapi_tag: "",
+                                      },
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    openapi_options: {
+                                      openapi_schema_url: e.currentTarget.value,
+                                      openapi_tag:
+                                        prev.openapi_options?.openapi_tag ?? "",
+                                    },
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="openapiTag"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              OpenAPI Tag
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                }
+                                tooltipText="For a site like https://docs.trieve.ai, the tag here would be 'api-reference' because of the API routes being documented at https://docs.trieve.ai/api-reference/* paths."
+                                direction="right"
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              id="openapiTag"
+                              name="openapiTag"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                              value={
+                                crawlOptions()?.openapi_options?.openapi_tag ??
+                                ""
+                              }
+                              onInput={(e) =>
+                                setCrawlOptions((prev) => {
+                                  if (!prev) {
+                                    return {
+                                      openapi_options: {
+                                        openapi_schema_url: "",
+                                        openapi_tag: e.currentTarget.value,
+                                      },
+                                    };
+                                  }
+
+                                  return {
+                                    ...prev,
+                                    openapi_options: {
+                                      openapi_schema_url:
+                                        prev.openapi_options
+                                          ?.openapi_schema_url ?? "",
+                                      openapi_tag: e.currentTarget.value,
+                                    },
+                                  };
+                                })
+                              }
+                            />
+                          </div>
                         </div>
                       </Show>
                     </div>
@@ -800,7 +897,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                 <div class="mt-4 flex items-center justify-between">
                   <button
                     type="button"
-                    class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-fuchsia-500"
+                    class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-magenta-500"
                     onClick={() => props.closeModal()}
                   >
                     Cancel
@@ -808,7 +905,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                   <button
                     type="submit"
                     disabled={name() === "" || isLoading()}
-                    class="inline-flex justify-center rounded-md bg-fuchsia-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-fuchsia-700 disabled:bg-fuchsia-200"
+                    class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-magenta-700 disabled:bg-magenta-200"
                   >
                     Create New Dataset
                   </button>

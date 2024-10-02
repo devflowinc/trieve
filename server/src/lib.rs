@@ -142,7 +142,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.11.12",
+        version = "0.11.13",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -336,6 +336,7 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::UpdateDatasetRequest,
             handlers::dataset_handler::GetDatasetsPagination,
             data::models::DatasetConfigurationDTO,
+            handlers::chunk_handler::CrawlOpenAPIOptions,
             handlers::chunk_handler::CrawlInterval,
             handlers::analytics_handler::GetTopDatasetsRequestBody,
             handlers::analytics_handler::CTRDataRequestBody,

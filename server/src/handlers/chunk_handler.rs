@@ -2683,7 +2683,17 @@ pub fn check_completion_param_validity(
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+/// Options for including an openapi spec in the crawl
+pub struct CrawlOpenAPIOptions {
+    /// OpenAPI json schema to be processed alongside the site crawl
+    pub openapi_schema_url: String,
+    /// Tag to look for to determine if a page should create an openapi route chunk instead of chunks from heading-split of the HTML
+    pub openapi_tag: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 #[serde(rename_all = "snake_case")]
+/// Interval at which specified site should be re-scraped
 pub enum CrawlInterval {
     Daily,
     Weekly,

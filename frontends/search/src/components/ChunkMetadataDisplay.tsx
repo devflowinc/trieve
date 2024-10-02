@@ -9,6 +9,7 @@ import {
   Switch,
   Match,
   useContext,
+  createEffect,
 } from "solid-js";
 import {
   indirectHasOwnProperty,
@@ -65,6 +66,8 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const [deleted, setDeleted] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
+  const [imageLinks, setImageLinks] = createSignal<string[] | null>(null);
+
   const $currentDataset = datasetAndUserContext.currentDataset;
 
   const location = useLocation();
@@ -102,6 +105,17 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
 
     props.setShowConfirmModal(true);
   };
+
+  createEffect(() => {
+    if (
+      !props.chunk.metadata ||
+      !indirectHasOwnProperty(props.chunk, "image_urls")
+    ) {
+      return null;
+    }
+
+    setImageLinks(props.chunk.image_urls);
+  });
 
   const useExpand = createMemo(() => {
     if (!props.chunk.chunk_html) return false;
@@ -257,6 +271,11 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   </span>
                 </div>
               </Show>
+              <Show when={imageLinks() != null}>
+                <For each={imageLinks() ?? []}>
+                  {(link) => <img class="w-40" src={link ?? ""} alt={link} />}
+                </For>
+              </Show>
               <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
                 <button
                   class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:bg-neutral-700/60 dark:text-magenta-400"
@@ -310,6 +329,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           </div>
           <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
           <div
+            id="score-chunk-html"
             classList={{
               "line-clamp-4 gradient-mask-b-0": useExpand() && !expanded(),
               "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal !text-black dark:!text-white":

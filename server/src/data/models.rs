@@ -6,8 +6,8 @@ use crate::get_env;
 use crate::handlers::analytics_handler::CTRDataRequestBody;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::handlers::chunk_handler::{
-    AutocompleteReqPayload, ChunkFilter, FullTextBoost, ParsedQuery, ScoringOptions,
-    SearchChunksReqPayload, SemanticBoost,
+    AutocompleteReqPayload, ChunkFilter, CrawlOpenAPIOptions, FullTextBoost, ParsedQuery,
+    ScoringOptions, SearchChunksReqPayload, SemanticBoost,
 };
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload};
@@ -6285,6 +6285,8 @@ pub struct CrawlOptions {
     pub exclude_tags: Option<Vec<String>>,
     /// Boost titles such that keyword matches in titles are prioritized in search results. Strongly recommended to leave this on. Defaults to true.
     pub boost_titles: Option<bool>,
+    /// Options for including an openapi spec in the crawl
+    pub openapi_options: Option<CrawlOpenAPIOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
