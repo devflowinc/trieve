@@ -101,6 +101,8 @@ pub struct CreateMessageReqPayload {
     pub score_threshold: Option<f32>,
     /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
     pub llm_options: Option<LLMOptions>,
+    /// Image urls to send to the llm as part of the call
+    pub image_urls: Option<Vec<Option<String>>>
 }
 
 /// Create message
@@ -164,6 +166,8 @@ pub async fn create_message(
         }
     }
 
+    println!("Double check the  todo below");
+
     let new_message = models::Message::from_details(
         create_message_data.new_message_content.clone(),
         topic_id,
@@ -172,6 +176,8 @@ pub async fn create_message(
         None,
         None,
         dataset_org_plan_sub.dataset.id,
+        // TODO double check this
+        None
     );
 
     // get the previous messages
@@ -305,6 +311,8 @@ pub struct RegenerateMessageReqPayload {
     pub llm_options: Option<LLMOptions>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
     pub user_id: Option<String>,
+    /// Image urls to send to the llm as part of the call
+    pub image_urls: Option<Vec<Option<String>>>
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -333,6 +341,8 @@ pub struct EditMessageReqPayload {
     pub llm_options: Option<LLMOptions>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
     pub user_id: Option<String>,
+    /// Image urls to send to the llm as part of the call
+    pub image_urls: Option<Vec<Option<String>>>
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -349,6 +359,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             score_threshold: data.score_threshold,
             llm_options: data.llm_options,
             user_id: data.user_id,
+            image_urls: data.image_urls,
         }
     }
 }
@@ -367,6 +378,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             score_threshold: data.score_threshold,
             llm_options: data.llm_options,
             user_id: data.user_id,
+            image_urls: data.image_urls,
         }
     }
 }

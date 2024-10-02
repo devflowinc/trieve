@@ -104,9 +104,9 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         organization_id -> Uuid,
+        server_configuration -> Jsonb,
         tracking_id -> Nullable<Text>,
         deleted -> Int4,
-        server_configuration -> Jsonb,
     }
 }
 
@@ -162,6 +162,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         dataset_id -> Uuid,
+        image_urls -> Nullable<Array<Nullable<Text>>>,
     }
 }
 

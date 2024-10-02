@@ -44,7 +44,9 @@ use diesel::{
     sql_types::Text,
 };
 use itertools::Itertools;
-use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
+use openai_dive::v1::resources::chat::{
+    ChatMessage, ChatMessageContent, ImageUrl, ImageUrlType, Role,
+};
 use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon, GeoRadius};
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
 use rand::Rng;
@@ -188,6 +190,7 @@ pub struct Message {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub dataset_id: uuid::Uuid,
+    pub image_urls: Option<Vec<Option<String>>>,
 }
 
 impl From<Message> for ChatMessage {
@@ -197,6 +200,26 @@ impl From<Message> for ChatMessage {
             "user" => Role::User,
             _ => Role::Assistant,
         };
+        if let Some(image_urls) = message.image_urls {
+            return ChatMessage {
+                role,
+                content: ChatMessageContent::ImageUrl(
+                    image_urls
+                        .into_iter()
+                        .filter_map(|url_option| {
+                            url_option.map(|url| ImageUrl {
+                                r#type: "image_url".to_string(),
+                                text: None,
+                                image_url: ImageUrlType { url, detail: None },
+                            })
+                        })
+                        .collect_vec(),
+                ),
+                tool_calls: None,
+                name: None,
+                tool_call_id: None,
+            };
+        }
 
         ChatMessage {
             role,
@@ -257,6 +280,7 @@ impl Message {
         prompt_tokens: Option<i32>,
         completion_tokens: Option<i32>,
         dataset_id: T,
+        image_urls: Option<Vec<Option<String>>>,
     ) -> Self {
         Message {
             id: uuid::Uuid::new_v4(),
@@ -267,6 +291,7 @@ impl Message {
             deleted: false,
             prompt_tokens,
             completion_tokens,
+            image_urls,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             dataset_id: dataset_id.into(),
@@ -1883,9 +1908,9 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
+    pub server_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
-    pub server_configuration: serde_json::Value,
 }
 
 impl Dataset {
@@ -5983,6 +6008,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
+            pub image_urls: Option<Vec<Option<String>>>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6010,6 +6036,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             score_threshold: helper.score_threshold,
             llm_options,
             user_id: helper.user_id,
+            image_urls: helper.image_urls,
         })
     }
 }
@@ -6031,6 +6058,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
+            pub image_urls: Option<Vec<Option<String>>>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6057,6 +6085,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             score_threshold: helper.score_threshold,
             llm_options,
             user_id: helper.user_id,
+            image_urls: helper.image_urls,
         })
     }
 }
@@ -6080,6 +6109,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
+            pub image_urls: Option<Vec<Option<String>>>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6107,6 +6137,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             filters: helper.filters,
             score_threshold: helper.score_threshold,
             user_id: helper.user_id,
+            image_urls: helper.image_urls,
             llm_options,
         })
     }

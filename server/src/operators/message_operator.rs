@@ -22,7 +22,9 @@ use futures_util::stream;
 use openai_dive::v1::{
     api::Client,
     resources::{
-        chat::{ChatCompletionParameters, ChatMessage, ChatMessageContent, Role},
+        chat::{
+            ChatCompletionParameters, ChatMessage, ChatMessageContent, ImageUrl, ImageUrlType, Role,
+        },
         shared::StopToken,
     },
 };
@@ -98,6 +100,7 @@ pub async fn create_generic_system_message(
         crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)
             .await?;
 
+    println!("Double check todo");
     let system_message = Message::from_details(
         system_prompt,
         topic.id,
@@ -106,6 +109,8 @@ pub async fn create_generic_system_message(
         Some(0),
         Some(0),
         dataset_id,
+        // TODO update?
+        None,
     );
 
     Ok(system_message)
@@ -317,6 +322,26 @@ pub async fn stream_response(
             name: None,
             tool_call_id: None,
         }];
+
+        if let Some(image_urls) = create_message_req_payload.image_urls {
+            gen_inference_msgs.push(ChatMessage {
+                role: Role::User,
+                content: ChatMessageContent::ImageUrl(
+                    image_urls
+                        .into_iter()
+                        .filter_map(|url_option| {
+                            url_option.map(|url| ImageUrl {
+                                r#type: "image_url".to_string(),
+                                text: None,
+                                image_url: ImageUrlType { url, detail: None },
+                            })
+                        }).collect()
+                ),
+                tool_calls: None,
+                name: None,
+                tool_call_id: None,
+            })
+        }
 
         let gen_inference_parameters = ChatCompletionParameters {
             model: chosen_model.clone(),
@@ -579,6 +604,8 @@ pub async fn stream_response(
             _ => "".to_string(),
         };
 
+        println!("Double check the todo");
+
         let new_message = models::Message::from_details(
             format!(
                 "{}{}",
@@ -598,6 +625,8 @@ pub async fn stream_response(
                     .expect("usize to i32 conversion should always succeed"),
             ),
             dataset.id,
+            // TODO update?
+            None,
         );
 
         let clickhouse_rag_event = RagQueryEventClickhouse {
@@ -653,6 +682,8 @@ pub async fn stream_response(
             format!("{}{}", chunk_metadatas_stringified, completion)
         };
 
+        println!("Double check todo");
+
         let new_message = models::Message::from_details(
             message_to_be_stored,
             topic_id,
@@ -661,6 +692,8 @@ pub async fn stream_response(
             None,
             Some(chunk_v.len().try_into().unwrap()),
             dataset.id,
+            // TODO update?
+            None,
         );
 
         let clickhouse_rag_event = RagQueryEventClickhouse {
