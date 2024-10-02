@@ -21,9 +21,6 @@ spec:
         repoURL: https://github.com/pmig/trieve
         targetRevision: pmig/gcp-trieve
         path: '{{.path.path}}'
-        kustomize:
-          components:
-            - ./
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:
