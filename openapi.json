@@ -12,7 +12,7 @@
       "name": "BSL",
       "url": "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt"
     },
-    "version": "0.11.13"
+    "version": "0.11.12"
   },
   "servers": [
     {
@@ -7263,30 +7263,11 @@
       },
       "CrawlInterval": {
         "type": "string",
-        "description": "Interval at which specified site should be re-scraped",
         "enum": [
           "daily",
           "weekly",
           "monthly"
         ]
-      },
-      "CrawlOpenAPIOptions": {
-        "type": "object",
-        "description": "Options for including an openapi spec in the crawl",
-        "required": [
-          "openapi_schema_url",
-          "openapi_tag"
-        ],
-        "properties": {
-          "openapi_schema_url": {
-            "type": "string",
-            "description": "OpenAPI json schema to be processed alongside the site crawl"
-          },
-          "openapi_tag": {
-            "type": "string",
-            "description": "Tag to look for to determine if a page should create an openapi route chunk instead of chunks from heading-split of the HTML"
-          }
-        }
       },
       "CrawlOptions": {
         "type": "object",
@@ -7346,14 +7327,6 @@
             "type": "integer",
             "format": "int32",
             "description": "How many levels deep to crawl, defaults to 10",
-            "nullable": true
-          },
-          "openapi_options": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CrawlOpenAPIOptions"
-              }
-            ],
             "nullable": true
           },
           "site_url": {

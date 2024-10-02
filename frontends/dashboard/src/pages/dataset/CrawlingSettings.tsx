@@ -1,5 +1,5 @@
 import { createQuery } from "@tanstack/solid-query";
-import { createSignal, Show, useContext } from "solid-js";
+import { Show, useContext } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { useTrieve } from "../../hooks/useTrieve";
 import { CrawlInterval, CrawlOptions } from "trieve-ts-sdk";
@@ -27,7 +27,7 @@ export const CrawlingSettings = () => {
     queryKey: ["crawl-settings", datasetId()],
     queryFn: async () => {
       const result = await trieve.fetch(
-        "/api/dataset/{dataset_id}/crawl_options",
+        "/api/dataset/crawl_options/{dataset_id}",
         "get",
         {
           datasetId: datasetId(),
