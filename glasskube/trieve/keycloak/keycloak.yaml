@@ -21,6 +21,8 @@ spec:
       key: password
   http:
     httpEnabled: true
+  ingress:
+    enabled: false
   hostname:
     strict: false
     hostname: http://trieve-keycloak-service:8080
