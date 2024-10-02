@@ -47,6 +47,43 @@ async fn crawl(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<ScrapeReport, ServiceError> {
+    let mut chunks = vec![];
+    let crawl_options = scrape_request.crawl_options.openapi_options.clone();
+    let mut spec = None;
+
+    if let Some(openapi_options) = scrape_request.crawl_options.openapi_options.clone() {
+        let client = reqwest::Client::new();
+
+        let schema = match client
+            .get(openapi_options.openapi_schema_url.clone())
+            .send()
+            .await
+        {
+            Ok(response) => {
+                let schema = response.text().await.map_err(|e| {
+                    log::error!("Error getting schema: {:?}", e);
+                    ServiceError::InternalServerError("Error getting schema".to_string())
+                })?;
+
+                Some(schema.replace("18446744073709552000", "2147483647"))
+            }
+            Err(e) => {
+                log::error!("Error getting schema: {:?}", e);
+                None
+            }
+        };
+
+        if let Some(schema) = schema {
+            spec = match oas3::from_str(&schema) {
+                Ok(schema) => Some(schema),
+                Err(e) => {
+                    log::error!("Error deserializing schema: {:?}", e);
+                    None
+                }
+            };
+        }
+    }
+
     let ingest_result;
     loop {
         let temp_result = get_crawl_from_firecrawl(scrape_request.scrape_id)
@@ -90,8 +127,6 @@ async fn crawl(
         scrape_request.id
     );
 
-    let mut chunks = vec![];
-
     let data = ingest_result.data.unwrap_or_default();
 
     log::info!("Processing {} documents from scrape", data.len());
@@ -127,6 +162,161 @@ async fn crawl(
         let page_description = page.metadata.og_description.clone().unwrap_or_default();
         let page_html = page.html.clone().unwrap_or_default();
         let page_tags = get_tags(page_link.clone());
+
+        if let Some(crawl_options) = &crawl_options {
+            if let Some(spec) = &spec {
+                if page_tags.contains(&crawl_options.openapi_tag) {
+                    if let Some(last_tag) = page_tags.last() {
+                        // try to find a operation in the spec with an operation_id that matches the last tag directly, with - replaced by _ or vice versa
+                        let operation = spec.operations().find(|(_, _, operation)| {
+                            let operation_id_find =
+                                if let Some(operation_id) = operation.operation_id.clone() {
+                                    operation_id == *last_tag
+                                        || operation_id.to_lowercase().replace("_", "-")
+                                            == *last_tag.to_lowercase()
+                                        || operation_id.to_lowercase().replace("-", "_")
+                                            == *last_tag.to_lowercase()
+                                } else {
+                                    false
+                                };
+                            if operation_id_find {
+                                return true;
+                            }
+
+                            let summary_match = if let Some(summary) = operation.summary.clone() {
+                                summary == *last_tag
+                                    || summary.to_lowercase().replace(" ", "-")
+                                        == *last_tag.to_lowercase()
+                                    || summary.to_lowercase().replace(" ", "_")
+                                        == *last_tag.to_lowercase()
+                            } else {
+                                false
+                            };
+                            if summary_match {
+                                return true;
+                            }
+
+                            if page_tags.len() < 2 {
+                                return false;
+                            }
+
+                            if let Some(second_to_last_tag) = page_tags.get(page_tags.len() - 2) {
+                                let combined_tag =
+                                    format!("{}-{}", second_to_last_tag, last_tag).to_lowercase();
+                                if let Some(operation_id) = operation.operation_id.clone() {
+                                    operation_id == combined_tag
+                                        || operation_id.to_lowercase().replace("_", "-")
+                                            == combined_tag.to_lowercase()
+                                        || operation_id.to_lowercase().replace("-", "_")
+                                            == combined_tag.to_lowercase()
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        });
+
+                        if operation.is_none() {
+                            println!(
+                                "No operation found for tag: {} in spec: {}",
+                                last_tag, page_link
+                            );
+                        }
+
+                        if let Some((path, method, operation)) = operation {
+                            let mut metadata = json!({
+                                "url": page_link.clone(),
+                                "operation_id": operation.operation_id.clone(),
+                            });
+
+                            let heading = format!("{} {}", method.to_string().to_uppercase(), path);
+                            let mut semantic_boost_phrase = heading.clone();
+                            let mut fulltext_boost_phrase = heading.clone();
+                            metadata["heading"] = json!(heading.clone());
+
+                            let mut chunk_html = format!(
+                                "<h2><span class=\"openapi-method\">{}</span> {}</h2>",
+                                method.to_string().to_uppercase(),
+                                path,
+                            )
+                            .replace("\\", "");
+                            if let Some(summary) = operation.summary.clone() {
+                                if !summary.is_empty() {
+                                    fulltext_boost_phrase
+                                        .push_str(format!("\n\n{}", summary).as_str());
+                                    semantic_boost_phrase
+                                        .push_str(format!("\n\n{}", summary).as_str());
+
+                                    metadata["summary"] = json!(summary.clone());
+
+                                    chunk_html.push_str(format!("\n\n<p>{}</p>", summary).as_str());
+                                }
+                            }
+                            if let Some(description) = operation.description.clone() {
+                                if !description.is_empty() {
+                                    semantic_boost_phrase
+                                        .push_str(format!("\n\n{}", description).as_str());
+
+                                    metadata["description"] = json!(description.clone());
+
+                                    chunk_html
+                                        .push_str(format!("\n\n<p>{}</p>", description).as_str());
+                                }
+                            }
+
+                            // TODO: include request body and response bodies as markdown tables for better RAG
+
+                            let mut tag_set = page_tags.clone();
+                            tag_set.push("openapi-route".to_string());
+
+                            let chunk = ChunkReqPayload {
+                                chunk_html: Some(chunk_html.clone()),
+                                link: Some(page_link.clone()),
+                                tag_set: Some(tag_set),
+                                metadata: Some(json!(metadata)),
+                                tracking_id: Some(hash_function(&format!(
+                                    "{}{}",
+                                    page_link.trim_end_matches("/"),
+                                    heading.clone()
+                                ))),
+                                upsert_by_tracking_id: Some(true),
+                                group_tracking_ids: Some(vec![page_link.clone()]),
+                                fulltext_boost: if scrape_request
+                                    .crawl_options
+                                    .boost_titles
+                                    .unwrap_or(true)
+                                {
+                                    Some(FullTextBoost {
+                                        phrase: fulltext_boost_phrase,
+                                        boost_factor: 1.3,
+                                    })
+                                } else {
+                                    None
+                                },
+                                semantic_boost: if scrape_request
+                                    .crawl_options
+                                    .boost_titles
+                                    .unwrap_or(true)
+                                {
+                                    Some(SemanticBoost {
+                                        phrase: semantic_boost_phrase,
+                                        distance_factor: 0.3,
+                                    })
+                                } else {
+                                    None
+                                },
+                                convert_html_to_text: Some(true),
+                                ..Default::default()
+                            };
+                            chunks.push(chunk);
+                        }
+
+                        continue;
+                    }
+                }
+            }
+        }
 
         let chunked_html = chunk_html(&page_html.clone());
 

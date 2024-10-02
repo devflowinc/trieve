@@ -52,7 +52,7 @@ checksum = "f9e772b3bcafe335042b5db010ab7c09013dad6eac4915c91d8d50902769f331"
 dependencies = [
  "actix-utils",
  "actix-web",
- "derive_more",
+ "derive_more 0.99.18",
  "futures-util",
  "log",
  "once_cell",
@@ -71,7 +71,7 @@ dependencies = [
  "actix-web",
  "bitflags 2.6.0",
  "bytes",
- "derive_more",
+ "derive_more 0.99.18",
  "futures-core",
  "http-range",
  "log",
@@ -98,7 +98,7 @@ dependencies = [
  "brotli",
  "bytes",
  "bytestring",
- "derive_more",
+ "derive_more 0.99.18",
  "encoding_rs",
  "flate2",
  "futures-core",
@@ -131,7 +131,7 @@ dependencies = [
  "actix-session",
  "actix-utils",
  "actix-web",
- "derive_more",
+ "derive_more 0.99.18",
  "futures-core",
  "serde",
  "tracing",
@@ -210,7 +210,7 @@ dependencies = [
  "actix-utils",
  "actix-web",
  "anyhow",
- "derive_more",
+ "derive_more 0.99.18",
  "rand 0.8.5",
  "redis 0.24.0",
  "serde",
@@ -248,7 +248,7 @@ dependencies = [
  "bytestring",
  "cfg-if",
  "cookie",
- "derive_more",
+ "derive_more 0.99.18",
  "encoding_rs",
  "futures-core",
  "futures-util",
@@ -829,9 +829,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "bytes"
-version = "1.6.0"
+version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "514de17de45fdb8dc022b1a7975556c53c86f9f0aa5f534b98977b171857c2c9"
+checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
 
 [[package]]
 name = "bytestring"
@@ -874,7 +874,7 @@ dependencies = [
  "chrono",
  "clap",
  "clickhouse 0.11.6",
- "derive_more",
+ "derive_more 0.99.18",
  "dotenvy",
  "serde",
  "time",
@@ -1466,6 +1466,27 @@ dependencies = [
  "quote",
  "rustc_version",
  "syn 2.0.70",
+]
+
+[[package]]
+name = "derive_more"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
+dependencies = [
+ "derive_more-impl",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.70",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -2629,6 +2650,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
+name = "libyml"
+version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3302702afa434ffa30847a83305f0a69d6abd74293b6554c18ec85c7ef30c980"
+dependencies = [
+ "anyhow",
+ "version_check",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3031,6 +3062,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.70",
+]
+
+[[package]]
+name = "oas3"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82d7118be36d600b4e08166e3d3a9f86b76ef2a72fa4b9d048147bc97d52ce3c"
+dependencies = [
+ "bytes",
+ "derive_more 1.0.0",
+ "futures-util",
+ "http 1.1.0",
+ "log",
+ "once_cell",
+ "regex",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_yml",
+ "url",
 ]
 
 [[package]]
@@ -4504,7 +4555,7 @@ checksum = "4eb30575f3638fc8f6815f448d50cb1a2e255b0897985c8c59f4d37b72a07b06"
 dependencies = [
  "bitflags 2.6.0",
  "cssparser",
- "derive_more",
+ "derive_more 0.99.18",
  "fxhash",
  "log",
  "new_debug_unreachable",
@@ -4793,6 +4844,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.70",
+]
+
+[[package]]
+name = "serde_yml"
+version = "0.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59e2dd588bf1597a252c3b920e0143eb99b0f76e4e082f4c92ce34fbc9e71ddd"
+dependencies = [
+ "indexmap 2.2.6",
+ "itoa",
+ "libyml",
+ "memchr",
+ "ryu",
+ "serde",
+ "version_check",
 ]
 
 [[package]]
@@ -5733,7 +5799,7 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "dateparser",
- "derive_more",
+ "derive_more 0.99.18",
  "diesel",
  "diesel-async",
  "diesel_migrations",
@@ -5749,6 +5815,7 @@ dependencies = [
  "log",
  "murmur3",
  "ndarray",
+ "oas3",
  "oauth2",
  "once_cell",
  "openai_dive",
@@ -5863,6 +5930,12 @@ name = "unicode-width"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0336d538f7abc86d282a4189614dfaa90810dfc2c6f6427eaf88e16311dd225d"
+
+[[package]]
+name = "unicode-xid"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "universal-hash"
@@ -6024,9 +6097,9 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "version_check"
-version = "0.9.4"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "waker-fn"

@@ -87,7 +87,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [expandMetadata, setExpandMetadata] = createSignal(
     props.defaultShowMetadata ?? false,
   );
-  const [imageLink, setImageLink] = createSignal<string | null>(null);
+  const [imageLinks, setImageLinks] = createSignal<string[] | null>(null);
 
   createEffect(() => {
     if (
@@ -97,8 +97,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
       return null;
     }
 
-    const imageLink = props.chunk.image_urls?.[0] as string;
-    setImageLink(imageLink);
+    setImageLinks(props.chunk.image_urls);
   });
 
   createEffect(() => {
@@ -390,8 +389,10 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   </span>
                 </div>
               </Show>
-              <Show when={imageLink() != null}>
-                <img class="w-40" src={imageLink() ?? ""} alt="" />
+              <Show when={imageLinks() != null}>
+                <For each={imageLinks() ?? []}>
+                  {(link) => <img class="w-40" src={link ?? ""} alt={link} />}
+                </For>
               </Show>
               <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
                 <button

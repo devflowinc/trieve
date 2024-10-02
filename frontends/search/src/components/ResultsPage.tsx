@@ -282,7 +282,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         },
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
-        get_total_pages: props.search.debounced.getTotalPages ?? false,
+        get_total_pages: props.search.debounced.getTotalPages ?? true,
         typo_options: {
           correct_typos: props.search.debounced.correctTypos,
           one_typo_word_range: {

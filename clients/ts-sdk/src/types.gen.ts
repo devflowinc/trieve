@@ -398,7 +398,24 @@ export type CountChunksReqPayload = {
 
 export type CountSearchMethod = 'fulltext' | 'semantic' | 'bm25';
 
+/**
+ * Interval at which specified site should be re-scraped
+ */
 export type CrawlInterval = 'daily' | 'weekly' | 'monthly';
+
+/**
+ * Options for including an openapi spec in the crawl
+ */
+export type CrawlOpenAPIOptions = {
+    /**
+     * OpenAPI json schema to be processed alongside the site crawl
+     */
+    openapi_schema_url: string;
+    /**
+     * Tag to look for to determine if a page should create an openapi route chunk instead of chunks from heading-split of the HTML
+     */
+    openapi_tag: string;
+};
 
 export type CrawlOptions = {
     /**
@@ -430,6 +447,7 @@ export type CrawlOptions = {
      * How many levels deep to crawl, defaults to 10
      */
     max_depth?: (number) | null;
+    openapi_options?: ((CrawlOpenAPIOptions) | null);
     /**
      * The URL to crawl
      */
