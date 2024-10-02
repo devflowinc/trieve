@@ -9,7 +9,7 @@ spec:
   generators:
     - git:
         repoURL: https://github.com/pmig/trieve
-        revision: HEAD
+        revision: pmig/gcp-trieve
         directories:
           - path: 'glasskube/packages/*'
   template:
@@ -19,7 +19,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/pmig/trieve
-        targetRevision: HEAD
+        targetRevision: pmig/gcp-trieve
         path: '{{.path.path}}'
         kustomize:
           components:
