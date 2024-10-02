@@ -779,20 +779,19 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::get().to(handlers::dataset_handler::get_usage_by_dataset_id)),
                                 )
                                 .service(
+                                    web::resource("/crawl_options/{dataset_id}")
+                                        .route(web::get().to(handlers::dataset_handler::get_dataset_crawl_options)),
+                                )
+                                .service(
                                     web::resource("/get_all_tags")
                                         .route(web::post().to(handlers::dataset_handler::get_all_tags)),
                                 )
                                 .service(
-                                    web::scope("/{dataset_id}")
-                                    .service(
-                                          web::resource("")
-                                              .route(web::get().to(handlers::dataset_handler::get_dataset))
-                                              .route(web::delete().to(handlers::dataset_handler::delete_dataset))
-                                    ).service(
-                                          web::resource("/crawl_options").route(
-                                              web::get().to(handlers::dataset_handler::get_dataset_crawl_options)
-                                          )
-                                    )
+                                    web::resource("/{dataset_id}")
+                                        .route(web::get().to(handlers::dataset_handler::get_dataset))
+                                        .route(
+                                            web::delete().to(handlers::dataset_handler::delete_dataset),
+                                        )
                                 )
                                 .service(
                                     web::resource("/clear/{dataset_id}")

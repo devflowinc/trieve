@@ -329,7 +329,7 @@ pub struct GetCrawlOptionsResponse {
 /// Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     get,
-    path = "/dataset/{dataset_id}/crawl_options",
+    path = "/dataset/crawl_options/{dataset_id}",
     context_path = "/api",
     tag = "Dataset",
     responses(
