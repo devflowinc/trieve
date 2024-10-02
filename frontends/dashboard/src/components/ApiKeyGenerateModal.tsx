@@ -37,8 +37,7 @@ import { Organization } from "trieve-ts-sdk";
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
   closeModal: () => void;
-
-  onCreated: () => void;
+  onCreated: (api_key?: string) => void;
 }) => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
@@ -118,11 +117,12 @@ export const ApiKeyGenerateModal = (props: {
       // eslint-disable-next-line solid/reactivity
     }).then((res) => {
       if (res.ok) {
+        // eslint-disable-next-line solid/reactivity
         void res.json().then((data) => {
           setApiKey((data as SetUserApiKeyResponse).api_key);
+          props.onCreated(apiKey());
         });
         setGenerated(true);
-        props.onCreated();
       } else {
         createToast({ type: "error", title: "Failed to generate API key" });
       }
