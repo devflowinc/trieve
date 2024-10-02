@@ -2528,6 +2528,7 @@ pub async fn generate_off_chunks(
         top_logprobs: None,
         seed: None,
     };
+    let query_id = uuid::Uuid::new_v4();
 
     if !stream_response.unwrap_or(true) {
         let assistant_completion =
@@ -2558,7 +2559,7 @@ pub async fn generate_off_chunks(
         };
 
         let clickhouse_rag_event = RagQueryEventClickhouse {
-            id: uuid::Uuid::new_v4(),
+            id: query_id,
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset_org_plan_sub.dataset.id,
             search_id: uuid::Uuid::nil(),
@@ -2579,7 +2580,9 @@ pub async fn generate_off_chunks(
             .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event))
             .await;
 
-        return Ok(HttpResponse::Ok().json(chat_content));
+        return Ok(HttpResponse::Ok()
+            .insert_header(("TR-QueryID", query_id.to_string()))
+            .json(chat_content));
     }
 
     let (s, r) = unbounded::<String>();
@@ -2633,7 +2636,9 @@ pub async fn generate_off_chunks(
         .into())
     });
 
-    Ok(HttpResponse::Ok().streaming(completion_stream))
+    Ok(HttpResponse::Ok()
+        .insert_header(("TR-QueryID", query_id.to_string()))
+        .streaming(completion_stream))
 }
 
 pub fn check_completion_param_validity(
