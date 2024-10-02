@@ -91,9 +91,9 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
           <div class="grid gap-4 sm:grid-cols-2">
             <For
               fallback={<div class="py-8 text-center">No Data.</div>}
-              each={props.search_data.results}
+              each={props.rag_data.results}
             >
-              {(result) => <ResultCard result={result} />}
+              {(result) => <ResultCard result={{ metadata: [result] }} />}
             </For>
           </div>
         </Card>

@@ -477,9 +477,9 @@ export interface SearchQueryEvent {
   latency: number;
   top_score: number;
   results: {
-    highlights: unknown;
+    highlights?: unknown;
     metadata: ChunkMetadataStringTagSet[];
-    score: number;
+    score?: number;
   }[];
   dataset_id: string;
   created_at: string;
