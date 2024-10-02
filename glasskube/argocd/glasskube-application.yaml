@@ -10,7 +10,7 @@ spec:
   source:
     path: glasskube/argocd/glasskube
     repoURL: https://github.com/pmig/trieve
-    targetRevision: pmig/gcp-hn-migration
+    targetRevision: pmig/gcp-trieve
   syncPolicy:
     syncOptions:
       - ApplyOutOfSyncOnly=true
