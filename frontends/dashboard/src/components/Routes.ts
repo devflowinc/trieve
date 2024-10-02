@@ -12,6 +12,12 @@ export const ApiRoutes = {
     "PUT /api/analytics/ctr",
     "PUT /api/analytics/search",
     "PUT /api/analytics/events",
+    "PUT /api/analytics/rag",
+  ],
+  "RAG (non-destructive)": [
+    "POST /api/topic",
+    "POST /api/message",
+    "PUT /api/message",
   ],
   "api/analytics/*": [
     "POST /api/analytics/rag",
