@@ -8,7 +8,9 @@ use crate::{
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
     operators::{
-        crawl_operator::{crawl, update_crawl_settings_for_dataset},
+        crawl_operator::{
+            crawl, get_crawl_request_by_dataset_id_query, update_crawl_settings_for_dataset,
+        },
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, get_dataset_by_id_query,
             get_dataset_usage_query, get_datasets_by_organization_id, get_tags_in_dataset_query,
@@ -304,6 +306,62 @@ pub async fn update_dataset(
     };
 
     Ok(HttpResponse::Ok().json(d))
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "crawl_options": {
+        "site_url": "https://example.com",
+        "interval": "daily",
+        "limit": 1000,
+        "exclude_paths": ["https://example.com/exclude"],
+        "include_paths": ["https://example.com/include"],
+        "max_depth": 10,
+        "include_tags": ["h1", "p", "a", ".main-content"],
+        "exclude_tags": ["#ad", "#footer"],
+    }
+}))]
+pub struct GetCrawlOptionsResponse {
+    crawl_options: Option<CrawlOptions>,
+}
+
+/// Get Dataset Crawl Options
+/// Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+#[utoipa::path(
+    get,
+    path = "/dataset/{dataset_id}/crawl_options",
+    context_path = "/api",
+    tag = "Dataset",
+    responses(
+        (status = 200, description = "Crawl options retrieved successfully", body = GetCrawlOptionsResponse),
+        (status = 400, description = "Service error relating to retrieving the crawl options", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn get_dataset_crawl_options(
+    pool: web::Data<Pool>,
+    dataset_id: web::Path<uuid::Uuid>,
+    user: AdminOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let d = get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id.into_inner()), pool.clone())
+        .await?;
+    let crawl_req = get_crawl_request_by_dataset_id_query(d.id, pool).await?;
+
+    if !verify_admin(&user, &d.organization_id) {
+        return Err(ServiceError::Forbidden);
+    }
+
+    Ok(HttpResponse::Ok().json(GetCrawlOptionsResponse {
+        crawl_options: crawl_req.map(|req| req.crawl_options),
+    }))
 }
 
 /// Delete Dataset

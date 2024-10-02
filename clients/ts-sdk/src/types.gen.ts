@@ -1109,6 +1109,10 @@ export type GetChunksInGroupsResponseBody = {
     total_pages: number;
 };
 
+export type GetCrawlOptionsResponse = {
+    crawl_options?: ((CrawlOptions) | null);
+};
+
 export type GetDatasetsPagination = {
     limit?: (number) | null;
     offset?: (number) | null;
@@ -3405,6 +3409,19 @@ export type DeleteDatasetData = {
 
 export type DeleteDatasetResponse = (void);
 
+export type GetDatasetCrawlOptionsData = {
+    /**
+     * The id of the dataset you want to retrieve.
+     */
+    datasetId: string;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetDatasetCrawlOptionsResponse = (GetCrawlOptionsResponse);
+
 export type GetEventsData2 = {
     /**
      * JSON request payload to get events for a dataset
@@ -4689,6 +4706,25 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to deleting the dataset
+                 */
+                400: ErrorResponseBody;
+                /**
+                 * Dataset not found
+                 */
+                404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/dataset/{dataset_id}/crawl_options': {
+        get: {
+            req: GetDatasetCrawlOptionsData;
+            res: {
+                /**
+                 * Crawl options retrieved successfully
+                 */
+                200: GetCrawlOptionsResponse;
+                /**
+                 * Service error relating to retrieving the crawl options
                  */
                 400: ErrorResponseBody;
                 /**
