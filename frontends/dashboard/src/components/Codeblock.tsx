@@ -1,23 +1,34 @@
 /* eslint-disable solid/no-innerhtml */
-import { createHighlighterCore } from "shiki";
+import { createHighlighterCore, HighlighterCore } from "shiki";
 import getWasm from "shiki/wasm";
 import { FaRegularClipboard, FaSolidCheck } from "solid-icons/fa";
-import { createResource, createSignal, Show } from "solid-js";
+import { createResource } from "solid-js";
+import { createSignal, Show } from "solid-js";
 
 interface CodeblockProps {
   content: string;
 }
 
+let highlighterInstance: HighlighterCore | null = null;
+
+const getHighlighter = async (): Promise<HighlighterCore> => {
+  if (!highlighterInstance) {
+    highlighterInstance = await createHighlighterCore({
+      themes: [import("shiki/themes/one-dark-pro.mjs")],
+      langs: [import("shiki/langs/ts.mjs")],
+      loadWasm: getWasm,
+    });
+  }
+  return highlighterInstance;
+};
+
 export const Codeblock = (props: CodeblockProps) => {
   const [copied, setCopied] = createSignal(false);
+
   const [code] = createResource(
     () => props.content,
     async (content) => {
-      const highlighter = await createHighlighterCore({
-        themes: [import("shiki/themes/one-dark-pro.mjs")],
-        langs: [import("shiki/langs/ts.mjs")],
-        loadWasm: getWasm,
-      });
+      const highlighter = await getHighlighter();
       const code = highlighter.codeToHtml(content, {
         lang: "ts",
         theme: "one-dark-pro",
@@ -50,7 +61,7 @@ export const Codeblock = (props: CodeblockProps) => {
             <FaSolidCheck size={18} />
           </Show>
         </div>
-        <div innerHTML={code()} />
+        <div innerHTML={code() ?? ""} />
       </div>
     </Show>
   );

@@ -1,12 +1,13 @@
 export const createChunkRequest = (
   dataset: string = "********-****-****-****-************",
+  apiKey: string = "tr-********************************",
 ) => {
   return `fetch("https://api.trieve.ai/api/chunk", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
     "TR-Dataset": "${dataset}",
-    Authorization: "tr-********************************",
+    Authorization: "${apiKey}",
   },
   body: JSON.stringify({
     chunk_html:
@@ -19,10 +20,11 @@ export const createChunkRequest = (
 
 export const createChunkRequestTS = (
   dataset: string,
+  apiKey: string,
 ) => `import { TrieveSDK } from "trieve-ts-sdk";
 
 export const trieve = new TrieveSDK({
-  apiKey: "tr-********************************",
+  apiKey: "${apiKey}",
   datasetId: "${dataset}",
 });
 
@@ -35,13 +37,14 @@ const data = await trieve.createChunk({
 
 export const hybridSearchRequest = (
   dataset: string = "********-****-****-****-************",
+  apiKey: string = "tr-********************************",
 ) => {
   return `fetch("https://api.trieve.ai/api/chunk/search", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
     "TR-Dataset": "${dataset}",
-    Authorization: "tr-********************************",
+    Authorization: "${apiKey}",
   },
   body: JSON.stringify({
     content: "AI will take over and maybe reward those who aided its rise",
@@ -53,10 +56,11 @@ export const hybridSearchRequest = (
 
 export const hybridSearchRequestTS = (
   dataset: string,
+  apiKey: string,
 ) => `import { TrieveSDK } from "trieve-ts-sdk";
 
 export const trieve = new TrieveSDK({
-  apiKey: "tr-********************************",
+  apiKey: "${apiKey}",
   datasetId: "${dataset}",
 });
 
