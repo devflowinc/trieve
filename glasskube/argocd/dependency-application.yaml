@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: glasskube-dependencies
+  namespace: argocd
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: glasskube/dependencies
+    repoURL: https://github.com/pmig/trieve
+    targetRevision: pmig/gcp-trieve
+    kustomize:
+      namespace: trieve
+  syncPolicy:
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+    automated:
+      prune: true
+      selfHeal: true
