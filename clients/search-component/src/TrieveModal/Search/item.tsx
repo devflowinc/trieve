@@ -118,10 +118,13 @@ export const Item = ({ item, requestID, index }: Props) => {
           : {})}
       >
         <div>
-          {props.showImages &&
+          {props.type === "ecommerce" &&
           item.chunk.image_urls?.length &&
           item.chunk.image_urls[0] ? (
-            <img src={item.chunk.image_urls[0]} />
+            <img
+              src={item.chunk.image_urls[0]}
+              className="w-8 max-h-8 mr-4 shrink-0"
+            />
           ) : null}
           {title ? (
             <div>
@@ -136,6 +139,28 @@ export const Item = ({ item, requestID, index }: Props) => {
                   __html: descriptionHtml,
                 }}
               />
+              {props.type === "ecommerce" ? (
+                <>
+                  {item.chunk.num_value ? (
+                    <p className="text-xs text-zinc-700">
+                      Price: {item.chunk.num_value}
+                    </p>
+                  ) : null}
+                  {item.chunk.metadata?.variants?.length > 1 ? (
+                    <div className="flex flex-wrap gap-1 items-center text-zinc-700 mt-1">
+                      <span className="text-[11px]">Variants:</span>
+                      {(item.chunk.metadata.variants as unknown as any[])?.map(
+                        (variant) => (
+                          <span className="text-[11px] px-1 border-zinc-200 border">
+                            {variant.title}
+                            {console.log(variant)}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
             </div>
           ) : (
             <p

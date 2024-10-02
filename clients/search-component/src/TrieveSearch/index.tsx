@@ -9,7 +9,6 @@ import { searchWithTrieve } from "../utils/trieve";
 export const TrieveSearch = ({
   trieve,
   onResultClick,
-  showImages,
   theme = "light",
   placeholder = "Search for anything",
   searchOptions = {
@@ -123,7 +122,6 @@ export const TrieveSearch = ({
                   requestID={requestID}
                   getItemProps={getItemProps}
                   onResultClick={onResultClick}
-                  showImages={showImages}
                 />
               ))}
             </div>

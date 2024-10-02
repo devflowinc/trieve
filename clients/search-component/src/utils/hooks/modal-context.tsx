@@ -15,6 +15,7 @@ import { countChunks, searchWithTrieve } from "../trieve";
 
 export const ALL_TAG = { tag: "all", label: "All", icon: null };
 
+type ModalTypes = "ecommerce" | "docs";
 type SearchModes = "chat" | "search";
 type searchOptions = Omit<
   Omit<AutocompleteReqPayload, "query">,
@@ -43,6 +44,7 @@ export type ModalProps = {
     icon?: () => JSX.Element;
   }[];
   defaultSearchMode?: SearchModes;
+  type?: ModalTypes;
 };
 
 const defaultProps = {
@@ -57,6 +59,7 @@ const defaultProps = {
   suggestedQueries: true,
   trieve: (() => {}) as unknown as TrieveSDK,
   openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
+  type: "docs" as ModalTypes,
 };
 
 const ModalContext = createContext<{
