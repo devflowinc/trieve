@@ -34,6 +34,7 @@ import { RAGTablePage } from "./analytics/pages/tablePages/RAGTablePage.tsx";
 import { ApiContext, trieve } from "./api/trieve.ts";
 import { SingleRAGQueryPage } from "./analytics/pages/SingleRAGQueryPage.tsx";
 import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
+import { CrawlingSettings } from "./pages/dataset/CrawlingSettings.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -140,6 +141,10 @@ const routes: RouteDefinition[] = [
               {
                 path: "/manage",
                 component: DangerZoneForm,
+              },
+              {
+                path: "/crawling",
+                component: CrawlingSettings,
               },
 
               {

@@ -164,6 +164,39 @@ pub async fn get_crawl_request(
     Ok(request.into())
 }
 
+pub async fn get_crawl_request_by_dataset_id_query(
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Option<CrawlRequest>, ServiceError> {
+    use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let request: Option<CrawlRequestPG> = crawl_requests_table::crawl_requests
+        .filter(crawl_requests_table::scrape_id.eq(dataset_id))
+        .select((
+            crawl_requests_table::id,
+            crawl_requests_table::url,
+            crawl_requests_table::status,
+            crawl_requests_table::next_crawl_at,
+            crawl_requests_table::interval,
+            crawl_requests_table::crawl_options,
+            crawl_requests_table::scrape_id,
+            crawl_requests_table::dataset_id,
+            crawl_requests_table::created_at,
+        ))
+        .first(&mut conn)
+        .await
+        .optional()
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    Ok(match request {
+        Some(request) => Some(request.into()),
+        None => None,
+    })
+}
+
 pub async fn get_crawl_requests_to_rerun(
     pool: web::Data<Pool>,
 ) -> Result<Vec<CrawlRequest>, ServiceError> {

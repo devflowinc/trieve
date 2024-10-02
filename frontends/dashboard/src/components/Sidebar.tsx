@@ -3,7 +3,9 @@ import { JSX } from "solid-js";
 import { DatasetContext } from "../contexts/DatasetContext";
 import { A, useLocation } from "@solidjs/router";
 import {
+  AiFillThunderbolt,
   AiOutlineBarChart,
+  AiOutlineCamera,
   AiOutlineHistory,
   AiOutlineInfoCircle,
   AiOutlineKey,
@@ -188,6 +190,12 @@ export const DashboardSidebar = () => {
               icon={TbSparkles}
               href={`/dataset/${datasetId()}/llm-settings`}
               label="LLM Options"
+            />
+            <Link
+              isExternal={false}
+              icon={AiOutlineCamera}
+              href={`/dataset/${datasetId()}/crawling`}
+              label="Crawling Options"
             />
             <Link
               isExternal={false}
