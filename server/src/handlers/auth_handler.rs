@@ -1,5 +1,6 @@
 use crate::data::models::{Organization, RedisPool, StripePlan, UserRole};
 use crate::get_env;
+use crate::operators::dittofeed_operator::{get_user_ditto_identity, send_user_ditto_identity};
 use crate::operators::invitation_operator::check_inv_valid;
 use crate::operators::organization_operator::{get_org_from_id_query, get_user_org_count};
 use crate::operators::user_operator::{add_user_to_organization, create_user_query};
@@ -383,12 +384,13 @@ pub async fn login(
         (status = 400, description = "Email or password empty or incorrect", body = ErrorResponseBody),
     )
 )]
-#[tracing::instrument(skip(session, oidc_client, pool))]
+#[tracing::instrument(skip(session, oidc_client, pool, clickhouse_client, redis_pool))]
 pub async fn callback(
     req: HttpRequest,
     session: Session,
     oidc_client: web::Data<CoreClient>,
     redis_pool: web::Data<RedisPool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
     query: web::Query<OpCallback>,
 ) -> Result<HttpResponse, Error> {
@@ -479,7 +481,7 @@ pub async fn callback(
         Ok(user) => user,
         Err(_) => {
             user_is_new = true;
-            create_account(
+            let (user, user_orgs, orgs) = create_account(
                 email.to_string(),
                 name.iter().next().unwrap().1.to_string(),
                 user_id,
@@ -487,7 +489,30 @@ pub async fn callback(
                 login_state.inv_code,
                 pool.clone(),
             )
-            .await?
+            .await?;
+
+            let slim_user = SlimUser::from_details(user.clone(), user_orgs.clone(), orgs.clone());
+        
+            match get_user_ditto_identity(slim_user, pool.clone(), &clickhouse_client).await {
+                Ok(identify_request) => {
+                    match send_user_ditto_identity(identify_request).await {
+                        Ok(_) => {
+                            log::info!("Sent ditto identity for user {}", user.email);
+                        }
+                        Err(e) => {
+                            log::info!(
+                                "Failed to send ditto identity for user {}. Error: {}",
+                                user.email,
+                                e
+                            );
+                        }
+                    };
+                }
+                Err(e) => {
+                    log::info!("No ditto identity for user {}. Error: {}", user.email, e);
+                }
+            }
+            (user, user_orgs, orgs)
         }
     };
 
