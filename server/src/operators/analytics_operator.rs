@@ -116,7 +116,7 @@ pub async fn get_search_query(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryEvent, ServiceError> {
     let clickhouse_query = clickhouse_client
-        .query("SELECT ?fields FROM search_queries WHERE id = ? AND dataset_id = ? AND search_queries.is_duplicate = 0")
+        .query("SELECT ?fields FROM search_queries WHERE id = ? AND dataset_id = ?")
         .bind(search_id)
         .bind(dataset_id)
         .fetch_one::<SearchQueryEventClickhouse>()
