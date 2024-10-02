@@ -43,9 +43,11 @@ export const ResultCard = (props: ResultCardProps) => {
 
             <IoCode />
           </div>
-          <div class="text-xs font-normal opacity-60">
-            Score: {props?.result?.score.toFixed(5)}
-          </div>
+          <Show when={props?.result?.score}>
+            <div class="text-xs font-normal opacity-60">
+              Score: {props?.result?.score?.toFixed(5)}
+            </div>
+          </Show>
           <Show when={metadata()}>
             {(metadata) => (
               <div class="line-clamp-1 font-mono text-xs text-zinc-600">
