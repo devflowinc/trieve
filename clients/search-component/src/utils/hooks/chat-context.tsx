@@ -4,6 +4,7 @@ import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 type Messages = {
+  queryId: string | null;
   type: string;
   text: string;
   additional: Chunk[] | null;
@@ -62,7 +63,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleReader = async (
-    reader: ReadableStreamDefaultReader<Uint8Array>
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    queryId: string | null
   ) => {
     setIsLoading(true);
     isDoneReading.current = false;
@@ -93,6 +95,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               type: "system",
               text: text,
               additional: json ? json : null,
+              queryId
             },
           ],
         ]);
@@ -114,7 +117,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     question?: string;
   }) => {
     setIsLoading(true);
-    const reader = await props.trieve.createMessageReader(
+    const { reader, queryId } = await props.trieve.createMessageReaderWithQueryId(
       {
         topic_id: id || currentTopic,
         new_message_content: question || currentQuestion,
@@ -124,7 +127,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       },
       chatMessageAbortController.current.signal
     );
-    handleReader(reader);
+    handleReader(reader, queryId);
   };
 
   const stopGeneratingMessage = () => {
@@ -147,7 +150,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     isDoneReading.current = false;
     setMessages((m) => [
       ...m,
-      [{ type: "user", text: question || currentQuestion, additional: null }],
+      [{ type: "user", text: question || currentQuestion, additional: null, queryId: null }],
     ]);
 
     if (!currentTopic) {
@@ -159,7 +162,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setCurrentQuestion("");
     setMessages((m) => [
       ...m,
-      [{ type: "system", text: "Loading...", additional: null }],
+      [{ type: "system", text: "Loading...", additional: null, queryId: null }],
     ]);
     modalRef.current?.scroll({
       top: modalRef.current.scrollHeight + 50,
@@ -172,6 +175,19 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     await askQuestion(query);
   };
 
+<<<<<<< HEAD
+=======
+  const rateChatCompletion = async(isPositive: boolean, queryId?: string) => {
+    if (queryId) {
+      console.log("Rating query", queryId, isPositive);
+      props.trieve.rateRagQuery({
+        rating: isPositive ? 1: 0,
+        query_id: queryId
+      });
+    }
+  }
+
+>>>>>>> 2e2c1159 (feat: added new function to trieveSDK to get queryID, and wrapping up)
   return (
     <ModalContext.Provider
       value={{
