@@ -9,7 +9,7 @@ spec:
   generators:
     - git:
         repoURL: https://github.com/pmig/trieve
-        revision: pmig/gcp-hn-migration
+        revision: HEAD
         directories:
           - path: 'glasskube/packages/*'
   template:
@@ -19,7 +19,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/pmig/trieve
-        targetRevision: pmig/gcp-hn-migration
+        targetRevision: HEAD
         path: '{{.path.path}}'
         kustomize:
           components:
