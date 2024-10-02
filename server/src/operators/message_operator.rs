@@ -549,6 +549,8 @@ pub async fn stream_response(
         chunk_metadatas_stringified1.clone_from(&chunk_metadatas_stringified);
     }
 
+    let query_id = uuid::Uuid::new_v4();
+
     if !create_message_req_payload
         .llm_options
         .as_ref()
@@ -624,7 +626,9 @@ pub async fn stream_response(
 
         create_message_query(new_message, &pool).await?;
 
-        return Ok(HttpResponse::Ok().json(completion_content));
+        return Ok(HttpResponse::Ok()
+            .insert_header(("TR-QueryID", query_id.to_string()))
+            .json(completion_content));
     }
 
     let (s, r) = unbounded::<String>();
@@ -637,7 +641,6 @@ pub async fn stream_response(
         .unwrap_or(Some(false))
         .unwrap_or(false);
 
-    let query_id = uuid::Uuid::new_v4();
     let query_id_arb = query_id;
 
     Arbiter::new().spawn(async move {
@@ -713,7 +716,9 @@ pub async fn stream_response(
         .unwrap_or(Some(false))
         .unwrap_or(false)
     {
-        return Ok(HttpResponse::Ok().streaming(completion_stream.chain(chunk_stream)));
+        return Ok(HttpResponse::Ok()
+            .insert_header(("TR-QueryID", query_id.to_string()))
+            .streaming(completion_stream.chain(chunk_stream)));
     }
 
     Ok(HttpResponse::Ok()
