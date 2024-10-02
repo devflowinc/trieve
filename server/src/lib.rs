@@ -666,7 +666,6 @@ pub fn main() -> std::io::Result<()> {
             App::new()
                 .wrap(
                     Cors::permissive()
-                        .allow_any_header()
                 )
                 .app_data(PayloadConfig::new(134200000))
                 .wrap(middleware::json_middleware::JsonMiddlewareFactory)
