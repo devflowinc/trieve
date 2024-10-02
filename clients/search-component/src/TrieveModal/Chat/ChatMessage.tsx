@@ -8,7 +8,7 @@ import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
 
 type Message = {
-  queryId?: string;
+  queryId: string | null;
   type: string;
   text: string;
   additional: Chunk[] | null;
@@ -84,6 +84,7 @@ export const Message = ({
   message: Message;
 }) => {
   const { rateChatCompletion } = useChatState();
+  const [positive, setPositive] = React.useState<boolean | null>(null);
 
   return (
     <div>
@@ -133,15 +134,15 @@ export const Message = ({
                   )
                   .map((m) => [
                     m.metadata.heading ||
-                      m.metadata.title ||
-                      m.metadata.page_title,
+                    m.metadata.title ||
+                    m.metadata.page_title,
                     m.link,
                   ])
                   .filter(
                     (v, i, a) => a.findIndex((t) => t[0] === v[0]) === i && v[0]
                   )
-                  .map((link) => (
-                    <a key={link[1]} href={link[1] as string} target="_blank">
+                  .map((link, idx) => (
+                    <a key={idx} href={link[1] as string} target="_blank">
                       {link[0]}
                     </a>
                   ))}
@@ -149,15 +150,21 @@ export const Message = ({
               <div className="feedback-wrapper">
                 <span className="spacer"></span>
                 <div className="feedback-icons">
-                  <button onClick={() => {
-                    rateChatCompletion(false, message.queryId)
-                  }}>
-                    <ThumbsUpIcon/>
+                  <button
+                    className={(positive != null && positive) ? "icon-darken" : ""}
+                    onClick={() => {
+                      rateChatCompletion(true, message.queryId)
+                      setPositive(true);
+                    }}>
+                    <ThumbsUpIcon />
                   </button>
-                  <button onClick={() => {
-                    rateChatCompletion(true, message.queryId)
-                  }}>
-                    <ThumbsDownIcon/>
+                  <button
+                    className={(positive != null && !positive) ? "icon-darken" : ""}
+                    onClick={() => {
+                      rateChatCompletion(false, message.queryId)
+                      setPositive(false);
+                    }}>
+                    <ThumbsDownIcon />
                   </button>
                 </div>
               </div>

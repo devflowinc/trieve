@@ -20,7 +20,7 @@ const ModalContext = createContext<{
   clearConversation: () => void;
   switchToChatAndAskQuestion: (query: string) => Promise<void>;
   isDoneReading?: React.MutableRefObject<boolean>;
-  rateChatCompletion: (isPositive: boolean, queryId?: string) => void;
+  rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
 }>({
   askQuestion: async () => {},
   currentQuestion: "",
@@ -177,7 +177,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     await askQuestion(query);
   };
 
-  const rateChatCompletion = async(isPositive: boolean, queryId?: string) => {
+  const rateChatCompletion = async(isPositive: boolean, queryId: string | null) => {
     if (queryId) {
       props.trieve.rateRagQuery({
         rating: isPositive ? 1: 0,
