@@ -783,11 +783,16 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::post().to(handlers::dataset_handler::get_all_tags)),
                                 )
                                 .service(
-                                    web::resource("/{dataset_id}")
-                                        .route(web::get().to(handlers::dataset_handler::get_dataset))
-                                        .route(
-                                            web::delete().to(handlers::dataset_handler::delete_dataset),
-                                        )
+                                    web::scope("/{dataset_id}")
+                                    .service(
+                                          web::resource("")
+                                              .route(web::get().to(handlers::dataset_handler::get_dataset))
+                                              .route(web::delete().to(handlers::dataset_handler::delete_dataset))
+                                    ).service(
+                                          web::resource("/crawl_options").route(
+                                              web::get().to(handlers::dataset_handler::get_dataset_crawl_options)
+                                          )
+                                    )
                                 )
                                 .service(
                                     web::resource("/clear/{dataset_id}")
