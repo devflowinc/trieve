@@ -32,7 +32,7 @@ export const OpenModalButton = () => {
             </svg>
             <div>{props.placeholder}</div>
           </div>
-          <span className="open">
+          <span key={"open-button"} className="open">
             {keyCombo.map((key) => (
               <Fragment key={key.key}>
                 {key.ctrl ? (
@@ -41,7 +41,7 @@ export const OpenModalButton = () => {
                     <span className="not-mac">Ctrl </span>
                   </>
                 ) : (
-                  <span>
+                  <span key="no-key">
                     {" "}
                     {keyCombo.length > 1 ? "+" : null} {key.label || key.key}
                   </span>

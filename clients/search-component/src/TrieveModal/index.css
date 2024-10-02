@@ -180,6 +180,11 @@ body {
 
         .feedback-icons {
           @apply flex space-x-2;
+
+          .icon-darken {
+            opacity: 100%;
+          }
+
           button {
             opacity: 50%;
             &:hover,
@@ -215,7 +220,7 @@ body {
       }
 
       .system {
-        @apply mt-2 sm:mt-8 mb-5 items-center sm:max-w-[52vw] overflow-ellipsis;
+        @apply mt-2 sm:mt-8 mb-5 items-center sm:max-w-[46vw] overflow-ellipsis;
         p {
           @apply pb-1;
         }
@@ -617,10 +622,6 @@ body {
         .loading-system {
           @apply w-12;
           fill: var(--tv-zinc-400);
-        }
-
-        .user {
-          color: var(--tv-prop-brand-color);
         }
 
         .chat-ul {
