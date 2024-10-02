@@ -24,7 +24,7 @@ use super::{
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DittofeedIdentifyUser {
-    pub r#type: String,
+    pub r#type: Option<String>,
     pub message_id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub traits: DittofeedUserTraits,
@@ -66,12 +66,18 @@ pub struct DittoDatasetUsage {
 pub enum DittoTrackProperties {
     DittoDatasetUsage(DittoDatasetUsage),
     DittoOrgUsage(DittoOrgUsage),
+    DittoDatasetCreated(DittoDatasetCreated),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DittoDatasetCreated {
+    pub dataset: DatasetDTO,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DittoTrackRequest {
-    pub r#type: String,
+    pub r#type: Option<String>,
     pub message_id: uuid::Uuid,
     pub event: String,
     pub properties: DittoTrackProperties,
@@ -233,7 +239,7 @@ pub async fn get_user_ditto_identity(
     let org_track_requests = org_usages
         .into_iter()
         .map(|usage| DittoTrackRequest {
-            r#type: "track".to_string(),
+            r#type: Some("track".to_string()),
             message_id: usage.organization.id,
             event: "ORGANIZATION_USAGE".to_string(),
             properties: DittoTrackProperties::DittoOrgUsage(usage),
@@ -244,7 +250,7 @@ pub async fn get_user_ditto_identity(
     let dataset_track_requests = dataset_usages
         .into_iter()
         .map(|usage| DittoTrackRequest {
-            r#type: "track".to_string(),
+            r#type: Some("track".to_string()),
             message_id: usage.dataset.id,
             event: "DATASET_USAGE".to_string(),
             properties: DittoTrackProperties::DittoDatasetUsage(usage),
@@ -260,7 +266,7 @@ pub async fn get_user_ditto_identity(
         .collect::<Vec<_>>();
 
     let batch_requests = vec![DittoBatchRequestTypes::Identify(DittofeedIdentifyUser {
-        r#type: "identify".to_string(),
+        r#type: Some("identify".to_string()),
         message_id: uuid::Uuid::new_v4(),
         user_id: user.id,
         traits: DittofeedUserTraits {
@@ -301,6 +307,26 @@ pub async fn send_user_ditto_identity(
         .post(format!("{}/api/public/apps/batch", dittofeed_url))
         .header("Authorization", format!("Basic {}", api_key))
         .json(&batch_request)
+        .send()
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?
+        .error_for_status()
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    Ok(())
+}
+
+pub async fn send_ditto_event(event: DittoTrackRequest) -> Result<(), ServiceError> {
+    let dittofeed_url =
+        std::env::var("DITTOFEED_URL").unwrap_or("https://app.dittofeed.com".to_string());
+    let api_key = std::env::var("DITTOFEED_API_KEY").expect("DITTOFEED_API_KEY is not set");
+
+    let client = reqwest::Client::new();
+
+    client
+        .post(format!("{}/api/public/apps/track", dittofeed_url))
+        .header("Authorization", format!("Basic {}", api_key))
+        .json(&event)
         .send()
         .await
         .map_err(|e| ServiceError::BadRequest(e.to_string()))?
