@@ -492,7 +492,7 @@ pub async fn callback(
             .await?;
 
             let slim_user = SlimUser::from_details(user.clone(), user_orgs.clone(), orgs.clone());
-        
+
             match get_user_ditto_identity(slim_user, pool.clone(), &clickhouse_client).await {
                 Ok(identify_request) => {
                     match send_user_ditto_identity(identify_request).await {
