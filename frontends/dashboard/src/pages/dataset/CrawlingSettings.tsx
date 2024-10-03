@@ -59,7 +59,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
     <div class="rounded border border-neutral-300 bg-white p-4 shadow">
       <div class="text-lg">Crawl Options</div>
 
-      <div class="flex w-full items-stretch justify-between gap-4">
+      <div class="flex w-full items-stretch justify-between gap-4 pt-2">
         <div class="grow">
           <label for="url" class="block">
             Site URL
@@ -87,9 +87,41 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
       </div>
 
-      <div>
-        <label for="">Max Pages</label>
-        <input type="number"></input>
+      <div class="flex items-center gap-2 pt-2">
+        <label class="block">Boost Titles</label>
+        <input
+          class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+          type="checkbox"
+        />
+      </div>
+
+      <div class="flex gap-4">
+        <div class="pt-2">
+          <label class="block" for="">
+            Page Limit
+          </label>
+          <input
+            value={options.limit || "0"}
+            onInput={(e) => {
+              setOptions("limit", parseInt(e.currentTarget.value));
+            }}
+            class="block rounded-md border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            type="number"
+          />
+        </div>
+        <div class="pt-2">
+          <label class="block" for="">
+            Max Depth
+          </label>
+          <input
+            value={options.max_depth || "0"}
+            onInput={(e) => {
+              setOptions("max_depth", parseInt(e.currentTarget.value));
+            }}
+            class="block rounded-md border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            type="number"
+          />
+        </div>
       </div>
     </div>
   );
