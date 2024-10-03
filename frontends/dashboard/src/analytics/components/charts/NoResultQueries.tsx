@@ -73,7 +73,7 @@ export const NoResultQueries = (props: NoResultQueriesProps) => {
   });
   return (
     <MagicSuspense skeletonKey="noresultqueries" unstyled>
-      <div>
+      <div class="overflow-x-auto">
         <Show when={notResultQuery.data?.length === 0}>
           <div class="py-8 text-center opacity-80">No Data.</div>
         </Show>
