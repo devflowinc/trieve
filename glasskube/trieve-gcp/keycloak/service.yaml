@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: trieve-keycloak
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    beta.cloud.google.com/backend-config: '{"default": "trieve-keycloak"}'
+spec:
+  # TODO: This won't work because the operator injects it's own labels into all metadata, selectors
+  # and templates. To fix this, the simplest way is probably to let the operator "know" that it
+  # also has to inject labels in the keycloak pod template. But should there be a list of
+  # "well-known" label field-specs? Or should it be specified in the package.yaml?
+  selector:
+    app: keycloak
+    # TODO: operator insert
+    # app.kubernetes.io/instance: ${INSTANCE_NAME}-trieve-keycloak
+    app.kubernetes.io/managed-by: keycloak-operator
+  ports:
+    - name: http
+      port: 8080
+    - name: management
+      port: 9000
