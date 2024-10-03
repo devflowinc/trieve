@@ -55,7 +55,7 @@ export const RAGTablePage = () => {
     },
     {
       accessorKey: "created_at",
-      header: "Searched At",
+      header: "Queried At",
       sortable: true,
       cell(props) {
         return format(

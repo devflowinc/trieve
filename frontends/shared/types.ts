@@ -483,6 +483,25 @@ export interface SearchQueryEvent {
   }[];
   dataset_id: string;
   created_at: string;
+  query_rating?: {
+    note?: string;
+    rating: number;
+  };
+}
+
+export interface RecommendationEvent {
+  created_at: string;
+  dataset_id: string;
+  id: string;
+  negative_ids: string[];
+  negative_tracking_ids: string[];
+  positive_ids: string[];
+  positive_tracking_ids: string[];
+  recommendation_type: string;
+  request_params: Record<string, unknown>;
+  results: ChunkMetadataStringTagSet[];
+  top_score: number;
+  user_id: string;
 }
 
 export interface CTRSearchQuery {
@@ -518,6 +537,11 @@ export interface RAGAnalyticsFilter {
   date_range?: DateRangeFilter;
 }
 
+export interface RecommendationsAnalyticsFilter {
+  date_range?: DateRangeFilter;
+  recommendation_type?: "chunk" | "group";
+}
+
 export type RAGSortBy = "created_at" | "latency";
 export type SearchSortBy = "created_at" | "latency" | "top_score";
 
@@ -532,6 +556,10 @@ export interface RagQueryEvent {
   llm_response: string;
   dataset_id: string;
   created_at: string;
+  query_rating?: {
+    note?: string;
+    rating: number;
+  };
 }
 
 export interface RAGUsageResponse {

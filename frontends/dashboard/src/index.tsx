@@ -35,6 +35,8 @@ import { ApiContext, trieve } from "./api/trieve.ts";
 import { SingleRAGQueryPage } from "./analytics/pages/SingleRAGQueryPage.tsx";
 import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
 import { CrawlingSettings } from "./pages/dataset/CrawlingSettings.tsx";
+import { RecommendationsTablePage } from "./analytics/pages/tablePages/RecommendationsTablePage.tsx";
+import { SingleRecommendationQueryPage } from "./analytics/pages/SingleRecommendationQueryPage.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -175,6 +177,10 @@ const routes: RouteDefinition[] = [
                     component: SingleRAGQueryPage,
                   },
                   {
+                    path: "/recommendations/:queryId",
+                    component: SingleRecommendationQueryPage,
+                  },
+                  {
                     path: "/data",
                     component: DataExplorerTabs, // Add back when rag table page is implemented
                     children: [
@@ -185,6 +191,10 @@ const routes: RouteDefinition[] = [
                       {
                         path: "/messages",
                         component: RAGTablePage,
+                      },
+                      {
+                        path: "/recommendations",
+                        component: RecommendationsTablePage,
                       },
                     ],
                   },

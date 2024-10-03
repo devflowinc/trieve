@@ -1,25 +1,20 @@
-import { RAGAnalyticsFilter, RequiredRAGAnalyticsFilter } from "shared/types";
+import { RecommendationsAnalyticsFilter } from "shared/types";
 import { SetStoreFunction } from "solid-js/store";
 import { DateRangePicker, Select } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
 import { cn } from "shared/utils";
 
-const ALL_RAG_TYPES: (RequiredRAGAnalyticsFilter["rag_type"] | "all_chunks")[] =
-  ["chosen_chunks", "all_chunks"];
+const ALL_RECOMMENDATION_TYPES: (
+  | RecommendationsAnalyticsFilter["recommendation_type"]
+  | "all_chunks"
+)[] = ["chunk", "group"];
 
 interface FilterBarProps {
-  filters: RAGAnalyticsFilter;
-  setFilters: SetStoreFunction<RAGAnalyticsFilter>;
+  filters: RecommendationsAnalyticsFilter;
+  setFilters: SetStoreFunction<RecommendationsAnalyticsFilter>;
   noPadding?: boolean;
 }
-
-export const timeFrameOptions: RequiredRAGAnalyticsFilter["granularity"][] = [
-  "day",
-  "hour",
-  "minute",
-  "second",
-];
 
 export type DateRangeOption = {
   date: Date;
@@ -41,7 +36,7 @@ export const dateRanges: DateRangeOption[] = [
   },
 ];
 
-export const RAGFilterBar = (props: FilterBarProps) => {
+export const RecommendationsFilterBar = (props: FilterBarProps) => {
   return (
     <div
       class={cn(
@@ -52,14 +47,19 @@ export const RAGFilterBar = (props: FilterBarProps) => {
       <div class="flex items-center gap-2">
         <div>
           <Select
-            label={<div class="text-sm text-neutral-600">RAG Method</div>}
+            label={
+              <div class="text-sm text-neutral-600">Recommendation Method</div>
+            }
             class="min-w-[200px] !bg-white"
             display={(s) => (s ? toTitleCase(s) : "All")}
-            selected={props.filters.rag_type}
+            selected={props.filters.recommendation_type}
             onSelected={(e) =>
-              props.setFilters("rag_type", e === "all_chunks" ? undefined : e)
+              props.setFilters(
+                "recommendation_type",
+                e === "all_chunks" ? undefined : e,
+              )
             }
-            options={ALL_RAG_TYPES}
+            options={ALL_RECOMMENDATION_TYPES}
           />
         </div>
       </div>

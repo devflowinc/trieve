@@ -80,6 +80,12 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
               label="Top Score"
               value={props.search_data.top_score.toFixed(4)}
             />
+            <Show when={props.rag_data.query_rating}>
+              <DataSquare
+                label="User Rating"
+                value={props.rag_data.query_rating?.rating.toString() ?? "N/A"}
+              />
+            </Show>
           </dl>
         </div>
         <Card title="LLM Response">

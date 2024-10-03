@@ -5195,6 +5195,8 @@ pub enum RecommendationAnalytics {
         sort_by: Option<SearchSortBy>,
         sort_order: Option<SortOrder>,
     },
+    #[schema(title = "QueryDetails")]
+    QueryDetails { request_id: uuid::Uuid },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -5314,6 +5316,8 @@ pub enum RecommendationAnalyticsResponse {
     LowConfidenceRecommendations(RecommendationsEventResponse),
     #[schema(title = "RecommendationQueries")]
     RecommendationQueries(RecommendationsEventResponse),
+    #[schema(title = "QueryDetails")]
+    QueryDetails(RecommendationEvent),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
