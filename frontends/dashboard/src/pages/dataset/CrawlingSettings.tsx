@@ -138,6 +138,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
   const submit = () => {
     const validateResult = validate(options);
     if (validateResult.valid) {
+      setErrors({});
       props.onSave(options);
     } else {
       setErrors(validateResult.errors);
