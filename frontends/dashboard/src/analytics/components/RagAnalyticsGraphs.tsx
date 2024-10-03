@@ -16,7 +16,7 @@ export const ALL_FAKE_RAG_OPTIONS: FakeRAGOption[] = [
   { label: "All chunks", value: "all_chunks" },
 ];
 
-export const RagAnalyticsPage = () => {
+export const RagAnalyticsGraphs = () => {
   const [filter, setFilter] = createStore<RequiredRAGAnalyticsFilter>({
     date_range: {
       gt: subDays(new Date(), 7),
