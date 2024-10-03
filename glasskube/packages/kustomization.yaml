@@ -1,5 +1,0 @@
-namespace: trieve
-resources:
-  - ../dependencies/redis.yaml
-  - ../dependencies/tika.yaml
-
