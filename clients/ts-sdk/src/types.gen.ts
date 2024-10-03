@@ -1579,6 +1579,9 @@ export type RecommendationAnalytics = {
     sort_by?: ((SearchSortBy) | null);
     sort_order?: ((SortOrder) | null);
     type: 'recommendation_queries';
+} | {
+    request_id: string;
+    type: 'query_details';
 };
 
 export type type4 = 'low_confidence_recommendations';
@@ -1588,7 +1591,7 @@ export type RecommendationAnalyticsFilter = {
     recommendation_type?: ((RecommendationType) | null);
 };
 
-export type RecommendationAnalyticsResponse = RecommendationsEventResponse;
+export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent;
 
 export type RecommendationCTRMetrics = {
     avg_position_of_click: number;

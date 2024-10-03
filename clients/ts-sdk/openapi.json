@@ -10847,6 +10847,26 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "QueryDetails",
+            "required": [
+              "request_id",
+              "type"
+            ],
+            "properties": {
+              "request_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "query_details"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -10881,6 +10901,9 @@
           },
           {
             "$ref": "#/components/schemas/RecommendationsEventResponse"
+          },
+          {
+            "$ref": "#/components/schemas/RecommendationEvent"
           }
         ]
       },

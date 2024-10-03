@@ -9,7 +9,7 @@ import {
   SortOrder,
 } from "shared/types";
 import { transformAnalyticsFilter } from "../utils/formatDate";
-import { RecommendationAnalyticsResponse } from "trieve-ts-sdk";
+import { RecommendationsEventResponse } from "trieve-ts-sdk";
 
 const apiHost = import.meta.env.VITE_API_HOST as string;
 
@@ -123,6 +123,6 @@ export const getRecommendationQueries = async (
   }
 
   const data =
-    (await response.json()) as unknown as RecommendationAnalyticsResponse;
+    (await response.json()) as unknown as RecommendationsEventResponse;
   return data.queries;
 };
