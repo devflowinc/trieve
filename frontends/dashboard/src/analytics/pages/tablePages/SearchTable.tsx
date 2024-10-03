@@ -62,7 +62,7 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
   },
 ];
 
-export const SearchTablePage = () => {
+export const SearchTable = () => {
   const navigate = useBetterNav();
   const datasetContext = useContext(DatasetContext);
 

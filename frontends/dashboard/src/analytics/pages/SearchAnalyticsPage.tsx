@@ -9,6 +9,7 @@ import { LowConfidenceQueries } from "../components/charts/LowConfidenceQueries"
 import { NoResultQueries } from "../components/charts/NoResultQueries";
 import { Card } from "../components/charts/Card";
 import { CTRSearchQueries } from "../components/charts/CTRSearchQueries";
+import { SearchTable } from "./tablePages/SearchTable";
 
 export const SearchAnalyticsPage = () => {
   const [analyticsFilters, setAnalyticsFilters] = createStore<AnalyticsParams>({
@@ -24,6 +25,8 @@ export const SearchAnalyticsPage = () => {
 
   return (
     <>
+      <SearchTable />
+      <div class="my-4 border-b border-b-neutral-200 pt-2" />
       <FilterBar
         noPadding
         filters={analyticsFilters}
