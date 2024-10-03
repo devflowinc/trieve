@@ -8,12 +8,11 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: glasskube/trieve-gcp
-    repoURL: https://github.com/pmig/trieve-gcp
+    path: glasskube/argocd/trieve-hackernews
+    repoURL: https://github.com/pmig/trieve
     targetRevision: HEAD
     kustomize:
       namespace: trieve
-
   syncPolicy:
     syncOptions:
       - ApplyOutOfSyncOnly=true

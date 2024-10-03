@@ -12,7 +12,7 @@ spec:
     cpuMode:
       value: 'false'
     domain:
-      value: trieve-hackernews.glasskube.com
+      value: glasskube.withtrieve.com
     keyForAnthropicApi:
       value: ' '
     keyForJinaCodeApi:
