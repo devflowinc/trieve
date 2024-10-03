@@ -65,6 +65,7 @@ export const Select = <T,>(props: SelectProps<T>) => {
         onClose={() => setSearchTerm("")}
       >
         <ListboxButton
+          type="button"
           class="flex py-1 text-sm px-3 w-full justify-between gap-2 items-center"
           onClick={() => setOpen(!open())}
         >
