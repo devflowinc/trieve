@@ -150,7 +150,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
         </tbody>
       </table>
       <div class="flex items-center justify-between pl-4  border-t border-gray-200">
-        {props.exportFn ? (
+        <Show when={props.exportFn && props.table.getRowCount() > 1}>
           <button
             onClick={() => void download()}
             class="flex items-center gap-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
@@ -158,7 +158,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
           >
             {isCreatingCSV() ? "Creating your CSV..." : "Export as CSV"}
           </button>
-        ) : null}
+        </Show>
         {props.pages &&
         (props.pages.canGoNext() || props.pages.page() !== 1) ? (
           <Pagination

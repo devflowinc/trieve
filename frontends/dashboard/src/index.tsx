@@ -29,7 +29,7 @@ import { SearchAnalyticsPage } from "./analytics/pages/SearchAnalyticsPage.tsx";
 import { RagAnalyticsPage } from "./analytics/pages/RagAnalyticsPage.tsx";
 import { TrendExplorer } from "./analytics/pages/TrendExplorer.tsx";
 import { SingleQueryPage } from "./analytics/pages/SingleQueryPage.tsx";
-import { SearchTablePage } from "./analytics/pages/tablePages/SearchTablePage.tsx";
+import { SearchTable } from "./analytics/pages/tablePages/SearchTable.tsx";
 import { RAGTablePage } from "./analytics/pages/tablePages/RAGTablePage.tsx";
 import { ApiContext, trieve } from "./api/trieve.ts";
 import { SingleRAGQueryPage } from "./analytics/pages/SingleRAGQueryPage.tsx";
@@ -157,10 +157,6 @@ const routes: RouteDefinition[] = [
                     component: AnalyticsOverviewPage,
                   },
                   {
-                    path: "/search",
-                    component: SearchAnalyticsPage,
-                  },
-                  {
                     path: "/rag",
                     component: RagAnalyticsPage,
                   },
@@ -186,7 +182,7 @@ const routes: RouteDefinition[] = [
                     children: [
                       {
                         path: "/searches",
-                        component: SearchTablePage,
+                        component: SearchAnalyticsPage,
                       },
                       {
                         path: "/messages",

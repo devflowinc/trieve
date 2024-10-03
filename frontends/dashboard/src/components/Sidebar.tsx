@@ -153,12 +153,6 @@ export const DashboardSidebar = () => {
             />
             <Link
               isExternal={false}
-              icon={AiOutlineSearch}
-              href={`/dataset/${datasetId()}/analytics/search`}
-              label="Search"
-            />
-            <Link
-              isExternal={false}
               icon={AiOutlineMessage}
               href={`/dataset/${datasetId()}/analytics/rag`}
               label="RAG"
