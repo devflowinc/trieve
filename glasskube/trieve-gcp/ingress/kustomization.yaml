@@ -1,0 +1,22 @@
+# This component replaces the many ingresses with a single one that has multiple rules.
+#
+# We should probably migrate the base manifest to this, as it is much simpler to provision and more
+# friendly to external load balancer integration. The only disadvantage is that the hosts patches
+# have to access the correct rule via array index, which is a little more error-prone.
+
+kind: Component
+resources:
+  - ingress.yaml
+  - managed-certificate.yaml
+
+# Delete the many Ingresses for individual services
+patches:
+  - target:
+      kind: Ingress
+      labelSelector: app.kubernetes.io/component
+    patch: |
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: not-used
