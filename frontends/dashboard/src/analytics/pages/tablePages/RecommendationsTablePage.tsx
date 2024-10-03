@@ -141,11 +141,7 @@ export const RecommendationsTablePage = () => {
       accessorKey: "top_score",
       header: "Top Score",
       cell(props) {
-        return (
-          <>
-            {props.getValue<number>()}
-          </>
-        );
+        return <>{props.getValue<number>().toPrecision(4)}</>;
       },
     },
     {
