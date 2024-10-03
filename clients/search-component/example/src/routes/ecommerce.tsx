@@ -51,6 +51,8 @@ export default function ECommerce() {
               brandLogoImgSrcUrl="https://www.zedlabz.com/cdn/shop/t/2/assets/zedlabz-logo-retina.png?v=156539475513264331071650193684"
               brandName="ZedLabs"
               brandColor="#204364"
+              defaultCurrency="$"
+              currencyPosition="before"
             />
 
             <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">
