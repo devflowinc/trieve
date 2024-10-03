@@ -7,10 +7,11 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
-        ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        HighlightOptions, Pool, QueryTypes, RecommendType, RecommendationEventClickhouse,
-        RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
-        SearchQueryEventClickhouse, SortOptions, TypoOptions, UnifiedId,
+        ChunkMetadataStringTagSet, ChunkMetadataTypes, DatasetAndOrgWithSubAndPlan,
+        DatasetConfiguration, HighlightOptions, Pool, QueryTypes, RecommendType,
+        RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
+        ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SortOptions, TypoOptions,
+        UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
@@ -1605,7 +1606,21 @@ pub async fn search_within_group(
             .bookmarks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap_or_default())
+            .map(|mut x| {
+                x.metadata.iter_mut().for_each(|x| match x {
+                    ChunkMetadataTypes::Content(content) => {
+                        content.chunk_html =
+                            content.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                    }
+                    ChunkMetadataTypes::Metadata(chunk) => {
+                        chunk.chunk_html =
+                            chunk.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                    }
+                    _ => {}
+                });
+
+                serde_json::to_string(&x).unwrap_or_default()
+            })
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -1790,7 +1805,23 @@ pub async fn search_over_groups(
             .group_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap_or_default())
+            .map(|mut x| {
+                x.metadata.iter_mut().for_each(|y| {
+                    y.metadata.iter_mut().for_each(|z| match z {
+                        ChunkMetadataTypes::Content(content) => {
+                            content.chunk_html =
+                                content.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                        }
+                        ChunkMetadataTypes::Metadata(chunk) => {
+                            chunk.chunk_html =
+                                chunk.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                        }
+                        _ => {}
+                    })
+                });
+
+                serde_json::to_string(&x).unwrap_or_default()
+            })
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),

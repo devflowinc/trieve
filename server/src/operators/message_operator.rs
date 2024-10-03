@@ -408,7 +408,21 @@ pub async fn stream_response(
             .score_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap_or_default())
+            .map(|mut x| {
+                x.metadata.iter_mut().for_each(|x| match x {
+                    ChunkMetadataTypes::Content(content) => {
+                        content.chunk_html =
+                            content.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                    }
+                    ChunkMetadataTypes::Metadata(chunk) => {
+                        chunk.chunk_html =
+                            chunk.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                    }
+                    _ => {}
+                });
+
+                serde_json::to_string(&x).unwrap_or_default()
+            })
             .collect(),
         created_at: time::OffsetDateTime::now_utc(),
         query_rating: String::from(""),

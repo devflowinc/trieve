@@ -1,11 +1,12 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
-    ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo,
-    HighlightOptions, IngestSpecificChunkMetadata, Pool, QueryTypes, RagQueryEventClickhouse,
-    RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
-    ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore,
-    SortByField, SortOptions, TypoOptions, UnifiedId, UpdateSpecificChunkMetadata,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataTypes,
+    ChunkMetadataWithScore, ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan,
+    DatasetConfiguration, GeoInfo, HighlightOptions, IngestSpecificChunkMetadata, Pool, QueryTypes,
+    RagQueryEventClickhouse, RecommendType, RecommendationEventClickhouse, RecommendationStrategy,
+    RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
+    SlimChunkMetadataWithScore, SortByField, SortOptions, TypoOptions, UnifiedId,
+    UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -1248,7 +1249,21 @@ pub async fn search_chunks(
             .score_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap_or_default())
+            .map(|mut x| {
+                x.metadata.iter_mut().for_each(|x| match x {
+                    ChunkMetadataTypes::Content(content) => {
+                        content.chunk_html =
+                            content.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                    }
+                    ChunkMetadataTypes::Metadata(chunk) => {
+                        chunk.chunk_html =
+                            chunk.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                    }
+                    _ => {}
+                });
+
+                serde_json::to_string(&x).unwrap_or_default()
+            })
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -1456,7 +1471,21 @@ pub async fn autocomplete(
             .score_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap_or_default())
+            .map(|mut x| {
+                x.metadata.iter_mut().for_each(|x| match x {
+                    ChunkMetadataTypes::Content(content) => {
+                        content.chunk_html =
+                            content.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                    }
+                    ChunkMetadataTypes::Metadata(chunk) => {
+                        chunk.chunk_html =
+                            chunk.chunk_html.clone().map(|x| x.replace("\"", "\\\""));
+                    }
+                    _ => {}
+                });
+
+                serde_json::to_string(&x).unwrap_or_default()
+            })
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
