@@ -2,8 +2,8 @@ use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
         CrawlOptions, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        DatasetConfigurationDTO, OrganizationWithSubAndPlan, Pool, RedisPool, StripePlan,
-        UnifiedId,
+        DatasetConfigurationDTO, DatasetDTO, OrganizationWithSubAndPlan, Pool, RedisPool,
+        StripePlan, UnifiedId,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -13,6 +13,9 @@ use crate::{
             clear_dataset_by_dataset_id_query, create_dataset_query, get_dataset_by_id_query,
             get_dataset_usage_query, get_datasets_by_organization_id, get_tags_in_dataset_query,
             soft_delete_dataset_by_id_query, update_dataset_query,
+        },
+        dittofeed_operator::{
+            send_ditto_event, DittoDatasetCreated, DittoTrackProperties, DittoTrackRequest,
         },
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
     },
@@ -130,7 +133,7 @@ pub async fn create_dataset(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     org_with_sub_and_plan: OrganizationWithSubAndPlan,
-    _user: OwnerOnly,
+    user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let org_id = org_with_sub_and_plan.organization.id;
 
@@ -172,6 +175,18 @@ pub async fn create_dataset(
         )
         .await?;
     };
+
+    let dataset_created_event = DittoTrackRequest {
+        event: "DATASET_CREATED".to_string(),
+        user_id: user.0.id,
+        message_id: uuid::Uuid::new_v4(),
+        properties: DittoTrackProperties::DittoDatasetCreated(DittoDatasetCreated {
+            dataset: DatasetDTO::from(dataset),
+        }),
+        r#type: None,
+    };
+
+    send_ditto_event(dataset_created_event).await?;
 
     Ok(HttpResponse::Ok().json(d))
 }

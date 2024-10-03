@@ -12,7 +12,7 @@ def get_search_queries(
     query = """
         SELECT id, query, top_score, created_at, search_type, request_params, latency, results, query_vector, is_duplicate, query_rating, dataset_id
         FROM default.search_queries 
-        WHERE dataset_id = '{}' AND is_duplicate = 0
+        WHERE dataset_id = '{}' AND is_duplicate = 0 AND search_type != 'rag'
         ORDER BY created_at, length(query)
         LIMIT {}
         """.format(
@@ -23,7 +23,7 @@ def get_search_queries(
         SELECT id, query, top_score, created_at, search_type, request_params, latency, results, query_vector, is_duplicate, query_rating, dataset_id
         FROM default.search_queries 
         WHERE dataset_id = '{}'
-            AND created_at >= '{}'
+            AND created_at >= '{}' AND search_type != 'rag'
         ORDER BY created_at, length(query)
         LIMIT {}
         """.format(
