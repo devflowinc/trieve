@@ -1,5 +1,5 @@
 import { Chunk, ChunkWithHighlights } from "../../utils/types";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowIcon } from "../icons";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
@@ -54,12 +54,20 @@ export const Item = ({ item, requestID, index }: Props) => {
     );
   }
   descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
-
-  const title =
+  const [shownImage, setShownImage] = useState<string>(
+    item.chunk?.image_urls?.[0] || ""
+  );
+  const price = item.chunk.num_value
+    ? ` - ${props.currencyPosition === "before" ? props.defaultCurrency : ""}${
+        item.chunk.num_value
+      }${props.currencyPosition === "after" ? props.defaultCurrency : ""}`
+    : "";
+  const title = `  ${
     cleanFirstHeading ||
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
-    item.chunk.metadata?.name;
+    item.chunk.metadata?.name
+  }  ${price}`;
 
   const checkForUpAndDown = (e: KeyboardEvent) => {
     if (e.code === "ArrowDown" || e.code === "ArrowUp") {
@@ -121,10 +129,7 @@ export const Item = ({ item, requestID, index }: Props) => {
           {props.type === "ecommerce" &&
           item.chunk.image_urls?.length &&
           item.chunk.image_urls[0] ? (
-            <img
-              src={item.chunk.image_urls[0]}
-              className="w-8 max-h-8 mr-4 shrink-0"
-            />
+            <img src={shownImage} className="w-8 max-h-8 mr-4 shrink-0" />
           ) : null}
           {title ? (
             <div>
@@ -141,22 +146,27 @@ export const Item = ({ item, requestID, index }: Props) => {
               />
               {props.type === "ecommerce" ? (
                 <>
-                  {item.chunk.num_value ? (
-                    <p className="text-xs text-zinc-700">
-                      Price: {item.chunk.num_value}
-                    </p>
-                  ) : null}
                   {item.chunk.metadata?.variants?.length > 1 ? (
                     <div className="flex flex-wrap gap-1 items-center text-zinc-700 mt-1">
                       <span className="text-[11px]">Variants:</span>
-                      {(item.chunk.metadata.variants as unknown as any[])?.map(
-                        (variant) => (
-                          <span className="text-[11px] px-1 border-zinc-200 border">
-                            {variant.title}
-                            {console.log(variant)}
-                          </span>
-                        )
-                      )}
+                      {(
+                        item.chunk.metadata.variants as unknown as {
+                          featured_image: { src: string };
+                          title: string;
+                        }[]
+                      )?.map((variant) => (
+                        <button
+                          className="text-[11px] px-1 border-zinc-200 border"
+                          onClick={(e) => {
+                            if (variant.featured_image?.src) {
+                              e.stopPropagation();
+                              setShownImage(variant.featured_image?.src);
+                            }
+                          }}
+                        >
+                          {variant.title}
+                        </button>
+                      ))}
                     </div>
                   ) : null}
                 </>
