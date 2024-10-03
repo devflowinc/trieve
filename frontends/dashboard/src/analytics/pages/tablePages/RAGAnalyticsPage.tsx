@@ -11,7 +11,10 @@ import {
 } from "@tanstack/solid-table";
 import { Card } from "../../components/charts/Card";
 import { DatasetContext } from "../../../contexts/DatasetContext";
-import { ALL_FAKE_RAG_OPTIONS } from "../RagAnalyticsPage";
+import {
+  ALL_FAKE_RAG_OPTIONS,
+  RagAnalyticsGraphs,
+} from "../../components/RagAnalyticsGraphs";
 import {
   RAGSortByCols,
   useDataExplorerRag,
@@ -22,7 +25,7 @@ import { IoOpenOutline } from "solid-icons/io";
 import { format } from "date-fns";
 import { parseCustomDateString } from "../../utils/formatDate";
 
-export const RAGTablePage = () => {
+export const RAGAnalyticsPage = () => {
   const navigate = useBetterNav();
   const datasetContext = useContext(DatasetContext);
 
@@ -167,6 +170,7 @@ export const RAGTablePage = () => {
           </Card>
         </Show>
       </div>
+      <RagAnalyticsGraphs />
     </div>
   );
 };

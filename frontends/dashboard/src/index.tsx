@@ -26,11 +26,10 @@ import { DangerZoneForm } from "./components/dataset-settings/DangerZone.tsx";
 import { Chart, registerables } from "chart.js";
 import { AnalyticsOverviewPage } from "./analytics/pages/AnalyticsOverviewPage.tsx";
 import { SearchAnalyticsPage } from "./analytics/pages/SearchAnalyticsPage.tsx";
-import { RagAnalyticsPage } from "./analytics/pages/RagAnalyticsPage.tsx";
+import { RagAnalyticsGraphs } from "./analytics/components/RagAnalyticsGraphs.tsx";
 import { TrendExplorer } from "./analytics/pages/TrendExplorer.tsx";
 import { SingleQueryPage } from "./analytics/pages/SingleQueryPage.tsx";
-import { SearchTable } from "./analytics/pages/tablePages/SearchTable.tsx";
-import { RAGTablePage } from "./analytics/pages/tablePages/RAGTablePage.tsx";
+import { RAGAnalyticsPage } from "./analytics/pages/tablePages/RAGAnalyticsPage.tsx";
 import { ApiContext, trieve } from "./api/trieve.ts";
 import { SingleRAGQueryPage } from "./analytics/pages/SingleRAGQueryPage.tsx";
 import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
@@ -157,10 +156,6 @@ const routes: RouteDefinition[] = [
                     component: AnalyticsOverviewPage,
                   },
                   {
-                    path: "/rag",
-                    component: RagAnalyticsPage,
-                  },
-                  {
                     path: "/trends",
                     component: TrendExplorer,
                   },
@@ -186,7 +181,7 @@ const routes: RouteDefinition[] = [
                       },
                       {
                         path: "/messages",
-                        component: RAGTablePage,
+                        component: RAGAnalyticsPage,
                       },
                       {
                         path: "/recommendations",
