@@ -126,10 +126,19 @@ export const Item = ({ item, requestID, index }: Props) => {
           : {})}
       >
         <div>
-          {props.type === "ecommerce" &&
-          item.chunk.image_urls?.length &&
-          item.chunk.image_urls[0] ? (
-            <img src={shownImage} className="w-8 max-h-8 mr-4 shrink-0" />
+          {props.type === "ecommerce" ? (
+            item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
+              <img src={shownImage} className="w-8 max-h-8 mr-4 shrink-0" />
+            ) : (
+              <div className="w-8 h-8 mr-4 shrink-0">
+                {props.brandLogoImgSrcUrl ? (
+                  <img
+                    src={props.brandLogoImgSrcUrl}
+                    className="w-8 max-h-8 shrink-0"
+                  />
+                ) : null}
+              </div>
+            )
           ) : null}
           {title ? (
             <div>
@@ -157,9 +166,11 @@ export const Item = ({ item, requestID, index }: Props) => {
                       )?.map((variant) => (
                         <button
                           className="text-[11px] px-1 border-zinc-200 border"
-                          onClick={(e) => {
+                          onClick={(ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            ev.nativeEvent.stopImmediatePropagation();
                             if (variant.featured_image?.src) {
-                              e.stopPropagation();
                               setShownImage(variant.featured_image?.src);
                             }
                           }}
