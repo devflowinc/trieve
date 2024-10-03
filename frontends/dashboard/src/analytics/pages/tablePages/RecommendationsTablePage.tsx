@@ -138,6 +138,17 @@ export const RecommendationsTablePage = () => {
       },
     },
     {
+      accessorKey: "top_score",
+      header: "Top Score",
+      cell(props) {
+        return (
+          <>
+            {props.getValue<number>()}
+          </>
+        );
+      },
+    },
+    {
       accessorKey: "results",
       id: "results",
       header: "Results",
