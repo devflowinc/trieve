@@ -71,7 +71,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                       class={cn(
                         props.small ? "py-2 pl-3 pr-2" : "py-3.5 pl-4 pr-3",
                         "sticky top-0 z-10 border-b border-neutral-300 bg-white bg-opacity-75 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8",
-                        props.headerClass
+                        props.headerClass,
                       )}
                     >
                       {(header.column.columnDef as SortableColumnDef<unknown>)
@@ -84,7 +84,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                             ? null
                             : flexRender(
                                 header.column.columnDef.header,
-                                header.getContext()
+                                header.getContext(),
                               )}
                           <Show when={header.column.getIsSorted() === "desc"}>
                             <FaSolidAngleDown />
@@ -99,7 +99,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                             ? null
                             : flexRender(
                                 header.column.columnDef.header,
-                                header.getContext()
+                                header.getContext(),
                               )}
                         </div>
                       )}
@@ -131,14 +131,14 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                         idx() !== props.table.getRowModel().rows.length - 1
                           ? "border-b border-neutral-200"
                           : "",
-                        "whitespace-nowrap text-sm font-medium text-neutral-900"
+                        "whitespace-nowrap text-sm font-medium text-neutral-900",
                       )}
                     >
                       <span class="max-w-[400px] truncate text-ellipsis block">
                         {" "}
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </span>
                     </td>

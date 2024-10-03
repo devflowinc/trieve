@@ -934,6 +934,27 @@ pub async fn get_low_confidence_recommendations_query(
     Ok(RecommendationsEventResponse { queries })
 }
 
+pub async fn get_recommendation_query(
+    dataset_id: uuid::Uuid,
+    recommendation_id: uuid::Uuid,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RecommendationEvent, ServiceError> {
+    let clickhouse_query = clickhouse_client
+        .query("SELECT ?fields FROM recommendations WHERE id = ? AND dataset_id = ?")
+        .bind(recommendation_id)
+        .bind(dataset_id)
+        .fetch_one::<RecommendationEventClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let query: RecommendationEvent = clickhouse_query.into();
+
+    Ok(query)
+}
+
 pub async fn get_recommendation_queries_query(
     dataset_id: uuid::Uuid,
     filter: Option<RecommendationAnalyticsFilter>,

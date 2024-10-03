@@ -454,6 +454,15 @@ pub async fn get_recommendation_analytics(
             .await?;
             RecommendationAnalyticsResponse::RecommendationQueries(recommendation_queries)
         }
+        RecommendationAnalytics::QueryDetails { request_id } => {
+            let recommendation_query = get_recommendation_query(
+                dataset_org_plan_sub.dataset.id,
+                request_id,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RecommendationAnalyticsResponse::QueryDetails(recommendation_query)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
