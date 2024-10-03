@@ -6289,6 +6289,26 @@ pub struct CrawlOptions {
     pub openapi_options: Option<CrawlOpenAPIOptions>,
 }
 
+impl CrawlOptions {
+    pub fn merge(&self, other: CrawlOptions) -> CrawlOptions {
+        CrawlOptions {
+            site_url: self.site_url.clone().or(other.site_url.clone()),
+            interval: self.interval.clone().or(other.interval.clone()),
+            limit: self.limit.or(other.limit),
+            include_tags: self.include_tags.clone().or(other.include_tags.clone()),
+            exclude_tags: self.exclude_tags.clone().or(other.exclude_tags.clone()),
+            include_paths: self.include_paths.clone().or(other.include_paths.clone()),
+            exclude_paths: self.exclude_paths.clone().or(other.exclude_paths.clone()),
+            max_depth: self.max_depth.or(other.max_depth),
+            boost_titles: self.boost_titles.or(other.boost_titles),
+            openapi_options: self
+                .openapi_options
+                .clone()
+                .or(other.openapi_options.clone()),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct FirecrawlCrawlRequest {
