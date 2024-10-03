@@ -126,7 +126,7 @@ body {
       border-color: var(--tv-zinc-200);
 
       &.search {
-        @apply border-t;
+        @apply border-t pt-1;
       }
 
       .bottom-row {
@@ -190,7 +190,6 @@ body {
             &:hover,
             &.active {
               opacity: 100%;
-
             }
           }
         }
