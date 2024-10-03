@@ -1,0 +1,10 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: trieve-keycloak
+spec:
+  healthCheck:
+    type: HTTP
+    checkIntervalSec: 15
+    port: 9000
+    requestPath: /admin/trieve/console/
