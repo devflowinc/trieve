@@ -97,6 +97,7 @@ const Error = (props: { error: string | null | undefined }) => {
   );
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ValidateFn<T extends Record<string, any>> = (value: T) => {
   errors: {
     [key in keyof T]: string | undefined;
