@@ -5,6 +5,7 @@ import { A, useLocation } from "@solidjs/router";
 import {
   AiOutlineBarChart,
   AiOutlineCamera,
+  AiOutlineCaretDown,
   AiOutlineHistory,
   AiOutlineInfoCircle,
   AiOutlineKey,
@@ -157,12 +158,41 @@ export const DashboardSidebar = () => {
               href={`/dataset/${datasetId()}/analytics/trends`}
               label="Trend Explorer"
             />
-            <Link
-              isExternal={false}
-              icon={AiOutlineTable}
+            <A
               href={`/dataset/${datasetId()}/analytics/data/searches`}
-              label="Data Explorer"
-            />
+              class="flex cursor-pointer items-center justify-between gap-2 rounded-md p-1 px-2 hover:underline"
+              classList={{
+                "bg-magenta-200/10":
+                  pathname.pathname.includes("/analytics/data"),
+              }}
+            >
+              <div class="flex items-center gap-2">
+                <div class="pl-[2px]">
+                  <AiOutlineCaretDown size={12} />
+                </div>
+                Data Explorer
+              </div>
+            </A>
+            <div class="pl-6">
+              <Link
+                isExternal={false}
+                icon={AiOutlineTable}
+                href={`/dataset/${datasetId()}/analytics/data/searches`}
+                label="Searches"
+              />
+              <Link
+                isExternal={false}
+                icon={AiOutlineTable}
+                href={`/dataset/${datasetId()}/analytics/data/messages`}
+                label="RAG Messages"
+              />
+              <Link
+                isExternal={false}
+                icon={AiOutlineTable}
+                href={`/dataset/${datasetId()}/analytics/data/recommendations`}
+                label="Recommendations"
+              />
+            </div>
           </div>
           <div class="gap flex flex-col pt-4">
             <SectionLabel>Dataset Settings</SectionLabel>

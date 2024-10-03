@@ -4,6 +4,9 @@ import { AnalyticsFilter, AnalyticsParams } from "shared/types";
 import { createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { getRpsUsageGraph } from "../../api/analytics";
 import { Chart } from "chart.js";
+import { fillDate } from "../../utils/graphDatesFiller";
+import { DatasetContext } from "../../../contexts/DatasetContext";
+import "chartjs-adapter-date-fns";
 
 interface SearchUsageProps {
   params: {
@@ -11,10 +14,6 @@ interface SearchUsageProps {
     granularity: AnalyticsParams["granularity"];
   };
 }
-
-import "chartjs-adapter-date-fns";
-import { fillDate } from "../../utils/graphDatesFiller";
-import { DatasetContext } from "../../../contexts/DatasetContext";
 
 export const SearchUsageGraph = (props: SearchUsageProps) => {
   const dataset = useContext(DatasetContext);
@@ -114,6 +113,17 @@ export const SearchUsageGraph = (props: SearchUsageProps) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = undefined;
     }
+
+    if (props.params.granularity === "day") {
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.round = "day";
+    } else {
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.round = undefined;
+    }
+
     const info = fillDate({
       data,
       date_range: props.params.filter.date_range,
