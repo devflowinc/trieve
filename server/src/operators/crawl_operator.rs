@@ -174,7 +174,7 @@ pub async fn get_crawl_request_by_dataset_id_query(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     let request: Option<CrawlRequestPG> = crawl_requests_table::crawl_requests
-        .filter(crawl_requests_table::scrape_id.eq(dataset_id))
+        .filter(crawl_requests_table::dataset_id.eq(dataset_id))
         .select((
             crawl_requests_table::id,
             crawl_requests_table::url,

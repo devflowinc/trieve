@@ -1,4 +1,4 @@
-import { createQuery } from "@tanstack/solid-query";
+import { createMutation, createQuery } from "@tanstack/solid-query";
 import { Show, useContext } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { useTrieve } from "../../hooks/useTrieve";
@@ -6,6 +6,9 @@ import { CrawlInterval, CrawlOptions } from "trieve-ts-sdk";
 import { createStore } from "solid-js/store";
 import { MultiStringInput, Select } from "shared/ui";
 import { toTitleCase } from "../../analytics/utils/titleCase";
+import { Spacer } from "../../components/Spacer";
+import { UserContext } from "../../contexts/UserContext";
+import { createToast } from "../../components/ShowToasts";
 
 const defaultCrawlOptions: CrawlOptions = {
   boost_titles: false,
@@ -21,6 +24,7 @@ const defaultCrawlOptions: CrawlOptions = {
 
 export const CrawlingSettings = () => {
   const datasetId = useContext(DatasetContext).datasetId;
+  const userContext = useContext(UserContext);
   const trieve = useTrieve();
 
   const crawlSettingsQuery = createQuery(() => ({
@@ -37,9 +41,41 @@ export const CrawlingSettings = () => {
     },
   }));
 
+  const updateDatasetMutation = createMutation(() => ({
+    mutationKey: ["crawl-settings-update", datasetId()],
+    mutationFn: async (options: CrawlOptions) => {
+      await trieve.fetch("/api/dataset", "put", {
+        data: {
+          crawl_options: options,
+          dataset_id: datasetId(),
+        },
+        organizationId: userContext.selectedOrg().id,
+      });
+    },
+    onSuccess() {
+      createToast({
+        title: "Success",
+        type: "success",
+        message: "Successfully updated crawl options",
+      });
+    },
+    onError() {
+      createToast({
+        title: "Error",
+        type: "error",
+        message: "Failed to update crawl options",
+      });
+    },
+  }));
+
+  const onSave = (options: CrawlOptions) => {
+    updateDatasetMutation.mutate(options);
+  };
+
   return (
     <Show when={crawlSettingsQuery.isSuccess}>
       <RealCrawlingSettings
+        onSave={onSave}
         mode={crawlSettingsQuery.data ? "edit" : "create"}
         initialCrawlingSettings={crawlSettingsQuery.data || defaultCrawlOptions}
       />
@@ -50,6 +86,7 @@ export const CrawlingSettings = () => {
 interface RealCrawlingSettingsProps {
   initialCrawlingSettings: CrawlOptions;
   mode: "edit" | "create";
+  onSave: (options: CrawlOptions) => void;
 }
 
 const Error = (props: { error: string | null | undefined }) => {
@@ -74,9 +111,21 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
   >({});
 
   const validate: ValidateFn<CrawlOptions> = (value) => {
+    console.log(value);
     const errors: Record<string, string> = {};
     if (!value.site_url) {
       errors.site_url = "Site URL is required";
+    }
+
+    if (value.site_url && !value.site_url.startsWith("http")) {
+      errors.site_url = "Invalid Site URL - http(s):// required";
+    }
+
+    if (!value.limit || value.limit <= 0) {
+      errors.limit = "Limit must be greater than 0";
+    }
+    if (!value.max_depth) {
+      errors.max_depth = "Max depth must be greater than 0";
     }
 
     return {
@@ -88,7 +137,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
   const submit = () => {
     const validateResult = validate(options);
     if (validateResult.valid) {
-      console.log("submit");
+      props.onSave(options);
     } else {
       setErrors(validateResult.errors);
     }
@@ -112,6 +161,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <input
             name="url"
             value={options.site_url || ""}
+            placeholder="URL to crawl..."
             onInput={(e) => {
               setOptions("site_url", e.currentTarget.value);
             }}
@@ -119,7 +169,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
           <Error error={errors.site_url} />
         </div>
-        <div>
+        <div class="min-w-[200px]">
           <Select
             options={["daily", "weekly", "monthly"] as CrawlInterval[]}
             display={(option) => toTitleCase(option)}
@@ -133,7 +183,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
       </div>
 
-      <div class="flex items-center gap-2 pt-2">
+      <div class="flex items-center gap-2 py-2 pt-4">
         <label class="block">Boost Titles</label>
         <input
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
@@ -154,6 +204,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             class="block rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             type="number"
           />
+          <Error error={errors.limit} />
         </div>
         <div class="pt-2">
           <label class="block" for="">
@@ -167,33 +218,70 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             class="block rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             type="number"
           />
+          <Error error={errors.max_depth} />
         </div>
       </div>
-      <div class="flex gap-2">
-        <div class="pt-4">
+      <div class="grid w-full grid-cols-2 justify-stretch gap-4 pt-4 xl:grid-cols-4">
+        <div class="">
           <div>Include Paths</div>
           <MultiStringInput
-            addClass="bg-magenta-100/40 px-2 rounded border border-magenta-300/40"
+            placeholder="/docs/*"
+            addClass="bg-magenta-100/40 px-2 rounded text-sm border border-magenta-300/40"
+            inputClass="w-full"
             addLabel="Add Path"
             onChange={(value) => {
               setOptions("include_paths", value);
             }}
             value={options.include_paths || []}
           />
+          <Error error={errors.include_paths} />
         </div>
-        <div class="pt-4">
+        <div class="">
+          <div>Exclude Paths</div>
+          <MultiStringInput
+            placeholder="/admin/*"
+            addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
+            addLabel="Add Path"
+            onChange={(value) => {
+              setOptions("exclude_paths", value);
+            }}
+            value={options.exclude_paths || []}
+          />
+          <Error error={errors.exclude_paths} />
+        </div>
+        <div class="">
           <div>Include Tags</div>
           <MultiStringInput
-            addClass="bg-magenta-100/40 px-2 rounded border border-magenta-300/40"
+            placeholder="h1..."
+            addClass="bg-magenta-100/40 text-sm px-2 rounded border border-magenta-300/40"
             addLabel="Add Tag"
             onChange={(value) => {
               setOptions("include_tags", value);
             }}
             value={options.include_tags || []}
           />
+          <Error error={errors.include_tags} />
+        </div>
+        <div class="">
+          <div>Exclude Tags</div>
+          <MultiStringInput
+            placeholder="button..."
+            addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
+            addLabel="Add Tag"
+            onChange={(value) => {
+              setOptions("exclude_tags", value);
+            }}
+            value={options.exclude_tags || []}
+          />
+          <Error error={errors.exclude_tags} />
         </div>
       </div>
-      <button>Submit</button>
+      <Spacer h={18} />
+      <div class="flex justify-end">
+        <button class="rounded border-magenta-200/80 bg-magenta-100 px-3 py-2 font-medium shadow hover:shadow-md">
+          Save
+        </button>
+      </div>
     </form>
   );
 };
