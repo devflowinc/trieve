@@ -1,18 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: glasskube-dependencies
+  name: trieve-hackernews
   namespace: argocd
 spec:
   destination:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: glasskube/dependencies
-    repoURL: https://github.com/pmig/trieve
-    targetRevision: pmig/gcp-trieve
+    path: glasskube/trieve-gcp
+    repoURL: https://github.com/pmig/trieve-gcp
+    targetRevision: HEAD
     kustomize:
       namespace: trieve
+
   syncPolicy:
     syncOptions:
       - ApplyOutOfSyncOnly=true
