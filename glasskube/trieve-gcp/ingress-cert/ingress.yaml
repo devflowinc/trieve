@@ -1,0 +1,6 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: trieve
+  annotations:
+    networking.gke.io/managed-certificates: trieve-cert

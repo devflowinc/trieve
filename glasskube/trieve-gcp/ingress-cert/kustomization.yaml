@@ -1,0 +1,5 @@
+kind: Component
+resources:
+  - managed-certificate.yaml
+patches:
+  - path: ingress.yaml

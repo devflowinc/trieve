@@ -3,14 +3,6 @@ commonLabels:
 nameSuffix: -search
 resources:
   - ../base
-patches:
-  - target:
-      kind: Ingress
-      name: trieve-ui
-    patch: |-
-      - op: add
-        path: /spec/rules/0/host
-        value: search.localtrieve.com
 images:
   - name: ui
     newName: trieve/search

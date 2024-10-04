@@ -3,4 +3,3 @@ commonLabels:
 resources:
   - keycloak.yaml
   - realm-import.yaml
-  - ingress.yaml
