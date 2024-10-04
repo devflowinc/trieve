@@ -3,4 +3,4 @@ resources:
 components:
   - ../trieve/embeddings/components/gpu
   - ./embeddings/components/gpu
-  - ingress
+  - ingress-cert

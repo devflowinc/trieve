@@ -4,6 +4,7 @@ commonLabels:
   app.kubernetes.io/instance: trieve
 resources:
   - configmap.yaml
+  - ingress.yaml
   - clickhouse
   - keycloak
   - server
