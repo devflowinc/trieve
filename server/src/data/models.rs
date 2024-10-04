@@ -6305,10 +6305,7 @@ impl CrawlOptions {
             exclude_paths: self.exclude_paths.clone().or(other.exclude_paths.clone()),
             max_depth: self.max_depth.or(other.max_depth),
             boost_titles: self.boost_titles.or(other.boost_titles),
-            openapi_options: self
-                .openapi_options
-                .clone()
-                .or(other.openapi_options.clone()),
+            openapi_options: self.openapi_options.clone(),
         }
     }
 }
