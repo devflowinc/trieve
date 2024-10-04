@@ -6,13 +6,13 @@ import {
   AiOutlineBarChart,
   AiOutlineCamera,
   AiOutlineCaretDown,
+  AiOutlineFilter,
   AiOutlineHistory,
   AiOutlineInfoCircle,
   AiOutlineKey,
   AiOutlineLeft,
   AiOutlineMessage,
   AiOutlineSearch,
-  AiOutlineTable,
 } from "solid-icons/ai";
 import { Spacer } from "./Spacer";
 import { Portal } from "solid-js/web";
@@ -176,19 +176,19 @@ export const DashboardSidebar = () => {
             <div class="pl-6">
               <Link
                 isExternal={false}
-                icon={AiOutlineTable}
+                icon={AiOutlineSearch}
                 href={`/dataset/${datasetId()}/analytics/data/searches`}
                 label="Searches"
               />
               <Link
                 isExternal={false}
-                icon={AiOutlineTable}
+                icon={AiOutlineMessage}
                 href={`/dataset/${datasetId()}/analytics/data/messages`}
                 label="RAG Messages"
               />
               <Link
                 isExternal={false}
-                icon={AiOutlineTable}
+                icon={AiOutlineFilter}
                 href={`/dataset/${datasetId()}/analytics/data/recommendations`}
                 label="Recommendations"
               />
