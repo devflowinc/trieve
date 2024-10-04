@@ -35,7 +35,6 @@ export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
   allowedAttributes: {
     ...sanitizeHtml.defaults.allowedAttributes,
-    "*": ["style"],
     button: ["onclick"],
   },
 };

@@ -161,6 +161,7 @@ pub async fn get_crawl_request(
         .first::<CrawlRequestPG>(&mut conn)
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
     Ok(request.into())
 }
 
@@ -255,6 +256,7 @@ pub async fn create_crawl_request(
         .get()
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
     diesel::insert_into(crawl_requests_table::crawl_requests)
         .values(&new_crawl_request)
         .execute(&mut conn)
@@ -274,6 +276,7 @@ pub async fn create_crawl_request(
         .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
     Ok(new_crawl_request.scrape_id)
 }
 
@@ -349,16 +352,6 @@ pub async fn update_crawl_settings_for_dataset(
         .await;
 
     if let Some(ref url) = crawl_options.site_url {
-        if crawl_req.is_err() {
-            crawl(
-                crawl_options.clone(),
-                pool.clone(),
-                redis_pool.clone(),
-                dataset_id,
-            )
-            .await?;
-        }
-
         diesel::update(
             crawl_requests_table::crawl_requests
                 .filter(crawl_requests_table::dataset_id.eq(dataset_id)),
@@ -392,7 +385,6 @@ pub async fn update_crawl_settings_for_dataset(
     )
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    // Merge the json values
     let merged_options = crawl_options.merge(previous_crawl_options);
 
     diesel::update(
@@ -407,6 +399,14 @@ pub async fn update_crawl_settings_for_dataset(
     .execute(&mut conn)
     .await
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    crawl(
+        crawl_options.clone(),
+        pool.clone(),
+        redis_pool.clone(),
+        dataset_id,
+    )
+    .await?;
 
     Ok(())
 }
