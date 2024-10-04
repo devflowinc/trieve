@@ -3,14 +3,6 @@ commonLabels:
 nameSuffix: -analytics
 resources:
   - ../base
-patches:
-  - target:
-      kind: Ingress
-      name: trieve-ui
-    patch: |-
-      - op: add
-        path: /spec/rules/0/host
-        value: analytics.localtrieve.com
 images:
   - name: ui
     newName: trieve/analytics-site

@@ -1,0 +1,12 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: trieve-cert
+spec:
+  domains:
+    - auth.localtrieve.com
+    - api.localtrieve.com
+    - analytics.localtrieve.com
+    - chat.localtrieve.com
+    - dashboard.localtrieve.com
+    - search.localtrieve.com
