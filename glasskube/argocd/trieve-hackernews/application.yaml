@@ -7,7 +7,7 @@ spec:
   packageInfo:
     name: trieve-gcp
     repositoryName: trieve
-    version: v0.11.8+3
+    version: v0.11.8+4
   values:
     cpuMode:
       value: 'false'
