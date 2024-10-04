@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { createQuery } from "@tanstack/solid-query";
 import { getRagQuery, getSearchQuery } from "../../api/analytics";
 import { createMemo, For, Show, useContext } from "solid-js";
@@ -49,7 +52,7 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
       <div class="flex flex-col gap-8">
         <div>
           <button
-            class="flex w-fit items-center space-x-4 rounded-md bg-fuchsia-200 p-1 text-base font-semibold leading-6 text-fuchsia-600"
+            class="flex w-fit items-center space-x-4 rounded-md bg-magenta-200 p-1 text-base font-semibold leading-6 text-magenta-600"
             onClick={() => history.back()}
           >
             <IoArrowBackOutline /> Back
@@ -80,6 +83,12 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
               label="Top Score"
               value={props.search_data.top_score.toFixed(4)}
             />
+            <Show when={props.rag_data.query_rating}>
+              <DataSquare
+                label="User Rating"
+                value={props.rag_data.query_rating?.rating.toString() ?? "N/A"}
+              />
+            </Show>
           </dl>
         </div>
         <Card title="LLM Response">

@@ -11,7 +11,10 @@ import {
 } from "@tanstack/solid-table";
 import { Card } from "../../components/charts/Card";
 import { DatasetContext } from "../../../contexts/DatasetContext";
-import { ALL_FAKE_RAG_OPTIONS } from "../RagAnalyticsPage";
+import {
+  ALL_FAKE_RAG_OPTIONS,
+  RagAnalyticsGraphs,
+} from "../../components/RagAnalyticsGraphs";
 import {
   RAGSortByCols,
   useDataExplorerRag,
@@ -22,7 +25,7 @@ import { IoOpenOutline } from "solid-icons/io";
 import { format } from "date-fns";
 import { parseCustomDateString } from "../../utils/formatDate";
 
-export const RAGTablePage = () => {
+export const RAGAnalyticsPage = () => {
   const navigate = useBetterNav();
   const datasetContext = useContext(DatasetContext);
 
@@ -55,7 +58,7 @@ export const RAGTablePage = () => {
     },
     {
       accessorKey: "created_at",
-      header: "Searched At",
+      header: "Queried At",
       sortable: true,
       cell(props) {
         return format(
@@ -133,8 +136,8 @@ export const RAGTablePage = () => {
 
   return (
     <div>
-      <div class="pb-1 text-lg">All RAG Queries</div>
-      <div class="mb-4 rounded-md bg-white">
+      <div class="mt-4 pb-1 text-lg">All RAG Queries</div>
+      <div class="rounded-md bg-white">
         <Show when={ragTableQuery.data}>
           <Card>
             <RAGFilterBar noPadding filters={filters} setFilters={setFilters} />
@@ -167,6 +170,8 @@ export const RAGTablePage = () => {
           </Card>
         </Show>
       </div>
+      <div class="my-4 border-b border-b-neutral-200 pt-2" />
+      <RagAnalyticsGraphs />
     </div>
   );
 };

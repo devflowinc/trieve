@@ -62,7 +62,7 @@ const columns: SortableColumnDef<SearchQueryEvent>[] = [
   },
 ];
 
-export const SearchTablePage = () => {
+export const SearchTable = () => {
   const navigate = useBetterNav();
   const datasetContext = useContext(DatasetContext);
 
@@ -116,8 +116,9 @@ export const SearchTablePage = () => {
         <Show when={searchTableQuery.data}>
           <Card>
             <FilterBar noPadding filters={filters} setFilters={setFilters} />
-            <div class="mt-4">
+            <div class="mt-4 overflow-x-auto">
               <TanStackTable
+                class="overflow-hidden"
                 pages={pages}
                 perPage={10}
                 table={table as unknown as Table<SearchQueryEvent>}

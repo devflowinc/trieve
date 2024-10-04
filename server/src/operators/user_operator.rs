@@ -681,5 +681,22 @@ pub async fn get_all_users_query(pool: web::Data<Pool>) -> Result<Vec<SlimUser>,
         return Err(ServiceError::BadRequest("No users found".to_string()));
     }
 
-    Ok(slim_users)
+    let mut unique_slim_users: Vec<SlimUser> = Vec::new();
+    for slim_user in slim_users {
+        if let Some(existing_user) = unique_slim_users.iter_mut().find(|u| u.id == slim_user.id) {
+            // Merge user_orgs
+            existing_user.user_orgs.extend(slim_user.user_orgs);
+            existing_user.user_orgs.sort_by_key(|uo| uo.id);
+            existing_user.user_orgs.dedup_by(|a, b| a.id == b.id);
+
+            // Merge orgs
+            existing_user.orgs.extend(slim_user.orgs);
+            existing_user.orgs.sort_by_key(|o| o.id);
+            existing_user.orgs.dedup_by(|a, b| a.id == b.id);
+        } else {
+            unique_slim_users.push(slim_user);
+        }
+    }
+
+    Ok(unique_slim_users)
 }

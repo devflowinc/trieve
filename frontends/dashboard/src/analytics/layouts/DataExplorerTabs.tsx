@@ -21,6 +21,10 @@ export const DataExplorerTabs: ParentComponent = (props) => {
       name: "RAG Messages",
       path: pathname().split("/").slice(0, -1).join("/") + "/messages",
     },
+    {
+      name: "Recommendations",
+      path: pathname().split("/").slice(0, -1).join("/") + "/recommendations",
+    },
   ];
 
   return (

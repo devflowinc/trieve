@@ -26,14 +26,15 @@ import { DangerZoneForm } from "./components/dataset-settings/DangerZone.tsx";
 import { Chart, registerables } from "chart.js";
 import { AnalyticsOverviewPage } from "./analytics/pages/AnalyticsOverviewPage.tsx";
 import { SearchAnalyticsPage } from "./analytics/pages/SearchAnalyticsPage.tsx";
-import { RagAnalyticsPage } from "./analytics/pages/RagAnalyticsPage.tsx";
 import { TrendExplorer } from "./analytics/pages/TrendExplorer.tsx";
 import { SingleQueryPage } from "./analytics/pages/SingleQueryPage.tsx";
-import { SearchTablePage } from "./analytics/pages/tablePages/SearchTablePage.tsx";
-import { RAGTablePage } from "./analytics/pages/tablePages/RAGTablePage.tsx";
+import { RAGAnalyticsPage } from "./analytics/pages/tablePages/RAGAnalyticsPage.tsx";
 import { ApiContext, trieve } from "./api/trieve.ts";
 import { SingleRAGQueryPage } from "./analytics/pages/SingleRAGQueryPage.tsx";
 import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
+import { CrawlingSettings } from "./pages/dataset/CrawlingSettings.tsx";
+import { RecommendationsTablePage } from "./analytics/pages/tablePages/RecommendationsTablePage.tsx";
+import { SingleRecommendationQueryPage } from "./analytics/pages/SingleRecommendationQueryPage.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -141,6 +142,10 @@ const routes: RouteDefinition[] = [
                 path: "/manage",
                 component: DangerZoneForm,
               },
+              {
+                path: "/crawling",
+                component: CrawlingSettings,
+              },
 
               {
                 path: "/analytics",
@@ -148,14 +153,6 @@ const routes: RouteDefinition[] = [
                   {
                     path: "/",
                     component: AnalyticsOverviewPage,
-                  },
-                  {
-                    path: "/search",
-                    component: SearchAnalyticsPage,
-                  },
-                  {
-                    path: "/rag",
-                    component: RagAnalyticsPage,
                   },
                   {
                     path: "/trends",
@@ -170,16 +167,24 @@ const routes: RouteDefinition[] = [
                     component: SingleRAGQueryPage,
                   },
                   {
+                    path: "/recommendations/:queryId",
+                    component: SingleRecommendationQueryPage,
+                  },
+                  {
                     path: "/data",
                     component: DataExplorerTabs, // Add back when rag table page is implemented
                     children: [
                       {
                         path: "/searches",
-                        component: SearchTablePage,
+                        component: SearchAnalyticsPage,
                       },
                       {
                         path: "/messages",
-                        component: RAGTablePage,
+                        component: RAGAnalyticsPage,
+                      },
+                      {
+                        path: "/recommendations",
+                        component: RecommendationsTablePage,
                       },
                     ],
                   },

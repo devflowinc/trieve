@@ -59,10 +59,7 @@ export const QueryCounts = () => {
           />
         </div>
       </div>
-      <Show
-        fallback={<div class="py-8">Loading...</div>}
-        when={queryCountsQuery.data}
-      >
+      <Show when={queryCountsQuery.data}>
         {(data) => (
           <div class="flex justify-around gap-2 py-2">
             <For

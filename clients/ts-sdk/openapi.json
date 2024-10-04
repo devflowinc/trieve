@@ -3208,6 +3208,76 @@
         ]
       }
     },
+    "/api/dataset/crawl_options/{dataset_id}": {
+      "get": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Get Dataset Crawl Options",
+        "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
+        "operationId": "get_dataset_crawl_options",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "description": "The id of the dataset you want to retrieve.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Crawl options retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCrawlOptionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to retrieving the crawl options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/dataset/files/{dataset_id}/{page}": {
       "get": {
         "tags": [
@@ -9119,6 +9189,43 @@
           }
         }
       },
+      "GetCrawlOptionsResponse": {
+        "type": "object",
+        "properties": {
+          "crawl_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CrawlOptions"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "example": {
+          "crawl_options": {
+            "exclude_paths": [
+              "https://example.com/exclude"
+            ],
+            "exclude_tags": [
+              "#ad",
+              "#footer"
+            ],
+            "include_paths": [
+              "https://example.com/include"
+            ],
+            "include_tags": [
+              "h1",
+              "p",
+              "a",
+              ".main-content"
+            ],
+            "interval": "daily",
+            "limit": 1000,
+            "max_depth": 10,
+            "site_url": "https://example.com"
+          }
+        }
+      },
       "GetDatasetsPagination": {
         "type": "object",
         "properties": {
@@ -10740,6 +10847,26 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "QueryDetails",
+            "required": [
+              "request_id",
+              "type"
+            ],
+            "properties": {
+              "request_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "query_details"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -10774,6 +10901,9 @@
           },
           {
             "$ref": "#/components/schemas/RecommendationsEventResponse"
+          },
+          {
+            "$ref": "#/components/schemas/RecommendationEvent"
           }
         ]
       },

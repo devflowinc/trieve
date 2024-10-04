@@ -12,6 +12,7 @@ import { Accessor, createMemo, createSignal, For, Show } from "solid-js";
 import { TbSelector } from "solid-icons/tb";
 import {
   differenceInHours,
+  format,
   formatDistanceToNowStrict,
   getDate,
   subHours,
@@ -20,7 +21,7 @@ import {
 import { differenceInMinutes } from "date-fns/fp";
 
 const getGranularitySuggestion = (
-  range: DateRangeFilter
+  range: DateRangeFilter,
 ): AnalyticsParams["granularity"] => {
   const startDate = range.gt || range.gte;
   const endDate = range.lt || range.lte || new Date();
@@ -61,7 +62,7 @@ const transformOurTypeToTheirs = (value: DateRangeFilter): PickerAloneValue => {
 
 const transformTheirTypeToOurs = (
   startDate: DateObjectUnits,
-  endDate: DateObjectUnits
+  endDate: DateObjectUnits,
 ): DateRangeFilter => {
   const actuallyNow = unitIsToday(endDate);
   return {
@@ -75,15 +76,17 @@ const transformTheirTypeToOurs = (
 const getLabelFromRange = (value: DateRangeFilter): string => {
   const endDate = value.lte || value.lt || new Date();
   const startDate = value.gte || value.gt;
+
   if (!startDate) {
     return "Error"; // This should never happen
   }
+
   // The end range of the date is set to right now, use simple labels
   if (Math.abs(differenceInMinutes(endDate, new Date())) < 4) {
     return "Last " + formatDistanceToNowStrict(startDate);
   }
 
-  return "NO LABEL";
+  return `${format(startDate, "MMM d")} to ${format(endDate, "MMM d")}`;
 };
 
 export const unitIsToday = (unit: DateObjectUnits) => {
@@ -103,7 +106,7 @@ interface DateRangePickerProps {
   value: DateRangeFilter;
   onChange: (value: DateRangeFilter) => void;
   onGranularitySuggestion?: (
-    granularity: AnalyticsParams["granularity"]
+    granularity: AnalyticsParams["granularity"],
   ) => void;
   initialSelectedPresetId?: number;
   presets?: DatePreset[];
@@ -111,7 +114,7 @@ interface DateRangePickerProps {
 
 export const DateRangePicker = (props: DateRangePickerProps) => {
   const [selectedPresetId, setSelectedPresetId] = createSignal<number>(
-    props.initialSelectedPresetId || 0
+    props.initialSelectedPresetId || 0,
   );
 
   const dateRangeValue = createMemo(() => {
@@ -123,14 +126,14 @@ export const DateRangePicker = (props: DateRangePickerProps) => {
   });
 
   const handleChange: ((data: DatePickerOnChange) => void) | undefined = (
-    data
+    data,
   ) => {
     if (data.type === "range") {
       if (data.startDate && data.endDate) {
         setSelectedPresetId(0);
         const transformed = transformTheirTypeToOurs(
           data.startDate,
-          data.endDate
+          data.endDate,
         );
 
         props.onChange(transformed);
@@ -289,7 +292,7 @@ interface PresetsProps {
   selectedPresetId: number;
   setSelectedPresetId: (id: number) => void;
   onGranularitySuggestion?: (
-    granularity: AnalyticsParams["granularity"]
+    granularity: AnalyticsParams["granularity"],
   ) => void;
 }
 

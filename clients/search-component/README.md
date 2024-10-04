@@ -78,7 +78,6 @@ declare module "solid-js" {
 | trieve               | TrieveSDK                                                                                      | null                                       |
 | chat                 | boolean                                                                                        | true                                       |
 | analytics            | boolean                                                                                        | true                                       |
-| showImages           | boolean                                                                                        | false                                      |
 | placeholder          | string                                                                                         | "Search..."                                |
 | onResultClick        | () => void                                                                                     | () => {}                                   |
 | theme                | "light" or "dark"                                                                              | "light"                                    |
@@ -119,7 +118,6 @@ declare module "solid-js" {
 | Name          | Type                                                                                           | Default                     |
 | ------------- | ---------------------------------------------------------------------------------------------- | --------------------------- |
 | trieve        | TrieveSDK                                                                                      | null                        |
-| showImages    | boolean                                                                                        | false                       |
 | placeholder   | string                                                                                         | "Search..."                 |
 | onResultClick | () => void                                                                                     | () => {}                    |
 | theme         | "light" or "dark"                                                                              | "light"                     |
@@ -134,8 +132,9 @@ MIT
 The `example/` folder shows the example application for what rendering this would look like
 
 Start the listener to update the search-component's css and javascript
+
 ```sh
-$clients/search-component yarn 
+$clients/search-component yarn
 $clients/search-component yarn dev
 ```
 

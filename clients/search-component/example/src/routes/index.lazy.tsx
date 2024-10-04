@@ -1,15 +1,21 @@
-import { TrieveSearch, TrieveSDK, TrieveModalSearch } from "../../src/index";
-import "../../dist/index.css";
+import { TrieveSearch, TrieveSDK, TrieveModalSearch } from "../../../src/index";
+import "../../../dist/index.css";
 import { useState } from "react";
-import { IconMoon, IconNext, IconPrevious, IconSun } from "./Icons";
+import { IconMoon, IconNext, IconPrevious, IconSun } from "../Icons";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
-const trieve = new TrieveSDK({
-  apiKey: "tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI",
-  datasetId: "4650e231-7857-45aa-beb1-cb52006a2460",
+import { createLazyFileRoute } from "@tanstack/react-router";
+
+export const Route = createLazyFileRoute("/")({
+  component: Home,
 });
 
-export default function App() {
+const trieve = new TrieveSDK({
+  apiKey: "tr-IzHXaZ89aELJXk0RkP1oIgqA6GFLGInG",
+  datasetId: "78c10935-12ad-4431-bb0f-3d9929262861",
+});
+
+export default function Home() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
   return (

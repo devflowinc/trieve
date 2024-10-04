@@ -1,9 +1,16 @@
-export const Spacer = (props: { h: number; withBorder?: boolean }) => {
+import { cn } from "shared/utils";
+
+export const Spacer = (props: {
+  h: number;
+  withBorder?: boolean;
+  class?: string;
+}) => {
   return (
     <div
-      classList={{
-        "border-b border-b-neutral-300": props.withBorder,
-      }}
+      class={cn(
+        props.withBorder && "border-b border-b-neutral-300",
+        props.class,
+      )}
       style={{ height: `${props.h}px` }}
     />
   );

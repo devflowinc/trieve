@@ -120,7 +120,6 @@ export const DatasetHomepage = () => {
       return;
     }
     const newDatasetName = input();
-    console.log("newDatasetName", newDatasetName);
     updateDatasetNameMutation.mutate(newDatasetName);
   };
 

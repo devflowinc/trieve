@@ -65,6 +65,12 @@ export const SingleQuery = (props: SingleQueryProps) => {
               label="Top Score"
               value={props.data.top_score.toPrecision(4)}
             />
+            <Show when={props.data.query_rating}>
+              <DataSquare
+                label="User Rating"
+                value={props.data.query_rating?.rating.toString() ?? "N/A"}
+              />
+            </Show>
           </dl>
         </div>
         <Card title="Results">

@@ -12,7 +12,7 @@ export const CTRSummary = (props: SearchCTRStatsProps) => {
   const ctrNeedsSetup = useCTRNeedsSetup();
 
   return (
-    <Show fallback={<div>Loading...</div>} when={searchSummaryQuery.data}>
+    <Show when={searchSummaryQuery.data}>
       {(data) => (
         <Show when={!ctrNeedsSetup()}>
           <div class="h-2" />

@@ -1109,6 +1109,10 @@ export type GetChunksInGroupsResponseBody = {
     total_pages: number;
 };
 
+export type GetCrawlOptionsResponse = {
+    crawl_options?: ((CrawlOptions) | null);
+};
+
 export type GetDatasetsPagination = {
     limit?: (number) | null;
     offset?: (number) | null;
@@ -1575,6 +1579,9 @@ export type RecommendationAnalytics = {
     sort_by?: ((SearchSortBy) | null);
     sort_order?: ((SortOrder) | null);
     type: 'recommendation_queries';
+} | {
+    request_id: string;
+    type: 'query_details';
 };
 
 export type type4 = 'low_confidence_recommendations';
@@ -1584,7 +1591,7 @@ export type RecommendationAnalyticsFilter = {
     recommendation_type?: ((RecommendationType) | null);
 };
 
-export type RecommendationAnalyticsResponse = RecommendationsEventResponse;
+export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent;
 
 export type RecommendationCTRMetrics = {
     avg_position_of_click: number;
@@ -3285,6 +3292,19 @@ export type ClearDatasetData = {
 
 export type ClearDatasetResponse = (void);
 
+export type GetDatasetCrawlOptionsData = {
+    /**
+     * The id of the dataset you want to retrieve.
+     */
+    datasetId: string;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetDatasetCrawlOptionsResponse = (GetCrawlOptionsResponse);
+
 export type GetDatasetFilesHandlerData = {
     /**
      * The id of the dataset to fetch files for.
@@ -4551,6 +4571,25 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to deleting the dataset
+                 */
+                400: ErrorResponseBody;
+                /**
+                 * Dataset not found
+                 */
+                404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/dataset/crawl_options/{dataset_id}': {
+        get: {
+            req: GetDatasetCrawlOptionsData;
+            res: {
+                /**
+                 * Crawl options retrieved successfully
+                 */
+                200: GetCrawlOptionsResponse;
+                /**
+                 * Service error relating to retrieving the crawl options
                  */
                 400: ErrorResponseBody;
                 /**

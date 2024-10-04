@@ -5195,6 +5195,8 @@ pub enum RecommendationAnalytics {
         sort_by: Option<SearchSortBy>,
         sort_order: Option<SortOrder>,
     },
+    #[schema(title = "QueryDetails")]
+    QueryDetails { request_id: uuid::Uuid },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -5314,6 +5316,8 @@ pub enum RecommendationAnalyticsResponse {
     LowConfidenceRecommendations(RecommendationsEventResponse),
     #[schema(title = "RecommendationQueries")]
     RecommendationQueries(RecommendationsEventResponse),
+    #[schema(title = "QueryDetails")]
+    QueryDetails(RecommendationEvent),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -6287,6 +6291,23 @@ pub struct CrawlOptions {
     pub boost_titles: Option<bool>,
     /// Options for including an openapi spec in the crawl
     pub openapi_options: Option<CrawlOpenAPIOptions>,
+}
+
+impl CrawlOptions {
+    pub fn merge(&self, other: CrawlOptions) -> CrawlOptions {
+        CrawlOptions {
+            site_url: self.site_url.clone().or(other.site_url.clone()),
+            interval: self.interval.clone().or(other.interval.clone()),
+            limit: self.limit.or(other.limit),
+            include_tags: self.include_tags.clone().or(other.include_tags.clone()),
+            exclude_tags: self.exclude_tags.clone().or(other.exclude_tags.clone()),
+            include_paths: self.include_paths.clone().or(other.include_paths.clone()),
+            exclude_paths: self.exclude_paths.clone().or(other.exclude_paths.clone()),
+            max_depth: self.max_depth.or(other.max_depth),
+            boost_titles: self.boost_titles.or(other.boost_titles),
+            openapi_options: self.openapi_options.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
