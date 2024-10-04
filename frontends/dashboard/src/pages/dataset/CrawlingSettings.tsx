@@ -112,7 +112,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
   >({});
 
   const validate: ValidateFn<CrawlOptions> = (value) => {
-    console.log(value);
     const errors: Record<string, string> = {};
     if (!value.site_url) {
       errors.site_url = "Site URL is required";

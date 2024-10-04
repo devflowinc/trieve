@@ -22,10 +22,9 @@ export const ResultCard = (props: ResultCardProps) => {
       props?.result?.metadata?.at(0),
     );
     if (parseResult.success) {
-      console.log("THE PARSED METADATA: ", parseResult.data);
       return parseResult.data;
     } else {
-      console.error("THE PARSED METADATA: ", parseResult.error);
+      console.error("Failed to parse metadata: ", parseResult.error);
       return null;
     }
   });
