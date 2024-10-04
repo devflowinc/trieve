@@ -568,6 +568,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                       setChunkGroups={setChunkCollections}
                       setSelectedIds={setSelectedIds}
                       selectedIds={selectedIds}
+                      searchId={searchID}
                     />
                   </div>
                 )}
@@ -747,6 +748,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                               setChunkGroups={setChunkCollections}
                               setSelectedIds={setSelectedIds}
                               selectedIds={selectedIds}
+                              searchId={searchID}
                             />
                           </div>
                         )}

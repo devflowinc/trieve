@@ -30,6 +30,7 @@ import { Tooltip } from "shared/ui";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { A, useLocation } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { TbClick } from "solid-icons/tb";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -70,6 +71,7 @@ export interface ScoreChunkProps {
   setSelectedIds: Setter<string[]>;
   selectedIds: Accessor<string[]>;
   chat?: boolean;
+  searchId: Accessor<string | null> | null;
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
@@ -245,7 +247,21 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 </span>
               </Show>
               <div class="flex-1" />
-
+              <Show when={!isInChunkViewer()}>
+                <Tooltip
+                  body={
+                    <A
+                      href={`/chunk/${
+                        props.chunk.id
+                      }?dataset=${$currentDataset?.()?.dataset.id}`}
+                    >
+                      <TbClick class="h-5 w-5" />
+                    </A>
+                  }
+                  tooltipText="Open chunk to test recommendations for similar chunks"
+                  direction="left"
+                />
+              </Show>
               <Show when={!isInChunkViewer()}>
                 <Tooltip
                   body={

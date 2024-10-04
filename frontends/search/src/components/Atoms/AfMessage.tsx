@@ -75,6 +75,7 @@ export const AfMessage = (props: AfMessageProps) => {
                         selectedIds={selectedIds}
                         setSelectedIds={setSelectedIds}
                         chat={true}
+                        searchId={searchID}
                       />
                     )}
                   </For>

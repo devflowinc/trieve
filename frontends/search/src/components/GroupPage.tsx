@@ -792,6 +792,7 @@ export const GroupPage = (props: GroupPageProps) => {
                                 setChunkGroups={setChunkGroups}
                                 setSelectedIds={setSelectedIds}
                                 selectedIds={selectedIds}
+                                searchId={searchID}
                               />
                             </div>
                           )}
