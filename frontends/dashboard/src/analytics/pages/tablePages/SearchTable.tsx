@@ -20,6 +20,7 @@ import { Card } from "../../components/charts/Card";
 import { formatSearchMethod } from "../../utils/searchType";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { getSearchQueries } from "../../api/tables";
+import { createTrieveQuery } from "../../../api/createTrieveQuery";
 
 const columns: SortableColumnDef<SearchQueryEvent>[] = [
   {
@@ -82,6 +83,18 @@ export const SearchTable = () => {
       desc: sortOrder() === "desc",
     },
   ]);
+
+  const testQuery = createTrieveQuery("big-test", {
+    queryFn(ctx) {
+      return ctx.trieve.fetch(
+        "/api/dataset/crawl_options/{dataset_id}",
+        "get",
+        {
+          datasetId: ctx.datasetId,
+        },
+      );
+    },
+  });
 
   createEffect(() => {
     setSortBy(sorting()[0].id as sortByCols);
