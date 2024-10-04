@@ -115,7 +115,7 @@ pub async fn get_search_query(
     search_id: uuid::Uuid,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryEvent, ServiceError> {
-    let clickhouse_query = clickhouse_client
+    let mut clickhouse_query = clickhouse_client
         .query("SELECT ?fields FROM search_queries WHERE id = ? AND dataset_id = ?")
         .bind(search_id)
         .bind(dataset_id)
@@ -126,7 +126,39 @@ pub async fn get_search_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let query: SearchQueryEvent = clickhouse_query.into();
+    let re = regex::Regex::new(r#""chunk_html":\s*"(.*?)"\s*,\s*"metadata""#).unwrap();
+    let results = clickhouse_query.results.clone();
+
+    let mut chunk_htmls = vec!["".to_string(); results.len()];
+
+    for (i, result_chunk) in results.iter().enumerate() {
+        if let Some(captures) = re.captures(result_chunk) {
+            if let Some(content) = captures.get(1) {
+                let result = re.replace(result_chunk.as_str(), |_: &regex::Captures| {
+                    r#""chunk_html": "","metadata""#.to_string()
+                });
+                chunk_htmls[i] = content.as_str().to_string();
+                clickhouse_query.results[i] = result.to_string();
+            }
+        }
+    }
+
+    let mut query: SearchQueryEvent = clickhouse_query.into();
+
+    query.results = query
+        .results
+        .iter()
+        .enumerate()
+        .map(|(i, result)| {
+            let mut new_result = result.clone();
+            if !chunk_htmls[i].is_empty() {
+                if let Some(v) = new_result.pointer_mut("/metadata/0/chunk_html") {
+                    *v = chunk_htmls.clone()[i].clone().into()
+                }
+            }
+            new_result
+        })
+        .collect();
 
     Ok(query)
 }
