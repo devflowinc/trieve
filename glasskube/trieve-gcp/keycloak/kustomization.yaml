@@ -1,6 +1,10 @@
-labels:
-  - pairs:
-      app.kubernetes.io/component: keycloak
+kind: Component
 resources:
-  - service.yaml
-  - backend-config.yaml
+  - res
+patches:
+  - target:
+      kind: Ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/http/paths/0/backend/service/name
+        value: trieve-keycloak

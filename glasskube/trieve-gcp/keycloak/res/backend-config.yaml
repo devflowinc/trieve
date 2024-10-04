@@ -6,5 +6,5 @@ spec:
   healthCheck:
     type: HTTP
     checkIntervalSec: 15
-    port: 9000
+    port: 8080
     requestPath: /admin/trieve/console/

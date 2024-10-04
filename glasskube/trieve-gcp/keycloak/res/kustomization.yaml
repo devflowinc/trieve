@@ -1,0 +1,6 @@
+labels:
+  - pairs:
+      app.kubernetes.io/component: keycloak
+resources:
+  - service.yaml
+  - backend-config.yaml
