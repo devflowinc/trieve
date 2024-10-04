@@ -144,6 +144,21 @@ export const DashboardSidebar = () => {
               label="API Keys"
             />
           </div>
+          <div class="gap flex flex-col pt-6">
+            <SectionLabel>Playgrounds</SectionLabel>
+            <Link
+              isExternal={true}
+              icon={AiOutlineSearch}
+              href={`${searchUiURL}${orgDatasetParams()}`}
+              label="Search"
+            />
+            <Link
+              isExternal={true}
+              icon={AiOutlineMessage}
+              href={`${chatUiURL}${orgDatasetParams()}`}
+              label="Chat"
+            />
+          </div>
           <div class="gap flex flex-col pt-4">
             <SectionLabel>Analytics</SectionLabel>
             <Link
@@ -219,21 +234,6 @@ export const DashboardSidebar = () => {
               icon={FiTrash}
               href={`/dataset/${datasetId()}/manage`}
               label="Manage Dataset"
-            />
-          </div>
-          <div class="gap flex flex-col pt-6">
-            <SectionLabel>Playgrounds</SectionLabel>
-            <Link
-              isExternal={true}
-              icon={AiOutlineSearch}
-              href={`${searchUiURL}${orgDatasetParams()}`}
-              label="Search"
-            />
-            <Link
-              isExternal={true}
-              icon={AiOutlineMessage}
-              href={`${chatUiURL}${orgDatasetParams()}`}
-              label="Chat"
             />
           </div>
         </div>
