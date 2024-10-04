@@ -188,7 +188,12 @@ pub async fn create_dataset(
         r#type: None,
     };
 
-    send_ditto_event(dataset_created_event).await?;
+    match send_ditto_event(dataset_created_event).await {
+        Ok(_) => (),
+        Err(e) => {
+            log::error!("Error sending ditto event: {}", e);
+        }
+    };
 
     Ok(HttpResponse::Ok().json(d))
 }
