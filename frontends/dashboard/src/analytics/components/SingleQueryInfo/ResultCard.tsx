@@ -11,9 +11,9 @@ interface ResultCardProps {
 const usefulMetadataSchema = z.object({
   id: z.string(),
   chunk_html: z.string(),
-  tracking_id: z.string().optional(),
-  weight: z.number().optional(),
-  created_at: z.string().optional(),
+  tracking_id: z.string().optional().nullable(),
+  weight: z.number().optional().nullable(),
+  created_at: z.string().optional().nullable(),
 });
 
 export const ResultCard = (props: ResultCardProps) => {
@@ -22,9 +22,10 @@ export const ResultCard = (props: ResultCardProps) => {
       props?.result?.metadata?.at(0),
     );
     if (parseResult.success) {
+      console.log("THE PARSED METADATA: ", parseResult.data);
       return parseResult.data;
     } else {
-      console.error(parseResult.error);
+      console.error("THE PARSED METADATA: ", parseResult.error);
       return null;
     }
   });
@@ -33,12 +34,12 @@ export const ResultCard = (props: ResultCardProps) => {
 
   return (
     <Show when={props.result}>
-      <>
+      <div class="rounded border border-neutral-200 p-2">
         <button
           onClick={() => setShowingJson(!showingJson())}
           class="text-left"
         >
-          <div class="flex justify-between text-sm">
+          <div class="flex items-center justify-between gap-2 text-sm">
             <span class="font-medium">{metadata()?.id}</span>
 
             <IoCode />
@@ -68,7 +69,7 @@ export const ResultCard = (props: ResultCardProps) => {
             readonly
           />
         </FullScreenModal>
-      </>
+      </div>
     </Show>
   );
 };
