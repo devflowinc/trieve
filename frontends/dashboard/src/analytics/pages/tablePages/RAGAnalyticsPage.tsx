@@ -136,8 +136,9 @@ export const RAGAnalyticsPage = () => {
 
   return (
     <div>
-      <div class="pb-1 text-lg">All RAG Queries</div>
-      <div class="mb-4 rounded-md bg-white">
+      <RagAnalyticsGraphs />
+      <div class="mt-4 pb-1 text-lg">All RAG Queries</div>
+      <div class="rounded-md bg-white">
         <Show when={ragTableQuery.data}>
           <Card>
             <RAGFilterBar noPadding filters={filters} setFilters={setFilters} />
@@ -170,7 +171,6 @@ export const RAGAnalyticsPage = () => {
           </Card>
         </Show>
       </div>
-      <RagAnalyticsGraphs />
     </div>
   );
 };

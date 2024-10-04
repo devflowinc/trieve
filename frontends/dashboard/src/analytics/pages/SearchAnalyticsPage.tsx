@@ -25,8 +25,6 @@ export const SearchAnalyticsPage = () => {
 
   return (
     <>
-      <SearchTable />
-      <div class="my-4 border-b border-b-neutral-200 pt-2" />
       <FilterBar
         noPadding
         filters={analyticsFilters}
@@ -61,6 +59,8 @@ export const SearchAnalyticsPage = () => {
           <NoResultQueries params={analyticsFilters} />
         </Card>
       </div>
+      <div class="my-4 border-b border-b-neutral-200 pt-2" />
+      <SearchTable />
     </>
   );
 };
