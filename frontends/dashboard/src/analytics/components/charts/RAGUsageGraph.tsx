@@ -124,6 +124,9 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
       // @ts-expect-error library types not updated
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = "day";
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.round = "day";
     } else if (props.params.granularity === "minute") {
       // @ts-expect-error library types not updated
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -132,7 +135,11 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
       // @ts-expect-error library types not updated
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = undefined;
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.round = undefined;
     }
+
     const info = fillDate({
       data,
       date_range: props.params.filter.date_range,
