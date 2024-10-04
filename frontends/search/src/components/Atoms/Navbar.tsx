@@ -53,43 +53,43 @@ export const Navbar = () => {
             </Show>
           </div>
 
-          <div class="flex items-center justify-end space-x-1 sm:space-x-4">
+          <div class="hidden items-center justify-end space-x-1 sm:space-x-4 md:flex">
             <a
               href={`${dashboardUrl}/dataset/${orgDatasetParams()}`}
               target="_blank"
-              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
+              class="min-[420px]:text-lg min-[920px]:block text-center"
             >
               Dashboard
             </a>
             <a
               href="https://docs.trieve.ai/api-reference"
               target="_blank"
-              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
+              class="min-[420px]:text-lg min-[920px]:block text-center"
             >
               API Docs
             </a>
             <a
               href={`/?dataset=${datasetAndUserContext.currentDataset?.()
                 ?.dataset.id}`}
-              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
+              class="min-[420px]:text-lg min-[920px]:block text-center"
             >
               Search Chunks
             </a>
             <a
               href={`/group?dataset=${currentDatasetId()}`}
-              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
+              class="min-[420px]:text-lg min-[920px]:block text-center"
             >
               Groups
             </a>
             <a
               href={`/create?dataset=${currentDatasetId()}`}
-              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
+              class="min-[420px]:text-lg min-[920px]:block text-center"
             >
               Create Chunk
             </a>
             <a
               href={`/upload?dataset=${currentDatasetId()}`}
-              class="min-[420px]:text-lg min-[920px]:block hidden text-center"
+              class="min-[420px]:text-lg min-[920px]:block text-center"
             >
               Upload file(s)
             </a>
