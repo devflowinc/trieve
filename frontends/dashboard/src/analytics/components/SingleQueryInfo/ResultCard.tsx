@@ -11,9 +11,9 @@ interface ResultCardProps {
 const usefulMetadataSchema = z.object({
   id: z.string(),
   chunk_html: z.string(),
-  tracking_id: z.string().optional().nullable(),
-  weight: z.number().optional().nullable(),
-  created_at: z.string().optional().nullable(),
+  tracking_id: z.string().nullish(),
+  weight: z.number().nullish(),
+  created_at: z.string().nullish(),
 });
 
 export const ResultCard = (props: ResultCardProps) => {
