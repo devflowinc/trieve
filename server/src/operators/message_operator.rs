@@ -1,6 +1,6 @@
 use crate::data::models::{
-    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetConfiguration, QueryTypes,
-    RagQueryEventClickhouse, RedisPool, SearchMethod,
+    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetConfiguration, LLMOptions,
+    QueryTypes, RagQueryEventClickhouse, RedisPool, SearchMethod,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -19,6 +19,7 @@ use crossbeam_channel::unbounded;
 use diesel_async::RunQueryDsl;
 use futures::StreamExt;
 use futures_util::stream;
+use openai_dive::v1::resources::chat::{ImageUrl, ImageUrlType};
 use openai_dive::v1::{
     api::Client,
     resources::{
@@ -484,8 +485,19 @@ pub async fn stream_response(
         rag_content,
     ));
 
+    let images: Vec<String> = chunk_metadatas
+        .iter()
+        .filter_map(|chunk| chunk.image_urls.clone())
+        .flat_map(|image_urls| {
+            image_urls
+                .iter()
+                .filter_map(|image| image.clone())
+                .collect::<Vec<_>>()
+        })
+        .collect();
+
     // replace the last message with the last message with evidence
-    let open_ai_messages: Vec<ChatMessage> = openai_messages
+    let mut open_ai_messages: Vec<ChatMessage> = openai_messages
         .clone()
         .into_iter()
         .enumerate()
@@ -503,6 +515,37 @@ pub async fn stream_response(
             }
         })
         .collect();
+
+    if !images.is_empty() {
+        if let Some(LLMOptions {
+            image_config: Some(ref image_config),
+            ..
+        }) = create_message_req_payload.llm_options
+        {
+            if image_config.use_images.unwrap_or(false) {
+                open_ai_messages.push(ChatMessage {
+                    name: None,
+                    role: Role::User,
+                    tool_calls: None,
+                    tool_call_id: None,
+                    content: ChatMessageContent::ImageUrl(
+                        images
+                            .iter()
+                            .take(image_config.images_per_chunk.unwrap_or(5))
+                            .map(|url| ImageUrl {
+                                r#type: "image_url".to_string(),
+                                text: None,
+                                image_url: ImageUrlType {
+                                    url: url.to_string(),
+                                    detail: None,
+                                },
+                            })
+                            .collect(),
+                    ),
+                })
+            }
+        }
+    }
 
     let mut parameters = ChatCompletionParameters {
         model: chosen_model,
@@ -706,9 +749,10 @@ pub async fn stream_response(
             }
             return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
         }
-        Err(ServiceError::InternalServerError(
-            "Model Response Error. Please try again later.".into(),
-        )
+        Err(ServiceError::InternalServerError(format!(
+            "Model Response Error. Please try again later. {:?}",
+            response
+        ))
         .into())
     });
 
