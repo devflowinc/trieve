@@ -133,7 +133,7 @@ body {
         @apply flex justify-between;
 
         button {
-          @apply rounded px-2 text-sm py-1 border;
+          @apply px-2 text-sm py-1 border;
           color: var(--tv-zinc-700);
           border-color: var(--tv-zinc-300);
 
