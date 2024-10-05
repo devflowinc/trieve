@@ -541,6 +541,10 @@ body {
         @apply shrink-0 w-8
       }
 
+      mark {
+        @apply text-fuchsia-600 bg-inherit;
+      }
+
       &.start-chat {
         @apply items-center flex;
 
