@@ -513,6 +513,34 @@ body {
       @apply select-none cursor-pointer px-3 py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
       background-color: var(--tv-zinc-50);
 
+      .post-method {
+        @apply text-xs bg-blue-900 px-1 py-0.5 rounded-md text-blue-400 mr-1;
+      }
+
+      .get-method {
+        @apply text-xs bg-green-900 px-1 py-0.5 rounded-md text-green-400 mr-1;
+      }
+
+      .delete-method {
+        @apply text-xs bg-red-900 px-1 py-0.5 rounded-md text-red-400 mr-1;
+      }
+
+      .put-method {
+        @apply text-xs bg-yellow-900 px-1 py-0.5 rounded-md text-yellow-400 mr-1;
+      }
+
+      .patch-method {
+        @apply text-xs bg-purple-900 px-1 py-0.5 rounded-md text-purple-400 mr-1;
+      }
+
+      h4 {
+        @apply overflow-hidden whitespace-nowrap text-ellipsis max-w-[450px];
+      }
+
+      svg {
+        @apply shrink-0 w-8
+      }
+
       &.start-chat {
         @apply items-center flex;
 
@@ -617,6 +645,15 @@ body {
 
       .system-information-wrapper {
         .questions {
+          .suggested-question {
+            border-color: var(--tv-zinc-700);
+
+            &:hover {
+              background-color: var(--tv-zinc-800);
+            }
+          }
+        }
+        .header {
           .suggested-question {
             border-color: var(--tv-zinc-700);
 
