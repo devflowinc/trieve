@@ -2,10 +2,11 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo,
-    HighlightOptions, IngestSpecificChunkMetadata, Pool, QueryTypes, RagQueryEventClickhouse,
-    RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
-    ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore,
-    SortByField, SortOptions, TypoOptions, UnifiedId, UpdateSpecificChunkMetadata,
+    HighlightOptions, ImageConfig, IngestSpecificChunkMetadata, Pool, QueryTypes,
+    RagQueryEventClickhouse, RecommendType, RecommendationEventClickhouse, RecommendationStrategy,
+    RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
+    SlimChunkMetadataWithScore, SortByField, SortOptions, TypoOptions, UnifiedId,
+    UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -33,6 +34,7 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
 };
+use openai_dive::v1::resources::chat::{ImageUrl, ImageUrlType};
 use openai_dive::v1::resources::shared::StopToken;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -2335,6 +2337,8 @@ pub struct GenerateOffChunksReqPayload {
     pub stop_tokens: Option<Vec<String>>,
     /// User ID is the id of the user who is making the request. This is used to track user interactions with the RAG results.
     pub user_id: Option<String>,
+    /// Configuration for sending images to the llm
+    pub image_config: Option<ImageConfig>,
 }
 
 /// RAG on Specified Chunks
@@ -2477,6 +2481,31 @@ pub async fn generate_off_chunks(
             name: None,
             tool_call_id: None,
         });
+
+        if let Some(image_config) = &data.image_config {
+            if image_config.use_images.unwrap_or(false) {
+                if let Some(image_urls) = bookmark.image_urls.clone() {
+                    let urls = image_urls
+                        .iter()
+                        .filter_map(|image| image.clone())
+                        .take(image_config.images_per_chunk.unwrap_or(5))
+                        .map(|url| ImageUrl {
+                            r#type: "image_url".to_string(),
+                            text: None,
+                            image_url: ImageUrlType { url, detail: None },
+                        })
+                        .collect::<Vec<_>>();
+
+                    messages.push(ChatMessage {
+                        role: Role::User,
+                        content: ChatMessageContent::ImageUrl(urls),
+                        tool_calls: None,
+                        name: None,
+                        tool_call_id: None,
+                    });
+                }
+            }
+        }
 
         messages.push(ChatMessage {
             role: Role::Assistant,
@@ -2628,20 +2657,24 @@ pub async fn generate_off_chunks(
     });
 
     let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
-        if let Ok(response) = response {
-            let chat_content = match response.choices.get(0) {
-                Some(choice) => choice.delta.content.clone(),
-                None => Some("failed to get response completion".to_string()),
-            };
-            if let Some(message) = chat_content.clone() {
-                s.send(message).unwrap();
+        match response {
+            Ok(response) => {
+                let chat_content = match response.choices.get(0) {
+                    Some(choice) => choice.delta.content.clone(),
+                    None => Some("failed to get response completion".to_string()),
+                };
+                if let Some(message) = chat_content.clone() {
+                    s.send(message).unwrap();
+                }
+
+                Ok(Bytes::from(chat_content.unwrap_or("".to_string())))
             }
-            return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+            Err(e) => Err(ServiceError::InternalServerError(format!(
+                "Model Response Error. Please try again later. {:?}",
+                e
+            ))
+            .into()),
         }
-        Err(ServiceError::InternalServerError(
-            "Model Response Error. Please try again later.".into(),
-        )
-        .into())
     });
 
     Ok(HttpResponse::Ok()

@@ -5610,6 +5610,19 @@ pub struct TypoRange {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
+#[schema(example = json!({
+    "use_images": true,
+    "images_per_chunk": 1
+}))]
+/// Configuration for sending images to the llm
+pub struct ImageConfig {
+    /// This sends images to the llm if chunk_metadata.image_urls has some value, the call will error if the model is not a vision LLM model. default: false
+    pub use_images: Option<bool>,
+    /// The number of Images to send to the llm per chunk that is fetched more images may slow down llm inference time. default: 5
+    pub images_per_chunk: Option<usize>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
 /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
 pub struct LLMOptions {
     /// Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead.
@@ -5628,6 +5641,8 @@ pub struct LLMOptions {
     pub stop_tokens: Option<Vec<String>>,
     /// Optionally, override the system prompt in dataset server settings.
     pub system_prompt: Option<String>,
+    /// Configuration for sending images to the llm
+    pub image_config: Option<ImageConfig>,
 }
 
 // Helper function to extract SortOptions and HighlightOptions
