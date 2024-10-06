@@ -16,6 +16,7 @@ import {
   GetChunksData,
   GetTrackingChunksData,
   RecommendChunksRequest,
+  RecommendChunksResponseBody,
   ScrollChunksReqPayload,
   SearchChunksReqPayload,
   SearchResponseBody,
@@ -114,7 +115,7 @@ export async function autocomplete(
       xApiVersion: "V2",
     },
     signal
-  );
+  ) as Promise<SearchResponseBody>;
 }
 
 /**
@@ -143,7 +144,7 @@ export async function getRecommendedChunks(
       datasetId: this.datasetId,
     },
     signal
-  );
+  ) as Promise<RecommendChunksResponseBody>;
 }
 
 /**
