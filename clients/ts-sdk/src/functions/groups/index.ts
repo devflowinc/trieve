@@ -16,9 +16,12 @@ import {
   GetGroupsForChunksReqPayload,
   GetGroupsForDatasetData,
   RecommendGroupsReqPayload,
+  RecommendGroupsResponseBody,
   RemoveChunkFromGroupReqPayload,
   SearchOverGroupsReqPayload,
+  SearchOverGroupsResponseBody,
   SearchWithinGroupReqPayload,
+  SearchWithinGroupResponseBody,
   UpdateChunkGroupReqPayload,
   UpdateGroupByTrackingIDReqPayload,
 } from "../../fetch-client";
@@ -77,7 +80,7 @@ export async function searchOverGroups(
       datasetId: this.datasetId,
     },
     signal
-  );
+  ) as Promise<SearchOverGroupsResponseBody>;
 }
 
 /**
@@ -104,7 +107,7 @@ export async function searchInGroup(
       datasetId: this.datasetId,
     },
     signal
-  );
+  ) as Promise<SearchWithinGroupResponseBody>;
 }
 
 /**
@@ -131,7 +134,7 @@ export async function recommendedGroups(
       datasetId: this.datasetId,
     },
     signal
-  );
+  ) as Promise<RecommendGroupsResponseBody>;
 }
 
 /**
