@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import {
   Accessor,
   For,
@@ -30,8 +31,7 @@ import { Tooltip } from "shared/ui";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { A, useLocation } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
-import { Button } from "solid-headless";
-import { TbClick } from "solid-icons/tb";
+import { CTRPopup } from "./CTRPopup";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -71,7 +71,13 @@ export interface ScoreChunkProps {
   setSelectedIds: Setter<string[]>;
   selectedIds: Accessor<string[]>;
   chat?: boolean;
-  registerClickForChunk?: (id: string) => Promise<void>;
+  registerClickForChunk?: ({
+    eventType,
+    id,
+  }: {
+    eventType: string;
+    id: string;
+  }) => Promise<void>;
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
@@ -249,18 +255,13 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
               <Show when={props.registerClickForChunk}>
                 {(registerClickForChunk) => (
-                  <Tooltip
-                    body={
-                      <Button
-                        onClick={() =>
-                          void registerClickForChunk()(props.chunk.id)
-                        }
-                      >
-                        <TbClick class="h-5 w-5" />
-                      </Button>
+                  <CTRPopup
+                    onSubmit={(eventType: string) =>
+                      void registerClickForChunk()({
+                        eventType,
+                        id: props.chunk.id,
+                      })
                     }
-                    tooltipText="Register event"
-                    direction="left"
                   />
                 )}
               </Show>

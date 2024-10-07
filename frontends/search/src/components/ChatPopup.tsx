@@ -127,7 +127,7 @@ export const ChatPopup = (props: LayoutProps) => {
         body: JSON.stringify(body),
         signal: completionAbortController().signal,
       });
-
+      console.log(res);
       // get the response as a stream
       const reader = res.body?.getReader();
       if (!reader) {
