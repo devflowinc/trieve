@@ -29,6 +29,8 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { createToast } from "./ShowToasts";
 import { Tooltip } from "shared/ui";
 import { useLocation } from "@solidjs/router";
+import { TbClick } from "solid-icons/tb";
+import { Button } from "solid-headless";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -55,6 +57,7 @@ export interface ChunkMetadataDisplayProps {
   setChunkGroups: Setter<ChunkGroupDTO[]>;
   setOnDelete: Setter<() => void>;
   showExpand?: boolean;
+  registerClickForChunk?: (id: string) => Promise<void>;
 }
 
 const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
@@ -129,6 +132,23 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           <div class="flex w-full flex-col space-y-2">
             <div class="flex h-fit items-center space-x-1">
               <div class="flex-1" />
+              <Show when={props.registerClickForChunk}>
+                {(registerClickForChunk) => (
+                  <Tooltip
+                    body={
+                      <Button
+                        onClick={() =>
+                          void registerClickForChunk()(props.chunk.id)
+                        }
+                      >
+                        <TbClick class="h-5 w-5" />
+                      </Button>
+                    }
+                    tooltipText="Register event"
+                    direction="left"
+                  />
+                )}
+              </Show>
               <Tooltip
                 body={
                   <Show when={Object.keys(props.chunk.metadata ?? {}).length}>

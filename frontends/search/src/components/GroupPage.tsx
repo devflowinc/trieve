@@ -52,6 +52,7 @@ import ScoreChunk from "./ScoreChunk";
 import { BiRegularXCircle } from "solid-icons/bi";
 import { createToast } from "./ShowToasts";
 import { FiEye } from "solid-icons/fi";
+import { useCtrClickForChunk } from "../hooks/useCtrAnalytics";
 
 export interface GroupPageProps {
   groupID: string;
@@ -61,7 +62,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const apiHost: string = import.meta.env.VITE_API_HOST as string;
   const datasetAndUserContext = useContext(DatasetAndUserContext);
   const search = useSearch();
-
+  const { registerClickForChunk } = useCtrClickForChunk();
   const $dataset = datasetAndUserContext.currentDataset;
   const navigate = useNavigate();
 
@@ -686,7 +687,7 @@ export const GroupPage = (props: GroupPageProps) => {
                 <div class="text-xl font-semibold">Related Chunks</div>
               </div>
               <For each={recommendedChunks()}>
-                {(chunk) => (
+                {(chunk, i) => (
                   <>
                     <div class="mt-4">
                       <ChunkMetadataDisplay
@@ -699,6 +700,9 @@ export const GroupPage = (props: GroupPageProps) => {
                         setChunkGroups={setChunkGroups}
                         setOnDelete={setOnDelete}
                         showExpand={true}
+                        registerClickForChunk={(id: string) =>
+                          registerClickForChunk(id, i() + 1, searchID())
+                        }
                       />
                     </div>
                   </>
@@ -778,7 +782,7 @@ export const GroupPage = (props: GroupPageProps) => {
                       </div>
                       <Show when={groupExpanded()}>
                         <For each={groupResult.chunks}>
-                          {(chunk) => (
+                          {(chunk, i) => (
                             <div class="ml-5 flex space-y-4">
                               <ScoreChunk
                                 totalGroupPages={totalGroupPages()}
@@ -792,6 +796,9 @@ export const GroupPage = (props: GroupPageProps) => {
                                 setChunkGroups={setChunkGroups}
                                 setSelectedIds={setSelectedIds}
                                 selectedIds={selectedIds}
+                                registerClickForChunk={(id: string) =>
+                                  registerClickForChunk(id, i() + 1, searchID())
+                                }
                               />
                             </div>
                           )}
