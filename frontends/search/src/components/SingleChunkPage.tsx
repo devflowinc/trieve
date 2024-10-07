@@ -26,6 +26,7 @@ import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline } from "solid-icons/io";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { useSearchParams } from "@solidjs/router";
+import { useCtrClickForChunk } from "../hooks/useCtrAnalytics";
 
 export interface SingleChunkPageProps {
   chunkId: string | undefined;
@@ -45,6 +46,8 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const [error, setError] = createSignal("");
   const [fetching, setFetching] = createSignal(true);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
+  const { registerClickForChunk } = useCtrClickForChunk();
+  const [searchID, setSearchID] = createSignal("");
   const $currentUser = datasetAndUserContext.user;
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
@@ -153,6 +156,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
+          setSearchID(data.id);
           const typed_data = data.chunks as ScoreChunkDTO[];
           const deduped_data = typed_data.filter((d) => {
             return !prev_recommendations.some((c) => c.chunk.id == d.chunk.id);
@@ -299,7 +303,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                 </div>
 
                 <For each={recommendedChunks()}>
-                  {(scoreChunk) => (
+                  {(scoreChunk, i) => (
                     <>
                       <div class="mt-4">
                         <ChunkMetadataDisplay
@@ -313,6 +317,14 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                           setChunkGroups={setChunkGroups}
                           setOnDelete={setOnDelete}
                           showExpand={true}
+                          registerClickForChunk={(id: string) =>
+                            registerClickForChunk(
+                              id,
+                              i() + 1,
+                              searchID(),
+                              "recommendation",
+                            )
+                          }
                         />
                       </div>
                     </>

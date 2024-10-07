@@ -30,6 +30,8 @@ import { Tooltip } from "shared/ui";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { A, useLocation } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { Button } from "solid-headless";
+import { TbClick } from "solid-icons/tb";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -69,11 +71,11 @@ export interface ScoreChunkProps {
   setSelectedIds: Setter<string[]>;
   selectedIds: Accessor<string[]>;
   chat?: boolean;
+  registerClickForChunk?: (id: string) => Promise<void>;
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
-
   const $currentDataset = datasetAndUserContext.currentDataset;
   const $currentUser = datasetAndUserContext.user;
   const apiHost = import.meta.env.VITE_API_HOST as string;
@@ -245,6 +247,23 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </Show>
               <div class="flex-1" />
 
+              <Show when={props.registerClickForChunk}>
+                {(registerClickForChunk) => (
+                  <Tooltip
+                    body={
+                      <Button
+                        onClick={() =>
+                          void registerClickForChunk()(props.chunk.id)
+                        }
+                      >
+                        <TbClick class="h-5 w-5" />
+                      </Button>
+                    }
+                    tooltipText="Register event"
+                    direction="left"
+                  />
+                )}
+              </Show>
               <Show when={!isInChunkViewer()}>
                 <Tooltip
                   body={
