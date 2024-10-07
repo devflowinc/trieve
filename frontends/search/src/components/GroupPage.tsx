@@ -700,8 +700,13 @@ export const GroupPage = (props: GroupPageProps) => {
                         setChunkGroups={setChunkGroups}
                         setOnDelete={setOnDelete}
                         showExpand={true}
-                        registerClickForChunk={(id: string) =>
-                          registerClickForChunk(id, i() + 1, searchID())
+                        registerClickForChunk={({ id, eventType }) =>
+                          registerClickForChunk({
+                            id: id,
+                            eventType: eventType,
+                            position: i(),
+                            searchID: searchID(),
+                          })
                         }
                       />
                     </div>
@@ -796,8 +801,13 @@ export const GroupPage = (props: GroupPageProps) => {
                                 setChunkGroups={setChunkGroups}
                                 setSelectedIds={setSelectedIds}
                                 selectedIds={selectedIds}
-                                registerClickForChunk={(id: string) =>
-                                  registerClickForChunk(id, i() + 1, searchID())
+                                registerClickForChunk={({ id, eventType }) =>
+                                  registerClickForChunk({
+                                    id: id,
+                                    eventType: eventType,
+                                    position: i(),
+                                    searchID: searchID(),
+                                  })
                                 }
                               />
                             </div>
