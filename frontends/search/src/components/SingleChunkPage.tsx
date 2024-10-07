@@ -246,6 +246,14 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         counter={"0"}
         selectedIds={selectedIds}
         setSelectedIds={setSelectedIds}
+        registerClickForChunk={({ id, eventType }) =>
+          registerClickForChunk({
+            id: id,
+            eventType: eventType,
+            position: 0,
+            searchID: searchID(),
+          })
+        }
       />
     );
   });
@@ -317,13 +325,13 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                           setChunkGroups={setChunkGroups}
                           setOnDelete={setOnDelete}
                           showExpand={true}
-                          registerClickForChunk={(id: string) =>
-                            registerClickForChunk(
-                              id,
-                              i() + 1,
-                              searchID(),
-                              "recommendation",
-                            )
+                          registerClickForChunk={({ id, eventType }) =>
+                            registerClickForChunk({
+                              id: id,
+                              eventType: eventType,
+                              position: i(),
+                              searchID: searchID(),
+                            })
                           }
                         />
                       </div>

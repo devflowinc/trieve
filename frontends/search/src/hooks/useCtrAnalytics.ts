@@ -14,7 +14,7 @@ export const useCtrClickForChunk = () => {
   }: {
     id: string;
     position?: number;
-    searchID: string;
+    searchID?: string;
     eventType: string;
   }) => {
     let body = {};

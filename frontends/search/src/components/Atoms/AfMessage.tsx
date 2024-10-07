@@ -8,6 +8,7 @@ import { Accessor, For, Show, createEffect, createSignal } from "solid-js";
 import type { ScoreChunkDTO } from "../../utils/apiTypes";
 import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
 import sanitizeHtml from "sanitize-html";
+import { useCtrClickForChunk } from "../../hooks/useCtrAnalytics";
 
 export interface AfMessageProps {
   role: "user" | "assistant" | "system";
@@ -19,6 +20,7 @@ export interface AfMessageProps {
 
 export const AfMessage = (props: AfMessageProps) => {
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
+  const { registerClickForChunk } = useCtrClickForChunk();
   const [content, setContent] = createSignal<string>("");
 
   createEffect(() => {
@@ -75,6 +77,13 @@ export const AfMessage = (props: AfMessageProps) => {
                         selectedIds={selectedIds}
                         setSelectedIds={setSelectedIds}
                         chat={true}
+                        registerClickForChunk={({ id, eventType }) =>
+                          registerClickForChunk({
+                            id: id,
+                            eventType: eventType,
+                            position: 0,
+                          })
+                        }
                       />
                     )}
                   </For>
