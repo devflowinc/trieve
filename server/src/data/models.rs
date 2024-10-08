@@ -878,6 +878,7 @@ pub struct ScoreChunk {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(title = "SlimChunkMetadataWithArrayTagSet")]
 pub struct SlimChunkMetadataWithArrayTagSet {
     pub id: uuid::Uuid,
     pub link: Option<String>,
@@ -1298,6 +1299,7 @@ impl From<ContentChunkMetadata> for SlimChunkMetadata {
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
+#[schema(title = "ContentChunkMetadata")]
 pub struct ContentChunkMetadata {
     pub id: uuid::Uuid,
     #[serde(skip)]
