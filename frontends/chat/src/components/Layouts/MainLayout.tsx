@@ -94,6 +94,7 @@ const MainLayout = (props: LayoutProps) => {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    messageId: string | null,
   ) => {
     let done = false;
     while (!done) {
@@ -113,7 +114,7 @@ const MainLayout = (props: LayoutProps) => {
 
           const newMessage = {
             content: lastMessage.content + newText,
-            id: lastMessage.id,
+            id: messageId ? messageId : undefined,
           };
           return [...prev.slice(0, prev.length - 1), newMessage];
         });
@@ -231,7 +232,9 @@ const MainLayout = (props: LayoutProps) => {
         return;
       }
 
-      await handleReader(reader);
+      const messageId = res.headers.get("TR-Queryid");
+
+      await handleReader(reader, messageId);
     } catch (e) {
       console.error(e);
     }
@@ -347,8 +350,9 @@ const MainLayout = (props: LayoutProps) => {
                         if (!reader) {
                           return;
                         }
+                        const messageId = response.headers.get("TR-Queryid");
                         setStreamingCompletion(true);
-                        handleReader(reader).catch((e) => {
+                        handleReader(reader, messageId).catch((e) => {
                           console.error("Error handling reader: ", e);
                         });
                       })
