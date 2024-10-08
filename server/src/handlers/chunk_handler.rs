@@ -2347,8 +2347,16 @@ pub struct GenerateOffChunksReqPayload {
     tag = "Chunk",
     request_body(content = GenerateOffChunksReqPayload, description = "JSON request payload to perform RAG on some chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
-        (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
+        (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",
+            headers(
+                ("TR-QueryID" = uuid::Uuid, description = "Query ID that is used for tracking analytics")
+            )
+        ),
+        (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String,
+            headers(
+                ("TR-QueryID" = uuid::Uuid, description = "Query ID that is used for tracking analytics")
+            )
+        ),
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(

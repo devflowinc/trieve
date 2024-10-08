@@ -210,15 +210,16 @@ export async function ragOnChunkReader(
   props: GenerateOffChunksReqPayload,
   signal?: AbortSignal
 ) {
-  return this.trieve.fetch(
-    "/api/chunk/generate",
-    "post",
-    {
-      data: props,
-      datasetId: this.datasetId,
+  const response = await fetch(this.trieve.baseUrl + "/api/chunk/generate", {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+      "TR-Dataset": this.datasetId,
+      Authorization: `Bearer ${this.trieve.apiKey}`,
     },
+    body: JSON.stringify(props),
     signal
-  );
+  });
 
   const reader = response.body?.getReader();
 
@@ -256,15 +257,16 @@ export async function ragOnChunkReaderWithQueryId(
   props: GenerateOffChunksReqPayload,
   signal?: AbortSignal
 ) {
-  return this.trieve.fetch(
-    "/api/chunk/generate",
-    "post",
-    {
-      data: props,
-      datasetId: this.datasetId,
+  const response = await fetch(this.trieve.baseUrl + "/api/chunk/generate", {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+      "TR-Dataset": this.datasetId,
+      Authorization: `Bearer ${this.trieve.apiKey}`,
     },
+    body: JSON.stringify(props),
     signal
-  );
+  });
 
   const reader = response.body?.getReader();
 

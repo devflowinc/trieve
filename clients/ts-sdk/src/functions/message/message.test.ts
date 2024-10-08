@@ -24,7 +24,7 @@ describe("Message Tests", async () => {
       topic_id: EXAMPLE_TOPIC_ID,
     });
 
-    expectTypeOf(data).toBeUnknown();
+    expectTypeOf(data).toEqualTypeOf<string>();
   });
 
   test("regenerateMessage", async () => {

@@ -1100,6 +1100,15 @@
         "responses": {
           "200": {
             "description": "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -4321,6 +4330,15 @@
         "responses": {
           "200": {
             "description": "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -4379,7 +4397,16 @@
         },
         "responses": {
           "200": {
-            "description": "This will be a HTTP stream, check the chat or search UI for an example how to process this"
+            "description": "This will be a HTTP stream, check the chat or search UI for an example how to process this",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            }
           },
           "400": {
             "description": "Service error relating to getting a chat completion",
@@ -4432,6 +4459,15 @@
         "responses": {
           "200": {
             "description": "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -4492,6 +4528,15 @@
         "responses": {
           "200": {
             "description": "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
