@@ -113,6 +113,7 @@ const MainLayout = (props: LayoutProps) => {
 
           const newMessage = {
             content: lastMessage.content + newText,
+            id: lastMessage.id,
           };
           return [...prev.slice(0, prev.length - 1), newMessage];
         });
@@ -177,7 +178,7 @@ const MainLayout = (props: LayoutProps) => {
     if (regenerateLastMessage) {
       requestMethod = "PATCH";
       setMessages((prev): Message[] => {
-        const newMessages = [{ content: "" }];
+        const newMessages = [{ content: "", id: prev[prev.length - 1].id }];
         return [...prev.slice(0, -1), ...newMessages];
       });
     } else {
@@ -297,6 +298,7 @@ const MainLayout = (props: LayoutProps) => {
             {(message, idx) => {
               return (
                 <AfMessage
+                  queryId={message.id}
                   normalChat={false}
                   role={messageRoleFromIndex(idx())}
                   content={message.content}
