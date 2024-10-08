@@ -59,56 +59,55 @@ export const MessageVoting = (props: MessageVotingProps) => {
     icon: IconTypes;
     onClick: (e: MouseEvent) => void;
   }) => {
-    return (
-      <div onClick={(e) => props.onClick(e)} class="p-2">
-        {props.icon({})}
-      </div>
-    );
+    return <div onClick={(e) => props.onClick(e)}>{props.icon({})}</div>;
   };
 
   return (
-    <div class="flex flex-col">
-      <Show
-        fallback={
+    <>
+      <div class="my-2 mb-2 w-full border-b border-b-neutral-400 dark:border-b-neutral-500" />
+      <div class="flex flex-col gap-2 pt-1">
+        <Show
+          fallback={
+            <VoteIcon
+              icon={BsHandThumbsUp}
+              onClick={(e) => {
+                e.preventDefault();
+                void updateVote(props.queryId, 1);
+              }}
+            />
+          }
+          when={store[props.queryId] === 1}
+        >
           <VoteIcon
-            icon={BsHandThumbsUp}
+            icon={BsHandThumbsUpFill}
             onClick={(e) => {
               e.preventDefault();
-              void updateVote(props.queryId, 1);
+              void updateVote(props.queryId, 0);
             }}
           />
-        }
-        when={store[props.queryId] === 1}
-      >
-        <VoteIcon
-          icon={BsHandThumbsUpFill}
-          onClick={(e) => {
-            e.preventDefault();
-            void updateVote(props.queryId, 0);
-          }}
-        />
-      </Show>
+        </Show>
 
-      <Show
-        fallback={
+        <Show
+          fallback={
+            <VoteIcon
+              icon={BsHandThumbsDown}
+              onClick={(e) => {
+                e.preventDefault();
+                void updateVote(props.queryId, -1);
+              }}
+            />
+          }
+          when={store[props.queryId] === -1}
+        >
           <VoteIcon
-            icon={BsHandThumbsDown}
+            icon={BsHandThumbsDownFill}
             onClick={(e) => {
               e.preventDefault();
-              void updateVote(props.queryId, -1);
+              void updateVote(props.queryId, 0);
             }}
           />
-        }
-        when={store[props.queryId] === -1}
-      >
-        <VoteIcon
-          icon={BsHandThumbsDownFill}
-          onClick={(e) => {
-            e.preventDefault();
-            void updateVote(props.queryId, 0);
-          }}
-        />
-      </Show>
-    </div>
+        </Show>
+      </div>
+    </>
   );
 };
