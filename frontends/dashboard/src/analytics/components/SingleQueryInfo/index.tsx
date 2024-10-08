@@ -11,6 +11,7 @@ import { DatasetContext } from "../../../contexts/DatasetContext";
 import { UserContext } from "../../../contexts/UserContext";
 import { IoArrowBackOutline } from "solid-icons/io";
 import { isScoreChunkDTO } from "shared/types";
+import { ArbitraryResultCard } from "./ArbitraryResultCard";
 
 interface SingleQueryProps {
   queryId: string;
@@ -97,13 +98,7 @@ export const SingleQuery = (props: SingleQueryProps) => {
                   if (isScoreChunkDTO(result)) {
                     return <ResultCard result={result} />;
                   } else {
-                    return (
-                      <div>
-                        <pre class="text-sm">
-                          {JSON.stringify(result, null, 2)}
-                        </pre>
-                      </div>
-                    );
+                    return <ArbitraryResultCard result={result} />;
                   }
                 }}
               </For>

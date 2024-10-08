@@ -4882,7 +4882,7 @@ impl EventTypes {
                     .collect(),
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
-                query_rating: serde_json::to_string(&query_rating).unwrap_or_default(),
+                query_rating: serde_json::to_string(&query_rating).unwrap_or("".to_string()),
                 user_id: user_id.unwrap_or_default(),
             }),
             EventTypes::RAG {
@@ -4906,7 +4906,7 @@ impl EventTypes {
                     .iter()
                     .map(|r| r.to_string())
                     .collect(),
-                query_rating: serde_json::to_string(&query_rating).unwrap_or_default(),
+                query_rating: serde_json::to_string(&query_rating).unwrap_or("".to_string()),
                 llm_response: llm_response.unwrap_or_default(),
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
