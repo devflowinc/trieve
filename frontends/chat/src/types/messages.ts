@@ -1,4 +1,5 @@
 export interface Message {
+  id?: string | undefined;
   content: string;
 }
 

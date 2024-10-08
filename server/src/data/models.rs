@@ -257,9 +257,10 @@ impl Message {
         prompt_tokens: Option<i32>,
         completion_tokens: Option<i32>,
         dataset_id: T,
+        message_id: uuid::Uuid,
     ) -> Self {
         Message {
-            id: uuid::Uuid::new_v4(),
+            id: message_id,
             topic_id: topic_id.into(),
             sort_order,
             content: content.into(),

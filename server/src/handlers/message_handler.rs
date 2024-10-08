@@ -180,6 +180,7 @@ pub async fn create_message(
         None,
         None,
         dataset_org_plan_sub.dataset.id,
+        uuid::Uuid::new_v4(),
     );
 
     // get the previous messages

@@ -28,8 +28,9 @@ import { SolidMarkdown } from "solid-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import rehypeSanitize from "rehype-sanitize";
-
+import { MessageVoting } from "./MessageVoting";
 export interface AfMessageProps {
+  queryId?: string;
   normalChat: boolean;
   role: "user" | "assistant" | "system";
   content: string;
@@ -233,6 +234,9 @@ export const AfMessage = (props: AfMessageProps) => {
                   </Show>
                   <Show when={copied()}>
                     <FiCheck class="text-green-500" />
+                  </Show>
+                  <Show when={props.queryId}>
+                    {(id) => <MessageVoting queryId={id()} />}
                   </Show>
                 </div>
               )}

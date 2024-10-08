@@ -106,6 +106,7 @@ pub async fn create_generic_system_message(
         Some(0),
         Some(0),
         dataset_id,
+        uuid::Uuid::new_v4(),
     );
 
     Ok(system_message)
@@ -598,10 +599,11 @@ pub async fn stream_response(
                     .expect("usize to i32 conversion should always succeed"),
             ),
             dataset.id,
+            query_id,
         );
 
         let clickhouse_rag_event = RagQueryEventClickhouse {
-            id: uuid::Uuid::new_v4(),
+            id: query_id,
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
             search_id: uuid::Uuid::nil(),
@@ -661,6 +663,7 @@ pub async fn stream_response(
             None,
             Some(chunk_v.len().try_into().unwrap()),
             dataset.id,
+            query_id_arb,
         );
 
         let clickhouse_rag_event = RagQueryEventClickhouse {
