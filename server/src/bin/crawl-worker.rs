@@ -1,6 +1,7 @@
 use actix_web::web;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use sentry::{Hub, SentryFutureExt};
+use serde::{Deserialize, Serialize};
 use signal_hook::consts::SIGTERM;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -41,12 +42,135 @@ struct ScrapeReport {
     chunks_created: usize,
 }
 
+#[derive(Debug, Deserialize)]
+struct ShopifyResponse {
+    products: Vec<ShopifyProduct>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+struct ShopifyVariant {
+    id: u64,
+    product_id: u64,
+    title: String,
+    price: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+struct ShopifyProduct {
+    id: u64,
+    title: String,
+    body_html: String,
+    handle: String,
+    tags: Vec<String>,
+    variants: Vec<ShopifyVariant>,
+    images: Vec<ShopifyImage>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+struct ShopifyImage {
+    src: String,
+}
+
+fn create_chunk_req_payload(
+    product: &ShopifyProduct,
+    variant: &ShopifyVariant,
+    base_url: &str,
+    scrape_request: &CrawlRequest,
+) -> Result<ChunkReqPayload, ServiceError> {
+    let image_urls: Vec<String> = product.images.iter().map(|img| img.src.clone()).collect();
+
+    let link = format!(
+        "{}/products/{}?variant={}",
+        base_url, product.handle, variant.id
+    );
+
+    let chunk_html = format!(
+        "<h1>{} - {}</h1>{}",
+        product.title, variant.title, product.body_html
+    );
+
+    let semantic_boost_phrase = product.title.clone();
+    let fulltext_boost_phrase = product.title.clone();
+
+    Ok(ChunkReqPayload {
+        chunk_html: Some(chunk_html),
+        link: Some(link),
+        tag_set: Some(product.tags.clone()),
+        num_value: variant.price.parse().ok(),
+        metadata: serde_json::to_value(product.clone()).ok(),
+        tracking_id: Some(variant.id.to_string()),
+        image_urls: Some(image_urls),
+        fulltext_boost: if scrape_request.crawl_options.boost_titles.unwrap_or(true) {
+            Some(FullTextBoost {
+                phrase: fulltext_boost_phrase,
+                boost_factor: 1.3,
+            })
+        } else {
+            None
+        },
+        semantic_boost: if scrape_request.crawl_options.boost_titles.unwrap_or(true) {
+            Some(SemanticBoost {
+                phrase: semantic_boost_phrase,
+                distance_factor: 0.3,
+            })
+        } else {
+            None
+        },
+        convert_html_to_text: Some(true),
+        ..Default::default()
+    })
+}
+
+async fn get_chunks_from_shopify(
+    scrape_request: CrawlRequest,
+) -> Result<(Vec<ChunkReqPayload>, usize), ServiceError> {
+    let mut chunks: Vec<ChunkReqPayload> = Vec::new();
+    let mut cur_page = 1;
+
+    loop {
+        let url = format!("{}/products.json?page={}", scrape_request.url, cur_page);
+        let response: ShopifyResponse = ureq::get(&url)
+            .call()
+            .map_err(|e| ServiceError::InternalServerError(format!("Failed to fetch: {}", e)))?
+            .into_json()
+            .map_err(|e| {
+                ServiceError::InternalServerError(format!("Failed to parse JSON: {}", e))
+            })?;
+        if response.products.is_empty() {
+            break;
+        }
+
+        for product in response.products {
+            if product.variants.len() == 1 {
+                chunks.push(create_chunk_req_payload(
+                    &product,
+                    &product.variants[0],
+                    &scrape_request.url,
+                    &scrape_request,
+                )?);
+            } else {
+                for variant in &product.variants {
+                    chunks.push(create_chunk_req_payload(
+                        &product,
+                        variant,
+                        &scrape_request.url,
+                        &scrape_request,
+                    )?);
+                }
+            }
+        }
+
+        cur_page += 1;
+    }
+
+    Ok((chunks, cur_page))
+}
+
 #[allow(clippy::print_stdout)]
-async fn crawl(
+async fn get_chunks_with_firecrawl(
     scrape_request: CrawlRequest,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
-) -> Result<ScrapeReport, ServiceError> {
+) -> Result<(Vec<ChunkReqPayload>, usize), ServiceError> {
     let mut chunks = vec![];
     let crawl_options = scrape_request.crawl_options.openapi_options.clone();
     let mut spec = None;
@@ -384,6 +508,15 @@ async fn crawl(
         }
     }
 
+    Ok((chunks, page_count))
+}
+
+#[allow(clippy::print_stdout)]
+async fn crawl(
+    scrape_request: CrawlRequest,
+    pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
+) -> Result<ScrapeReport, ServiceError> {
     let dataset = get_dataset_by_id_query(
         trieve_server::data::models::UnifiedId::TrieveUuid(scrape_request.dataset_id),
         pool.clone(),
@@ -395,6 +528,12 @@ async fn crawl(
     })?;
 
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
+
+    // Use shopify specific logic to get chunks or firecrawl
+    let (chunks, page_count) = match scrape_request.crawl_options.is_shopify {
+        Some(true) => get_chunks_from_shopify(scrape_request.clone()).await?,
+        _ => get_chunks_with_firecrawl(scrape_request.clone(), pool.clone()).await?,
+    };
 
     let chunks_to_upload = chunks.chunks(120);
 
