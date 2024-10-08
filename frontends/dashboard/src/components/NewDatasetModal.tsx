@@ -32,11 +32,39 @@ import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import { createStore, SetStoreFunction, unwrap } from "solid-js/store";
 import { DatasetConfig } from "./dataset-settings/LegacySettingsWrapper";
 import { cn } from "shared/utils";
+import { ValidateFn, ErrorMsg } from "../utils/validation";
 
 export interface NewDatasetModalProps {
   isOpen: Accessor<boolean>;
   closeModal: () => void;
 }
+
+const validate: ValidateFn<DatasetConfig> = (value) => {
+  const errors: Record<string, string> = {};
+
+  if (value.BM25_ENABLED) {
+    if (!value.BM25_B) {
+      errors.BM25_B = "B is required";
+    } else if (value.BM25_B < 0) {
+      errors.BM25_B = "B must be greater than 0";
+    } else if (value.BM25_B > 1) {
+      errors.BM25_B = "B must be less than 1";
+    }
+    if (!value.BM25_K) {
+      errors.BM25_K = "K is required";
+    } else if (value.BM25_K < 0) {
+      errors.BM25_K = "K must be greater than 0";
+    }
+    if (!value.BM25_AVG_LEN) {
+      errors.BM25_AVG_LEN = "Average Length is required";
+    }
+  }
+
+  return {
+    errors,
+    valid: Object.values(errors).filter((v) => !!v).length === 0,
+  };
+};
 
 export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const userContext = useContext(UserContext);
@@ -52,8 +80,19 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const [isLoading, setIsLoading] = createSignal(false);
   const [fillWithExampleData, setFillWithExampleData] = createSignal(false);
 
+  const [errors, setErrors] = createStore<
+    ReturnType<ValidateFn<DatasetConfig>>["errors"]
+  >({});
+
   const createDataset = async () => {
     const curServerConfig = unwrap(serverConfig);
+    const validateResult = validate(curServerConfig);
+    if (validateResult.valid) {
+      setErrors({});
+    } else {
+      setErrors(validateResult.errors);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -406,6 +445,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               class="col-span-2 block w-full bg-white px-3 py-1.5 text-sm text-neutral-700"
                             >
                               <BM25Settings
+                                errors={errors}
                                 config={serverConfig}
                                 setConfig={setServerConfig}
                               />
@@ -918,6 +958,7 @@ export default NewDatasetModal;
 const BM25Settings = (props: {
   config: DatasetConfig;
   setConfig: SetStoreFunction<DatasetConfig>;
+  errors: ReturnType<ValidateFn<DatasetConfig>>["errors"];
 }) => {
   return (
     <div>
@@ -942,36 +983,37 @@ const BM25Settings = (props: {
           <label class="block">B</label>
           <input
             min={0}
-            step={0.1}
+            step="any"
             disabled={!props.config.BM25_ENABLED}
-            value={props.config.BM25_B || "0.75"}
+            value={props.config.BM25_B?.toString() || ""}
             onInput={(e) => {
               props.setConfig("BM25_B", parseFloat(e.currentTarget.value));
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 group-disabled:opacity-20 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             type="number"
           />
+          <ErrorMsg error={props.errors.BM25_B} />
         </div>
         <div>
           <label class="block">K</label>
           <input
-            min={0}
-            step={0.25}
+            step="any"
             disabled={!props.config.BM25_ENABLED}
-            value={props.config.BM25_K || "1.2"}
+            value={props.config.BM25_K?.toString() || ""}
             onInput={(e) => {
               props.setConfig("BM25_K", parseFloat(e.currentTarget.value));
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 group-disabled:opacity-20 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             type="number"
           />
+          <ErrorMsg error={props.errors.BM25_K} />
         </div>
         <div>
           <label class="block">Average Length</label>
           <input
             step={1}
             disabled={!props.config.BM25_ENABLED}
-            value={props.config.BM25_AVG_LEN || "256"}
+            value={props.config.BM25_AVG_LEN?.toString() || ""}
             onInput={(e) => {
               props.setConfig(
                 "BM25_AVG_LEN",
@@ -981,6 +1023,7 @@ const BM25Settings = (props: {
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 group-disabled:opacity-20 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             type="number"
           />
+          <ErrorMsg error={props.errors.BM25_AVG_LEN} />
         </div>
       </div>
     </div>
