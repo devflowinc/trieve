@@ -249,6 +249,7 @@ impl From<ChatMessageProxy> for ChatMessage {
 }
 
 impl Message {
+    #![allow(clippy::too_many_arguments)]
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
         topic_id: T,
