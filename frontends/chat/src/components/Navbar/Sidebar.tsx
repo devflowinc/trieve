@@ -5,6 +5,7 @@ import {
   BiRegularPlus,
   BiRegularTrash,
   BiRegularX,
+  BiRegularDuplicate,
 } from "solid-icons/bi";
 import {
   Accessor,
@@ -79,6 +80,34 @@ export const Sidebar = (props: SidebarProps) => {
 
     setEditingIndex(-1);
     await props.refetchTopics();
+  };
+
+  const cloneTopic = async () => {
+    const dataset = userContext.currentDataset?.();
+    if (!dataset) return;
+
+    const res = await fetch(`${apiHost}/topic/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "TR-Dataset": dataset.dataset.id,
+      },
+      body: JSON.stringify({
+        topic_id: props.currentTopic()?.id,
+        owner_id: userContext.user?.()?.id,
+      }),
+      credentials: "include",
+    });
+
+    if (res.ok) {
+      await props.refetchTopics();
+    } else {
+      createToast({
+        type: "error",
+        message: "Error deleting topic",
+      });
+      return;
+    }
   };
 
   const deleteSelected = async () => {
@@ -221,10 +250,21 @@ export const Sidebar = (props: SidebarProps) => {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
+                            void cloneTopic();
+                          }}
+                          class="text-lg hover:text-blue-500"
+                          title="Clone chat"
+                        >
+                          <BiRegularDuplicate />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
                             setEditingTopic(topic.name);
                             setEditingIndex(index());
                           }}
                           class="text-lg hover:text-blue-500"
+                          title="Edit topic name"
                         >
                           <BiRegularEdit />
                         </button>
@@ -234,6 +274,7 @@ export const Sidebar = (props: SidebarProps) => {
                             void deleteSelected();
                           }}
                           class="text-lg hover:text-red-500"
+                          title="Delete chat"
                         >
                           <BiRegularTrash />
                         </button>
