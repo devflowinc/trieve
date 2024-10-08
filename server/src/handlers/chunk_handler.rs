@@ -288,7 +288,7 @@ pub enum CreateChunkReqPayloadEnum {
         (status = 400, description = "Error typically due to deserialization issues", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -446,7 +446,7 @@ pub async fn create_chunk(
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
     security(
@@ -492,7 +492,7 @@ pub async fn delete_chunk(
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to delete"),
     ),
     security(
@@ -599,7 +599,7 @@ pub struct UpdateIngestionMessage {
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -766,7 +766,7 @@ pub struct UpdateChunkByTrackingIdData {
         (status = 400, description = "Service error relating to to updating chunk", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -1148,7 +1148,7 @@ pub fn parse_query(
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -1394,7 +1394,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -1521,7 +1521,7 @@ pub struct ScrollChunksReqPayload {
         (status = 400, description = "Service error relating to scrolling chunks", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1597,7 +1597,7 @@ pub async fn scroll_dataset_chunks(
         (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."),
         ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
@@ -1697,7 +1697,7 @@ pub struct CountChunkQueryResponseBody {
         (status = 404, description = "Failed to count chunks", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1782,7 +1782,7 @@ pub async fn count_chunks(
         (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."),
         ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch"),
     ),
@@ -1843,7 +1843,7 @@ pub struct GetChunksData {
         (status = 404, description = "Any one of the specified chunks not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -1915,7 +1915,7 @@ pub struct GetTrackingChunksData {
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -2022,7 +2022,7 @@ pub enum RecommendResponseTypes {
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -2360,7 +2360,7 @@ pub struct GenerateOffChunksReqPayload {
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),

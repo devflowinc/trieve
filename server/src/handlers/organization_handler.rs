@@ -30,7 +30,7 @@ use utoipa::ToSchema;
         (status = 404, description = "Organization not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("organization_id" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch."),
     ),
     security(
@@ -66,7 +66,7 @@ pub async fn get_organization(
         (status = 400, description = "Service error relating to deleting the organization by id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("organization_id" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch."),
     ),
     security(
@@ -119,7 +119,7 @@ pub struct UpdateOrganizationReqPayload {
         (status = 400, description = "Service error relating to updating the organization", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
     ),
     security(
         ("ApiKey" = ["owner"]),
@@ -215,7 +215,7 @@ pub async fn create_organization(
         (status = 400, description = "Service error relating to finding the organization's usage by id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("organization_id" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch the usage of."),
     ),
     security(
@@ -252,7 +252,7 @@ pub async fn get_organization_usage(
         (status = 400, description = "Service error relating to finding the organization's users by id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("organization_id" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch the users of."),
     ),
     security(
@@ -295,7 +295,7 @@ pub struct RemoveUserFromOrgPathParams {
         (status = 400, description = "Service error relating to removing the user from the organization", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("organization_id" = uuid::Uuid, Path, description = "The id of the organization you want to remove the user from"),
         ("user_id" = uuid::Uuid, Path, description = "The id of the user you want to remove from the organization"),
     ),
@@ -374,7 +374,7 @@ pub struct UpdateAllOrgDatasetConfigsReqPayload {
         (status = 400, description = "Service error relating to updating the dataset ServerConfigurations", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
     ),
     security(
         ("ApiKey" = ["owner"]),

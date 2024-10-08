@@ -126,7 +126,7 @@ pub struct CreateMessageReqPayload {
         (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -254,7 +254,7 @@ pub async fn create_message(
         (status = 400, description = "Service error relating to getting the messages", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("messages_topic_id" = uuid, description = "The ID of the topic to get messages for."),
     ),
     security(
@@ -397,7 +397,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
         (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -471,7 +471,7 @@ pub async fn edit_message(
         (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -615,7 +615,7 @@ pub async fn regenerate_message_patch(
         (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -675,7 +675,7 @@ pub struct SuggestedQueriesResponse {
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),

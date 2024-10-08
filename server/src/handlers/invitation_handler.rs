@@ -54,7 +54,7 @@ pub struct InvitationData {
         (status = 400, description = "Invalid email or some other error", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -170,7 +170,7 @@ pub async fn create_invitation(
         (status = 400, description = "Service error relating to getting invitations for the dataset", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("organization_id" = uuid, Path, description = "The organization id to get invitations for"),
     ),
     security(
@@ -204,7 +204,7 @@ pub async fn get_invitations(
         (status = 400, description = "Service error relating to deleting invitation", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("invitation_id" = uuid, Path, description = "The id of the invitation to delete"),
     ),
     security(

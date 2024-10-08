@@ -103,7 +103,7 @@ pub struct UploadFileResult {
         (status = 400, description = "Service error relating to uploading the file", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -236,7 +236,7 @@ pub async fn upload_file_handler(
         (status = 404, description = "File not found", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("file_id" = uuid::Uuid, description = "The id of the file to fetch"),
     ),
     security(
@@ -279,7 +279,7 @@ pub struct FileData {
         (status = 400, description = "Service error relating to getting the files in the current datase", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch files for."),
         ("page" = u64, description = "The page number of files you wish to fetch. Each page contains at most 10 files."),
     ),
@@ -337,7 +337,7 @@ pub async fn get_dataset_files_handler(
         (status = 400, description = "Service error relating to finding or deleting the file", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
         ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
