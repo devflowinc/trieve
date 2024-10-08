@@ -65,8 +65,8 @@ pub async fn get_topic_messages(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn create_message_query(
-    new_message: Message,
+pub async fn create_messages_query(
+    new_messages: Vec<Message>,
     pool: &web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::messages::dsl::messages;
@@ -77,7 +77,7 @@ pub async fn create_message_query(
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     diesel::insert_into(messages)
-        .values(&new_message)
+        .values(&new_messages)
         .execute(&mut conn)
         .await
         .map_err(|_db_error| {
@@ -133,13 +133,13 @@ pub async fn create_topic_message_query(
         )
         .await?;
         ret_messages.extend(vec![system_message.clone()]);
-        create_message_query(system_message, pool).await?;
+        create_messages_query(vec![system_message], pool).await?;
         previous_messages_len = 1;
     }
 
     new_message_copy.sort_order = previous_messages_len as i32;
 
-    create_message_query(new_message_copy.clone(), pool).await?;
+    create_messages_query(vec![new_message_copy.clone()], pool).await?;
     ret_messages.push(new_message_copy);
 
     Ok(ret_messages)
@@ -626,7 +626,7 @@ pub async fn stream_response(
             .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
             .await;
 
-        create_message_query(new_message, &pool).await?;
+        create_messages_query(vec![new_message], &pool).await?;
 
         return Ok(HttpResponse::Ok()
             .insert_header(("TR-QueryID", query_id.to_string()))
@@ -690,7 +690,7 @@ pub async fn stream_response(
             .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
             .await;
 
-        let _ = create_message_query(new_message, &pool).await;
+        let _ = create_messages_query(vec![new_message], &pool).await;
     });
 
     let chunk_stream = stream::iter(vec![Ok(Bytes::from(chunk_metadatas_stringified1))]);
