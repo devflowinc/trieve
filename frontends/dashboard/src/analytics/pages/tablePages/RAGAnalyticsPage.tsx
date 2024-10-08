@@ -4,6 +4,7 @@ import { createEffect, createSignal, Show, useContext } from "solid-js";
 import { SortableColumnDef, TanStackTable } from "shared/ui";
 import { useBetterNav } from "../../utils/useBetterNav";
 import {
+  createColumnHelper,
   createSolidTable,
   getCoreRowModel,
   SortingState,
@@ -24,6 +25,8 @@ import { getRAGQueries } from "../../api/analytics";
 import { IoOpenOutline } from "solid-icons/io";
 import { format } from "date-fns";
 import { parseCustomDateString } from "../../utils/formatDate";
+
+const colHelper = createColumnHelper<RagQueryEvent>();
 
 export const RAGAnalyticsPage = () => {
   const navigate = useBetterNav();
@@ -109,6 +112,15 @@ export const RAGAnalyticsPage = () => {
             </button>
           </Show>
         );
+      },
+    },
+    {
+      accessorKey: "query_rating",
+      header: "Query Rating",
+      cell(props) {
+        const val =
+          props.getValue() as unknown as RagQueryEvent["query_rating"];
+        return <Show when={val}>{(rating) => <div>{val?.rating}</div>}</Show>;
       },
     },
   ];
