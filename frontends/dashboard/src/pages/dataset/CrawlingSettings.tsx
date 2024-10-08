@@ -1,5 +1,5 @@
 import { createMutation, createQuery } from "@tanstack/solid-query";
-import { Show, useContext } from "solid-js";
+import { Show, useContext, createMemo } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { useTrieve } from "../../hooks/useTrieve";
 import {
@@ -14,6 +14,7 @@ import { Spacer } from "../../components/Spacer";
 import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../../components/ShowToasts";
 import { ValidateFn } from "../../utils/validation";
+import { cn } from "shared/utils";
 
 const defaultCrawlOptions: CrawlOptions = {
   boost_titles: false,
@@ -26,6 +27,7 @@ const defaultCrawlOptions: CrawlOptions = {
   max_depth: 10,
   site_url: "",
   openapi_options: null,
+  is_shopify: false,
 };
 
 const normalizeOpenAPIOptions = (
@@ -127,6 +129,8 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
     ReturnType<ValidateFn<CrawlOptions>>["errors"]
   >({});
 
+  const isShopify = createMemo(() => !!options.is_shopify);
+
   const validate: ValidateFn<CrawlOptions> = (value) => {
     const errors: Record<string, string> = {};
     if (!value.site_url) {
@@ -209,17 +213,31 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
       <div class="flex items-center gap-2 py-2 pt-4">
         <label class="block">Boost Titles</label>
         <input
+          checked={options.boost_titles || false}
+          onChange={(e) => {
+            setOptions("boost_titles", e.currentTarget.checked);
+          }}
+          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+          type="checkbox"
+        />
+        <label class="block pl-4">Shopify</label>
+        <input
+          onChange={(e) => {
+            setOptions("is_shopify", e.currentTarget.checked);
+          }}
+          checked={options.is_shopify || false}
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
         />
       </div>
 
-      <div class="flex gap-4 pt-2">
+      <div class={cn("flex gap-4 pt-2", isShopify() && "opacity-40")}>
         <div>
           <label class="block" for="">
             Page Limit
           </label>
           <input
+            disabled={isShopify()}
             value={options.limit || "0"}
             onInput={(e) => {
               setOptions("limit", parseInt(e.currentTarget.value));
@@ -234,6 +252,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             Max Depth
           </label>
           <input
+            disabled={isShopify()}
             value={options.max_depth || "0"}
             onInput={(e) => {
               setOptions("max_depth", parseInt(e.currentTarget.value));
@@ -248,6 +267,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             OpenAPI Schema URL
           </label>
           <input
+            disabled={isShopify()}
             placeholder="https://example.com/openapi.json"
             value={options.openapi_options?.openapi_schema_url || ""}
             onInput={(e) => {
@@ -269,6 +289,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             OpenAPI Tag
           </label>
           <input
+            disabled={isShopify()}
             value={options.openapi_options?.openapi_tag || ""}
             onInput={(e) => {
               if (!options.openapi_options) {
@@ -284,10 +305,16 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
         </div>
       </div>
-      <div class="grid w-full grid-cols-2 justify-stretch gap-4 pt-4 xl:grid-cols-4">
+      <div
+        class={cn(
+          "grid w-full grid-cols-2 justify-stretch gap-4 pt-4 xl:grid-cols-4",
+          isShopify() && "opacity-40",
+        )}
+      >
         <div class="">
           <div>Include Paths</div>
           <MultiStringInput
+            disabled={isShopify()}
             placeholder="/docs/*"
             addClass="bg-magenta-100/40 px-2 rounded text-sm border border-magenta-300/40"
             inputClass="w-full"
@@ -302,6 +329,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         <div class="">
           <div>Exclude Paths</div>
           <MultiStringInput
+            disabled={isShopify()}
             placeholder="/admin/*"
             addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
             addLabel="Add Path"
@@ -315,6 +343,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         <div class="">
           <div>Include Tags</div>
           <MultiStringInput
+            disabled={isShopify()}
             placeholder="h1..."
             addClass="bg-magenta-100/40 text-sm px-2 rounded border border-magenta-300/40"
             addLabel="Add Tag"
@@ -328,6 +357,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         <div class="">
           <div>Exclude Tags</div>
           <MultiStringInput
+            disabled={isShopify()}
             placeholder="button..."
             addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
             addLabel="Add Tag"

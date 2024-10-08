@@ -40,7 +40,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -143,7 +144,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -197,7 +199,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -258,7 +261,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -317,7 +321,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -371,7 +376,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -432,7 +438,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -491,7 +498,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -545,7 +553,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -606,7 +615,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -813,7 +823,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -892,7 +903,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -946,7 +958,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1021,7 +1034,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1082,7 +1096,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1152,7 +1167,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1227,7 +1243,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1302,7 +1319,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1363,7 +1381,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1418,7 +1437,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1499,7 +1519,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1551,7 +1572,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1633,7 +1655,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1686,7 +1709,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1755,7 +1779,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1809,7 +1834,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1871,7 +1897,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1951,7 +1978,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -2015,7 +2043,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2090,7 +2119,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2165,7 +2195,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2240,7 +2271,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2334,7 +2366,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2401,7 +2434,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2462,7 +2496,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2525,7 +2560,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2586,7 +2622,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2654,7 +2691,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2716,7 +2754,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2812,7 +2851,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2900,7 +2940,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -2961,7 +3002,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3039,7 +3081,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -3098,7 +3141,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -3169,7 +3213,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3232,7 +3277,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3302,7 +3348,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3376,7 +3423,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -3437,7 +3485,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3507,7 +3556,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3602,7 +3652,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3664,7 +3715,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3734,7 +3786,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3802,7 +3855,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3865,7 +3919,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -3926,7 +3981,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -3987,7 +4043,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -4055,7 +4112,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -4142,7 +4200,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -4196,7 +4255,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -4249,7 +4309,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -4312,7 +4373,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -4380,7 +4442,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -4441,7 +4504,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -4510,7 +4574,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -4580,7 +4645,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -4691,7 +4757,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -4752,7 +4819,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -4806,7 +4874,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -4866,7 +4935,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -4929,7 +4999,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -4997,7 +5068,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -5237,7 +5309,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -5290,7 +5363,8 @@
             "description": "The organization id to use for the request",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -5353,7 +5427,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -5412,7 +5487,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -5536,7 +5612,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -5589,7 +5666,8 @@
             "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -7268,6 +7346,7 @@
       },
       "ContentChunkMetadata": {
         "type": "object",
+        "title": "ContentChunkMetadata",
         "required": [
           "id",
           "weight"
@@ -7463,6 +7542,10 @@
                 "$ref": "#/components/schemas/CrawlInterval"
               }
             ],
+            "nullable": true
+          },
+          "is_shopify": {
+            "type": "boolean",
             "nullable": true
           },
           "limit": {
@@ -12932,6 +13015,7 @@
       },
       "SlimChunkMetadataWithArrayTagSet": {
         "type": "object",
+        "title": "SlimChunkMetadataWithArrayTagSet",
         "required": [
           "id",
           "created_at",

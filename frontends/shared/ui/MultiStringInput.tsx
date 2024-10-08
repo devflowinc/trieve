@@ -10,6 +10,7 @@ interface MultiStringInputProps {
   addClass?: string;
   addLabel?: string;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 const addBlankStringIfEmpty = (value: string[]) => {
@@ -44,6 +45,7 @@ export const MultiStringInput = (props: MultiStringInputProps) => {
         {(entry) => (
           <div class="flex w-full items-center gap-2">
             <input
+              disabled={props.disabled}
               placeholder={props.placeholder}
               value={entry.value}
               onInput={(e) => {
@@ -56,6 +58,7 @@ export const MultiStringInput = (props: MultiStringInputProps) => {
             />
             <button
               type="button"
+              disabled={props.disabled}
               class="text-neutral-400 hover:text-neutral-500 dark:text-neutral-300 dark:hover:text-neutral-400"
               onClick={() => {
                 if (proxyStore.length === 1) {
@@ -72,6 +75,7 @@ export const MultiStringInput = (props: MultiStringInputProps) => {
       </For>
       <button
         type="button"
+        disabled={props.disabled}
         class={cn("flex gap-2 items-center justify-center", props.addClass)}
         onClick={() => {
           setProxyStore((v) => [

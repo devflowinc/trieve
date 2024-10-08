@@ -454,6 +454,7 @@ export type CrawlOptions = {
      */
     include_tags?: Array<(string)> | null;
     interval?: ((CrawlInterval) | null);
+    is_shopify?: (boolean) | null;
     /**
      * How many pages to crawl, defaults to 1000
      */
