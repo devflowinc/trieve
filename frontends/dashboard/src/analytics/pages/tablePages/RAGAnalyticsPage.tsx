@@ -141,7 +141,7 @@ export const RAGAnalyticsPage = () => {
         <Show when={ragTableQuery.data}>
           <Card>
             <RAGFilterBar noPadding filters={filters} setFilters={setFilters} />
-            <div class="mt-4">
+            <div class="mt-4 overflow-x-auto">
               <TanStackTable
                 pages={pages}
                 perPage={10}
