@@ -74,7 +74,7 @@ export const MessageVoting = (props: MessageVotingProps) => {
             icon={BsHandThumbsUp}
             onClick={(e) => {
               e.preventDefault();
-              updateVote(props.queryId, 1);
+              void updateVote(props.queryId, 1);
             }}
           />
         }
@@ -84,7 +84,7 @@ export const MessageVoting = (props: MessageVotingProps) => {
           icon={BsHandThumbsUpFill}
           onClick={(e) => {
             e.preventDefault();
-            updateVote(props.queryId, 0);
+            void updateVote(props.queryId, 0);
           }}
         />
       </Show>
@@ -95,7 +95,7 @@ export const MessageVoting = (props: MessageVotingProps) => {
             icon={BsHandThumbsDown}
             onClick={(e) => {
               e.preventDefault();
-              updateVote(props.queryId, -1);
+              void updateVote(props.queryId, -1);
             }}
           />
         }
@@ -105,7 +105,7 @@ export const MessageVoting = (props: MessageVotingProps) => {
           icon={BsHandThumbsDownFill}
           onClick={(e) => {
             e.preventDefault();
-            updateVote(props.queryId, 0);
+            void updateVote(props.queryId, 0);
           }}
         />
       </Show>
