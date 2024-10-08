@@ -14,6 +14,7 @@ import { DatasetContext } from "../../../contexts/DatasetContext";
 import { UserContext } from "../../../contexts/UserContext";
 import { IoArrowBackOutline } from "solid-icons/io";
 import { isScoreChunkDTO, SearchQueryEvent } from "shared/types";
+import { ArbitraryResultCard } from "../SingleQueryInfo/ArbitraryResultCard";
 
 interface SingleRAGQueryProps {
   queryId: string;
@@ -29,7 +30,11 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
   }));
 
   let search_query: CreateQueryResult<SearchQueryEvent, Error> | undefined;
-  if (rag_query.data?.search_id !== "00000000-0000-0000-0000-000000000000") {
+  if (
+    rag_query.data?.search_id !== undefined &&
+    rag_query.data?.search_id !== "00000000-0000-0000-0000-000000000000"
+  ) {
+    console.log("looking for search id", rag_query.data?.search_id);
     search_query = createQuery(() => ({
       queryKey: ["single_query", rag_query.data?.search_id],
       queryFn: () => {
@@ -121,7 +126,12 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
             </ul>
           </Card>
         </Show>
-        <Show when={props.search_data?.results && props.search_data.results[0]}>
+        <Show
+          when={
+            (props.search_data?.results && props.search_data.results[0]) ||
+            (props.rag_data.results && props.rag_data.results[0])
+          }
+        >
           <Card title="Results">
             <div class="grid gap-4 sm:grid-cols-2">
               <For
@@ -136,13 +146,7 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
                   if (isScoreChunkDTO(result)) {
                     return <ResultCard result={result} />;
                   } else {
-                    return (
-                      <div>
-                        <pre class="text-sm">
-                          {JSON.stringify(result, null, 2)}
-                        </pre>
-                      </div>
-                    );
+                    return <ArbitraryResultCard result={result} />;
                   }
                 }}
               </For>

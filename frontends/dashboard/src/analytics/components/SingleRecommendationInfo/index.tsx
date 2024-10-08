@@ -11,6 +11,7 @@ import { DatasetContext } from "../../../contexts/DatasetContext";
 import { UserContext } from "../../../contexts/UserContext";
 import { IoArrowBackOutline } from "solid-icons/io";
 import { isScoreChunkDTO } from "shared/types";
+import { ArbitraryResultCard } from "../SingleQueryInfo/ArbitraryResultCard";
 
 interface SingleRecommendationQueryProps {
   queryId: string;
@@ -121,16 +122,10 @@ export const SingleRecommendationQuery = (
                 each={props.recommendation_data.results}
               >
                 {(result) => {
-                  if (isScoreChunkDTO({ metadata: [result] })) {
-                    return <ResultCard result={{ metadata: [result] }} />;
+                  if (isScoreChunkDTO(result)) {
+                    return <ResultCard result={result} />;
                   } else {
-                    return (
-                      <div>
-                        <pre class="text-sm">
-                          {JSON.stringify(result, null, 2)}
-                        </pre>
-                      </div>
-                    );
+                    return <ArbitraryResultCard result={result} />;
                   }
                 }}
               </For>
