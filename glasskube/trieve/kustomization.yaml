@@ -17,30 +17,30 @@ images:
   - name: ghcr.io/huggingface/text-embeddings-inference
     newTag: cpu-1.4
   - name: trieve/ingest
-    newTag: sha-d8b18ca
+    newTag: sha-85f4954
   - name: trieve/sync_qdrant
-    newTag: sha-d8b18ca
+    newTag: sha-85f4954
   - name: trieve/server
-    newTag: sha-d8b18ca
+    newTag: sha-85f4954
   - name: trieve/analytics-site
     newTag: sha-ed22f21
   - name: trieve/chat
-    newTag: sha-ed22f21
+    newTag: sha-85f4954
   - name: trieve/dashboard
-    newTag: sha-ed22f21
+    newTag: sha-85f4954
   - name: trieve/search
-    newTag: sha-ed22f21
+    newTag: sha-85f4954
   - name: trieve/delete-worker
     newName: trieve/delete_worker
-    newTag: sha-d8b18ca
+    newTag: sha-85f4954
   - name: trieve/file-worker
     newName: trieve/file_worker
-    newTag: sha-d8b18ca
+    newTag: sha-85f4954
   - name: trieve/group-worker
     newName: trieve/group_worker
-    newTag: sha-d8b18ca
+    newTag: sha-85f4954
   - name: trieve/word-id-cronjob
-    newTag: sha-d8b18ca
+    newTag: sha-85f4954
   - name: trieve/clickhouse-collapse-query-script
     newTag: sha-5cdcd38
   - name: trieve/clickhouse-clustering
