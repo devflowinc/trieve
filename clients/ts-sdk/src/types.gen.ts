@@ -3546,7 +3546,7 @@ export type EditMessageData = {
     trDataset: string;
 };
 
-export type EditMessageResponse = (unknown);
+export type EditMessageResponse = (string);
 
 export type RegenerateMessageData = {
     /**
@@ -4878,7 +4878,7 @@ export type $OpenApiTs = {
                 /**
                  * This will be a HTTP stream, check the chat or search UI for an example how to process this
                  */
-                200: unknown;
+                200: string;
                 /**
                  * Service error relating to getting a chat completion
                  */
