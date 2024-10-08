@@ -29,6 +29,7 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { createToast } from "./ShowToasts";
 import { Tooltip } from "shared/ui";
 import { useLocation } from "@solidjs/router";
+import { CTRPopup } from "./CTRPopup";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -55,6 +56,13 @@ export interface ChunkMetadataDisplayProps {
   setChunkGroups: Setter<ChunkGroupDTO[]>;
   setOnDelete: Setter<() => void>;
   showExpand?: boolean;
+  registerClickForChunk?: ({
+    eventType,
+    id,
+  }: {
+    eventType: string;
+    id: string;
+  }) => Promise<void>;
 }
 
 const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
@@ -129,6 +137,19 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           <div class="flex w-full flex-col space-y-2">
             <div class="flex h-fit items-center space-x-1">
               <div class="flex-1" />
+              <Show when={props.registerClickForChunk}>
+                {(registerClickForChunk) => (
+                  <CTRPopup
+                    onSubmit={(eventType: string) =>
+                      void registerClickForChunk()({
+                        eventType,
+                        id: props.chunk.id,
+                      })
+                    }
+                  />
+                )}
+              </Show>
+
               <Tooltip
                 body={
                   <Show when={Object.keys(props.chunk.metadata ?? {}).length}>

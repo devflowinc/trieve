@@ -1100,6 +1100,15 @@
         "responses": {
           "200": {
             "description": "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -4321,6 +4330,15 @@
         "responses": {
           "200": {
             "description": "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -4379,7 +4397,16 @@
         },
         "responses": {
           "200": {
-            "description": "This will be a HTTP stream, check the chat or search UI for an example how to process this"
+            "description": "This will be a HTTP stream, check the chat or search UI for an example how to process this",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            }
           },
           "400": {
             "description": "Service error relating to getting a chat completion",
@@ -4432,6 +4459,15 @@
         "responses": {
           "200": {
             "description": "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -4492,6 +4528,15 @@
         "responses": {
           "200": {
             "description": "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -5388,6 +5433,67 @@
           },
           "400": {
             "description": "Service error relating to topic update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/topic/clone": {
+      "post": {
+        "tags": [
+          "Topic"
+        ],
+        "summary": "Clone Topic",
+        "description": "Create a new chat topic from a `topic_id`. The new topic will be attched to the owner_id and act as a coordinator for conversation message history of gen-AI chat sessions. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
+        "operationId": "clone_topic",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to create chat topic",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloneTopicReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The JSON response payload containing the created topic",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Topic"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Topic name empty or a service error",
             "content": {
               "application/json": {
                 "schema": {
@@ -7045,6 +7151,29 @@
           "position": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "CloneTopicReqPayload": {
+        "type": "object",
+        "required": [
+          "topic_id",
+          "owner_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the topic. If this is not provided, the topic name is the same as the previous topic",
+            "nullable": true
+          },
+          "owner_id": {
+            "type": "string",
+            "description": "The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user."
+          },
+          "topic_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The topic_id to clone from"
           }
         }
       },

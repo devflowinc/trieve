@@ -345,6 +345,21 @@ export type ChunkWithPosition = {
     position: number;
 };
 
+export type CloneTopicReqPayload = {
+    /**
+     * The name of the topic. If this is not provided, the topic name is the same as the previous topic
+     */
+    name?: (string) | null;
+    /**
+     * The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user.
+     */
+    owner_id: string;
+    /**
+     * The topic_id to clone from
+     */
+    topic_id: string;
+};
+
 export type ClusterAnalytics = {
     filter?: ((ClusterAnalyticsFilter) | null);
     type: 'cluster_topics';
@@ -3546,7 +3561,7 @@ export type EditMessageData = {
     trDataset: string;
 };
 
-export type EditMessageResponse = (unknown);
+export type EditMessageResponse = (string);
 
 export type RegenerateMessageData = {
     /**
@@ -3760,6 +3775,19 @@ export type UpdateTopicData = {
 };
 
 export type UpdateTopicResponse = (void);
+
+export type CloneTopicData = {
+    /**
+     * JSON request payload to create chat topic
+     */
+    requestBody: CloneTopicReqPayload;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type CloneTopicResponse = (Topic);
 
 export type GetAllTopicsForOwnerIdData = {
     /**
@@ -4878,7 +4906,7 @@ export type $OpenApiTs = {
                 /**
                  * This will be a HTTP stream, check the chat or search UI for an example how to process this
                  */
-                200: unknown;
+                200: string;
                 /**
                  * Service error relating to getting a chat completion
                  */
@@ -5144,6 +5172,21 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to topic update
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/topic/clone': {
+        post: {
+            req: CloneTopicData;
+            res: {
+                /**
+                 * The JSON response payload containing the created topic
+                 */
+                200: Topic;
+                /**
+                 * Topic name empty or a service error
                  */
                 400: ErrorResponseBody;
             };

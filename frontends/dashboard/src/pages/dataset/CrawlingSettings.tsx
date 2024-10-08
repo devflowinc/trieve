@@ -13,6 +13,7 @@ import { toTitleCase } from "../../analytics/utils/titleCase";
 import { Spacer } from "../../components/Spacer";
 import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../../components/ShowToasts";
+import { ValidateFn } from "../../utils/validation";
 
 const defaultCrawlOptions: CrawlOptions = {
   boost_titles: false,
@@ -118,14 +119,6 @@ const Error = (props: { error: string | null | undefined }) => {
       <div class="text-sm text-red-500">{props.error}</div>
     </Show>
   );
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ValidateFn<T extends Record<string, any>> = (value: T) => {
-  errors: {
-    [key in keyof T]: string | undefined;
-  };
-  valid: boolean;
 };
 
 const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {

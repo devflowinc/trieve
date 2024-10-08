@@ -111,6 +111,17 @@ export const RAGAnalyticsPage = () => {
         );
       },
     },
+    {
+      accessorKey: "query_rating",
+      header: "Query Rating",
+      cell(props) {
+        const val =
+          props.getValue() as unknown as RagQueryEvent["query_rating"];
+        return (
+          <Show when={val}>{(rating) => <div>{rating().rating}</div>}</Show>
+        );
+      },
+    },
   ];
 
   const table = createSolidTable({
@@ -141,7 +152,7 @@ export const RAGAnalyticsPage = () => {
         <Show when={ragTableQuery.data}>
           <Card>
             <RAGFilterBar noPadding filters={filters} setFilters={setFilters} />
-            <div class="mt-4">
+            <div class="mt-4 overflow-x-auto">
               <TanStackTable
                 pages={pages}
                 perPage={10}

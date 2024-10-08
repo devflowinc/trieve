@@ -294,7 +294,7 @@ pub async fn direct_to_payment_link(
         (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("subscription_id" = uuid, Path, description = "id of the subscription you want to cancel"),
     ),
     security(
@@ -339,7 +339,7 @@ pub struct UpdateSubscriptionData {
         (status = 400, description = "Service error relating to updating the subscription to the new plan", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("subscription_id" = uuid::Uuid, Path, description = "id of the subscription you want to update"),
         ("plan_id" = uuid::Uuid, Path, description = "id of the plan you want to subscribe to"),
     ),

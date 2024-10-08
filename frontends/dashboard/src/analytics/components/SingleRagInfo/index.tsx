@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { createQuery } from "@tanstack/solid-query";
 import { getRagQuery, getSearchQuery } from "../../api/analytics";
 import { createMemo, For, Show, useContext } from "solid-js";
@@ -52,12 +49,12 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
       <div class="flex flex-col gap-8">
         <div>
           <button
-            class="flex w-fit items-center space-x-4 rounded-md bg-magenta-200 p-1 text-base font-semibold leading-6 text-magenta-600"
+            class="flex w-fit items-center gap-1 rounded-md bg-magenta-100/50 p-1 text-base font-semibold text-magenta-700"
             onClick={() => history.back()}
           >
             <IoArrowBackOutline /> Back
           </button>
-          <h3 class="text-base font-semibold leading-6 text-gray-900">
+          <h3 class="pt-4 text-base font-semibold leading-6 text-gray-900">
             <QueryStringDisplay size="large">
               {props.rag_data.user_message}
             </QueryStringDisplay>

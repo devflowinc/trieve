@@ -16,6 +16,7 @@ import {
   GetChunksData,
   GetTrackingChunksData,
   RecommendChunksRequest,
+  RecommendChunksResponseBody,
   ScrollChunksReqPayload,
   SearchChunksReqPayload,
   SearchResponseBody,
@@ -114,7 +115,7 @@ export async function autocomplete(
       xApiVersion: "V2",
     },
     signal
-  );
+  ) as Promise<SearchResponseBody>;
 }
 
 /**
@@ -143,7 +144,7 @@ export async function getRecommendedChunks(
       datasetId: this.datasetId,
     },
     signal
-  );
+  ) as Promise<RecommendChunksResponseBody>;
 }
 
 /**
@@ -180,6 +181,105 @@ export async function ragOnChunk(
     },
     signal
   );
+}
+
+/**
+ * This function is just like ragOnChunk but it returns a reader to parse the stream easier.
+ * This function exists as an alternative to the topic+message resource pattern where our Trieve handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt and the conversation is ephemeral.
+ * 
+ * 
+ * Example:
+ * ```js
+ *const reader = await trieve.ragOnChunkReader({
+  chunk_ids: ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+  prev_messages: [
+    {
+      content: "How do I setup RAG with Trieve?",
+      role: "user",
+    },
+  ],
+  prompt:
+    "Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:",
+  stream_response: true,
+});
+ * ```
+ */
+export async function ragOnChunkReader(
+  /** @hidden */
+  this: TrieveSDK,
+  props: GenerateOffChunksReqPayload,
+  signal?: AbortSignal
+) {
+  const response = await fetch(this.trieve.baseUrl + "/api/chunk/generate", {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+      "TR-Dataset": this.datasetId,
+      Authorization: `Bearer ${this.trieve.apiKey}`,
+    },
+    body: JSON.stringify(props),
+    signal
+  });
+
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    throw new Error("Failed to get reader from response body");
+  }
+
+  return reader;
+}
+
+/**
+ * This function is just like ragOnChunk but it returns a reader to parse the stream easier.
+ * This function exists as an alternative to the topic+message resource pattern where our Trieve handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt and the conversation is ephemeral.
+ * 
+ * 
+ * Example:
+ * ```js
+ *const { reader, queryId } = await trieve.ragOnChunkReader({
+  chunk_ids: ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+  prev_messages: [
+    {
+      content: "How do I setup RAG with Trieve?",
+      role: "user",
+    },
+  ],
+  prompt:
+    "Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:",
+  stream_response: true,
+});
+ * ```
+ */
+export async function ragOnChunkReaderWithQueryId(
+  /** @hidden */
+  this: TrieveSDK,
+  props: GenerateOffChunksReqPayload,
+  signal?: AbortSignal
+) {
+  const response = await fetch(this.trieve.baseUrl + "/api/chunk/generate", {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+      "TR-Dataset": this.datasetId,
+      Authorization: `Bearer ${this.trieve.apiKey}`,
+    },
+    body: JSON.stringify(props),
+    signal
+  });
+
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    throw new Error("Failed to get reader from response body");
+  }
+
+  const queryId = response.headers.get("TR-QueryID");
+
+  return {
+    reader,
+    queryId
+  };
 }
 
 /**

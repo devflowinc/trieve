@@ -48,6 +48,7 @@ import ScoreChunk from "./ScoreChunk";
 import { FiEye } from "solid-icons/fi";
 import { ServerTimings } from "./ServerTimings";
 import { VsChevronRight } from "solid-icons/vs";
+import { useCtrClickForChunk } from "../hooks/useCtrAnalytics";
 
 export interface ResultsPageProps {
   search: SearchStore;
@@ -75,7 +76,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $dataset = datasetAndUserContext.currentDataset;
-
+  const { registerClickForChunk } = useCtrClickForChunk();
   const [loading, setLoading] = createSignal(false);
   const [page, setPage] = createSignal(1);
 
@@ -553,7 +554,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             <ShowServerTimings />
             <div class="flex w-full max-w-screen-2xl flex-col space-y-4">
               <For each={resultChunks()}>
-                {(chunk) => (
+                {(chunk, i) => (
                   <div>
                     <ScoreChunk
                       totalGroupPages={totalCollectionPages()}
@@ -568,6 +569,14 @@ const ResultsPage = (props: ResultsPageProps) => {
                       setChunkGroups={setChunkCollections}
                       setSelectedIds={setSelectedIds}
                       selectedIds={selectedIds}
+                      registerClickForChunk={({ id, eventType }) =>
+                        registerClickForChunk({
+                          id: id,
+                          eventType: eventType,
+                          position: i(),
+                          searchID: searchID(),
+                        })
+                      }
                     />
                   </div>
                 )}
@@ -733,7 +742,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                     </div>
                     <Show when={groupExpanded()}>
                       <For each={groupResult.chunks}>
-                        {(chunk) => (
+                        {(chunk, i) => (
                           <div class="ml-5 flex space-y-4">
                             <ScoreChunk
                               totalGroupPages={totalCollectionPages()}
@@ -747,6 +756,14 @@ const ResultsPage = (props: ResultsPageProps) => {
                               setChunkGroups={setChunkCollections}
                               setSelectedIds={setSelectedIds}
                               selectedIds={selectedIds}
+                              registerClickForChunk={({ id, eventType }) =>
+                                registerClickForChunk({
+                                  id: id,
+                                  eventType: eventType,
+                                  position: i(),
+                                  searchID: searchID(),
+                                })
+                              }
                             />
                           </div>
                         )}

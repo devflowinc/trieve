@@ -1,4 +1,4 @@
-import { throttle } from "lodash";
+import {throttle } from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { SuggestedQueriesResponse } from "trieve-ts-sdk";
 import { getSuggestedQueries } from "../trieve";
@@ -13,6 +13,9 @@ export const useSuggestedQueries = () => {
   >([]);
 
   const getQueries = throttle(async () => {
+    if (isFetching.current) {
+      return;
+    }
     isFetching.current = true;
     setIsLoading(true);
     const queries = await getSuggestedQueries({

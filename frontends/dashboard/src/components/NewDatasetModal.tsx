@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Accessor,
   createSignal,
@@ -32,17 +29,48 @@ import { CrawlInterval, CrawlOptions, DistanceMetric } from "trieve-ts-sdk";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { Tooltip } from "shared/ui";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
+import { createStore, SetStoreFunction, unwrap } from "solid-js/store";
+import { DatasetConfig } from "./dataset-settings/LegacySettingsWrapper";
+import { cn } from "shared/utils";
+import { ValidateFn, ErrorMsg } from "../utils/validation";
 
 export interface NewDatasetModalProps {
   isOpen: Accessor<boolean>;
   closeModal: () => void;
 }
 
+const validate: ValidateFn<DatasetConfig> = (value) => {
+  const errors: Record<string, string> = {};
+
+  if (value.BM25_ENABLED) {
+    if (!value.BM25_B) {
+      errors.BM25_B = "B is required";
+    } else if (value.BM25_B < 0) {
+      errors.BM25_B = "B must be greater than 0";
+    } else if (value.BM25_B > 1) {
+      errors.BM25_B = "B must be less than 1";
+    }
+    if (!value.BM25_K) {
+      errors.BM25_K = "K is required";
+    } else if (value.BM25_K < 0) {
+      errors.BM25_K = "K must be greater than 0";
+    }
+    if (!value.BM25_AVG_LEN) {
+      errors.BM25_AVG_LEN = "Average Length is required";
+    }
+  }
+
+  return {
+    errors,
+    valid: Object.values(errors).filter((v) => !!v).length === 0,
+  };
+};
+
 export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const userContext = useContext(UserContext);
   const navigate = useNavigate();
 
-  const [serverConfig, setServerConfig] = createSignal(
+  const [serverConfig, setServerConfig] = createStore(
     defaultServerEnvsConfiguration,
   );
   const [crawlOptions, setCrawlOptions] = createSignal<CrawlOptions>();
@@ -52,8 +80,19 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const [isLoading, setIsLoading] = createSignal(false);
   const [fillWithExampleData, setFillWithExampleData] = createSignal(false);
 
+  const [errors, setErrors] = createStore<
+    ReturnType<ValidateFn<DatasetConfig>>["errors"]
+  >({});
+
   const createDataset = async () => {
-    const curServerConfig = serverConfig();
+    const curServerConfig = unwrap(serverConfig);
+    const validateResult = validate(curServerConfig);
+    if (validateResult.valid) {
+      setErrors({});
+    } else {
+      setErrors(validateResult.errors);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -124,7 +163,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel class="inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 text-left align-middle shadow-xl transition-all">
+            <DialogPanel class="inline-block max-h-[90vh] w-full max-w-2xl transform overflow-hidden overflow-y-auto rounded-md bg-white p-6 text-left align-middle shadow-xl transition-all">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -261,13 +300,10 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               name="embeddingSize"
                               class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                                 availableEmbeddingModels.find(
                                   (model) =>
-                                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                     model.id ===
-                                    serverConfig().EMBEDDING_MODEL_NAME,
-                                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                                    serverConfig.EMBEDDING_MODEL_NAME,
                                 )?.name ?? availableEmbeddingModels[0].name
                               }
                               onChange={(e) => {
@@ -326,12 +362,9 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               name="distanceMetric"
                               class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                               value={
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                                 availableDistanceMetrics.find(
                                   (model) =>
-                                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                                    model.id === serverConfig().DISTANCE_METRIC,
-                                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                                    model.id === serverConfig.DISTANCE_METRIC,
                                 )?.name ?? availableDistanceMetrics[0].name
                               }
                               onChange={(e) => {
@@ -411,9 +444,11 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               id="bm25"
                               class="col-span-2 block w-full bg-white px-3 py-1.5 text-sm text-neutral-700"
                             >
-                              Dataset will have BM25 for keyword search. B, K,
-                              and average token length can be configured via the
-                              dataset options after creation.
+                              <BM25Settings
+                                errors={errors}
+                                config={serverConfig}
+                                setConfig={setServerConfig}
+                              />
                             </p>
                           </div>
                         </div>
@@ -919,3 +954,78 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   );
 };
 export default NewDatasetModal;
+
+const BM25Settings = (props: {
+  config: DatasetConfig;
+  setConfig: SetStoreFunction<DatasetConfig>;
+  errors: ReturnType<ValidateFn<DatasetConfig>>["errors"];
+}) => {
+  return (
+    <div>
+      <div class="flex items-center gap-2 py-2 pb-5">
+        <label class="block">BM25 Enabled</label>
+        <input
+          checked={props.config.BM25_ENABLED ? true : false}
+          onChange={(e) => {
+            props.setConfig("BM25_ENABLED", e.currentTarget.checked);
+          }}
+          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+          type="checkbox"
+        />
+      </div>
+      <div
+        class={cn(
+          "group flex justify-stretch gap-2",
+          !props.config.BM25_ENABLED && "opacity-40",
+        )}
+      >
+        <div>
+          <label class="block">B</label>
+          <input
+            min={0}
+            step="any"
+            disabled={!props.config.BM25_ENABLED}
+            value={props.config.BM25_B?.toString() || ""}
+            onInput={(e) => {
+              props.setConfig("BM25_B", parseFloat(e.currentTarget.value));
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 group-disabled:opacity-20 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            type="number"
+          />
+          <ErrorMsg error={props.errors.BM25_B} />
+        </div>
+        <div>
+          <label class="block">K</label>
+          <input
+            step="any"
+            disabled={!props.config.BM25_ENABLED}
+            value={props.config.BM25_K?.toString() || ""}
+            onInput={(e) => {
+              props.setConfig("BM25_K", parseFloat(e.currentTarget.value));
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 group-disabled:opacity-20 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            type="number"
+          />
+          <ErrorMsg error={props.errors.BM25_K} />
+        </div>
+        <div>
+          <label class="block">Average Length</label>
+          <input
+            step={1}
+            disabled={!props.config.BM25_ENABLED}
+            value={props.config.BM25_AVG_LEN?.toString() || ""}
+            onInput={(e) => {
+              props.setConfig(
+                "BM25_AVG_LEN",
+                parseFloat(e.currentTarget.value),
+              );
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 group-disabled:opacity-20 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            type="number"
+          />
+          <ErrorMsg error={props.errors.BM25_AVG_LEN} />
+        </div>
+      </div>
+    </div>
+  );
+};

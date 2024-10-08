@@ -11,9 +11,9 @@ import {
   GetChunksInGroupResponse,
   GroupData,
   GroupsForChunk,
-  RecommendGroupsResponse,
-  SearchGroupResponseTypes,
-  SearchOverGroupsResponseTypes,
+  RecommendGroupsResponseBody,
+  SearchOverGroupsResponseBody,
+  SearchWithinGroupResponseBody,
 } from "../../types.gen";
 import { test } from "../../__tests__/utils";
 
@@ -37,7 +37,7 @@ describe("Chunk Groups Methods Test", async () => {
       search_type: "fulltext",
     });
 
-    expectTypeOf(data).toEqualTypeOf<SearchOverGroupsResponseTypes>();
+    expectTypeOf(data).toEqualTypeOf<SearchOverGroupsResponseBody>();
   });
   test("searchInGroup", async () => {
     const data = await trieve.searchInGroup({
@@ -46,14 +46,14 @@ describe("Chunk Groups Methods Test", async () => {
       group_id: GROUP_EXAMPLE_ID,
     });
 
-    expectTypeOf(data).toEqualTypeOf<SearchGroupResponseTypes>();
+    expectTypeOf(data).toEqualTypeOf<SearchWithinGroupResponseBody>();
   });
   test("recommendedGroups", async () => {
     const data = await trieve.recommendedGroups({
       positive_group_ids: [GROUP_EXAMPLE_ID],
     });
 
-    expectTypeOf(data).toEqualTypeOf<RecommendGroupsResponse>();
+    expectTypeOf(data).toEqualTypeOf<RecommendGroupsResponseBody>();
   });
   test("updateGroup", async () => {
     const data = await trieve.updateGroup({

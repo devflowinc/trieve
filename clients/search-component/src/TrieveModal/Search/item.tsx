@@ -28,6 +28,11 @@ export const Item = ({ item, requestID, index }: Props) => {
   });
   descriptionHtml = $descriptionHtml.html() || "";
 
+  const openapiRequestVerb = load(item.chunk.chunk_html || "")
+    .root()
+    .find(".openapi-method")
+    .text();
+
   const chunkHtmlHeadings = load(item.chunk.chunk_html || "")
     .root()
     .find("h1, h2, h3, h4, h5, h6")
@@ -62,12 +67,38 @@ export const Item = ({ item, requestID, index }: Props) => {
         item.chunk.num_value
       }${props.currencyPosition === "after" ? props.defaultCurrency : ""}`
     : "";
-  const title = `  ${
+  let title = `  ${
     cleanFirstHeading ||
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name
   }  ${price}`;
+
+  switch (openapiRequestVerb) {
+    case "POST":
+      title = title.replace("POST", '<span class="post-method">POST</span>');
+      break;
+    case "GET":
+      title = title.replace("GET", '<span class="get-method">GET</span>');
+      break;
+    case "PUT":
+      title = title.replace("PUT", '<span class="put-method">PUT</span>');
+      break;
+    case "DELETE":
+      title = title.replace(
+        "DELETE",
+        '<span class="delete-method">DELETE</span>'
+      );
+      break;
+    case "PATCH":
+      title = title.replace(
+        "PATCH",
+        '<span class="patch-method">PATCH</span>'
+      );
+      break;
+    default:
+      break;
+  }
 
   const checkForUpAndDown = (e: KeyboardEvent) => {
     if (e.code === "ArrowDown" || e.code === "ArrowUp") {

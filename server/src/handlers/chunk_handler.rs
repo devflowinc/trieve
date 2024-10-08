@@ -2,10 +2,11 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
     ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo,
-    HighlightOptions, IngestSpecificChunkMetadata, Pool, QueryTypes, RagQueryEventClickhouse,
-    RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
-    ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore,
-    SortByField, SortOptions, TypoOptions, UnifiedId, UpdateSpecificChunkMetadata,
+    HighlightOptions, ImageConfig, IngestSpecificChunkMetadata, Pool, QueryTypes,
+    RagQueryEventClickhouse, RecommendType, RecommendationEventClickhouse, RecommendationStrategy,
+    RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
+    SlimChunkMetadataWithScore, SortByField, SortOptions, TypoOptions, UnifiedId,
+    UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -33,6 +34,7 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
 };
+use openai_dive::v1::resources::chat::{ImageUrl, ImageUrlType};
 use openai_dive::v1::resources::shared::StopToken;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -288,7 +290,7 @@ pub enum CreateChunkReqPayloadEnum {
         (status = 400, description = "Error typically due to deserialization issues", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -446,7 +448,7 @@ pub async fn create_chunk(
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
     security(
@@ -492,7 +494,7 @@ pub async fn delete_chunk(
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to delete"),
     ),
     security(
@@ -599,7 +601,7 @@ pub struct UpdateIngestionMessage {
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -766,7 +768,7 @@ pub struct UpdateChunkByTrackingIdData {
         (status = 400, description = "Service error relating to to updating chunk", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -1148,7 +1150,7 @@ pub fn parse_query(
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -1394,7 +1396,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -1521,7 +1523,7 @@ pub struct ScrollChunksReqPayload {
         (status = 400, description = "Service error relating to scrolling chunks", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1597,7 +1599,7 @@ pub async fn scroll_dataset_chunks(
         (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."),
         ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
@@ -1697,7 +1699,7 @@ pub struct CountChunkQueryResponseBody {
         (status = 404, description = "Failed to count chunks", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1782,7 +1784,7 @@ pub async fn count_chunks(
         (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."),
         ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch"),
     ),
@@ -1843,7 +1845,7 @@ pub struct GetChunksData {
         (status = 404, description = "Any one of the specified chunks not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -1915,7 +1917,7 @@ pub struct GetTrackingChunksData {
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -2022,7 +2024,7 @@ pub enum RecommendResponseTypes {
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -2335,6 +2337,8 @@ pub struct GenerateOffChunksReqPayload {
     pub stop_tokens: Option<Vec<String>>,
     /// User ID is the id of the user who is making the request. This is used to track user interactions with the RAG results.
     pub user_id: Option<String>,
+    /// Configuration for sending images to the llm
+    pub image_config: Option<ImageConfig>,
 }
 
 /// RAG on Specified Chunks
@@ -2347,12 +2351,20 @@ pub struct GenerateOffChunksReqPayload {
     tag = "Chunk",
     request_body(content = GenerateOffChunksReqPayload, description = "JSON request payload to perform RAG on some chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
-        (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
+        (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",
+            headers(
+                ("TR-QueryID" = uuid::Uuid, description = "Query ID that is used for tracking analytics")
+            )
+        ),
+        (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String,
+            headers(
+                ("TR-QueryID" = uuid::Uuid, description = "Query ID that is used for tracking analytics")
+            )
+        ),
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -2469,6 +2481,31 @@ pub async fn generate_off_chunks(
             name: None,
             tool_call_id: None,
         });
+
+        if let Some(image_config) = &data.image_config {
+            if image_config.use_images.unwrap_or(false) {
+                if let Some(image_urls) = bookmark.image_urls.clone() {
+                    let urls = image_urls
+                        .iter()
+                        .filter_map(|image| image.clone())
+                        .take(image_config.images_per_chunk.unwrap_or(5))
+                        .map(|url| ImageUrl {
+                            r#type: "image_url".to_string(),
+                            text: None,
+                            image_url: ImageUrlType { url, detail: None },
+                        })
+                        .collect::<Vec<_>>();
+
+                    messages.push(ChatMessage {
+                        role: Role::User,
+                        content: ChatMessageContent::ImageUrl(urls),
+                        tool_calls: None,
+                        name: None,
+                        tool_call_id: None,
+                    });
+                }
+            }
+        }
 
         messages.push(ChatMessage {
             role: Role::Assistant,
@@ -2620,20 +2657,24 @@ pub async fn generate_off_chunks(
     });
 
     let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
-        if let Ok(response) = response {
-            let chat_content = match response.choices.get(0) {
-                Some(choice) => choice.delta.content.clone(),
-                None => Some("failed to get response completion".to_string()),
-            };
-            if let Some(message) = chat_content.clone() {
-                s.send(message).unwrap();
+        match response {
+            Ok(response) => {
+                let chat_content = match response.choices.get(0) {
+                    Some(choice) => choice.delta.content.clone(),
+                    None => Some("failed to get response completion".to_string()),
+                };
+                if let Some(message) = chat_content.clone() {
+                    s.send(message).unwrap();
+                }
+
+                Ok(Bytes::from(chat_content.unwrap_or("".to_string())))
             }
-            return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+            Err(e) => Err(ServiceError::InternalServerError(format!(
+                "Model Response Error. Please try again later. {:?}",
+                e
+            ))
+            .into()),
         }
-        Err(ServiceError::InternalServerError(
-            "Model Response Error. Please try again later.".into(),
-        )
-        .into())
     });
 
     Ok(HttpResponse::Ok()

@@ -163,6 +163,7 @@ impl Modify for SecurityAddon {
         handlers::topic_handler::create_topic,
         handlers::topic_handler::delete_topic,
         handlers::topic_handler::update_topic,
+        handlers::topic_handler::clone_topic,
         handlers::topic_handler::get_all_topics_for_owner_id,
         handlers::message_handler::create_message,
         handlers::message_handler::get_all_topic_messages,
@@ -250,6 +251,7 @@ impl Modify for SecurityAddon {
         schemas(
             handlers::auth_handler::AuthQuery,
             handlers::topic_handler::CreateTopicReqPayload,
+            handlers::topic_handler::CloneTopicReqPayload,
             handlers::topic_handler::DeleteTopicData,
             handlers::topic_handler::UpdateTopicReqPayload,
             handlers::message_handler::CreateMessageReqPayload,
@@ -430,6 +432,7 @@ impl Modify for SecurityAddon {
             data::models::QdrantSortBy,
             data::models::SortOptions,
             data::models::LLMOptions,
+            data::models::ImageConfig,
             data::models::HighlightOptions,
             data::models::TypoOptions,
             data::models::TypoRange,
@@ -835,6 +838,10 @@ pub fn main() -> std::io::Result<()> {
                             web::resource("/topic")
                                 .route(web::post().to(handlers::topic_handler::create_topic))
                                 .route(web::put().to(handlers::topic_handler::update_topic)),
+                        )
+                        .service(
+                            web::resource("/topic/clone")
+                                .route(web::post().to(handlers::topic_handler::clone_topic))
                         )
                         .service(
                             web::resource("/topic/{topic_id}")

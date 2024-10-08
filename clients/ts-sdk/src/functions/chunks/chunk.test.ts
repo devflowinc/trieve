@@ -3,11 +3,10 @@ import { TrieveSDK } from "../../sdk";
 import {
   ChunkReturnTypes,
   CountChunkQueryResponseBody,
-  RecommendResponseTypes,
+  RecommendChunksResponseBody,
   ReturnQueuedChunk,
   ScrollChunksResponseBody,
   SearchResponseBody,
-  SearchResponseTypes,
 } from "../../types.gen";
 import {
   CHUNK_EXAMPLE_ID,
@@ -44,7 +43,7 @@ describe("Chunk Methods Test", async () => {
       search_type: "fulltext",
     });
 
-    expectTypeOf(data).toEqualTypeOf<SearchResponseTypes>();
+    expectTypeOf(data).toEqualTypeOf<SearchResponseBody>();
   });
 
   test("getRecommendedChunks", async () => {
@@ -52,7 +51,7 @@ describe("Chunk Methods Test", async () => {
       positive_chunk_ids: [CHUNK_EXAMPLE_ID],
     });
 
-    expectTypeOf(data).toEqualTypeOf<RecommendResponseTypes>();
+    expectTypeOf(data).toEqualTypeOf<RecommendChunksResponseBody>();
   });
 
   test("ragOnChunk", async () => {

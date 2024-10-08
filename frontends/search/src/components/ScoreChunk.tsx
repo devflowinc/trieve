@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import {
   Accessor,
   For,
@@ -30,12 +31,12 @@ import { Tooltip } from "shared/ui";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { A, useLocation } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { CTRPopup } from "./CTRPopup";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
   allowedAttributes: {
     ...sanitizeHtml.defaults.allowedAttributes,
-    "*": ["style"],
     button: ["onclick"],
   },
 };
@@ -70,11 +71,17 @@ export interface ScoreChunkProps {
   setSelectedIds: Setter<string[]>;
   selectedIds: Accessor<string[]>;
   chat?: boolean;
+  registerClickForChunk?: ({
+    eventType,
+    id,
+  }: {
+    eventType: string;
+    id: string;
+  }) => Promise<void>;
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
-
   const $currentDataset = datasetAndUserContext.currentDataset;
   const $currentUser = datasetAndUserContext.user;
   const apiHost = import.meta.env.VITE_API_HOST as string;
@@ -246,6 +253,18 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </Show>
               <div class="flex-1" />
 
+              <Show when={props.registerClickForChunk}>
+                {(registerClickForChunk) => (
+                  <CTRPopup
+                    onSubmit={(eventType: string) =>
+                      void registerClickForChunk()({
+                        eventType,
+                        id: props.chunk.id,
+                      })
+                    }
+                  />
+                )}
+              </Show>
               <Show when={!isInChunkViewer()}>
                 <Tooltip
                   body={

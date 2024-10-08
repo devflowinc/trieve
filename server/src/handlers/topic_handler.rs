@@ -3,10 +3,10 @@ use crate::{
     errors::ServiceError,
     handlers::auth_handler::AdminOnly,
     operators::{
-        message_operator::get_topic_string,
+        message_operator::{create_messages_query, get_topic_messages, get_topic_string},
         topic_operator::{
             create_topic_query, delete_topic_query, get_all_topics_for_owner_id_query,
-            update_topic_query,
+            get_topic_query, update_topic_query,
         },
     },
 };
@@ -38,7 +38,7 @@ pub struct CreateTopicReqPayload {
         (status = 400, description = "Topic name empty or a service error", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -90,6 +90,68 @@ pub async fn create_topic(
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct CloneTopicReqPayload {
+    /// The topic_id to clone from
+    pub topic_id: uuid::Uuid,
+    /// The name of the topic. If this is not provided, the topic name is the same as the previous topic
+    pub name: Option<String>,
+    /// The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user.
+    pub owner_id: String,
+}
+
+/// Clone Topic
+///
+/// Create a new chat topic from a `topic_id`. The new topic will be attched to the owner_id and act as a coordinator for conversation message history of gen-AI chat sessions. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+#[utoipa::path(
+    post,
+    path = "/topic/clone",
+    context_path = "/api",
+    tag = "Topic",
+    request_body(content = CloneTopicReqPayload, description = "JSON request payload to create chat topic", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The JSON response payload containing the created topic", body = Topic),
+        (status = 400, description = "Topic name empty or a service error", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn clone_topic(
+    data: web::Json<CloneTopicReqPayload>,
+    user: AdminOnly,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let data = data.into_inner();
+
+    //  get topic from topic_id
+    let original_topic =
+        get_topic_query(data.topic_id, dataset_org_plan_sub.dataset.id, &pool).await?;
+
+    let topic_name = data.name.unwrap_or(original_topic.name);
+
+    let new_topic = Topic::from_details(topic_name, data.owner_id, dataset_org_plan_sub.dataset.id);
+
+    create_topic_query(new_topic.clone(), &pool).await?;
+
+    let mut old_messages =
+        get_topic_messages(original_topic.id, dataset_org_plan_sub.dataset.id, &pool).await?;
+
+    old_messages.iter_mut().for_each(|message| {
+        message.topic_id = new_topic.id;
+        message.id = uuid::Uuid::new_v4();
+    });
+
+    create_messages_query(old_messages, &pool).await?;
+
+    Ok(HttpResponse::Ok().json(new_topic))
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct DeleteTopicData {
     /// The id of the topic to target.
     pub topic_id: uuid::Uuid,
@@ -108,7 +170,7 @@ pub struct DeleteTopicData {
         (status = 400, description = "Service error relating to topic deletion", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("topic_id" = uuid, Path, description = "The id of the topic you want to delete."),
     ),
     security(
@@ -151,7 +213,7 @@ pub struct UpdateTopicReqPayload {
         (status = 400, description = "Service error relating to topic update", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -191,7 +253,7 @@ pub async fn update_topic(
     ),
     params (
         ("owner_id", description="The owner_id to get topics of; A common approach is to use a browser fingerprint or your user's id"),
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),

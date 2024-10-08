@@ -77,6 +77,11 @@ const MainLayout = (props: LayoutProps) => {
     boolean | null
   >(null);
 
+  const [useImages, setUseImages] = createSignal<
+    boolean | null
+  >(null);
+
+
   const [streamCompletionsFirst, setStreamCompletionsFirst] = createSignal<
     boolean | null
   >(null);
@@ -94,6 +99,7 @@ const MainLayout = (props: LayoutProps) => {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    messageId: string | null,
   ) => {
     let done = false;
     while (!done) {
@@ -113,6 +119,7 @@ const MainLayout = (props: LayoutProps) => {
 
           const newMessage = {
             content: lastMessage.content + newText,
+            id: messageId ? messageId : undefined,
           };
           return [...prev.slice(0, prev.length - 1), newMessage];
         });
@@ -177,7 +184,7 @@ const MainLayout = (props: LayoutProps) => {
     if (regenerateLastMessage) {
       requestMethod = "PATCH";
       setMessages((prev): Message[] => {
-        const newMessages = [{ content: "" }];
+        const newMessages = [{ content: "", id: prev[prev.length - 1].id }];
         return [...prev.slice(0, -1), ...newMessages];
       });
     } else {
@@ -219,6 +226,9 @@ const MainLayout = (props: LayoutProps) => {
           system_prompt: systemPrompt(),
           llm_options: {
             completion_first: streamCompletionsFirst(),
+            image_options: {
+              use_images: useImages()
+            }
           },
           search_type: searchType(),
         }),
@@ -230,7 +240,9 @@ const MainLayout = (props: LayoutProps) => {
         return;
       }
 
-      await handleReader(reader);
+      const messageId = res.headers.get("TR-Queryid");
+
+      await handleReader(reader, messageId);
     } catch (e) {
       console.error(e);
     }
@@ -297,6 +309,7 @@ const MainLayout = (props: LayoutProps) => {
             {(message, idx) => {
               return (
                 <AfMessage
+                  queryId={message.id}
                   normalChat={false}
                   role={messageRoleFromIndex(idx())}
                   content={message.content}
@@ -334,6 +347,9 @@ const MainLayout = (props: LayoutProps) => {
                         topic_id: props.selectedTopic?.id,
                         llm_options: {
                           completion_first: streamCompletionsFirst(),
+                          image_options: {
+                            use_images: useImages()
+                          }
                         },
                       }),
                     })
@@ -345,8 +361,9 @@ const MainLayout = (props: LayoutProps) => {
                         if (!reader) {
                           return;
                         }
+                        const messageId = response.headers.get("TR-Queryid");
                         setStreamingCompletion(true);
-                        handleReader(reader).catch((e) => {
+                        handleReader(reader, messageId).catch((e) => {
                           console.error("Error handling reader: ", e);
                         });
                       })
@@ -440,6 +457,20 @@ const MainLayout = (props: LayoutProps) => {
                       checked={concatUserMessagesQuery() ?? false}
                       onChange={(e) => {
                         setConcatUserMessagesQuery(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="concat_user_messages">
+                      Use Images
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="concat_user_messages"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={useImages() ?? false}
+                      onChange={(e) => {
+                        setUseImages(e.target.checked);
                       }}
                     />
                   </div>

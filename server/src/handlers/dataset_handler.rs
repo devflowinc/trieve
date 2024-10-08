@@ -123,7 +123,7 @@ pub struct CreateDatasetRequest {
         (status = 400, description = "Service error relating to creating the dataset", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
     ),
     security(
         ("ApiKey" = ["owner"]),
@@ -259,7 +259,7 @@ pub struct UpdateDatasetRequest {
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
     ),
     security(
         ("ApiKey" = ["owner"]),
@@ -343,7 +343,7 @@ pub struct GetCrawlOptionsResponse {
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
     ),
     security(
@@ -383,7 +383,7 @@ pub async fn get_dataset_crawl_options(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to delete."),
 
     ),
@@ -429,7 +429,7 @@ pub async fn delete_dataset(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to clear."),
 
     ),
@@ -474,7 +474,7 @@ pub async fn clear_dataset(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = String, Path, description = "The tracking id of the dataset you want to delete."),
     ),
     security(
@@ -520,7 +520,7 @@ pub async fn delete_dataset_by_tracking_id(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
     ),
     security(
@@ -559,7 +559,7 @@ pub async fn get_dataset(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve usage for."),
     ),
     security(
@@ -593,7 +593,7 @@ pub async fn get_usage_by_dataset_id(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = String, Path, description = "The tracking id of the dataset you want to retrieve."),
     ),
     security(
@@ -639,7 +639,7 @@ pub struct GetDatasetsPagination {
         (status = 404, description = "Could not find organization", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("organization_id" = uuid, Path, description = "id of the organization you want to retrieve datasets for"),
         ("limit" = Option<i64>, Query, description = "The number of records to return"),
         ("offset" = Option<i64>, Query, description = "The number of records to skip"),
@@ -712,7 +712,7 @@ pub struct GetAllTagsResponse {
         (status = 400, description = "Service error relating to finding items by tag", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
