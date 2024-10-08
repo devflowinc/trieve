@@ -184,6 +184,103 @@ export async function ragOnChunk(
 }
 
 /**
+ * This function is just like ragOnChunk but it returns a reader to parse the stream easier.
+ * This function exists as an alternative to the topic+message resource pattern where our Trieve handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt and the conversation is ephemeral.
+ * 
+ * 
+ * Example:
+ * ```js
+ *const reader = await trieve.ragOnChunkReader({
+  chunk_ids: ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+  prev_messages: [
+    {
+      content: "How do I setup RAG with Trieve?",
+      role: "user",
+    },
+  ],
+  prompt:
+    "Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:",
+  stream_response: true,
+});
+ * ```
+ */
+export async function ragOnChunkReader(
+  /** @hidden */
+  this: TrieveSDK,
+  props: GenerateOffChunksReqPayload,
+  signal?: AbortSignal
+) {
+  return this.trieve.fetch(
+    "/api/chunk/generate",
+    "post",
+    {
+      data: props,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
+
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    throw new Error("Failed to get reader from response body");
+  }
+
+  return reader;
+}
+
+/**
+ * This function is just like ragOnChunk but it returns a reader to parse the stream easier.
+ * This function exists as an alternative to the topic+message resource pattern where our Trieve handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt and the conversation is ephemeral.
+ * 
+ * 
+ * Example:
+ * ```js
+ *const { reader, queryId } = await trieve.ragOnChunkReader({
+  chunk_ids: ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+  prev_messages: [
+    {
+      content: "How do I setup RAG with Trieve?",
+      role: "user",
+    },
+  ],
+  prompt:
+    "Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:",
+  stream_response: true,
+});
+ * ```
+ */
+export async function ragOnChunkReaderWithQueryId(
+  /** @hidden */
+  this: TrieveSDK,
+  props: GenerateOffChunksReqPayload,
+  signal?: AbortSignal
+) {
+  return this.trieve.fetch(
+    "/api/chunk/generate",
+    "post",
+    {
+      data: props,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
+
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    throw new Error("Failed to get reader from response body");
+  }
+
+  const queryId = response.headers.get("TR-QueryID");
+
+  return {
+    reader,
+    queryId
+  };
+}
+
+/**
  * This function will generate 3 suggested queries based off a hybrid search using RAG with the query provided in the request body and return them as a JSON object.
  * 
  * Example:
