@@ -10,6 +10,7 @@ import { DataSquare } from "../SingleQueryInfo/DataSquare";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { UserContext } from "../../../contexts/UserContext";
 import { IoArrowBackOutline } from "solid-icons/io";
+import { isScoreChunkDTO } from "shared/types";
 
 interface SingleRecommendationQueryProps {
   queryId: string;
@@ -88,42 +89,76 @@ export const SingleRecommendationQuery = (
               label="Dataset"
               value={datasetName() || props.recommendation_data.dataset_id}
             />
-            <DataSquare
-              label="Results"
-              value={props.recommendation_data.results.length}
-            />
-            <DataSquare
-              label="Top Score"
-              value={props.recommendation_data.top_score.toFixed(4)}
-            />
+            <Show
+              when={
+                props.recommendation_data.results &&
+                props.recommendation_data.results[0]
+              }
+            >
+              <DataSquare
+                label="Results"
+                value={props.recommendation_data.results.length}
+              />
+            </Show>
+            <Show when={props.recommendation_data.top_score > 0.0}>
+              <DataSquare
+                label="Top Score"
+                value={props.recommendation_data.top_score.toPrecision(4)}
+              />
+            </Show>
           </dl>
         </div>
-        <Card title="Results">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <For
-              fallback={<div class="py-8 text-center">No Data.</div>}
-              each={props.recommendation_data.results}
-            >
-              {(result) => <ResultCard result={{ metadata: [result] }} />}
-            </For>
-          </div>
-        </Card>
-        <Card title="Recommendation Request Parameters">
-          <ul>
-            <For
-              each={Object.keys(
-                props.recommendation_data.request_params,
-              ).filter((key) => props.recommendation_data.request_params[key])}
-            >
-              {(key) => (
-                <li class="text-sm">
-                  <span class="font-medium">{key}: </span>
-                  {props.recommendation_data.request_params[key] as string}{" "}
-                </li>
-              )}
-            </For>
-          </ul>
-        </Card>
+        <Show
+          when={
+            props.recommendation_data.results &&
+            props.recommendation_data.results[0]
+          }
+        >
+          <Card title="Results">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <For
+                fallback={<div class="py-8 text-center">No Data.</div>}
+                each={props.recommendation_data.results}
+              >
+                {(result) => {
+                  if (isScoreChunkDTO({ metadata: [result] })) {
+                    return <ResultCard result={{ metadata: [result] }} />;
+                  } else {
+                    return (
+                      <div>
+                        <pre class="text-sm">
+                          {JSON.stringify(result, null, 2)}
+                        </pre>
+                      </div>
+                    );
+                  }
+                }}
+              </For>
+            </div>
+          </Card>
+        </Show>
+        <Show when={props.recommendation_data.request_params}>
+          <Card title="Request Parameters">
+            <ul>
+              <For
+                each={Object.keys(
+                  props.recommendation_data.request_params,
+                ).filter(
+                  (key) => props.recommendation_data.request_params[key],
+                )}
+              >
+                {(key) => (
+                  <li class="text-sm">
+                    <span class="font-medium">{key}: </span>
+                    {
+                      props.recommendation_data.request_params[key] as string
+                    }{" "}
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Card>
+        </Show>
       </div>
     );
   };
