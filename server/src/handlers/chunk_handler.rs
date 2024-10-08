@@ -71,7 +71,7 @@ pub struct ScoringOptions {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone, Default)]
-#[schema(example = json!({
+#[schema(title = "single", example = json!({
     "chunk_html": "<p>Some HTML content</p>",
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
@@ -164,7 +164,7 @@ pub struct SingleQueuedChunkResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
-#[schema(example = json!({
+#[schema(title = "batch", example = json!({
     "chunk_metadata": [{
         "content": "Some content",
         "link": "https://example.com",
@@ -210,7 +210,7 @@ pub struct BulkUploadIngestionMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-#[schema(example = json!({
+#[schema(title = "single", example = json!({
     "chunk_html": "<p>Some HTML content</p>",
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
@@ -231,7 +231,7 @@ pub struct BulkUploadIngestionMessage {
 pub struct CreateSingleChunkReqPayload(pub ChunkReqPayload);
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-#[schema(example = json!([{
+#[schema(title = "batch", example = json!([{
     "chunk_html": "<p>Some HTML content</p>",
     "link": "https://example.com",
     "tag_set": ["tag1", "tag2"],
