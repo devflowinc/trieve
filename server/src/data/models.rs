@@ -6542,6 +6542,7 @@ pub struct CrawlOptions {
     pub boost_titles: Option<bool>,
     /// Options for including an openapi spec in the crawl
     pub openapi_options: Option<CrawlOpenAPIOptions>,
+    pub is_shopify: Option<bool>,
 }
 
 impl CrawlOptions {
@@ -6557,6 +6558,7 @@ impl CrawlOptions {
             max_depth: self.max_depth.or(other.max_depth),
             boost_titles: self.boost_titles.or(other.boost_titles),
             openapi_options: self.openapi_options.clone(),
+            is_shopify: self.is_shopify.or(other.is_shopify),
         }
     }
 }
