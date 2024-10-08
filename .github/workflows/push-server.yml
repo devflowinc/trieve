@@ -593,6 +593,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
   crawl-worker:
     name: Push Crawl Worker
     runs-on: ${{ matrix.runner }}
@@ -640,6 +641,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
   crawl-cron-job:
       name: Push Crawl Cron Job
       runs-on: ${{ matrix.runner }}
@@ -687,6 +689,7 @@ jobs:
             push: true
             tags: ${{ steps.meta.outputs.tags }}
             labels: ${{ steps.meta.outputs.labels }}
+
   dittofeed-sync-worker:
       name: Push Dittofeed Sync Worker
       runs-on: ${{ matrix.runner }}
