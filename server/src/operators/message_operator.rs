@@ -606,7 +606,7 @@ pub async fn stream_response(
             id: query_id,
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
-            search_id: uuid::Uuid::nil(),
+            search_id: clickhouse_search_event.id,
             results: chunk_ids
                 .clone()
                 .into_iter()
