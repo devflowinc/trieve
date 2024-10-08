@@ -9,4 +9,4 @@ spec:
         - name: embedding
           resources:
             limits:
-              nvidia.com/gpu: "1"
+              nvidia.com/gpu: "0.2"

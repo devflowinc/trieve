@@ -17,6 +17,6 @@ spec:
             - splade
           resources:
             requests:
-              memory: 500Mi
+              memory: 1Gi
             limits:
-              memory: 500Mi
+              memory: 2Gi
