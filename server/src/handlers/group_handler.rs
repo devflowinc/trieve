@@ -172,7 +172,7 @@ impl From<Vec<ChunkGroup>> for CreateChunkGroupResponseEnum {
         (status = 400, description = "Service error relating to creating the chunk_group(s)", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -311,7 +311,7 @@ pub struct DatasetGroupQuery {
         (status = 400, description = "Service error relating to getting the groups created by the given dataset", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch groups for."),
         ("page" = i64, description = "The page of groups to fetch. Page is 1-indexed."),
     ),
@@ -356,7 +356,7 @@ pub struct GetGroupByTrackingIDData {
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = String, description = "The tracking id of the group to fetch."),
     ),
     security(
@@ -401,7 +401,7 @@ pub struct GetGroupData {
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("group_id" = Option<uuid::Uuid>, Path, description = "Id of the group you want to fetch."),
     ),
     security(
@@ -453,7 +453,7 @@ pub struct UpdateGroupByTrackingIDReqPayload {
         (status = 400, description = "Service error relating to updating the chunkGroup", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = uuid::Uuid, description = "Tracking id of the chunk_group to update"),
     ),
     security(
@@ -514,7 +514,7 @@ pub struct DeleteGroupByTrackingIDData {
         (status = 400, description = "Service error relating to deleting the chunkGroup", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = uuid::Uuid, description = "Tracking id of the chunk_group to delete"),
         ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
@@ -575,7 +575,7 @@ pub struct DeleteGroupData {
         (status = 400, description = "Service error relating to deleting the chunkGroup", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("group_id" = Option<uuid::Uuid>, Path, description = "Id of the group you want to fetch."),
         ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
@@ -650,7 +650,7 @@ pub struct UpdateChunkGroupReqPayload {
         (status = 400, description = "Service error relating to updating the chunkGroup", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -741,7 +741,7 @@ pub struct AddChunkToGroupReqPayload {
         (status = 400, description = "Service error relating to getting the groups that the chunk is in.", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("group_id" = uuid, description = "Id of the group to add the chunk to as a bookmark"),
     ),
     security(
@@ -796,7 +796,7 @@ pub async fn add_chunk_to_group(
         (status = 400, description = "Service error related to adding the chunk group by tracking_id", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("tracking_id" = uuid, description = "Tracking id of the group to add the chunk to as a bookmark"),
     ),
     security(
@@ -895,7 +895,7 @@ pub enum GetChunksInGroupResponse {
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("group_id" = uuid::Uuid, Path, description = "Id of the group you want to fetch."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The version of the API to use for the request"),
         ("page" = Option<u64>, description = "The page of chunks to get from the group"),
@@ -953,7 +953,7 @@ pub struct GetChunksInGroupByTrackingIdReqPayload {
         (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("group_tracking_id" = String, description = "The id of the group to get the chunks from"),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The version of the API to use for the request"),
         ("page" = u64, description = "The page of chunks to get from the group"),
@@ -1012,7 +1012,7 @@ pub struct GetGroupsForChunksReqPayload {
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1054,7 +1054,7 @@ pub struct RemoveChunkFromGroupReqPayload {
         (status = 400, description = "Service error relating to removing the chunk from the group", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("group_id" = uuid::Uuid, Path, description = "Id of the group you want to remove the chunk from."),
         ("chunk_id" = Option<uuid::Uuid>, Query, description = "Id of the chunk you want to remove from the group"),
     ),
@@ -1151,7 +1151,7 @@ pub enum RecommendGroupsResponse {
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -1491,7 +1491,7 @@ impl SearchWithinGroupResults {
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
@@ -1672,7 +1672,7 @@ pub struct SearchOverGroupsReqPayload {
         (status = 400, description = "Service error relating to searching over groups", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Dataset" = String, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
     ),
     security(
