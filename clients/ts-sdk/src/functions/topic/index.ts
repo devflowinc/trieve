@@ -8,6 +8,7 @@ import {
   DeleteTopicData2,
   GetAllTopicsForOwnerIdData,
   UpdateTopicReqPayload,
+  CloneTopicReqPayload
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
@@ -31,6 +32,35 @@ export async function createTopic(
 ) {
   return await this.trieve.fetch(
     "/api/topic",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
+}
+
+/**
+ * Clone a chat topic and all its messages to a new topic. Topics are attached to a owner_id’s and act as a coordinator for conversation message history of gen-AI chat sessions. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.cloneTopic({
+  first_user_message: "hello",
+  name: "Test",
+  owner_id: "3c90c3cc-1d76-27198-8888-8dd25736052a",
+});
+ * ```
+ */
+export async function cloneTopic(
+  /** @hidden */
+  this: TrieveSDK,
+  data: CloneTopicReqPayload,
+  signal?: AbortSignal
+) {
+  return await this.trieve.fetch(
+    "/api/topic/clone",
     "post",
     {
       data,
