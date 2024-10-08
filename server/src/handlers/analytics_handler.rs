@@ -2,13 +2,16 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        DatasetAndOrgWithSubAndPlan, DateRange, EventDataClickhouse, EventTypes,
-        GetEventsRequestBody, OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        DatasetAndOrgWithSubAndPlan, DateRange, EventDataTypes, EventTypes, GetEventsRequestBody,
+        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
         SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
     errors::ServiceError,
-    operators::analytics_operator::*,
+    operators::{
+        analytics_operator::*,
+        clickhouse_operator::{ClickHouseEvent, EventQueue},
+    },
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -512,11 +515,12 @@ pub async fn send_ctr_data(
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let event_data = EventDataClickhouse::from_event_data(
-        data.into_inner().into(),
-        dataset_org_plan_sub.dataset.id,
-    );
-    send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
+    let event_data =
+        EventTypes::from(data.into_inner()).to_event_data(dataset_org_plan_sub.dataset.id);
+
+    if let EventDataTypes::EventDataClickhouse(event_data) = event_data {
+        send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -546,13 +550,33 @@ pub async fn send_event_data(
     _user: AdminOnly,
     data: web::Json<EventTypes>,
     clickhouse_client: web::Data<clickhouse::Client>,
-
+    event_queue: web::Data<EventQueue>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let event_data =
-        EventDataClickhouse::from_event_data(data.into_inner(), dataset_org_plan_sub.dataset.id);
+    let event_data = data
+        .into_inner()
+        .to_event_data(dataset_org_plan_sub.dataset.id);
 
-    send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
+    match event_data {
+        EventDataTypes::EventDataClickhouse(event_data) => {
+            send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
+        }
+        EventDataTypes::SearchQueryEventClickhouse(event_data) => {
+            event_queue
+                .send(ClickHouseEvent::SearchQueryEvent(event_data))
+                .await;
+        }
+        EventDataTypes::RagQueryEventClickhouse(event_data) => {
+            event_queue
+                .send(ClickHouseEvent::RagQueryEvent(event_data))
+                .await;
+        }
+        EventDataTypes::RecommendationEventClickhouse(event_data) => {
+            event_queue
+                .send(ClickHouseEvent::RecommendationEvent(event_data))
+                .await;
+        }
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }

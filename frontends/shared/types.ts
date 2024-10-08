@@ -476,17 +476,38 @@ export interface SearchQueryEvent {
   request_params: Record<string, unknown>;
   latency: number;
   top_score: number;
-  results: {
-    highlights?: unknown;
-    metadata: ChunkMetadataStringTagSet[];
-    score?: number;
-  }[];
+  results: ScoreChunkDTO[] | object[];
   dataset_id: string;
   created_at: string;
   query_rating?: {
     note?: string;
     rating: number;
   };
+}
+
+export interface ScoreChunkDTO {
+  highlights?: unknown;
+  metadata: ChunkMetadataStringTagSet[];
+  score?: number;
+}
+
+export function isScoreChunkDTO(data: unknown): data is ScoreChunkDTO {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  if (!Array.isArray((data as ScoreChunkDTO).metadata)) {
+    return false;
+  }
+
+  if (
+    (data as ScoreChunkDTO).score !== undefined &&
+    typeof (data as ScoreChunkDTO).score !== "number"
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 export interface RecommendationEvent {

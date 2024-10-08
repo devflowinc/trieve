@@ -1,11 +1,11 @@
-import { SearchQueryEvent } from "shared/types";
+import { ScoreChunkDTO } from "shared/types";
 import { FullScreenModal, JsonInput } from "shared/ui";
 import { IoCode } from "solid-icons/io";
 import { createMemo, createSignal, Show } from "solid-js";
 import { z } from "zod";
 
 interface ResultCardProps {
-  result: SearchQueryEvent["results"][0];
+  result: ScoreChunkDTO;
 }
 
 const usefulMetadataSchema = z.object({
@@ -43,7 +43,7 @@ export const ResultCard = (props: ResultCardProps) => {
 
             <IoCode />
           </div>
-          <Show when={props?.result?.score}>
+          <Show when={props.result.score}>
             <div class="text-xs font-normal opacity-60">
               Score: {props?.result?.score?.toFixed(5)}
             </div>

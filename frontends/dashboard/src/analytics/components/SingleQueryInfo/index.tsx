@@ -10,6 +10,7 @@ import { DataSquare } from "./DataSquare";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { UserContext } from "../../../contexts/UserContext";
 import { IoArrowBackOutline } from "solid-icons/io";
+import { isScoreChunkDTO } from "shared/types";
 
 interface SingleQueryProps {
   queryId: string;
@@ -59,13 +60,25 @@ export const SingleQuery = (props: SingleQueryProps) => {
               label="Dataset"
               value={datasetName() || props.data.dataset_id}
             />
-            <DataSquare label="Results" value={props.data.results.length} />
-            <DataSquare label="Latency" value={`${props.data.latency}ms`} />
-            <DataSquare
-              label="Top Score"
-              value={props.data.top_score.toPrecision(4)}
-            />
-            <Show when={props.data.query_rating}>
+            <Show when={props.data.results && props.data.results[0]}>
+              <DataSquare label="Results" value={props.data.results.length} />
+            </Show>
+            <Show when={props.data.latency > 0.0}>
+              <DataSquare label="Latency" value={`${props.data.latency}ms`} />
+            </Show>
+            <Show when={props.data.top_score > 0.0}>
+              <DataSquare
+                label="Top Score"
+                value={props.data.top_score.toPrecision(4)}
+              />
+            </Show>
+            <Show
+              when={
+                props.data.query_rating &&
+                (props.data.query_rating.rating > 0 ||
+                  props.data.query_rating.note)
+              }
+            >
               <DataSquare
                 label="User Rating"
                 value={props.data.query_rating?.rating.toString() ?? "N/A"}
@@ -73,32 +86,48 @@ export const SingleQuery = (props: SingleQueryProps) => {
             </Show>
           </dl>
         </div>
-        <Card title="Results">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <For
-              fallback={<div class="py-8 text-center">No Data.</div>}
-              each={props.data.results}
-            >
-              {(result) => <ResultCard result={result} />}
-            </For>
-          </div>
-        </Card>
-        <Card title="Request Parameters">
-          <ul>
-            <For
-              each={Object.keys(props.data.request_params).filter(
-                (key) => props.data.request_params[key],
-              )}
-            >
-              {(key) => (
-                <li class="text-sm">
-                  <span class="font-medium">{key}: </span>
-                  {props.data.request_params[key] as string}{" "}
-                </li>
-              )}
-            </For>
-          </ul>
-        </Card>
+        <Show when={props.data.results && props.data.results[0]}>
+          <Card title="Results">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <For
+                fallback={<div class="py-8 text-center">No Data.</div>}
+                each={props.data.results}
+              >
+                {(result) => {
+                  if (isScoreChunkDTO(result)) {
+                    return <ResultCard result={result} />;
+                  } else {
+                    return (
+                      <div>
+                        <pre class="text-sm">
+                          {JSON.stringify(result, null, 2)}
+                        </pre>
+                      </div>
+                    );
+                  }
+                }}
+              </For>
+            </div>
+          </Card>
+        </Show>
+        <Show when={props.data.request_params}>
+          <Card title="Request Parameters">
+            <ul>
+              <For
+                each={Object.keys(props.data.request_params).filter(
+                  (key) => props.data.request_params[key],
+                )}
+              >
+                {(key) => (
+                  <li class="text-sm">
+                    <span class="font-medium">{key}: </span>
+                    {props.data.request_params[key] as string}{" "}
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Card>
+        </Show>
       </div>
     );
   };

@@ -3709,11 +3709,25 @@ pub struct SearchQueryRating {
     pub note: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Display)]
+#[serde(rename_all = "snake_case")]
+pub enum ClickhouseSearchTypes {
+    #[display(fmt = "search")]
+    Search,
+    #[display(fmt = "search_over_groups")]
+    SearchOverGroups,
+    #[display(fmt = "autocomplete")]
+    Autocomplete,
+    #[display(fmt = "rag")]
+    #[serde(rename = "rag")]
+    RAG,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "SearchQueryEvent")]
 pub struct SearchQueryEvent {
     pub id: uuid::Uuid,
-    pub search_type: String,
+    pub search_type: ClickhouseSearchTypes,
     pub query: String,
     pub request_params: serde_json::Value,
     pub latency: f32,
@@ -3729,7 +3743,7 @@ impl Default for SearchQueryEvent {
     fn default() -> Self {
         SearchQueryEvent {
             id: uuid::Uuid::new_v4(),
-            search_type: "search".to_string(),
+            search_type: ClickhouseSearchTypes::Search,
             query: "".to_string(),
             request_params: serde_json::Value::String("".to_string()),
             latency: 0.0,
@@ -4002,6 +4016,18 @@ pub enum SearchResultType {
     GroupSearch(GroupScoreChunk),
 }
 
+impl From<String> for ClickhouseSearchTypes {
+    fn from(search_type: String) -> Self {
+        match search_type.as_str() {
+            "search" => ClickhouseSearchTypes::Search,
+            "search_over_groups" => ClickhouseSearchTypes::SearchOverGroups,
+            "autocomplete" => ClickhouseSearchTypes::Autocomplete,
+            "rag" => ClickhouseSearchTypes::RAG,
+            _ => ClickhouseSearchTypes::Search,
+        }
+    }
+}
+
 impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
     fn from(clickhouse_response: SearchQueryEventClickhouse) -> SearchQueryEvent {
         let query_rating = if !clickhouse_response.query_rating.is_empty() {
@@ -4012,7 +4038,7 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
 
         SearchQueryEvent {
             id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
-            search_type: clickhouse_response.search_type,
+            search_type: clickhouse_response.search_type.into(),
             query: clickhouse_response
                 .query
                 .replace("|q", "?")
@@ -4042,14 +4068,23 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Display)]
+#[serde(rename_all = "snake_case")]
+pub enum ClickhouseRagTypes {
+    #[display(fmt = "chosen_chunks")]
+    ChosenChunks,
+    #[display(fmt = "all_chunks")]
+    AllChunks,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "RagQueryEvent")]
 pub struct RagQueryEvent {
     pub id: uuid::Uuid,
-    pub rag_type: String,
+    pub rag_type: ClickhouseRagTypes,
     pub user_message: String,
     pub search_id: uuid::Uuid,
-    pub results: Vec<ChunkMetadataStringTagSet>,
+    pub results: Vec<serde_json::Value>,
     pub dataset_id: uuid::Uuid,
     pub llm_response: String,
     pub query_rating: Option<SearchQueryRating>,
@@ -4057,22 +4092,42 @@ pub struct RagQueryEvent {
     pub user_id: String,
 }
 
+impl From<String> for ClickhouseRagTypes {
+    fn from(rag_type: String) -> Self {
+        match rag_type.as_str() {
+            "chosen_chunks" => ClickhouseRagTypes::ChosenChunks,
+            "all_chunks" => ClickhouseRagTypes::AllChunks,
+            _ => ClickhouseRagTypes::ChosenChunks,
+        }
+    }
+}
+
 impl RagQueryEventClickhouse {
     pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> RagQueryEvent {
         let chunk_ids = self
             .results
-            .into_iter()
-            .map(|r| r.parse::<uuid::Uuid>().unwrap_or_default())
-            .collect::<Vec<uuid::Uuid>>();
+            .iter()
+            .filter_map(|x| x.parse::<uuid::Uuid>().ok())
+            .collect_vec();
 
-        let chunks = get_metadata_from_ids_query(chunk_ids, self.dataset_id, pool)
-            .await
-            .unwrap_or(vec![]);
+        let results = if !chunk_ids.is_empty() {
+            let chunks = get_metadata_from_ids_query(chunk_ids, self.dataset_id, pool)
+                .await
+                .unwrap_or(vec![]);
 
-        let chunk_string_tag_sets = chunks
-            .into_iter()
-            .map(ChunkMetadataStringTagSet::from)
-            .collect::<Vec<ChunkMetadataStringTagSet>>();
+            chunks
+                .into_iter()
+                .map(|chunk| serde_json::to_value(chunk).unwrap_or_default())
+                .collect::<Vec<serde_json::Value>>()
+        } else {
+            self.json_results
+                .iter()
+                .map(|r| {
+                    serde_json::from_str(&r.replace("|q", "?").replace('\n', ""))
+                        .unwrap_or_default()
+                })
+                .collect::<Vec<serde_json::Value>>()
+        };
 
         let query_rating = if !self.query_rating.is_empty() {
             Some(serde_json::from_str(&self.query_rating).unwrap_or_default())
@@ -4082,10 +4137,10 @@ impl RagQueryEventClickhouse {
 
         RagQueryEvent {
             id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
-            rag_type: self.rag_type,
+            rag_type: self.rag_type.into(),
             user_message: self.user_message,
             search_id: uuid::Uuid::from_bytes(*self.search_id.as_bytes()),
-            results: chunk_string_tag_sets,
+            results,
             query_rating,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
             llm_response: self.llm_response,
@@ -4104,6 +4159,7 @@ pub struct RagQueryEventClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub search_id: uuid::Uuid,
     pub results: Vec<String>,
+    pub json_results: Vec<String>,
     pub query_rating: String,
     pub llm_response: String,
     #[serde(with = "clickhouse::serde::uuid")]
@@ -4158,10 +4214,20 @@ pub struct RecommendationEventClickhouse {
     pub user_id: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, Default)]
+#[serde(rename = "snake_case")]
+pub enum ClickhouseRecommendationTypes {
+    #[display(fmt = "chunk")]
+    #[default]
+    Chunk,
+    #[display(fmt = "group")]
+    Group,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Default)]
 pub struct RecommendationEvent {
     pub id: uuid::Uuid,
-    pub recommendation_type: String,
+    pub recommendation_type: ClickhouseRecommendationTypes,
     pub positive_ids: Vec<uuid::Uuid>,
     pub negative_ids: Vec<uuid::Uuid>,
     pub positive_tracking_ids: Vec<String>,
@@ -4174,11 +4240,21 @@ pub struct RecommendationEvent {
     pub user_id: String,
 }
 
+impl From<String> for ClickhouseRecommendationTypes {
+    fn from(recommendation_type: String) -> Self {
+        match recommendation_type.as_str() {
+            "chunk" => ClickhouseRecommendationTypes::Chunk,
+            "group" => ClickhouseRecommendationTypes::Group,
+            _ => ClickhouseRecommendationTypes::Chunk,
+        }
+    }
+}
+
 impl From<RecommendationEventClickhouse> for RecommendationEvent {
     fn from(clickhouse_response: RecommendationEventClickhouse) -> RecommendationEvent {
         RecommendationEvent {
             id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
-            recommendation_type: clickhouse_response.recommendation_type,
+            recommendation_type: clickhouse_response.recommendation_type.into(),
             positive_ids: clickhouse_response
                 .positive_ids
                 .iter()
@@ -4669,9 +4745,16 @@ pub struct EventDataClickhouse {
     pub updated_at: OffsetDateTime,
 }
 
-impl EventDataClickhouse {
-    pub fn from_event_data(event: EventTypes, dataset_id: uuid::Uuid) -> Self {
-        match event {
+pub enum EventDataTypes {
+    EventDataClickhouse(EventDataClickhouse),
+    SearchQueryEventClickhouse(SearchQueryEventClickhouse),
+    RagQueryEventClickhouse(RagQueryEventClickhouse),
+    RecommendationEventClickhouse(RecommendationEventClickhouse),
+}
+
+impl EventTypes {
+    pub fn to_event_data(self, dataset_id: uuid::Uuid) -> EventDataTypes {
+        match self {
             EventTypes::AddToCart {
                 event_name,
                 request_id,
@@ -4679,7 +4762,7 @@ impl EventDataClickhouse {
                 user_id,
                 metadata,
                 is_conversion,
-            } => EventDataClickhouse {
+            } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "add_to_cart".to_string(),
                 event_name,
@@ -4691,7 +4774,7 @@ impl EventDataClickhouse {
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
-            },
+            }),
             EventTypes::Purchase {
                 event_name,
                 request_id,
@@ -4700,7 +4783,7 @@ impl EventDataClickhouse {
                 is_conversion,
                 value,
                 currency,
-            } => EventDataClickhouse {
+            } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "purchase".to_string(),
                 event_name,
@@ -4716,14 +4799,14 @@ impl EventDataClickhouse {
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
-            },
+            }),
             EventTypes::View {
                 event_name,
                 request_id,
                 items,
                 user_id,
                 metadata,
-            } => EventDataClickhouse {
+            } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "view".to_string(),
                 event_name,
@@ -4735,14 +4818,14 @@ impl EventDataClickhouse {
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
-            },
+            }),
             EventTypes::Click {
                 event_name,
                 request_id,
                 clicked_items: clicked_item,
                 user_id,
                 is_conversion,
-            } => EventDataClickhouse {
+            } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "click".to_string(),
                 event_name,
@@ -4754,14 +4837,14 @@ impl EventDataClickhouse {
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
-            },
+            }),
             EventTypes::FilterClicked {
                 event_name,
                 request_id,
                 items,
                 user_id,
                 is_conversion,
-            } => EventDataClickhouse {
+            } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "filter_clicked".to_string(),
                 event_name,
@@ -4773,7 +4856,98 @@ impl EventDataClickhouse {
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
-            },
+            }),
+            EventTypes::Search {
+                search_type,
+                query,
+                request_params,
+                latency,
+                top_score,
+                results,
+                query_rating,
+                user_id,
+            } => EventDataTypes::SearchQueryEventClickhouse(SearchQueryEventClickhouse {
+                id: uuid::Uuid::new_v4(),
+                search_type: search_type
+                    .unwrap_or(ClickhouseSearchTypes::Search)
+                    .to_string(),
+                query,
+                request_params: serde_json::to_string(&request_params).unwrap_or_default(),
+                latency: latency.unwrap_or(0.0),
+                top_score: top_score.unwrap_or(0.0),
+                results: results
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|r| r.to_string())
+                    .collect(),
+                dataset_id,
+                created_at: OffsetDateTime::now_utc(),
+                query_rating: serde_json::to_string(&query_rating).unwrap_or_default(),
+                user_id: user_id.unwrap_or_default(),
+            }),
+            EventTypes::RAG {
+                rag_type,
+                user_message,
+                search_id,
+                results,
+                query_rating,
+                llm_response,
+                user_id,
+            } => EventDataTypes::RagQueryEventClickhouse(RagQueryEventClickhouse {
+                id: uuid::Uuid::new_v4(),
+                rag_type: rag_type
+                    .unwrap_or(ClickhouseRagTypes::ChosenChunks)
+                    .to_string(),
+                user_message,
+                search_id: search_id.unwrap_or_default(),
+                results: vec![String::new()],
+                json_results: results
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|r| r.to_string())
+                    .collect(),
+                query_rating: serde_json::to_string(&query_rating).unwrap_or_default(),
+                llm_response: llm_response.unwrap_or_default(),
+                dataset_id,
+                created_at: OffsetDateTime::now_utc(),
+                user_id: user_id.unwrap_or_default(),
+            }),
+            EventTypes::Recommendation {
+                recommendation_type,
+                positive_ids,
+                negative_ids,
+                positive_tracking_ids,
+                negative_tracking_ids,
+                request_params,
+                top_score,
+                results,
+                user_id,
+            } => EventDataTypes::RecommendationEventClickhouse(RecommendationEventClickhouse {
+                id: uuid::Uuid::new_v4(),
+                recommendation_type: recommendation_type.unwrap_or_default().to_string(),
+                positive_ids: positive_ids
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect(),
+                negative_ids: negative_ids
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect(),
+                positive_tracking_ids: positive_tracking_ids.unwrap_or_default().clone(),
+                negative_tracking_ids: negative_tracking_ids.unwrap_or_default().clone(),
+                request_params: serde_json::to_string(&request_params).unwrap_or_default(),
+                results: results
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|r| r.to_string())
+                    .collect(),
+                top_score: top_score.unwrap_or(0.0),
+                dataset_id,
+                created_at: OffsetDateTime::now_utc(),
+                user_id: user_id.unwrap_or_default(),
+            }),
         }
     }
 }
@@ -5528,6 +5702,64 @@ pub enum EventTypes {
         user_id: Option<String>,
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
+    },
+    #[display(fmt = "search")]
+    Search {
+        /// The search type: search, rag, or search_over_groups
+        search_type: Option<ClickhouseSearchTypes>,
+        /// The search query
+        query: String,
+        /// The request params of the search
+        request_params: Option<serde_json::Value>,
+        /// Latency of the search
+        latency: Option<f32>,
+        /// The top score of the search
+        top_score: Option<f32>,
+        /// The results of the search
+        results: Option<Vec<serde_json::Value>>,
+        /// The rating of the query
+        query_rating: Option<SearchQueryRating>,
+        /// The user id of the user who made the search
+        user_id: Option<String>,
+    },
+    #[display(fmt = "rag")]
+    #[serde(rename = "rag")]
+    RAG {
+        /// The Type of RAG event: chosen_chunks, all_chunks
+        rag_type: Option<ClickhouseRagTypes>,
+        /// The user message
+        user_message: String,
+        /// The search id to associate the RAG event with a search
+        search_id: Option<uuid::Uuid>,
+        /// The results of the RAG event    
+        results: Option<Vec<serde_json::Value>>,
+        /// The rating of the query
+        query_rating: Option<SearchQueryRating>,
+        /// The response from the LLM
+        llm_response: Option<String>,
+        /// The user id of the user who made the RAG event
+        user_id: Option<String>,
+    },
+    #[display(fmt = "recommendation")]
+    Recommendation {
+        /// The Type of Recommendation event: chunk, group
+        recommendation_type: Option<ClickhouseRecommendationTypes>,
+        /// Positive ids used for the recommendation
+        positive_ids: Option<Vec<uuid::Uuid>>,
+        /// Negative ids used for the recommendation
+        negative_ids: Option<Vec<uuid::Uuid>>,
+        /// Positive tracking ids used for the recommendation
+        positive_tracking_ids: Option<Vec<String>>,
+        /// Negative tracking ids used for the recommendation
+        negative_tracking_ids: Option<Vec<String>>,
+        /// The request params of the recommendation
+        request_params: Option<serde_json::Value>,
+        /// The results of the Recommendation event    
+        results: Option<Vec<serde_json::Value>>,
+        /// Top score of the recommendation
+        top_score: Option<f32>,
+        /// The user id of the user who made the recommendation
+        user_id: Option<String>,
     },
 }
 

@@ -437,22 +437,12 @@ pub async fn stream_response(
         )
         .collect::<Vec<ChunkMetadataStringTagSet>>();
 
-    let chunk_ids = result_chunks
+    let chunk_data = result_chunks
         .score_chunks
-        .iter()
-        .filter_map(|score_chunk_dto| {
-            score_chunk_dto
-                .metadata
-                .clone()
-                .into_iter()
-                .map(|metadata| match metadata {
-                    ChunkMetadataTypes::ID(chunk_metadata) => chunk_metadata.id,
-                    ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.id,
-                    ChunkMetadataTypes::Content(chunk_metadata) => chunk_metadata.id,
-                })
-                .next()
-        })
-        .collect::<Vec<uuid::Uuid>>();
+        .clone()
+        .into_iter()
+        .map(|x| serde_json::to_string(&x).unwrap_or_default())
+        .collect();
 
     let mut chunk_metadatas_stringified =
         serde_json::to_string(&chunk_metadatas).expect("Failed to serialize citation chunks");
@@ -650,11 +640,8 @@ pub async fn stream_response(
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
             search_id: clickhouse_search_event.id,
-            results: chunk_ids
-                .clone()
-                .into_iter()
-                .map(|s| s.to_string())
-                .collect(),
+            results: vec![],
+            json_results: chunk_data,
             user_message: query.clone(),
             query_rating: String::new(),
             rag_type: "chosen_chunks".to_string(),
@@ -714,11 +701,8 @@ pub async fn stream_response(
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
             search_id: clickhouse_search_event.id,
-            results: chunk_ids
-                .clone()
-                .into_iter()
-                .map(|s| s.to_string())
-                .collect(),
+            results: vec![],
+            json_results: chunk_data,
             user_message: query.clone(),
             query_rating: String::new(),
             rag_type: "all_chunks".to_string(),
