@@ -77,6 +77,11 @@ const MainLayout = (props: LayoutProps) => {
     boolean | null
   >(null);
 
+  const [useImages, setUseImages] = createSignal<
+    boolean | null
+  >(null);
+
+
   const [streamCompletionsFirst, setStreamCompletionsFirst] = createSignal<
     boolean | null
   >(null);
@@ -221,6 +226,9 @@ const MainLayout = (props: LayoutProps) => {
           system_prompt: systemPrompt(),
           llm_options: {
             completion_first: streamCompletionsFirst(),
+            image_options: {
+              use_images: useImages()
+            }
           },
           search_type: searchType(),
         }),
@@ -339,6 +347,9 @@ const MainLayout = (props: LayoutProps) => {
                         topic_id: props.selectedTopic?.id,
                         llm_options: {
                           completion_first: streamCompletionsFirst(),
+                          image_options: {
+                            use_images: useImages()
+                          }
                         },
                       }),
                     })
@@ -446,6 +457,20 @@ const MainLayout = (props: LayoutProps) => {
                       checked={concatUserMessagesQuery() ?? false}
                       onChange={(e) => {
                         setConcatUserMessagesQuery(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="concat_user_messages">
+                      Use Images
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="concat_user_messages"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={useImages() ?? false}
+                      onChange={(e) => {
+                        setUseImages(e.target.checked);
                       }}
                     />
                   </div>
