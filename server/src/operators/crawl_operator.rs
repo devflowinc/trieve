@@ -335,21 +335,41 @@ pub async fn update_crawl_settings_for_dataset(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    let crawl_req = crawl_requests_table::crawl_requests
-        .select((
-            crawl_requests_table::id,
-            crawl_requests_table::url,
-            crawl_requests_table::status,
-            crawl_requests_table::next_crawl_at,
-            crawl_requests_table::interval,
-            crawl_requests_table::crawl_options,
-            crawl_requests_table::scrape_id,
-            crawl_requests_table::dataset_id,
-            crawl_requests_table::created_at,
-        ))
-        .filter(crawl_requests_table::dataset_id.eq(dataset_id))
-        .first::<CrawlRequestPG>(&mut conn)
-        .await;
+    let crawl_req: Result<CrawlRequestPG, diesel::result::Error> =
+        crawl_requests_table::crawl_requests
+            .select((
+                crawl_requests_table::id,
+                crawl_requests_table::url,
+                crawl_requests_table::status,
+                crawl_requests_table::next_crawl_at,
+                crawl_requests_table::interval,
+                crawl_requests_table::crawl_options,
+                crawl_requests_table::scrape_id,
+                crawl_requests_table::dataset_id,
+                crawl_requests_table::created_at,
+            ))
+            .filter(crawl_requests_table::dataset_id.eq(dataset_id))
+            .first::<CrawlRequestPG>(&mut conn)
+            .await;
+
+    let crawl_req = match crawl_req {
+        Err(e) => match e {
+            diesel::result::Error::NotFound => {
+                create_crawl_request(
+                    crawl_options.clone(),
+                    dataset_id,
+                    uuid::Uuid::new_v4(),
+                    pool.clone(),
+                    redis_pool.clone(),
+                )
+                .await
+                .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+                return Ok(());
+            }
+            _ => return Err(ServiceError::InternalServerError(e.to_string())),
+        },
+        Ok(req) => req,
+    };
 
     if let Some(ref url) = crawl_options.site_url {
         diesel::update(
@@ -378,12 +398,8 @@ pub async fn update_crawl_settings_for_dataset(
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     }
 
-    let previous_crawl_options: CrawlOptions = serde_json::from_value(
-        crawl_req
-            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?
-            .crawl_options,
-    )
-    .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let previous_crawl_options: CrawlOptions = serde_json::from_value(crawl_req.crawl_options)
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     let merged_options = crawl_options.merge(previous_crawl_options);
 
