@@ -7480,6 +7480,7 @@
       },
       "CrawlOpenAPIOptions": {
         "type": "object",
+        "title": "CrawlOpenAPIOptions",
         "description": "Options for including an openapi spec in the crawl",
         "required": [
           "openapi_schema_url",
@@ -7544,10 +7545,6 @@
             ],
             "nullable": true
           },
-          "is_shopify": {
-            "type": "boolean",
-            "nullable": true
-          },
           "limit": {
             "type": "integer",
             "format": "int32",
@@ -7560,10 +7557,10 @@
             "description": "How many levels deep to crawl, defaults to 10",
             "nullable": true
           },
-          "openapi_options": {
+          "scrape_options": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/CrawlOpenAPIOptions"
+                "$ref": "#/components/schemas/ScrapeOptions"
               }
             ],
             "nullable": true
@@ -7595,6 +7592,16 @@
           "limit": 1000,
           "max_depth": 10,
           "site_url": "https://example.com"
+        }
+      },
+      "CrawlShopifyOptions": {
+        "type": "object",
+        "title": "CrawlShopifyOptions",
+        "properties": {
+          "boost_item_names": {
+            "type": "boolean",
+            "nullable": true
+          }
         }
       },
       "CreateBatchChunkGroupReqPayload": {
@@ -9205,6 +9212,14 @@
             "description": "Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits.",
             "nullable": true
           },
+          "image_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImageConfig"
+              }
+            ],
+            "nullable": true
+          },
           "max_tokens": {
             "type": "integer",
             "format": "int32",
@@ -9807,6 +9822,27 @@
           "v1"
         ]
       },
+      "ImageConfig": {
+        "type": "object",
+        "description": "Configuration for sending images to the llm",
+        "properties": {
+          "images_per_chunk": {
+            "type": "integer",
+            "description": "The number of Images to send to the llm per chunk that is fetched more images may slow down llm inference time. default: 5",
+            "nullable": true,
+            "minimum": 0
+          },
+          "use_images": {
+            "type": "boolean",
+            "description": "This sends images to the llm if chunk_metadata.image_urls has some value, the call will error if the model is not a vision LLM model. default: false",
+            "nullable": true
+          }
+        },
+        "example": {
+          "images_per_chunk": 1,
+          "use_images": true
+        }
+      },
       "Invitation": {
         "type": "object",
         "required": [
@@ -9897,6 +9933,14 @@
             "type": "number",
             "format": "float",
             "description": "Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.",
+            "nullable": true
+          },
+          "image_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImageConfig"
+              }
+            ],
             "nullable": true
           },
           "max_tokens": {
@@ -11557,6 +11601,56 @@
             ],
             "nullable": true
           }
+        }
+      },
+      "ScrapeOptions": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CrawlOpenAPIOptions"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "openapi"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CrawlShopifyOptions"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "shopify"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "description": "Options for including an openapi spec or shopify settigns",
+        "discriminator": {
+          "propertyName": "type"
         }
       },
       "ScrollChunksReqPayload": {

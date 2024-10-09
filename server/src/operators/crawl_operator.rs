@@ -4,7 +4,7 @@ use crate::data::models::FirecrawlCrawlRequest;
 use crate::data::models::RedisPool;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::{
-    data::models::{CrawlRequest, CrawlRequestPG, Pool},
+    data::models::{CrawlRequest, CrawlRequestPG, ScrapeOptions, CrawlShopifyOptions, Pool},
     errors::ServiceError,
 };
 use actix_web::web;
@@ -127,7 +127,7 @@ pub async fn crawl(
     redis_pool: web::Data<RedisPool>,
     dataset_id: uuid::Uuid,
 ) -> Result<uuid::Uuid, ServiceError> {
-   let scrape_id = if crawl_options.is_shopify.unwrap_or(false) {
+   let scrape_id = if let Some(ScrapeOptions::Shopify(_)) = crawl_options.scrape_options {
         uuid::Uuid::nil()
     } else {
         crawl_site(crawl_options.clone())

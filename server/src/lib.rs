@@ -342,6 +342,8 @@ impl Modify for SecurityAddon {
             data::models::DatasetConfigurationDTO,
             handlers::chunk_handler::CrawlOpenAPIOptions,
             handlers::chunk_handler::CrawlInterval,
+            data::models::ScrapeOptions,
+            data::models::CrawlShopifyOptions,
             handlers::analytics_handler::GetTopDatasetsRequestBody,
             handlers::analytics_handler::CTRDataRequestBody,
             data::models::CTRType,
