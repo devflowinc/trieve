@@ -335,25 +335,21 @@ pub async fn update_crawl_settings_for_dataset(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    // Should only ever be empty or len = 1
-    let prev_crawl_reqs: Vec<CrawlRequestPG> = {
-        crawl_requests_table::crawl_requests
-            .select((
-                crawl_requests_table::id,
-                crawl_requests_table::url,
-                crawl_requests_table::status,
-                crawl_requests_table::next_crawl_at,
-                crawl_requests_table::interval,
-                crawl_requests_table::crawl_options,
-                crawl_requests_table::scrape_id,
-                crawl_requests_table::dataset_id,
-                crawl_requests_table::created_at,
-            ))
-            .filter(crawl_requests_table::dataset_id.eq(dataset_id))
-            .load::<CrawlRequestPG>(&mut conn)
-            .await
-            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?
-    };
+    let crawl_req = crawl_requests_table::crawl_requests
+        .select((
+            crawl_requests_table::id,
+            crawl_requests_table::url,
+            crawl_requests_table::status,
+            crawl_requests_table::next_crawl_at,
+            crawl_requests_table::interval,
+            crawl_requests_table::crawl_options,
+            crawl_requests_table::scrape_id,
+            crawl_requests_table::dataset_id,
+            crawl_requests_table::created_at,
+        ))
+        .filter(crawl_requests_table::dataset_id.eq(dataset_id))
+        .first::<CrawlRequestPG>(&mut conn)
+        .await;
 
     if let Some(ref url) = crawl_options.site_url {
         diesel::update(
@@ -382,23 +378,21 @@ pub async fn update_crawl_settings_for_dataset(
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     }
 
-    let new_options = match prev_crawl_reqs.get(0) {
-        Some(prev_crawl_req) => {
-            let previous_crawl_options: CrawlOptions =
-                serde_json::from_value(prev_crawl_req.clone().crawl_options)
-                    .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let previous_crawl_options: CrawlOptions = serde_json::from_value(
+        crawl_req
+            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?
+            .crawl_options,
+    )
+    .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-            let merged_options = previous_crawl_options.merge(crawl_options.clone());
-            merged_options
-        }
-        None => crawl_options.clone(),
-    };
+    let merged_options = crawl_options.merge(previous_crawl_options);
+
     diesel::update(
         crawl_requests_table::crawl_requests
             .filter(crawl_requests_table::dataset_id.eq(dataset_id)),
     )
     .set(crawl_requests_table::crawl_options.eq(
-        serde_json::to_value(new_options.clone()).map_err(|e| {
+        serde_json::to_value(merged_options.clone()).map_err(|e| {
             ServiceError::BadRequest(format!("Failed to serialize crawl options: {}", e))
         })?,
     ))
@@ -406,15 +400,14 @@ pub async fn update_crawl_settings_for_dataset(
     .await
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    if prev_crawl_reqs.get(0).is_none() {
-        crawl(
-            crawl_options.clone(),
-            pool.clone(),
-            redis_pool.clone(),
-            dataset_id,
-        )
-        .await?;
-    }
+    crawl(
+        crawl_options.clone(),
+        pool.clone(),
+        redis_pool.clone(),
+        dataset_id,
+    )
+    .await?;
+
     Ok(())
 }
 
