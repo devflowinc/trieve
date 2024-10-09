@@ -299,7 +299,14 @@ pub async fn send_user_ditto_identity(
 ) -> Result<(), ServiceError> {
     let dittofeed_url =
         std::env::var("DITTOFEED_URL").unwrap_or("https://app.dittofeed.com".to_string());
-    let api_key = std::env::var("DITTOFEED_API_KEY").expect("DITTOFEED_API_KEY is not set");
+    let api_key = match std::env::var("DITTOFEED_API_KEY") {
+        Ok(api_key) => api_key,
+        Err(_) => {
+            return Err(ServiceError::BadRequest(
+                "DITTOFEED_API_KEY is not set".to_string(),
+            ))
+        }
+    };
 
     let client = reqwest::Client::new();
 
