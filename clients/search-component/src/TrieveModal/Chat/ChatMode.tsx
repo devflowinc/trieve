@@ -23,7 +23,7 @@ export const ChatMode = () => {
     if (mode == "chat" && open) {
       chatInput.current?.focus();
     }
-  }, [mode, open]);
+  }, [chatInput, mode, open]);
 
   return (
     <>
