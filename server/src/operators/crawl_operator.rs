@@ -127,9 +127,13 @@ pub async fn crawl(
     redis_pool: web::Data<RedisPool>,
     dataset_id: uuid::Uuid,
 ) -> Result<uuid::Uuid, ServiceError> {
-    let scrape_id = crawl_site(crawl_options.clone())
-        .await
-        .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?;
+   let scrape_id = if crawl_options.is_shopify.unwrap_or(false) {
+        uuid::Uuid::nil()
+    } else {
+        crawl_site(crawl_options.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?
+    };
 
     create_crawl_request(crawl_options, dataset_id, scrape_id, pool, redis_pool).await?;
 
