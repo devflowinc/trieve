@@ -512,6 +512,7 @@ pub async fn callback(
                     log::info!("No ditto identity for user {}. Error: {}", user.email, e);
                 }
             }
+
             (user, user_orgs, orgs)
         }
     };
