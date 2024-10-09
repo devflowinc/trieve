@@ -6,7 +6,7 @@ import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
 
 export const ChatMode = () => {
-  const { setMode, modalRef } = useModalState();
+  const { setMode, modalRef, open, mode } = useModalState();
   const {
     askQuestion,
     messages,
@@ -16,6 +16,14 @@ export const ChatMode = () => {
     isDoneReading,
     stopGeneratingMessage,
   } = useChatState();
+
+  const chatInput = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (mode == "chat" && open) {
+      chatInput.current?.focus();
+    }
+  }, [mode, open]);
 
   return (
     <>
@@ -51,6 +59,7 @@ export const ChatMode = () => {
             }}
           >
             <input
+              ref={chatInput}
               value={currentQuestion}
               onChange={(e) => setCurrentQuestion(e.target.value)}
               placeholder="Ask me anything"
