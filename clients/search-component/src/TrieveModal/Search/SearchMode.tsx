@@ -15,6 +15,8 @@ export const SearchMode = () => {
     setQuery,
     requestID,
     inputRef,
+    open,
+    mode,
   } = useModalState();
   const {
     suggestedQueries,
@@ -22,6 +24,12 @@ export const SearchMode = () => {
     isLoadingSuggestedQueries,
   } = useSuggestedQueries();
   const { switchToChatAndAskQuestion } = useChatState();
+
+  React.useEffect(() => {
+    if (mode == "search" && open) {
+      inputRef.current?.focus();
+    }
+  }, [mode, open]);
 
   return (
     <>
