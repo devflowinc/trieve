@@ -77,10 +77,7 @@ const MainLayout = (props: LayoutProps) => {
     boolean | null
   >(null);
 
-  const [useImages, setUseImages] = createSignal<
-    boolean | null
-  >(null);
-
+  const [useImages, setUseImages] = createSignal<boolean | null>(null);
 
   const [streamCompletionsFirst, setStreamCompletionsFirst] = createSignal<
     boolean | null
@@ -227,8 +224,8 @@ const MainLayout = (props: LayoutProps) => {
           llm_options: {
             completion_first: streamCompletionsFirst(),
             image_options: {
-              use_images: useImages()
-            }
+              use_images: useImages(),
+            },
           },
           search_type: searchType(),
         }),
@@ -348,8 +345,8 @@ const MainLayout = (props: LayoutProps) => {
                         llm_options: {
                           completion_first: streamCompletionsFirst(),
                           image_options: {
-                            use_images: useImages()
-                          }
+                            use_images: useImages(),
+                          },
                         },
                       }),
                     })
@@ -461,9 +458,7 @@ const MainLayout = (props: LayoutProps) => {
                     />
                   </div>
                   <div class="flex w-full items-center gap-x-2">
-                    <label for="concat_user_messages">
-                      Use Images
-                    </label>
+                    <label for="concat_user_messages">Use Images</label>
                     <input
                       type="checkbox"
                       id="concat_user_messages"

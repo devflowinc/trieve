@@ -6541,8 +6541,25 @@ pub struct CrawlOptions {
     /// Boost titles such that keyword matches in titles are prioritized in search results. Strongly recommended to leave this on. Defaults to true.
     pub boost_titles: Option<bool>,
     /// Options for including an openapi spec in the crawl
-    pub openapi_options: Option<CrawlOpenAPIOptions>,
-    pub is_shopify: Option<bool>,
+    pub scrape_options: Option<ScrapeOptions>
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[serde(tag = "type")]
+/// Options for including an openapi spec or shopify settigns
+pub enum ScrapeOptions {
+    /// OpenAPI Scrape Options
+    #[serde(rename = "openapi")]
+    OpenApi(CrawlOpenAPIOptions),
+    /// Shopify Scrape Options
+    #[serde(rename = "shopify")]
+    Shopify(CrawlShopifyOptions)
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(title = "CrawlShopifyOptions")]
+pub struct CrawlShopifyOptions {
+    pub boost_item_names: Option<bool>,
 }
 
 impl CrawlOptions {
@@ -6557,8 +6574,7 @@ impl CrawlOptions {
             exclude_paths: self.exclude_paths.clone().or(other.exclude_paths.clone()),
             max_depth: self.max_depth.or(other.max_depth),
             boost_titles: self.boost_titles.or(other.boost_titles),
-            openapi_options: self.openapi_options.clone(),
-            is_shopify: self.is_shopify.or(other.is_shopify),
+            scrape_options: self.scrape_options.clone(),
         }
     }
 }

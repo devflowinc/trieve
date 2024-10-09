@@ -2725,6 +2725,7 @@ pub fn check_completion_param_validity(
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 /// Options for including an openapi spec in the crawl
+#[schema(title = "CrawlOpenAPIOptions")]
 pub struct CrawlOpenAPIOptions {
     /// OpenAPI json schema to be processed alongside the site crawl
     pub openapi_schema_url: String,

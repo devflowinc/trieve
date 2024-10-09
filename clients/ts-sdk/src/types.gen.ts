@@ -454,7 +454,6 @@ export type CrawlOptions = {
      */
     include_tags?: Array<(string)> | null;
     interval?: ((CrawlInterval) | null);
-    is_shopify?: (boolean) | null;
     /**
      * How many pages to crawl, defaults to 1000
      */
@@ -463,11 +462,15 @@ export type CrawlOptions = {
      * How many levels deep to crawl, defaults to 10
      */
     max_depth?: (number) | null;
-    openapi_options?: ((CrawlOpenAPIOptions) | null);
+    scrape_options?: ((ScrapeOptions) | null);
     /**
      * The URL to crawl
      */
     site_url?: (string) | null;
+};
+
+export type CrawlShopifyOptions = {
+    boost_item_names?: (boolean) | null;
 };
 
 export type CreateBatchChunkGroupReqPayload = Array<CreateSingleChunkGroupReqPayload>;
@@ -1042,6 +1045,7 @@ export type GenerateOffChunksReqPayload = {
      * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits.
      */
     highlight_results?: (boolean) | null;
+    image_config?: ((ImageConfig) | null);
     /**
      * The maximum number of tokens to generate in the chat completion. Default is None.
      */
@@ -1249,6 +1253,20 @@ export type HighlightOptions = {
 
 export type HighlightStrategy = 'exactmatch' | 'v1';
 
+/**
+ * Configuration for sending images to the llm
+ */
+export type ImageConfig = {
+    /**
+     * The number of Images to send to the llm per chunk that is fetched more images may slow down llm inference time. default: 5
+     */
+    images_per_chunk?: (number) | null;
+    /**
+     * This sends images to the llm if chunk_metadata.image_urls has some value, the call will error if the model is not a vision LLM model. default: false
+     */
+    use_images?: (boolean) | null;
+};
+
 export type Invitation = {
     created_at: string;
     email: string;
@@ -1290,6 +1308,7 @@ export type LLMOptions = {
      * Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
      */
     frequency_penalty?: (number) | null;
+    image_config?: ((ImageConfig) | null);
     /**
      * The maximum number of tokens to generate in the chat completion. Default is None.
      */
@@ -1724,6 +1743,17 @@ export type ScoringOptions = {
     semantic_boost?: ((SemanticBoost) | null);
 };
 
+/**
+ * Options for including an openapi spec or shopify settigns
+ */
+export type ScrapeOptions = (CrawlOpenAPIOptions & {
+    type: 'openapi';
+}) | (CrawlShopifyOptions & {
+    type: 'shopify';
+});
+
+export type type5 = 'openapi';
+
 export type ScrollChunksReqPayload = {
     filters?: ((ChunkFilter) | null);
     /**
@@ -1782,7 +1812,7 @@ export type SearchAnalytics = {
     type: 'popular_filters';
 };
 
-export type type5 = 'latency_graph';
+export type type6 = 'latency_graph';
 
 export type SearchAnalyticsFilter = {
     date_range?: ((DateRange) | null);
