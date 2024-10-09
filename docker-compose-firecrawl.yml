@@ -1,6 +1,6 @@
 name: firecrawl
 services:
-# Firecrawl services
+  # Firecrawl services
   playwright-service:
     image: trieve/playwright-service-ts:latest
     environment:
@@ -13,7 +13,7 @@ services:
       - backend
 
   firecrawl-api:
-    image: trieve/firecrawl:v0.0.1
+    image: 16b96959d512
     networks:
       - backend
     environment:
@@ -46,10 +46,10 @@ services:
       - playwright-service
     ports:
       - "3002:3002"
-    command: [ "pnpm", "run", "start:production" ]
+    command: ["pnpm", "run", "start:production"]
 
   firecrawl-worker:
-    image: trieve/firecrawl:v0.0.1
+    image: 16b96959d512
     networks:
       - backend
     environment:
@@ -81,7 +81,7 @@ services:
     depends_on:
       - playwright-service
       - firecrawl-api
-    command: [ "pnpm", "run", "workers" ]
+    command: ["pnpm", "run", "workers"]
 
   redis:
     image: redis:alpine
@@ -89,8 +89,6 @@ services:
       - backend
     command: redis-server --bind 0.0.0.0
 
-
 networks:
   backend:
     driver: bridge
-

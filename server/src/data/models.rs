@@ -6539,6 +6539,8 @@ pub struct CrawlOptions {
     pub allow_external_links: Option<bool>,
     /// Option for allowing the crawl to navigate from a specific URL to previously linked pages.
     pub allow_backward_links: Option<bool>,
+    /// Ignore the website sitemap when crawling, defaults to true.
+    pub ignore_sitemap: Option<bool>,
     /// Options for including an openapi spec in the crawl
     pub scrape_options: Option<ScrapeOptions>,
 }
@@ -6574,6 +6576,7 @@ impl CrawlOptions {
             include_paths: self.include_paths.clone().or(other.include_paths.clone()),
             exclude_paths: self.exclude_paths.clone().or(other.exclude_paths.clone()),
             max_depth: self.max_depth.or(other.max_depth),
+            ignore_sitemap: self.ignore_sitemap.or(other.ignore_sitemap),
             boost_titles: self.boost_titles.or(other.boost_titles),
             scrape_options: self.scrape_options.clone(),
             allow_external_links: self.allow_external_links.or(other.allow_external_links),
@@ -6624,14 +6627,14 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
             exclude_paths: crawl_options.exclude_paths,
             include_paths: crawl_options.include_paths,
             max_depth: Some(crawl_options.max_depth.unwrap_or(10)),
-            ignore_sitemap: None,
+            ignore_sitemap: crawl_options.ignore_sitemap,
             limit: Some(crawl_options.limit.unwrap_or(1000)),
             allow_external_links: Some(crawl_options.allow_external_links.unwrap_or(false)),
             allow_backward_links: Some(crawl_options.allow_backward_links.unwrap_or(false)),
             scrape_options: Some(FirecrawlScraperOptions {
                 include_tags: crawl_options.include_tags,
                 exclude_tags: crawl_options.exclude_tags,
-                formats: Some(vec!["html".to_string()]),
+                formats: Some(vec!["html".to_string(), "rawHtml".to_string()]),
                 wait_for: Some(1000),
             }),
         }

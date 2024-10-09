@@ -345,7 +345,26 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           checked={isOpenAPI()}
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
+          checked={options.boost_titles ?? true}
+          onChange={(e) => {
+            setOptions("boost_titles", e.currentTarget.checked);
+          }}
         />
+      </div>
+
+      <div class="flex items-center gap-2 py-2 pt-4">
+        <label class="block">Allow External Links</label>
+        <input
+          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+          type="checkbox"
+          checked={options.allow_external_links ?? true}
+          onChange={(e) => {
+            setOptions("allow_external_links", e.currentTarget.checked);
+          }}
+        />
+      </div>
+
+      <div class="flex items-center gap-2 py-2 pt-4">
         <Show when={isShopify()}>
           <label class="block pl-4">Group Product Variants?</label>
           <input
