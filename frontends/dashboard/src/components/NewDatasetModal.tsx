@@ -1,6 +1,7 @@
 import {
   Accessor,
   createSignal,
+  createEffect,
   useContext,
   For,
   Switch,
@@ -131,6 +132,10 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
       });
     }
   };
+
+  createEffect(() => {
+    console.log(crawlOptions());
+  });
 
   return (
     <Transition appear show={props.isOpen()}>
@@ -828,101 +833,223 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             />
                           </div>
 
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="openapiSchemaUrl"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              OpenAPI Schema URL
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                          <div class="content-center py-4 sm:grid sm:grid-cols-2 sm:items-start sm:gap-4">
+                            <div class="col-span-1 flex">
+                              <input
+                                type="checkbox"
+                                id="useOpenAPI"
+                                name="useOpenAPI"
+                                class="mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                                checked={
+                                  crawlOptions()?.scrape_options != undefined &&
+                                  crawlOptions()?.scrape_options?.type ==
+                                    "openapi"
                                 }
-                                tooltipText="URL that will return a *.json or *.yaml file with an OpenAPI schema which pairs with the docs."
-                                direction="right"
+                                onChange={(e) =>
+                                  setCrawlOptions((prev) => {
+                                    if (!prev) {
+                                      return {
+                                        scrape_options: {
+                                          type: "openapi",
+                                        },
+                                      };
+                                    }
+                                    if (!e.currentTarget.checked) {
+                                      return {
+                                        ...prev,
+                                        scrape_options: null,
+                                      };
+                                    } else {
+                                      return {
+                                        ...prev,
+                                        scrape_options: {
+                                          type: "openapi",
+                                        },
+                                      };
+                                    }
+                                  })
+                                }
                               />
-                            </label>
-                            <input
-                              type="text"
-                              id="openapiSchemaUrl"
-                              name="openapiSchemaUrl"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={
-                                crawlOptions()?.openapi_options
-                                  ?.openapi_schema_url ?? ""
-                              }
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      openapi_options: {
-                                        openapi_schema_url:
-                                          e.currentTarget.value,
-                                        openapi_tag: "",
-                                      },
-                                    };
-                                  }
 
-                                  return {
-                                    ...prev,
-                                    openapi_options: {
-                                      openapi_schema_url: e.currentTarget.value,
-                                      openapi_tag:
-                                        prev.openapi_options?.openapi_tag ?? "",
-                                    },
-                                  };
-                                })
-                              }
-                            />
+                              <label
+                                for="useOpenAPI"
+                                class="flex h-full items-center gap-2 pl-1.5 pt-1.5 text-sm font-medium leading-6"
+                              >
+                                OpenAPI spec
+                                <Tooltip
+                                  body={
+                                    <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                  }
+                                  tooltipText="Parse an OpenAPI spec on a specified route"
+                                  direction="right"
+                                />
+                              </label>
+                            </div>
+                            <div class="col-span-1 flex">
+                              <input
+                                type="checkbox"
+                                id="useShopify"
+                                name="useShopify"
+                                class="mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                                checked={
+                                  crawlOptions()?.scrape_options != undefined &&
+                                  crawlOptions()?.scrape_options?.type ==
+                                    "shopify"
+                                }
+                                onChange={(e) =>
+                                  setCrawlOptions((prev) => {
+                                    if (!prev) {
+                                      return {
+                                        scrape_options: {
+                                          type: "shopify",
+                                        },
+                                      };
+                                    }
+
+                                    if (!e.currentTarget.checked) {
+                                      return {
+                                        ...prev,
+                                        scrape_options: null,
+                                      };
+                                    } else {
+                                      return {
+                                        ...prev,
+                                        scrape_options: {
+                                          type: "shopify",
+                                        },
+                                      };
+                                    }
+                                  })
+                                }
+                              />
+
+                              <label
+                                for="useShopify"
+                                class="flex h-full items-center gap-2 pl-1.5 pt-1.5 text-sm font-medium leading-6"
+                              >
+                                Is Shopify Store
+                                <Tooltip
+                                  body={
+                                    <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                  }
+                                  tooltipText="Toggle if the webpage is a shopify store to scrape the products more accurately"
+                                  direction="left"
+                                />
+                              </label>
+                            </div>
                           </div>
 
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="openapiTag"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                          <Switch>
+                            <Match
+                              when={
+                                crawlOptions()?.scrape_options?.type ==
+                                "openapi"
+                              }
                             >
-                              OpenAPI Tag
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="For a site like https://docs.trieve.ai, the tag here would be 'api-reference' because of the API routes being documented at https://docs.trieve.ai/api-reference/* paths."
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="text"
-                              id="openapiTag"
-                              name="openapiTag"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={
-                                crawlOptions()?.openapi_options?.openapi_tag ??
-                                ""
-                              }
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      openapi_options: {
-                                        openapi_schema_url: "",
-                                        openapi_tag: e.currentTarget.value,
-                                      },
-                                    };
+                              <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                                <label
+                                  for="openapiSchemaUrl"
+                                  class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                                >
+                                  OpenAPI Schema URL
+                                  <Tooltip
+                                    body={
+                                      <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                    }
+                                    tooltipText="URL that will return a *.json or *.yaml file with an OpenAPI schema which pairs with the docs."
+                                    direction="right"
+                                  />
+                                </label>
+                                <input
+                                  type="text"
+                                  id="openapiSchemaUrl"
+                                  name="openapiSchemaUrl"
+                                  class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                                  value={
+                                    // @ts-expect-error type is checked in <Match/> component
+                                    crawlOptions()?.scrape_options
+                                      ?.openapi_schema_url ?? ""
                                   }
+                                  onInput={(e) =>
+                                    setCrawlOptions((prev) => {
+                                      if (!prev) {
+                                        return {
+                                          scrape_options: {
+                                            type: "openapi",
+                                            openapi_schema_url:
+                                              e.currentTarget.value,
+                                            openapi_tag: "",
+                                          },
+                                        };
+                                      }
 
-                                  return {
-                                    ...prev,
-                                    openapi_options: {
-                                      openapi_schema_url:
-                                        prev.openapi_options
-                                          ?.openapi_schema_url ?? "",
-                                      openapi_tag: e.currentTarget.value,
-                                    },
-                                  };
-                                })
-                              }
-                            />
-                          </div>
+                                      return {
+                                        ...prev,
+                                        scrape_options: {
+                                          type: "openapi",
+                                          openapi_schema_url:
+                                            e.currentTarget.value,
+                                          openapi_tag:
+                                            prev.scrape_options?.openapi_tag ??
+                                            "",
+                                        },
+                                      };
+                                    })
+                                  }
+                                />
+                              </div>
+
+                              <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                                <label
+                                  for="openapiTag"
+                                  class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                                >
+                                  OpenAPI Tag
+                                  <Tooltip
+                                    body={
+                                      <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                    }
+                                    tooltipText="For a site like https://docs.trieve.ai, the tag here would be 'api-reference' because of the API routes being documented at https://docs.trieve.ai/api-reference/* paths."
+                                    direction="right"
+                                  />
+                                </label>
+                                <input
+                                  type="text"
+                                  id="openapiTag"
+                                  name="openapiTag"
+                                  class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                                  value={
+                                    crawlOptions()?.scrape_options
+                                      ?.openapi_tag ?? ""
+                                  }
+                                  onInput={(e) =>
+                                    setCrawlOptions((prev) => {
+                                      if (!prev) {
+                                        return {
+                                          scrape_options: {
+                                            type: "openapi",
+                                            openapi_schema_url: "",
+                                            openapi_tag: e.currentTarget.value,
+                                          },
+                                        };
+                                      }
+
+                                      return {
+                                        ...prev,
+                                        scrape_options: {
+                                          type: "openapi",
+                                          openapi_schema_url:
+                                            prev.scrape_options
+                                              ?.openapi_schema_url ?? "",
+                                          openapi_tag: e.currentTarget.value,
+                                        },
+                                      };
+                                    })
+                                  }
+                                />
+                              </div>
+                            </Match>
+                          </Switch>
                         </div>
                       </Show>
                     </div>

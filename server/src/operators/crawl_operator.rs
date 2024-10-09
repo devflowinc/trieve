@@ -4,7 +4,7 @@ use crate::data::models::FirecrawlCrawlRequest;
 use crate::data::models::RedisPool;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::{
-    data::models::{CrawlRequest, CrawlRequestPG, Pool},
+    data::models::{CrawlRequest, CrawlRequestPG, ScrapeOptions, CrawlShopifyOptions, Pool},
     errors::ServiceError,
 };
 use actix_web::web;
@@ -127,7 +127,7 @@ pub async fn crawl(
     redis_pool: web::Data<RedisPool>,
     dataset_id: uuid::Uuid,
 ) -> Result<uuid::Uuid, ServiceError> {
-   let scrape_id = if crawl_options.is_shopify.unwrap_or(false) {
+   let scrape_id = if let Some(ScrapeOptions::Shopify(_)) = crawl_options.scrape_options {
         uuid::Uuid::nil()
     } else {
         crawl_site(crawl_options.clone())
@@ -339,7 +339,7 @@ pub async fn update_crawl_settings_for_dataset(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    let crawl_req = crawl_requests_table::crawl_requests
+    let prev_crawl_req = crawl_requests_table::crawl_requests
         .select((
             crawl_requests_table::id,
             crawl_requests_table::url,
@@ -353,7 +353,8 @@ pub async fn update_crawl_settings_for_dataset(
         ))
         .filter(crawl_requests_table::dataset_id.eq(dataset_id))
         .first::<CrawlRequestPG>(&mut conn)
-        .await;
+        .await
+        .optional()?;
 
     if let Some(ref url) = crawl_options.site_url {
         diesel::update(
@@ -382,14 +383,13 @@ pub async fn update_crawl_settings_for_dataset(
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     }
 
-    let previous_crawl_options: CrawlOptions = serde_json::from_value(
-        crawl_req
-            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?
-            .crawl_options,
-    )
-    .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let merged_options = if let Some(prev_crawl_req) = prev_crawl_req {
+        let previous_crawl_options: CrawlOptions = serde_json::from_value(prev_crawl_req.crawl_options).map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+        crawl_options.merge(previous_crawl_options)
+    } else {
+        crawl_options
+    };
 
-    let merged_options = crawl_options.merge(previous_crawl_options);
 
     diesel::update(
         crawl_requests_table::crawl_requests
@@ -405,7 +405,7 @@ pub async fn update_crawl_settings_for_dataset(
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     crawl(
-        crawl_options.clone(),
+        merged_options.clone(),
         pool.clone(),
         redis_pool.clone(),
         dataset_id,

@@ -17,7 +17,7 @@ use trieve_server::{
     },
 };
 use trieve_server::{
-    data::models::{CrawlRequest, DatasetConfiguration, RedisPool},
+    data::models::{CrawlRequest, DatasetConfiguration, RedisPool, ScrapeOptions},
     operators::crawl_operator::{get_crawl_from_firecrawl, Status},
 };
 use trieve_server::{
@@ -172,10 +172,9 @@ async fn get_chunks_with_firecrawl(
     pool: web::Data<Pool>,
 ) -> Result<(Vec<ChunkReqPayload>, usize), ServiceError> {
     let mut chunks = vec![];
-    let crawl_options = scrape_request.crawl_options.openapi_options.clone();
     let mut spec = None;
 
-    if let Some(openapi_options) = scrape_request.crawl_options.openapi_options.clone() {
+    if let Some(ScrapeOptions::OpenApi(openapi_options)) = scrape_request.crawl_options.scrape_options.clone() {
         let client = reqwest::Client::new();
 
         let schema = match client
@@ -287,9 +286,9 @@ async fn get_chunks_with_firecrawl(
         let page_html = page.html.clone().unwrap_or_default();
         let page_tags = get_tags(page_link.clone());
 
-        if let Some(crawl_options) = &crawl_options {
-            if let Some(spec) = &spec {
-                if page_tags.contains(&crawl_options.openapi_tag) {
+        if let Some(spec) = &spec {
+            if let Some(ScrapeOptions::OpenApi(ref openapi_options)) = scrape_request.crawl_options.scrape_options {
+                if page_tags.contains(&openapi_options.openapi_tag) {
                     if let Some(last_tag) = page_tags.last() {
                         // try to find a operation in the spec with an operation_id that matches the last tag directly, with - replaced by _ or vice versa
                         let operation = spec.operations().find(|(_, _, operation)| {
@@ -530,8 +529,8 @@ async fn crawl(
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     // Use shopify specific logic to get chunks or firecrawl
-    let (chunks, page_count) = match scrape_request.crawl_options.is_shopify {
-        Some(true) => get_chunks_from_shopify(scrape_request.clone()).await?,
+    let (chunks, page_count) = match scrape_request.crawl_options.scrape_options {
+        Some(ScrapeOptions::Shopify(_)) => get_chunks_from_shopify(scrape_request.clone()).await?,
         _ => get_chunks_with_firecrawl(scrape_request.clone(), pool.clone()).await?,
     };
 

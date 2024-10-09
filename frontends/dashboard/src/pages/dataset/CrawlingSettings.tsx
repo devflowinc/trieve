@@ -1,5 +1,5 @@
 import { createMutation, createQuery } from "@tanstack/solid-query";
-import { Show, useContext, createMemo } from "solid-js";
+import { Show, useContext, createMemo, createEffect } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { useTrieve } from "../../hooks/useTrieve";
 import {
@@ -26,20 +26,21 @@ const defaultCrawlOptions: CrawlOptions = {
   limit: 1000,
   max_depth: 10,
   site_url: "",
-  openapi_options: null,
-  is_shopify: false,
+  scrape_options: {},
 };
 
 const normalizeOpenAPIOptions = (
   options: CrawlOpenAPIOptions | null | undefined,
 ) => {
-  if (options) {
+  if (options && options.type == "openapi") {
     if (options.openapi_schema_url === "") {
       return null;
     }
     if (!options.openapi_tag && !options.openapi_schema_url) {
       return null;
     }
+    return options;
+  } else if (options && options.type == "shopify") {
     return options;
   }
   return null;
@@ -71,7 +72,7 @@ export const CrawlingSettings = () => {
         data: {
           crawl_options: {
             ...options,
-            openapi_options: normalizeOpenAPIOptions(options.openapi_options),
+            scrape_options: normalizeOpenAPIOptions(options.scrape_options),
           },
           dataset_id: datasetId(),
         },
@@ -129,7 +130,20 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
     ReturnType<ValidateFn<CrawlOptions>>["errors"]
   >({});
 
-  const isShopify = createMemo(() => !!options.is_shopify);
+  const isShopify = createMemo(
+    () =>
+      options.scrape_options != {} &&
+      options.scrape_options?.type === "shopify",
+  );
+  const isOpenAPI = createMemo(
+    () =>
+      options.scrape_options?.type != null &&
+      options.scrape_options?.type === "openapi",
+  );
+
+  createEffect(() => {
+    console.log(isOpenAPI());
+  });
 
   const validate: ValidateFn<CrawlOptions> = (value) => {
     const errors: Record<string, string> = {};
@@ -148,10 +162,10 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
       errors.max_depth = "Max depth must be greater than 0";
     }
     if (
-      value.openapi_options?.openapi_tag &&
-      !value.openapi_options.openapi_schema_url
+      value.scrape_options?.openapi_tag &&
+      !value.scrape_options.openapi_schema_url
     ) {
-      errors.openapi_options = "OpenAPI Schema URL is required for tag";
+      errors.scrape_options = "OpenAPI Schema URL is required for tag";
     }
 
     return {
@@ -220,12 +234,31 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
         />
-        <label class="block pl-4">Shopify</label>
+        <label class="block pl-4">Shopify?</label>
         <input
           onChange={(e) => {
-            setOptions("is_shopify", e.currentTarget.checked);
+            if (e.currentTarget.checked) {
+              setOptions("scrape_options", "type", "shopify");
+            } else {
+              setOptions("scrape_options", "type", {});
+              setOptions("scrape_options", {});
+            }
           }}
-          checked={options.is_shopify || false}
+          checked={isShopify()}
+          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+          type="checkbox"
+        />
+        <label class="block pl-4">OpenAPI Spec?</label>
+        <input
+          onChange={(e) => {
+            if (e.currentTarget.checked) {
+              setOptions("scrape_options", "type", "openapi");
+            } else {
+              setOptions("scrape_options", "type", {});
+              setOptions("scrape_options", {});
+            }
+          }}
+          checked={isOpenAPI()}
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
         />
@@ -267,36 +300,36 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             OpenAPI Schema URL
           </label>
           <input
-            disabled={isShopify()}
+            disabled={isShopify() || !isOpenAPI()}
             placeholder="https://example.com/openapi.json"
-            value={options.openapi_options?.openapi_schema_url || ""}
+            value={options.scrape_options?.openapi_schema_url || ""}
             onInput={(e) => {
-              if (!options.openapi_options) {
-                setOptions("openapi_options", {});
+              if (!options.scrape_options) {
+                setOptions("scrape_options", {});
               }
               setOptions(
-                "openapi_options",
+                "scrape_options",
                 "openapi_schema_url",
                 e.currentTarget.value,
               );
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
-          <Error error={errors.openapi_options} />
+          <Error error={errors.scrape_options} />
         </div>
         <div class="grow">
           <label class="block" for="">
             OpenAPI Tag
           </label>
           <input
-            disabled={isShopify()}
-            value={options.openapi_options?.openapi_tag || ""}
+            disabled={isShopify() || !isOpenAPI()}
+            value={options.scrape_options?.openapi_tag || ""}
             onInput={(e) => {
-              if (!options.openapi_options) {
-                setOptions("openapi_options", {});
+              if (!options.scrape_options) {
+                setOptions("scrape_options", { type: "openapi" });
               }
               setOptions(
-                "openapi_options",
+                "scrape_options",
                 "openapi_tag",
                 e.currentTarget.value,
               );
