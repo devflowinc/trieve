@@ -9,10 +9,10 @@ import { toTitleCase } from "../../analytics/utils/titleCase";
 import { Spacer } from "../../components/Spacer";
 import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../../components/ShowToasts";
-import { ValidateFn } from "../../utils/validation";
+import { ValidateErrors, ValidateFn } from "../../utils/validation";
 import { cn } from "shared/utils";
 
-const defaultCrawlOptions: CrawlOptions = {
+export const defaultCrawlOptions: CrawlOptions = {
   boost_titles: false,
   exclude_paths: [],
   exclude_tags: [],
@@ -29,10 +29,12 @@ export type FlatCrawlOptions = Omit<CrawlOptions, "scrape_options"> & {
   type?: "openapi" | "shopify";
   openapi_schema_url?: string;
   openapi_tag?: string;
-  boost_item_names?: boolean | null;
+  group_variants?: boolean | null;
 };
 
-const unflattenCrawlOptions = (options: FlatCrawlOptions): CrawlOptions => {
+export const unflattenCrawlOptions = (
+  options: FlatCrawlOptions,
+): CrawlOptions => {
   if (options && options.type == "openapi") {
     if (!options.openapi_schema_url || !options.openapi_tag) {
       return {
@@ -69,7 +71,7 @@ const unflattenCrawlOptions = (options: FlatCrawlOptions): CrawlOptions => {
       site_url: options.site_url,
       scrape_options: {
         type: "shopify",
-        boost_item_names: options.boost_item_names,
+        group_variants: options.group_variants,
       },
     };
   }
@@ -79,7 +81,9 @@ const unflattenCrawlOptions = (options: FlatCrawlOptions): CrawlOptions => {
   };
 };
 
-const flattenCrawlOptions = (options: CrawlOptions): FlatCrawlOptions => {
+export const flattenCrawlOptions = (
+  options: CrawlOptions,
+): FlatCrawlOptions => {
   if (options.scrape_options?.type == "openapi") {
     return {
       ...options,
@@ -91,10 +95,13 @@ const flattenCrawlOptions = (options: CrawlOptions): FlatCrawlOptions => {
     return {
       ...options,
       type: "shopify",
-      boost_item_names: options.scrape_options.boost_item_names,
+      group_variants: options.scrape_options.group_variants,
     };
   } else {
-    return options;
+    return {
+      ...options,
+      type: undefined,
+    };
   }
 };
 
@@ -175,6 +182,40 @@ const Error = (props: { error: string | null | undefined }) => {
   );
 };
 
+export const validateFlatCrawlOptions: ValidateFn<FlatCrawlOptions> = (
+  value,
+) => {
+  const errors: ValidateErrors<FlatCrawlOptions> = {};
+  if (!value.site_url) {
+    errors.site_url = "Site URL is required";
+  }
+
+  if (value.site_url && !value.site_url.startsWith("http")) {
+    errors.site_url = "Invalid Site URL - http(s):// required";
+  }
+
+  if (value.type != "shopify") {
+    if (!value.limit || value.limit <= 0) {
+      errors.limit = "Limit must be greater than 0";
+    }
+    if (!value.max_depth) {
+      errors.max_depth = "Max depth must be greater than 0";
+    }
+    if (
+      value.type == "openapi" &&
+      value.openapi_tag &&
+      !value.openapi_schema_url
+    ) {
+      errors.openapi_schema_url = "OpenAPI Schema URL is required for tag";
+    }
+  }
+
+  return {
+    errors,
+    valid: Object.values(errors).filter((v) => !!v).length === 0,
+  };
+};
+
 const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
   const [options, setOptions] = createStore(props.initialCrawlingSettings);
   const [errors, setErrors] = createStore<
@@ -184,40 +225,8 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
   const isShopify = createMemo(() => options.type === "shopify");
   const isOpenAPI = createMemo(() => options.type === "openapi");
 
-  const validate: ValidateFn<CrawlOptions> = (value) => {
-    const errors: Record<string, string> = {};
-    if (!value.site_url) {
-      errors.site_url = "Site URL is required";
-    }
-
-    if (value.site_url && !value.site_url.startsWith("http")) {
-      errors.site_url = "Invalid Site URL - http(s):// required";
-    }
-
-    if (value.scrape_options?.type != "shopify") {
-      if (!value.limit || value.limit <= 0) {
-        errors.limit = "Limit must be greater than 0";
-      }
-      if (!value.max_depth) {
-        errors.max_depth = "Max depth must be greater than 0";
-      }
-      if (
-        value.scrape_options?.type == "openapi" &&
-        value.scrape_options?.openapi_tag &&
-        !value.scrape_options.openapi_schema_url
-      ) {
-        errors.scrape_options = "OpenAPI Schema URL is required for tag";
-      }
-    }
-
-    return {
-      errors,
-      valid: Object.values(errors).filter((v) => !!v).length === 0,
-    };
-  };
-
   const submit = () => {
-    const validateResult = validate(options);
+    const validateResult = validateFlatCrawlOptions(options);
     if (validateResult.valid) {
       setErrors({});
       props.onSave(unflattenCrawlOptions(options));
@@ -344,7 +353,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
-          <Error error={errors.scrape_options} />
         </div>
         <div class="grow">
           <label class="block" for="">
