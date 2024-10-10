@@ -288,9 +288,23 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         <label class="block pl-4">Shopify?</label>
         <input
           onChange={(e) => {
-            if (e.currentTarget.checked) {
-              setOptions("type", "shopify");
-            }
+            setOptions((prev) => {
+              if (!e.currentTarget.checked) {
+                if (prev.type === "shopify") {
+                  return {
+                    ...prev,
+                    type: undefined,
+                  };
+                }
+                return {
+                  ...prev,
+                };
+              } else {
+                return {
+                  type: "shopify" as const,
+                };
+              }
+            });
           }}
           checked={isShopify()}
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
@@ -298,11 +312,26 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         />
         <label class="block pl-4">OpenAPI Spec?</label>
         <input
-          onChange={(e) => {
-            if (e.currentTarget.checked) {
-              setOptions("type", "openapi");
-            }
-          }}
+          onChange={(e) =>
+            setOptions((prev) => {
+              if (!e.currentTarget.checked) {
+                if (prev.type === "openapi") {
+                  return {
+                    ...prev,
+                    type: undefined,
+                  };
+                }
+                return {
+                  ...prev,
+                };
+              } else {
+                return {
+                  ...prev,
+                  type: "openapi",
+                };
+              }
+            })
+          }
           checked={isOpenAPI()}
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
@@ -340,33 +369,35 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
           <Error error={errors.max_depth} />
         </div>
-        <div class="grow">
-          <label class="block" for="">
-            OpenAPI Schema URL
-          </label>
-          <input
-            disabled={isShopify() || !isOpenAPI()}
-            placeholder="https://example.com/openapi.json"
-            value={options.openapi_schema_url || ""}
-            onInput={(e) => {
-              setOptions("openapi_schema_url", e.currentTarget.value);
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
-        </div>
-        <div class="grow">
-          <label class="block" for="">
-            OpenAPI Tag
-          </label>
-          <input
-            disabled={isShopify() || !isOpenAPI()}
-            value={options.openapi_tag || ""}
-            onInput={(e) => {
-              setOptions("openapi_tag", e.currentTarget.value);
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
-        </div>
+        <Show when={options.type === "openapi"}>
+          <div class="grow">
+            <label class="block" for="">
+              OpenAPI Schema URL
+            </label>
+            <input
+              disabled={isShopify() || !isOpenAPI()}
+              placeholder="https://example.com/openapi.json"
+              value={options.openapi_schema_url || ""}
+              onInput={(e) => {
+                setOptions("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <label class="block" for="">
+              OpenAPI Tag
+            </label>
+            <input
+              disabled={isShopify() || !isOpenAPI()}
+              value={options.openapi_tag || ""}
+              onInput={(e) => {
+                setOptions("openapi_tag", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+        </Show>
       </div>
       <div
         class={cn(
