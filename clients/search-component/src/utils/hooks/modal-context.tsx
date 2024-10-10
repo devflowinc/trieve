@@ -41,6 +41,7 @@ export type ModalProps = {
   tags?: {
     tag: string;
     label?: string;
+    selected?: boolean;
     icon?: () => JSX.Element;
   }[];
   defaultSearchMode?: SearchModes;
@@ -127,7 +128,9 @@ function ModalProvider({
   const [mode, setMode] = useState(props.defaultSearchMode || "search");
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
-  const [currentTag, setCurrentTag] = useState("all");
+  const [currentTag, setCurrentTag] = useState(
+    props.tags?.find((t) => t.selected)?.tag || "all",
+  );
 
   useEffect(() => {
     setProps((p) => ({
@@ -182,8 +185,8 @@ function ModalProvider({
             trieve: props.trieve,
             abortController,
             ...(tag.tag !== "all" && { tag: tag.tag }),
-          })
-        )
+          }),
+        ),
       );
       setTagCounts(numberOfRecords);
     }
@@ -224,8 +227,7 @@ function ModalProvider({
         currentTag,
         setCurrentTag,
         tagCounts,
-      }}
-    >
+      }}>
       {children}
     </ModalContext.Provider>
   );

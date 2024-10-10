@@ -41,7 +41,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController()
+    new AbortController(),
   );
   const isDoneReading = useRef<boolean>(true);
   const createTopic = async ({ question }: { question: string }) => {
@@ -66,7 +66,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     setIsLoading(true);
     isDoneReading.current = false;
@@ -97,7 +97,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               type: "system",
               text: text,
               additional: json ? json : null,
-              queryId
+              queryId,
             },
           ],
         ]);
@@ -119,16 +119,18 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     question?: string;
   }) => {
     setIsLoading(true);
-    const { reader, queryId } = await props.trieve.createMessageReaderWithQueryId(
-      {
-        topic_id: id || currentTopic,
-        new_message_content: question || currentQuestion,
-        llm_options: {
-          completion_first: true,
+    const { reader, queryId } =
+      await props.trieve.createMessageReaderWithQueryId(
+        {
+          topic_id: id || currentTopic,
+          new_message_content: question || currentQuestion,
+          llm_options: {
+            completion_first: true,
+          },
+          page_size: 5,
         },
-      },
-      chatMessageAbortController.current.signal
-    );
+        chatMessageAbortController.current.signal,
+      );
     handleReader(reader, queryId);
   };
 
@@ -143,7 +145,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         [
           ...messages.slice(0, -1),
           messages[messages.length - 1]?.slice(0, -1),
-        ].filter((a) => a.length)
+        ].filter((a) => a.length),
       );
     }
   };
@@ -152,7 +154,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     isDoneReading.current = false;
     setMessages((m) => [
       ...m,
-      [{ type: "user", text: question || currentQuestion, additional: null, queryId: null }],
+      [
+        {
+          type: "user",
+          text: question || currentQuestion,
+          additional: null,
+          queryId: null,
+        },
+      ],
     ]);
 
     if (!currentTopic) {
@@ -177,14 +186,17 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     await askQuestion(query);
   };
 
-  const rateChatCompletion = async(isPositive: boolean, queryId: string | null) => {
+  const rateChatCompletion = async (
+    isPositive: boolean,
+    queryId: string | null,
+  ) => {
     if (queryId) {
       props.trieve.rateRagQuery({
-        rating: isPositive ? 1: 0,
-        query_id: queryId
+        rating: isPositive ? 1 : 0,
+        query_id: queryId,
       });
     }
-  }
+  };
 
   return (
     <ModalContext.Provider
@@ -198,9 +210,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         clearConversation,
         stopGeneratingMessage,
         isDoneReading,
-        rateChatCompletion
-      }}
-    >
+        rateChatCompletion,
+      }}>
       {children}
     </ModalContext.Provider>
   );
