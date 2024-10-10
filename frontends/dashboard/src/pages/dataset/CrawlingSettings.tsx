@@ -155,17 +155,20 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
       errors.site_url = "Invalid Site URL - http(s):// required";
     }
 
-    if (!value.limit || value.limit <= 0) {
-      errors.limit = "Limit must be greater than 0";
-    }
-    if (!value.max_depth) {
-      errors.max_depth = "Max depth must be greater than 0";
-    }
-    if (
-      value.scrape_options?.openapi_tag &&
-      !value.scrape_options.openapi_schema_url
-    ) {
-      errors.scrape_options = "OpenAPI Schema URL is required for tag";
+    if (value.scrape_options?.type != "shopify") {
+      if (!value.limit || value.limit <= 0) {
+        errors.limit = "Limit must be greater than 0";
+      }
+      if (!value.max_depth) {
+        errors.max_depth = "Max depth must be greater than 0";
+      }
+      if (
+        value.scrape_options?.type == "openapi" &&
+        value.scrape_options?.openapi_tag &&
+        !value.scrape_options.openapi_schema_url
+      ) {
+        errors.scrape_options = "OpenAPI Schema URL is required for tag";
+      }
     }
 
     return {
