@@ -1049,6 +1049,59 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                 />
                               </div>
                             </Match>
+                            <Match
+                              when={
+                                crawlOptions()?.scrape_options?.type ==
+                                "shopify"
+                              }
+                            >
+                              <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                                <label
+                                  for="groupVariants"
+                                  class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                                >
+                                  Group Product Variants
+                                  <Tooltip
+                                    body={
+                                      <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                    }
+                                    tooltipText="This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product"
+                                    direction="right"
+                                  />
+                                </label>
+                                <input
+                                  type="checkbox"
+                                  id="groupVariants"
+                                  name="groupVariants"
+                                  class="col-span-2 mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                                  checked={
+                                    crawlOptions()?.scrape_options
+                                      .group_variants ?? true
+                                  }
+                                  onChange={(e) =>
+                                    setCrawlOptions((prev) => {
+                                      if (!prev) {
+                                        console.log(e.currentTarget.value);
+                                        return {
+                                          scrape_options: {
+                                            type: "shopify",
+                                            group_variants: e.currentTarget.checked,
+                                          },
+                                        };
+                                      }
+
+                                      return {
+                                        ...prev,
+                                        scrape_options: {
+                                          type: "shopify",
+                                          group_variants: e.currentTarget.checked,
+                                        },
+                                      };
+                                    })
+                                  }
+                                />
+                              </div>
+                            </Match>
                           </Switch>
                         </div>
                       </Show>
