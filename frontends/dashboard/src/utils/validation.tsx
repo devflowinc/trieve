@@ -1,15 +1,16 @@
 import { Show } from "solid-js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ValidateFn<T extends Record<string, any>> = (value: T) => {
-  errors: {
-    [key in keyof T]: string | undefined;
-  };
+export type ValidateFn<T extends Record<string, unknown>> = (value: T) => {
+  errors: ValidateErrors<T>;
   valid: boolean;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ValidateErrors<T extends ValidateFn<any>> = ReturnType<T>["errors"];
+export type ValidateErrors<T extends Record<string, any>> = {
+  [key in keyof T]: NonNullable<T[key]> extends Record<string, unknown>
+    ? ReturnType<ValidateFn<NonNullable<T[key]>>>["errors"]
+    : string | undefined;
+};
 
 export const ErrorMsg = (props: { error: string | null | undefined }) => {
   return (

@@ -469,8 +469,14 @@ export type CrawlOptions = {
     site_url?: (string) | null;
 };
 
+/**
+ * Options for Crawling Shopify
+ */
 export type CrawlShopifyOptions = {
-    boost_item_names?: (boolean) | null;
+    /**
+     * This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product. default: true
+     */
+    group_variants?: (boolean) | null;
 };
 
 export type CreateBatchChunkGroupReqPayload = Array<CreateSingleChunkGroupReqPayload>;
