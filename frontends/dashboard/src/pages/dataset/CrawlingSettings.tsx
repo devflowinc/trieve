@@ -1,12 +1,8 @@
 import { createMutation, createQuery } from "@tanstack/solid-query";
-import { Show, useContext, createMemo, createEffect } from "solid-js";
+import { Show, useContext, createMemo } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { useTrieve } from "../../hooks/useTrieve";
-import {
-  CrawlInterval,
-  CrawlOpenAPIOptions,
-  CrawlOptions,
-} from "trieve-ts-sdk";
+import { CrawlInterval, CrawlOptions } from "trieve-ts-sdk";
 import { createStore } from "solid-js/store";
 import { MultiStringInput, Select } from "shared/ui";
 import { toTitleCase } from "../../analytics/utils/titleCase";
@@ -26,24 +22,80 @@ const defaultCrawlOptions: CrawlOptions = {
   limit: 1000,
   max_depth: 10,
   site_url: "",
-  scrape_options: {},
+  scrape_options: null,
 };
 
-const normalizeOpenAPIOptions = (
-  options: CrawlOpenAPIOptions | null | undefined,
-) => {
+export type FlatCrawlOptions = Omit<CrawlOptions, "scrape_options"> & {
+  type?: "openapi" | "shopify";
+  openapi_schema_url?: string;
+  openapi_tag?: string;
+  boost_item_names?: boolean | null;
+};
+
+const unflattenCrawlOptions = (options: FlatCrawlOptions): CrawlOptions => {
   if (options && options.type == "openapi") {
-    if (options.openapi_schema_url === "") {
-      return null;
+    if (!options.openapi_schema_url || !options.openapi_tag) {
+      return {
+        ...options,
+        scrape_options: null,
+      };
     }
-    if (!options.openapi_tag && !options.openapi_schema_url) {
-      return null;
-    }
-    return options;
+    return {
+      boost_titles: options.boost_titles,
+      exclude_paths: options.exclude_paths,
+      exclude_tags: options.exclude_tags,
+      include_paths: options.include_paths,
+      include_tags: options.include_tags,
+      interval: options.interval,
+      limit: options.limit,
+      max_depth: options.max_depth,
+      site_url: options.site_url,
+      scrape_options: {
+        type: "openapi",
+        openapi_schema_url: options.openapi_schema_url,
+        openapi_tag: options.openapi_tag,
+      },
+    };
   } else if (options && options.type == "shopify") {
+    return {
+      boost_titles: options.boost_titles,
+      exclude_paths: options.exclude_paths,
+      exclude_tags: options.exclude_tags,
+      include_paths: options.include_paths,
+      include_tags: options.include_tags,
+      interval: options.interval,
+      limit: options.limit,
+      max_depth: options.max_depth,
+      site_url: options.site_url,
+      scrape_options: {
+        type: "shopify",
+        boost_item_names: options.boost_item_names,
+      },
+    };
+  }
+  return {
+    ...options,
+    scrape_options: null,
+  };
+};
+
+const flattenCrawlOptions = (options: CrawlOptions): FlatCrawlOptions => {
+  if (options.scrape_options?.type == "openapi") {
+    return {
+      ...options,
+      type: "openapi",
+      openapi_schema_url: options.scrape_options.openapi_schema_url,
+      openapi_tag: options.scrape_options.openapi_tag,
+    };
+  } else if (options.scrape_options?.type == "shopify") {
+    return {
+      ...options,
+      type: "shopify",
+      boost_item_names: options.scrape_options.boost_item_names,
+    };
+  } else {
     return options;
   }
-  return null;
 };
 
 export const CrawlingSettings = () => {
@@ -70,10 +122,7 @@ export const CrawlingSettings = () => {
     mutationFn: async (options: CrawlOptions) => {
       await trieve.fetch("/api/dataset", "put", {
         data: {
-          crawl_options: {
-            ...options,
-            scrape_options: normalizeOpenAPIOptions(options.scrape_options),
-          },
+          crawl_options: options,
           dataset_id: datasetId(),
         },
         organizationId: userContext.selectedOrg().id,
@@ -104,14 +153,16 @@ export const CrawlingSettings = () => {
       <RealCrawlingSettings
         onSave={onSave}
         mode={crawlSettingsQuery.data ? "edit" : "create"}
-        initialCrawlingSettings={crawlSettingsQuery.data || defaultCrawlOptions}
+        initialCrawlingSettings={flattenCrawlOptions(
+          crawlSettingsQuery.data || defaultCrawlOptions,
+        )}
       />
     </Show>
   );
 };
 
 interface RealCrawlingSettingsProps {
-  initialCrawlingSettings: CrawlOptions;
+  initialCrawlingSettings: FlatCrawlOptions;
   mode: "edit" | "create";
   onSave: (options: CrawlOptions) => void;
 }
@@ -130,20 +181,8 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
     ReturnType<ValidateFn<CrawlOptions>>["errors"]
   >({});
 
-  const isShopify = createMemo(
-    () =>
-      options.scrape_options != {} &&
-      options.scrape_options?.type === "shopify",
-  );
-  const isOpenAPI = createMemo(
-    () =>
-      options.scrape_options?.type != null &&
-      options.scrape_options?.type === "openapi",
-  );
-
-  createEffect(() => {
-    console.log(isOpenAPI());
-  });
+  const isShopify = createMemo(() => options.type === "shopify");
+  const isOpenAPI = createMemo(() => options.type === "openapi");
 
   const validate: ValidateFn<CrawlOptions> = (value) => {
     const errors: Record<string, string> = {};
@@ -181,7 +220,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
     const validateResult = validate(options);
     if (validateResult.valid) {
       setErrors({});
-      props.onSave(options);
+      props.onSave(unflattenCrawlOptions(options));
     } else {
       setErrors(validateResult.errors);
     }
@@ -241,10 +280,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         <input
           onChange={(e) => {
             if (e.currentTarget.checked) {
-              setOptions("scrape_options", "type", "shopify");
-            } else {
-              setOptions("scrape_options", "type", {});
-              setOptions("scrape_options", {});
+              setOptions("type", "shopify");
             }
           }}
           checked={isShopify()}
@@ -255,10 +291,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         <input
           onChange={(e) => {
             if (e.currentTarget.checked) {
-              setOptions("scrape_options", "type", "openapi");
-            } else {
-              setOptions("scrape_options", "type", {});
-              setOptions("scrape_options", {});
+              setOptions("type", "openapi");
             }
           }}
           checked={isOpenAPI()}
@@ -305,16 +338,9 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <input
             disabled={isShopify() || !isOpenAPI()}
             placeholder="https://example.com/openapi.json"
-            value={options.scrape_options?.openapi_schema_url || ""}
+            value={options.openapi_schema_url || ""}
             onInput={(e) => {
-              if (!options.scrape_options) {
-                setOptions("scrape_options", {});
-              }
-              setOptions(
-                "scrape_options",
-                "openapi_schema_url",
-                e.currentTarget.value,
-              );
+              setOptions("openapi_schema_url", e.currentTarget.value);
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
@@ -326,16 +352,9 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           </label>
           <input
             disabled={isShopify() || !isOpenAPI()}
-            value={options.scrape_options?.openapi_tag || ""}
+            value={options.openapi_tag || ""}
             onInput={(e) => {
-              if (!options.scrape_options) {
-                setOptions("scrape_options", { type: "openapi" });
-              }
-              setOptions(
-                "scrape_options",
-                "openapi_tag",
-                e.currentTarget.value,
-              );
+              setOptions("openapi_tag", e.currentTarget.value);
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />

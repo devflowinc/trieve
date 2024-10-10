@@ -1085,7 +1085,8 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                         return {
                                           scrape_options: {
                                             type: "shopify",
-                                            group_variants: e.currentTarget.checked,
+                                            group_variants:
+                                              e.currentTarget.checked,
                                           },
                                         };
                                       }
@@ -1094,7 +1095,8 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                         ...prev,
                                         scrape_options: {
                                           type: "shopify",
-                                          group_variants: e.currentTarget.checked,
+                                          group_variants:
+                                            e.currentTarget.checked,
                                         },
                                       };
                                     })
