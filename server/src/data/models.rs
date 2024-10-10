@@ -6327,7 +6327,7 @@ pub enum ScrapeOptions {
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 #[schema(title = "CrawlShopifyOptions")]
 pub struct CrawlShopifyOptions {
-    pub boost_item_names: Option<bool>,
+    pub group_variants: Option<bool>,
 }
 
 impl CrawlOptions {
