@@ -1,7 +1,6 @@
 import {
   Accessor,
   createSignal,
-  createEffect,
   useContext,
   For,
   Switch,
@@ -26,14 +25,21 @@ import { createToast } from "./ShowToasts";
 import { createNewDataset } from "../api/createDataset";
 import { uploadSampleData } from "../api/uploadSampleData";
 import { defaultServerEnvsConfiguration } from "../utils/serverEnvs";
-import { CrawlInterval, CrawlOptions, DistanceMetric } from "trieve-ts-sdk";
+import { CrawlInterval, DistanceMetric } from "trieve-ts-sdk";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { Tooltip } from "shared/ui";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import { createStore, SetStoreFunction, unwrap } from "solid-js/store";
 import { DatasetConfig } from "./dataset-settings/LegacySettingsWrapper";
 import { cn } from "shared/utils";
-import { ValidateFn, ErrorMsg } from "../utils/validation";
+import { ValidateFn, ErrorMsg, ValidateErrors } from "../utils/validation";
+import {
+  defaultCrawlOptions,
+  FlatCrawlOptions,
+  flattenCrawlOptions,
+  unflattenCrawlOptions,
+  validateFlatCrawlOptions,
+} from "../pages/dataset/CrawlingSettings";
 
 export interface NewDatasetModalProps {
   isOpen: Accessor<boolean>;
@@ -41,7 +47,7 @@ export interface NewDatasetModalProps {
 }
 
 const validate: ValidateFn<DatasetConfig> = (value) => {
-  const errors: Record<string, string> = {};
+  const errors: ValidateErrors<DatasetConfig> = {};
 
   if (value.BM25_ENABLED) {
     if (!value.BM25_B) {
@@ -74,7 +80,9 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const [serverConfig, setServerConfig] = createStore(
     defaultServerEnvsConfiguration,
   );
-  const [crawlOptions, setCrawlOptions] = createSignal<CrawlOptions>();
+  const [crawlOptions, setCrawlOptions] = createStore<FlatCrawlOptions>(
+    flattenCrawlOptions(defaultCrawlOptions),
+  );
   const [name, setName] = createSignal<string>("");
   const [showAdvanced, setShowAdvanced] = createSignal(false);
   const [showScraping, setShowScraping] = createSignal(false);
@@ -84,9 +92,13 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const [errors, setErrors] = createStore<
     ReturnType<ValidateFn<DatasetConfig>>["errors"]
   >({});
+  const [crawlErrors, setCrawlErrors] = createStore<
+    ReturnType<ValidateFn<FlatCrawlOptions>>["errors"]
+  >({});
 
   const createDataset = async () => {
     const curServerConfig = unwrap(serverConfig);
+    const unwrappedFlatCrawlOptions = unwrap(crawlOptions);
     const validateResult = validate(curServerConfig);
     if (validateResult.valid) {
       setErrors({});
@@ -95,13 +107,27 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
       return;
     }
 
+    if (showScraping()) {
+      const crawlValidateResult = validateFlatCrawlOptions(
+        unwrappedFlatCrawlOptions,
+      );
+      if (crawlValidateResult.valid) {
+        setCrawlErrors({});
+      } else {
+        setCrawlErrors(crawlValidateResult.errors);
+        return;
+      }
+    }
+
     try {
       setIsLoading(true);
       const dataset = await createNewDataset({
         name: name(),
         organizationId: userContext.selectedOrg().id,
         serverConfig: curServerConfig,
-        crawlOptions: crawlOptions(),
+        crawlOptions: showScraping()
+          ? unflattenCrawlOptions(unwrappedFlatCrawlOptions)
+          : undefined,
       });
 
       if (fillWithExampleData()) {
@@ -132,10 +158,6 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
       });
     }
   };
-
-  createEffect(() => {
-    console.log(crawlOptions());
-  });
 
   return (
     <Transition appear show={props.isOpen()}>
@@ -469,10 +491,18 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                       >
                         <Switch>
                           <Match when={!showScraping()}>
-                            <FiChevronDown />
+                            <input
+                              class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+                              type="checkbox"
+                              checked={false}
+                            />
                           </Match>
                           <Match when={showScraping()}>
-                            <FiChevronUp />
+                            <input
+                              class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+                              type="checkbox"
+                              checked={true}
+                            />
                           </Match>
                         </Switch>
                         Scraping
@@ -485,625 +515,11 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                         />
                       </button>
                       <Show when={showScraping()}>
-                        <div class="ml-4 flex flex-col space-y-2 border-neutral-900/10 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t">
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="scrapingUrl"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Scraping URL
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="The URL of the website you would like to scrape."
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="text"
-                              id="scrapingUrl"
-                              name="scrapingUrl"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={crawlOptions()?.site_url ?? ""}
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      site_url: e.currentTarget.value,
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    site_url: e.currentTarget.value,
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="excludePaths"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Exclude Paths
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="URL Patterns to exclude from the crawl. Example: '/admin/*, /login/*"
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="text"
-                              id="excludePaths"
-                              name="excludePaths"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={crawlOptions()?.exclude_paths ?? ""}
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      exclude_paths:
-                                        e.currentTarget.value.split(","),
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    exclude_paths:
-                                      e.currentTarget.value.split(","),
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="includePaths"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Include Paths
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="URL Patterns to include in the crawl. Example: '/docs/*, /blog/*'"
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="text"
-                              id="includePaths"
-                              name="includePaths"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={crawlOptions()?.include_paths ?? ""}
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      include_paths:
-                                        e.currentTarget.value.split(","),
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    include_paths:
-                                      e.currentTarget.value.split(","),
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="excludeTags"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Exclude Tags
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="Specify the HTML tags, classes and ids to exclude from the response. Example 'header, .table-of-contents'"
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="text"
-                              id="excludeTags"
-                              name="excludeTags"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={crawlOptions()?.exclude_tags ?? ""}
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      exclude_tags:
-                                        e.currentTarget.value.split(","),
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    exclude_tags:
-                                      e.currentTarget.value.split(","),
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="includeTags"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Include Tags
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="Specify the HTML tags, classes and ids to include in the response. Example 'article, .inner-content'"
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="text"
-                              id="includeTags"
-                              name="includeTags"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={crawlOptions()?.include_tags ?? ""}
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      include_tags:
-                                        e.currentTarget.value.split(","),
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    include_tags:
-                                      e.currentTarget.value.split(","),
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="maxDepth"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Max Depth
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="How many levels deep to crawl, defaults to 10"
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="number"
-                              id="maxDepth"
-                              name="maxDepth"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={crawlOptions()?.max_depth ?? ""}
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      max_depth: parseInt(
-                                        e.currentTarget.value,
-                                      ),
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    max_depth: parseInt(e.currentTarget.value),
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="pageLimit"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Limit (Max Pages to Crawl)
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="Maximum number of pages to crawl, defaults to 1000"
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="number"
-                              id="pageLimit"
-                              name="pageLimit"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={crawlOptions()?.limit ?? ""}
-                              onInput={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      limit: parseInt(e.currentTarget.value),
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    limit: parseInt(e.currentTarget.value),
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="interval"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Interval
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="How often to scrape the website. Defaults to daily."
-                                direction="right"
-                              />
-                            </label>
-                            <select
-                              id="interval"
-                              name="interval"
-                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              value={crawlOptions()?.interval ?? ""}
-                              onChange={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      interval: e.currentTarget
-                                        .value as CrawlInterval,
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    interval: e.currentTarget
-                                      .value as CrawlInterval,
-                                  };
-                                })
-                              }
-                            >
-                              <option value="daily">daily</option>
-                              <option value="weekly">weekly</option>
-                              <option value="monthly">monthly</option>
-                            </select>
-                          </div>
-
-                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                            <label
-                              for="boostTitles"
-                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                            >
-                              Boost Titles
-                              <Tooltip
-                                body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                }
-                                tooltipText="Boost the frequency of titles in the search index such that title matches are prioritized."
-                                direction="right"
-                              />
-                            </label>
-                            <input
-                              type="checkbox"
-                              id="boostTitles"
-                              name="boostTitles"
-                              class="col-span-2 mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                              checked={crawlOptions()?.boost_titles ?? true}
-                              onChange={(e) =>
-                                setCrawlOptions((prev) => {
-                                  if (!prev) {
-                                    return {
-                                      boost_titles: e.currentTarget.checked,
-                                    };
-                                  }
-
-                                  return {
-                                    ...prev,
-                                    boost_titles: e.currentTarget.checked,
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div class="content-center py-4 sm:grid sm:grid-cols-2 sm:items-start sm:gap-4">
-                            <div class="col-span-1 flex">
-                              <input
-                                type="checkbox"
-                                id="useOpenAPI"
-                                name="useOpenAPI"
-                                class="mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                                checked={
-                                  crawlOptions()?.scrape_options != undefined &&
-                                  crawlOptions()?.scrape_options?.type ==
-                                    "openapi"
-                                }
-                                onChange={(e) =>
-                                  setCrawlOptions((prev) => {
-                                    if (!prev) {
-                                      return {
-                                        scrape_options: {
-                                          type: "openapi",
-                                        },
-                                      };
-                                    }
-                                    if (!e.currentTarget.checked) {
-                                      return {
-                                        ...prev,
-                                        scrape_options: null,
-                                      };
-                                    } else {
-                                      return {
-                                        ...prev,
-                                        scrape_options: {
-                                          type: "openapi",
-                                        },
-                                      };
-                                    }
-                                  })
-                                }
-                              />
-
-                              <label
-                                for="useOpenAPI"
-                                class="flex h-full items-center gap-2 pl-1.5 pt-1.5 text-sm font-medium leading-6"
-                              >
-                                OpenAPI spec
-                                <Tooltip
-                                  body={
-                                    <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                  }
-                                  tooltipText="Parse an OpenAPI spec on a specified route"
-                                  direction="right"
-                                />
-                              </label>
-                            </div>
-                            <div class="col-span-1 flex">
-                              <input
-                                type="checkbox"
-                                id="useShopify"
-                                name="useShopify"
-                                class="mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                                checked={
-                                  crawlOptions()?.scrape_options != undefined &&
-                                  crawlOptions()?.scrape_options?.type ==
-                                    "shopify"
-                                }
-                                onChange={(e) =>
-                                  setCrawlOptions((prev) => {
-                                    if (!prev) {
-                                      return {
-                                        scrape_options: {
-                                          type: "shopify",
-                                        },
-                                      };
-                                    }
-
-                                    if (!e.currentTarget.checked) {
-                                      return {
-                                        ...prev,
-                                        scrape_options: null,
-                                      };
-                                    } else {
-                                      return {
-                                        ...prev,
-                                        scrape_options: {
-                                          type: "shopify",
-                                        },
-                                      };
-                                    }
-                                  })
-                                }
-                              />
-
-                              <label
-                                for="useShopify"
-                                class="flex h-full items-center gap-2 pl-1.5 pt-1.5 text-sm font-medium leading-6"
-                              >
-                                Is Shopify Store
-                                <Tooltip
-                                  body={
-                                    <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                  }
-                                  tooltipText="Toggle if the webpage is a shopify store to scrape the products more accurately"
-                                  direction="left"
-                                />
-                              </label>
-                            </div>
-                          </div>
-
-                          <Switch>
-                            <Match
-                              when={
-                                crawlOptions()?.scrape_options?.type ==
-                                "openapi"
-                              }
-                            >
-                              <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                                <label
-                                  for="openapiSchemaUrl"
-                                  class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                                >
-                                  OpenAPI Schema URL
-                                  <Tooltip
-                                    body={
-                                      <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                    }
-                                    tooltipText="URL that will return a *.json or *.yaml file with an OpenAPI schema which pairs with the docs."
-                                    direction="right"
-                                  />
-                                </label>
-                                <input
-                                  type="text"
-                                  id="openapiSchemaUrl"
-                                  name="openapiSchemaUrl"
-                                  class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                                  value={
-                                    // @ts-expect-error type is checked in <Match/> component
-                                    crawlOptions()?.scrape_options
-                                      ?.openapi_schema_url ?? ""
-                                  }
-                                  onInput={(e) =>
-                                    setCrawlOptions((prev) => {
-                                      if (!prev) {
-                                        return {
-                                          scrape_options: {
-                                            type: "openapi",
-                                            openapi_schema_url:
-                                              e.currentTarget.value,
-                                            openapi_tag: "",
-                                          },
-                                        };
-                                      }
-
-                                      return {
-                                        ...prev,
-                                        scrape_options: {
-                                          type: "openapi",
-                                          openapi_schema_url:
-                                            e.currentTarget.value,
-                                          openapi_tag:
-                                            prev.scrape_options?.openapi_tag ??
-                                            "",
-                                        },
-                                      };
-                                    })
-                                  }
-                                />
-                              </div>
-
-                              <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                                <label
-                                  for="openapiTag"
-                                  class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                                >
-                                  OpenAPI Tag
-                                  <Tooltip
-                                    body={
-                                      <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                    }
-                                    tooltipText="For a site like https://docs.trieve.ai, the tag here would be 'api-reference' because of the API routes being documented at https://docs.trieve.ai/api-reference/* paths."
-                                    direction="right"
-                                  />
-                                </label>
-                                <input
-                                  type="text"
-                                  id="openapiTag"
-                                  name="openapiTag"
-                                  class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                                  value={
-                                    crawlOptions()?.scrape_options
-                                      ?.openapi_tag ?? ""
-                                  }
-                                  onInput={(e) =>
-                                    setCrawlOptions((prev) => {
-                                      if (!prev) {
-                                        return {
-                                          scrape_options: {
-                                            type: "openapi",
-                                            openapi_schema_url: "",
-                                            openapi_tag: e.currentTarget.value,
-                                          },
-                                        };
-                                      }
-
-                                      return {
-                                        ...prev,
-                                        scrape_options: {
-                                          type: "openapi",
-                                          openapi_schema_url:
-                                            prev.scrape_options
-                                              ?.openapi_schema_url ?? "",
-                                          openapi_tag: e.currentTarget.value,
-                                        },
-                                      };
-                                    })
-                                  }
-                                />
-                              </div>
-                            </Match>
-                            <Match
-                              when={
-                                crawlOptions()?.scrape_options?.type ==
-                                "shopify"
-                              }
-                            >
-                              <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-                                <label
-                                  for="groupVariants"
-                                  class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
-                                >
-                                  Group Product Variants
-                                  <Tooltip
-                                    body={
-                                      <FaRegularCircleQuestion class="h-4 w-4 text-black" />
-                                    }
-                                    tooltipText="This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product"
-                                    direction="right"
-                                  />
-                                </label>
-                                <input
-                                  type="checkbox"
-                                  id="groupVariants"
-                                  name="groupVariants"
-                                  class="col-span-2 mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                                  checked={
-                                    crawlOptions()?.scrape_options
-                                      .group_variants ?? true
-                                  }
-                                  onChange={(e) =>
-                                    setCrawlOptions((prev) => {
-                                      if (!prev) {
-                                        console.log(e.currentTarget.value);
-                                        return {
-                                          scrape_options: {
-                                            type: "shopify",
-                                            group_variants: e.currentTarget.checked,
-                                          },
-                                        };
-                                      }
-
-                                      return {
-                                        ...prev,
-                                        scrape_options: {
-                                          type: "shopify",
-                                          group_variants: e.currentTarget.checked,
-                                        },
-                                      };
-                                    })
-                                  }
-                                />
-                              </div>
-                            </Match>
-                          </Switch>
-                        </div>
+                        <ScrapingSettings
+                          crawlOptions={crawlOptions}
+                          setCrawlOptions={setCrawlOptions}
+                          errors={crawlErrors}
+                        />
                       </Show>
                     </div>
                   </div>
@@ -1134,6 +550,515 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   );
 };
 export default NewDatasetModal;
+
+const ScrapingSettings = (props: {
+  crawlOptions: FlatCrawlOptions;
+  setCrawlOptions: SetStoreFunction<FlatCrawlOptions>;
+  errors: ReturnType<ValidateFn<FlatCrawlOptions>>["errors"];
+}) => {
+  return (
+    <div>
+      <div class="ml-4 flex flex-col space-y-2 border-neutral-900/10 sm:space-y-0 sm:divide-y sm:divide-neutral-900/10 sm:border-t">
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="scrapingUrl"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Scraping URL
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="The URL of the website you would like to scrape."
+              direction="right"
+            />
+          </label>
+          <input
+            type="text"
+            id="scrapingUrl"
+            name="scrapingUrl"
+            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            value={props.crawlOptions?.site_url ?? ""}
+            onInput={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    site_url: e.currentTarget.value,
+                  };
+                }
+
+                return {
+                  ...prev,
+                  site_url: e.currentTarget.value,
+                };
+              })
+            }
+          />
+        </div>
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="excludePaths"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Exclude Paths
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="URL Patterns to exclude from the crawl. Example: '/admin/*, /login/*"
+              direction="right"
+            />
+          </label>
+          <input
+            type="text"
+            id="excludePaths"
+            name="excludePaths"
+            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            value={props.crawlOptions?.exclude_paths ?? ""}
+            onInput={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    exclude_paths: e.currentTarget.value.split(","),
+                  };
+                }
+
+                return {
+                  ...prev,
+                  exclude_paths: e.currentTarget.value.split(","),
+                };
+              })
+            }
+          />
+        </div>
+
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="includePaths"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Include Paths
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="URL Patterns to include in the crawl. Example: '/docs/*, /blog/*'"
+              direction="right"
+            />
+          </label>
+          <input
+            type="text"
+            id="includePaths"
+            name="includePaths"
+            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            value={props.crawlOptions?.include_paths ?? ""}
+            onInput={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    include_paths: e.currentTarget.value.split(","),
+                  };
+                }
+
+                return {
+                  ...prev,
+                  include_paths: e.currentTarget.value.split(","),
+                };
+              })
+            }
+          />
+        </div>
+
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="excludeTags"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Exclude Tags
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="Specify the HTML tags, classes and ids to exclude from the response. Example 'header, .table-of-contents'"
+              direction="right"
+            />
+          </label>
+          <input
+            type="text"
+            id="excludeTags"
+            name="excludeTags"
+            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            value={props.crawlOptions?.exclude_tags ?? ""}
+            onInput={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    exclude_tags: e.currentTarget.value.split(","),
+                  };
+                }
+                return {
+                  ...prev,
+                  exclude_tags: e.currentTarget.value.split(","),
+                };
+              })
+            }
+          />
+        </div>
+
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="includeTags"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Include Tags
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="Specify the HTML tags, classes and ids to include in the response. Example 'article, .inner-content'"
+              direction="right"
+            />
+          </label>
+          <input
+            type="text"
+            id="includeTags"
+            name="includeTags"
+            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            value={props.crawlOptions?.include_tags ?? ""}
+            onInput={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    include_tags: e.currentTarget.value.split(","),
+                  };
+                }
+
+                return {
+                  ...prev,
+                  include_tags: e.currentTarget.value.split(","),
+                };
+              })
+            }
+          />
+        </div>
+
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="maxDepth"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Max Depth
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="How many levels deep to crawl, defaults to 10"
+              direction="right"
+            />
+          </label>
+          <input
+            type="number"
+            id="maxDepth"
+            name="maxDepth"
+            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            value={props.crawlOptions?.max_depth ?? ""}
+            onInput={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    max_depth: parseInt(e.currentTarget.value),
+                  };
+                }
+
+                return {
+                  ...prev,
+                  max_depth: parseInt(e.currentTarget.value),
+                };
+              })
+            }
+          />
+        </div>
+
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="pageLimit"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Limit (Max Pages to Crawl)
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="Maximum number of pages to crawl, defaults to 1000"
+              direction="right"
+            />
+          </label>
+          <input
+            type="number"
+            id="pageLimit"
+            name="pageLimit"
+            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            value={props.crawlOptions?.limit ?? ""}
+            onInput={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    limit: parseInt(e.currentTarget.value),
+                  };
+                }
+
+                return {
+                  ...prev,
+                  limit: parseInt(e.currentTarget.value),
+                };
+              })
+            }
+          />
+        </div>
+
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="interval"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Interval
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="How often to scrape the website. Defaults to daily."
+              direction="right"
+            />
+          </label>
+          <select
+            id="interval"
+            name="interval"
+            class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            value={props.crawlOptions?.interval ?? ""}
+            onChange={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    interval: e.currentTarget.value as CrawlInterval,
+                  };
+                }
+
+                return {
+                  ...prev,
+                  interval: e.currentTarget.value as CrawlInterval,
+                };
+              })
+            }
+          >
+            <option value="daily">daily</option>
+            <option value="weekly">weekly</option>
+            <option value="monthly">monthly</option>
+          </select>
+        </div>
+
+        <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+          <label
+            for="boostTitles"
+            class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+          >
+            Boost Titles
+            <Tooltip
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              tooltipText="Boost the frequency of titles in the search index such that title matches are prioritized."
+              direction="right"
+            />
+          </label>
+          <input
+            type="checkbox"
+            id="boostTitles"
+            name="boostTitles"
+            class="col-span-2 mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            checked={props.crawlOptions?.boost_titles ?? true}
+            onChange={(e) =>
+              props.setCrawlOptions((prev) => {
+                if (!prev) {
+                  return {
+                    boost_titles: e.currentTarget.checked,
+                  };
+                }
+
+                return {
+                  ...prev,
+                  boost_titles: e.currentTarget.checked,
+                };
+              })
+            }
+          />
+        </div>
+
+        <div class="content-center py-4 sm:grid sm:grid-cols-2 sm:items-start sm:gap-4">
+          <div class="col-span-1 flex">
+            <input
+              type="checkbox"
+              id="useOpenAPI"
+              name="useOpenAPI"
+              class="mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              checked={props.crawlOptions.type === "openapi"}
+              onChange={(e) =>
+                props.setCrawlOptions((prev) => {
+                  if (!e.currentTarget.checked) {
+                    if (prev.type === "openapi") {
+                      return {
+                        ...prev,
+                        type: undefined,
+                      };
+                    }
+                    return {
+                      ...prev,
+                    };
+                  } else {
+                    return {
+                      ...prev,
+                      type: "openapi",
+                    };
+                  }
+                })
+              }
+            />
+
+            <label
+              for="useOpenAPI"
+              class="flex h-full items-center gap-2 pl-1.5 pt-1.5 text-sm font-medium leading-6"
+            >
+              OpenAPI spec
+              <Tooltip
+                body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+                tooltipText="Parse an OpenAPI spec on a specified route"
+                direction="right"
+              />
+            </label>
+          </div>
+          <div class="col-span-1 flex">
+            <input
+              type="checkbox"
+              id="useShopify"
+              name="useShopify"
+              class="mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              checked={props.crawlOptions.type == "shopify"}
+              onChange={(e) =>
+                props.setCrawlOptions((prev) => {
+                  if (!e.currentTarget.checked) {
+                    if (prev.type === "shopify") {
+                      return {
+                        ...prev,
+                        type: undefined,
+                      };
+                    }
+                    return {
+                      ...prev,
+                    };
+                  } else {
+                    return {
+                      type: "shopify" as const,
+                    };
+                  }
+                })
+              }
+            />
+
+            <label
+              for="useShopify"
+              class="flex h-full items-center gap-2 pl-1.5 pt-1.5 text-sm font-medium leading-6"
+            >
+              Is Shopify Store
+              <Tooltip
+                body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+                tooltipText="Toggle if the webpage is a shopify store to scrape the products more accurately"
+                direction="left"
+              />
+            </label>
+          </div>
+        </div>
+
+        <Switch>
+          <Match when={props.crawlOptions.type == "openapi"}>
+            <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+              <label
+                for="openapiSchemaUrl"
+                class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+              >
+                OpenAPI Schema URL
+                <Tooltip
+                  body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+                  tooltipText="URL that will return a *.json or *.yaml file with an OpenAPI schema which pairs with the docs."
+                  direction="right"
+                />
+              </label>
+              <input
+                type="text"
+                id="openapiSchemaUrl"
+                name="openapiSchemaUrl"
+                class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={props.crawlOptions.openapi_schema_url ?? ""}
+                onInput={(e) =>
+                  props.setCrawlOptions((prev) => {
+                    return {
+                      ...prev,
+                      type: "openapi",
+                      openapi_schema_url: e.currentTarget.value,
+                    };
+                  })
+                }
+              />
+            </div>
+
+            <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+              <label
+                for="openapiTag"
+                class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+              >
+                OpenAPI Tag
+                <Tooltip
+                  body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+                  tooltipText="For a site like https://docs.trieve.ai, the tag here would be 'api-reference' because of the API routes being documented at https://docs.trieve.ai/api-reference/* paths."
+                  direction="right"
+                />
+              </label>
+              <input
+                type="text"
+                id="openapiTag"
+                name="openapiTag"
+                class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={props.crawlOptions.openapi_tag ?? ""}
+                onInput={(e) =>
+                  props.setCrawlOptions((prev) => {
+                    return {
+                      ...prev,
+                      type: "openapi",
+                      openapi_tag: e.currentTarget.value,
+                    };
+                  })
+                }
+              />
+            </div>
+          </Match>
+          <Match when={props.crawlOptions.type == "shopify"}>
+            <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+              <label
+                for="groupVariants"
+                class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+              >
+                Group Product Variants
+                <Tooltip
+                  body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+                  tooltipText="This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product"
+                  direction="right"
+                />
+              </label>
+              <input
+                type="checkbox"
+                id="groupVariants"
+                name="groupVariants"
+                class="col-span-2 mt-2.5 block w-fit rounded-md border-[0.5px] border-neutral-300 bg-white px-3 text-start placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                checked={props.crawlOptions.group_variants ?? true}
+                onChange={(e) =>
+                  props.setCrawlOptions((prev) => {
+                    return {
+                      ...prev,
+                      scrape_options: {
+                        type: "shopify",
+                        group_variants: e.currentTarget.checked,
+                      },
+                    };
+                  })
+                }
+              />
+            </div>
+          </Match>
+        </Switch>
+      </div>
+    </div>
+  );
+};
 
 const BM25Settings = (props: {
   config: DatasetConfig;

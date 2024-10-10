@@ -7597,9 +7597,11 @@
       "CrawlShopifyOptions": {
         "type": "object",
         "title": "CrawlShopifyOptions",
+        "description": "Options for Crawling Shopify",
         "properties": {
-          "boost_item_names": {
+          "group_variants": {
             "type": "boolean",
+            "description": "This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product. default: true",
             "nullable": true
           }
         }
