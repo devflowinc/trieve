@@ -107,14 +107,16 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
       return;
     }
 
-    const crawlValidateResult = validateFlatCrawlOptions(
-      unwrappedFlatCrawlOptions,
-    );
-    if (crawlValidateResult.valid) {
-      setCrawlErrors({});
-    } else {
-      setCrawlErrors(crawlValidateResult.errors);
-      return;
+    if (showScraping()) {
+      const crawlValidateResult = validateFlatCrawlOptions(
+        unwrappedFlatCrawlOptions,
+      );
+      if (crawlValidateResult.valid) {
+        setCrawlErrors({});
+      } else {
+        setCrawlErrors(crawlValidateResult.errors);
+        return;
+      }
     }
 
     try {
@@ -123,7 +125,9 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
         name: name(),
         organizationId: userContext.selectedOrg().id,
         serverConfig: curServerConfig,
-        crawlOptions: unflattenCrawlOptions(unwrappedFlatCrawlOptions),
+        crawlOptions: showScraping()
+          ? unflattenCrawlOptions(unwrappedFlatCrawlOptions)
+          : undefined,
       });
 
       if (fillWithExampleData()) {
