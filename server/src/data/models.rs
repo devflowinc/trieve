@@ -6326,7 +6326,9 @@ pub enum ScrapeOptions {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 #[schema(title = "CrawlShopifyOptions")]
+/// Options for Crawling Shopify
 pub struct CrawlShopifyOptions {
+    /// This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product. default: true
     pub group_variants: Option<bool>,
 }
 
