@@ -17,7 +17,7 @@ use trieve_server::{
     },
 };
 use trieve_server::{
-    data::models::{CrawlRequest, DatasetConfiguration, RedisPool, ScrapeOptions},
+    data::models::{CrawlRequest, DatasetConfiguration, RedisPool, ScrapeOptions, CrawlShopifyOptions},
     operators::crawl_operator::{get_crawl_from_firecrawl, Status},
 };
 use trieve_server::{
@@ -89,8 +89,23 @@ fn create_chunk_req_payload(
         product.title, variant.title, product.body_html
     );
 
-    let semantic_boost_phrase = product.title.clone();
-    let fulltext_boost_phrase = product.title.clone();
+    let group_variants = if let Some(ScrapeOptions::Shopify(CrawlShopifyOptions{ group_variants: Some(group_variants), .. })) = scrape_request.crawl_options.scrape_options {
+        group_variants
+    } else {
+        true
+    };
+
+    let semantic_boost_phrase = if group_variants {
+        variant.title.clone()
+    } else {
+        product.title.clone() 
+    };
+
+    let fulltext_boost_phrase = if group_variants {
+        variant.title.clone()
+    } else {
+        product.title.clone()
+    };
 
     Ok(ChunkReqPayload {
         chunk_html: Some(chunk_html),
@@ -98,7 +113,18 @@ fn create_chunk_req_payload(
         tag_set: Some(product.tags.clone()),
         num_value: variant.price.parse().ok(),
         metadata: serde_json::to_value(product.clone()).ok(),
-        tracking_id: Some(variant.id.to_string()),
+        tracking_id: if group_variants {
+                Some(variant.id.to_string())
+            } else {
+                Some(product.id.to_string())
+            },
+        group_tracking_ids: if group_variants {
+            Some(vec![
+                product.id.to_string()
+            ])
+        } else {
+            None
+        },
         image_urls: Some(image_urls),
         fulltext_boost: if scrape_request.crawl_options.boost_titles.unwrap_or(true) {
             Some(FullTextBoost {
