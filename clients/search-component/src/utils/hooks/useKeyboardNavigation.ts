@@ -19,9 +19,9 @@ export const useKeyboardNavigation = () => {
       }
     }
 
-    if (e.code === "ArrowDown" && inputRef.current === document.activeElement) {
-      document.getElementById(`trieve-search-item-0`)?.focus();
-    }
+    // if (e.code === "ArrowDown" && inputRef.current === document.activeElement) {
+    //   document.getElementById(`trieve-search-item-0`)?.focus();
+    // }
   };
 
   useEffect(() => {
@@ -34,17 +34,17 @@ export const useKeyboardNavigation = () => {
   const onUpOrDownClicked = (index: number, code: string) => {
     if (code === "ArrowDown") {
       if (index < results.length - 1) {
-        document.getElementById(`trieve-search-item-${index + 1}`)?.focus();
+        // document.getElementById(`trieve-search-item-${index + 1}`)?.focus();
       } else {
-        document.getElementById(`trieve-search-item-0`)?.focus();
+        // document.getElementById(`trieve-search-item-0`)?.focus();
       }
     }
 
     if (code === "ArrowUp") {
       if (index > 0) {
-        document.getElementById(`trieve-search-item-${index - 1}`)?.focus();
+        // document.getElementById(`trieve-search-item-${index - 1}`)?.focus();
       } else {
-        inputRef.current?.focus();
+        // inputRef.current?.focus();
       }
     }
   };

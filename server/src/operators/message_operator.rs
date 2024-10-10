@@ -19,11 +19,11 @@ use crossbeam_channel::unbounded;
 use diesel_async::RunQueryDsl;
 use futures::StreamExt;
 use futures_util::stream;
-use openai_dive::v1::resources::chat::{ImageUrl, ImageUrlType};
+use openai_dive::v1::resources::chat::{DeltaChatMessage, ImageUrl, ImageUrlType};
 use openai_dive::v1::{
     api::Client,
     resources::{
-        chat::{ChatCompletionParameters, ChatMessage, ChatMessageContent, Role},
+        chat::{ChatCompletionParameters, ChatMessage, ChatMessageContent},
         shared::StopToken,
     },
 };
@@ -284,6 +284,7 @@ pub async fn stream_response(
     };
 
     let client = Client {
+        headers: None,
         project: None,
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
@@ -312,12 +313,9 @@ pub async fn stream_response(
     let use_message_to_query_prompt = dataset_config.USE_MESSAGE_TO_QUERY_PROMPT;
     if create_message_req_payload.search_query.is_none() && use_message_to_query_prompt {
         let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
-        let gen_inference_msgs = vec![ChatMessage {
-            role: Role::User,
+        let gen_inference_msgs = vec![ChatMessage::User {
             content: ChatMessageContent::Text(format!("{}\n{}", message_to_query_prompt, query)),
-            tool_calls: None,
             name: None,
-            tool_call_id: None,
         }];
 
         let gen_inference_parameters = ChatCompletionParameters {
@@ -330,7 +328,7 @@ pub async fn stream_response(
             stop: dataset_config.STOP_TOKENS.clone().map(StopToken::Array),
             top_p: None,
             n: None,
-            max_tokens: dataset_config.MAX_TOKENS.map(|max| max as u32),
+            max_completion_tokens: dataset_config.MAX_TOKENS.map(|max| max as u32),
             logit_bias: None,
             user: None,
             response_format: None,
@@ -339,6 +337,7 @@ pub async fn stream_response(
             logprobs: None,
             top_logprobs: None,
             seed: None,
+            ..Default::default()
         };
 
         let search_query_from_message_to_query_prompt = client
@@ -352,9 +351,19 @@ pub async fn stream_response(
             .get(0)
             .expect("No response for LLM completion")
             .message
-            .content
         {
-            ChatMessageContent::Text(query) => query.clone(),
+            ChatMessage::User {
+                content: ChatMessageContent::Text(query),
+                ..
+            }
+            | ChatMessage::System {
+                content: ChatMessageContent::Text(query),
+                ..
+            }
+            | ChatMessage::Assistant {
+                content: Some(ChatMessageContent::Text(query)),
+                ..
+            } => query.clone(),
             _ => "".to_string(),
         };
     }
@@ -466,9 +475,19 @@ pub async fn stream_response(
         match &openai_messages
             .last()
             .expect("There needs to be at least 1 prior message")
-            .content
         {
-            ChatMessageContent::Text(text) => text.clone(),
+            ChatMessage::User {
+                content: ChatMessageContent::Text(text),
+                ..
+            }
+            | ChatMessage::System {
+                content: ChatMessageContent::Text(text),
+                ..
+            }
+            | ChatMessage::Assistant {
+                content: Some(ChatMessageContent::Text(text)),
+                ..
+            } => text.clone(),
             _ => "".to_string(),
         },
         rag_prompt,
@@ -493,12 +512,22 @@ pub async fn stream_response(
         .enumerate()
         .map(|(index, message)| {
             if index == openai_messages.len() - 1 {
-                ChatMessage {
-                    role: message.role,
-                    content: last_message.clone(),
-                    name: message.name,
-                    tool_calls: None,
-                    tool_call_id: None,
+                match message {
+                    ChatMessage::Assistant { name, .. } => ChatMessage::Assistant {
+                        content: Some(last_message.clone()),
+                        name,
+                        tool_calls: None,
+                        refusal: None,
+                    },
+                    ChatMessage::System { name, .. } => ChatMessage::System {
+                        content: last_message.clone(),
+                        name,
+                    },
+                    ChatMessage::User { name, .. } => ChatMessage::User {
+                        content: last_message.clone(),
+                        name,
+                    },
+                    _ => message,
                 }
             } else {
                 message
@@ -513,11 +542,8 @@ pub async fn stream_response(
         }) = create_message_req_payload.llm_options
         {
             if image_config.use_images.unwrap_or(false) {
-                open_ai_messages.push(ChatMessage {
+                open_ai_messages.push(ChatMessage::User {
                     name: None,
-                    role: Role::User,
-                    tool_calls: None,
-                    tool_call_id: None,
                     content: ChatMessageContent::ImageUrl(
                         images
                             .iter()
@@ -557,7 +583,7 @@ pub async fn stream_response(
             .PRESENCE_PENALTY
             .map(|x| x as f32)
             .or(llm_options.presence_penalty);
-        parameters.max_tokens = dataset_config
+        parameters.max_completion_tokens = dataset_config
             .MAX_TOKENS
             .map(|x| x as u32)
             .or(llm_options.max_tokens);
@@ -607,9 +633,20 @@ pub async fn stream_response(
         let completion_content = match &assistant_completion
             .choices
             .get(0)
-            .map(|chat_completion_choice| chat_completion_choice.message.content.clone())
+            .map(|chat_completion_choice| chat_completion_choice.message.clone())
         {
-            Some(ChatMessageContent::Text(text)) => text.clone(),
+            Some(ChatMessage::User {
+                content: ChatMessageContent::Text(text),
+                ..
+            })
+            | Some(ChatMessage::System {
+                content: ChatMessageContent::Text(text),
+                ..
+            })
+            | Some(ChatMessage::Assistant {
+                content: Some(ChatMessageContent::Text(text)),
+                ..
+            }) => text.clone(),
             _ => "".to_string(),
         };
 
@@ -726,8 +763,25 @@ pub async fn stream_response(
             let chat_content = response
                 .choices
                 .get(0)
-                .map(|chat_completion_content| chat_completion_content.delta.content.clone())
+                .map(
+                    |chat_completion_content| match &chat_completion_content.delta {
+                        DeltaChatMessage::User {
+                            content: ChatMessageContent::Text(topic),
+                            ..
+                        }
+                        | DeltaChatMessage::System {
+                            content: ChatMessageContent::Text(topic),
+                            ..
+                        }
+                        | DeltaChatMessage::Assistant {
+                            content: Some(ChatMessageContent::Text(topic)),
+                            ..
+                        } => Some(topic.clone()),
+                        _ => None,
+                    },
+                )
                 .unwrap_or(None);
+
             if let Some(message) = chat_content.clone() {
                 s.send(message).unwrap();
             }
@@ -763,15 +817,12 @@ pub async fn get_topic_string(
     first_message: String,
     dataset: &Dataset,
 ) -> Result<String, ServiceError> {
-    let prompt_topic_message = ChatMessage {
-        role: Role::User,
+    let prompt_topic_message = ChatMessage::User {
         content: ChatMessageContent::Text(format!(
             "Write a 2-3 word topic name from the following prompt: {}",
             first_message
         )),
-        tool_calls: None,
         name: None,
-        tool_call_id: None,
     };
     let parameters = ChatCompletionParameters {
         model,
@@ -781,7 +832,6 @@ pub async fn get_topic_string(
         top_p: None,
         n: None,
         stop: None,
-        max_tokens: None,
         presence_penalty: Some(0.8),
         frequency_penalty: Some(0.8),
         logit_bias: None,
@@ -792,6 +842,7 @@ pub async fn get_topic_string(
         logprobs: None,
         top_logprobs: None,
         seed: None,
+        ..Default::default()
     };
 
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -816,6 +867,7 @@ pub async fn get_topic_string(
     };
 
     let client = Client {
+        headers: None,
         api_key: llm_api_key,
         project: None,
         http_client: reqwest::Client::new(),
@@ -836,9 +888,19 @@ pub async fn get_topic_string(
             "No response for LLM completion".to_string(),
         ))?
         .message
-        .content
     {
-        ChatMessageContent::Text(topic) => topic.clone(),
+        ChatMessage::User {
+            content: ChatMessageContent::Text(topic),
+            ..
+        }
+        | ChatMessage::System {
+            content: ChatMessageContent::Text(topic),
+            ..
+        }
+        | ChatMessage::Assistant {
+            content: Some(ChatMessageContent::Text(topic)),
+            ..
+        } => topic.clone(),
         _ => "".to_string(),
     };
 

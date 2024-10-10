@@ -5,10 +5,7 @@ use crate::{
     handlers::chunk_handler::{FullTextBoost, SemanticBoost},
 };
 use murmur3::murmur3_32;
-use openai_dive::v1::{
-    helpers::format_response,
-    resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingResponse},
-};
+use openai_dive::v1::resources::embedding::EmbeddingInput;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, io::Cursor, ops::IndexMut};
 
@@ -23,6 +20,11 @@ pub struct EmbeddingParameters {
     pub model: String,
     /// Truncate the input to the maximum length of the model.
     pub truncate: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DenseEmbedData {
+    pub data: Vec<Vec<f32>>,
 }
 
 #[tracing::instrument]
@@ -128,28 +130,16 @@ pub async fn get_dense_vector(
             e,
             e.to_string()
         ))
+    })?
+    .into_json::<DenseEmbedData>()
+    .map_err(|err| {
+        ServiceError::InternalServerError(format!(
+            "Failed to format response from embeddings server {:?}",
+            err
+        ))
     })?;
 
-    let embeddings: EmbeddingResponse =
-        format_response(embeddings_resp.into_string().unwrap_or("".to_string())).map_err(|e| {
-            log::error!("Failed to format response from embeddings server {:?}", e);
-            ServiceError::InternalServerError(
-                "Failed to format response from embeddings server".to_owned(),
-            )
-        })?;
-
-    let mut vectors: Vec<Vec<f32>> = embeddings
-    .data
-    .into_iter()
-    .map(|x| match x.embedding {
-        EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
-        EmbeddingOutput::Base64(_) => {
-            log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
-            vec![]
-        }
-    })
-    .collect();
-
+    let mut vectors: Vec<Vec<f32>> = embeddings_resp.data;
     if vectors.iter().any(|x| x.is_empty()) {
         return Err(ServiceError::InternalServerError(
             "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
@@ -425,42 +415,28 @@ pub async fn get_dense_vectors(
 
             let embedding_api_key = embedding_api_key.clone();
 
-            let vectors_resp = async move {
+            
+            async move {
                 let embeddings_resp = cur_client
-                .post(format!("{}/embeddings?api-version=2023-05-15", url))
-                .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
-                .header("api-key", &embedding_api_key.clone())
-                .header("Content-Type", "application/json")
-                .json(&parameters)
-                .send()
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Failed to send message to embedding server".to_string())
-                })?
-                .text()
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Failed to get text from embeddings".to_string())
-                })?;
-
-                let embeddings: EmbeddingResponse = format_response(embeddings_resp.clone())
-                    .map_err(move |_e| {
-                        log::error!("Failed to format response from embeddings server {:?}", embeddings_resp);
-                        ServiceError::InternalServerError(
-                            format!("Failed to format response from embeddings server {:?}", embeddings_resp)
-                        )
+                    .post(format!("{}/embeddings?api-version=2023-05-15", url))
+                    .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
+                    .header("api-key", &embedding_api_key.clone())
+                    .header("Content-Type", "application/json")
+                    .json(&parameters)
+                    .send()
+                    .await
+                    .map_err(|_| {
+                        ServiceError::BadRequest("Failed to send message to embedding server".to_string())
+                    })?
+                    .json::<DenseEmbedData>()
+                    .await
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!("Failed to format text from embeddings {}", err))
                     })?;
 
-                let vectors_and_boosts: Vec<(Vec<f32>, &(usize, SemanticBoost))> = embeddings
+                let vectors_and_boosts: Vec<(Vec<f32>, &(usize, SemanticBoost))> = embeddings_resp
                     .data
                     .into_iter()
-                    .map(|x| match x.embedding {
-                        EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
-                        EmbeddingOutput::Base64(_) => {
-                            log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
-                            vec![]
-                        }
-                    })
                     .zip(thirty_distances)
                     .collect();
 
@@ -471,9 +447,7 @@ pub async fn get_dense_vectors(
                     }
 
                 Ok(vectors_and_boosts)
-            };
-
-            vectors_resp
+            }
         })
         .collect();
 
@@ -509,7 +483,9 @@ pub async fn get_dense_vectors(
 
             let embedding_api_key = embedding_api_key.clone();
 
-                let vectors_resp = async move {
+                
+
+                async move {
                     let embeddings_resp = cur_client
                     .post(format!("{}/embeddings?api-version=2023-05-15", url))
                     .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
@@ -521,41 +497,16 @@ pub async fn get_dense_vectors(
                     .map_err(|_| {
                         ServiceError::BadRequest("Failed to send message to embedding server".to_string())
                     })?
-                    .text()
+                    .json::<DenseEmbedData>()
                     .await
-                    .map_err(|_| {
-                        ServiceError::BadRequest("Failed to get text from embeddings".to_string())
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!("Failed to get text from embeddings {:?}", err))
                     })?;
 
-                    let embeddings: EmbeddingResponse = format_response(embeddings_resp.clone())
-                        .map_err(move |_e| {
-                            log::error!("Failed to format response from embeddings server {:?}", embeddings_resp);
-                            ServiceError::InternalServerError(
-                                format!("Failed to format response from embeddings server {:?}", embeddings_resp)
-                            )
-                        })?;
+                    let vectors: Vec<Vec<f32>> = embeddings_resp.data;
 
-                let vectors: Vec<Vec<f32>> = embeddings
-                    .data
-                    .into_iter()
-                    .map(|x| match x.embedding {
-                        EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
-                        EmbeddingOutput::Base64(_) => {
-                            log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
-                            vec![]
-                        }
-                    })
-                    .collect();
-
-                    if vectors.iter().any(|x| x.is_empty()) {
-                        return Err(ServiceError::InternalServerError(
-                            "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
-                        ));
-                    }
                     Ok(vectors)
-                };
-
-                vectors_resp
+                }
 
             })
         .collect();
