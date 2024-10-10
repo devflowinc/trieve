@@ -32,13 +32,15 @@ const defaultCrawlOptions: CrawlOptions = {
 const normalizeOpenAPIOptions = (
   options: CrawlOpenAPIOptions | null | undefined,
 ) => {
-  if (options) {
+  if (options && options.type == "openapi") {
     if (options.openapi_schema_url === "") {
       return null;
     }
     if (!options.openapi_tag && !options.openapi_schema_url) {
       return null;
     }
+    return options;
+  } else if (options && options.type == "shopify") {
     return options;
   }
   return null;
