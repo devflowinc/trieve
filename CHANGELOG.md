@@ -1,5 +1,70 @@
 # Changelog
 
+## [0.13.0](https://github.com/devflowinc/trieve/compare/v0.12.0...v0.13.0) (2024-10-10)
+
+
+### Features
+
+* add /topic/clone to the ts-sdk ([8b6fe7e](https://github.com/devflowinc/trieve/commit/8b6fe7ed261f75b68fa46dd13c7eed513340d9eb))
+* add glasskube argocd app ([afc7497](https://github.com/devflowinc/trieve/commit/afc7497b7f53f5c097f2dee148603da5ca13bdb7))
+* add ImageConfig for sending images to the llm ([1f12579](https://github.com/devflowinc/trieve/commit/1f12579c56bc53b422afad605dff64cd2bf710b5))
+* add kustomization ([9480d6d](https://github.com/devflowinc/trieve/commit/9480d6d7b9f6fa9f550327c5b29cfafbc6adb3fc))
+* add packages kustomization ([92ce2b0](https://github.com/devflowinc/trieve/commit/92ce2b0c507954bba0a71565803bb8741a862f02))
+* add prices and images to ecomm chat ([9097194](https://github.com/devflowinc/trieve/commit/90971946ecb7c199c17a5c5676fb2e090999f4b1))
+* add trieve hackernews application ([9b5620e](https://github.com/devflowinc/trieve/commit/9b5620eaba90847c95b0f933160eca6275bdd08f))
+* added useImages to the frontend as a parameter ([c2db61c](https://github.com/devflowinc/trieve/commit/c2db61cb3c7544754a6786c0453666ea98325e48))
+* auto focus input field ([81a0567](https://github.com/devflowinc/trieve/commit/81a0567d7f1a6bc999d4eed17299cac2c14c587c))
+* bm25 settings when creating new dataset ([e1346c7](https://github.com/devflowinc/trieve/commit/e1346c72a65ffeeb72caa8e113efacf216958442))
+* clone topic and message route ([4471cb8](https://github.com/devflowinc/trieve/commit/4471cb8aa67a9fc3724fead41672737abee6839c))
+* clone topic in chat frontend ([71c20d6](https://github.com/devflowinc/trieve/commit/71c20d65d0295d6af7fbd8dc758095e75f4f1b51))
+* delete applicationset ([0e29e5a](https://github.com/devflowinc/trieve/commit/0e29e5a308863a0677a878548d54cc8348a9bbf4))
+* headless analytics ([a59466d](https://github.com/devflowinc/trieve/commit/a59466de219ebf8b7b9500a9801ddd07d0331eb9))
+* let embeddings share, gpu, update hash, increase splade-query doc memory ([72dfab6](https://github.com/devflowinc/trieve/commit/72dfab6d0cb46119013e2b8bed35285cb8f436a3))
+* move package into folder ([596740f](https://github.com/devflowinc/trieve/commit/596740f767f123ad3f29f973cb3404518119eb0f))
+* move to HEAD ([8c0187d](https://github.com/devflowinc/trieve/commit/8c0187d17281a223f0c77115e3ab62e037cffaca))
+* remove kustomization ([22175f0](https://github.com/devflowinc/trieve/commit/22175f06ebf8e826567f4ff769afc27a9bd59a39))
+* set argocd source to pmig/trieve HEAD ([5b0fd13](https://github.com/devflowinc/trieve/commit/5b0fd1325be47e0988a73b67b73b0ac2de32295f))
+* show first 3 lines of results ([1943428](https://github.com/devflowinc/trieve/commit/194342874fe3de57332be55ae777699b5657457d))
+* show vote score on dashboard rag table ([8c97b2e](https://github.com/devflowinc/trieve/commit/8c97b2ee5ea64b153e2cd2a6e129d514b91cf3cb))
+* switch glasskube argocd deployment to main branch ([46ee59b](https://github.com/devflowinc/trieve/commit/46ee59bfcf531e50e28c88267095c4c50f457dfc))
+* upgrade glasskube to v0.24.0 ([3c8661e](https://github.com/devflowinc/trieve/commit/3c8661ecd013ca2a2ab6606b370cab3ed262c974))
+* upgrade to the latest trieve-gcp package ([3fafd77](https://github.com/devflowinc/trieve/commit/3fafd77fe3c56a1e5233c0c9c37823142d1af369))
+* use same clickhouse and postgres message ids ([5fc7799](https://github.com/devflowinc/trieve/commit/5fc779933fe72f214d5518811184a3516bbfa9b8))
+* use tmp deployment branch ([2733380](https://github.com/devflowinc/trieve/commit/2733380f60170afbc009454c9e2825ecf404ef3f))
+* utility functions to get TR-QueryId on all RAG based routes ([c1dfa03](https://github.com/devflowinc/trieve/commit/c1dfa033f2326a108de111ca98e66e1b9421d216))
+* validation for bm25 ([3213aa1](https://github.com/devflowinc/trieve/commit/3213aa193aba1772d6553c7abd5f7667d0a7b02b))
+
+
+### Cleanup
+
+* avoid panic when ditto api key is not set ([5c343d8](https://github.com/devflowinc/trieve/commit/5c343d8ca9ebae2521ccd580e30de56ecea405a6))
+* ignore clippy too many args ([b064266](https://github.com/devflowinc/trieve/commit/b0642662d3638960bb315ebc6602a7367690a28c))
+
+
+### Bug Fixes
+
+* autofocus chatInput on open ([5510dae](https://github.com/devflowinc/trieve/commit/5510dae2d28014126919a9f58057f4a7f8f0a03c))
+* disable keycloak builtin ingress ([97bf136](https://github.com/devflowinc/trieve/commit/97bf136df6f5f5220a0f48e7112242f2cd98108e))
+* eslint ([5cb6c43](https://github.com/devflowinc/trieve/commit/5cb6c43f101f9732e2fbe9c5abd3704529b819c5))
+* keep track of message id for voting ([5dcf9c1](https://github.com/devflowinc/trieve/commit/5dcf9c13454f1873f40f6c62ea7231565cfda8c1))
+* update release CI action to push dittofeed and crawl worker ([7636b56](https://github.com/devflowinc/trieve/commit/7636b567e5799da02f81918720186c6728c8f14b))
+* use the search events search id in RAG route ([4b04a36](https://github.com/devflowinc/trieve/commit/4b04a365a07ac579ce2442c5d5c02d10c8b62400))
+
+
+### Other
+
+* add keycloak extra service with gcp backend config POC ([383fc7f](https://github.com/devflowinc/trieve/commit/383fc7f43eeca9aa864117ac27cf97fea8d23b57))
+* change to single ingress for all services and add gcp managed certificate ([08cfa7e](https://github.com/devflowinc/trieve/commit/08cfa7e28a249959c41fd092a5cd99773c76a61e))
+* fix keycloak backendconfig ([e52d95f](https://github.com/devflowinc/trieve/commit/e52d95f05f5d1dfef893fcd7bfb82b2f84dfe041))
+* move combined ingress to base ([a60aa4d](https://github.com/devflowinc/trieve/commit/a60aa4da81430a0bb245c62a6e4c67af75174353))
+
+
+### Docs
+
+* add TR-QueryID response header to the redoc spec ([f60a300](https://github.com/devflowinc/trieve/commit/f60a3000ea7922cc259f95a5889e7f42c6b8a0db))
+* cleanup response types for /chunk/search ([f59a834](https://github.com/devflowinc/trieve/commit/f59a834986b9e5cbe45669d1ebc85db487ce81cf))
+* update TR-Dataset and TR-Organization to be uuid::Uuid everywhere ([2345823](https://github.com/devflowinc/trieve/commit/2345823653c3edd0759fbf426b4539a93ac2f5c1))
+
 ## [0.12.0](https://github.com/devflowinc/trieve/compare/v0.11.9-pre...v0.12.0) (2024-10-07)
 
 
