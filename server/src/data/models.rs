@@ -6541,7 +6541,27 @@ pub struct CrawlOptions {
     /// Boost titles such that keyword matches in titles are prioritized in search results. Strongly recommended to leave this on. Defaults to true.
     pub boost_titles: Option<bool>,
     /// Options for including an openapi spec in the crawl
-    pub openapi_options: Option<CrawlOpenAPIOptions>,
+    pub scrape_options: Option<ScrapeOptions>,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[serde(tag = "type")]
+/// Options for including an openapi spec or shopify settigns
+pub enum ScrapeOptions {
+    /// OpenAPI Scrape Options
+    #[serde(rename = "openapi")]
+    OpenApi(CrawlOpenAPIOptions),
+    /// Shopify Scrape Options
+    #[serde(rename = "shopify")]
+    Shopify(CrawlShopifyOptions),
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(title = "CrawlShopifyOptions")]
+/// Options for Crawling Shopify
+pub struct CrawlShopifyOptions {
+    /// This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product. default: true
+    pub group_variants: Option<bool>,
 }
 
 impl CrawlOptions {
@@ -6556,7 +6576,7 @@ impl CrawlOptions {
             exclude_paths: self.exclude_paths.clone().or(other.exclude_paths.clone()),
             max_depth: self.max_depth.or(other.max_depth),
             boost_titles: self.boost_titles.or(other.boost_titles),
-            openapi_options: self.openapi_options.clone(),
+            scrape_options: self.scrape_options.clone(),
         }
     }
 }
