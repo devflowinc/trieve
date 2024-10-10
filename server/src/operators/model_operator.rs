@@ -24,7 +24,20 @@ pub struct EmbeddingParameters {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DenseEmbedData {
-    pub data: Vec<Vec<f32>>,
+    pub data: Vec<EmbeddingInner>,
+}
+
+impl DenseEmbedData {
+    pub fn to_vec(&self) -> Vec<Vec<f32>> {
+        self.data.iter().map(|inner| {
+            inner.embedding.clone()
+        }).collect()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmbeddingInner {
+    embedding: Vec<f32>,
 }
 
 #[tracing::instrument]
@@ -116,7 +129,7 @@ pub async fn get_dense_vector(
         truncate: true,
     };
 
-    let embeddings_resp = ureq::post(&format!(
+    let embeddings_resp_a = ureq::post(&format!(
         "{}/embeddings?api-version=2023-05-15",
         embedding_base_url
     ))
@@ -130,16 +143,20 @@ pub async fn get_dense_vector(
             e,
             e.to_string()
         ))
-    })?
-    .into_json::<DenseEmbedData>()
-    .map_err(|err| {
-        ServiceError::InternalServerError(format!(
-            "Failed to format response from embeddings server {:?}",
-            err
-        ))
     })?;
 
-    let mut vectors: Vec<Vec<f32>> = embeddings_resp.data;
+    println!("data {:?}", embeddings_resp_a);
+
+    let embeddings_resp = embeddings_resp_a
+        .into_json::<DenseEmbedData>()
+        .map_err(|err| {
+            ServiceError::InternalServerError(format!(
+                "Failed to format response from embeddings server {:?}",
+                err
+            ))
+        })?;
+
+    let mut vectors: Vec<Vec<f32>> = embeddings_resp.to_vec();
     if vectors.iter().any(|x| x.is_empty()) {
         return Err(ServiceError::InternalServerError(
             "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
@@ -435,7 +452,7 @@ pub async fn get_dense_vectors(
                     })?;
 
                 let vectors_and_boosts: Vec<(Vec<f32>, &(usize, SemanticBoost))> = embeddings_resp
-                    .data
+                    .to_vec()
                     .into_iter()
                     .zip(thirty_distances)
                     .collect();
@@ -503,7 +520,7 @@ pub async fn get_dense_vectors(
                         ServiceError::BadRequest(format!("Failed to get text from embeddings {:?}", err))
                     })?;
 
-                    let vectors: Vec<Vec<f32>> = embeddings_resp.data;
+                    let vectors: Vec<Vec<f32>> = embeddings_resp.to_vec();
 
                     Ok(vectors)
                 }
