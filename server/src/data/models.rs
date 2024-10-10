@@ -6309,7 +6309,7 @@ pub struct CrawlOptions {
     /// Boost titles such that keyword matches in titles are prioritized in search results. Strongly recommended to leave this on. Defaults to true.
     pub boost_titles: Option<bool>,
     /// Options for including an openapi spec in the crawl
-    pub scrape_options: Option<ScrapeOptions>
+    pub scrape_options: Option<ScrapeOptions>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -6321,7 +6321,7 @@ pub enum ScrapeOptions {
     OpenApi(CrawlOpenAPIOptions),
     /// Shopify Scrape Options
     #[serde(rename = "shopify")]
-    Shopify(CrawlShopifyOptions)
+    Shopify(CrawlShopifyOptions),
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]

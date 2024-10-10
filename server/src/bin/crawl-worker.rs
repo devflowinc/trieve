@@ -17,7 +17,9 @@ use trieve_server::{
     },
 };
 use trieve_server::{
-    data::models::{CrawlRequest, DatasetConfiguration, RedisPool, ScrapeOptions, CrawlShopifyOptions},
+    data::models::{
+        CrawlRequest, CrawlShopifyOptions, DatasetConfiguration, RedisPool, ScrapeOptions,
+    },
     operators::crawl_operator::{get_crawl_from_firecrawl, Status},
 };
 use trieve_server::{
@@ -89,7 +91,11 @@ fn create_chunk_req_payload(
         product.title, variant.title, product.body_html
     );
 
-    let group_variants = if let Some(ScrapeOptions::Shopify(CrawlShopifyOptions{ group_variants: Some(group_variants), .. })) = scrape_request.crawl_options.scrape_options {
+    let group_variants = if let Some(ScrapeOptions::Shopify(CrawlShopifyOptions {
+        group_variants: Some(group_variants),
+        ..
+    })) = scrape_request.crawl_options.scrape_options
+    {
         group_variants
     } else {
         true
@@ -98,7 +104,7 @@ fn create_chunk_req_payload(
     let semantic_boost_phrase = if group_variants {
         variant.title.clone()
     } else {
-        product.title.clone() 
+        product.title.clone()
     };
 
     let fulltext_boost_phrase = if group_variants {
@@ -114,14 +120,12 @@ fn create_chunk_req_payload(
         num_value: variant.price.parse().ok(),
         metadata: serde_json::to_value(product.clone()).ok(),
         tracking_id: if group_variants {
-                Some(variant.id.to_string())
-            } else {
-                Some(product.id.to_string())
-            },
+            Some(variant.id.to_string())
+        } else {
+            Some(product.id.to_string())
+        },
         group_tracking_ids: if group_variants {
-            Some(vec![
-                product.id.to_string()
-            ])
+            Some(vec![product.id.to_string()])
         } else {
             None
         },
@@ -200,7 +204,9 @@ async fn get_chunks_with_firecrawl(
     let mut chunks = vec![];
     let mut spec = None;
 
-    if let Some(ScrapeOptions::OpenApi(openapi_options)) = scrape_request.crawl_options.scrape_options.clone() {
+    if let Some(ScrapeOptions::OpenApi(openapi_options)) =
+        scrape_request.crawl_options.scrape_options.clone()
+    {
         let client = reqwest::Client::new();
 
         let schema = match client
@@ -313,7 +319,9 @@ async fn get_chunks_with_firecrawl(
         let page_tags = get_tags(page_link.clone());
 
         if let Some(spec) = &spec {
-            if let Some(ScrapeOptions::OpenApi(ref openapi_options)) = scrape_request.crawl_options.scrape_options {
+            if let Some(ScrapeOptions::OpenApi(ref openapi_options)) =
+                scrape_request.crawl_options.scrape_options
+            {
                 if page_tags.contains(&openapi_options.openapi_tag) {
                     if let Some(last_tag) = page_tags.last() {
                         // try to find a operation in the spec with an operation_id that matches the last tag directly, with - replaced by _ or vice versa
