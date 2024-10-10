@@ -28,7 +28,7 @@ use itertools::Itertools;
 use openai_dive::v1::{
     api::Client,
     resources::chat::{
-        ChatCompletionChoice, ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
+        ChatCompletionChoice, ChatCompletionParameters, ChatMessage, ChatMessageContent,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -839,12 +839,9 @@ pub async fn get_suggested_queries(
         query_style
     ));
 
-    let message = ChatMessage {
-        role: Role::User,
+    let message = ChatMessage::User {
         content,
-        tool_calls: None,
         name: None,
-        tool_call_id: None,
     };
 
     let parameters = ChatCompletionParameters {
@@ -855,7 +852,7 @@ pub async fn get_suggested_queries(
         top_p: None,
         n: None,
         stop: None,
-        max_tokens: None,
+        max_completion_tokens: None,
         presence_penalty: Some(0.8),
         frequency_penalty: Some(0.8),
         logit_bias: None,
@@ -866,9 +863,11 @@ pub async fn get_suggested_queries(
         logprobs: None,
         top_logprobs: None,
         seed: None,
+        ..Default::default()
     };
 
     let client = Client {
+        headers: None,
         project: None,
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
@@ -888,19 +887,26 @@ pub async fn get_suggested_queries(
         .unwrap_or(&ChatCompletionChoice {
             logprobs: None,
             index: 0,
-            message: ChatMessage {
-                role: Role::User,
+            message: ChatMessage::User {
                 content: ChatMessageContent::Text("".to_string()),
-                tool_calls: None,
                 name: None,
-                tool_call_id: None,
             },
             finish_reason: None,
         })
         .message
-        .content
     {
-        ChatMessageContent::Text(content) => content.clone(),
+        ChatMessage::User {
+            content: ChatMessageContent::Text(content),
+            ..
+        }
+        | ChatMessage::System {
+            content: ChatMessageContent::Text(content),
+            ..
+        }
+        | ChatMessage::Assistant {
+            content: Some(ChatMessageContent::Text(content)),
+            ..
+        } => content.clone(),
         _ => "".to_string(),
     }
     .split('\n')
@@ -926,9 +932,19 @@ pub async fn get_suggested_queries(
             .first()
             .expect("No response for LLM completion")
             .message
-            .content
         {
-            ChatMessageContent::Text(content) => content.clone(),
+            ChatMessage::User {
+                content: ChatMessageContent::Text(content),
+                ..
+            }
+            | ChatMessage::System {
+                content: ChatMessageContent::Text(content),
+                ..
+            }
+            | ChatMessage::Assistant {
+                content: Some(ChatMessageContent::Text(content)),
+                ..
+            } => content.clone(),
             _ => "".to_string(),
         }
         .split('\n')

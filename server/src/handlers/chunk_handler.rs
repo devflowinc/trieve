@@ -32,7 +32,7 @@ use dateparser::DateTimeUtc;
 use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
-    ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
+    ChatCompletionParameters, ChatMessage, ChatMessageContent, DeltaChatMessage,
 };
 use openai_dive::v1::resources::chat::{ImageUrl, ImageUrlType};
 use openai_dive::v1::resources::shared::StopToken;
@@ -2421,6 +2421,7 @@ pub async fn generate_off_chunks(
     };
 
     let client = Client {
+        headers: None,
         project: None,
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
@@ -2439,23 +2440,19 @@ pub async fn generate_off_chunks(
 
     messages.truncate(prev_messages.len() - 1);
 
-    messages.push(ChatMessage {
-        role: Role::User,
+    messages.push(ChatMessage::User {
         content: ChatMessageContent::Text("I am going to provide several pieces of information (documents) for you to use in response to a request or question.".to_string()),
-        tool_calls: None,
         name: None,
-        tool_call_id: None,
     });
 
-    messages.push(ChatMessage {
-        role: Role::Assistant,
-        content: ChatMessageContent::Text(
+    messages.push(ChatMessage::Assistant {
+        content: Some(ChatMessageContent::Text(
             "Understood, I will use the provided documents as information to respond to any future questions or instructions."
                 .to_string(),
-        ),
+        )),
         tool_calls: None,
         name: None,
-        tool_call_id: None,
+        refusal: None,
     });
 
     chunks.sort_by(|a, b| {
@@ -2474,12 +2471,9 @@ pub async fn generate_off_chunks(
             .collect::<Vec<_>>()
             .join(" ");
 
-        messages.push(ChatMessage {
-            role: Role::User,
+        messages.push(ChatMessage::User {
             content: ChatMessageContent::Text(format!("Doc {}: {}", idx + 1, first_2000_words)),
-            tool_calls: None,
             name: None,
-            tool_call_id: None,
         });
 
         if let Some(image_config) = &data.image_config {
@@ -2496,23 +2490,19 @@ pub async fn generate_off_chunks(
                         })
                         .collect::<Vec<_>>();
 
-                    messages.push(ChatMessage {
-                        role: Role::User,
+                    messages.push(ChatMessage::User {
                         content: ChatMessageContent::ImageUrl(urls),
-                        tool_calls: None,
                         name: None,
-                        tool_call_id: None,
                     });
                 }
             }
         }
 
-        messages.push(ChatMessage {
-            role: Role::Assistant,
-            content: ChatMessageContent::Text("".to_string()),
+        messages.push(ChatMessage::Assistant {
+            content: Some(ChatMessageContent::Text("".to_string())),
             tool_calls: None,
             name: None,
-            tool_call_id: None,
+            refusal: None,
         });
     });
 
@@ -2530,16 +2520,13 @@ pub async fn generate_off_chunks(
 
     let prompt = prompt.unwrap_or("Respond to the question or instruction using the docs and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:\n\n".to_string());
 
-    messages.push(ChatMessage {
-        role: Role::User,
+    messages.push(ChatMessage::User {
         content: ChatMessageContent::Text(format!(
             "{} {}",
             prompt,
             last_prev_message.content.clone()
         )),
-        tool_calls: None,
         name: None,
-        tool_call_id: None,
     });
 
     let parameters = ChatCompletionParameters {
@@ -2555,7 +2542,7 @@ pub async fn generate_off_chunks(
             .stop_tokens
             .as_ref()
             .map(|stop_tokens| StopToken::Array(stop_tokens.clone())),
-        max_tokens: data.max_tokens,
+        max_completion_tokens: data.max_tokens,
         logit_bias: None,
         user: None,
         response_format: None,
@@ -2564,6 +2551,7 @@ pub async fn generate_off_chunks(
         logprobs: None,
         top_logprobs: None,
         seed: None,
+        ..Default::default()
     };
     let query_id = uuid::Uuid::new_v4();
 
@@ -2580,19 +2568,28 @@ pub async fn generate_off_chunks(
                     ))
                 })?;
 
-        let chat_content = match assistant_completion.choices.get(0) {
-            Some(choice) => choice.message.content.clone(),
+        let completion_content = match assistant_completion.choices.get(0) {
+            Some(choice) => match &choice.message {
+                ChatMessage::Assistant {
+                    content: Some(ChatMessageContent::Text(content)),
+                    ..
+                }
+                | ChatMessage::User {
+                    content: ChatMessageContent::Text(content),
+                    ..
+                }
+                | ChatMessage::System {
+                    content: ChatMessageContent::Text(content),
+                    ..
+                } => content.clone(),
+                _ => "Failed to get response completion".into(),
+            },
             None => {
                 return Err(ServiceError::InternalServerError(
                     "Failed to get response completion".into(),
                 )
                 .into())
             }
-        };
-
-        let completion_content = match chat_content.clone() {
-            ChatMessageContent::Text(text) => text.clone(),
-            _ => "Failed to get response completion".to_string(),
         };
 
         let clickhouse_rag_event = RagQueryEventClickhouse {
@@ -2619,7 +2616,7 @@ pub async fn generate_off_chunks(
 
         return Ok(HttpResponse::Ok()
             .insert_header(("TR-QueryID", query_id.to_string()))
-            .json(chat_content));
+            .json(completion_content));
     }
 
     let (s, r) = unbounded::<String>();
@@ -2660,14 +2657,27 @@ pub async fn generate_off_chunks(
         match response {
             Ok(response) => {
                 let chat_content = match response.choices.get(0) {
-                    Some(choice) => choice.delta.content.clone(),
-                    None => Some("failed to get response completion".to_string()),
+                    Some(choice) => match &choice.delta {
+                        DeltaChatMessage::Assistant {
+                            content: Some(ChatMessageContent::Text(text)),
+                            ..
+                        }
+                        | DeltaChatMessage::User {
+                            content: ChatMessageContent::Text(text),
+                            ..
+                        }
+                        | DeltaChatMessage::System {
+                            content: ChatMessageContent::Text(text),
+                            ..
+                        } => text.clone(),
+                        _ => "failed to get response completion".to_string(),
+                    },
+                    None => "failed to get response completion".to_string(),
                 };
-                if let Some(message) = chat_content.clone() {
-                    s.send(message).unwrap();
-                }
 
-                Ok(Bytes::from(chat_content.unwrap_or("".to_string())))
+                s.send(chat_content.clone()).unwrap();
+
+                Ok(Bytes::from(chat_content))
             }
             Err(e) => Err(ServiceError::InternalServerError(format!(
                 "Model Response Error. Please try again later. {:?}",

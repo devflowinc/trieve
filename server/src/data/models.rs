@@ -44,7 +44,7 @@ use diesel::{
     sql_types::Text,
 };
 use itertools::Itertools;
-use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
+use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent};
 use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon, GeoRadius};
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
 use rand::Rng;
@@ -192,18 +192,21 @@ pub struct Message {
 
 impl From<Message> for ChatMessage {
     fn from(message: Message) -> Self {
-        let role = match message.role.as_str() {
-            "system" => Role::System,
-            "user" => Role::User,
-            _ => Role::Assistant,
-        };
-
-        ChatMessage {
-            role,
-            content: ChatMessageContent::Text(message.content),
-            tool_calls: None,
-            name: None,
-            tool_call_id: None,
+        match message.role.as_str() {
+            "system" => ChatMessage::System {
+                content: ChatMessageContent::Text(message.content),
+                name: None,
+            },
+            "user" => ChatMessage::User {
+                content: ChatMessageContent::Text(message.content),
+                name: None,
+            },
+            _ => ChatMessage::Assistant {
+                content: Some(ChatMessageContent::Text(message.content)),
+                refusal: None,
+                tool_calls: None,
+                name: None,
+            }
         }
     }
 }
@@ -214,16 +217,6 @@ pub enum RoleProxy {
     System,
     User,
     Assistant,
-}
-
-impl From<RoleProxy> for Role {
-    fn from(val: RoleProxy) -> Self {
-        match val {
-            RoleProxy::System => Role::System,
-            RoleProxy::User => Role::User,
-            RoleProxy::Assistant => Role::Assistant,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -238,12 +231,21 @@ pub struct ChatMessageProxy {
 
 impl From<ChatMessageProxy> for ChatMessage {
     fn from(message: ChatMessageProxy) -> Self {
-        ChatMessage {
-            role: message.role.into(),
-            content: ChatMessageContent::Text(message.content),
-            tool_calls: None,
-            name: None,
-            tool_call_id: None,
+        match message.role {
+            RoleProxy::System => ChatMessage::System {
+                content: ChatMessageContent::Text(message.content),
+                name: None,
+            },
+            RoleProxy::User => ChatMessage::User {
+                content: ChatMessageContent::Text(message.content),
+                name: None,
+            },
+            RoleProxy::Assistant => ChatMessage::Assistant {
+                content: Some(ChatMessageContent::Text(message.content)),
+                refusal: None,
+                tool_calls: None,
+                name: None,
+            }
         }
     }
 }
