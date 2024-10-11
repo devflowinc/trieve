@@ -200,3 +200,8 @@ Install Stripe CLI.
 4. `stripe products create --name trieve --default-price-data.unit-amount 1200 --default-price-data.currency usd`
 5. `stripe plans create --amount=1200 --currency=usd --interval=month --product={id from response of step 3}`
 
+## Contributors
+
+<a href="https://github.com/devflowinc/trieve/graphs/contributors">
+  <img alt="contributors" src="https://contrib.rocks/image?repo=devflowinc/trieve"/>
+</a>
