@@ -13,6 +13,8 @@ use crate::{
     },
 };
 use actix_web::{web, HttpRequest, HttpResponse};
+use sanitize_html::rules;
+use sanitize_html::sanitize_str;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -142,10 +144,16 @@ pub async fn update_organization(
 
     let updated_organization = update_organization_query(
         org_with_plan_and_sub.organization.id,
-        organization_update_data
-            .name
-            .unwrap_or(old_organization.organization.name)
-            .as_str(),
+        &sanitize_str(
+            &rules::predefined::DEFAULT,
+            organization_update_data
+                .name
+                .unwrap_or(old_organization.organization.name)
+                .as_str(),
+        )
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to sanitize organization name".to_string())
+        })?,
         pool,
         redis_pool,
     )

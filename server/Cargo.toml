@@ -175,6 +175,7 @@ rayon = "1.10.0"
 crossbeam = "0.8.4"
 dashmap = "6.0.1"
 oas3 = "0.10.0"
+sanitize_html = "0.8.1"
 
 
 [build-dependencies]
