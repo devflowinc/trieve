@@ -13,7 +13,9 @@ import { ErrorMsg, ValidateErrors, ValidateFn } from "../../utils/validation";
 import { cn } from "shared/utils";
 
 export const defaultCrawlOptions: CrawlOptions = {
-  boost_titles: false,
+  boost_titles: true,
+  allow_external_links: false,
+  ignore_sitemap: false,
   exclude_paths: [],
   exclude_tags: [],
   include_paths: [],
@@ -295,31 +297,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
         />
-        <label class="block pl-4">Shopify?</label>
-        <input
-          onChange={(e) => {
-            setOptions((prev) => {
-              if (!e.currentTarget.checked) {
-                if (prev.type === "shopify") {
-                  return {
-                    ...prev,
-                    type: undefined,
-                  };
-                }
-                return {
-                  ...prev,
-                };
-              } else {
-                return {
-                  type: "shopify" as const,
-                };
-              }
-            });
-          }}
-          checked={isShopify()}
-          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
-          type="checkbox"
-        />
+
         <label class="block pl-4">OpenAPI Spec?</label>
         <input
           onChange={(e) =>
@@ -345,19 +323,53 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           checked={isOpenAPI()}
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
-          checked={options.boost_titles ?? true}
+        />
+
+        <label class="block pl-4">Shopify?</label>
+        <input
           onChange={(e) => {
-            setOptions("boost_titles", e.currentTarget.checked);
+            setOptions((prev) => {
+              if (!e.currentTarget.checked) {
+                if (prev.type === "shopify") {
+                  return {
+                    ...prev,
+                    type: undefined,
+                  };
+                }
+                return {
+                  ...prev,
+                };
+              } else {
+                return {
+                  type: "shopify" as const,
+                };
+              }
+            });
           }}
+          checked={isShopify()}
+          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+          type="checkbox"
         />
       </div>
 
       <div class="flex items-center gap-2 py-2 pt-4">
+        <label class="block">Ignore Sitemap</label>
+        <input
+          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+          type="checkbox"
+          disabled={isShopify()}
+          checked={options.ignore_sitemap ?? true}
+          onChange={(e) => {
+            setOptions("ignore_sitemap", e.currentTarget.checked);
+          }}
+        />
+
         <label class="block">Allow External Links</label>
         <input
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
-          checked={options.allow_external_links ?? true}
+          disabled={isShopify()}
+          checked={options.allow_external_links ?? false}
           onChange={(e) => {
             setOptions("allow_external_links", e.currentTarget.checked);
           }}
@@ -378,19 +390,19 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </Show>
       </div>
 
-      <div class={cn("flex gap-4 pt-2", isShopify() && "opacity-40")}>
+      <div classList={{ "flex gap-4 pt-2": true, "opacity-40": isShopify() }}>
         <div>
           <label class="block" for="">
             Page Limit
           </label>
           <input
+            class="block max-w-[100px] rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            type="number"
             disabled={isShopify()}
             value={options.limit || "0"}
             onInput={(e) => {
               setOptions("limit", parseInt(e.currentTarget.value));
             }}
-            class="block max-w-[100px] rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            type="number"
           />
           <Error error={errors.limit} />
         </div>
