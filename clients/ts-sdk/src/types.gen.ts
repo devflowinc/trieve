@@ -345,6 +345,12 @@ export type ChunkWithPosition = {
     position: number;
 };
 
+export type ClickhouseRagTypes = 'chosen_chunks' | 'all_chunks';
+
+export type ClickhouseRecommendationTypes = 'Chunk' | 'Group';
+
+export type ClickhouseSearchTypes = 'search' | 'search_over_groups' | 'autocomplete' | 'rag';
+
 export type CloneTopicReqPayload = {
     /**
      * The name of the topic. If this is not provided, the topic name is the same as the previous topic
@@ -436,10 +442,6 @@ export type CrawlOpenAPIOptions = {
  * Options for setting up the crawl which will populate the dataset.
  */
 export type CrawlOptions = {
-    /**
-     * Option for allowing the crawl to navigate from a specific URL to previously linked pages.
-     */
-    allow_backward_links?: (boolean) | null;
     /**
      * Option for allowing the crawl to follow links to external websites.
      */
@@ -989,6 +991,93 @@ export type EventTypes = {
      * The user id of the user who clicked the items
      */
     user_id?: (string) | null;
+} | {
+    event_type: 'search';
+    /**
+     * Latency of the search
+     */
+    latency?: (number) | null;
+    /**
+     * The search query
+     */
+    query: string;
+    query_rating?: ((SearchQueryRating) | null);
+    /**
+     * The request params of the search
+     */
+    request_params?: unknown;
+    /**
+     * The results of the search
+     */
+    results?: Array<unknown> | null;
+    search_type?: ((ClickhouseSearchTypes) | null);
+    /**
+     * The top score of the search
+     */
+    top_score?: (number) | null;
+    /**
+     * The user id of the user who made the search
+     */
+    user_id?: (string) | null;
+} | {
+    event_type: 'rag';
+    /**
+     * The response from the LLM
+     */
+    llm_response?: (string) | null;
+    query_rating?: ((SearchQueryRating) | null);
+    rag_type?: ((ClickhouseRagTypes) | null);
+    /**
+     * The results of the RAG event
+     */
+    results?: Array<unknown> | null;
+    /**
+     * The search id to associate the RAG event with a search
+     */
+    search_id?: (string) | null;
+    /**
+     * The user id of the user who made the RAG event
+     */
+    user_id?: (string) | null;
+    /**
+     * The user message
+     */
+    user_message: string;
+} | {
+    event_type: 'recommendation';
+    /**
+     * Negative ids used for the recommendation
+     */
+    negative_ids?: Array<(string)> | null;
+    /**
+     * Negative tracking ids used for the recommendation
+     */
+    negative_tracking_ids?: Array<(string)> | null;
+    /**
+     * Positive ids used for the recommendation
+     */
+    positive_ids?: Array<(string)> | null;
+    /**
+     * Positive tracking ids used for the recommendation
+     */
+    positive_tracking_ids?: Array<(string)> | null;
+    recommendation_type?: ((ClickhouseRecommendationTypes) | null);
+    /**
+     * The request params of the recommendation
+     */
+    request_params?: unknown;
+    /**
+     * The results of the Recommendation event
+     */
+    results?: Array<unknown> | null;
+    /**
+     * Top score of the recommendation
+     */
+    top_score?: (number) | null;
+    /**
+     * The user id of the user who made the recommendation
+     */
+    user_id?: (string) | null;
 };
 
 export type event_type = 'view';
@@ -1503,8 +1592,8 @@ export type RagQueryEvent = {
     id: string;
     llm_response: string;
     query_rating?: ((SearchQueryRating) | null);
-    rag_type: string;
-    results: Array<ChunkMetadataStringTagSet>;
+    rag_type: ClickhouseRagTypes;
+    results: Array<unknown>;
     search_id: string;
     user_id: string;
     user_message: string;
@@ -1664,7 +1753,7 @@ export type RecommendationEvent = {
     negative_tracking_ids: Array<(string)>;
     positive_ids: Array<(string)>;
     positive_tracking_ids: Array<(string)>;
-    recommendation_type: string;
+    recommendation_type: ClickhouseRecommendationTypes;
     request_params: unknown;
     results: Array<unknown>;
     top_score: number;
@@ -2007,7 +2096,7 @@ export type SearchQueryEvent = {
     query_rating?: ((SearchQueryRating) | null);
     request_params: unknown;
     results: Array<unknown>;
-    search_type: string;
+    search_type: ClickhouseSearchTypes;
     top_score: number;
     user_id: string;
 };

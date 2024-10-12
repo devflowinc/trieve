@@ -6510,8 +6510,8 @@ impl From<CrawlRequest> for CrawlRequestPG {
     "site_url": "https://example.com",
     "interval": "daily",
     "limit": 1000,
-    "exclude_paths": ["https://example.com/exclude"],
-    "include_paths": ["https://example.com/include"],
+    "exclude_paths": ["https://example.com/exclude*"],
+    "include_paths": ["https://example.com/include*"],
     "max_depth": 10,
     "include_tags": ["h1", "p", "a", ".main-content"],
     "exclude_tags": ["#ad", "#footer"],
@@ -6537,8 +6537,6 @@ pub struct CrawlOptions {
     pub boost_titles: Option<bool>,
     /// Option for allowing the crawl to follow links to external websites.
     pub allow_external_links: Option<bool>,
-    /// Option for allowing the crawl to navigate from a specific URL to previously linked pages.
-    pub allow_backward_links: Option<bool>,
     /// Ignore the website sitemap when crawling, defaults to true.
     pub ignore_sitemap: Option<bool>,
     /// Options for including an openapi spec in the crawl
@@ -6580,7 +6578,6 @@ impl CrawlOptions {
             boost_titles: self.boost_titles.or(other.boost_titles),
             scrape_options: self.scrape_options.clone(),
             allow_external_links: self.allow_external_links.or(other.allow_external_links),
-            openapi_options: self.openapi_options.clone(),
         }
     }
 }
@@ -6601,8 +6598,6 @@ pub struct FirecrawlCrawlRequest {
     pub limit: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_external_links: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub allow_backward_links: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scrape_options: Option<FirecrawlScraperOptions>,
 }
@@ -6629,8 +6624,7 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
             max_depth: Some(crawl_options.max_depth.unwrap_or(10)),
             ignore_sitemap: crawl_options.ignore_sitemap,
             limit: Some(crawl_options.limit.unwrap_or(1000)),
-            allow_external_links: Some(crawl_options.allow_external_links.unwrap_or(false)),
-            allow_backward_links: Some(crawl_options.allow_backward_links.unwrap_or(false)),
+            allow_external_links: crawl_options.allow_external_links,
             scrape_options: Some(FirecrawlScraperOptions {
                 include_tags: crawl_options.include_tags,
                 exclude_tags: crawl_options.exclude_tags,

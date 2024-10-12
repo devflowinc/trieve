@@ -7234,6 +7234,29 @@
           }
         }
       },
+      "ClickhouseRagTypes": {
+        "type": "string",
+        "enum": [
+          "chosen_chunks",
+          "all_chunks"
+        ]
+      },
+      "ClickhouseRecommendationTypes": {
+        "type": "string",
+        "enum": [
+          "Chunk",
+          "Group"
+        ]
+      },
+      "ClickhouseSearchTypes": {
+        "type": "string",
+        "enum": [
+          "search",
+          "search_over_groups",
+          "autocomplete",
+          "rag"
+        ]
+      },
       "CloneTopicReqPayload": {
         "type": "object",
         "required": [
@@ -7503,11 +7526,6 @@
         "type": "object",
         "description": "Options for setting up the crawl which will populate the dataset.",
         "properties": {
-          "allow_backward_links": {
-            "type": "boolean",
-            "description": "Option for allowing the crawl to navigate from a specific URL to previously linked pages.",
-            "nullable": true
-          },
           "allow_external_links": {
             "type": "boolean",
             "description": "Option for allowing the crawl to follow links to external websites.",
@@ -7591,14 +7609,14 @@
         },
         "example": {
           "exclude_paths": [
-            "https://example.com/exclude"
+            "https://example.com/exclude*"
           ],
           "exclude_tags": [
             "#ad",
             "#footer"
           ],
           "include_paths": [
-            "https://example.com/include"
+            "https://example.com/include*"
           ],
           "include_tags": [
             "h1",
@@ -8963,6 +8981,202 @@
               "user_id": {
                 "type": "string",
                 "description": "The user id of the user who clicked the items",
+                "nullable": true
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "query",
+              "event_type"
+            ],
+            "properties": {
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "search"
+                ]
+              },
+              "latency": {
+                "type": "number",
+                "format": "float",
+                "description": "Latency of the search",
+                "nullable": true
+              },
+              "query": {
+                "type": "string",
+                "description": "The search query"
+              },
+              "query_rating": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchQueryRating"
+                  }
+                ],
+                "nullable": true
+              },
+              "request_params": {
+                "description": "The request params of the search",
+                "nullable": true
+              },
+              "results": {
+                "type": "array",
+                "items": {},
+                "description": "The results of the search",
+                "nullable": true
+              },
+              "search_type": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ClickhouseSearchTypes"
+                  }
+                ],
+                "nullable": true
+              },
+              "top_score": {
+                "type": "number",
+                "format": "float",
+                "description": "The top score of the search",
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who made the search",
+                "nullable": true
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "user_message",
+              "event_type"
+            ],
+            "properties": {
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "rag"
+                ]
+              },
+              "llm_response": {
+                "type": "string",
+                "description": "The response from the LLM",
+                "nullable": true
+              },
+              "query_rating": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchQueryRating"
+                  }
+                ],
+                "nullable": true
+              },
+              "rag_type": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ClickhouseRagTypes"
+                  }
+                ],
+                "nullable": true
+              },
+              "results": {
+                "type": "array",
+                "items": {},
+                "description": "The results of the RAG event",
+                "nullable": true
+              },
+              "search_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The search id to associate the RAG event with a search",
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who made the RAG event",
+                "nullable": true
+              },
+              "user_message": {
+                "type": "string",
+                "description": "The user message"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "event_type"
+            ],
+            "properties": {
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "recommendation"
+                ]
+              },
+              "negative_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Negative ids used for the recommendation",
+                "nullable": true
+              },
+              "negative_tracking_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Negative tracking ids used for the recommendation",
+                "nullable": true
+              },
+              "positive_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Positive ids used for the recommendation",
+                "nullable": true
+              },
+              "positive_tracking_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Positive tracking ids used for the recommendation",
+                "nullable": true
+              },
+              "recommendation_type": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ClickhouseRecommendationTypes"
+                  }
+                ],
+                "nullable": true
+              },
+              "request_params": {
+                "description": "The request params of the recommendation",
+                "nullable": true
+              },
+              "results": {
+                "type": "array",
+                "items": {},
+                "description": "The results of the Recommendation event",
+                "nullable": true
+              },
+              "top_score": {
+                "type": "number",
+                "format": "float",
+                "description": "Top score of the recommendation",
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who made the recommendation",
                 "nullable": true
               }
             }
@@ -10677,13 +10891,11 @@
             "nullable": true
           },
           "rag_type": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClickhouseRagTypes"
           },
           "results": {
             "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChunkMetadataStringTagSet"
-            }
+            "items": {}
           },
           "search_id": {
             "type": "string",
@@ -11266,7 +11478,7 @@
             }
           },
           "recommendation_type": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClickhouseRecommendationTypes"
           },
           "request_params": {},
           "results": {
@@ -12616,7 +12828,7 @@
             "items": {}
           },
           "search_type": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClickhouseSearchTypes"
           },
           "top_score": {
             "type": "number",

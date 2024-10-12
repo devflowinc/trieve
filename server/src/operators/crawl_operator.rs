@@ -608,13 +608,20 @@ pub fn chunk_html(html: &str) -> Vec<(String, String)> {
                 current_chunk = trimmed_chunk;
             }
 
-            if convert_html_to_text(&current_chunk)
-                .split_whitespace()
-                .count()
-                > 5
-            {
-                let heading = extract_first_heading(&current_chunk);
-                chunks.push((heading, current_chunk));
+            let chunk_text = convert_html_to_text(&current_chunk);
+
+            if chunk_text.split_whitespace().count() > 5 {
+                let headings_text = extract_all_headings(&current_chunk);
+
+                if chunk_text
+                    .replace(headings_text.as_str(), "")
+                    .trim()
+                    .is_empty()
+                {
+                    short_chunk = Some(current_chunk);
+                } else {
+                    chunks.push((headings_text, current_chunk));
+                }
             } else {
                 short_chunk = Some(current_chunk);
             }
@@ -637,23 +644,23 @@ pub fn chunk_html(html: &str) -> Vec<(String, String)> {
             current_chunk = trimmed_chunk;
         }
 
-        let heading = extract_first_heading(&current_chunk);
-        chunks.push((heading, current_chunk));
+        let headings_text = extract_all_headings(&current_chunk);
+        chunks.push((headings_text, current_chunk));
     } else if let Some(last_short_chunk) = short_chunk {
-        let heading = extract_first_heading(&last_short_chunk);
-        chunks.push((heading, last_short_chunk));
+        let headings_text = extract_all_headings(&last_short_chunk);
+        chunks.push((headings_text, last_short_chunk));
     }
 
     chunks
 }
 
-fn extract_first_heading(html: &str) -> String {
+fn extract_all_headings(html: &str) -> String {
     let fragment = Html::parse_fragment(html);
     let heading_selector = Selector::parse("h1, h2, h3, h4, h5, h6").unwrap();
 
     fragment
         .select(&heading_selector)
-        .next()
         .map(|element| element.text().collect::<String>())
-        .unwrap_or_default()
+        .collect::<Vec<String>>()
+        .join("\n")
 }
