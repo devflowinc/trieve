@@ -2582,11 +2582,18 @@ pub async fn generate_off_chunks(
                     content: ChatMessageContent::Text(content),
                     ..
                 } => content.clone(),
-                _ => "Failed to get response completion".into(),
+                _ => {
+                    log::error!(
+                        "ChatMessage of first choice did not have text or was either Tool or Function {:?}",
+                        choice
+                    );
+                    "ChatMessage of first did not have text or was either Tool or Function"
+                        .to_string()
+                }
             },
             None => {
                 return Err(ServiceError::InternalServerError(
-                    "Failed to get response completion".into(),
+                    "Failed to get response completion; no choices".into(),
                 )
                 .into())
             }
@@ -2656,23 +2663,38 @@ pub async fn generate_off_chunks(
     let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
         match response {
             Ok(response) => {
-                let chat_content = match response.choices.get(0) {
-                    Some(choice) => match &choice.delta {
-                        DeltaChatMessage::Assistant {
-                            content: Some(ChatMessageContent::Text(text)),
-                            ..
+                let chat_content = {
+                    match response.choices.get(0) {
+                        Some(choice) => {
+                            if choice.finish_reason.is_some() {
+                                "".to_string()
+                            } else {
+                                match &choice.delta {
+                                    DeltaChatMessage::Assistant {
+                                        content: Some(ChatMessageContent::Text(text)),
+                                        ..
+                                    }
+                                    | DeltaChatMessage::User {
+                                        content: ChatMessageContent::Text(text),
+                                        ..
+                                    }
+                                    | DeltaChatMessage::System {
+                                        content: ChatMessageContent::Text(text),
+                                        ..
+                                    }
+                                    | DeltaChatMessage::Untagged {
+                                        content: Some(ChatMessageContent::Text(text)),
+                                        ..
+                                    } => text.clone(),
+                                    _ => {
+                                        log::error!("Delta of first choice did not have text or was either Tool or Function {:?}", choice);
+                                        "Delta of first did not have text or was either Tool or Function".to_string()
+                                    }
+                                }
+                            }
                         }
-                        | DeltaChatMessage::User {
-                            content: ChatMessageContent::Text(text),
-                            ..
-                        }
-                        | DeltaChatMessage::System {
-                            content: ChatMessageContent::Text(text),
-                            ..
-                        } => text.clone(),
-                        _ => "failed to get response completion".to_string(),
-                    },
-                    None => "failed to get response completion".to_string(),
+                        None => "Failed to get first stream completion choice".to_string(),
+                    }
                 };
 
                 s.send(chat_content.clone()).unwrap();
