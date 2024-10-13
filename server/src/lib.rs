@@ -224,6 +224,7 @@ impl Modify for SecurityAddon {
         handlers::dataset_handler::delete_dataset,
         handlers::dataset_handler::delete_dataset_by_tracking_id,
         handlers::dataset_handler::get_dataset,
+        handlers::dataset_handler::get_dataset_by_tracking_id,
         handlers::dataset_handler::get_dataset_crawl_options,
         handlers::dataset_handler::get_usage_by_dataset_id,
         handlers::dataset_handler::get_datasets_from_organization,
