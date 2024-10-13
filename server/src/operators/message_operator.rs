@@ -353,18 +353,18 @@ pub async fn stream_response(
             .message
         {
             ChatMessage::User {
-                content: ChatMessageContent::Text(query),
+                content: ChatMessageContent::Text(content),
                 ..
             }
             | ChatMessage::System {
-                content: ChatMessageContent::Text(query),
+                content: ChatMessageContent::Text(content),
                 ..
             }
             | ChatMessage::Assistant {
-                content: Some(ChatMessageContent::Text(query)),
+                content: Some(ChatMessageContent::Text(content)),
                 ..
-            } => query.clone(),
-            _ => "".to_string(),
+            } => content.clone(),
+            _ => query,
         };
     }
 
@@ -763,23 +763,34 @@ pub async fn stream_response(
             let chat_content = response
                 .choices
                 .get(0)
-                .map(
-                    |chat_completion_content| match &chat_completion_content.delta {
-                        DeltaChatMessage::User {
-                            content: ChatMessageContent::Text(topic),
-                            ..
+                .map(|choice| {
+                    if choice.finish_reason.is_some() {
+                        Some("".to_string())
+                    } else {
+                        match &choice.delta {
+                            DeltaChatMessage::User {
+                                content: ChatMessageContent::Text(text),
+                                ..
+                            }
+                            | DeltaChatMessage::System {
+                                content: ChatMessageContent::Text(text),
+                                ..
+                            }
+                            | DeltaChatMessage::Assistant {
+                                content: Some(ChatMessageContent::Text(text)),
+                                ..
+                            }
+                            | DeltaChatMessage::Untagged {
+                                content: Some(ChatMessageContent::Text(text)),
+                                ..
+                            } => Some(text.clone()),
+                            _ => {
+                                log::error!("Delta of first choice did not have text or was either Tool or Function {:?}", choice);
+                                None
+                            },
                         }
-                        | DeltaChatMessage::System {
-                            content: ChatMessageContent::Text(topic),
-                            ..
-                        }
-                        | DeltaChatMessage::Assistant {
-                            content: Some(ChatMessageContent::Text(topic)),
-                            ..
-                        } => Some(topic.clone()),
-                        _ => None,
-                    },
-                )
+                    }
+                })
                 .unwrap_or(None);
 
             if let Some(message) = chat_content.clone() {
