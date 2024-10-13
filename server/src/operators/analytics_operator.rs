@@ -1447,10 +1447,6 @@ pub async fn set_rag_query_rating_query(
 
     let stringified_data = serde_json::to_string(&rating).unwrap_or_default();
 
-    println!("stringified_data: {:?}", stringified_data);
-    println!("data.query_id: {:?}", data.query_id);
-    println!("dataset_id: {:?}", dataset_id);
-
     clickhouse_client
         .query(
             "ALTER TABLE default.rag_queries
