@@ -29,9 +29,10 @@ pub struct DenseEmbedData {
 
 impl DenseEmbedData {
     pub fn to_vec(&self) -> Vec<Vec<f32>> {
-        self.data.iter().map(|inner| {
-            inner.embedding.clone()
-        }).collect()
+        self.data
+            .iter()
+            .map(|inner| inner.embedding.clone())
+            .collect()
     }
 }
 
@@ -432,7 +433,6 @@ pub async fn get_dense_vectors(
 
             let embedding_api_key = embedding_api_key.clone();
 
-            
             async move {
                 let embeddings_resp = cur_client
                     .post(format!("{}/embeddings?api-version=2023-05-15", url))
@@ -472,9 +472,7 @@ pub async fn get_dense_vectors(
         .map(|messages| {
             let clipped_messages = messages
                 .iter()
-                .map(|message| {
-                        message.chars().take(12000).collect()
-                })
+                .map(|message| message.chars().take(12000).collect())
                 .collect::<Vec<String>>();
 
             let input = match embed_type {
@@ -482,7 +480,8 @@ pub async fn get_dense_vectors(
                 "query" => EmbeddingInput::String(
                     format!(
                         "{}{}",
-                        dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_messages.get(0).unwrap_or(&"".to_string())
+                        dataset_config.EMBEDDING_QUERY_PREFIX,
+                        &clipped_messages.get(0).unwrap_or(&"".to_string())
                     )
                     .to_string(),
                 ),
@@ -500,32 +499,37 @@ pub async fn get_dense_vectors(
 
             let embedding_api_key = embedding_api_key.clone();
 
-                
-
-                async move {
-                    let embeddings_resp = cur_client
+            async move {
+                let embeddings_resp = cur_client
                     .post(format!("{}/embeddings?api-version=2023-05-15", url))
-                    .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
+                    .header(
+                        "Authorization",
+                        &format!("Bearer {}", &embedding_api_key.clone()),
+                    )
                     .header("api-key", &embedding_api_key.clone())
                     .header("Content-Type", "application/json")
                     .json(&parameters)
                     .send()
                     .await
                     .map_err(|_| {
-                        ServiceError::BadRequest("Failed to send message to embedding server".to_string())
+                        ServiceError::BadRequest(
+                            "Failed to send message to embedding server".to_string(),
+                        )
                     })?
                     .json::<DenseEmbedData>()
                     .await
                     .map_err(|err| {
-                        ServiceError::BadRequest(format!("Failed to get text from embeddings {:?}", err))
+                        ServiceError::BadRequest(format!(
+                            "Failed to get text from embeddings {:?}",
+                            err
+                        ))
                     })?;
 
-                    let vectors: Vec<Vec<f32>> = embeddings_resp.to_vec();
+                let vectors: Vec<Vec<f32>> = embeddings_resp.to_vec();
 
-                    Ok(vectors)
-                }
-
-            })
+                Ok(vectors)
+            }
+        })
         .collect();
 
     let mut content_vectors: Vec<_> = futures::future::join_all(vec_content_futures)

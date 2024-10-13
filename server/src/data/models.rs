@@ -206,7 +206,7 @@ impl From<Message> for ChatMessage {
                 refusal: None,
                 tool_calls: None,
                 name: None,
-            }
+            },
         }
     }
 }
@@ -245,7 +245,7 @@ impl From<ChatMessageProxy> for ChatMessage {
                 refusal: None,
                 tool_calls: None,
                 name: None,
-            }
+            },
         }
     }
 }

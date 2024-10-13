@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useModalState } from "./modal-context";
 
 export const useKeyboardNavigation = () => {
-  const { results, setOpen, inputRef, props, open } = useModalState();
+  const { results, setOpen, props, open } = useModalState();
 
   const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
 
