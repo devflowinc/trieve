@@ -146,8 +146,6 @@ pub async fn get_dense_vector(
         ))
     })?;
 
-    println!("data {:?}", embeddings_resp_a);
-
     let embeddings_resp = embeddings_resp_a
         .into_json::<DenseEmbedData>()
         .map_err(|err| {
