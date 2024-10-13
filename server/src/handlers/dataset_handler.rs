@@ -485,24 +485,23 @@ pub async fn clear_dataset(
 pub async fn delete_dataset_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    if dataset_org_plan_sub.dataset.tracking_id != Some(tracking_id.clone()) {
-        return Err(ServiceError::BadRequest(
-            "Dataset header does not match provided dataset ID".to_string(),
-        ));
-    }
+    let dataset = get_dataset_by_id_query(
+        UnifiedId::TrackingId(tracking_id.into_inner()),
+        pool.clone(),
+    )
+    .await?;
 
-    if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
+    if !verify_owner(&user, &dataset.organization_id) {
         return Err(ServiceError::Forbidden);
     }
 
-    let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let config = DatasetConfiguration::from_json(dataset.server_configuration);
 
-    soft_delete_dataset_by_id_query(dataset_org_plan_sub.dataset.id, config, pool, redis_pool)
-        .await?;
+    soft_delete_dataset_by_id_query(dataset.id, config, pool, redis_pool).await?;
+
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -533,16 +532,18 @@ pub async fn get_dataset(
     dataset_id: web::Path<uuid::Uuid>,
     user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let mut d =
+    let mut dataset =
         get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id.into_inner()), pool).await?;
 
-    if !verify_admin(&user, &d.organization_id) {
+    if !verify_admin(&user, &dataset.organization_id) {
         return Err(ServiceError::Forbidden);
     }
 
-    d.server_configuration = json!(DatasetConfiguration::from_json(d.server_configuration));
+    dataset.server_configuration = json!(DatasetConfiguration::from_json(
+        dataset.server_configuration
+    ));
 
-    Ok(HttpResponse::Ok().json(d))
+    Ok(HttpResponse::Ok().json(dataset))
 }
 
 /// Get Usage By Dataset ID
@@ -606,17 +607,20 @@ pub async fn get_dataset_by_tracking_id(
     pool: web::Data<Pool>,
     user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let mut d = get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id.into_inner()), pool)
-        .await
-        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let mut dataset =
+        get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id.into_inner()), pool)
+            .await
+            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    if !verify_admin(&user, &d.organization_id) {
+    if !verify_admin(&user, &dataset.organization_id) {
         return Err(ServiceError::Forbidden);
     }
 
-    d.server_configuration = json!(DatasetConfiguration::from_json(d.server_configuration));
+    dataset.server_configuration = json!(DatasetConfiguration::from_json(
+        dataset.server_configuration
+    ));
 
-    Ok(HttpResponse::Ok().json(d))
+    Ok(HttpResponse::Ok().json(dataset))
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema, Default)]
