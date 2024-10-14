@@ -3,7 +3,9 @@ use crate::get_env;
 use crate::operators::dittofeed_operator::{get_user_ditto_identity, send_user_ditto_identity};
 use crate::operators::invitation_operator::check_inv_valid;
 use crate::operators::organization_operator::{get_org_from_id_query, get_user_org_count};
-use crate::operators::user_operator::{add_user_to_organization, create_user_query};
+use crate::operators::user_operator::{
+    add_user_to_organization, create_user_query, get_user_by_oidc_subject_query,
+};
 use crate::{
     data::models::{Pool, SlimUser, User, UserOrganization},
     errors::ServiceError,
@@ -166,7 +168,7 @@ pub async fn build_oidc_client() -> CoreClient {
 pub async fn create_account(
     email: String,
     name: String,
-    user_id: uuid::Uuid,
+    user_oidc_subject: String,
     organization_id: Option<uuid::Uuid>,
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -214,7 +216,8 @@ pub async fn create_account(
         role = invitation.role.into();
     }
 
-    let user_org = create_user_query(user_id, email, Some(name), role, org_id, pool).await?;
+    let user_org =
+        create_user_query(user_oidc_subject, email, Some(name), role, org_id, pool).await?;
 
     Ok(user_org)
 }
@@ -454,13 +457,7 @@ pub async fn callback(
         }
     }?;
 
-    let user_id = claims
-        .subject()
-        .to_string()
-        .parse::<uuid::Uuid>()
-        .map_err(|_| {
-            ServiceError::InternalServerError("Failed to parse user ID from claims".into())
-        })?;
+    let user_oidc_subject = claims.subject().to_string();
 
     let email = claims.email().ok_or_else(|| {
         ServiceError::InternalServerError("Failed to parse email from claims".into())
@@ -477,45 +474,47 @@ pub async fn callback(
 
     let mut user_is_new = false;
 
-    let (user, user_orgs, orgs) = match get_user_by_id_query(&user_id, pool.clone()).await {
-        Ok(user) => user,
-        Err(_) => {
-            user_is_new = true;
-            let (user, user_orgs, orgs) = create_account(
-                email.to_string(),
-                name.iter().next().unwrap().1.to_string(),
-                user_id,
-                login_state.organization_id,
-                login_state.inv_code,
-                pool.clone(),
-            )
-            .await?;
+    let (user, user_orgs, orgs) =
+        match get_user_by_oidc_subject_query(&user_oidc_subject, pool.clone()).await {
+            Ok(user) => user,
+            Err(_) => {
+                user_is_new = true;
+                let (user, user_orgs, orgs) = create_account(
+                    email.to_string(),
+                    name.iter().next().unwrap().1.to_string(),
+                    user_oidc_subject,
+                    login_state.organization_id,
+                    login_state.inv_code,
+                    pool.clone(),
+                )
+                .await?;
 
-            let slim_user = SlimUser::from_details(user.clone(), user_orgs.clone(), orgs.clone());
+                let slim_user =
+                    SlimUser::from_details(user.clone(), user_orgs.clone(), orgs.clone());
 
-            match get_user_ditto_identity(slim_user, pool.clone(), &clickhouse_client).await {
-                Ok(identify_request) => {
-                    match send_user_ditto_identity(identify_request).await {
-                        Ok(_) => {
-                            log::info!("Sent ditto identity for user {}", user.email);
-                        }
-                        Err(e) => {
-                            log::info!(
-                                "Failed to send ditto identity for user {}. Error: {}",
-                                user.email,
-                                e
-                            );
-                        }
-                    };
+                match get_user_ditto_identity(slim_user, pool.clone(), &clickhouse_client).await {
+                    Ok(identify_request) => {
+                        match send_user_ditto_identity(identify_request).await {
+                            Ok(_) => {
+                                log::info!("Sent ditto identity for user {}", user.email);
+                            }
+                            Err(e) => {
+                                log::info!(
+                                    "Failed to send ditto identity for user {}. Error: {}",
+                                    user.email,
+                                    e
+                                );
+                            }
+                        };
+                    }
+                    Err(e) => {
+                        log::info!("No ditto identity for user {}. Error: {}", user.email, e);
+                    }
                 }
-                Err(e) => {
-                    log::info!("No ditto identity for user {}. Error: {}", user.email, e);
-                }
+
+                (user, user_orgs, orgs)
             }
-
-            (user, user_orgs, orgs)
-        }
-    };
+        };
 
     if login_state.organization_id.is_some()
         && !user_orgs.iter().any(|org| {
