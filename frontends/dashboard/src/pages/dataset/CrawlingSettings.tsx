@@ -76,7 +76,14 @@ export const unflattenCrawlOptions = (
     };
   }
   return {
-    ...options,
+    boost_titles: options.boost_titles,
+    exclude_paths: options.exclude_paths,
+    exclude_tags: options.exclude_tags,
+    include_paths: options.include_paths,
+    include_tags: options.include_tags,
+    interval: options.interval,
+    limit: options.limit,
+    max_depth: options.max_depth,
     scrape_options: null,
   };
 };
@@ -339,6 +346,17 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
         />
+        <Show when={isShopify()}>
+          <label class="block pl-4">Group Product Variants?</label>
+          <input
+            onChange={(e) =>
+              setOptions("group_variants", e.currentTarget.checked)
+            }
+            checked={!!options.group_variants}
+            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            type="checkbox"
+          />
+        </Show>
       </div>
 
       <div class={cn("flex gap-4 pt-2", isShopify() && "opacity-40")}>
