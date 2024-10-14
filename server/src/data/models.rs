@@ -96,26 +96,18 @@ pub struct User {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub name: Option<String>,
+    pub oidc_subject: String,
 }
 
 impl User {
-    pub fn from_details<S: Into<String>>(email: S, name: Option<S>) -> Self {
-        User {
-            id: uuid::Uuid::new_v4(),
-            email: email.into(),
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-            name: name.map(|n| n.into()),
-        }
-    }
-
-    pub fn from_details_with_id<S: Into<String>, T: Into<uuid::Uuid>>(
+    pub fn from_details_with_id<S: Into<String>, T: Into<String>>(
         id: T,
         email: S,
         name: Option<S>,
     ) -> Self {
         User {
-            id: id.into(),
+            id: uuid::Uuid::new_v4(),
+            oidc_subject: id.into(),
             email: email.into(),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),

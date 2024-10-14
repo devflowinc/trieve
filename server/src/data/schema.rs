@@ -274,6 +274,8 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         name -> Nullable<Text>,
+        #[max_length = 255]
+        oidc_subject -> Varchar,
     }
 }
 

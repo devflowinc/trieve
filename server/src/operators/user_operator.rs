@@ -81,6 +81,48 @@ pub async fn get_user_by_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn get_user_by_oidc_subject_query(
+    oidc_subject: &str,
+    pool: web::Data<Pool>,
+) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
+    use crate::data::schema::organizations::dsl as organization_columns;
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_owned())
+    })?;
+
+    let user = users_columns::users
+        .filter(users_columns::oidc_subject.eq(oidc_subject))
+        .select(User::as_select())
+        .first::<User>(&mut conn)
+        .await
+        .map_err(|_| {
+            ServiceError::BadRequest(
+                "Error loading user by itself for get_user_by_oidc_subject_query".to_owned(),
+            )
+        })?;
+
+    let orgs = user_organizations_columns::user_organizations
+        .inner_join(organization_columns::organizations)
+        .filter(user_organizations_columns::user_id.eq(user.id))
+        .filter(organization_columns::deleted.eq(0))
+        .select((UserOrganization::as_select(), Organization::as_select()))
+        .load::<(UserOrganization, Organization)>(&mut conn)
+        .await
+        .map_err(|_| {
+            ServiceError::BadRequest(
+                "Error loading user organizations for get_user_by_oidc_subject_query".to_owned(),
+            )
+        })?;
+
+    let (user_orgs, orgs) = orgs.into_iter().unzip();
+
+    Ok((user, user_orgs, orgs))
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
@@ -414,7 +456,7 @@ pub async fn delete_user_api_keys_query(
 
 #[tracing::instrument(skip(pool))]
 pub async fn create_user_query(
-    user_id: uuid::Uuid,
+    user_oidc_subject: String,
     email: String,
     name: Option<String>,
     role: UserRole,
@@ -428,8 +470,8 @@ pub async fn create_user_query(
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    let user = User::from_details_with_id(user_id, email, name);
-    let user_org = UserOrganization::from_details(user_id, org_id, role);
+    let user = User::from_details_with_id(user_oidc_subject, email, name);
+    let user_org = UserOrganization::from_details(user.id, org_id, role);
 
     let user_org = conn
         .transaction::<_, diesel::result::Error, _>(|conn| {
