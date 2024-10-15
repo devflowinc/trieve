@@ -23,7 +23,7 @@ type TableProps<T> = {
     prevPage: () => void;
     canGoNext: Accessor<boolean>;
   };
-  total?: number;
+  total_pages?: number;
   perPage?: number;
   class?: string;
   headerClass?: string;
@@ -145,20 +145,22 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
         </tbody>
       </table>
       <div class="flex items-center justify-between pl-4 border-t border-gray-200">
-        <Show when={props.exportFn && props.table.getRowCount() > 1}>
-          <button
-            onClick={() => void download()}
-            class="flex items-center gap-2 hover:bg-neutral-200 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
-            disabled={isCreatingCSV()}>
-            {isCreatingCSV() ? "Creating your CSV..." : "Export as CSV"}
-          </button>
+        <Show when={props.exportFn && props.table.getRowCount() > 0}>
+          <div class="py-3">
+            <button
+              onClick={() => void download()}
+              class="flex items-center gap-2 hover:bg-neutral-200 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
+              disabled={isCreatingCSV()}>
+              {isCreatingCSV() ? "Creating your CSV..." : "Export as CSV"}
+            </button>
+          </div>
         </Show>
         {props.pages &&
         (props.pages.canGoNext() || props.pages.page() !== 1) ? (
           <Pagination
             pages={props.pages}
             perPage={props.perPage}
-            total={props.total}
+            total_pages={props.total_pages}
           />
         ) : null}
       </div>

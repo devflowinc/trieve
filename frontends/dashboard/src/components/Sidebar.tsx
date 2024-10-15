@@ -134,7 +134,7 @@ export const DashboardSidebar = () => {
             <Link
               href={`/dataset/${datasetId()}/events`}
               icon={AiOutlineHistory}
-              label={"Event Log"}
+              label={"Admin Event Log"}
               isExternal={false}
             />
             <Link

@@ -320,6 +320,7 @@ export const availableDistanceMetrics = [
 
 export interface EventDTO {
   events: Event[];
+  event_types: string[];
   page_count: number;
 }
 
@@ -329,6 +330,10 @@ export const isEventDTO = (data: unknown): data is EventDTO => {
   }
 
   if (!Array.isArray((data as EventDTO).events)) {
+    return false;
+  }
+
+  if (!Array.isArray((data as EventDTO).event_types)) {
     return false;
   }
 

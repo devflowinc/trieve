@@ -1,12 +1,12 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataWithScore,
-    ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo,
-    HighlightOptions, ImageConfig, IngestSpecificChunkMetadata, Pool, QueryTypes,
-    RagQueryEventClickhouse, RecommendType, RecommendationEventClickhouse, RecommendationStrategy,
-    RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse,
-    SlimChunkMetadataWithScore, SortByField, SortOptions, TypoOptions, UnifiedId,
-    UpdateSpecificChunkMetadata,
+    escape_quotes, ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet,
+    ChunkMetadataWithScore, ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan,
+    DatasetConfiguration, GeoInfo, HighlightOptions, ImageConfig, IngestSpecificChunkMetadata,
+    Pool, QueryTypes, RagQueryEventClickhouse, RecommendType, RecommendationEventClickhouse,
+    RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
+    SearchQueryEventClickhouse, SlimChunkMetadataWithScore, SortByField, SortOptions, TypoOptions,
+    UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -1250,7 +1250,11 @@ pub async fn search_chunks(
             .score_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap_or_default())
+            .map(|x| {
+                let mut json = serde_json::to_value(&x).unwrap_or_default();
+                escape_quotes(&mut json);
+                json.to_string()
+            })
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -1458,7 +1462,11 @@ pub async fn autocomplete(
             .score_chunks
             .clone()
             .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap_or_default())
+            .map(|x| {
+                let mut json = serde_json::to_value(&x).unwrap_or_default();
+                escape_quotes(&mut json);
+                json.to_string()
+            })
             .collect(),
         dataset_id: dataset_org_plan_sub.dataset.id,
         created_at: time::OffsetDateTime::now_utc(),
@@ -2608,7 +2616,11 @@ pub async fn generate_off_chunks(
             json_results: chunks
                 .clone()
                 .into_iter()
-                .map(|x| serde_json::to_string(&x).unwrap_or_default())
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
                 .collect(),
             user_message: prompt,
             query_rating: String::new(),
@@ -2646,7 +2658,11 @@ pub async fn generate_off_chunks(
             json_results: chunks
                 .clone()
                 .into_iter()
-                .map(|x| serde_json::to_string(&x).unwrap_or_default())
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
                 .collect(),
             user_message: prompt,
             rag_type: "chosen_chunks".to_string(),
