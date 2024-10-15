@@ -35,6 +35,7 @@ import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
 import { CrawlingSettings } from "./pages/dataset/CrawlingSettings.tsx";
 import { RecommendationsTablePage } from "./analytics/pages/tablePages/RecommendationsTablePage.tsx";
 import { SingleRecommendationQueryPage } from "./analytics/pages/SingleRecommendationQueryPage.tsx";
+import { PublicPageSettings } from "./pages/dataset/PublicPageSettings.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -146,7 +147,10 @@ const routes: RouteDefinition[] = [
                 path: "/crawling",
                 component: CrawlingSettings,
               },
-
+              {
+                path: "/public-page",
+                component: PublicPageSettings,
+              },
               {
                 path: "/analytics",
                 children: [
