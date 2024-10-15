@@ -111,6 +111,7 @@ export default function Home() {
               brandLogoImgSrcUrl="https://avatars.githubusercontent.com/u/76905799?s=200&v=4"
               brandName="SigNoz"
               brandColor="#E75536"
+              allowSwitchingModes={false}
             />
 
             <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">

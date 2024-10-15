@@ -381,7 +381,7 @@ body {
           }
 
           img {
-            @apply w-7 max-h-7 sm:w-3/4 sm:h-3/4 sm:mx-auto sm:mt-2;
+            @apply w-7 sm:w-3/4 sm:h-3/4 sm:mx-auto sm:mt-2;
           }
 
           svg {

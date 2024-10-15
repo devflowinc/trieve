@@ -21,19 +21,19 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB"
+      props.brandColor ?? "#CB53EB",
     );
 
     // depending on the theme, set the background color of ::-webkit-scrollbar-thumb for #trieve-search-modal
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)"
+        "var(--tv-zinc-700)",
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)"
+        "var(--tv-zinc-300)",
       );
     }
   }, [props.brandColor]);
@@ -44,8 +44,7 @@ const Modal = () => {
       onOpenChange={(value) => {
         setOpen(value);
         setMode(props.defaultSearchMode || "search");
-      }}
-    >
+      }}>
       <OpenModalButton />
       <Dialog.Portal>
         <Dialog.DialogTitle className="sr-only">Search</Dialog.DialogTitle>
@@ -58,16 +57,14 @@ const Modal = () => {
           className={
             (mode === "chat" ? "chat-modal-mobile " : " ") +
             (props.theme === "dark" ? "dark " : "")
-          }
-        >
-          <ModeSwitch />
+          }>
+          {props.allowSwitchingModes && <ModeSwitch />}
           <div style={{ display: mode === "search" ? "block" : "none" }}>
             <SearchMode />
           </div>
           <div
             className={mode === "chat" ? " chat-container" : " "}
-            style={{ display: mode === "chat" ? "block" : "none" }}
-          >
+            style={{ display: mode === "chat" ? "block" : "none" }}>
             <ChatMode />
           </div>
         </Dialog.Content>

@@ -46,6 +46,7 @@ export type ModalProps = {
   }[];
   defaultSearchMode?: SearchModes;
   type?: ModalTypes;
+  allowSwitchingModes?: boolean;
   defaultCurrency?: string;
   currencyPosition?: currencyPosition;
 };
@@ -63,6 +64,7 @@ const defaultProps = {
   trieve: (() => {}) as unknown as TrieveSDK,
   openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
   type: "docs" as ModalTypes,
+  allowSwitchingModes: true,
   currencyPosition: "after" as currencyPosition,
 };
 
