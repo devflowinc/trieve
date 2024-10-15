@@ -11,6 +11,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("cargo:rerun-if-changed=.env");
 
+    minijinja_embed::embed_templates!("src/public");
     Ok(())
 }
 

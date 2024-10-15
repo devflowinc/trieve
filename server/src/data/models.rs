@@ -54,10 +54,12 @@ use std::collections::HashMap;
 use std::io::Write;
 use time::OffsetDateTime;
 use utoipa::ToSchema;
+use minijinja::Environment;
 
 // type alias to use in multiple places
 pub type Pool = diesel_async::pooled_connection::deadpool::Pool<diesel_async::AsyncPgConnection>;
 pub type RedisPool = bb8_redis::bb8::Pool<bb8_redis::RedisConnectionManager>;
+pub type Templates<'a> = web::Data<Environment<'a>>;
 
 pub fn uuid_between(uuid1: uuid::Uuid, uuid2: uuid::Uuid) -> uuid::Uuid {
     let num1 = u128::from_be_bytes(*uuid1.as_bytes());
