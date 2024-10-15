@@ -18,7 +18,7 @@ import { Spacer } from "./Spacer";
 import { Portal } from "solid-js/web";
 import { NavbarDatasetSelector } from "../layouts/NavbarDatasetSelector";
 import { NavbarOrganizationSelector } from "../layouts/NavbarOrganizationSelector";
-import { FiExternalLink, FiTrash } from "solid-icons/fi";
+import { FiExternalLink, FiTrash, FiShare2 } from "solid-icons/fi";
 import { UserContext } from "../contexts/UserContext";
 import { IconTypes } from "solid-icons";
 import { IoOptionsOutline } from "solid-icons/io";
@@ -222,6 +222,12 @@ export const DashboardSidebar = () => {
               icon={IoOptionsOutline}
               href={`/dataset/${datasetId()}/options`}
               label="Dataset Options"
+            />
+            <Link
+              isExternal={false}
+              icon={FiShare2}
+              href={`/dataset/${datasetId()}/public-page`}
+              label="Public Page"
             />
             <Link
               isExternal={false}

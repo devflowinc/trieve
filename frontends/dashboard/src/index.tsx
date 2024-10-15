@@ -37,6 +37,7 @@ import { RecommendationsTablePage } from "./analytics/pages/tablePages/Recommend
 import { SingleRecommendationQueryPage } from "./analytics/pages/SingleRecommendationQueryPage.tsx";
 import { EventsTablePage } from "./analytics/pages/tablePages/EventsTablePage.tsx";
 import { SingleEventQueryPage } from "./analytics/pages/SingleEventQueryPage.tsx";
+import { PublicPageSettings } from "./pages/dataset/PublicPageSettings.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -148,7 +149,10 @@ const routes: RouteDefinition[] = [
                 path: "/crawling",
                 component: CrawlingSettings,
               },
-
+              {
+                path: "/public-page",
+                component: PublicPageSettings,
+              },
               {
                 path: "/analytics",
                 children: [
