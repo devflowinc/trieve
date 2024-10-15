@@ -28,6 +28,7 @@ use diesel_async::pooled_connection::ManagerConfig;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
+use minijinja::Environment;
 use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
 use postgres_openssl::MakeTlsConnector;
@@ -35,7 +36,6 @@ use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use ureq::json;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
-use minijinja::Environment;
 
 pub mod data;
 pub mod errors;
