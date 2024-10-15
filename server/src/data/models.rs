@@ -44,6 +44,7 @@ use diesel::{
     sql_types::Text,
 };
 use itertools::Itertools;
+use minijinja::Environment;
 use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent};
 use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon, GeoRadius};
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
@@ -58,6 +59,7 @@ use utoipa::ToSchema;
 // type alias to use in multiple places
 pub type Pool = diesel_async::pooled_connection::deadpool::Pool<diesel_async::AsyncPgConnection>;
 pub type RedisPool = bb8_redis::bb8::Pool<bb8_redis::RedisConnectionManager>;
+pub type Templates<'a> = web::Data<Environment<'a>>;
 
 pub fn uuid_between(uuid1: uuid::Uuid, uuid2: uuid::Uuid) -> uuid::Uuid {
     let num1 = u128::from_be_bytes(*uuid1.as_bytes());
@@ -2053,6 +2055,13 @@ pub struct DatasetConfiguration {
     pub LOCKED: bool,
     pub SYSTEM_PROMPT: String,
     pub MAX_LIMIT: u64,
+    pub PUBLIC_DATASET: PublicDatasetOptions,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct PublicDatasetOptions {
+    pub enabled: bool,
+    pub api_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -2143,6 +2152,8 @@ pub struct DatasetConfigurationDTO {
     pub SYSTEM_PROMPT: Option<String>,
     /// The maximum limit for the number of chunks for counting
     pub MAX_LIMIT: Option<u64>,
+    /// Config for making the dataset public
+    pub PUBLIC_DATASET: Option<PublicDatasetOptions>,
 }
 
 impl From<DatasetConfigurationDTO> for DatasetConfiguration {
@@ -2176,6 +2187,10 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             LOCKED: dto.LOCKED.unwrap_or(false),
             SYSTEM_PROMPT: dto.SYSTEM_PROMPT.unwrap_or("You are a helpful assistant".to_string()),
             MAX_LIMIT: dto.MAX_LIMIT.unwrap_or(10000),
+            PUBLIC_DATASET: PublicDatasetOptions {
+                enabled: dto.PUBLIC_DATASET.map(|public_dataset| public_dataset.enabled).unwrap_or(false),
+                api_key: "".to_string()
+            },
         }
     }
 }
@@ -2211,6 +2226,10 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             LOCKED: Some(config.LOCKED),
             SYSTEM_PROMPT: Some(config.SYSTEM_PROMPT),
             MAX_LIMIT: Some(config.MAX_LIMIT),
+            PUBLIC_DATASET: Some(PublicDatasetOptions {
+                enabled: config.PUBLIC_DATASET.enabled,
+                api_key: "".to_string(),
+            }),
         }
     }
 }
@@ -2246,14 +2265,19 @@ impl Default for DatasetConfiguration {
             MAX_TOKENS: None,
             SYSTEM_PROMPT: "You are a helpful assistant".to_string(),
             MAX_LIMIT: 10000,
+            PUBLIC_DATASET: PublicDatasetOptions {
+                enabled: false,
+                api_key: "".to_string()
+            },
         }
     }
 }
 
 impl DatasetConfiguration {
-    pub fn from_json(configuration: serde_json::Value) -> Self {
+    pub fn from_json(configuration_json: serde_json::Value) -> Self {
         let default_config = json!({});
-        let configuration = configuration
+        let binding = configuration_json.clone();
+        let configuration = binding
             .as_object()
             .unwrap_or(default_config.as_object().unwrap());
 
@@ -2487,6 +2511,10 @@ impl DatasetConfiguration {
             MAX_TOKENS: configuration
                 .get("MAX_TOKENS")
                 .and_then(|v| v.as_u64()),
+            PUBLIC_DATASET: PublicDatasetOptions {
+                enabled: configuration_json.pointer("/PUBLIC_DATASET/enabled").unwrap_or(&json!(false)).as_bool().unwrap_or(false),
+                api_key: configuration_json.pointer("/PUBLIC_DATASET/api_key").unwrap_or(&json!("")).as_str().unwrap_or("").to_string(),
+            }
         }
     }
 
@@ -2609,6 +2637,14 @@ impl DatasetConfigurationDTO {
                 .clone()
                 .unwrap_or(curr_dataset_config.SYSTEM_PROMPT),
             MAX_LIMIT: self.MAX_LIMIT.unwrap_or(curr_dataset_config.MAX_LIMIT),
+            PUBLIC_DATASET: PublicDatasetOptions {
+                enabled: <std::option::Option<PublicDatasetOptions> as Clone>::clone(
+                    &self.PUBLIC_DATASET,
+                )
+                .map(|dataset| dataset.enabled)
+                .unwrap_or(false),
+                api_key: "".to_string(),
+            },
         }
     }
 }
