@@ -10,12 +10,15 @@ import { DatasetContext } from "../../../contexts/DatasetContext";
 import { UserContext } from "../../../contexts/UserContext";
 import { IoArrowBackOutline } from "solid-icons/io";
 import { ArbitraryResultCard } from "../SingleQueryInfo/ArbitraryResultCard";
+import { FiExternalLink } from "solid-icons/fi";
+import { useNavigate } from "@solidjs/router";
 
 interface SingleEventQueryProps {
   queryId: string;
 }
 export const SingleEventQuery = (props: SingleEventQueryProps) => {
   const dataset = useContext(DatasetContext);
+  const navigate = useNavigate();
 
   const event_query = createQuery(() => ({
     queryKey: ["single_event_query", props.queryId],
@@ -59,7 +62,7 @@ export const SingleEventQuery = (props: SingleEventQueryProps) => {
               "M/d/yy h:mm a",
             )}
           </span>
-          <dl class="m-auto mt-5 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow md:grid-cols-4 md:divide-x md:divide-y-0">
+          <dl class="m-auto mt-5 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow md:grid-cols-5 md:divide-x md:divide-y-0">
             <DataSquare
               label="Event Type"
               value={props.event_data.event_type}
@@ -81,6 +84,42 @@ export const SingleEventQuery = (props: SingleEventQueryProps) => {
               label="Conversion"
               value={props.event_data.is_conversion ? "Yes" : "No"}
             />
+            <Show
+              when={
+                props.event_data.request_id && props.event_data.request_type
+              }
+            >
+              <DataSquare
+                label="Linked Event"
+                value={<FiExternalLink />}
+                onClick={() => {
+                  let link;
+                  switch (props.event_data.request_type) {
+                    case "search":
+                      link = `/dataset/${dataset.datasetId()}/analytics/query/${
+                        props.event_data.request_id
+                      }`;
+                      break;
+                    case "rag":
+                      link = `/dataset/${dataset.datasetId()}/analytics/rag/${
+                        props.event_data.request_id
+                      }`;
+                      break;
+                    case "recommendations":
+                      link = `/dataset/${dataset.datasetId()}/analytics/recommendations/${
+                        props.event_data.request_id
+                      }`;
+                      break;
+                    default:
+                      break;
+                  }
+                  console.log(link);
+                  if (link) {
+                    navigate(link);
+                  }
+                }}
+              />
+            </Show>
           </dl>
         </div>
         <Show when={props.event_data.items && props.event_data.items[0]}>

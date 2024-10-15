@@ -1613,17 +1613,7 @@ pub async fn get_all_events_query(
 ) -> Result<GetEventsResponseBody, ServiceError> {
     let mut query_string = format!(
         "SELECT 
-            id,
-            event_type,
-            event_name,
-            request_id,
-            items,
-            metadata,
-            user_id,
-            is_conversion,
-            dataset_id,
-            created_at,
-            updated_at
+            ?fields
         FROM 
             default.events
         WHERE dataset_id = '{}'",

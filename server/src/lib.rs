@@ -405,6 +405,7 @@ impl Modify for SecurityAddon {
             data::models::ClusterAnalyticsFilter,
             data::models::RAGAnalyticsResponse,
             data::models::EventTypeRequest,
+            data::models::RequestInfo,
             data::models::RecommendationAnalyticsResponse,
             data::models::RecommendationEvent,
             data::models::RecommendationAnalyticsFilter,
