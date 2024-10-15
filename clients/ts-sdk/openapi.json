@@ -3396,6 +3396,68 @@
         ]
       }
     },
+    "/api/dataset/events": {
+      "post": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Get events for the dataset",
+        "description": "Get events for the dataset specified by the TR-Dataset header.",
+        "operationId": "get_events",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to get events for a dataset",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetEventsData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Events for the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventReturn"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting events for the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
     "/api/dataset/files/{dataset_id}/{page}": {
       "get": {
         "tags": [
@@ -4030,68 +4092,6 @@
           {
             "ApiKey": [
               "owner"
-            ]
-          }
-        ]
-      }
-    },
-    "/api/events": {
-      "post": {
-        "tags": [
-          "Events"
-        ],
-        "summary": "Get events for the dataset",
-        "description": "Get events for the dataset specified by the TR-Dataset header.",
-        "operationId": "get_events",
-        "parameters": [
-          {
-            "name": "TR-Dataset",
-            "in": "header",
-            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "JSON request payload to get events for a dataset",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GetEventsData"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Events for the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventReturn"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Service error relating to getting events for the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": [
-              "readonly"
             ]
           }
         ]
@@ -8041,6 +8041,11 @@
             "format": "uuid",
             "description": "The ID of the topic to attach the message to."
           },
+          "use_group_search": {
+            "type": "boolean",
+            "description": "If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.",
+            "nullable": true
+          },
           "user_id": {
             "type": "string",
             "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.",
@@ -8720,6 +8725,10 @@
             "format": "uuid",
             "description": "The id of the topic to edit the message at the given sort order for."
           },
+          "use_group_search": {
+            "type": "boolean",
+            "nullable": true
+          },
           "user_id": {
             "type": "string",
             "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.",
@@ -8861,9 +8870,16 @@
         "type": "object",
         "required": [
           "events",
+          "event_types",
           "page_count"
         ],
         "properties": {
+          "event_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "events": {
             "type": "array",
             "items": {
@@ -11822,6 +11838,11 @@
             "type": "string",
             "format": "uuid",
             "description": "The id of the topic to regenerate the last message for."
+          },
+          "use_group_search": {
+            "type": "boolean",
+            "description": "If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.",
+            "nullable": true
           },
           "user_id": {
             "type": "string",

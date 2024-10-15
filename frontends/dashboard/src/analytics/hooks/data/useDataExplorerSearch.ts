@@ -32,33 +32,35 @@ export const useDataExplorerSearch = () => {
 
   // Get query data for next page
   createEffect(() => {
-    void queryClient.prefetchQuery({
-      queryKey: [
-        "search-query-table",
-        {
-          filter: filters.filter,
-          page: pages.page() + 1,
-          sortBy: sortBy(),
-          sortOrder: sortOrder(),
-          datasetId: dataset.datasetId(),
-        },
-      ],
-      queryFn: async () => {
-        const results = await getSearchQueries(
+    for (let i = 1; i <= 5; i++) {
+      void queryClient.prefetchQuery({
+        queryKey: [
+          "search-query-table",
           {
             filter: filters.filter,
-            page: pages.page() + 1,
+            page: pages.page() + i,
             sortBy: sortBy(),
             sortOrder: sortOrder(),
+            datasetId: dataset.datasetId(),
           },
-          dataset.datasetId(),
-        );
-        if (results.length === 0) {
-          pages.setMaxPageDiscovered(pages.page());
-        }
-        return results;
-      },
-    });
+        ],
+        queryFn: async () => {
+          const results = await getSearchQueries(
+            {
+              filter: filters.filter,
+              page: pages.page() + i,
+              sortBy: sortBy(),
+              sortOrder: sortOrder(),
+            },
+            dataset.datasetId(),
+          );
+          if (results.length === 0) {
+            pages.setMaxPageDiscovered(pages.page() + i - 1);
+          }
+          return results;
+        },
+      });
+    }
   });
 
   const searchTableQuery = createQuery(() => ({

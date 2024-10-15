@@ -549,6 +549,10 @@ export type CreateMessageReqPayload = {
      */
     topic_id: string;
     /**
+     * If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
+     */
+    use_group_search?: (boolean) | null;
+    /**
      * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
      */
     user_id?: (string) | null;
@@ -822,6 +826,7 @@ export type EditMessageReqPayload = {
      * The id of the topic to edit the message at the given sort order for.
      */
     topic_id: string;
+    use_group_search?: (boolean) | null;
     /**
      * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
      */
@@ -864,6 +869,7 @@ export type EventData = {
 };
 
 export type EventReturn = {
+    event_types: Array<(string)>;
     events: Array<WorkerEvent>;
     page_count: number;
 };
@@ -1820,6 +1826,10 @@ export type RegenerateMessageReqPayload = {
      * The id of the topic to regenerate the last message for.
      */
     topic_id: string;
+    /**
+     * If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
+     */
+    use_group_search?: (boolean) | null;
     /**
      * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
      */
@@ -3478,6 +3488,19 @@ export type GetDatasetCrawlOptionsData = {
 
 export type GetDatasetCrawlOptionsResponse = (GetCrawlOptionsResponse);
 
+export type GetEventsData2 = {
+    /**
+     * JSON request payload to get events for a dataset
+     */
+    requestBody: GetEventsData;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetEventsResponse = (EventReturn);
+
 export type GetDatasetFilesHandlerData = {
     /**
      * The id of the dataset to fetch files for.
@@ -3610,19 +3633,6 @@ export type DeleteDatasetData = {
 };
 
 export type DeleteDatasetResponse = (void);
-
-export type GetEventsData2 = {
-    /**
-     * JSON request payload to get events for a dataset
-     */
-    requestBody: GetEventsData;
-    /**
-     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
-     */
-    trDataset: string;
-};
-
-export type GetEventsResponse = (EventReturn);
 
 export type UploadFileHandlerData = {
     /**
@@ -4815,6 +4825,21 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/dataset/events': {
+        post: {
+            req: GetEventsData2;
+            res: {
+                /**
+                 * Events for the dataset
+                 */
+                200: EventReturn;
+                /**
+                 * Service error relating to getting events for the dataset
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
     '/api/dataset/files/{dataset_id}/{page}': {
         get: {
             req: GetDatasetFilesHandlerData;
@@ -4967,21 +4992,6 @@ export type $OpenApiTs = {
                  * Dataset not found
                  */
                 404: ErrorResponseBody;
-            };
-        };
-    };
-    '/api/events': {
-        post: {
-            req: GetEventsData2;
-            res: {
-                /**
-                 * Events for the dataset
-                 */
-                200: EventReturn;
-                /**
-                 * Service error relating to getting events for the dataset
-                 */
-                400: ErrorResponseBody;
             };
         };
     };

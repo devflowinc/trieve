@@ -9,6 +9,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
 pub struct EventReturn {
     pub events: Vec<WorkerEvent>,
+    pub event_types: Vec<String>,
     pub page_count: i32,
 }
 #[tracing::instrument(skip(clickhouse_client))]
@@ -87,8 +88,28 @@ pub async fn get_events_query(
         .unwrap_or(0.0_f64)
         .ceil() as i32;
 
+    let event_types_query = format!(
+        "
+        SELECT DISTINCT event_type
+        FROM default.dataset_events
+        WHERE dataset_id = '{dataset_id}'
+        ORDER BY event_type
+        ",
+        dataset_id = dataset_id,
+    );
+
+    let event_types: Vec<String> = clickhouse_client
+        .query(&event_types_query)
+        .fetch_all()
+        .await
+        .map_err(|err| {
+            log::error!("Failed to get event types {:?}", err);
+            ServiceError::BadRequest("Failed to get event types".to_string())
+        })?;
+
     Ok(EventReturn {
         events,
+        event_types,
         page_count: count,
     })
 }

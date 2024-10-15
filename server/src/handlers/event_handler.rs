@@ -28,9 +28,9 @@ pub struct GetEventsData {
 /// Get events for the dataset specified by the TR-Dataset header.
 #[utoipa::path(
     post,
-    path = "/events",
+    path = "/dataset/events",
     context_path = "/api",
-    tag = "Events",
+    tag = "Dataset",
     request_body(content = GetEventsData, description = "JSON request payload to get events for a dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Events for the dataset", body = EventReturn),

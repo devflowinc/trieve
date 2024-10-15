@@ -142,7 +142,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.11.13",
+        version = "0.12.0",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -797,6 +797,10 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::post().to(handlers::dataset_handler::get_all_tags)),
                                 )
                                 .service(
+                                    web::resource("/events")
+                                        .route(web::post().to(handlers::event_handler::get_events)),
+                                )
+                                .service(
                                     web::resource("/{dataset_id}")
                                         .route(web::get().to(handlers::dataset_handler::get_dataset))
                                         .route(
@@ -1199,12 +1203,12 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::post().to(handlers::analytics_handler::get_all_events)),
                                 )
                                 .service(
-                                    web::resource("/{id}")
-                                        .route(web::get().to(handlers::analytics_handler::get_event_by_id)),
-                                )
-                                .service(
                                     web::resource("/ctr")
                                         .route(web::post().to(handlers::analytics_handler::get_ctr_analytics)),
+                                )
+                                .service(
+                                    web::resource("/{id}")
+                                        .route(web::get().to(handlers::analytics_handler::get_event_by_id)),
                                 )
                             )
                             .service(

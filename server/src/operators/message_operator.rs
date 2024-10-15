@@ -1,6 +1,6 @@
 use crate::data::models::{
-    self, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset, DatasetConfiguration, LLMOptions,
-    QueryTypes, RagQueryEventClickhouse, RedisPool, SearchMethod,
+    self, escape_quotes, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset,
+    DatasetConfiguration, LLMOptions, QueryTypes, RagQueryEventClickhouse, RedisPool, SearchMethod,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -399,7 +399,11 @@ pub async fn get_rag_chunks_query(
                 .group_chunks
                 .clone()
                 .into_iter()
-                .map(|x| serde_json::to_string(&x).unwrap_or_default())
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
                 .collect(),
             created_at: time::OffsetDateTime::now_utc(),
             query_rating: String::from(""),
@@ -503,7 +507,11 @@ pub async fn get_rag_chunks_query(
                 .score_chunks
                 .clone()
                 .into_iter()
-                .map(|x| serde_json::to_string(&x).unwrap_or_default())
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
                 .collect(),
             created_at: time::OffsetDateTime::now_utc(),
             query_rating: String::from(""),
@@ -622,7 +630,11 @@ pub async fn stream_response(
     let chunk_data = chunk_metadatas
         .clone()
         .into_iter()
-        .map(|x| serde_json::to_string(&x).unwrap_or_default())
+        .map(|x| {
+            let mut json = serde_json::to_value(&x).unwrap_or_default();
+            escape_quotes(&mut json);
+            json.to_string()
+        })
         .collect();
 
     let mut chunk_metadatas_stringified =

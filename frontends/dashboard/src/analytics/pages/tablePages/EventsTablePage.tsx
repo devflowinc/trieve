@@ -74,7 +74,7 @@ export const EventsTablePage = () => {
               class="flex items-center gap-2 text-left"
               onClick={() => {
                 navigate(
-                  `/dataset/${datasetContext.datasetId()}/analytics/rag/${
+                  `/dataset/${datasetContext.datasetId()}/analytics/event/${
                     props.row.id
                   }`,
                 );

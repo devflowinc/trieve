@@ -25,12 +25,59 @@ export const DatasetEvents = () => {
       name: string;
     }[]
   >([]);
+  const [eventTypes, setEventTypes] = createSignal<string[]>([]);
+
+  const events = [
+    {
+      id: "file_uploaded",
+      name: "File Uploaded",
+    },
+    {
+      id: "file_upload_failed",
+      name: "File Upload Failed",
+    },
+    {
+      id: "chunks_uploaded",
+      name: "Chunks Uploaded",
+    },
+    {
+      id: "chunk_updated",
+      name: "Chunk Updated",
+    },
+    {
+      id: "crawl_completed",
+      name: "Crawl Completed",
+    },
+    {
+      id: "bulk_chunks_deleted",
+      name: "Bulk Chunks Deleted",
+    },
+    {
+      id: "dataset_delete_failed",
+      name: "Dataset Delete Failed",
+    },
+    {
+      id: "qdrant_index_failed",
+      name: "Qdrant Index Failed",
+    },
+    {
+      id: "bulk_chunk_upload_failed",
+      name: "Bulk Chunk Upload Failed",
+    },
+  ];
+
+  // eslint-disable-next-line solid/reactivity
+  createEffect(async () => {
+    if (selected().length) {
+      await eventsQuery.refetch();
+    }
+  });
 
   const eventsQuery = createQuery(() => ({
     queryKey: ["events", datasetId],
     refetchInterval: 5000,
     queryFn: async () => {
-      const response = await trieve.fetch("/api/events", "post", {
+      const response = await trieve.fetch("/api/dataset/events", "post", {
         data: {
           event_types: selected().map((s) => s.id) as EventTypeRequest[],
           page: page(),
@@ -40,6 +87,7 @@ export const DatasetEvents = () => {
       if (isEventDTO(response)) {
         if (Array.isArray(response.events) && response.events.every(isEvent)) {
           setPageCount(Math.ceil(response.page_count / 10));
+          setEventTypes(response.event_types);
           setLoading(false);
           return response.events;
         }
@@ -76,40 +124,7 @@ export const DatasetEvents = () => {
               <div class="flex min-w-[300px] flex-col gap-1">
                 <span class="text-sm">Event Type:</span>
                 <MultiSelect
-                  items={[
-                    {
-                      id: "file_uploaded",
-                      name: "File Uploaded",
-                    },
-                    {
-                      id: "file_upload_failed",
-                      name: "File Upload Failed",
-                    },
-                    {
-                      id: "chunks_uploaded",
-                      name: "Chunks Uploaded",
-                    },
-                    {
-                      id: "chunk_updated",
-                      name: "Chunk Updated",
-                    },
-                    {
-                      id: "bulk_chunks_deleted",
-                      name: "Bulk Chunks Deleted",
-                    },
-                    {
-                      id: "dataset_delete_failed",
-                      name: "Dataset Delete Failed",
-                    },
-                    {
-                      id: "qdrant_index_failed",
-                      name: "Qdrant Index Failed",
-                    },
-                    {
-                      id: "bulk_chunk_upload_failed",
-                      name: "Bulk Chunk Upload Failed",
-                    },
-                  ]}
+                  items={events.filter((e) => eventTypes().includes(e.id))}
                   setSelected={(
                     selected: {
                       id: string;

@@ -4062,6 +4062,25 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
     }
 }
 
+pub fn escape_quotes(value: &mut Value) {
+    match value {
+        Value::String(s) => {
+            *s = s.replace('"', "\\\"");
+        }
+        Value::Array(arr) => {
+            for item in arr {
+                escape_quotes(item);
+            }
+        }
+        Value::Object(obj) => {
+            for (_, v) in obj {
+                escape_quotes(v);
+            }
+        }
+        _ => {}
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Display)]
 #[serde(rename_all = "snake_case")]
 pub enum ClickhouseRagTypes {
