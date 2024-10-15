@@ -5,9 +5,11 @@ import { Chunk, ChunkWithHighlights, Props } from "../utils/types";
 import { throttle } from "lodash-es";
 import r2wc from "@r2wc/react-to-web-component";
 import { searchWithTrieve } from "../utils/trieve";
+import { TrieveSDK } from "trieve-ts-sdk";
 
 export const TrieveSearch = ({
-  trieve,
+  apiKey,
+  datasetId,
   onResultClick,
   theme = "light",
   placeholder = "Search for anything",
@@ -49,6 +51,11 @@ export const TrieveSearch = ({
         }
       },
     });
+
+  const trieve = new TrieveSDK({
+    apiKey: apiKey,
+    datasetId: datasetId,
+  });
 
   const search = async (inputValue: string) => {
     if (!inputValue) {

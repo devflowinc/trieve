@@ -75,7 +75,8 @@ declare module "solid-js" {
 
 | Name                 | Type                                                                                           | Default                                    |
 | -------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| trieve               | TrieveSDK                                                                                      | null                                       |
+| datasetId            | string                                                                                         | ''                                         |
+| apiKey               | string                                                                                         | ''                                         |
 | chat                 | boolean                                                                                        | true                                       |
 | analytics            | boolean                                                                                        | true                                       |
 | placeholder          | string                                                                                         | "Search..."                                |
@@ -104,20 +105,21 @@ declare module "solid-js" {
 #### Usage in React:
 
 ```jsx
-<TrieveSearch trieve={trieve} />
+<TrieveSearch apiKey="<your trieve apiKey>" datasetId="<your trieve datasetId" />
 ```
 
 #### Usage in Web Components:
 
 ```html
-<trieve-search trieve="<your trieve instance>" />
+<trieve-search apiKey="<your trieve apiKey>" datasetId="<your trieve datasetId" />
 ```
 
 #### Props
 
 | Name          | Type                                                                                           | Default                     |
 | ------------- | ---------------------------------------------------------------------------------------------- | --------------------------- |
-| trieve        | TrieveSDK                                                                                      | null                        |
+| datasetId     | string                                                                                         | ''                          |
+| apiKey        | string                                                                                         | ''                          |
 | placeholder   | string                                                                                         | "Search..."                 |
 | onResultClick | () => void                                                                                     | () => {}                    |
 | theme         | "light" or "dark"                                                                              | "light"                     |
