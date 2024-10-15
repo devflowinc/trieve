@@ -1265,6 +1265,10 @@ export type GetEventsData = {
 
 export type GetEventsRequestBody = {
     filter?: ((EventAnalyticsFilter) | null);
+    /**
+     * Page of results to return
+     */
+    page?: (number) | null;
 };
 
 export type GetEventsResponseBody = {
@@ -2762,15 +2766,6 @@ export type SendCtrDataData = {
 
 export type SendCtrDataResponse = (void);
 
-export type GetAllEventsData = {
-    /**
-     * JSON request payload to filter the events
-     */
-    requestBody: GetEventsRequestBody;
-};
-
-export type GetAllEventsResponse = (GetEventsResponseBody);
-
 export type SendEventDataData = {
     /**
      * JSON request payload to send event data
@@ -2784,6 +2779,15 @@ export type SendEventDataData = {
 
 export type SendEventDataResponse = (void);
 
+export type GetAllEventsData = {
+    /**
+     * JSON request payload to filter the events
+     */
+    requestBody: GetEventsRequestBody;
+};
+
+export type GetAllEventsResponse = (GetEventsResponseBody);
+
 export type GetCtrAnalyticsData = {
     /**
      * JSON request payload to filter the graph
@@ -2796,6 +2800,19 @@ export type GetCtrAnalyticsData = {
 };
 
 export type GetCtrAnalyticsResponse = (CTRAnalyticsResponse);
+
+export type GetEventByIdData = {
+    /**
+     * The event id to use for the request
+     */
+    eventId: string;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetEventByIdResponse = (EventData);
 
 export type GetRagAnalyticsData = {
     /**
@@ -3529,6 +3546,19 @@ export type GetDatasetsFromOrganizationData = {
 
 export type GetDatasetsFromOrganizationResponse = (Array<DatasetAndUsage>);
 
+export type GetDatasetByTrackingIdData = {
+    /**
+     * The tracking id of the dataset you want to retrieve.
+     */
+    trackingId: string;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetDatasetByTrackingIdResponse = (Dataset);
+
 export type DeleteDatasetByTrackingIdData = {
     /**
      * The tracking id of the dataset you want to delete.
@@ -4002,19 +4032,6 @@ export type $OpenApiTs = {
         };
     };
     '/api/analytics/events': {
-        post: {
-            req: GetAllEventsData;
-            res: {
-                /**
-                 * The events for the request
-                 */
-                200: GetEventsResponseBody;
-                /**
-                 * Service error relating to getting events
-                 */
-                400: ErrorResponseBody;
-            };
-        };
         put: {
             req: SendEventDataData;
             res: {
@@ -4024,6 +4041,21 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to sending event data
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/analytics/events/all': {
+        post: {
+            req: GetAllEventsData;
+            res: {
+                /**
+                 * The events for the request
+                 */
+                200: GetEventsResponseBody;
+                /**
+                 * Service error relating to getting events
                  */
                 400: ErrorResponseBody;
             };
@@ -4039,6 +4071,21 @@ export type $OpenApiTs = {
                 200: CTRAnalyticsResponse;
                 /**
                  * Service error relating to getting CTR analytics
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/analytics/events/{event_id}': {
+        get: {
+            req: GetEventByIdData;
+            res: {
+                /**
+                 * The event for the request
+                 */
+                200: EventData;
+                /**
+                 * Service error relating to getting an event
                  */
                 400: ErrorResponseBody;
             };
@@ -4833,6 +4880,23 @@ export type $OpenApiTs = {
         };
     };
     '/api/dataset/tracking_id/{tracking_id}': {
+        get: {
+            req: GetDatasetByTrackingIdData;
+            res: {
+                /**
+                 * Dataset retrieved successfully
+                 */
+                200: Dataset;
+                /**
+                 * Service error relating to retrieving the dataset
+                 */
+                400: ErrorResponseBody;
+                /**
+                 * Dataset not found
+                 */
+                404: ErrorResponseBody;
+            };
+        };
         delete: {
             req: DeleteDatasetByTrackingIdData;
             res: {

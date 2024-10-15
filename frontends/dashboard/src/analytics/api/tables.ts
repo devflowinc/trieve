@@ -1,5 +1,7 @@
 import {
   AnalyticsFilter,
+  EventAnalyticsFilter,
+  EventResponse,
   RAGAnalyticsFilter,
   RagQueryResponse,
   RAGSortBy,
@@ -32,6 +34,11 @@ type RecommendationQueriesTablesParams = {
   page?: number;
   sortBy?: SearchSortBy;
   sortOrder?: SortOrder;
+};
+
+type EventTablesParams = {
+  filter?: EventAnalyticsFilter;
+  page?: number;
 };
 
 export const getSearchQueries = async (
@@ -92,6 +99,33 @@ export const getRagQueries = async (
 
   const data = (await response.json()) as unknown as RagQueryResponse;
   return data.queries;
+};
+
+export const getEvents = async (
+  params: EventTablesParams,
+  datasetId: string,
+) => {
+  const response = await fetch(`${apiHost}/analytics/events/all`, {
+    credentials: "include",
+    method: "POST",
+    body: JSON.stringify({
+      filter: params.filter
+        ? transformAnalyticsFilter(params.filter)
+        : undefined,
+      page: params.page,
+    }),
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch head queries: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as unknown as EventResponse;
+  return data.events;
 };
 
 export const getRecommendationQueries = async (

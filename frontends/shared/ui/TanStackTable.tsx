@@ -59,8 +59,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
   return (
     <>
       <table
-        class={cn("min-w-full border-separate border-spacing-0", props.class)}
-      >
+        class={cn("min-w-full border-separate border-spacing-0", props.class)}>
         <thead>
           <For each={props.table.getHeaderGroups()}>
             {(headerGroup) => (
@@ -72,14 +71,12 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                         props.small ? "py-2 pl-3 pr-2" : "py-3.5 pl-4 pr-3",
                         "sticky top-0 z-10 border-b border-neutral-300 bg-white bg-opacity-75 text-left text-sm font-semibold text-neutral-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8",
                         props.headerClass,
-                      )}
-                    >
+                      )}>
                       {(header.column.columnDef as SortableColumnDef<unknown>)
                         .sortable ? (
                         <button
                           class="flex items-center gap-1"
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
+                          onClick={header.column.getToggleSortingHandler()}>
                           {header.isPlaceholder
                             ? null
                             : flexRender(
@@ -119,8 +116,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                 })}
                 onClick={() =>
                   props.onRowClick && props.onRowClick(row.original)
-                }
-              >
+                }>
                 <For each={row.getVisibleCells()}>
                   {(cell) => (
                     <td
@@ -132,8 +128,7 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
                           ? "border-b border-neutral-200"
                           : "",
                         "whitespace-nowrap text-sm font-medium text-neutral-900",
-                      )}
-                    >
+                      )}>
                       <span class="max-w-[400px] truncate text-ellipsis block">
                         {" "}
                         {flexRender(
@@ -149,13 +144,12 @@ export const TanStackTable = <T,>(props: TableProps<T>) => {
           </For>
         </tbody>
       </table>
-      <div class="flex items-center justify-between pl-4  border-t border-gray-200">
+      <div class="flex items-center justify-between pl-4 border-t border-gray-200">
         <Show when={props.exportFn && props.table.getRowCount() > 1}>
           <button
             onClick={() => void download()}
             class="flex items-center gap-2 hover:bg-neutral-200 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
-            disabled={isCreatingCSV()}
-          >
+            disabled={isCreatingCSV()}>
             {isCreatingCSV() ? "Creating your CSV..." : "Export as CSV"}
           </button>
         </Show>

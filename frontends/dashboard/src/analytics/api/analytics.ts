@@ -18,6 +18,7 @@ import {
   UsageDatapoint,
   UsageGraphResponse,
   RecommendationEvent,
+  EventData,
 } from "shared/types";
 import { transformAnalyticsFilter } from "../utils/formatDate";
 
@@ -358,5 +359,26 @@ export const getRecommendationQuery = async (
   }
 
   const data = (await response.json()) as unknown as RecommendationEvent;
+  return data;
+};
+
+export const getEventQuery = async (
+  datasetId: string,
+  eventId: string,
+): Promise<EventData> => {
+  const response = await fetch(`${apiHost}/analytics/events/${eventId}`, {
+    credentials: "include",
+    method: "GET",
+    headers: {
+      "TR-Dataset": datasetId,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch search event: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as unknown as EventData;
   return data;
 };

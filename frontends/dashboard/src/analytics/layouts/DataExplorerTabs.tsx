@@ -25,6 +25,10 @@ export const DataExplorerTabs: ParentComponent = (props) => {
       name: "Recommendations",
       path: pathname().split("/").slice(0, -1).join("/") + "/recommendations",
     },
+    {
+      name: "Events",
+      path: pathname().split("/").slice(0, -1).join("/") + "/events",
+    },
   ];
 
   return (

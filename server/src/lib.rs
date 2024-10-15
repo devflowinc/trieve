@@ -246,6 +246,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::set_rag_query_rating,
         handlers::analytics_handler::get_top_datasets,
         handlers::analytics_handler::get_all_events,
+        handlers::analytics_handler::get_event_by_id,
         handlers::metrics_handler::get_metrics,
     ),
     components(
@@ -1192,7 +1193,14 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("")
                                         .route(web::put().to(handlers::analytics_handler::send_event_data))
+                                )
+                                .service(
+                                    web::resource("/all")
                                         .route(web::post().to(handlers::analytics_handler::get_all_events)),
+                                )
+                                .service(
+                                    web::resource("/{id}")
+                                        .route(web::get().to(handlers::analytics_handler::get_event_by_id)),
                                 )
                                 .service(
                                     web::resource("/ctr")

@@ -61,7 +61,7 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
       <div class="flex flex-col gap-8">
         <div>
           <button
-            class="flex w-fit items-center gap-1 rounded-md bg-magenta-100/50 p-1 text-base font-semibold text-magenta-700"
+            class="flex w-fit items-center gap-1 rounded-md bg-fuchsia-200 p-1 text-base font-semibold text-fuchsia-600"
             onClick={() => history.back()}
           >
             <IoArrowBackOutline /> Back

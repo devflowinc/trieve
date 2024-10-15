@@ -22,7 +22,7 @@ import { FiExternalLink, FiTrash } from "solid-icons/fi";
 import { UserContext } from "../contexts/UserContext";
 import { IconTypes } from "solid-icons";
 import { IoOptionsOutline } from "solid-icons/io";
-import { TbSparkles } from "solid-icons/tb";
+import { TbSparkles, TbTimelineEventText } from "solid-icons/tb";
 import { createSignal } from "solid-js";
 import NewDatasetModal from "../components/NewDatasetModal";
 import { ImNewspaper } from "solid-icons/im";
@@ -206,6 +206,12 @@ export const DashboardSidebar = () => {
                 icon={AiOutlineFilter}
                 href={`/dataset/${datasetId()}/analytics/data/recommendations`}
                 label="Recommendations"
+              />
+              <Link
+                isExternal={false}
+                icon={TbTimelineEventText}
+                href={`/dataset/${datasetId()}/analytics/data/events`}
+                label="Events"
               />
             </div>
           </div>

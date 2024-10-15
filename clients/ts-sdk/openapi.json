@@ -82,54 +82,6 @@
       }
     },
     "/api/analytics/events": {
-      "post": {
-        "tags": [
-          "Analytics"
-        ],
-        "summary": "Get All Events",
-        "description": "This route allows you to view all events.",
-        "operationId": "get_all_events",
-        "requestBody": {
-          "description": "JSON request payload to filter the events",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GetEventsRequestBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The events for the request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetEventsResponseBody"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Service error relating to getting events",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": [
-              "admin"
-            ]
-          }
-        ]
-      },
       "put": {
         "tags": [
           "Analytics"
@@ -166,6 +118,56 @@
           },
           "400": {
             "description": "Service error relating to sending event data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/analytics/events/all": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get All Events",
+        "description": "This route allows you to view all events.",
+        "operationId": "get_all_events",
+        "requestBody": {
+          "description": "JSON request payload to filter the events",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetEventsRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The events for the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetEventsResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting events",
             "content": {
               "application/json": {
                 "schema": {
@@ -228,6 +230,67 @@
           },
           "400": {
             "description": "Service error relating to getting CTR analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/analytics/events/{event_id}": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Event By ID",
+        "description": "This route allows you to view an event by its ID.",
+        "operationId": "get_event_by_id",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "description": "The event id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event for the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting an event",
             "content": {
               "application/json": {
                 "schema": {
@@ -3638,6 +3701,74 @@
       }
     },
     "/api/dataset/tracking_id/{tracking_id}": {
+      "get": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Get Dataset by Tracking ID",
+        "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
+        "operationId": "get_dataset_by_tracking_id",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tracking_id",
+            "in": "path",
+            "description": "The tracking id of the dataset you want to retrieve.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dataset retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dataset"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to retrieving the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      },
       "delete": {
         "tags": [
           "Dataset"
@@ -9744,6 +9875,13 @@
               }
             ],
             "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Page of results to return",
+            "nullable": true,
+            "minimum": 0
           }
         }
       },

@@ -5019,6 +5019,8 @@ pub enum EventTypesFilter {
 pub struct GetEventsRequestBody {
     /// Filter to apply to the events
     pub filter: Option<EventAnalyticsFilter>,
+    /// Page of results to return
+    pub page: Option<u32>,
 }
 
 fn convert_filter(
@@ -5032,7 +5034,7 @@ fn convert_filter(
     }
 
     let path = parts[0].trim();
-    let value = parts[1].trim();
+    let value = &parts[1].trim().replace("'", "\"");
 
     // Parse the value as JSON to handle different types
     let json_value: Value = serde_json::from_str(value)?;
