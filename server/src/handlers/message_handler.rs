@@ -77,7 +77,7 @@ pub fn check_completion_param_validity(
     Ok(())
 }
 
-#[derive(Serialize, Debug, ToSchema)]
+#[derive(Serialize, Debug, ToSchema, Clone)]
 pub struct CreateMessageReqPayload {
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
     pub new_message_content: String,
@@ -89,6 +89,8 @@ pub struct CreateMessageReqPayload {
     pub highlight_options: Option<HighlightOptions>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
     pub search_type: Option<SearchMethod>,
+    /// If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
+    pub use_group_search: Option<bool>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -300,6 +302,8 @@ pub struct RegenerateMessageReqPayload {
     pub highlight_options: Option<HighlightOptions>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: Option<SearchMethod>,
+    /// If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
+    pub use_group_search: Option<bool>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -328,6 +332,8 @@ pub struct EditMessageReqPayload {
     pub highlight_options: Option<HighlightOptions>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: Option<SearchMethod>,
+    // If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
+    pub use_group_search: Option<bool>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -351,6 +357,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             topic_id: data.topic_id,
             highlight_options: data.highlight_options,
             search_type: data.search_type,
+            use_group_search: data.use_group_search,
             concat_user_messages_query: data.concat_user_messages_query,
             search_query: data.search_query,
             page_size: data.page_size,
@@ -369,6 +376,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             topic_id: data.topic_id,
             highlight_options: data.highlight_options,
             search_type: data.search_type,
+            use_group_search: data.use_group_search,
             concat_user_messages_query: data.concat_user_messages_query,
             search_query: data.search_query,
             page_size: data.page_size,

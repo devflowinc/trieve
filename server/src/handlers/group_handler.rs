@@ -1626,7 +1626,7 @@ pub async fn search_within_group(
     }
 }
 
-#[derive(Serialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Debug, Clone, ToSchema, Default)]
 pub struct SearchOverGroupsReqPayload {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: SearchMethod,

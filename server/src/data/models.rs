@@ -4309,7 +4309,7 @@ pub enum SearchType {
     SearchWithinGroups,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum SearchMethod {
     #[serde(rename = "fulltext", alias = "full_text")]
@@ -4318,6 +4318,7 @@ pub enum SearchMethod {
     #[display(fmt = "semantic")]
     Semantic,
     #[display(fmt = "hybrid")]
+    #[default]
     Hybrid,
     #[serde(rename = "bm25", alias = "BM25")]
     #[display(fmt = "BM25")]
@@ -6234,6 +6235,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
+            pub use_group_search: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6254,6 +6256,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             topic_id: helper.topic_id,
             highlight_options,
             search_type: helper.search_type,
+            use_group_search: helper.use_group_search,
             concat_user_messages_query: helper.concat_user_messages_query,
             search_query: helper.search_query,
             page_size: helper.page_size,
@@ -6282,6 +6285,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
+            pub use_group_search: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6304,6 +6308,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             concat_user_messages_query: helper.concat_user_messages_query,
             search_query: helper.search_query,
             page_size: helper.page_size,
+            use_group_search: helper.use_group_search,
             filters: helper.filters,
             score_threshold: helper.score_threshold,
             llm_options,
@@ -6324,6 +6329,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub new_message_content: String,
             pub highlight_options: Option<HighlightOptions>,
             pub search_type: Option<SearchMethod>,
+            pub use_group_search: Option<bool>,
             pub concat_user_messages_query: Option<bool>,
             pub search_query: Option<String>,
             pub page_size: Option<u64>,
@@ -6352,6 +6358,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             new_message_content: helper.new_message_content,
             highlight_options,
             search_type: helper.search_type,
+            use_group_search: helper.use_group_search,
             concat_user_messages_query: helper.concat_user_messages_query,
             search_query: helper.search_query,
             page_size: helper.page_size,
@@ -6387,6 +6394,12 @@ impl From<(ParsedQuery, f32)> for MultiQuery {
 pub enum QueryTypes {
     Single(String),
     Multi(Vec<MultiQuery>),
+}
+
+impl Default for QueryTypes {
+    fn default() -> Self {
+        QueryTypes::Single("".to_string())
+    }
 }
 
 impl QueryTypes {
