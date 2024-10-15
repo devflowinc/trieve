@@ -1,4 +1,3 @@
-import { throttle } from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { SuggestedQueriesResponse } from "trieve-ts-sdk";
 import { getSuggestedQueries } from "../trieve";
@@ -12,7 +11,7 @@ export const useSuggestedQueries = () => {
     SuggestedQueriesResponse["queries"]
   >([]);
 
-  const getQueries = throttle(async () => {
+  const getQueries = async () => {
     if (isFetching.current) {
       return;
     }
@@ -25,7 +24,7 @@ export const useSuggestedQueries = () => {
     setSuggestedQueries(queries.queries.splice(0, 3));
     isFetching.current = false;
     setIsLoading(false);
-  }, 1000);
+  };
 
   const refetchSuggestedQueries = () => {
     getQueries();
@@ -45,7 +44,29 @@ export const useSuggestedQueries = () => {
       return;
     }
 
-    getQueries();
+    const abortController = new AbortController();
+
+    if (isFetching.current) {
+      return;
+    }
+    isFetching.current = true;
+    setIsLoading(true);
+
+    const timeoutId = setTimeout(async () => {
+      const queries = await getSuggestedQueries({
+        trieve: trieveSDK,
+        query,
+        abortController,
+      });
+      setSuggestedQueries(queries.queries.splice(0, 3));
+      isFetching.current = false;
+      setIsLoading(false);
+    }, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      abortController.abort();
+    };
   }, [query]);
 
   return {

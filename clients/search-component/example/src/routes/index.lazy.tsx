@@ -38,14 +38,14 @@ export default function Home() {
             </h2>
 
             <TrieveModalSearch
-              defaultSearchMode="chat"
-              apiKey="tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI"
-              datasetId="4650e231-7857-45aa-beb1-cb52006a2460"
+              defaultSearchMode="search"
+              apiKey="tr-zpPVGUq18FxOCmXgLfqGbmDOY4UMW00r"
+              datasetId="4538ad9f-47cf-44d4-8a14-7c111f9558a9"
               theme={theme}
               tags={[
                 {
-                  tag: "userguide",
-                  label: "User Guides",
+                  tag: "openapi-route",
+                  label: "API Routes",
                   icon: () => (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -69,8 +69,8 @@ export default function Home() {
                   ),
                 },
                 {
-                  tag: "docker",
-                  label: "Docker",
+                  tag: "blog",
+                  label: "Blog",
                   icon: () => (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -99,19 +99,19 @@ export default function Home() {
                 },
               ]}
               defaultSearchQueries={[
-                "App Service Diagnostic Settings EventHub",
-                "Logstash to SigNoz configuration tutorial",
-                "EventHub and App Service logging integration",
+                "How to create a chunk?",
+                "Does Trieve use a re-ranker?",
+                "Sending click events",
               ]}
               defaultAiQuestions={[
-                "What is SigNoz?",
-                "How to change retention period?",
-                "How do I install SigNoz?",
+                "What is Trieve?",
+                "How to perform autocomplete search?",
+                "How do I install the TS SDK?",
               ]}
-              brandLogoImgSrcUrl="https://avatars.githubusercontent.com/u/76905799?s=200&v=4"
-              brandName="SigNoz"
-              brandColor="#E75536"
-              allowSwitchingModes={false}
+              brandLogoImgSrcUrl="https://cdn.trieve.ai/trieve-logo.png"
+              brandName="Trieve"
+              brandColor="#b557c5"
+              allowSwitchingModes={true}
             />
 
             <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">
@@ -126,8 +126,8 @@ export default function Home() {
               Search Results Component
             </h2>
             <TrieveSearch
-              apiKey="tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI"
-              datasetId="4650e231-7857-45aa-beb1-cb52006a2460"
+              apiKey="tr-zpPVGUq18FxOCmXgLfqGbmDOY4UMW00r"
+              datasetId="4538ad9f-47cf-44d4-8a14-7c111f9558a9"
               theme={theme}
             />
           </>
