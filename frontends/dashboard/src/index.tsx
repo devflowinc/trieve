@@ -35,6 +35,8 @@ import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
 import { CrawlingSettings } from "./pages/dataset/CrawlingSettings.tsx";
 import { RecommendationsTablePage } from "./analytics/pages/tablePages/RecommendationsTablePage.tsx";
 import { SingleRecommendationQueryPage } from "./analytics/pages/SingleRecommendationQueryPage.tsx";
+import { EventsTablePage } from "./analytics/pages/tablePages/EventsTablePage.tsx";
+import { SingleEventQueryPage } from "./analytics/pages/SingleEventQueryPage.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -171,6 +173,10 @@ const routes: RouteDefinition[] = [
                     component: SingleRecommendationQueryPage,
                   },
                   {
+                    path: "/event/:queryId",
+                    component: SingleEventQueryPage,
+                  },
+                  {
                     path: "/data",
                     component: DataExplorerTabs, // Add back when rag table page is implemented
                     children: [
@@ -185,6 +191,10 @@ const routes: RouteDefinition[] = [
                       {
                         path: "/recommendations",
                         component: RecommendationsTablePage,
+                      },
+                      {
+                        path: "/events",
+                        component: EventsTablePage,
                       },
                     ],
                   },

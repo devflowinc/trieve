@@ -1038,11 +1038,18 @@ pub async fn send_event_data_query(
     data: EventDataClickhouse,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<(), ServiceError> {
+    let items = data
+        .items
+        .iter()
+        .map(|item| item.replace("\'", "''"))
+        .collect_vec()
+        .join("', '");
     let query_string = format!(
-        "INSERT INTO default.events (id, event_type, event_name, items, metadata, user_id, is_conversion, request_id, dataset_id, created_at, updated_at) VALUES ('{}', '{}', '{}', ['{:?}'], '{}', '{}', '{}', '{}', '{}', now(), now())",
-        data.id, data.event_type, data.event_name.replace('\'', "''").replace('?', "|q").replace('\n', ""), data.items.join(",").replace('\'', "''").replace('?', "|q").replace('\n', ""), data.metadata.replace('\'', "''").replace('?', "|q").replace('\n', ""), data.user_id, data.is_conversion, data.request_id, data.dataset_id
+        "INSERT INTO default.events (id, event_type, event_name, items, metadata, user_id, is_conversion, request_id, dataset_id, created_at, updated_at) VALUES ('{}', '{}', '{}', array('{}'), '{}', '{}', '{}', '{}', '{}', now(), now())",
+        data.id, data.event_type, data.event_name.replace('\'', "''").replace('?', "|q").replace('\n', ""), items.replace('?', "|q").replace('\n', ""), data.metadata.replace('\'', "''").replace('?', "|q").replace('\n', ""), data.user_id, data.is_conversion, data.request_id, data.dataset_id
     );
 
+    println!("{}", query_string);
     clickhouse_client
         .query(&query_string)
         .execute()
@@ -1579,8 +1586,28 @@ pub async fn get_top_datasets_query(
     Ok(response)
 }
 
+pub async fn get_event_by_id_query(
+    dataset_id: uuid::Uuid,
+    event_id: uuid::Uuid,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<EventData, ServiceError> {
+    let clickhouse_query = clickhouse_client
+        .query("SELECT ?fields FROM events WHERE id = ? AND dataset_id = ?")
+        .bind(event_id)
+        .bind(dataset_id)
+        .fetch_one::<EventDataClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    Ok(clickhouse_query.into())
+}
+
 pub async fn get_all_events_query(
     dataset_id: uuid::Uuid,
+    page: Option<u32>,
     filter: Option<EventAnalyticsFilter>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<GetEventsResponseBody, ServiceError> {
@@ -1614,11 +1641,13 @@ pub async fn get_all_events_query(
         "
         ORDER BY 
             created_at DESC
-        LIMIT 10",
+        LIMIT 10
+        OFFSET ?",
     );
 
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
+        .bind((page.unwrap_or(1) - 1) * 10)
         .fetch_all::<EventDataClickhouse>()
         .await
         .map_err(|e| {

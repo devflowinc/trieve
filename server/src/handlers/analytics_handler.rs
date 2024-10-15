@@ -686,7 +686,7 @@ pub async fn get_ctr_analytics(
 /// This route allows you to view all events.
 #[utoipa::path(
     post,
-    path = "/analytics/events",
+    path = "/analytics/events/all",
     context_path = "/api",
     tag = "Analytics",
     request_body(content = GetEventsRequestBody, description = "JSON request payload to filter the events", content_type = "application/json"),
@@ -706,8 +706,47 @@ pub async fn get_all_events(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = dataset_org_plan_sub.dataset.id;
+    let events = get_all_events_query(
+        dataset_id,
+        data.page,
+        data.filter.clone(),
+        clickhouse_client.get_ref(),
+    )
+    .await?;
+
+    Ok(HttpResponse::Ok().json(events))
+}
+
+/// Get Event By ID
+///
+/// This route allows you to view an event by its ID.
+#[utoipa::path(
+    get,
+    path = "/analytics/events/{event_id}",
+    context_path = "/api",
+    tag = "Analytics",
+    responses(
+        (status = 200, description = "The event for the request", body = EventData),
+
+        (status = 400, description = "Service error relating to getting an event", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("event_id" = uuid::Uuid, Path, description = "The event id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_event_by_id(
+    _user: AdminOnly,
+    data: web::Path<uuid::Uuid>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_id = dataset_org_plan_sub.dataset.id;
     let events =
-        get_all_events_query(dataset_id, data.filter.clone(), clickhouse_client.get_ref()).await?;
+        get_event_by_id_query(dataset_id, data.into_inner(), clickhouse_client.get_ref()).await?;
 
     Ok(HttpResponse::Ok().json(events))
 }

@@ -558,6 +558,13 @@ export interface RAGAnalyticsFilter {
   date_range?: DateRangeFilter;
 }
 
+export interface EventAnalyticsFilter {
+  date_range?: DateRangeFilter;
+  event_type?: "view" | "click" | "add_to_cart" | "purchase" | "filter_clicked";
+  is_conversion?: boolean;
+  metadata_filter?: string;
+}
+
 export interface RecommendationsAnalyticsFilter {
   date_range?: DateRangeFilter;
   recommendation_type?: "chunk" | "group";
@@ -581,6 +588,20 @@ export interface RagQueryEvent {
     note?: string;
     rating: number;
   };
+}
+
+export interface EventData {
+  id: string;
+  event_type: string;
+  event_name: string;
+  request_id?: string;
+  items: string[];
+  metadata?: object;
+  user_id?: string;
+  is_conversion?: boolean;
+  dataset_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface RAGUsageResponse {
@@ -613,4 +634,8 @@ export interface LatencyGraphResponse {
 
 export interface RagQueryResponse {
   queries: RagQueryEvent[];
+}
+
+export interface EventResponse {
+  events: EventData[];
 }

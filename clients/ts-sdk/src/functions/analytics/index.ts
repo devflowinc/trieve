@@ -41,7 +41,7 @@ export async function getCTRAnalytics(
   /** @hidden */
   this: TrieveSDK,
   data: CTRAnalytics,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return await this.trieve.fetch(
     "/api/analytics/events/ctr",
@@ -50,7 +50,7 @@ export async function getCTRAnalytics(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -71,7 +71,7 @@ export async function sendCTRAnalytics(
   /** @hidden */
   this: TrieveSDK,
   data: CTRDataRequestBody,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return await this.trieve.fetch(
     "/api/analytics/ctr",
@@ -80,7 +80,7 @@ export async function sendCTRAnalytics(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -110,7 +110,7 @@ export async function getRagAnalytics(
   /** @hidden */
   this: TrieveSDK,
   data: RAGAnalytics,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return this.trieve.fetch(
     "/api/analytics/rag",
@@ -119,7 +119,7 @@ export async function getRagAnalytics(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -148,7 +148,7 @@ export async function getRecommendationAnalytics(
   /** @hidden */
   this: TrieveSDK,
   data: RecommendationAnalytics,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return this.trieve.fetch(
     "/api/analytics/recommendations",
@@ -157,7 +157,7 @@ export async function getRecommendationAnalytics(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -186,7 +186,7 @@ export async function getSearchAnalytics(
   /** @hidden */
   this: TrieveSDK,
   data: SearchAnalytics,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return this.trieve.fetch(
     "/api/analytics/search",
@@ -195,7 +195,7 @@ export async function getSearchAnalytics(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -221,7 +221,7 @@ export async function getClusterAnalytics(
   /** @hidden */
   this: TrieveSDK,
   data: ClusterAnalytics,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return this.trieve.fetch(
     "/api/analytics/search/cluster",
@@ -230,7 +230,7 @@ export async function getClusterAnalytics(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -249,7 +249,7 @@ export async function rateRagQuery(
   /** @hidden */
   this: TrieveSDK,
   data: RateQueryRequest,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return this.trieve.fetch(
     "/api/analytics/rag",
@@ -258,7 +258,7 @@ export async function rateRagQuery(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -277,7 +277,7 @@ export async function rateSearchQuery(
   /** @hidden */
   this: TrieveSDK,
   data: RateQueryRequest,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return this.trieve.fetch(
     "/api/analytics/search",
@@ -286,7 +286,7 @@ export async function rateSearchQuery(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -305,7 +305,7 @@ export async function getTopDatasets(
   /** @hidden */
   this: TrieveSDK,
   data: GetTopDatasetsRequestBody & { organizationId: string },
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return this.trieve.fetch(
     "/api/analytics/top",
@@ -314,7 +314,7 @@ export async function getTopDatasets(
       data,
       organizationId: data.organizationId,
     },
-    signal
+    signal,
   );
 }
 
@@ -341,14 +341,14 @@ export async function getAllAnalyticsEvents(
   /** @hidden */
   this: TrieveSDK,
   data: GetEventsRequestBody,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return await this.trieve.fetch(
-    "/api/analytics/events",
+    "/api/analytics/events/all",
     "post",
     {
       data,
     },
-    signal
+    signal,
   );
 }
