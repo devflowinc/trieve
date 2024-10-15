@@ -334,7 +334,10 @@ pub async fn login(
             CsrfToken::new_random,
             Nonce::new_random,
         )
-        .add_scope(Scope::new("openid".to_string()))
+        .add_scopes([
+            Scope::new("profile".to_owned()),
+            Scope::new("email".to_owned()),
+        ])
         .set_pkce_challenge(pkce_challenge)
         .url();
 
