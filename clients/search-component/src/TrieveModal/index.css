@@ -126,14 +126,14 @@ body {
       border-color: var(--tv-zinc-200);
 
       &.search {
-        @apply border-t pt-1;
+        @apply border-t;
       }
 
       .bottom-row {
         @apply flex justify-between;
 
         button {
-          @apply px-2 text-sm py-1 border;
+          @apply px-2 text-sm py-1;
           color: var(--tv-zinc-700);
           border-color: var(--tv-zinc-300);
 
@@ -540,12 +540,12 @@ body {
       @apply mt-4;
 
       &:not(.chat-ul) {
-        @apply overflow-auto max-h-[420px] mt-4 mx-0 px-0;
+        @apply overflow-y-auto overflow-x-hidden max-h-[420px] mt-4 mx-0 px-0;
       }
     }
 
     .item {
-      @apply select-none cursor-pointer px-3 py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
+      @apply select-none cursor-pointer py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
       background-color: var(--tv-zinc-50);
 
       .post-method {
@@ -577,14 +577,15 @@ body {
       }
 
       mark {
-        @apply text-fuchsia-600 bg-inherit;
+        @apply bg-inherit;
+        color: var(--tv-prop-brand-color);
       }
 
       &.start-chat {
         @apply items-center flex;
 
         h4 {
-          @apply p-0;
+          @apply pl-0 pt-0;
 
           span {
             color: var(--tv-prop-brand-color);
@@ -592,7 +593,7 @@ body {
         }
 
         > div {
-          @apply justify-start gap-4;
+          @apply justify-start gap-2;
 
           > svg {
             @apply shrink-0 w-8;
@@ -656,8 +657,7 @@ body {
         border-color: var(--tv-zinc-700);
 
         li {
-          &:hover,
-          &.active {
+          &:hover {
             background-color: var(--tv-zinc-800);
           }
 
@@ -675,7 +675,6 @@ body {
             color: var(--tv-zinc-400);
 
             &.active {
-              background-color: var(--tv-zinc-900);
               color: var(--tv-zinc-200);
             }
           }

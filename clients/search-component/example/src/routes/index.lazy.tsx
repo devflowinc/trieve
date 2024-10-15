@@ -1,4 +1,4 @@
-import { TrieveSearch, TrieveSDK, TrieveModalSearch } from "../../../src/index";
+import { TrieveSearch, TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
 import { useState } from "react";
 import { IconMoon, IconNext, IconPrevious, IconSun } from "../Icons";
@@ -10,11 +10,6 @@ export const Route = createLazyFileRoute("/")({
   component: Home,
 });
 
-const trieve = new TrieveSDK({
-  apiKey: "tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI",
-  datasetId: "4650e231-7857-45aa-beb1-cb52006a2460",
-});
-
 export default function Home() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -23,12 +18,14 @@ export default function Home() {
       <div
         className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
           theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-        }`}>
+        }`}
+      >
         <div className="absolute top-6 right-6">
           <ul>
             <li>
               <button
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              >
                 {theme === "light" ? <IconMoon /> : <IconSun />}
               </button>
             </li>
@@ -42,7 +39,8 @@ export default function Home() {
 
             <TrieveModalSearch
               defaultSearchMode="chat"
-              trieve={trieve}
+              apiKey="tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI"
+              datasetId="4650e231-7857-45aa-beb1-cb52006a2460"
               theme={theme}
               tags={[
                 {
@@ -59,7 +57,8 @@ export default function Home() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="w-3 h-3">
+                      className="w-3 h-3"
+                    >
                       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                       <path d="M14 3v4a1 1 0 0 0 1 1h4" />
                       <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
@@ -83,7 +82,8 @@ export default function Home() {
                       stroke="currentColor"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="w-3 h-3">
+                      className="w-3 h-3"
+                    >
                       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                       <path d="M22 12.54c-1.804 -.345 -2.701 -1.08 -3.523 -2.94c-.487 .696 -1.102 1.568 -.92 2.4c.028 .238 -.32 1 -.557 1h-14c0 5.208 3.164 7 6.196 7c4.124 .022 7.828 -1.376 9.854 -5c1.146 -.101 2.296 -1.505 2.95 -2.46z" />
                       <path d="M5 10h3v3h-3z" />
@@ -125,7 +125,11 @@ export default function Home() {
             <h2 className="font-bold text-center py-8">
               Search Results Component
             </h2>
-            <TrieveSearch trieve={trieve} theme={theme} />
+            <TrieveSearch
+              apiKey="tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI"
+              datasetId="4650e231-7857-45aa-beb1-cb52006a2460"
+              theme={theme}
+            />
           </>
         )}
 

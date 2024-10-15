@@ -23,7 +23,8 @@ type searchOptions = Omit<
   "highlight_options"
 >;
 export type ModalProps = {
-  trieve: TrieveSDK;
+  datasetId: string;
+  apiKey: string;
   onResultClick?: (chunk: Chunk) => void;
   theme?: "light" | "dark";
   searchOptions?: searchOptions;
@@ -52,6 +53,8 @@ export type ModalProps = {
 };
 
 const defaultProps = {
+  datasetId: "",
+  apiKey: "",
   defaultSearchMode: "search" as SearchModes,
   placeholder: "Search...",
   theme: "light" as "light" | "dark",
@@ -70,6 +73,7 @@ const defaultProps = {
 
 const ModalContext = createContext<{
   props: ModalProps;
+  trieveSDK: TrieveSDK;
   query: string;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   results: ChunkWithHighlights[];
@@ -90,6 +94,7 @@ const ModalContext = createContext<{
   tagCounts: CountChunkQueryResponseBody[];
 }>({
   props: defaultProps,
+  trieveSDK: (() => {}) as unknown as TrieveSDK,
   query: "",
   results: [],
   loadingResults: false,
@@ -131,8 +136,13 @@ function ModalProvider({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all",
+    props.tags?.find((t) => t.selected)?.tag || "all"
   );
+
+  const trieve = new TrieveSDK({
+    apiKey: "tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI",
+    datasetId: "4650e231-7857-45aa-beb1-cb52006a2460",
+  });
 
   useEffect(() => {
     setProps((p) => ({
@@ -152,7 +162,7 @@ function ModalProvider({
       const results = await searchWithTrieve({
         query: query,
         searchOptions: props.searchOptions,
-        trieve: props.trieve,
+        trieve: trieve,
         abortController,
         ...(currentTag !== "all" && { tag: currentTag }),
       });
@@ -184,11 +194,11 @@ function ModalProvider({
         [ALL_TAG, ...props.tags].map((tag) =>
           countChunks({
             query: query,
-            trieve: props.trieve,
+            trieve: trieve,
             abortController,
             ...(tag.tag !== "all" && { tag: tag.tag }),
-          }),
-        ),
+          })
+        )
       );
       setTagCounts(numberOfRecords);
     }
@@ -212,6 +222,7 @@ function ModalProvider({
             ...props,
           })),
         props,
+        trieveSDK: trieve,
         query,
         setQuery,
         open,
@@ -229,7 +240,8 @@ function ModalProvider({
         currentTag,
         setCurrentTag,
         tagCounts,
-      }}>
+      }}
+    >
       {children}
     </ModalContext.Provider>
   );

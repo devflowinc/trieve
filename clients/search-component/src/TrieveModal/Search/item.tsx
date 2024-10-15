@@ -14,7 +14,7 @@ type Props = {
 
 export const Item = ({ item, requestID, index }: Props) => {
   const { onUpOrDownClicked } = useKeyboardNavigation();
-  const { props } = useModalState();
+  const { props, trieveSDK } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
@@ -91,10 +91,7 @@ export const Item = ({ item, requestID, index }: Props) => {
       );
       break;
     case "PATCH":
-      title = title.replace(
-        "PATCH",
-        '<span class="patch-method">PATCH</span>'
-      );
+      title = title.replace("PATCH", '<span class="patch-method">PATCH</span>');
       break;
     default:
       break;
@@ -116,7 +113,7 @@ export const Item = ({ item, requestID, index }: Props) => {
 
     if (props.analytics) {
       await sendCtrData({
-        trieve: props.trieve,
+        trieve: trieveSDK,
         index: chunk.position,
         requestID: requestID,
         chunkID: chunk.id,

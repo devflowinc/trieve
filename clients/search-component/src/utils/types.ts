@@ -1,7 +1,6 @@
 import {
   ChunkMetadata,
   SearchChunksReqPayload,
-  TrieveSDK,
 } from "trieve-ts-sdk";
 
 export type Chunk = Omit<ChunkMetadata, "metadata"> & {
@@ -21,7 +20,8 @@ export type SearchResults = {
 };
 
 export type Props = {
-  trieve: TrieveSDK;
+  datasetId: string;
+  apiKey: string;
   onResultClick?: (chunk: Chunk, requestID: string) => void;
   theme?: "light" | "dark";
   searchOptions?: Omit<
