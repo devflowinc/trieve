@@ -35,6 +35,7 @@ use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use ureq::json;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
+use minijinja::Environment;
 
 pub mod data;
 pub mod errors;
@@ -673,14 +674,17 @@ pub fn main() -> std::io::Result<()> {
             std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create metrics {:?}", e))
         })?;
 
-
         HttpServer::new(move || {
+            let mut env = Environment::new();
+            minijinja_embed::load_templates!(&mut env);
+
             App::new()
                 .wrap(
                     Cors::permissive()
                 )
                 .app_data(PayloadConfig::new(134200000))
                 .wrap(middleware::json_middleware::JsonMiddlewareFactory)
+                .app_data(web::Data::new(env))
                 .app_data(json_cfg.clone())
                 .app_data(
                     web::PathConfig::default()
@@ -749,6 +753,10 @@ pub fn main() -> std::io::Result<()> {
                 .service(
                     web::resource("/metrics")
                     .route(web::get().to(handlers::metrics_handler::get_metrics))
+                )
+                .service(
+                    web::resource("/public_page")
+                        .route(web::get().to(handlers::page_handler::public_page))
                 )
                 // everything under '/api/' route
                 .service(

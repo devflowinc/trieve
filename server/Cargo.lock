@@ -2874,6 +2874,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "memo-map"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38d1115007560874e373613744c6fba374c17688327a71c1476d1a5954cc857b"
+
+[[package]]
 name = "migrations_internals"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2918,6 +2924,23 @@ checksum = "f45614075738ce1b77a1768912a60c0227525971b03e09122a05b8a34a2a6278"
 dependencies = [
  "rxml",
 ]
+
+[[package]]
+name = "minijinja"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1028b628753a7e1a88fc59c9ba4b02ecc3bc0bd3c7af23df667bc28df9b3310e"
+dependencies = [
+ "memo-map",
+ "self_cell",
+ "serde",
+]
+
+[[package]]
+name = "minijinja-embed"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c76b834769fa7cfc97332d7c6b4025f264a41dfca1b9c0959af25611a7892310"
 
 [[package]]
 name = "minimal-lexical"
@@ -4631,6 +4654,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "self_cell"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d369a96f978623eb3dc28807c4852d6cc617fed53da5d3c400feff1ef34a714a"
+
+[[package]]
 name = "semver"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5877,6 +5906,8 @@ dependencies = [
  "lettre",
  "levenshtein_automata",
  "log",
+ "minijinja",
+ "minijinja-embed",
  "murmur3",
  "ndarray",
  "oas3",
