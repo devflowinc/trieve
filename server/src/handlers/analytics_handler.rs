@@ -525,9 +525,9 @@ pub async fn send_ctr_data(
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// Send Event Data
+/// Send User Event Data
 ///
-/// This route allows you to send event data to the system.
+/// This route allows you to send user event data to the system.
 #[utoipa::path(
     put,
     path = "/analytics/events",
@@ -681,9 +681,9 @@ pub async fn get_ctr_analytics(
     Ok(HttpResponse::Ok().json(response))
 }
 
-/// Get All Events
+/// Get All User Events
 ///
-/// This route allows you to view all events.
+/// This route allows you to view all user events.
 #[utoipa::path(
     post,
     path = "/analytics/events/all",
@@ -717,9 +717,9 @@ pub async fn get_all_events(
     Ok(HttpResponse::Ok().json(events))
 }
 
-/// Get Event By ID
+/// Get User Event By ID
 ///
-/// This route allows you to view an event by its ID.
+/// This route allows you to view an user event by its ID. You can pass in any type of event and get the details for that event.
 #[utoipa::path(
     get,
     path = "/analytics/events/{event_id}",

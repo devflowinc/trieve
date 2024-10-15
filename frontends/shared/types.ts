@@ -600,6 +600,7 @@ export interface EventData {
   event_type: string;
   event_name: string;
   request_id?: string;
+  request_type?: string;
   items: string[];
   metadata?: object;
   user_id?: string;

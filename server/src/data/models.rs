@@ -4718,6 +4718,7 @@ pub struct EventData {
     pub event_type: String,
     pub event_name: String,
     pub request_id: Option<String>,
+    pub request_type: Option<String>,
     pub items: Vec<String>,
     pub metadata: Option<serde_json::Value>,
     pub user_id: Option<String>,
@@ -4747,6 +4748,7 @@ pub struct EventDataClickhouse {
     pub event_type: String,
     pub event_name: String,
     pub request_id: String,
+    pub request_type: String,
     pub items: Vec<String>,
     pub metadata: String,
     pub user_id: String,
@@ -4771,7 +4773,7 @@ impl EventTypes {
         match self {
             EventTypes::AddToCart {
                 event_name,
-                request_id,
+                request,
                 items,
                 user_id,
                 metadata,
@@ -4780,7 +4782,8 @@ impl EventTypes {
                 id: uuid::Uuid::new_v4(),
                 event_type: "add_to_cart".to_string(),
                 event_name,
-                request_id: request_id.unwrap_or_default(),
+                request_id: request.clone().unwrap_or_default().request_id.to_string(),
+                request_type: request.unwrap_or_default().request_type.to_string(),
                 items,
                 metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
                 user_id: user_id.unwrap_or_default(),
@@ -4791,7 +4794,7 @@ impl EventTypes {
             }),
             EventTypes::Purchase {
                 event_name,
-                request_id,
+                request,
                 items,
                 user_id,
                 is_conversion,
@@ -4801,7 +4804,8 @@ impl EventTypes {
                 id: uuid::Uuid::new_v4(),
                 event_type: "purchase".to_string(),
                 event_name,
-                request_id: request_id.unwrap_or_default(),
+                request_id: request.clone().unwrap_or_default().request_id.to_string(),
+                request_type: request.unwrap_or_default().request_type.to_string(),
                 items,
                 metadata: json!({
                     "value": value.unwrap_or(0.0f64),
@@ -4816,7 +4820,7 @@ impl EventTypes {
             }),
             EventTypes::View {
                 event_name,
-                request_id,
+                request,
                 items,
                 user_id,
                 metadata,
@@ -4824,7 +4828,8 @@ impl EventTypes {
                 id: uuid::Uuid::new_v4(),
                 event_type: "view".to_string(),
                 event_name,
-                request_id: request_id.unwrap_or_default(),
+                request_id: request.clone().unwrap_or_default().request_id.to_string(),
+                request_type: request.unwrap_or_default().request_type.to_string(),
                 items,
                 metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
                 user_id: user_id.unwrap_or_default(),
@@ -4835,7 +4840,7 @@ impl EventTypes {
             }),
             EventTypes::Click {
                 event_name,
-                request_id,
+                request,
                 clicked_items: clicked_item,
                 user_id,
                 is_conversion,
@@ -4843,7 +4848,8 @@ impl EventTypes {
                 id: uuid::Uuid::new_v4(),
                 event_type: "click".to_string(),
                 event_name,
-                request_id: request_id.unwrap_or_default(),
+                request_id: request.clone().unwrap_or_default().request_id.to_string(),
+                request_type: request.unwrap_or_default().request_type.to_string(),
                 items: vec![],
                 metadata: serde_json::to_string(&clicked_item).unwrap_or_default(),
                 user_id: user_id.unwrap_or_default(),
@@ -4854,7 +4860,7 @@ impl EventTypes {
             }),
             EventTypes::FilterClicked {
                 event_name,
-                request_id,
+                request,
                 items,
                 user_id,
                 is_conversion,
@@ -4862,7 +4868,8 @@ impl EventTypes {
                 id: uuid::Uuid::new_v4(),
                 event_type: "filter_clicked".to_string(),
                 event_name,
-                request_id: request_id.unwrap_or_default(),
+                request_id: request.clone().unwrap_or_default().request_id.to_string(),
+                request_type: request.unwrap_or_default().request_type.to_string(),
                 items: vec![],
                 metadata: serde_json::to_string(&items).unwrap_or_default(),
                 user_id: user_id.unwrap_or_default(),
@@ -4968,10 +4975,18 @@ impl EventTypes {
 
 impl From<EventDataClickhouse> for EventData {
     fn from(clickhouse_response: EventDataClickhouse) -> EventData {
-        let request_id = if clickhouse_response.request_id.is_empty() {
-            None
+        let (request_type, request_id) = if clickhouse_response.request_id.is_empty() {
+            (None, None)
+        } else if clickhouse_response.request_type.is_empty() {
+            (
+                Some(String::from("search")),
+                Some(clickhouse_response.request_id),
+            )
         } else {
-            Some(clickhouse_response.request_id)
+            (
+                Some(clickhouse_response.request_type),
+                Some(clickhouse_response.request_id),
+            )
         };
 
         let user_id = if clickhouse_response.user_id.is_empty() {
@@ -4985,6 +5000,7 @@ impl From<EventDataClickhouse> for EventData {
             event_type: clickhouse_response.event_type,
             event_name: clickhouse_response.event_name,
             request_id,
+            request_type,
             items: clickhouse_response.items,
             metadata: serde_json::from_str(&clickhouse_response.metadata).unwrap_or_default(),
             user_id,
@@ -5644,6 +5660,12 @@ pub struct ChunkMetadataWithPosition {
     pub position: i32,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
+pub struct RequestInfo {
+    pub request_type: CTRType,
+    pub request_id: uuid::Uuid,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "event_type")]
@@ -5653,7 +5675,7 @@ pub enum EventTypes {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<String>,
+        request: Option<RequestInfo>,
         /// The items that were viewed
         items: Vec<String>,
         /// The user id of the user who viewed the items
@@ -5666,7 +5688,7 @@ pub enum EventTypes {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<String>,
+        request: Option<RequestInfo>,
         /// The items that were added to the cart
         items: Vec<String>,
         /// The user id of the user who added the items to the cart
@@ -5681,7 +5703,7 @@ pub enum EventTypes {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<String>,
+        request: Option<RequestInfo>,
         /// The items that were clicked and their positons in a hashmap ie. {item_id: position}
         clicked_items: ChunkWithPosition,
         /// The user id of the user who clicked the items
@@ -5694,7 +5716,7 @@ pub enum EventTypes {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<String>,
+        request: Option<RequestInfo>,
         /// The items that were purchased
         items: Vec<String>,
         /// The user id of the user who purchased the items
@@ -5711,7 +5733,7 @@ pub enum EventTypes {
         /// The name of the event
         event_name: String,
         /// The request id of the event to associate it with a request
-        request_id: Option<String>,
+        request: Option<RequestInfo>,
         /// The filter items that were clicked in a hashmap ie. {filter_name: filter_value} where filter_name is filter_type::field_name
         items: HashMap<String, String>,
         /// The user id of the user who clicked the items
@@ -5783,7 +5805,10 @@ impl From<CTRDataRequestBody> for EventTypes {
     fn from(data: CTRDataRequestBody) -> Self {
         EventTypes::Click {
             event_name: String::from("click"),
-            request_id: Some(data.request_id.to_string()),
+            request: Some(RequestInfo {
+                request_type: data.ctr_type,
+                request_id: data.request_id,
+            }),
             clicked_items: ChunkWithPosition {
                 chunk_id: data.clicked_chunk_id.unwrap_or_default(),
                 position: data.position,
@@ -5794,10 +5819,16 @@ impl From<CTRDataRequestBody> for EventTypes {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default, Display)]
 #[serde(rename_all = "snake_case")]
 pub enum CTRType {
+    #[default]
+    #[display(fmt = "search")]
     Search,
+    #[serde(rename = "rag")]
+    #[display(fmt = "rag")]
+    RAG,
+    #[display(fmt = "recommendation")]
     Recommendation,
 }
 
