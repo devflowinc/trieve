@@ -4,7 +4,8 @@ use crate::data::models::{
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
-use crate::handlers::chunk_handler::{ParsedQuery, SearchChunksReqPayload};
+use crate::handlers::chunk_handler::{ParsedQuery, ParsedQueryTypes, SearchChunksReqPayload};
+use crate::handlers::group_handler::SearchOverGroupsReqPayload;
 use crate::handlers::message_handler::CreateMessageReqPayload;
 use crate::operators::clickhouse_operator::ClickHouseEvent;
 use crate::operators::parse_operator::convert_html_to_text;
@@ -31,7 +32,10 @@ use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 
 use super::clickhouse_operator::{get_latency_from_header, EventQueue};
-use super::search_operator::search_hybrid_chunks;
+use super::search_operator::{
+    full_text_search_over_groups, hybrid_search_over_groups, search_chunks_query,
+    search_hybrid_chunks, semantic_search_over_groups,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatCompletionDTO {
@@ -233,6 +237,305 @@ pub async fn delete_message_query(
 }
 
 #[allow(clippy::too_many_arguments)]
+pub async fn get_rag_chunks_query(
+    create_message_req_payload: CreateMessageReqPayload,
+    dataset_config: DatasetConfiguration,
+    dataset: Dataset,
+    user_message_query: String,
+    chosen_model: String,
+    client: &Client,
+    pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
+    event_queue: web::Data<EventQueue>,
+) -> Result<(uuid::Uuid, Vec<ChunkMetadataStringTagSet>), actix_web::Error> {
+    let mut query =
+        if let Some(create_message_query) = create_message_req_payload.search_query.clone() {
+            create_message_query
+        } else {
+            user_message_query
+        };
+
+    let use_message_to_query_prompt = dataset_config.USE_MESSAGE_TO_QUERY_PROMPT;
+    if create_message_req_payload.search_query.is_none() && use_message_to_query_prompt {
+        let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
+        let gen_inference_msgs = vec![ChatMessage::User {
+            content: ChatMessageContent::Text(format!("{}\n{}", message_to_query_prompt, query)),
+            name: None,
+        }];
+
+        let gen_inference_parameters = ChatCompletionParameters {
+            model: chosen_model.clone(),
+            messages: gen_inference_msgs,
+            stream: Some(false),
+            temperature: dataset_config.TEMPERATURE.map(|temp| temp as f32),
+            frequency_penalty: Some(dataset_config.FREQUENCY_PENALTY.unwrap_or(0.8) as f32),
+            presence_penalty: Some(dataset_config.PRESENCE_PENALTY.unwrap_or(0.8) as f32),
+            stop: dataset_config.STOP_TOKENS.clone().map(StopToken::Array),
+            top_p: None,
+            n: None,
+            max_completion_tokens: dataset_config.MAX_TOKENS.map(|max| max as u32),
+            logit_bias: None,
+            user: None,
+            response_format: None,
+            tools: None,
+            tool_choice: None,
+            logprobs: None,
+            top_logprobs: None,
+            seed: None,
+            ..Default::default()
+        };
+
+        let search_query_from_message_to_query_prompt = client
+            .chat()
+            .create(gen_inference_parameters)
+            .await
+            .expect("No LLM Completion for chunk search");
+
+        query = match &search_query_from_message_to_query_prompt
+            .choices
+            .get(0)
+            .expect("No response for LLM completion")
+            .message
+        {
+            ChatMessage::User {
+                content: ChatMessageContent::Text(content),
+                ..
+            }
+            | ChatMessage::System {
+                content: ChatMessageContent::Text(content),
+                ..
+            }
+            | ChatMessage::Assistant {
+                content: Some(ChatMessageContent::Text(content)),
+                ..
+            } => content.clone(),
+            _ => query,
+        };
+    }
+
+    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
+    let search_type = create_message_req_payload
+        .search_type
+        .unwrap_or(SearchMethod::Hybrid);
+    if create_message_req_payload
+        .use_group_search
+        .is_some_and(|x| x)
+    {
+        let search_groups_data = SearchOverGroupsReqPayload {
+            search_type: search_type.clone(),
+            query: QueryTypes::Single(query.clone()),
+            score_threshold: create_message_req_payload.score_threshold,
+            page_size: Some(
+                create_message_req_payload
+                    .page_size
+                    .unwrap_or(n_retrievals_to_include.try_into().unwrap_or(8)),
+            ),
+            highlight_options: create_message_req_payload.highlight_options,
+            filters: create_message_req_payload.filters,
+            group_size: Some(1),
+            ..Default::default()
+        };
+
+        let parsed_query = ParsedQuery {
+            query: query.clone(),
+            quote_words: None,
+            negated_words: None,
+        };
+
+        let mut search_timer = Timer::new();
+
+        let result_groups = match search_type {
+            SearchMethod::Hybrid => {
+                hybrid_search_over_groups(
+                    search_groups_data.clone(),
+                    parsed_query,
+                    pool.clone(),
+                    redis_pool,
+                    dataset.clone(),
+                    &dataset_config,
+                    &mut search_timer,
+                )
+                .await?
+            }
+            SearchMethod::FullText => {
+                full_text_search_over_groups(
+                    search_groups_data.clone(),
+                    ParsedQueryTypes::Single(parsed_query),
+                    pool.clone(),
+                    redis_pool,
+                    dataset.clone(),
+                    &dataset_config,
+                    &mut search_timer,
+                )
+                .await?
+            }
+            _ => {
+                semantic_search_over_groups(
+                    search_groups_data.clone(),
+                    ParsedQueryTypes::Single(parsed_query),
+                    pool.clone(),
+                    redis_pool,
+                    dataset.clone(),
+                    &dataset_config,
+                    &mut search_timer,
+                )
+                .await?
+            }
+        };
+
+        let clickhouse_search_event = SearchQueryEventClickhouse {
+            request_params: serde_json::to_string(&search_groups_data.clone()).unwrap_or_default(),
+            id: uuid::Uuid::new_v4(),
+            search_type: "rag_groups".to_string(),
+            query: query.clone(),
+            dataset_id: dataset.id,
+            top_score: result_groups
+                .group_chunks
+                .get(0)
+                .map(|x| x.metadata.get(0).map(|y| y.score as f32).unwrap_or(0.0))
+                .unwrap_or(0.0),
+            latency: get_latency_from_header(search_timer.header_value()),
+            results: result_groups
+                .group_chunks
+                .clone()
+                .into_iter()
+                .map(|x| serde_json::to_string(&x).unwrap_or_default())
+                .collect(),
+            created_at: time::OffsetDateTime::now_utc(),
+            query_rating: String::from(""),
+            user_id: create_message_req_payload
+                .user_id
+                .clone()
+                .unwrap_or_default(),
+        };
+
+        event_queue
+            .send(ClickHouseEvent::SearchQueryEvent(
+                clickhouse_search_event.clone(),
+            ))
+            .await;
+
+        Ok((
+            clickhouse_search_event.id,
+            result_groups
+                .group_chunks
+                .into_iter()
+                .flat_map(|group_chunk| {
+                    group_chunk
+                        .metadata
+                        .into_iter()
+                        .map(|score_chunk| {
+                            match score_chunk.metadata.get(0).expect("No metadata found") {
+                                ChunkMetadataTypes::Metadata(chunk_metadata) => {
+                                    chunk_metadata.clone()
+                                }
+                                _ => unreachable!(
+                                    "The operator should never return slim chunks for this"
+                                ),
+                            }
+                        })
+                        .collect::<Vec<ChunkMetadataStringTagSet>>()
+                })
+                .collect::<Vec<ChunkMetadataStringTagSet>>(),
+        ))
+    } else {
+        let search_chunk_data = SearchChunksReqPayload {
+            search_type: search_type.clone(),
+            query: QueryTypes::Single(query.clone()),
+            score_threshold: create_message_req_payload.score_threshold,
+            page_size: Some(
+                create_message_req_payload
+                    .page_size
+                    .unwrap_or(n_retrievals_to_include.try_into().unwrap_or(8)),
+            ),
+            highlight_options: create_message_req_payload.highlight_options,
+            filters: create_message_req_payload.filters,
+            ..Default::default()
+        };
+        let parsed_query = ParsedQuery {
+            query: query.clone(),
+            quote_words: None,
+            negated_words: None,
+        };
+        let mut search_timer = Timer::new();
+
+        let result_chunks = match search_type {
+            SearchMethod::Hybrid => {
+                search_hybrid_chunks(
+                    search_chunk_data.clone(),
+                    parsed_query,
+                    pool.clone(),
+                    redis_pool,
+                    dataset.clone(),
+                    &dataset_config,
+                    &mut search_timer,
+                )
+                .await?
+            }
+            _ => {
+                search_chunks_query(
+                    search_chunk_data.clone(),
+                    ParsedQueryTypes::Single(parsed_query),
+                    pool.clone(),
+                    redis_pool,
+                    dataset.clone(),
+                    &dataset_config,
+                    &mut search_timer,
+                )
+                .await?
+            }
+        };
+
+        let clickhouse_search_event = SearchQueryEventClickhouse {
+            request_params: serde_json::to_string(&search_chunk_data.clone()).unwrap_or_default(),
+            id: uuid::Uuid::new_v4(),
+            search_type: "rag_chunks".to_string(),
+            query: query.clone(),
+            dataset_id: dataset.id,
+            top_score: result_chunks
+                .score_chunks
+                .get(0)
+                .map(|x| x.score as f32)
+                .unwrap_or(0.0),
+
+            latency: get_latency_from_header(search_timer.header_value()),
+            results: result_chunks
+                .score_chunks
+                .clone()
+                .into_iter()
+                .map(|x| serde_json::to_string(&x).unwrap_or_default())
+                .collect(),
+            created_at: time::OffsetDateTime::now_utc(),
+            query_rating: String::from(""),
+            user_id: create_message_req_payload
+                .user_id
+                .clone()
+                .unwrap_or_default(),
+        };
+
+        event_queue
+            .send(ClickHouseEvent::SearchQueryEvent(
+                clickhouse_search_event.clone(),
+            ))
+            .await;
+
+        Ok((
+            clickhouse_search_event.id,
+            result_chunks
+                .score_chunks
+                .iter()
+                .map(
+                    |score_chunk| match score_chunk.metadata.get(0).expect("No metadata found") {
+                        ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.clone(),
+                        _ => unreachable!("The operator should never return slim chunks for this"),
+                    },
+                )
+                .collect::<Vec<ChunkMetadataStringTagSet>>(),
+        ))
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool, redis_pool, event_queue))]
 pub async fn stream_response(
     messages: Vec<models::Message>,
@@ -303,151 +606,20 @@ pub async fn stream_response(
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
     let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
-    let mut query =
-        if let Some(create_message_query) = create_message_req_payload.search_query.clone() {
-            create_message_query
-        } else {
-            user_message_query
-        };
-
-    let use_message_to_query_prompt = dataset_config.USE_MESSAGE_TO_QUERY_PROMPT;
-    if create_message_req_payload.search_query.is_none() && use_message_to_query_prompt {
-        let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
-        let gen_inference_msgs = vec![ChatMessage::User {
-            content: ChatMessageContent::Text(format!("{}\n{}", message_to_query_prompt, query)),
-            name: None,
-        }];
-
-        let gen_inference_parameters = ChatCompletionParameters {
-            model: chosen_model.clone(),
-            messages: gen_inference_msgs,
-            stream: Some(false),
-            temperature: dataset_config.TEMPERATURE.map(|temp| temp as f32),
-            frequency_penalty: Some(dataset_config.FREQUENCY_PENALTY.unwrap_or(0.8) as f32),
-            presence_penalty: Some(dataset_config.PRESENCE_PENALTY.unwrap_or(0.8) as f32),
-            stop: dataset_config.STOP_TOKENS.clone().map(StopToken::Array),
-            top_p: None,
-            n: None,
-            max_completion_tokens: dataset_config.MAX_TOKENS.map(|max| max as u32),
-            logit_bias: None,
-            user: None,
-            response_format: None,
-            tools: None,
-            tool_choice: None,
-            logprobs: None,
-            top_logprobs: None,
-            seed: None,
-            ..Default::default()
-        };
-
-        let search_query_from_message_to_query_prompt = client
-            .chat()
-            .create(gen_inference_parameters)
-            .await
-            .expect("No LLM Completion for chunk search");
-
-        query = match &search_query_from_message_to_query_prompt
-            .choices
-            .get(0)
-            .expect("No response for LLM completion")
-            .message
-        {
-            ChatMessage::User {
-                content: ChatMessageContent::Text(content),
-                ..
-            }
-            | ChatMessage::System {
-                content: ChatMessageContent::Text(content),
-                ..
-            }
-            | ChatMessage::Assistant {
-                content: Some(ChatMessageContent::Text(content)),
-                ..
-            } => content.clone(),
-            _ => query,
-        };
-    }
-
-    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
-    let search_chunk_data = SearchChunksReqPayload {
-        search_type: create_message_req_payload
-            .search_type
-            .unwrap_or(SearchMethod::Hybrid),
-        query: QueryTypes::Single(query.clone()),
-        score_threshold: create_message_req_payload.score_threshold,
-        page_size: Some(
-            create_message_req_payload
-                .page_size
-                .unwrap_or(n_retrievals_to_include.try_into().unwrap_or(8)),
-        ),
-        highlight_options: create_message_req_payload.highlight_options,
-        filters: create_message_req_payload.filters,
-        ..Default::default()
-    };
-    let parsed_query = ParsedQuery {
-        query: query.clone(),
-        quote_words: None,
-        negated_words: None,
-    };
-    let mut search_timer = Timer::new();
-
-    let result_chunks = search_hybrid_chunks(
-        search_chunk_data.clone(),
-        parsed_query,
-        pool.clone(),
-        redis_pool,
+    let (search_id, chunk_metadatas) = get_rag_chunks_query(
+        create_message_req_payload.clone(),
+        dataset_config.clone(),
         dataset.clone(),
-        &dataset_config,
-        &mut search_timer,
+        user_message_query.clone(),
+        chosen_model.clone(),
+        &client,
+        pool.clone(),
+        redis_pool.clone(),
+        event_queue.clone(),
     )
     .await?;
 
-    let clickhouse_search_event = SearchQueryEventClickhouse {
-        request_params: serde_json::to_string(&search_chunk_data.clone()).unwrap_or_default(),
-        id: uuid::Uuid::new_v4(),
-        search_type: "rag".to_string(),
-        query: query.clone(),
-        dataset_id: dataset.id,
-        top_score: result_chunks
-            .score_chunks
-            .get(0)
-            .map(|x| x.score as f32)
-            .unwrap_or(0.0),
-
-        latency: get_latency_from_header(search_timer.header_value()),
-        results: result_chunks
-            .score_chunks
-            .clone()
-            .into_iter()
-            .map(|x| serde_json::to_string(&x).unwrap_or_default())
-            .collect(),
-        created_at: time::OffsetDateTime::now_utc(),
-        query_rating: String::from(""),
-        user_id: create_message_req_payload
-            .user_id
-            .clone()
-            .unwrap_or_default(),
-    };
-
-    event_queue
-        .send(ClickHouseEvent::SearchQueryEvent(
-            clickhouse_search_event.clone(),
-        ))
-        .await;
-
-    let chunk_metadatas = result_chunks
-        .score_chunks
-        .iter()
-        .map(
-            |score_chunk| match score_chunk.metadata.get(0).expect("No metadata found") {
-                ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.clone(),
-                _ => unreachable!("The operator should never return slim chunks for this"),
-            },
-        )
-        .collect::<Vec<ChunkMetadataStringTagSet>>();
-
-    let chunk_data = result_chunks
-        .score_chunks
+    let chunk_data = chunk_metadatas
         .clone()
         .into_iter()
         .map(|x| serde_json::to_string(&x).unwrap_or_default())
@@ -676,10 +848,10 @@ pub async fn stream_response(
             id: query_id,
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
-            search_id: clickhouse_search_event.id,
+            search_id,
             results: vec![],
             json_results: chunk_data,
-            user_message: query.clone(),
+            user_message: user_message_query.clone(),
             query_rating: String::new(),
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion_content.clone(),
@@ -737,10 +909,10 @@ pub async fn stream_response(
             id: query_id_arb,
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
-            search_id: clickhouse_search_event.id,
+            search_id,
             results: vec![],
             json_results: chunk_data,
-            user_message: query.clone(),
+            user_message: user_message_query.clone(),
             query_rating: String::new(),
             rag_type: "all_chunks".to_string(),
             llm_response: completion.clone(),

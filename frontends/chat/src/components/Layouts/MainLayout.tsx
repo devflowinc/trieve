@@ -78,6 +78,9 @@ const MainLayout = (props: LayoutProps) => {
   >(null);
 
   const [useImages, setUseImages] = createSignal<boolean | null>(null);
+  const [useGroupSearch, setUseGroupSearch] = createSignal<boolean | null>(
+    null,
+  );
 
   const [streamCompletionsFirst, setStreamCompletionsFirst] = createSignal<
     boolean | null
@@ -227,6 +230,7 @@ const MainLayout = (props: LayoutProps) => {
               use_images: useImages(),
             },
           },
+          use_group_search: useGroupSearch(),
           search_type: searchType(),
         }),
         signal: completionAbortController().signal,
@@ -466,6 +470,18 @@ const MainLayout = (props: LayoutProps) => {
                       checked={useImages() ?? false}
                       onChange={(e) => {
                         setUseImages(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="concat_user_messages">Use Group Search</label>
+                    <input
+                      type="checkbox"
+                      id="concat_user_messages"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={useGroupSearch() ?? false}
+                      onChange={(e) => {
+                        setUseGroupSearch(e.target.checked);
                       }}
                     />
                   </div>

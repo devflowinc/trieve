@@ -103,6 +103,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
     if (validateResult.valid) {
       setErrors({});
     } else {
+      console.log(validateResult.errors);
       setErrors(validateResult.errors);
       return;
     }
@@ -114,6 +115,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
       if (crawlValidateResult.valid) {
         setCrawlErrors({});
       } else {
+        console.log(crawlValidateResult.errors);
         setCrawlErrors(crawlValidateResult.errors);
         return;
       }
