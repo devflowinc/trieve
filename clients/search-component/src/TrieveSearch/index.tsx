@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useCombobox } from "downshift";
 import { Item } from "./Item";
 import { Chunk, ChunkWithHighlights, Props } from "../utils/types";
-import { throttle } from "lodash-es";
 import r2wc from "@r2wc/react-to-web-component";
 import { searchWithTrieve } from "../utils/trieve";
 import { TrieveSDK } from "trieve-ts-sdk";
@@ -24,10 +23,7 @@ export const TrieveSearch = ({
   const { isOpen, getLabelProps, getMenuProps, getInputProps, getItemProps } =
     useCombobox({
       items: results,
-      onInputValueChange: throttle(
-        ({ inputValue }) => search(inputValue),
-        1000
-      ),
+      onInputValueChange: ({ inputValue }) => search(inputValue),
       stateReducer: (state, actionAndChanges) => {
         const { type, changes } = actionAndChanges;
         switch (type) {

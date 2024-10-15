@@ -48,7 +48,10 @@ export const searchWithTrieve = async ({
     };
   });
 
-  return {chunks: resultsWithHighlight, requestID: results.id} as unknown as SearchResults;
+  return {
+    chunks: resultsWithHighlight,
+    requestID: results.id,
+  } as unknown as SearchResults;
 };
 
 export const countChunks = async ({
@@ -102,34 +105,40 @@ export const sendCtrData = async ({
 export const getSuggestedQueries = async ({
   trieve,
   query,
+  abortController,
 }: {
   query: string;
   trieve: TrieveSDK;
+  abortController?: AbortController;
 }) => {
-  return trieve.suggestedQueries({
-    ...(query && { query }),
-    suggestion_type: "keyword",
-    search_type: "semantic",
-    context: "You are a user searching through a docs website",
-  });
+  return trieve.suggestedQueries(
+    {
+      ...(query && { query }),
+      suggestion_type: "keyword",
+      search_type: "semantic",
+      context: "You are a user searching through a docs website",
+    },
+    abortController?.signal
+  );
 };
 
 export const getSuggestedQuestions = async ({
   trieve,
+  abortController,
 }: {
   trieve: TrieveSDK;
+  abortController?: AbortController;
 }) => {
-  return trieve.suggestedQueries({
-    suggestion_type: "question",
-    search_type: "semantic",
-    context: "You are a user searching through a docs website",
-  });
+  return trieve.suggestedQueries(
+    {
+      suggestion_type: "question",
+      search_type: "semantic",
+      context: "You are a user searching through a docs website",
+    },
+    abortController?.signal
+  );
 };
 
-export const sendFeedBack = async ({
-  trieve,
-}: {
-  trieve: TrieveSDK;
-}) => {
+export const sendFeedBack = async ({ trieve }: { trieve: TrieveSDK }) => {
   return trieve;
 };

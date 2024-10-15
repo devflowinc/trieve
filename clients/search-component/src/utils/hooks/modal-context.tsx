@@ -140,8 +140,8 @@ function ModalProvider({
   );
 
   const trieve = new TrieveSDK({
-    apiKey: "tr-UPjrAOp35kGrJWM1IvODj4zVWTdGgQxI",
-    datasetId: "4650e231-7857-45aa-beb1-cb52006a2460",
+    apiKey: props.apiKey,
+    datasetId: props.datasetId,
   });
 
   useEffect(() => {

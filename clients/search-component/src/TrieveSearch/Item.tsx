@@ -1,4 +1,3 @@
-import { omit } from "lodash";
 import { Chunk, ChunkWithHighlights } from "../utils/types";
 import React from "react";
 
@@ -11,6 +10,14 @@ type Props = {
     index: number;
   }) => object | null | undefined;
   onResultClick?: (chunk: Chunk, requestID: string) => void;
+};
+
+export const omit = (obj: object | null | undefined, keys: string[]) => {
+  if (!obj) return obj;
+
+  return Object.fromEntries(
+    Object.entries(obj).filter(([key]) => !keys.includes(key))
+  );
 };
 
 export const Item = ({
