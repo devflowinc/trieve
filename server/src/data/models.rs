@@ -2240,9 +2240,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             SYSTEM_PROMPT: Some(config.SYSTEM_PROMPT),
             MAX_LIMIT: Some(config.MAX_LIMIT),
             PUBLIC_DATASET: Some(PublicDatasetOptions {
-                enabled: config
-                    .PUBLIC_DATASET
-                    .enabled,
+                enabled: config.PUBLIC_DATASET.enabled,
                 api_key: "".to_string(),
             }),
         }
@@ -2291,8 +2289,7 @@ impl Default for DatasetConfiguration {
 impl DatasetConfiguration {
     pub fn from_json(configuration_json: serde_json::Value) -> Self {
         let default_config = json!({});
-        let binding = configuration_json
-            .clone();
+        let binding = configuration_json.clone();
         let configuration = binding
             .as_object()
             .unwrap_or(default_config.as_object().unwrap());
@@ -2654,9 +2651,13 @@ impl DatasetConfigurationDTO {
                 .unwrap_or(curr_dataset_config.SYSTEM_PROMPT),
             MAX_LIMIT: self.MAX_LIMIT.unwrap_or(curr_dataset_config.MAX_LIMIT),
             PUBLIC_DATASET: PublicDatasetOptions {
-                enabled: <std::option::Option<PublicDatasetOptions> as Clone>::clone(&self.PUBLIC_DATASET).map(|dataset| dataset.enabled).unwrap_or(false),
-                api_key: "".to_string()
-            }
+                enabled: <std::option::Option<PublicDatasetOptions> as Clone>::clone(
+                    &self.PUBLIC_DATASET,
+                )
+                .map(|dataset| dataset.enabled)
+                .unwrap_or(false),
+                api_key: "".to_string(),
+            },
         }
     }
 }
