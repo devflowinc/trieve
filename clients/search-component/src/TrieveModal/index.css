@@ -58,11 +58,28 @@ body {
     }
 
     .no-results {
-      @apply text-sm text-center my-8;
+      @apply text-sm text-center my-8 flex flex-col gap-2;
+
+      > p.no-results-text {
+        @apply font-medium;
+      }
+
+      > p > a.no-results-help-link {
+        @apply underline;
+        color: var(--tv-prop-brand-color);
+      }
     }
 
     .no-results-loading {
       @apply text-sm text-center my-8 animate-pulse;
+    }
+
+    .clear-query {
+      @apply flex items-center justify-end mt-2 absolute top-1.5 right-2 z-30 font-medium;
+
+      > .clear-query-icon {
+        @apply w-5 h-5 fill-current;
+      }
     }
 
     .mode-switch-wrapper {
@@ -661,6 +678,11 @@ body {
             background-color: var(--tv-zinc-800);
           }
 
+          &:hover,
+          &.active {
+            background-color: var(--tv-zinc-800);
+          }
+
           &.active {
             border-color: var(--tv-prop-brand-color);
           }
@@ -675,6 +697,7 @@ body {
             color: var(--tv-zinc-400);
 
             &.active {
+              background-color: var(--tv-zinc-700);
               color: var(--tv-zinc-200);
             }
           }

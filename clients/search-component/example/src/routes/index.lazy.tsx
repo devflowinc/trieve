@@ -41,6 +41,7 @@ export default function Home() {
               defaultSearchMode="search"
               apiKey="tr-zpPVGUq18FxOCmXgLfqGbmDOY4UMW00r"
               datasetId="4538ad9f-47cf-44d4-8a14-7c111f9558a9"
+              problemLink="mailto:help@trieve.ai?subject="
               theme={theme}
               tags={[
                 {

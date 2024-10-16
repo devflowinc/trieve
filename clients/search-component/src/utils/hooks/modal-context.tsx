@@ -37,6 +37,7 @@ export type ModalProps = {
   defaultAiQuestions?: string[];
   brandLogoImgSrcUrl?: string;
   brandName?: string;
+  problemLink?: string;
   brandColor?: string;
   openKeyCombination?: { key?: string; label?: string; ctrl?: boolean }[];
   tags?: {
@@ -169,7 +170,10 @@ function ModalProvider({
       setResults(results.chunks);
       setRequestID(results.requestID);
     } catch (e) {
-      if (e != 'AbortError' && e != "AbortError: signal is aborted without reason") {
+      if (
+        e != "AbortError" &&
+        e != "AbortError: signal is aborted without reason"
+      ) {
         console.error(e);
       }
     } finally {
@@ -204,8 +208,11 @@ function ModalProvider({
           )
         );
         setTagCounts(numberOfRecords);
-      } catch(e) {
-        if (e != 'AbortError' && e != "AbortError: signal is aborted without reason") {
+      } catch (e) {
+        if (
+          e != "AbortError" &&
+          e != "AbortError: signal is aborted without reason"
+        ) {
           console.log(e);
           console.log(typeof e);
           console.error(e);

@@ -1,6 +1,7 @@
 import { SearchResponseBody, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk, Props, SearchResults } from "./types";
 import { highlightOptions, highlightText } from "./highlight";
+import { omit } from "../TrieveSearch/Item";
 
 export const searchWithTrieve = async ({
   trieve,
@@ -25,7 +26,7 @@ export const searchWithTrieve = async ({
         highlight_delimiters: ["?", ",", ".", "!", "\n"],
       },
       extend_results: true,
-      score_threshold: 0.2,
+      score_threshold: 2,
       page_size: 20,
       ...(tag && {
         filters: {
@@ -59,22 +60,25 @@ export const countChunks = async ({
   query,
   abortController,
   tag,
+  searchOptions,
 }: {
   trieve: TrieveSDK;
   query: string;
   abortController?: AbortController;
   tag?: string;
+  searchOptions?: Props["searchOptions"];
 }) => {
   const results = await trieve.countChunksAboveThreshold(
     {
       query,
-      score_threshold: 0.2,
+      score_threshold: 2,
       ...(tag && {
         filters: {
           must: [{ field: "tag_set", match_any: [tag] }],
         },
       }),
       search_type: "fulltext",
+      ...omit(searchOptions, ["search_type"]),
     },
     abortController?.signal
   );
