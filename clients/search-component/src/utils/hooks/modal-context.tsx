@@ -169,8 +169,9 @@ function ModalProvider({
       setResults(results.chunks);
       setRequestID(results.requestID);
     } catch (e) {
-      if (e.name != 'AbortError') {
+      if (e != 'AbortError' && e != "AbortError: signal is aborted without reason") {
         console.error(e);
+        console.log(e.toString());
       }
     } finally {
       setLoadingResults(false);
@@ -205,7 +206,7 @@ function ModalProvider({
         );
         setTagCounts(numberOfRecords);
       } catch(e) {
-        if (e != 'AbortError' && e.name == 'AbortError') {
+        if (e != 'AbortError' && e != "AbortError: signal is aborted without reason") {
           console.log(e);
           console.log(typeof e);
           console.error(e);

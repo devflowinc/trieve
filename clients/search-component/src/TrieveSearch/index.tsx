@@ -69,7 +69,7 @@ export const TrieveSearch = ({
       setResults(results.chunks);
       setRequestID(results.requestID);
     } catch (e) {
-      if (e.name != 'AbortError') {
+      if (e != 'AbortError: signal is aborted without reason') {
         console.error(e);
       }
     }
