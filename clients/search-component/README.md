@@ -90,6 +90,7 @@ declare module "solid-js" {
 | defaultAiQuestions   | string[]                                                                                       | []                                         |
 | brandLogoImgSrcUrl   | string                                                                                         | null                                       |
 | brandName            | string                                                                                         | null                                       |
+| problemLink          | string                                                                                         | null                                       |
 | accentColor          | string                                                                                         | #CB53EB                                    |
 
 ### Search Results

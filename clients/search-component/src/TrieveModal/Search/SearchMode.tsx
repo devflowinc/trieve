@@ -57,9 +57,24 @@ export const SearchMode = () => {
             placeholder={props.placeholder || "Search for anything"}
           />
 
-          <div className="kbd-wrapper">
-            <kbd>ESC</kbd>
-          </div>
+          <button className="clear-query" onClick={() => setQuery("")}>
+            <svg
+              className="clear-query-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
         {props.suggestedQueries && (!query || (query && !results.length)) && (
           <div className="suggested-queries-wrapper">
@@ -125,7 +140,21 @@ export const SearchMode = () => {
             ))
           : null}
         {query && !results.length && !loadingResults ? (
-          <p className="no-results">No results found</p>
+          <div className="no-results">
+            <p className="no-results-text">No results found</p>
+            {props.problemLink && (
+              <p>
+                Believe this query should return results?{" "}
+                <a
+                  className="no-results-help-link"
+                  href={`${props.problemLink}No results found for query: ${query} on ${props.brandName}`}
+                  target="_blank"
+                >
+                  Contact us
+                </a>
+              </p>
+            )}
+          </div>
         ) : query && !results.length && loadingResults ? (
           <p className="no-results-loading">Searching...</p>
         ) : null}
