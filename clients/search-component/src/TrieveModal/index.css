@@ -11,7 +11,6 @@
   --tv-zinc-400: rgb(161, 161, 170);
   --tv-zinc-500: rgb(108 108 120);
   --tv-zinc-600: rgb(82 82 91);
-  --tv-primary-500: rgb(163 62 181);
 }
 
 body {
@@ -876,10 +875,10 @@ body {
 
     &:hover {
       outline: none;
-      border: 1px solid var(--tv-primary-500);
+      border: 1px solid var(--tv-prop-brand-color);
       box-shadow:
         rgb(255, 255, 255) 0px 0px 0px 0px inset,
-        var(--tv-primary-500) 0px 0px 1px inset,
+        var(--tv-prop-brand-color) 0px 0px 1px inset,
         rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
     }
 
@@ -936,10 +935,10 @@ body {
         rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       &:hover {
         outline: none;
-        border: 1px solid var(--tv-primary-500);
+        border: 1px solid var(--tv-prop-brand-color);
         box-shadow:
           rgb(255, 255, 255) 0px 0px 0px 0px inset,
-          var(--tv-primary-500) 0px 0px 1px inset,
+          var(--tv-prop-brand-color) 0px 0px 1px inset,
           rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
 

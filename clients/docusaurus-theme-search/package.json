@@ -1,6 +1,6 @@
 {
   "name": "@trieve/docusaurus-search-theme",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "author": "cdxker <denzell.f@trieve.ai>",
   "license": "MIT",
   "main": "dist/index.js",
@@ -24,7 +24,7 @@
     "cli-progress": "^3.12.0",
     "micromatch": "^4.0.7",
     "pagefind": "^1.1.0",
-    "trieve-search-component": "^0.0.30"
+    "trieve-search-component": "^0.0.33"
   },
   "peerDependencies": {
     "@docusaurus/core": "^2.0.0 || ^3.0.0",
