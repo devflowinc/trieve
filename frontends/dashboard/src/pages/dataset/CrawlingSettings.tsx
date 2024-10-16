@@ -45,6 +45,7 @@ export const unflattenCrawlOptions = (
       };
     }
     return {
+      allow_external_links: options.allow_external_links,
       boost_titles: options.boost_titles,
       exclude_paths: options.exclude_paths,
       exclude_tags: options.exclude_tags,
@@ -62,6 +63,7 @@ export const unflattenCrawlOptions = (
     };
   } else if (options && options.type == "shopify") {
     return {
+      allow_external_links: options.allow_external_links,
       boost_titles: options.boost_titles,
       exclude_paths: options.exclude_paths,
       exclude_tags: options.exclude_tags,
@@ -78,6 +80,7 @@ export const unflattenCrawlOptions = (
     };
   }
   return {
+    allow_external_links: options.allow_external_links,
     boost_titles: options.boost_titles,
     exclude_paths: options.exclude_paths,
     exclude_tags: options.exclude_tags,
@@ -86,6 +89,7 @@ export const unflattenCrawlOptions = (
     interval: options.interval,
     limit: options.limit,
     max_depth: options.max_depth,
+    site_url: options.site_url,
     scrape_options: null,
   };
 };
@@ -237,11 +241,11 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
   const isShopify = createMemo(() => options.type === "shopify");
   const isOpenAPI = createMemo(() => options.type === "openapi");
 
-  const submit = () => {
-    const validateResult = validateFlatCrawlOptions(options);
+  const submit = (curOptions: FlatCrawlOptions) => {
+    const validateResult = validateFlatCrawlOptions(curOptions);
     if (validateResult.valid) {
       setErrors({});
-      props.onSave(unflattenCrawlOptions(options));
+      props.onSave(unflattenCrawlOptions(curOptions));
     } else {
       setErrors(validateResult.errors);
     }
@@ -251,7 +255,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        submit();
+        submit(options);
       }}
       class="rounded border border-neutral-300 bg-white p-4 shadow"
     >
