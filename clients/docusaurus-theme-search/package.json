@@ -18,8 +18,6 @@
     "pub": "yarn build && yarn publish --access public"
   },
   "dependencies": {
-    "@getcanary/docusaurus-theme-search-pagefind": "^1.0.2",
-    "@getcanary/web": "^1.0.0",
     "@trieve/docusaurus-search-theme": "^0.1.0",
     "cli-progress": "^3.12.0",
     "micromatch": "^4.0.7",

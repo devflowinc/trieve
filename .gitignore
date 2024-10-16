@@ -82,6 +82,7 @@ data/*
 clients/ts-sdk/dist
 clients/ts-sdk/docs
 clients/search-component/dist
+clients/docusaurus-theme-search/dist
 eslint_report.json
 
 
