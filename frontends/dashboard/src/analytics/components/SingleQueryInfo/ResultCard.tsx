@@ -1,11 +1,16 @@
-import { ScoreChunkDTO } from "shared/types";
+import {
+  GroupScoreChunkDTO,
+  isGroupScoreChunkDTO,
+  isScoreChunkDTO,
+  ScoreChunkDTO,
+} from "shared/types";
 import { FullScreenModal, JsonInput } from "shared/ui";
 import { IoCode } from "solid-icons/io";
 import { createMemo, createSignal, Show } from "solid-js";
 import { z } from "zod";
 
 interface ResultCardProps {
-  result: ScoreChunkDTO;
+  result: ScoreChunkDTO | GroupScoreChunkDTO;
 }
 
 const usefulMetadataSchema = z.object({
@@ -18,14 +23,26 @@ const usefulMetadataSchema = z.object({
 
 export const ResultCard = (props: ResultCardProps) => {
   const metadata = createMemo(() => {
-    const parseResult = usefulMetadataSchema.safeParse(
-      props?.result?.metadata?.at(0),
-    );
-    if (parseResult.success) {
-      return parseResult.data;
-    } else {
-      console.error("Failed to parse metadata: ", parseResult.error);
-      return null;
+    if (isGroupScoreChunkDTO(props.result)) {
+      const parseResult = usefulMetadataSchema.safeParse(
+        props?.result?.metadata?.at(0)?.metadata?.at(0),
+      );
+      if (parseResult.success) {
+        return parseResult.data;
+      } else {
+        console.error("Failed to parse metadata: ", parseResult.error);
+        return null;
+      }
+    } else if (isScoreChunkDTO(props.result)) {
+      const parseResult = usefulMetadataSchema.safeParse(
+        props?.result?.metadata?.at(0),
+      );
+      if (parseResult.success) {
+        return parseResult.data;
+      } else {
+        console.error("Failed to parse metadata: ", parseResult.error);
+        return null;
+      }
     }
   });
 
@@ -43,11 +60,19 @@ export const ResultCard = (props: ResultCardProps) => {
 
             <IoCode />
           </div>
-          <Show when={props.result.score}>
-            <div class="text-xs font-normal opacity-60">
-              Score: {props?.result?.score?.toFixed(5)}
-            </div>
-          </Show>
+          {isGroupScoreChunkDTO(props.result) ? (
+            <Show when={props.result.metadata.at(0)?.score}>
+              <div class="text-xs font-normal opacity-60">
+                Score: {props.result.metadata.at(0)?.score?.toFixed(5)}
+              </div>
+            </Show>
+          ) : (
+            <Show when={props.result.score}>
+              <div class="text-xs font-normal opacity-60">
+                Score: {props?.result?.score?.toFixed(5)}
+              </div>
+            </Show>
+          )}
           <Show when={metadata()}>
             {(metadata) => (
               <div class="line-clamp-1 font-mono text-xs text-zinc-600">

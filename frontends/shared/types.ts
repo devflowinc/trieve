@@ -481,7 +481,7 @@ export interface SearchQueryEvent {
   request_params: Record<string, unknown>;
   latency: number;
   top_score: number;
-  results: ScoreChunkDTO[] | object[];
+  results: ScoreChunkDTO[] | object[] | GroupScoreChunkDTO[];
   dataset_id: string;
   created_at: string;
   query_rating?: {
@@ -490,10 +490,38 @@ export interface SearchQueryEvent {
   };
 }
 
+export interface GroupScoreChunkDTO {
+  group_id: string;
+  group_name?: string;
+  group_description?: string;
+  group_created_at: string;
+  group_updated_at: string;
+  group_tracking_id?: string;
+  group_metadata?: Record<string, unknown>;
+  group_tag_set?: string[] | null;
+  group_dataset_id: string;
+  metadata: ScoreChunkDTO[];
+  file_id?: string;
+}
+
 export interface ScoreChunkDTO {
   highlights?: unknown;
   metadata: ChunkMetadataStringTagSet[];
   score?: number;
+}
+
+export function isGroupScoreChunkDTO(
+  data: unknown,
+): data is GroupScoreChunkDTO {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  if (!Array.isArray((data as GroupScoreChunkDTO).metadata)) {
+    return false;
+  }
+
+  return true;
 }
 
 export function isScoreChunkDTO(data: unknown): data is ScoreChunkDTO {
