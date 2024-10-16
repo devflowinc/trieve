@@ -10,7 +10,7 @@ import { DataSquare } from "./DataSquare";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { UserContext } from "../../../contexts/UserContext";
 import { IoArrowBackOutline } from "solid-icons/io";
-import { isScoreChunkDTO } from "shared/types";
+import { isGroupScoreChunkDTO, isScoreChunkDTO } from "shared/types";
 import { ArbitraryResultCard } from "./ArbitraryResultCard";
 
 interface SingleQueryProps {
@@ -95,7 +95,7 @@ export const SingleQuery = (props: SingleQueryProps) => {
                 each={props.data.results}
               >
                 {(result) => {
-                  if (isScoreChunkDTO(result)) {
+                  if (isScoreChunkDTO(result) || isGroupScoreChunkDTO(result)) {
                     return <ResultCard result={result} />;
                   } else {
                     return <ArbitraryResultCard result={result} />;
