@@ -169,7 +169,9 @@ function ModalProvider({
       setResults(results.chunks);
       setRequestID(results.requestID);
     } catch (e) {
-      console.error(e);
+      if (e.name != 'AbortError') {
+        console.error(e);
+      }
     } finally {
       setLoadingResults(false);
     }
@@ -190,17 +192,25 @@ function ModalProvider({
       return;
     }
     if (props.tags?.length) {
-      const numberOfRecords = await Promise.all(
-        [ALL_TAG, ...props.tags].map((tag) =>
-          countChunks({
-            query: query,
-            trieve: trieve,
-            abortController,
-            ...(tag.tag !== "all" && { tag: tag.tag }),
-          })
-        )
-      );
-      setTagCounts(numberOfRecords);
+      try {
+        const numberOfRecords = await Promise.all(
+          [ALL_TAG, ...props.tags].map((tag) =>
+            countChunks({
+              query: query,
+              trieve: trieve,
+              abortController,
+              ...(tag.tag !== "all" && { tag: tag.tag }),
+            })
+          )
+        );
+        setTagCounts(numberOfRecords);
+      } catch(e) {
+        if (e != 'AbortError' && e.name == 'AbortError') {
+          console.log(e);
+          console.log(typeof e);
+          console.error(e);
+        }
+      }
     }
   };
 
@@ -209,7 +219,7 @@ function ModalProvider({
     getTagCounts(abortController);
 
     return () => {
-      abortController.abort();
+      abortController.abort("AbortError");
     };
   }, [query]);
 
