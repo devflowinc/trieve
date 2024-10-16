@@ -35,7 +35,6 @@ use utoipa::{IntoParams, ToSchema};
 #[derive(Deserialize, Debug)]
 pub struct OpCallback {
     pub state: String,
-    pub session_state: String,
     pub code: String,
 }
 
