@@ -1,0 +1,44 @@
+{
+  "name": "@trieve/docusaurus-search-theme",
+  "version": "0.1.3",
+  "author": "cdxker <denzell.f@trieve.ai>",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "rm -rf dist && yarn transform  && yarn copy && yarn format",
+    "copy": "cp -r src/theme dist",
+    "transform": "esbuild src/**/*.js --outdir=dist --format=cjs --platform=node --allow-overwrite",
+    "format": "prettier --write .",
+    "pub": "yarn build && yarn publish --access public"
+  },
+  "dependencies": {
+    "@getcanary/docusaurus-theme-search-pagefind": "^1.0.2",
+    "@getcanary/web": "^1.0.0",
+    "@trieve/docusaurus-search-theme": "^0.1.0",
+    "cli-progress": "^3.12.0",
+    "micromatch": "^4.0.7",
+    "pagefind": "^1.1.0",
+    "trieve-search-component": "^0.0.30"
+  },
+  "peerDependencies": {
+    "@docusaurus/core": "^2.0.0 || ^3.0.0",
+    "@getcanary/web": "^1.0.0",
+    "react": "^17 || ^18",
+    "react-dom": "^17 || ^18"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^3.4.0",
+    "@types/cli-progress": "^3.11.6",
+    "@types/micromatch": "^4.0.9",
+    "esbuild": "^0.23.0",
+    "json-to-markdown": "^1.0.4",
+    "parse5": "^7.1.2",
+    "prettier": "^3.3.3"
+  }
+}
