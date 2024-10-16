@@ -69,7 +69,9 @@ export const TrieveSearch = ({
       setResults(results.chunks);
       setRequestID(results.requestID);
     } catch (e) {
-      console.error(e);
+      if (e.name != 'AbortError') {
+        console.error(e);
+      }
     }
 
     setLoadingResults(false);
