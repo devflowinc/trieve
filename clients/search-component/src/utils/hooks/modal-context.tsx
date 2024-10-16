@@ -171,7 +171,6 @@ function ModalProvider({
     } catch (e) {
       if (e != 'AbortError' && e != "AbortError: signal is aborted without reason") {
         console.error(e);
-        console.log(e.toString());
       }
     } finally {
       setLoadingResults(false);
