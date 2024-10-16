@@ -47,7 +47,7 @@ pub async fn get_qdrant_connection(
 
     Qdrant::from_url(qdrant_url)
         .api_key(qdrant_api_key)
-        .timeout(std::time::Duration::from_secs(60))
+        .timeout(std::time::Duration::from_secs(10))
         .build()
         .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))
 }
