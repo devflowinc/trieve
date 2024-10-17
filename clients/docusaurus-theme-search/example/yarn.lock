@@ -2065,7 +2065,7 @@
   resolved "https://registry.yarnpkg.com/@thumbmarkjs/thumbmarkjs/-/thumbmarkjs-0.14.8.tgz#abe3a9ebd9ec949ea7f044acf4a5e0074b18cf97"
   integrity sha512-J+/HnYBv24ufFCoyqbFhtZk1zTGKWzHfyN15sc6kJq/1D/6H1oaKt+W1yWxkUwzclMS1n36EaoHbNjFeiuDqDg==
 
-"@trieve/docusaurus-search-theme@^0.1.0", "@trieve/docusaurus-search-theme@^0.1.3":
+"@trieve/docusaurus-search-theme@^0.1.0":
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/@trieve/docusaurus-search-theme/-/docusaurus-search-theme-0.1.3.tgz#5c4cbeadca832861afbe3500d2fb8bc5682b600f"
   integrity sha512-4LShfLZM/GV2nHQeiWQm+bqF4ukk3FBspVbusjE8mWpUThvtDUtLJQ8ZnToaD5389gAJZNXjsInyRRdpuioBvw==
@@ -2077,6 +2077,17 @@
     micromatch "^4.0.7"
     pagefind "^1.1.0"
     trieve-search-component "^0.0.30"
+
+"@trieve/docusaurus-search-theme@^0.1.6":
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/@trieve/docusaurus-search-theme/-/docusaurus-search-theme-0.1.6.tgz#b7c79e1dfabc1d5298631ca0b4c14ab7f67c7bba"
+  integrity sha512-nOpv0qg5gsasKdRsAXuVXajZNCSX4QOYoTEWrSui5MrUErxcX2LmPMk54UkdqzxFBV3Va3cbsVCVTLV3K2mPzA==
+  dependencies:
+    "@trieve/docusaurus-search-theme" "^0.1.0"
+    cli-progress "^3.12.0"
+    micromatch "^4.0.7"
+    pagefind "^1.1.0"
+    trieve-search-component "^0.0.34"
 
 "@trysound/sax@0.2.0":
   version "0.2.0"
@@ -8312,6 +8323,21 @@ trieve-search-component@^0.0.30:
   version "0.0.30"
   resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.30.tgz#361538941214f458f23e9ee72b21aad10ca3100d"
   integrity sha512-2zlqrtI1eqHa1+RtbLsDfDbU/YR2chAx2PsEChHKF9QuLpWaniIxeyh3yg8koXh3PoYK5Nvtf1oSLujHYmCYTQ==
+  dependencies:
+    "@r2wc/react-to-web-component" "^2.0.3"
+    "@radix-ui/react-dialog" "^1.1.1"
+    "@thumbmarkjs/thumbmarkjs" "^0.14.8"
+    cheerio "^1.0.0"
+    downshift "^9.0.8"
+    lodash-es "^4.17.21"
+    react-markdown "^9.0.1"
+    react-syntax-highlighter "^15.5.0"
+    trieve-ts-sdk "*"
+
+trieve-search-component@^0.0.34:
+  version "0.0.34"
+  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.34.tgz#f5f022cb96c25e66e17e9d758e9ba7a83395d5ad"
+  integrity sha512-VCdwI0XP27vuSo3FP4k6gz/nK1svgInk8xk7LlZ3H922RmGB5EzPB7AB9Xhw/fm9yq+/ospWkPjNjgZHhZtGQA==
   dependencies:
     "@r2wc/react-to-web-component" "^2.0.3"
     "@radix-ui/react-dialog" "^1.1.1"
