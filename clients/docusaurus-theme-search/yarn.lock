@@ -2651,10 +2651,10 @@ trieve-search-component@^0.0.30:
     react-syntax-highlighter "^15.5.0"
     trieve-ts-sdk "*"
 
-trieve-search-component@^0.0.33:
-  version "0.0.33"
-  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.33.tgz#c8b1b3fbdb29f3f6e3d7e806327d73025243a073"
-  integrity sha512-FkMDgoBx1oopPHPKMZQLQFIH+mpI92wgDGgZmMGA8Hx/ikV3kSpWGwR+Q6GwRo1tF5JOZMVoQrM3vCKTdy0tjQ==
+trieve-search-component@^0.0.34:
+  version "0.0.34"
+  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.34.tgz#f5f022cb96c25e66e17e9d758e9ba7a83395d5ad"
+  integrity sha512-VCdwI0XP27vuSo3FP4k6gz/nK1svgInk8xk7LlZ3H922RmGB5EzPB7AB9Xhw/fm9yq+/ospWkPjNjgZHhZtGQA==
   dependencies:
     "@r2wc/react-to-web-component" "^2.0.3"
     "@radix-ui/react-dialog" "^1.1.1"

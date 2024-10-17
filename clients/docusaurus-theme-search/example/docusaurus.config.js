@@ -29,6 +29,7 @@ const config = {
           "Is there a python sdk?",
           "How to get started?",
         ],
+        responsive: true,
       },
     ],
   ],
