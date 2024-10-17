@@ -863,7 +863,16 @@ body {
 }
 body {
   #open-trieve-modal {
-    @apply w-full flex items-center text-sm leading-6 ring-1 shadow-sm justify-between  rounded-md border-0 py-1.5 px-2 sm:text-sm truncate gap-2 min-w-[43px]  max-w-[300px];
+    @apply  flex items-center text-sm leading-6 ring-1 shadow-sm justify-between  rounded-md border-0 py-1.5 px-2 sm:text-sm truncate gap-2;
+
+    &:not(.responsive) {
+      @apply w-full min-w-[43px] max-w-[300px];
+    }
+
+    &.responsive {
+      @apply sm:w-full sm:min-w-[43px] sm:max-w-[300px];
+    }
+
     color: var(--tv-zinc-400);
     background-color: var(--tv-zinc-50);
     outline: none;
@@ -883,7 +892,15 @@ body {
     }
 
     > div {
-      @apply flex items-center gap-3 min-w-[42px];
+      @apply flex items-center gap-3;
+
+      &.responsive {
+        @apply sm:min-w-[42px];
+      }
+
+      &:not(.responsive) {
+        @apply min-w-[42px];
+      }
 
       svg {
         @apply min-w-4 flex-none;
@@ -896,6 +913,11 @@ body {
 
       > div {
         @apply truncate min-w-0;
+        &.responsive {
+          @media (max-width: 640px) {
+            display: none;
+          }
+        }
       }
     }
 
@@ -903,6 +925,12 @@ body {
       @apply inline-flex items-center rounded border px-1 font-sans text-xs py-0.5 gap-1;
       color: var(--tv-zinc-400);
       border-color: var(--tv-zinc-200);
+
+      &.responsive {
+          @media (max-width: 640px) {
+            display: none;
+          }
+      }
 
       @media screen and (-webkit-font-smoothing: antialiased) {
         .mac {

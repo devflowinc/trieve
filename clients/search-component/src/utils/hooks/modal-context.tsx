@@ -51,6 +51,7 @@ export type ModalProps = {
   allowSwitchingModes?: boolean;
   defaultCurrency?: string;
   currencyPosition?: currencyPosition;
+  responsive?: boolean;
 };
 
 const defaultProps = {
@@ -70,6 +71,7 @@ const defaultProps = {
   type: "docs" as ModalTypes,
   allowSwitchingModes: true,
   currencyPosition: "after" as currencyPosition,
+  responsive: false
 };
 
 const ModalContext = createContext<{

@@ -92,6 +92,7 @@ declare module "solid-js" {
 | brandName            | string                                                                                         | null                                       |
 | problemLink          | string                                                                                         | null                                       |
 | accentColor          | string                                                                                         | #CB53EB                                    |
+| responsive           | boolean                                                                                        | false                                      |
 
 ### Search Results
 
