@@ -651,6 +651,10 @@ pub fn chunk_html(html: &str) -> Vec<(String, String)> {
         chunks.push((headings_text, last_short_chunk));
     }
 
+    chunks.retain(|(headings_text, content)| {
+        !headings_text.trim().is_empty() && !content.trim().is_empty()
+    });
+
     chunks
 }
 
