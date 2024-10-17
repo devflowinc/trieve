@@ -113,6 +113,7 @@ export default function Home() {
               brandName="Trieve"
               brandColor="#b557c5"
               allowSwitchingModes={true}
+              responsive={false}
             />
 
             <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">
