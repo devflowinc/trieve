@@ -52,6 +52,7 @@ export type ModalProps = {
   defaultCurrency?: string;
   currencyPosition?: currencyPosition;
   responsive?: boolean;
+  debounceMs?: number;
 };
 
 const defaultProps = {
@@ -71,7 +72,8 @@ const defaultProps = {
   type: "docs" as ModalTypes,
   allowSwitchingModes: true,
   currencyPosition: "after" as currencyPosition,
-  responsive: false
+  responsive: false,
+  debounceMs: 0,
 };
 
 const ModalContext = createContext<{
@@ -185,9 +187,14 @@ function ModalProvider({
 
   useEffect(() => {
     const abortController = new AbortController();
-    search(abortController);
+
+    setLoadingResults(true);
+    const timeout = setTimeout(() => {
+      search(abortController);
+    }, props.debounceMs);
 
     return () => {
+      clearTimeout(timeout);
       abortController.abort();
     };
   }, [query, currentTag]);
@@ -225,9 +232,13 @@ function ModalProvider({
 
   useEffect(() => {
     const abortController = new AbortController();
-    getTagCounts(abortController);
+
+    const timeout = setTimeout(() => {
+      getTagCounts(abortController);
+    }, props.debounceMs);
 
     return () => {
+      clearTimeout(timeout);
       abortController.abort("AbortError");
     };
   }, [query]);
