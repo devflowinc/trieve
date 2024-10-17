@@ -34,34 +34,11 @@ export const useSuggestedQueries = () => {
     if (!props.suggestedQueries) {
       return;
     }
-
-    if (props.defaultSearchQueries?.length) {
-      if (query) {
-        getQueries();
-        return;
-      }
-      setSuggestedQueries(props.defaultSearchQueries);
-      return;
-    }
-
     const abortController = new AbortController();
 
-    if (isFetching.current) {
-      return;
-    }
-    isFetching.current = true;
-    setIsLoading(true);
-
     const timeoutId = setTimeout(async () => {
-      const queries = await getSuggestedQueries({
-        trieve: trieveSDK,
-        query,
-        abortController,
-      });
-      setSuggestedQueries(queries.queries.splice(0, 3));
-      isFetching.current = false;
-      setIsLoading(false);
-    }, 500);
+      getQueries();
+    }, props.debounceMs);
 
     return () => {
       clearTimeout(timeoutId);
