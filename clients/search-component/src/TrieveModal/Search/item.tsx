@@ -55,12 +55,12 @@ export const Item = ({ item, requestID, index }: Props) => {
   for (const heading of chunkHtmlHeadings) {
     descriptionHtml = descriptionHtml.replace(
       load(heading ?? "").text() || "",
-      ""
+      "",
     );
   }
   descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
   const [shownImage, setShownImage] = useState<string>(
-    item.chunk?.image_urls?.[0] || ""
+    item.chunk?.image_urls?.[0] || "",
   );
   const price = item.chunk.num_value
     ? ` - ${props.currencyPosition === "before" ? props.defaultCurrency : ""}${
@@ -87,7 +87,7 @@ export const Item = ({ item, requestID, index }: Props) => {
     case "DELETE":
       title = title.replace(
         "DELETE",
-        '<span class="delete-method">DELETE</span>'
+        '<span class="delete-method">DELETE</span>',
       );
       break;
     case "PATCH":
@@ -103,9 +103,39 @@ export const Item = ({ item, requestID, index }: Props) => {
     }
   };
 
+  const getChunkPath = () => {
+    const urlElements = item.chunk.link?.split("/").slice(3) ?? [];
+    console.log(urlElements);
+    if (urlElements?.length > 1) {
+      return urlElements
+        .slice(0, -1)
+        .map((word) => word.replace(/-/g, " "))
+        .concat(
+          item.chunk.metadata?.title ||
+            item.chunk.metadata.summary ||
+            urlElements.slice(-1)[0],
+        )
+        .map((word) =>
+          word
+            .split(" ")
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(" "),
+        )
+        .join(" > ");
+    } else {
+      console.log(item.chunk.metadata?.title);
+      return item.chunk.metadata?.title
+        ? item.chunk.metadata.title
+            .split(" ")
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(" ")
+        : "";
+    }
+  };
+
   const onResultClick = async (
     chunk: Chunk & { position: number },
-    requestID: string
+    requestID: string,
   ) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
@@ -144,15 +174,14 @@ export const Item = ({ item, requestID, index }: Props) => {
               ...item.chunk,
               position: index,
             },
-            requestID
+            requestID,
           )
         }
         {...(item.chunk.link
           ? {
               href: `${item.chunk.link}${linkSuffix}`,
             }
-          : {})}
-      >
+          : {})}>
         <div>
           {props.type === "ecommerce" ? (
             item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
@@ -167,6 +196,7 @@ export const Item = ({ item, requestID, index }: Props) => {
           ) : null}
           {title ? (
             <div>
+              {props.type !== "ecommerce" ? <h6>{getChunkPath()}</h6> : null}
               <h4
                 dangerouslySetInnerHTML={{
                   __html: title,
@@ -197,8 +227,7 @@ export const Item = ({ item, requestID, index }: Props) => {
                             if (variant.featured_image?.src) {
                               setShownImage(variant.featured_image?.src);
                             }
-                          }}
-                        >
+                          }}>
                           {variant.title}
                         </button>
                       ))}
