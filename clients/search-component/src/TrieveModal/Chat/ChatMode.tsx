@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { BackIcon } from "../icons";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { AIInitialMessage } from "./AIInitalMessage";
@@ -26,7 +26,7 @@ export const ChatMode = () => {
   }, [chatInput, mode, open]);
 
   return (
-    <>
+    <Suspense>
       <div className="chat-outer-wrapper" ref={modalRef}>
         <div className="system-information-wrapper">
           <div className="ai-message">
@@ -92,6 +92,8 @@ export const ChatMode = () => {
           </div>
         </div>
       </div>
-    </>
+    </Suspense>
   );
 };
+
+export default ChatMode;

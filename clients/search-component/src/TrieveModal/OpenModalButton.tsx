@@ -13,12 +13,12 @@ export const OpenModalButton = ({ setOpen }: OpenModalButtonProps) => {
   return (
     <>
       {ButtonEl ? (
-        <button type="button">
-          <ButtonEl
-            onClick={() => {
-              setOpen()
-            }}
-          />
+        <button
+          onClick={() => {
+            setOpen()
+          }}
+          type="button">
+          <ButtonEl />
         </button>
       ) : (
         <button
