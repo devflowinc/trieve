@@ -9,6 +9,7 @@
   ],
   "version": "0.0.38",
   "license": "MIT",
+  "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
     "dev": "run-p watch:css watch:js",
     "watch:css": "npx postcss src/app.css -o dist/index.css --watch",
