@@ -55,8 +55,8 @@ export const hybridSearchRequest = (
 };
 
 export const hybridSearchRequestTS = (
-  dataset: string,
-  apiKey: string,
+  dataset: string = "********-****-****-****-************",
+  apiKey: string = "tr-********************************",
 ) => `import { TrieveSDK } from "trieve-ts-sdk";
 
 export const trieve = new TrieveSDK({
@@ -68,4 +68,21 @@ const data = await trieve.search({
   query: "AI will take over and maybe reward those who aided its rise",
   search_type: "hybrid",
 });
+`;
+
+export const searchComponentRequest = (dataset: string, apiKey: string) =>
+  `export const trieve = new TrieveSDK({
+  apiKey: "${apiKey}",
+  datasetId: "${dataset}",
+});
+
+function MyComponent() {
+  return (
+    <TrieveSearch
+      type="ecommerce"
+      defaultSearchMode="search"
+      trieve={trieve}
+    />
+  );
+}
 `;
