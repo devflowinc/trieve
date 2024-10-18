@@ -21,7 +21,6 @@
     "pub": "yarn build && yarn publish --access public"
   },
   "dependencies": {
-    "@trieve/docusaurus-search-theme": "^0.1.0",
     "trieve-search-component": "^0.0.43"
   },
   "peerDependencies": {
