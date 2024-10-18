@@ -1,7 +1,6 @@
 import { SearchResponseBody, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk, Props, SearchResults } from "./types";
 import { highlightOptions, highlightText } from "./highlight";
-import { omit } from "../TrieveSearch/Item";
 
 export const searchWithTrieve = async ({
   trieve,
@@ -53,6 +52,14 @@ export const searchWithTrieve = async ({
     chunks: resultsWithHighlight,
     requestID: results.id,
   } as unknown as SearchResults;
+};
+
+export const omit = (obj: object | null | undefined, keys: string[]) => {
+  if (!obj) return obj;
+
+  return Object.fromEntries(
+    Object.entries(obj).filter(([key]) => !keys.includes(key))
+  );
 };
 
 export const countChunks = async ({

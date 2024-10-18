@@ -30,7 +30,7 @@ const config = {
           "How to get started?",
         ],
         responsive: true,
-        debounceMs: 200
+        debounceMs: 200,
       },
     ],
   ],

@@ -1,20 +1,31 @@
 import React, { Fragment } from "react";
 import { useModalState } from "../utils/hooks/modal-context";
-import * as Dialog from "@radix-ui/react-dialog";
 
-export const OpenModalButton = () => {
+interface OpenModalButtonProps {
+  setOpen: () => void;
+};
+
+export const OpenModalButton = ({ setOpen }: OpenModalButtonProps) => {
   const { props } = useModalState();
   const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
 
   const ButtonEl = props.ButtonEl;
   return (
-    <Dialog.Trigger asChild>
+    <>
       {ButtonEl ? (
         <button type="button">
-          <ButtonEl />
+          <ButtonEl
+            onClick={() => {
+              setOpen()
+            }}
+          />
         </button>
       ) : (
-        <button id="open-trieve-modal" type="button" className={`${props.theme} ${props.responsive ?? false ? 'responsive' : ''}`}>
+        <button
+          onClick={() => {
+            setOpen()
+          }}
+          id="open-trieve-modal" type="button" className={`${props.theme} ${props.responsive ?? false ? 'responsive' : ''}`}>
           <div className={`${props.responsive ?? false ? 'responsive' : ''}`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -31,7 +42,7 @@ export const OpenModalButton = () => {
               <path d="m21 21-4.3-4.3"></path>
             </svg>
             <div className={`${props.responsive ?? false ? 'responsive' : ''}`}>
-                {props.placeholder}
+              {props.placeholder}
             </div>
           </div>
           <span key={"open-button"} className={`open ${props.responsive ?? false ? 'responsive' : ''}`}>
@@ -53,6 +64,6 @@ export const OpenModalButton = () => {
           </span>
         </button>
       )}
-    </Dialog.Trigger>
+    </>
   );
 };

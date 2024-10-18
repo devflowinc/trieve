@@ -157,8 +157,8 @@ export default {
         },
       },
       animation: {
-        overlayShow: "overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        contentShow: "contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)",
+        overlayShow: "overlayShow 300ms cubic-bezier(0.16, 1, 0.3, 1)",
+        contentShow: "contentShow 300ms cubic-bezier(0.17, 0.89, 0.32, 1.25)",
         "spin-border": "rotate 5s infinite linear",
       },
     },
