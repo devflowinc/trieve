@@ -2651,17 +2651,16 @@ trieve-search-component@^0.0.30:
     react-syntax-highlighter "^15.5.0"
     trieve-ts-sdk "*"
 
-trieve-search-component@^0.0.34:
-  version "0.0.34"
-  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.34.tgz#f5f022cb96c25e66e17e9d758e9ba7a83395d5ad"
-  integrity sha512-VCdwI0XP27vuSo3FP4k6gz/nK1svgInk8xk7LlZ3H922RmGB5EzPB7AB9Xhw/fm9yq+/ospWkPjNjgZHhZtGQA==
+trieve-search-component@^0.0.38:
+  version "0.0.38"
+  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.38.tgz#05fd5d1961c10546c43758707448a58e1a6a94dd"
+  integrity sha512-yuCFtIzSM2Rhuy3oZRjF/EVZDRM8HTYVM/6xD++1FNJXtSkJNy+tGehQEuAACabawhI8NhbBJDOdPlfHOFiJkg==
   dependencies:
     "@r2wc/react-to-web-component" "^2.0.3"
     "@radix-ui/react-dialog" "^1.1.1"
     "@thumbmarkjs/thumbmarkjs" "^0.14.8"
     cheerio "^1.0.0"
     downshift "^9.0.8"
-    lodash-es "^4.17.21"
     react-markdown "^9.0.1"
     react-syntax-highlighter "^15.5.0"
     trieve-ts-sdk "*"
