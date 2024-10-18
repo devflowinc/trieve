@@ -513,7 +513,13 @@ async fn get_chunks_with_firecrawl(
                 metadata: Some(json!(metadata)),
                 tracking_id: Some(hash_function(&format!(
                     "{}{}",
-                    page_link.trim_end_matches("/"),
+                    page_link
+                        .trim_end_matches("/")
+                        .split("/")
+                        .collect::<Vec<&str>>()
+                        .split_at(3)
+                        .1
+                        .join("/"),
                     heading.clone()
                 ))),
                 upsert_by_tracking_id: Some(true),
