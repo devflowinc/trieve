@@ -587,12 +587,12 @@ pub fn get_tags(url: String) -> Vec<String> {
     Vec::new()
 }
 
-pub fn chunk_html(html: &str, crawl_options: &CrawlOptions) -> Vec<(String, String)> {
+pub fn chunk_html(html: &str, crawl_options: &CrawlOptions) -> Vec<(Vec<String>, String)> {
     let re = Regex::new(r"(?i)<h[1-6].*?>").unwrap();
     let mut chunks = Vec::new();
     let mut current_chunk = String::new();
     let mut last_end = 0;
-    let mut short_chunk: Option<String> = None;
+    let mut heading_stack: Vec<String> = Vec::new();
 
     for cap in re.find_iter(html) {
         if last_end != cap.start() {
@@ -600,32 +600,26 @@ pub fn chunk_html(html: &str, crawl_options: &CrawlOptions) -> Vec<(String, Stri
         }
 
         if !current_chunk.is_empty() {
-            let trimmed_chunk = current_chunk.trim().to_string();
-
-            if let Some(prev_short_chunk) = short_chunk.take() {
-                current_chunk = format!("{} {}", prev_short_chunk, trimmed_chunk);
-            } else {
-                current_chunk = trimmed_chunk;
-            }
+            let current_chunk = current_chunk.trim().to_string();
 
             let chunk_text = convert_html_to_text(&current_chunk);
 
-            if chunk_text.split_whitespace().count() > 5 {
+            if chunk_text.split_whitespace().count() > 10 {
                 let headings_text = extract_all_headings(&current_chunk);
 
-                if chunk_text
+                if !chunk_text
                     .replace(headings_text.as_str(), "")
                     .trim()
                     .is_empty()
                 {
-                    short_chunk = Some(current_chunk);
-                } else {
-                    chunks.push((headings_text, current_chunk));
+                    chunks.push((heading_stack.clone(), current_chunk));
                 }
-            } else {
-                short_chunk = Some(current_chunk);
             }
         }
+
+        let heading_level = cap.as_str().chars().nth(2).unwrap().to_digit(10).unwrap() as usize;
+        heading_stack.truncate(heading_level - 1);
+        heading_stack.push(extract_heading_text(&html[cap.start()..cap.end()]));
 
         current_chunk = cap.as_str().to_string();
         last_end = cap.end();
@@ -636,31 +630,23 @@ pub fn chunk_html(html: &str, crawl_options: &CrawlOptions) -> Vec<(String, Stri
     }
 
     if !current_chunk.is_empty() {
-        let trimmed_chunk = current_chunk.trim().to_string();
+        let current_chunk = current_chunk.trim().to_string();
 
-        if let Some(prev_short_chunk) = short_chunk.take() {
-            current_chunk = format!("{} {}", prev_short_chunk, trimmed_chunk);
-        } else {
-            current_chunk = trimmed_chunk;
-        }
-
-        let headings_text = extract_all_headings(&current_chunk);
-        chunks.push((headings_text, current_chunk));
-    } else if let Some(last_short_chunk) = short_chunk {
-        let headings_text = extract_all_headings(&last_short_chunk);
-        chunks.push((headings_text, last_short_chunk));
+        chunks.push((heading_stack.clone(), current_chunk));
     }
 
     chunks = chunks
         .into_iter()
-        .map(|(headings_text, content)| {
-            let mut headings_text = headings_text.clone();
+        .map(|(mut headings, content)| {
+            let mut headings_text = headings.last().unwrap_or(&String::new()).clone();
             let mut content = content.clone();
 
             if let Some(heading_remove_strings) = &crawl_options.heading_remove_strings {
                 heading_remove_strings.iter().for_each(|remove_string| {
                     headings_text = headings_text.replace(remove_string, "");
                 });
+                headings.pop();
+                headings.push(headings_text);
             }
             if let Some(body_remove_strings) = &crawl_options.body_remove_strings {
                 body_remove_strings.iter().for_each(|remove_string| {
@@ -668,15 +654,24 @@ pub fn chunk_html(html: &str, crawl_options: &CrawlOptions) -> Vec<(String, Stri
                 });
             }
 
-            (headings_text, content)
+            (headings, content)
         })
         .collect();
 
-    chunks.retain(|(headings_text, content)| {
-        !headings_text.trim().is_empty() && !content.trim().is_empty()
-    });
+    chunks.retain(|(headings, content)| !headings.is_empty() && !content.trim().is_empty());
 
     chunks
+}
+
+fn extract_heading_text(html: &str) -> String {
+    let fragment = Html::parse_fragment(html);
+    let heading_selector = Selector::parse("h1, h2, h3, h4, h5, h6").unwrap();
+
+    fragment
+        .select(&heading_selector)
+        .next()
+        .map(|element| element.text().collect::<String>())
+        .unwrap_or_default()
 }
 
 fn extract_all_headings(html: &str) -> String {

@@ -393,7 +393,7 @@ body {
           }
 
           &.assistant {
-            @apply my-5 h-10;
+            @apply my-5;
           }
 
           img {
@@ -563,6 +563,10 @@ body {
     .item {
       @apply select-none cursor-pointer py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
       background-color: var(--tv-zinc-50);
+
+      .chunk-path {
+        @apply text-xs  text-gray-800 line-clamp-1 overflow-ellipsis;
+      }
 
       .post-method {
         @apply text-xs bg-blue-900 px-1 py-0.5 rounded-md text-blue-400 mr-1;
@@ -928,9 +932,9 @@ body {
       border-color: var(--tv-zinc-200);
 
       &.responsive {
-          @media (max-width: 640px) {
-            display: none;
-          }
+        @media (max-width: 640px) {
+          display: none;
+        }
       }
 
       @media screen and (-webkit-font-smoothing: antialiased) {
