@@ -81,6 +81,22 @@ fn create_chunk_req_payload(
 ) -> Result<ChunkReqPayload, ServiceError> {
     let image_urls: Vec<String> = product.images.iter().map(|img| img.src.clone()).collect();
 
+    let mut product_title = product.title.clone();
+    let mut variant_title = variant.title.clone();
+    let mut product_body_html = product.body_html.clone();
+
+    if let Some(heading_remove_strings) = &scrape_request.crawl_options.heading_remove_strings {
+        heading_remove_strings.iter().for_each(|remove_string| {
+            product_title = product_title.replace(remove_string, "");
+            variant_title = variant_title.replace(remove_string, "");
+        });
+    }
+    if let Some(body_remove_strings) = &scrape_request.crawl_options.body_remove_strings {
+        body_remove_strings.iter().for_each(|remove_string| {
+            product_body_html = product_body_html.replace(remove_string, "");
+        });
+    }
+
     let link = format!(
         "{}/products/{}?variant={}",
         base_url, product.handle, variant.id
@@ -475,7 +491,7 @@ async fn get_chunks_with_firecrawl(
             }
         }
 
-        let chunked_html = chunk_html(&page_html.clone());
+        let chunked_html = chunk_html(&page_html.clone(), &scrape_request.crawl_options);
 
         for chunk in chunked_html {
             let heading = chunk.0.clone();

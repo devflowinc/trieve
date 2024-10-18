@@ -492,12 +492,12 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Error error={errors.exclude_paths} />
         </div>
         <div class="">
-          <div>Include Tags</div>
+          <div>Include Query Selectors</div>
           <MultiStringInput
             disabled={isShopify()}
             placeholder="h1..."
             addClass="bg-magenta-100/40 text-sm px-2 rounded border border-magenta-300/40"
-            addLabel="Add Tag"
+            addLabel="Add Selector"
             onChange={(value) => {
               setOptions("include_tags", value);
             }}
@@ -506,18 +506,44 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Error error={errors.include_tags} />
         </div>
         <div class="">
-          <div>Exclude Tags</div>
+          <div>Exclude Query Selectors</div>
           <MultiStringInput
             disabled={isShopify()}
             placeholder="button..."
             addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
-            addLabel="Add Tag"
+            addLabel="Add Selector"
             onChange={(value) => {
               setOptions("exclude_tags", value);
             }}
             value={options.exclude_tags || []}
           />
           <Error error={errors.exclude_tags} />
+        </div>
+        <div class="">
+          <div>Heading Remove Strings</div>
+          <MultiStringInput
+            placeholder="#"
+            addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
+            addLabel="Add Text"
+            onChange={(value) => {
+              setOptions("heading_remove_strings", value);
+            }}
+            value={options.heading_remove_strings || []}
+          />
+          <Error error={errors.heading_remove_strings} />
+        </div>
+        <div class="">
+          <div>Body Remove Strings</div>
+          <MultiStringInput
+            placeholder="#"
+            addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
+            addLabel="Add Text"
+            onChange={(value) => {
+              setOptions("body_remove_strings", value);
+            }}
+            value={options.body_remove_strings || []}
+          />
+          <Error error={errors.body_remove_strings} />
         </div>
       </div>
       <Spacer h={18} />

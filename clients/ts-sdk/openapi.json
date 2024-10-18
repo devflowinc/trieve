@@ -12,7 +12,7 @@
       "name": "BSL",
       "url": "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt"
     },
-    "version": "0.11.13"
+    "version": "0.12.0"
   },
   "servers": [
     {
@@ -86,8 +86,8 @@
         "tags": [
           "Analytics"
         ],
-        "summary": "Send Event Data",
-        "description": "This route allows you to send event data to the system.",
+        "summary": "Send User Event Data",
+        "description": "This route allows you to send user event data to the system.",
         "operationId": "send_event_data",
         "parameters": [
           {
@@ -141,8 +141,8 @@
         "tags": [
           "Analytics"
         ],
-        "summary": "Get All Events",
-        "description": "This route allows you to view all events.",
+        "summary": "Get All User Events",
+        "description": "This route allows you to view all user events.",
         "operationId": "get_all_events",
         "requestBody": {
           "description": "JSON request payload to filter the events",
@@ -253,8 +253,8 @@
         "tags": [
           "Analytics"
         ],
-        "summary": "Get Event By ID",
-        "description": "This route allows you to view an event by its ID.",
+        "summary": "Get User Event By ID",
+        "description": "This route allows you to view an user event by its ID. You can pass in any type of event and get the details for that event.",
         "operationId": "get_event_by_id",
         "parameters": [
           {
@@ -6640,6 +6640,7 @@
         "type": "string",
         "enum": [
           "search",
+          "rag",
           "recommendation"
         ]
       },
@@ -7662,6 +7663,14 @@
             "description": "Option for allowing the crawl to follow links to external websites.",
             "nullable": true
           },
+          "body_remove_strings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Text strings to remove from body when creating chunks for each page",
+            "nullable": true
+          },
           "boost_titles": {
             "type": "boolean",
             "description": "Boost titles such that keyword matches in titles are prioritized in search results. Strongly recommended to leave this on. Defaults to true.",
@@ -7681,6 +7690,14 @@
               "type": "string"
             },
             "description": "Specify the HTML tags, classes and ids to exclude from the response.",
+            "nullable": true
+          },
+          "heading_remove_strings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Text strings to remove from headings when creating chunks for each page",
             "nullable": true
           },
           "ignore_sitemap": {
@@ -7739,12 +7756,20 @@
           }
         },
         "example": {
+          "body_remove_strings": [
+            "Edit on github"
+          ],
+          "boost_titles": true,
           "exclude_paths": [
             "https://example.com/exclude*"
           ],
           "exclude_tags": [
             "#ad",
             "#footer"
+          ],
+          "heading_remove_strings": [
+            "Advertisement",
+            "Sponsored"
           ],
           "include_paths": [
             "https://example.com/include*"
@@ -8842,6 +8867,10 @@
             "type": "string",
             "nullable": true
           },
+          "request_type": {
+            "type": "string",
+            "nullable": true
+          },
           "updated_at": {
             "type": "string"
           },
@@ -8941,9 +8970,12 @@
                 "description": "Any other metadata associated with the event",
                 "nullable": true
               },
-              "request_id": {
-                "type": "string",
-                "description": "The request id of the event to associate it with a request",
+              "request": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RequestInfo"
+                  }
+                ],
                 "nullable": true
               },
               "user_id": {
@@ -8987,9 +9019,12 @@
                 "description": "Any other metadata associated with the event",
                 "nullable": true
               },
-              "request_id": {
-                "type": "string",
-                "description": "The request id of the event to associate it with a request",
+              "request": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RequestInfo"
+                  }
+                ],
                 "nullable": true
               },
               "user_id": {
@@ -9025,9 +9060,12 @@
                 "description": "Whether the event is a conversion event",
                 "nullable": true
               },
-              "request_id": {
-                "type": "string",
-                "description": "The request id of the event to associate it with a request",
+              "request": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RequestInfo"
+                  }
+                ],
                 "nullable": true
               },
               "user_id": {
@@ -9072,9 +9110,12 @@
                 },
                 "description": "The items that were purchased"
               },
-              "request_id": {
-                "type": "string",
-                "description": "The request id of the event to associate it with a request",
+              "request": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RequestInfo"
+                  }
+                ],
                 "nullable": true
               },
               "user_id": {
@@ -9120,9 +9161,12 @@
                   "type": "string"
                 }
               },
-              "request_id": {
-                "type": "string",
-                "description": "The request id of the event to associate it with a request",
+              "request": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RequestInfo"
+                  }
+                ],
                 "nullable": true
               },
               "user_id": {
@@ -11861,6 +11905,22 @@
             "type": "string",
             "format": "uuid",
             "description": "Id of the chunk to remove from the group."
+          }
+        }
+      },
+      "RequestInfo": {
+        "type": "object",
+        "required": [
+          "request_type",
+          "request_id"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_type": {
+            "$ref": "#/components/schemas/CTRType"
           }
         }
       },
