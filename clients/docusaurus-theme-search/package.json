@@ -3,6 +3,7 @@
   "version": "0.1.6",
   "author": "cdxker <denzell.f@trieve.ai>",
   "license": "MIT",
+  "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/docusaurus-theme-search",
   "main": "dist/index.js",
   "files": [
     "dist"
