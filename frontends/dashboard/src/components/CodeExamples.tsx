@@ -4,15 +4,15 @@ import {
   createChunkRequestTS,
   hybridSearchRequest,
   hybridSearchRequestTS,
+  searchComponentRequest,
 } from "../utils/createCodeSnippets";
 import { DatasetContext } from "../contexts/DatasetContext";
-import { Accessor, createSignal, Setter, Show, useContext } from "solid-js";
+import { createSignal, Show, useContext } from "solid-js";
 import { Button } from "terracotta";
 import { ApiKeyGenerateModal } from "./ApiKeyGenerateModal";
 
 export const CodeExamples = () => {
   const { datasetId } = useContext(DatasetContext);
-  const [selectedTab, setSelectedTab] = createSignal("fetch");
   const [openModal, setOpenModal] = createSignal(false);
   const [apiKey, setApiKey] = createSignal<string>(
     "tr-********************************",
@@ -60,8 +60,6 @@ export const CodeExamples = () => {
         <CodeExample
           fetchContent={createChunkRequest(datasetId(), apiKey())}
           tsContent={createChunkRequestTS(datasetId(), apiKey())}
-          selectedTab={selectedTab}
-          setSelectedTab={setSelectedTab}
         />
       </div>
       <div class="flex flex-col space-y-2">
@@ -79,8 +77,7 @@ export const CodeExamples = () => {
         <CodeExample
           fetchContent={hybridSearchRequest(datasetId(), apiKey())}
           tsContent={hybridSearchRequestTS(datasetId(), apiKey())}
-          selectedTab={selectedTab}
-          setSelectedTab={setSelectedTab}
+          componentContent={searchComponentRequest(datasetId(), apiKey())}
         />
       </div>
       <ApiKeyGenerateModal
@@ -97,40 +94,60 @@ export const CodeExamples = () => {
 const CodeExample = (props: {
   tsContent: string;
   fetchContent: string;
-  selectedTab: Accessor<string>;
-  setSelectedTab: Setter<string>;
+  componentContent?: string;
 }) => {
+  const [selectedTab, setSelectedTab] = createSignal("fetch");
   return (
     <div>
       <div class="mb-4 flex gap-4 border-b pb-1">
         <Button
           classList={{
             "font-medium": true,
-            "text-fuchsia-800": props.selectedTab() === "fetch",
+            "text-fuchsia-800": selectedTab() === "fetch",
           }}
-          onClick={() => props.setSelectedTab("fetch")}
+          onClick={() => setSelectedTab("fetch")}
         >
           Using Fetch
         </Button>
         <Button
           classList={{
             "font-medium": true,
-            "text-fuchsia-800": props.selectedTab() === "ts",
+            "text-fuchsia-800": selectedTab() === "ts",
           }}
-          onClick={() => props.setSelectedTab("ts")}
+          onClick={() => setSelectedTab("ts")}
         >
           Using the TS SDK
         </Button>
+        <Show when={props.componentContent}>
+          <Button
+            classList={{
+              "font-medium": true,
+              "text-fuchsia-800": selectedTab() === "component",
+            }}
+            onClick={() => setSelectedTab("component")}
+          >
+            Using the Search Component
+          </Button>
+        </Show>
       </div>
-      <Show when={props.selectedTab() === "ts"}>
+      <Show when={selectedTab() === "ts"}>
         <Codeblock content={`npm install trieve-ts-sdk`} />
         <div class="h-3" />
       </Show>
-      <Show when={props.selectedTab() === "fetch"}>
+      <Show when={selectedTab() === "component"}>
+        <Codeblock content={`npm install trieve-search-component`} />
+        <div class="h-3" />
+      </Show>
+      <Show when={selectedTab() === "fetch"}>
         <Codeblock content={props.fetchContent} />
       </Show>
-      <Show when={props.selectedTab() === "ts"}>
+      <Show when={selectedTab() === "ts"}>
         <Codeblock content={props.tsContent} />
+      </Show>
+      <Show when={selectedTab() === "component"}>
+        <Show when={props.componentContent}>
+          {(content) => <Codeblock content={content()} />}
+        </Show>
       </Show>
     </div>
   );
