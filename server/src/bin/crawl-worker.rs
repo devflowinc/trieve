@@ -409,11 +409,11 @@ async fn get_chunks_with_firecrawl(
                             metadata["heading"] = json!(heading.clone());
 
                             let mut chunk_html = format!(
-                                "<h2><span class=\"openapi-method\">{}</span> {}</h2>",
+                                "<h2><span class=\"openapi-method\">{}</span> ",
                                 method.to_string().to_uppercase(),
-                                path,
                             )
                             .replace("\\", "");
+
                             if let Some(summary) = operation.summary.clone() {
                                 if !summary.is_empty() {
                                     fulltext_boost_phrase
@@ -423,8 +423,12 @@ async fn get_chunks_with_firecrawl(
 
                                     metadata["summary"] = json!(summary.clone());
 
-                                    chunk_html.push_str(format!("\n\n<p>{}</p>", summary).as_str());
+                                    chunk_html.push_str(format!("{}</h2>", summary).as_str());
+                                } else {
+                                    chunk_html.push_str(format!("{}</h2>", path).as_str());
                                 }
+                            } else {
+                                chunk_html.push_str(format!("{}</h2>", path).as_str());
                             }
                             if let Some(description) = operation.description.clone() {
                                 if !description.is_empty() {
@@ -494,7 +498,7 @@ async fn get_chunks_with_firecrawl(
         let chunked_html = chunk_html(&page_html.clone(), &scrape_request.crawl_options);
 
         for chunk in chunked_html {
-            let heading = chunk.0.clone();
+            let heading = chunk.0.last().unwrap_or(&String::new()).clone();
             let chunk_html = chunk.1.clone();
 
             if chunk_html.is_empty() {
@@ -504,6 +508,7 @@ async fn get_chunks_with_firecrawl(
 
             let mut metadata = json!({
                 "url": page_link.clone(),
+                "hierarchy": chunk.0.clone(),
             });
 
             let mut semantic_boost_phrase = heading.clone();
@@ -515,6 +520,10 @@ async fn get_chunks_with_firecrawl(
                 fulltext_boost_phrase.push_str(format!("\n\n{}", page_title).as_str());
 
                 metadata["title"] = json!(page_title.clone());
+                metadata["hierarchy"]
+                    .as_array_mut()
+                    .unwrap()
+                    .insert(0, json!(page_title.clone()));
             }
             if !page_description.is_empty() {
                 semantic_boost_phrase.push_str(format!("\n\n{}", page_description).as_str());

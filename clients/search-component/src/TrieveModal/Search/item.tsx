@@ -45,7 +45,8 @@ export const Item = ({ item, requestID, index }: Props) => {
     .replaceWith(function () {
       return $firstHeading(this).text();
     });
-  const cleanFirstHeading = cleanFirstHeadingHtml.html();
+
+  const cleanFirstHeading = cleanFirstHeadingHtml.html()?.replace("#", "");
   const titleInnerText = $firstHeading.text();
 
   descriptionHtml = descriptionHtml
@@ -105,7 +106,6 @@ export const Item = ({ item, requestID, index }: Props) => {
 
   const getChunkPath = () => {
     const urlElements = item.chunk.link?.split("/").slice(3) ?? [];
-    console.log(urlElements);
     if (urlElements?.length > 1) {
       return urlElements
         .slice(0, -1)
@@ -123,13 +123,7 @@ export const Item = ({ item, requestID, index }: Props) => {
         )
         .join(" > ");
     } else {
-      console.log(item.chunk.metadata?.title);
-      return item.chunk.metadata?.title
-        ? item.chunk.metadata.title
-            .split(" ")
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-            .join(" ")
-        : "";
+      return item.chunk.metadata?.title ? item.chunk.metadata.title : "";
     }
   };
 
@@ -196,7 +190,7 @@ export const Item = ({ item, requestID, index }: Props) => {
           ) : null}
           {title ? (
             <div>
-              {props.type !== "ecommerce" ? <h6>{getChunkPath()}</h6> : null}
+              {props.type !== "ecommerce" ? <h6 className="chunk-path">{getChunkPath()}</h6> : null}
               <h4
                 dangerouslySetInnerHTML={{
                   __html: title,
