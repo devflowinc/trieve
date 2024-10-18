@@ -1,4 +1,4 @@
-import { TrieveSearch, TrieveSDK, TrieveModalSearch } from "../../../src/index";
+import { TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
 import { useState } from "react";
 import { IconMoon, IconNext, IconPrevious, IconSun } from "../Icons";
@@ -11,20 +11,14 @@ export const Route = createFileRoute("/ecommerce")({
   component: ECommerce,
 });
 
-const trieve = new TrieveSDK({
-  apiKey: "tr-IzHXaZ89aELJXk0RkP1oIgqA6GFLGInG",
-  datasetId: "78c10935-12ad-4431-bb0f-3d9929262861",
-});
-
 export default function ECommerce() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
   return (
     <>
       <div
-        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
-          theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-        }`}
+        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
+          }`}
       >
         <div className="absolute top-6 right-6">
           <ul>
@@ -46,8 +40,8 @@ export default function ECommerce() {
             <TrieveModalSearch
               type="ecommerce"
               defaultSearchMode="search"
-              trieve={trieve}
-              theme={theme}
+              apiKey="tr-IzHXaZ89aELJXk0RkP1oIgqA6GFLGInG"
+              datasetId="78c10935-12ad-4431-bb0f-3d9929262861"
               brandLogoImgSrcUrl="https://www.zedlabz.com/cdn/shop/t/2/assets/zedlabz-logo-retina.png?v=156539475513264331071650193684"
               brandName="ZedLabs"
               brandColor="#204364"
@@ -66,7 +60,9 @@ export default function ECommerce() {
             <h2 className="font-bold text-center py-8">
               Search Results Component
             </h2>
-            <TrieveSearch trieve={trieve} theme={theme} />
+            <h2 className="font-bold text-center py-8">
+              This was removed, see https://github.com/devflowinc/trieve/pull/2613
+            </h2>
           </>
         )}
 

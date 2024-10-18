@@ -7,7 +7,7 @@
     "dist/*",
     "dist/**/*"
   ],
-  "version": "0.0.38",
+  "version": "0.0.40",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
@@ -26,7 +26,6 @@
     "@eslint/js": "^9.10.0",
     "@tailwindcss/forms": "^0.5.9",
     "@types/eslint__js": "^8.42.3",
-    "@types/lodash-es": "^4.17.12",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@types/react-syntax-highlighter": "^15.5.13",
@@ -51,10 +50,8 @@
   },
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.0.3",
-    "@radix-ui/react-dialog": "^1.1.1",
     "@thumbmarkjs/thumbmarkjs": "^0.14.8",
     "cheerio": "^1.0.0",
-    "downshift": "^9.0.8",
     "react-markdown": "^9.0.1",
     "react-syntax-highlighter": "^15.5.0",
     "trieve-ts-sdk": "*"

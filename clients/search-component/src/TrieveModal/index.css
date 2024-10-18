@@ -15,11 +15,11 @@
 
 body {
   #trieve-search-modal-overlay {
-    @apply bg-black/60 w-screen fixed inset-0 h-screen data-[state=open]:animate-overlayShow backdrop-blur-sm z-[998];
+    @apply bg-black/60 w-screen fixed inset-0 h-screen animate-overlayShow backdrop-blur-sm z-[998];
   }
 
   #trieve-search-modal {
-    @apply data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg py-2 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+    @apply animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg py-2 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
 
@@ -861,9 +861,10 @@ body {
     }
   }
 }
+
 body {
   #open-trieve-modal {
-    @apply  flex items-center text-sm leading-6 ring-1 shadow-sm justify-between  rounded-md border-0 py-1.5 px-2 sm:text-sm truncate gap-2;
+    @apply flex items-center text-sm leading-6 ring-1 shadow-sm justify-between rounded-md border-0 py-1.5 px-2 sm:text-sm truncate gap-2;
 
     &:not(.responsive) {
       @apply w-full min-w-[43px] max-w-[300px];

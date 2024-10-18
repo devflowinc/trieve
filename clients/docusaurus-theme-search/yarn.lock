@@ -517,18 +517,6 @@
   dependencies:
     "@types/estree" "*"
 
-"@types/braces@*":
-  version "3.0.4"
-  resolved "https://registry.yarnpkg.com/@types/braces/-/braces-3.0.4.tgz#403488dc1c8d0db288270d3bbf0ce5f9c45678b4"
-  integrity sha512-0WR3b8eaISjEW7RpZnclONaLFDf7buaowRHdqLp4vLj54AsSAYWfh3DRbfiYJY9XDxMgx1B4sE1Afw2PGpuHOA==
-
-"@types/cli-progress@^3.11.6":
-  version "3.11.6"
-  resolved "https://registry.yarnpkg.com/@types/cli-progress/-/cli-progress-3.11.6.tgz#94b334ebe4190f710e51c1bf9b4fedb681fa9e45"
-  integrity sha512-cE3+jb9WRlu+uOSAugewNpITJDt1VF8dHOopPO4IABFc3SXYL5WE/+PTz/FCdZRRfIujiWW3n3aMbv1eIGVRWA==
-  dependencies:
-    "@types/node" "*"
-
 "@types/debug@^4.0.0":
   version "4.1.12"
   resolved "https://registry.yarnpkg.com/@types/debug/-/debug-4.1.12.tgz#a155f21690871953410df4b6b6f53187f0500917"
@@ -583,13 +571,6 @@
   version "2.0.13"
   resolved "https://registry.yarnpkg.com/@types/mdx/-/mdx-2.0.13.tgz#68f6877043d377092890ff5b298152b0a21671bd"
   integrity sha512-+OWZQfAYyio6YkJb3HLxDrvnx6SWWDbC0zVPfBRzUk0/nqoDyf6dNxQi3eArPe8rJ473nobTMQ/8Zk+LxJ+Yuw==
-
-"@types/micromatch@^4.0.9":
-  version "4.0.9"
-  resolved "https://registry.yarnpkg.com/@types/micromatch/-/micromatch-4.0.9.tgz#8e5763a8c1fc7fbf26144d9215a01ab0ff702dbb"
-  integrity sha512-7V+8ncr22h4UoYRLnLXSpTxjQrNUXtWHGeMPRJt1nULXI57G9bIcpyrHlmrQ7QK24EyyuXvYcSSWAM8GA9nqCg==
-  dependencies:
-    "@types/braces" "*"
 
 "@types/ms@*":
   version "0.7.34"
@@ -2651,16 +2632,14 @@ trieve-search-component@^0.0.30:
     react-syntax-highlighter "^15.5.0"
     trieve-ts-sdk "*"
 
-trieve-search-component@^0.0.38:
-  version "0.0.38"
-  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.38.tgz#05fd5d1961c10546c43758707448a58e1a6a94dd"
-  integrity sha512-yuCFtIzSM2Rhuy3oZRjF/EVZDRM8HTYVM/6xD++1FNJXtSkJNy+tGehQEuAACabawhI8NhbBJDOdPlfHOFiJkg==
+trieve-search-component@^0.0.40:
+  version "0.0.40"
+  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.40.tgz#cf3d890a0f47946c15c871c737a93905b4393a7c"
+  integrity sha512-TiHkEJOUmLQgX5oz/5PHG37Fw5QGFNmskNMZvq0wT/i21UzOglc8TPHsTvE0nhPVNMciA7jLcTnqJa2xEkldwg==
   dependencies:
     "@r2wc/react-to-web-component" "^2.0.3"
-    "@radix-ui/react-dialog" "^1.1.1"
     "@thumbmarkjs/thumbmarkjs" "^0.14.8"
     cheerio "^1.0.0"
-    downshift "^9.0.8"
     react-markdown "^9.0.1"
     react-syntax-highlighter "^15.5.0"
     trieve-ts-sdk "*"

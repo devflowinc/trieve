@@ -1,4 +1,4 @@
-import { TrieveSearch, TrieveModalSearch } from "../../../src/index";
+import { TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
 import { useState } from "react";
 import { IconMoon, IconNext, IconPrevious, IconSun } from "../Icons";
@@ -16,9 +16,8 @@ export default function Home() {
   return (
     <>
       <div
-        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
-          theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-        }`}
+        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
+          }`}
       >
         <div className="absolute top-6 right-6">
           <ul>
@@ -128,11 +127,9 @@ export default function Home() {
             <h2 className="font-bold text-center py-8">
               Search Results Component
             </h2>
-            <TrieveSearch
-              apiKey="tr-zpPVGUq18FxOCmXgLfqGbmDOY4UMW00r"
-              datasetId="4538ad9f-47cf-44d4-8a14-7c111f9558a9"
-              theme={theme}
-            />
+            <h2 className="font-bold text-center py-8">
+              This was removed, see https://github.com/devflowinc/trieve/pull/2613
+            </h2>
           </>
         )}
 
