@@ -160,7 +160,7 @@ export type CTRSearchQueryWithoutClicksResponse = {
     queries: Array<SearchQueriesWithoutClicksCTRResponse>;
 };
 
-export type CTRType = 'search' | 'recommendation';
+export type CTRType = 'search' | 'rag' | 'recommendation';
 
 export type ChatMessageProxy = {
     content: string;
@@ -447,6 +447,10 @@ export type CrawlOptions = {
      */
     allow_external_links?: (boolean) | null;
     /**
+     * Text strings to remove from body when creating chunks for each page
+     */
+    body_remove_strings?: Array<(string)> | null;
+    /**
      * Boost titles such that keyword matches in titles are prioritized in search results. Strongly recommended to leave this on. Defaults to true.
      */
     boost_titles?: (boolean) | null;
@@ -458,6 +462,10 @@ export type CrawlOptions = {
      * Specify the HTML tags, classes and ids to exclude from the response.
      */
     exclude_tags?: Array<(string)> | null;
+    /**
+     * Text strings to remove from headings when creating chunks for each page
+     */
+    heading_remove_strings?: Array<(string)> | null;
     /**
      * Ignore the website sitemap when crawling, defaults to true.
      */
@@ -864,6 +872,7 @@ export type EventData = {
     items: Array<(string)>;
     metadata?: unknown;
     request_id?: (string) | null;
+    request_type?: (string) | null;
     updated_at: string;
     user_id?: (string) | null;
 };
@@ -890,10 +899,7 @@ export type EventTypes = {
      * Any other metadata associated with the event
      */
     metadata?: unknown;
-    /**
-     * The request id of the event to associate it with a request
-     */
-    request_id?: (string) | null;
+    request?: ((RequestInfo) | null);
     /**
      * The user id of the user who viewed the items
      */
@@ -916,10 +922,7 @@ export type EventTypes = {
      * Any other metadata associated with the event
      */
     metadata?: unknown;
-    /**
-     * The request id of the event to associate it with a request
-     */
-    request_id?: (string) | null;
+    request?: ((RequestInfo) | null);
     /**
      * The user id of the user who added the items to the cart
      */
@@ -935,10 +938,7 @@ export type EventTypes = {
      * Whether the event is a conversion event
      */
     is_conversion?: (boolean) | null;
-    /**
-     * The request id of the event to associate it with a request
-     */
-    request_id?: (string) | null;
+    request?: ((RequestInfo) | null);
     /**
      * The user id of the user who clicked the items
      */
@@ -961,10 +961,7 @@ export type EventTypes = {
      * The items that were purchased
      */
     items: Array<(string)>;
-    /**
-     * The request id of the event to associate it with a request
-     */
-    request_id?: (string) | null;
+    request?: ((RequestInfo) | null);
     /**
      * The user id of the user who purchased the items
      */
@@ -989,10 +986,7 @@ export type EventTypes = {
     items: {
         [key: string]: (string);
     };
-    /**
-     * The request id of the event to associate it with a request
-     */
-    request_id?: (string) | null;
+    request?: ((RequestInfo) | null);
     /**
      * The user id of the user who clicked the items
      */
@@ -1841,6 +1835,11 @@ export type RemoveChunkFromGroupReqPayload = {
      * Id of the chunk to remove from the group.
      */
     chunk_id: string;
+};
+
+export type RequestInfo = {
+    request_id: string;
+    request_type: CTRType;
 };
 
 export type ReturnQueuedChunk = SingleQueuedChunkResponse | BatchQueuedChunkResponse;

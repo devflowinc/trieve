@@ -6580,6 +6580,9 @@ impl From<CrawlRequest> for CrawlRequestPG {
     "max_depth": 10,
     "include_tags": ["h1", "p", "a", ".main-content"],
     "exclude_tags": ["#ad", "#footer"],
+    "heading_remove_strings": ["Advertisement", "Sponsored"],
+    "body_remove_strings": ["Edit on github"],
+    "boost_titles": true,
 }))]
 pub struct CrawlOptions {
     /// The URL to crawl
@@ -6604,6 +6607,10 @@ pub struct CrawlOptions {
     pub allow_external_links: Option<bool>,
     /// Ignore the website sitemap when crawling, defaults to true.
     pub ignore_sitemap: Option<bool>,
+    /// Text strings to remove from headings when creating chunks for each page
+    pub heading_remove_strings: Option<Vec<String>>,
+    /// Text strings to remove from body when creating chunks for each page
+    pub body_remove_strings: Option<Vec<String>>,
     /// Options for including an openapi spec in the crawl
     pub scrape_options: Option<ScrapeOptions>,
 }
@@ -6643,6 +6650,14 @@ impl CrawlOptions {
             boost_titles: self.boost_titles.or(other.boost_titles),
             scrape_options: self.scrape_options.clone(),
             allow_external_links: self.allow_external_links.or(other.allow_external_links),
+            heading_remove_strings: self
+                .heading_remove_strings
+                .clone()
+                .or(other.heading_remove_strings.clone()),
+            body_remove_strings: self
+                .body_remove_strings
+                .clone()
+                .or(other.body_remove_strings.clone()),
         }
     }
 }
