@@ -424,6 +424,7 @@ async fn get_chunks_with_firecrawl(
                                     metadata["summary"] = json!(summary.clone());
 
                                     chunk_html.push_str(format!("{}</h2>", summary).as_str());
+                                    chunk_html.push_str(format!("\n\n<p>{}</p>", path).as_str());
                                 } else {
                                     chunk_html.push_str(format!("{}</h2>", path).as_str());
                                 }
