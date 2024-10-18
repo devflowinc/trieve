@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
 import r2wc from "@r2wc/react-to-web-component";
 import { SearchMode } from "./Search/SearchMode";
 import { ChatMode } from "./Chat/ChatMode";
@@ -39,37 +38,37 @@ const Modal = () => {
   }, [props.brandColor]);
 
   return (
-    <Dialog.Root
-      open={open}
-      onOpenChange={(value) => {
-        setOpen(value);
+    <>
+      <OpenModalButton setOpen={() => {
+        setOpen(true)
         setMode(props.defaultSearchMode || "search");
-      }}>
-      <OpenModalButton />
-      <Dialog.Portal>
-        <Dialog.DialogTitle className="sr-only">Search</Dialog.DialogTitle>
-        <Dialog.DialogDescription className="sr-only">
-          Search or ask an AI
-        </Dialog.DialogDescription>
-        <Dialog.Overlay id="trieve-search-modal-overlay" />
-        <Dialog.Content
-          id="trieve-search-modal"
-          className={
-            (mode === "chat" ? "chat-modal-mobile " : " ") +
-            (props.theme === "dark" ? "dark " : "")
-          }>
-          {props.allowSwitchingModes && <ModeSwitch />}
-          <div style={{ display: mode === "search" ? "block" : "none" }}>
-            <SearchMode />
-          </div>
+      }} />
+      {open &&
+        <>
           <div
-            className={mode === "chat" ? " chat-container" : " "}
-            style={{ display: mode === "chat" ? "block" : "none" }}>
-            <ChatMode />
+            onClick={() => {
+              setOpen(false)
+            }}
+            id="trieve-search-modal-overlay"></div>
+          <div
+            id="trieve-search-modal"
+            className={
+              (mode === "chat" ? "chat-modal-mobile " : " ") +
+              (props.theme === "dark" ? "dark " : "")
+            }>
+            {props.allowSwitchingModes && <ModeSwitch />}
+            <div style={{ display: mode === "search" ? "block" : "none" }}>
+              <SearchMode />
+            </div>
+            <div
+              className={mode === "chat" ? " chat-container" : " "}
+              style={{ display: mode === "chat" ? "block" : "none" }}>
+              <ChatMode />
+            </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </>
+      }
+    </>
   );
 };
 
