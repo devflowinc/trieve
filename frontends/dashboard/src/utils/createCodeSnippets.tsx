@@ -70,7 +70,7 @@ const data = await trieve.search({
 });
 `;
 
-export const searchComponentRequest = (dataset: string, apiKey: string) =>
+export const reactSearchComponentRequest = (dataset: string, apiKey: string) =>
   `export const trieve = new TrieveSDK({
   apiKey: "${apiKey}",
   datasetId: "${dataset}",
@@ -85,4 +85,14 @@ function MyComponent() {
     />
   );
 }
+`;
+
+export const webComponentRequest = (dataset: string, apiKey: string) =>
+  `initSearch({
+  datasetId: "${dataset}",
+  apiKey: "${apiKey}",
+})
+
+// In HTML...
+<trieve-search />
 `;
