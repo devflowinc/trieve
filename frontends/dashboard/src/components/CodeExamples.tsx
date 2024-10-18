@@ -4,7 +4,8 @@ import {
   createChunkRequestTS,
   hybridSearchRequest,
   hybridSearchRequestTS,
-  searchComponentRequest,
+  reactSearchComponentRequest,
+  webComponentRequest,
 } from "../utils/createCodeSnippets";
 import { DatasetContext } from "../contexts/DatasetContext";
 import { createSignal, Show, useContext } from "solid-js";
@@ -77,7 +78,11 @@ export const CodeExamples = () => {
         <CodeExample
           fetchContent={hybridSearchRequest(datasetId(), apiKey())}
           tsContent={hybridSearchRequestTS(datasetId(), apiKey())}
-          componentContent={searchComponentRequest(datasetId(), apiKey())}
+          reactComponentContent={reactSearchComponentRequest(
+            datasetId(),
+            apiKey(),
+          )}
+          webcomponentContent={webComponentRequest(datasetId(), apiKey())}
         />
       </div>
       <ApiKeyGenerateModal
@@ -94,7 +99,8 @@ export const CodeExamples = () => {
 const CodeExample = (props: {
   tsContent: string;
   fetchContent: string;
-  componentContent?: string;
+  reactComponentContent?: string;
+  webcomponentContent?: string;
 }) => {
   const [selectedTab, setSelectedTab] = createSignal("fetch");
   return (
@@ -118,15 +124,26 @@ const CodeExample = (props: {
         >
           Using the TS SDK
         </Button>
-        <Show when={props.componentContent}>
+        <Show when={props.reactComponentContent}>
           <Button
             classList={{
               "font-medium": true,
-              "text-fuchsia-800": selectedTab() === "component",
+              "text-fuchsia-800": selectedTab() === "react-component",
             }}
-            onClick={() => setSelectedTab("component")}
+            onClick={() => setSelectedTab("react-component")}
           >
-            Using the Search Component
+            React Component
+          </Button>
+        </Show>
+        <Show when={props.webcomponentContent}>
+          <Button
+            classList={{
+              "font-medium": true,
+              "text-fuchsia-800": selectedTab() === "web-component",
+            }}
+            onClick={() => setSelectedTab("web-component")}
+          >
+            Web Component
           </Button>
         </Show>
       </div>
@@ -134,7 +151,12 @@ const CodeExample = (props: {
         <Codeblock content={`npm install trieve-ts-sdk`} />
         <div class="h-3" />
       </Show>
-      <Show when={selectedTab() === "component"}>
+      <Show
+        when={
+          selectedTab() === "react-component" ||
+          selectedTab() === "web-component"
+        }
+      >
         <Codeblock content={`npm install trieve-search-component`} />
         <div class="h-3" />
       </Show>
@@ -144,8 +166,13 @@ const CodeExample = (props: {
       <Show when={selectedTab() === "ts"}>
         <Codeblock content={props.tsContent} />
       </Show>
-      <Show when={selectedTab() === "component"}>
-        <Show when={props.componentContent}>
+      <Show when={selectedTab() === "react-component"}>
+        <Show when={props.reactComponentContent}>
+          {(content) => <Codeblock content={content()} />}
+        </Show>
+      </Show>
+      <Show when={selectedTab() === "web-component"}>
+        <Show when={props.webcomponentContent}>
           {(content) => <Codeblock content={content()} />}
         </Show>
       </Show>
