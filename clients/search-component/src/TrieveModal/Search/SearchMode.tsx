@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Item } from "./item";
 import { AIIcon, ArrowIcon, ReloadIcon } from "../icons";
 import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
@@ -33,7 +33,7 @@ export const SearchMode = () => {
   }, [mode, open]);
 
   return (
-    <>
+    <Suspense fallback={<div className="hidden"> </div>}>
       <div className="input-wrapper">
         <div className="input-flex">
           <svg
@@ -182,6 +182,8 @@ export const SearchMode = () => {
           </a>
         </div>
       </div>
-    </>
+    </Suspense>
   );
 };
+
+export default SearchMode;

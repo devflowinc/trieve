@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { startTransition, useEffect, useMemo } from "react";
 import { useModalState } from "./modal-context";
 
 export const useKeyboardNavigation = () => {
@@ -15,7 +15,9 @@ export const useKeyboardNavigation = () => {
           if (otherKeys.every((k) => e.key === k.key)) {
             e.preventDefault();
             e.stopPropagation();
-            setOpen(true);
+            startTransition(() => {
+              setOpen(true);
+            });
           }
         }
       }

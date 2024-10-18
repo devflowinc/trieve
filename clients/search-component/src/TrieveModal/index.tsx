@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, lazy, startTransition } from "react";
 import r2wc from "@r2wc/react-to-web-component";
-import { SearchMode } from "./Search/SearchMode";
-import { ChatMode } from "./Chat/ChatMode";
+const SearchMode = lazy(() => import("./Search/SearchMode"));
+const ChatMode = lazy(() => import("./Chat/ChatMode"));
 
 import {
   ModalProps,
@@ -40,8 +40,10 @@ const Modal = () => {
   return (
     <>
       <OpenModalButton setOpen={() => {
-        setOpen(true)
-        setMode(props.defaultSearchMode || "search");
+        startTransition(() => {
+          setOpen(true)
+          setMode(props.defaultSearchMode || "search");
+        })
       }} />
       {open &&
         <>

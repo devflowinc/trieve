@@ -1,6 +1,6 @@
 {
   "name": "@trieve/docusaurus-search-theme",
-  "version": "0.1.9",
+  "version": "0.1.12",
   "author": "cdxker <denzell.f@trieve.ai>",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/docusaurus-theme-search",
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@trieve/docusaurus-search-theme": "^0.1.0",
-    "trieve-search-component": "^0.0.40"
+    "trieve-search-component": "^0.0.43"
   },
   "peerDependencies": {
     "@docusaurus/core": "^2.0.0 || ^3.0.0",
