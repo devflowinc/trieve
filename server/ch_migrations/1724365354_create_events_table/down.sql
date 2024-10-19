@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS default.events;
+DROP TABLE IF EXISTS events;

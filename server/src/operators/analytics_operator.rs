@@ -185,7 +185,7 @@ pub async fn get_search_metrics_query(
                 quantile(0.99)(latency) as p99,
                 quantile(0.95)(latency) as p95,
                 quantile(0.5)(latency) as p50
-            FROM default.search_queries
+            FROM search_queries
             WHERE dataset_id = ?
         ) subquery",
     );
@@ -224,7 +224,7 @@ pub async fn get_head_queries_query(
             query, 
             count(*) AS count
         FROM 
-            default.search_queries
+            search_queries
         WHERE dataset_id = ? AND search_queries.is_duplicate = 0",
     );
 
@@ -268,7 +268,7 @@ pub async fn get_low_confidence_queries_query(
         "SELECT 
             ?fields
         FROM 
-            default.search_queries
+            search_queries
         WHERE dataset_id = ? AND search_queries.is_duplicate = 0",
     );
 
@@ -323,7 +323,7 @@ pub async fn get_no_result_queries_query(
         "SELECT 
             ?fields
         FROM 
-            default.search_queries
+            search_queries
         WHERE dataset_id = ?
         AND top_score = 0 AND search_queries.is_duplicate = 0",
     );
@@ -369,7 +369,7 @@ pub async fn get_all_queries_query(
         "SELECT 
             ?fields
         FROM 
-            default.search_queries
+            search_queries
         WHERE dataset_id = ? AND search_queries.is_duplicate = 0",
     );
 
@@ -619,7 +619,7 @@ pub async fn get_search_usage_graph_query(
             toStartOfInterval(created_at, INTERVAL {}) AS time_stamp,
             count(*) AS requests
         FROM 
-            default.search_queries
+            search_queries
         WHERE 
             dataset_id = ?
         ",
@@ -678,7 +678,7 @@ pub async fn get_latency_graph_query(
                 toDateTime(toUnixTimestamp(created_at) - (toUnixTimestamp(created_at) % 1)) AS second,
                 avg(latency) AS latency_per_second
             FROM 
-                default.search_queries
+                search_queries
             WHERE 
                 dataset_id = ?
         ",
@@ -753,7 +753,7 @@ pub async fn get_rag_queries_query(
         "SELECT 
             ?fields
         FROM 
-            default.rag_queries
+            rag_queries
         WHERE dataset_id = ?",
     );
 
@@ -801,7 +801,7 @@ pub async fn get_rag_usage_query(
         "SELECT 
             count(*) as total_queries
         FROM 
-            default.rag_queries
+            rag_queries
         WHERE dataset_id = ?",
     );
 
@@ -841,7 +841,7 @@ pub async fn get_rag_usage_graph_query(
             toStartOfInterval(created_at, INTERVAL {}) AS time_stamp,
             count(*) AS requests
         FROM 
-            default.rag_queries
+            rag_queries
         WHERE 
             dataset_id = ?
         ",
@@ -921,7 +921,7 @@ pub async fn get_low_confidence_recommendations_query(
         "SELECT 
             ?fields
         FROM 
-            default.recommendations
+            recommendations
         WHERE dataset_id = ?",
     );
 
@@ -999,7 +999,7 @@ pub async fn get_recommendation_queries_query(
         "SELECT 
             ?fields
         FROM 
-            default.recommendations
+            recommendations
         WHERE dataset_id = ?",
     );
 
@@ -1045,7 +1045,7 @@ pub async fn send_event_data_query(
         .collect_vec()
         .join("', '");
     let query_string = format!(
-        "INSERT INTO default.events (id, event_type, event_name, items, metadata, user_id, is_conversion, request_id, dataset_id, created_at, updated_at) VALUES ('{}', '{}', '{}', array('{}'), '{}', '{}', '{}', '{}', '{}', now(), now())",
+        "INSERT INTO events (id, event_type, event_name, items, metadata, user_id, is_conversion, request_id, dataset_id, created_at, updated_at) VALUES ('{}', '{}', '{}', array('{}'), '{}', '{}', '{}', '{}', '{}', now(), now())",
         data.id, data.event_type, data.event_name.replace('\'', "''").replace('?', "|q").replace('\n', ""), items.replace('?', "|q").replace('\n', ""), data.metadata.replace('\'', "''").replace('?', "|q").replace('\n', ""), data.user_id, data.is_conversion, data.request_id, data.dataset_id
     );
 
@@ -1082,14 +1082,14 @@ pub async fn get_search_ctr_metrics_query(
     let mut query_string = String::from(
         "WITH total_searches AS (
             SELECT COUNT(*) AS total
-            FROM default.search_queries
+            FROM search_queries
             WHERE dataset_id = ? AND is_duplicate = 0
         ),
         metadata_values AS (
             SELECT arrayJoin(JSONExtractKeys(metadata)) AS key,
                 JSONExtractFloat(metadata, key) AS value
-            FROM default.events
-            JOIN default.search_queries ON toUUID(events.request_id) = search_queries.id
+            FROM events
+            JOIN search_queries ON toUUID(events.request_id) = search_queries.id
             WHERE search_queries.dataset_id = ? AND events.event_type = 'click'
         ",
     );
@@ -1145,8 +1145,8 @@ pub async fn get_searches_with_clicks_query(
             events.metadata,
             events.request_id,
             events.created_at
-        FROM default.events 
-        JOIN default.search_queries ON toUUID(events.request_id) = search_queries.id 
+        FROM events 
+        JOIN search_queries ON toUUID(events.request_id) = search_queries.id 
         WHERE search_queries.dataset_id = ? AND search_queries.is_duplicate = 0 AND events.event_type = 'click'",
     );
 
@@ -1191,8 +1191,8 @@ pub async fn get_searches_without_clicks_query(
 ) -> Result<CTRSearchQueryWithoutClicksResponse, ServiceError> {
     let mut query_string = String::from(
         "SELECT search_queries.query, search.id, search_queries.created_at
-        FROM default.search_queries sq
-        LEFT JOIN default.events cd ON sq.id = toUUID(cd.request_id) AND 
+        FROM search_queries sq
+        LEFT JOIN events cd ON sq.id = toUUID(cd.request_id) AND 
             events.event_type = 'click'
         WHERE cd.request_id = '' AND search_queries.dataset_id = ? AND search_queries.is_duplicate = 0",
     );
@@ -1234,14 +1234,14 @@ pub async fn get_recommendation_ctr_metrics_query(
     let mut query_string = String::from(
         "WITH total_recommendations AS (
             SELECT COUNT(*) AS total
-            FROM default.recommendations
+            FROM recommendations
             WHERE dataset_id = ? 
         ),
         metadata_values AS (
             SELECT arrayJoin(JSONExtractKeys(metadata)) AS key,
                 JSONExtractFloat(metadata, key) AS value
-            FROM default.events
-            JOIN default.recommendations ON toUUID(events.request_id) = recommendations.id
+            FROM events
+            JOIN recommendations ON toUUID(events.request_id) = recommendations.id
             WHERE recommendations.dataset_id = ? AND events.event_type = 'click'
         ",
     );
@@ -1312,8 +1312,8 @@ pub async fn get_recommendations_with_clicks_query(
             events.request_id,
             events.metadata,
             events.created_at
-        FROM default.events 
-        JOIN default.recommendations ON toUUID(events.request_id) = recommendations.id 
+        FROM events 
+        JOIN recommendations ON toUUID(events.request_id) = recommendations.id 
         WHERE recommendations.dataset_id = ? AND events.event_type = 'click'",
     );
 
@@ -1364,8 +1364,8 @@ pub async fn get_recommendations_without_clicks_query(
             recommendations.negative_tracking_ids,
             recommendations.id,
             recommendations.created_at
-        FROM default.recommendations r
-        LEFT JOIN default.events cd ON r.id = toUUID(cd.request_id) AND 
+        FROM recommendations r
+        LEFT JOIN events cd ON r.id = toUUID(cd.request_id) AND 
             events.event_type = 'click'
         WHERE cd.request_id = '' AND recommendations.dataset_id = ?",
     );
@@ -1413,7 +1413,7 @@ pub async fn set_search_query_rating_query(
 
     clickhouse_client
         .query(
-            "ALTER TABLE default.search_queries
+            "ALTER TABLE search_queries
         UPDATE query_rating = ?
         WHERE id = ? AND dataset_id = ?",
         )
@@ -1423,19 +1423,13 @@ pub async fn set_search_query_rating_query(
         .execute()
         .await
         .map_err(|err| {
-            log::error!(
-                "Error altering to ClickHouse default.search_queries: {:?}",
-                err
-            );
+            log::error!("Error altering to ClickHouse search_queries: {:?}", err);
             sentry::capture_message(
-                &format!(
-                    "Error altering to ClickHouse default.search_queries: {:?}",
-                    err
-                ),
+                &format!("Error altering to ClickHouse search_queries: {:?}", err),
                 sentry::Level::Error,
             );
             ServiceError::InternalServerError(
-                "Error altering to ClickHouse default.search_queries".to_string(),
+                "Error altering to ClickHouse search_queries".to_string(),
             )
         })?;
 
@@ -1456,7 +1450,7 @@ pub async fn set_rag_query_rating_query(
 
     clickhouse_client
         .query(
-            "ALTER TABLE default.rag_queries
+            "ALTER TABLE rag_queries
         UPDATE query_rating = ?
         WHERE id = ? AND dataset_id = ?",
         )
@@ -1466,19 +1460,13 @@ pub async fn set_rag_query_rating_query(
         .execute()
         .await
         .map_err(|err| {
-            log::error!(
-                "Error altering to ClickHouse default.rag_queries: {:?}",
-                err
-            );
+            log::error!("Error altering to ClickHouse rag_queries: {:?}", err);
             sentry::capture_message(
-                &format!(
-                    "Error altering to ClickHouse default.rag_queries: {:?}",
-                    err
-                ),
+                &format!("Error altering to ClickHouse rag_queries: {:?}", err),
                 sentry::Level::Error,
             );
             ServiceError::InternalServerError(
-                "Error altering to ClickHouse default.rag_queries".to_string(),
+                "Error altering to ClickHouse rag_queries".to_string(),
             )
         })?;
 
@@ -1513,7 +1501,7 @@ pub async fn get_top_datasets_query(
             dataset_id,
             COUNT(*) as total_queries
         FROM 
-            default.{}
+            {}
         WHERE 
             dataset_id IN ?",
         data.r#type
@@ -1625,7 +1613,7 @@ pub async fn get_all_events_query(
             created_at,
             updated_at
         FROM 
-            default.events
+            events
         WHERE dataset_id = '{}'",
         dataset_id
     );

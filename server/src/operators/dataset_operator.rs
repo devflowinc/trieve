@@ -485,7 +485,7 @@ pub async fn delete_dataset_by_id_query(
     }
 
     clickhouse_client
-        .query("DELETE FROM default.dataset_events WHERE dataset_id = ?")
+        .query("DELETE FROM dataset_events WHERE dataset_id = ?")
         .bind(id)
         .execute()
         .await
@@ -497,7 +497,7 @@ pub async fn delete_dataset_by_id_query(
     clickhouse_client
         .query(
             "
-        ALTER TABLE default.dataset_events
+        ALTER TABLE dataset_events
         DELETE WHERE dataset_id = ?;
         ",
         )
@@ -509,7 +509,7 @@ pub async fn delete_dataset_by_id_query(
     clickhouse_client
         .query(
             "
-        ALTER TABLE default.search_queries
+        ALTER TABLE search_queries
         DELETE WHERE dataset_id = ?;
         ",
         )
@@ -521,7 +521,7 @@ pub async fn delete_dataset_by_id_query(
     clickhouse_client
         .query(
             "
-        ALTER TABLE default.search_cluster_memberships
+        ALTER TABLE search_cluster_memberships
         DELETE WHERE cluster_id IN (
             SELECT id FROM cluster_topics WHERE dataset_id = ?
         );
@@ -535,7 +535,7 @@ pub async fn delete_dataset_by_id_query(
     clickhouse_client
         .query(
             "
-        ALTER TABLE default.cluster_topics
+        ALTER TABLE cluster_topics
         DELETE WHERE dataset_id = ?;
         ",
         )
@@ -743,13 +743,11 @@ pub async fn add_words_to_dataset(
         .map(|((w, count), dataset_id)| WordDataset::from_details(w, dataset_id, count))
         .collect_vec();
 
-    let mut words_inserter = clickhouse_client
-        .insert("default.words_datasets")
-        .map_err(|e| {
-            log::error!("Error inserting words_datasets: {:?}", e);
-            sentry::capture_message("Error inserting words_datasets", sentry::Level::Error);
-            ServiceError::InternalServerError(format!("Error inserting words_datasets: {:?}", e))
-        })?;
+    let mut words_inserter = clickhouse_client.insert("words_datasets").map_err(|e| {
+        log::error!("Error inserting words_datasets: {:?}", e);
+        sentry::capture_message("Error inserting words_datasets", sentry::Level::Error);
+        ServiceError::InternalServerError(format!("Error inserting words_datasets: {:?}", e))
+    })?;
 
     for row in rows {
         words_inserter.write(&row).await.map_err(|e| {
