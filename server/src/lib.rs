@@ -752,6 +752,9 @@ pub fn main() -> std::io::Result<()> {
                 .service(
                     web::resource("/metrics")
                     .route(web::get().to(handlers::metrics_handler::get_metrics))
+                ).service(
+                    web::resource("/builder-webhook")
+                    .route(web::post().to(handlers::webhook_handler::builder_webhook))
                 )
                 // everything under '/api/' route
                 .service(
