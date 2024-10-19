@@ -38,36 +38,26 @@ pub async fn send_to_clickhouse(
         return Ok(());
     }
 
-    let mut search_queries_inserter = String::from("INSERT INTO default.search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
+    let mut search_queries_inserter = String::from("INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
 
-    let mut rag_queries_inserter =
-        clickhouse_client
-            .insert("default.rag_queries")
-            .map_err(|e| {
-                log::error!("Error inserting rag queries: {:?}", e);
-                sentry::capture_message("Error inserting rag queries", sentry::Level::Error);
-                ServiceError::InternalServerError(format!("Error inserting rag queries: {:?}", e))
-            })?;
+    let mut rag_queries_inserter = clickhouse_client.insert("rag_queries").map_err(|e| {
+        log::error!("Error inserting rag queries: {:?}", e);
+        sentry::capture_message("Error inserting rag queries", sentry::Level::Error);
+        ServiceError::InternalServerError(format!("Error inserting rag queries: {:?}", e))
+    })?;
 
-    let mut recommendations_inserter = clickhouse_client
-        .insert("default.recommendations")
-        .map_err(|e| {
+    let mut recommendations_inserter =
+        clickhouse_client.insert("recommendations").map_err(|e| {
             log::error!("Error inserting recommendations: {:?}", e);
             sentry::capture_message("Error inserting recommendations", sentry::Level::Error);
             ServiceError::InternalServerError(format!("Error inserting recommendations: {:?}", e))
         })?;
 
-    let mut worker_events_inserter =
-        clickhouse_client
-            .insert("default.dataset_events")
-            .map_err(|e| {
-                log::error!("Error inserting recommendations: {:?}", e);
-                sentry::capture_message("Error inserting recommendations", sentry::Level::Error);
-                ServiceError::InternalServerError(format!(
-                    "Error inserting recommendations: {:?}",
-                    e
-                ))
-            })?;
+    let mut worker_events_inserter = clickhouse_client.insert("dataset_events").map_err(|e| {
+        log::error!("Error inserting recommendations: {:?}", e);
+        sentry::capture_message("Error inserting recommendations", sentry::Level::Error);
+        ServiceError::InternalServerError(format!("Error inserting recommendations: {:?}", e))
+    })?;
 
     for event in events {
         match event {
@@ -98,22 +88,16 @@ pub async fn send_to_clickhouse(
                         .execute()
                         .await
                         .map_err(|err| {
-                            log::error!(
-                                "Error writing to ClickHouse default.search_queries: {:?}",
-                                err
-                            );
+                            log::error!("Error writing to ClickHouse search_queries: {:?}", err);
                             sentry::capture_message(
-                                &format!(
-                                    "Error writing to ClickHouse default.search_queries: {:?}",
-                                    err
-                                ),
+                                &format!("Error writing to ClickHouse search_queries: {:?}", err),
                                 sentry::Level::Error,
                             );
                             ServiceError::InternalServerError(
-                                "Error writing to ClickHouse default.search_queries".to_string(),
+                                "Error writing to ClickHouse search_queries".to_string(),
                             )
                         })?;
-                    search_queries_inserter = String::from("INSERT INTO default.search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
+                    search_queries_inserter = String::from("INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
                 }
             }
             ClickHouseEvent::RecommendationEvent(event) => {
@@ -152,18 +136,18 @@ pub async fn send_to_clickhouse(
         }
     }
 
-    if search_queries_inserter != *"INSERT INTO default.search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES" {
+    if search_queries_inserter != *"INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES" {
         clickhouse_client
             .query(&search_queries_inserter[..search_queries_inserter.len() - 1])
             .execute()
             .await
             .map_err(|err| {
-                log::error!("Error writing to ClickHouse default.search_queries: {:?}", err);
+                log::error!("Error writing to ClickHouse search_queries: {:?}", err);
                 sentry::capture_message(
-                    &format!("Error writing to ClickHouse default.search_queries: {:?}", err),
+                    &format!("Error writing to ClickHouse search_queries: {:?}", err),
                     sentry::Level::Error,
                 );
-                ServiceError::InternalServerError("Error writing to ClickHouse default.search_queries".to_string())
+                ServiceError::InternalServerError("Error writing to ClickHouse search_queries".to_string())
             })?;
     }
 

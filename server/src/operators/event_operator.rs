@@ -28,7 +28,7 @@ pub async fn get_events_query(
             event_type,
             event_data,
             created_at
-        FROM default.dataset_events
+        FROM dataset_events
         WHERE dataset_id = '{dataset_id}' AND event_type IN ({event_types})
         ORDER BY created_at DESC
         LIMIT {limit} OFFSET {offset}
@@ -60,7 +60,7 @@ pub async fn get_events_query(
     let count_query = format!(
         "
         SELECT count(*) / {page_size}
-        FROM default.dataset_events
+        FROM dataset_events
         WHERE dataset_id = '{dataset_id}' AND event_type IN ({event_types})
         ",
         dataset_id = dataset_id,
@@ -91,7 +91,7 @@ pub async fn get_events_query(
     let event_types_query = format!(
         "
         SELECT DISTINCT event_type
-        FROM default.dataset_events
+        FROM dataset_events
         WHERE dataset_id = '{dataset_id}'
         ORDER BY event_type
         ",
