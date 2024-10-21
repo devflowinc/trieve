@@ -7,8 +7,6 @@ import {
   UserIcon,
 } from "../icons";
 import Markdown from "react-markdown";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { Chunk } from "../../utils/types";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
@@ -103,21 +101,10 @@ export const Message = ({
           <Markdown
             components={{
               code: (props) => {
-                const { className, children } = props || {};
+                const { children } = props || {};
                 if (!children) return null;
-                if (!className) {
-                  return (
-                    <SyntaxHighlighter language={"bash"} style={nightOwl}>
-                      {children?.toString()}
-                    </SyntaxHighlighter>
-                  );
-                }
                 return (
-                  <SyntaxHighlighter
-                    language={className?.split("language")[1] || "bash"}
-                    style={nightOwl}>
-                    {children?.toString()}
-                  </SyntaxHighlighter>
+                  children?.toString()
                 );
               },
             }}

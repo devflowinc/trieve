@@ -39,7 +39,7 @@ export const useSuggestedQueries = () => {
   }, [])
 
   useEffect(() => {
-    if (!props.suggestedQueries) {
+    if (!props.suggestedQueries || query === "") {
       return;
     }
 
