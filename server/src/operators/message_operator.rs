@@ -795,12 +795,10 @@ pub async fn stream_response(
 
     let query_id = uuid::Uuid::new_v4();
 
-    if !create_message_req_payload
+    if create_message_req_payload
         .llm_options
         .as_ref()
-        .map(|x| x.stream_response)
-        .unwrap_or(Some(true))
-        .unwrap_or(true)
+        .is_some_and(|llm_options| !llm_options.stream_response.unwrap_or(true))
     {
         let assistant_completion =
             client
@@ -873,6 +871,15 @@ pub async fn stream_response(
                 .unwrap_or_default(),
         };
 
+        let response_string = if create_message_req_payload
+            .llm_options
+            .is_some_and(|llm_options| llm_options.completion_first.unwrap_or(false))
+        {
+            format!("{}{}", completion_content, chunk_metadatas_stringified)
+        } else {
+            format!("{}{}", chunk_metadatas_stringified, completion_content)
+        };
+
         event_queue
             .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
             .await;
@@ -881,7 +888,7 @@ pub async fn stream_response(
 
         return Ok(HttpResponse::Ok()
             .insert_header(("TR-QueryID", query_id.to_string()))
-            .json(completion_content));
+            .json(response_string));
     }
 
     let (s, r) = unbounded::<String>();
