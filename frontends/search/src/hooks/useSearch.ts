@@ -99,7 +99,7 @@ const initalState: SearchOptions = {
     field: "",
   },
   pageSize: 10,
-  getTotalPages: false,
+  getTotalPages: true,
   correctTypos: false,
   oneTypoWordRangeMin: 4,
   oneTypoWordRangeMax: 6,
@@ -188,7 +188,7 @@ const fromParamsToState = (
       (JSON.parse(params.sort_by ?? "{}") as SortByField | SortBySearchType) ??
       initalState.sort_by,
     pageSize: parseInt(params.pageSize ?? "10"),
-    getTotalPages: (params.getTotalPages ?? "false") === "true",
+    getTotalPages: (params.getTotalPages ?? "true") === "true",
     correctTypos: (params.correctTypos ?? "false") === "true",
     oneTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "4"),
     oneTypoWordRangeMax: parseIntOrNull(params.oneTypoWordRangeMax),
