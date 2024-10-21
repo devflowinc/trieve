@@ -1,4 +1,5 @@
 import {
+  ChunkGroup,
   ChunkMetadata,
   SearchChunksReqPayload,
 } from "trieve-ts-sdk";
@@ -12,12 +13,34 @@ export type Chunk = Omit<ChunkMetadata, "metadata"> & {
   };
 };
 
+export type GroupChunk = {
+  chunks: ChunkWithHighlights[];
+  group: ChunkGroup;
+};
+
 export type ChunkWithHighlights = { chunk: Chunk; highlights: string[] };
 
 export type SearchResults = {
   chunks: ChunkWithHighlights[];
   requestID: string;
 };
+
+export type GroupSearchResults = {
+  groups: GroupChunk[];
+  requestID: string;
+};
+
+export function isChunksWithHighlights(
+  result: ChunkWithHighlights | GroupChunk,
+): result is ChunkWithHighlights {
+  return (result as ChunkWithHighlights).highlights !== undefined;
+}
+
+export function isGroupChunk(
+  result: ChunkWithHighlights | GroupChunk,
+): result is GroupChunk {
+  return (result as GroupChunk).group !== undefined;
+}
 
 export type Props = {
   datasetId: string;

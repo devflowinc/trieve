@@ -5,6 +5,7 @@ export const ApiRoutes = {
     "POST /api/chunk/search",
     "POST /api/chunk_group/search",
     "POST /api/chunk/autocomplete",
+    "POST /api/chunk_group/group_oriented_search",
   ],
   "Query Suggestions": ["POST /api/chunk/suggestions"],
   "Count Chunks Above Threshold": ["POST /api/chunk/count"],

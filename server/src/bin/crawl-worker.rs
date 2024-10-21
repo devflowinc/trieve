@@ -549,7 +549,11 @@ async fn get_chunks_with_firecrawl(
                     heading.clone()
                 ))),
                 upsert_by_tracking_id: Some(true),
-                group_tracking_ids: Some(vec![page_link.clone()]),
+                group_tracking_ids: Some(vec![if !page_title.is_empty() {
+                    page_title.clone()
+                } else {
+                    page_link.clone()
+                }]),
                 fulltext_boost: if scrape_request.crawl_options.boost_titles.unwrap_or(true) {
                     Some(FullTextBoost {
                         phrase: fulltext_boost_phrase,
