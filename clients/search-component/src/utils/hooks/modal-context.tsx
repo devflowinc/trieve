@@ -5,13 +5,17 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Chunk, ChunkWithHighlights } from "../types";
+import { Chunk, ChunkWithHighlights, GroupChunk } from "../types";
 import {
   AutocompleteReqPayload,
   CountChunkQueryResponseBody,
   TrieveSDK,
 } from "trieve-ts-sdk";
-import { countChunks, searchWithTrieve } from "../trieve";
+import {
+  countChunks,
+  groupSearchWithTrieve,
+  searchWithTrieve,
+} from "../trieve";
 
 export const ALL_TAG = { tag: "all", label: "All", icon: null };
 
@@ -48,6 +52,7 @@ export type ModalProps = {
   }[];
   defaultSearchMode?: SearchModes;
   type?: ModalTypes;
+  useGroupSearch?: boolean;
   allowSwitchingModes?: boolean;
   defaultCurrency?: string;
   currencyPosition?: currencyPosition;
@@ -70,6 +75,7 @@ const defaultProps = {
   trieve: (() => {}) as unknown as TrieveSDK,
   openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
   type: "docs" as ModalTypes,
+  useGroupSearch: false,
   allowSwitchingModes: true,
   currencyPosition: "after" as currencyPosition,
   responsive: false,
@@ -81,8 +87,10 @@ const ModalContext = createContext<{
   trieveSDK: TrieveSDK;
   query: string;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
-  results: ChunkWithHighlights[];
-  setResults: React.Dispatch<React.SetStateAction<ChunkWithHighlights[]>>;
+  results: ChunkWithHighlights[] | GroupChunk[];
+  setResults: React.Dispatch<
+    React.SetStateAction<ChunkWithHighlights[] | GroupChunk[]>
+  >;
   requestID: string;
   setRequestID: React.Dispatch<React.SetStateAction<string>>;
   loadingResults: boolean;
@@ -132,7 +140,9 @@ function ModalProvider({
     ...onLoadProps,
   });
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ChunkWithHighlights[]>([]);
+  const [results, setResults] = useState<ChunkWithHighlights[] | GroupChunk[]>(
+    [],
+  );
   const [requestID, setRequestID] = useState("");
   const [loadingResults, setLoadingResults] = useState(false);
   const [open, setOpen] = useState(false);
@@ -141,7 +151,7 @@ function ModalProvider({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all"
+    props.tags?.find((t) => t.selected)?.tag || "all",
   );
 
   const trieve = new TrieveSDK({
@@ -164,15 +174,28 @@ function ModalProvider({
 
     try {
       setLoadingResults(true);
-      const results = await searchWithTrieve({
-        query: query,
-        searchOptions: props.searchOptions,
-        trieve: trieve,
-        abortController,
-        ...(currentTag !== "all" && { tag: currentTag }),
-      });
-      setResults(results.chunks);
-      setRequestID(results.requestID);
+      if (props.type === "docs" && props.useGroupSearch) {
+        const results = await groupSearchWithTrieve({
+          query: query,
+          searchOptions: props.searchOptions,
+          trieve: trieve,
+          abortController,
+          ...(currentTag !== "all" && { tag: currentTag }),
+        });
+
+        setResults(results.groups);
+        setRequestID(results.requestID);
+      } else {
+        const results = await searchWithTrieve({
+          query: query,
+          searchOptions: props.searchOptions,
+          trieve: trieve,
+          abortController,
+          ...(currentTag !== "all" && { tag: currentTag }),
+        });
+        setResults(results.chunks);
+        setRequestID(results.requestID);
+      }
     } catch (e) {
       if (
         e != "AbortError" &&
@@ -213,8 +236,8 @@ function ModalProvider({
               trieve: trieve,
               abortController,
               ...(tag.tag !== "all" && { tag: tag.tag }),
-            })
-          )
+            }),
+          ),
         );
         setTagCounts(numberOfRecords);
       } catch (e) {
@@ -270,8 +293,7 @@ function ModalProvider({
         currentTag,
         setCurrentTag,
         tagCounts,
-      }}
-    >
+      }}>
       {children}
     </ModalContext.Provider>
   );

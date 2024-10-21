@@ -1,5 +1,5 @@
 import { SearchResponseBody, TrieveSDK } from "trieve-ts-sdk";
-import { Chunk, Props, SearchResults } from "./types";
+import { Chunk, GroupSearchResults, Props, SearchResults } from "./types";
 import { highlightOptions, highlightText } from "./highlight";
 
 export const searchWithTrieve = async ({
@@ -34,7 +34,7 @@ export const searchWithTrieve = async ({
       }),
       ...searchOptions,
     },
-    abortController?.signal
+    abortController?.signal,
   )) as SearchResponseBody;
 
   const resultsWithHighlight = results.chunks.map((chunk) => {
@@ -54,11 +54,66 @@ export const searchWithTrieve = async ({
   } as unknown as SearchResults;
 };
 
+export const groupSearchWithTrieve = async ({
+  trieve,
+  query,
+  searchOptions = {
+    search_type: "fulltext",
+  },
+  abortController,
+  tag,
+}: {
+  trieve: TrieveSDK;
+  query: string;
+  searchOptions: Props["searchOptions"];
+  abortController?: AbortController;
+  tag?: string;
+}) => {
+  const results = await trieve.searchOverGroups(
+    {
+      query,
+      highlight_options: {
+        ...highlightOptions,
+        highlight_delimiters: ["?", ",", ".", "!", "\n"],
+      },
+      score_threshold: 2,
+      page_size: 20,
+      ...(tag && {
+        filters: {
+          must: [{ field: "tag_set", match_any: [tag] }],
+        },
+      }),
+      group_size: 3,
+      ...searchOptions,
+    },
+    abortController?.signal,
+  );
+
+  const resultsWithHighlight = results.results.map((group) => {
+    group.chunks = group.chunks.map((chunk) => {
+      const c = chunk.chunk as unknown as Chunk;
+      return {
+        ...chunk,
+        chunk: {
+          ...chunk.chunk,
+          highlight: highlightText(query, c.chunk_html),
+        },
+      };
+    });
+    return group;
+  });
+
+  return {
+    groups: resultsWithHighlight,
+    requestID: results.id,
+  } as unknown as GroupSearchResults;
+};
+
 export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
 
   return Object.fromEntries(
-    Object.entries(obj).filter(([key]) => !keys.includes(key))
+    Object.entries(obj).filter(([key]) => !keys.includes(key)),
   );
 };
 
@@ -79,6 +134,7 @@ export const countChunks = async ({
     {
       query,
       score_threshold: 2,
+      limit: 10000,
       ...(tag && {
         filters: {
           must: [{ field: "tag_set", match_any: [tag] }],
@@ -87,7 +143,7 @@ export const countChunks = async ({
       search_type: "fulltext",
       ...omit(searchOptions, ["search_type"]),
     },
-    abortController?.signal
+    abortController?.signal,
   );
   return results;
 };
@@ -129,7 +185,7 @@ export const getSuggestedQueries = async ({
       search_type: "semantic",
       context: "You are a user searching through a docs website",
     },
-    abortController?.signal
+    abortController?.signal,
   );
 };
 
@@ -146,7 +202,7 @@ export const getSuggestedQuestions = async ({
       search_type: "semantic",
       context: "You are a user searching through a docs website",
     },
-    abortController?.signal
+    abortController?.signal,
   );
 };
 

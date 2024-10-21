@@ -10,14 +10,16 @@ type Props = {
   item: ChunkWithHighlights;
   requestID: string;
   index: number;
+  className?: string;
 };
 
-export const Item = ({ item, requestID, index }: Props) => {
+export const Item = ({ item, requestID, index, className }: Props) => {
   const { onUpOrDownClicked } = useKeyboardNavigation();
   const { props, trieveSDK } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   let descriptionHtml = item.highlights
     ? item.highlights.join("...")
@@ -161,7 +163,7 @@ export const Item = ({ item, requestID, index }: Props) => {
       <Component
         ref={itemRef}
         id={`trieve-search-item-${index}`}
-        className="item"
+        className={className ?? "item"}
         onClick={() =>
           onResultClick(
             {
@@ -171,6 +173,12 @@ export const Item = ({ item, requestID, index }: Props) => {
             requestID,
           )
         }
+        onMouseEnter={() => {
+          setIsHovered(true);
+        }}
+        onMouseLeave={() => {
+          setIsHovered(false);
+        }}
         {...(item.chunk.link
           ? {
               href: `${item.chunk.link}${linkSuffix}`,
@@ -190,7 +198,9 @@ export const Item = ({ item, requestID, index }: Props) => {
           ) : null}
           {title ? (
             <div>
-              {props.type !== "ecommerce" ? <h6 className="chunk-path">{getChunkPath()}</h6> : null}
+              {props.type === "docs" ? (
+                <h6 className="chunk-path">{getChunkPath()}</h6>
+              ) : null}
               <h4
                 dangerouslySetInnerHTML={{
                   __html: title,
@@ -237,7 +247,7 @@ export const Item = ({ item, requestID, index }: Props) => {
               }}
             />
           )}
-          <ArrowIcon />
+          <ArrowIcon className={!isHovered ? "hidden" : ""} />
         </div>
       </Component>
     </li>

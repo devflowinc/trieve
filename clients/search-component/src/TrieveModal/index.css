@@ -54,6 +54,13 @@ body {
 
     .trieve-elements-search {
       @apply pr-2;
+
+      .item-group-container {
+        @apply border-b border-gray-300 mb-5;
+      }
+      .item-group-name {
+        @apply text-sm font-bold mb-2;
+      }
     }
 
     .no-results {
@@ -596,9 +603,17 @@ body {
         @apply shrink-0 w-8;
       }
 
+      /* &.hidden {
+        @apply hidden;
+      } */
+
       mark {
         @apply bg-inherit;
         color: var(--tv-prop-brand-color);
+      }
+
+      &.group {
+        @apply pl-2 pr-3;
       }
 
       &.start-chat {

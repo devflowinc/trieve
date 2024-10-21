@@ -5,6 +5,7 @@ import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { Tags } from "./Tags";
 import { useChatState } from "../../utils/hooks/chat-context";
+import { isChunksWithHighlights } from "../../utils/types";
 
 export const SearchMode = () => {
   const {
@@ -45,8 +46,7 @@ export const SearchMode = () => {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="search-icon"
-          >
+            className="search-icon">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.3-4.3"></path>
           </svg>
@@ -68,8 +68,7 @@ export const SearchMode = () => {
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+              strokeLinejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -83,8 +82,7 @@ export const SearchMode = () => {
                 onClick={refetchSuggestedQueries}
                 disabled={isLoadingSuggestedQueries}
                 className="suggested-query"
-                title="Refresh suggested queries"
-              >
+                title="Refresh suggested queries">
                 <ReloadIcon width="14" height="14" />
               </button>
               <p>Suggested Queries: </p>
@@ -99,8 +97,7 @@ export const SearchMode = () => {
                   key={q}
                   className={`suggested-query${
                     isLoadingSuggestedQueries ? " loading" : ""
-                  }`}
-                >
+                  }`}>
                   {q}
                 </button>
               ))}
@@ -114,8 +111,7 @@ export const SearchMode = () => {
           <li>
             <button
               className="item start-chat"
-              onClick={() => switchToChatAndAskQuestion(query)}
-            >
+              onClick={() => switchToChatAndAskQuestion(query)}>
               <div>
                 <AIIcon />
                 <div>
@@ -130,14 +126,29 @@ export const SearchMode = () => {
           </li>
         ) : null}
         {results.length
-          ? results.map((result, index) => (
-              <Item
-                item={result}
-                index={index}
-                requestID={requestID}
-                key={result.chunk.id}
-              />
-            ))
+          ? results.map((result, index) =>
+              isChunksWithHighlights(result) ? (
+                <Item
+                  item={result}
+                  index={index}
+                  requestID={requestID}
+                  key={result.chunk.id}
+                />
+              ) : (
+                <div key={index} className="item-group-container">
+                  <p className="item-group-name">{result.group.name}</p>
+                  {result.chunks.map((chunk, index) => (
+                    <Item
+                      item={chunk}
+                      index={index}
+                      requestID={requestID}
+                      key={chunk.chunk.id}
+                      className="item group"
+                    />
+                  ))}
+                </div>
+              ),
+            )
           : null}
         {query && !results.length && !loadingResults ? (
           <div className="no-results">
@@ -148,8 +159,7 @@ export const SearchMode = () => {
                 <a
                   className="no-results-help-link"
                   href={`${props.problemLink}No results found for query: ${query} on ${props.brandName}`}
-                  target="_blank"
-                >
+                  target="_blank">
                   Contact us
                 </a>
               </p>
@@ -166,8 +176,7 @@ export const SearchMode = () => {
           <a
             className="trieve-powered"
             href="https://trieve.ai"
-            target="_blank"
-          >
+            target="_blank">
             <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
             Powered by Trieve
           </a>

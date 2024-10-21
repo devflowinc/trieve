@@ -16,15 +16,14 @@ export default function Home() {
   return (
     <>
       <div
-        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-          }`}
-      >
+        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
+          theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
+        }`}>
         <div className="absolute top-6 right-6">
           <ul>
             <li>
               <button
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              >
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
                 {theme === "light" ? <IconMoon /> : <IconSun />}
               </button>
             </li>
@@ -39,8 +38,8 @@ export default function Home() {
             <TrieveModalSearch
               debounceMs={1000}
               defaultSearchMode="search"
-              apiKey="tr-zpPVGUq18FxOCmXgLfqGbmDOY4UMW00r"
-              datasetId="4538ad9f-47cf-44d4-8a14-7c111f9558a9"
+              apiKey="tr-ZMwMAbZsIqqB2Ss4OTyPBe9hQEb5S0ov"
+              datasetId="e7ac9f62-1a01-41ad-8e37-4b0e0bfb8843"
               problemLink="mailto:help@trieve.ai?subject="
               theme={theme}
               tags={[
@@ -58,8 +57,7 @@ export default function Home() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="w-3 h-3"
-                    >
+                      className="w-3 h-3">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                       <path d="M14 3v4a1 1 0 0 0 1 1h4" />
                       <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
@@ -83,8 +81,7 @@ export default function Home() {
                       stroke="currentColor"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="w-3 h-3"
-                    >
+                      className="w-3 h-3">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                       <path d="M22 12.54c-1.804 -.345 -2.701 -1.08 -3.523 -2.94c-.487 .696 -1.102 1.568 -.92 2.4c.028 .238 -.32 1 -.557 1h-14c0 5.208 3.164 7 6.196 7c4.124 .022 7.828 -1.376 9.854 -5c1.146 -.101 2.296 -1.505 2.95 -2.46z" />
                       <path d="M5 10h3v3h-3z" />
@@ -113,6 +110,7 @@ export default function Home() {
               brandName="Trieve"
               brandColor="#b557c5"
               allowSwitchingModes={true}
+              useGroupSearch={false}
               responsive={false}
             />
 
@@ -128,7 +126,8 @@ export default function Home() {
               Search Results Component
             </h2>
             <h2 className="font-bold text-center py-8">
-              This was removed, see https://github.com/devflowinc/trieve/pull/2613
+              This was removed, see
+              https://github.com/devflowinc/trieve/pull/2613
             </h2>
           </>
         )}
