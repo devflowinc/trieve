@@ -1,4 +1,0 @@
-url = "http://localhost:8123"
-user = "clickhouse"
-password = "password"
-database = "default"
