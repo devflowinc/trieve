@@ -5848,7 +5848,7 @@ pub struct SortOptions {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
 pub struct HighlightOptions {
-    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<mark><b>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
     pub highlight_results: Option<bool>,
     /// Set highlight_exact_match to true to highlight exact matches from your query.
     pub highlight_strategy: Option<HighlightStrategy>,
@@ -5862,6 +5862,10 @@ pub struct HighlightOptions {
     pub highlight_max_num: Option<u32>,
     /// Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once. This parameter can be overriden to respect the highlight_max_length param.
     pub highlight_window: Option<u32>,
+    /// Custom html tag which should appear before highlights. If not specified, this defaults to '<mark><b>'.
+    pub pre_tag: Option<String>,
+    /// Custom html tag which should appear after highlights. If not specified, this defaults to '</mark></b>'.
+    pub post_tag: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
