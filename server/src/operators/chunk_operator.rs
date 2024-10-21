@@ -1446,6 +1446,7 @@ pub enum HighlightStrategy {
     V1,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn get_highlights_with_exact_match(
     input: ChunkMetadata,
     query: String,
@@ -1454,12 +1455,16 @@ pub fn get_highlights_with_exact_match(
     max_length: Option<u32>,
     max_num: Option<u32>,
     window_size: Option<u32>,
+    pre_tag: Option<String>,
+    post_tag: Option<String>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
     let cleaned_query = query.replace(
         |c: char| (delimiters.contains(&c.to_string()) && c != ' ') || c == '\"',
         "",
     );
+    let pre_tag = pre_tag.unwrap_or("<mark><b>".to_string());
+    let post_tag = post_tag.unwrap_or("</b></mark>".to_string());
 
     let stop_words = get_stop_words();
     let query_parts_split_by_stop_words: Vec<String> = cleaned_query
@@ -1645,6 +1650,8 @@ pub fn get_highlights_with_exact_match(
                 .unique()
                 .map(|x| x.trim().to_string())
                 .collect_vec(),
+            &pre_tag,
+            &post_tag,
         );
 
         let window = window_size.unwrap_or(0);
@@ -1872,13 +1879,15 @@ pub fn get_highlights_with_exact_match(
                     }
 
                     new_x = format!(
-                        "{}<mark><b>{}</b></mark>{}",
+                        "{}{}{}{}{}",
                         &new_x.get(0..query_idx).unwrap_or_default(),
+                        pre_tag,
                         &new_x.get(query_idx..query_end).unwrap_or_default(),
+                        post_tag,
                         &new_x.get(query_end..).unwrap_or_default()
                     );
                 }
-                new_x = new_x.replace("<mark><b></b></mark>", "");
+                new_x = new_x.replace(&format!("{}{}", pre_tag, post_tag), "");
 
                 if new_x != x {
                     Some(new_x)
@@ -1937,7 +1946,7 @@ pub fn get_highlights_with_exact_match(
             .filter_map(|x| x.map(|x| x.to_string()))
             .collect::<Vec<String>>();
         return Ok((
-            apply_highlights_to_html(new_output, phrases.clone()),
+            apply_highlights_to_html(new_output, phrases.clone(), &pre_tag, &post_tag),
             phrases.clone(),
         ));
     }
@@ -2023,7 +2032,7 @@ pub fn get_highlights_with_exact_match(
         }
         let highlighted_phrase = phrase.replace(
             phrase.trim(),
-            &format!("<mark><b>{}</b></mark>", phrase.trim()),
+            &format!("{}{}{}", pre_tag, phrase.trim(), post_tag),
         );
         let windowed_phrase = format!("{}{}{}", prev_phrase, highlighted_phrase, next_phrase);
         windowed_phrases.push(windowed_phrase);
@@ -2039,7 +2048,7 @@ pub fn get_highlights_with_exact_match(
         windowed_phrases.clone()
     };
     Ok((
-        apply_highlights_to_html(new_output, matched_phrases),
+        apply_highlights_to_html(new_output, matched_phrases, &pre_tag, &post_tag),
         result_matches,
     ))
 }
@@ -2054,7 +2063,12 @@ pub fn get_highlights(
     max_length: Option<u32>,
     max_num: Option<u32>,
     window_size: Option<u32>,
+    pre_tag: Option<String>,
+    post_tag: Option<String>,
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
+    let pre_tag = pre_tag.unwrap_or("<mark><b>".to_string());
+    let post_tag = post_tag.unwrap_or("</b></mark>".to_string());
+
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
     let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
@@ -2095,7 +2109,7 @@ pub fn get_highlights(
             .filter_map(|x| x.map(|x| x.to_string()))
             .collect::<Vec<String>>();
         return Ok((
-            apply_highlights_to_html(new_output, phrases.clone()),
+            apply_highlights_to_html(new_output, phrases.clone(), &pre_tag, &post_tag),
             phrases.clone(),
         ));
     }
@@ -2107,6 +2121,7 @@ pub fn get_highlights(
     let mut windowed_phrases = vec![];
     // Used to keep track of the number of words used in the phrase
     let mut used_phrases: HashMap<usize, usize> = HashMap::new();
+
     for idx in matched_idxs.clone() {
         let phrase = get_slice_from_vec_string(split_content.clone(), idx)?;
         let mut next_phrase = String::new();
@@ -2179,9 +2194,10 @@ pub fn get_highlights(
                 start -= 1;
             }
         }
+
         let highlighted_phrase = phrase.replace(
             phrase.trim(),
-            &format!("<mark><b>{}</b></mark>", phrase.trim()),
+            &format!("{}{}{}", pre_tag, phrase.trim(), post_tag),
         );
         let windowed_phrase = format!("{}{}{}", prev_phrase, highlighted_phrase, next_phrase);
         windowed_phrases.push(windowed_phrase);
@@ -2197,12 +2213,17 @@ pub fn get_highlights(
         windowed_phrases.clone()
     };
     Ok((
-        apply_highlights_to_html(new_output, matched_phrases),
+        apply_highlights_to_html(new_output, matched_phrases, &pre_tag, &post_tag),
         result_matches,
     ))
 }
 
-fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> ChunkMetadata {
+fn apply_highlights_to_html(
+    input: ChunkMetadata,
+    phrases: Vec<String>,
+    pre_tag: &str,
+    post_tag: &str,
+) -> ChunkMetadata {
     let mut meta_data = input;
     let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();
     let mut replaced_phrases = HashSet::new();
@@ -2238,7 +2259,7 @@ fn apply_highlights_to_html(input: ChunkMetadata, phrases: Vec<String>) -> Chunk
         all_case_matches.iter().unique().for_each(|all_case_match| {
             chunk_html = chunk_html.replace(
                 all_case_match,
-                &format!("<mark><b>{}</b></mark>", all_case_match),
+                &format!("{}{}{}", pre_tag, all_case_match, post_tag),
             );
         });
 

@@ -311,6 +311,8 @@ const ResultsPage = (props: ResultsPageProps) => {
           highlight_max_length: props.search.debounced.highlightMaxLength ?? 8,
           highlight_max_num: props.search.debounced.highlightMaxNum ?? 3,
           highlight_window: props.search.debounced.highlightWindow ?? 0,
+          pre_tag: props.search.debounced.highlightPreTag ?? "<mark><b>",
+          post_tag: props.search.debounced.highlightPostTag ?? "</b></mark>",
         },
 
         group_size: props.search.debounced.group_size ?? 3,

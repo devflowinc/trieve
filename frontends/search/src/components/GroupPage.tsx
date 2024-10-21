@@ -283,6 +283,8 @@ export const GroupPage = (props: GroupPageProps) => {
               highlight_delimiters: search.debounced.highlightDelimiters,
               highlight_max_length: search.debounced.highlightMaxLength,
               highlight_window: search.debounced.highlightWindow,
+              pre_tag: search.debounced.highlightPreTag,
+              post_tag: search.debounced.highlightPostTag,
             },
             sort_options: {
               sort_by: sort_by,

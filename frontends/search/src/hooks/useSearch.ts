@@ -77,6 +77,8 @@ export interface SearchOptions {
   highlightMaxLength: number;
   highlightMaxNum: number;
   highlightWindow: number;
+  highlightPreTag: string;
+  highlightPostTag: string;
   group_size: number;
   useQuoteNegatedTerms: boolean;
   removeStopWords: boolean;
@@ -112,6 +114,8 @@ const initalState: SearchOptions = {
   highlightMaxLength: 8,
   highlightMaxNum: 3,
   highlightWindow: 0,
+  highlightPreTag: "<mark><b>",
+  highlightPostTag: "</b></mark>",
   group_size: 3,
   useQuoteNegatedTerms: false,
   removeStopWords: false,
@@ -152,6 +156,8 @@ const fromStateToParams = (state: SearchOptions): Params => {
     highlightMaxLength: state.highlightMaxLength.toString(),
     highlightMaxNum: state.highlightMaxNum.toString(),
     highlightWindow: state.highlightWindow.toString(),
+    highlightPreTag: state.highlightPreTag,
+    highlightPostTag: state.highlightPostTag,
     group_size: state.group_size?.toString(),
     useQuoteNegatedTerms: state.useQuoteNegatedTerms.toString(),
     removeStopWords: state.removeStopWords.toString(),
@@ -201,6 +207,8 @@ const fromParamsToState = (
     highlightMaxLength: parseInt(params.highlightMaxLength ?? "8"),
     highlightMaxNum: parseInt(params.highlightMaxNum ?? "3"),
     highlightWindow: parseInt(params.highlightWindow ?? "0"),
+    highlightPreTag: params.highlightPreTag ?? initalState.highlightPreTag,
+    highlightPostTag: params.highlightPostTag ?? initalState.highlightPostTag,
     group_size: parseInt(params.group_size ?? "3"),
     useQuoteNegatedTerms: (params.useQuoteNegatedTerms ?? "false") === "true",
     removeStopWords: (params.removeStopWords ?? "false") === "true",

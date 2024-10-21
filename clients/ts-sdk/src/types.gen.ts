@@ -1152,7 +1152,7 @@ export type GenerateOffChunksReqPayload = {
      */
     frequency_penalty?: (number) | null;
     /**
-     * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits.
+     * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<mark><b>` tags to the chunk_html of the chunks to highlight matching splits.
      */
     highlight_results?: (boolean) | null;
     image_config?: ((ImageConfig) | null);
@@ -1351,7 +1351,7 @@ export type HighlightOptions = {
      */
     highlight_max_num?: (number) | null;
     /**
-     * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<b><mark>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
+     * Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<mark><b>` tags to the chunk_html of the chunks to highlight matching splits and return the highlights on each scored chunk in the response.
      */
     highlight_results?: (boolean) | null;
     highlight_strategy?: ((HighlightStrategy) | null);
@@ -1363,6 +1363,14 @@ export type HighlightOptions = {
      * Set highlight_window to a number to control the amount of words that are returned around the matched phrases. If not specified, this defaults to 0. This is useful for when you want to show more context around the matched words. When specified, window/2 whitespace separated words are added before and after each highlight in the response's highlights array. If an extended highlight overlaps with another highlight, the overlapping words are only included once. This parameter can be overriden to respect the highlight_max_length param.
      */
     highlight_window?: (number) | null;
+    /**
+     * Custom html tag which should appear after highlights. If not specified, this defaults to '</mark></b>'.
+     */
+    post_tag?: (string) | null;
+    /**
+     * Custom html tag which should appear before highlights. If not specified, this defaults to '<mark><b>'.
+     */
+    pre_tag?: (string) | null;
 };
 
 export type HighlightStrategy = 'exactmatch' | 'v1';

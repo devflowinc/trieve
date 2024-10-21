@@ -1064,6 +1064,8 @@ const SearchForm = (props: {
                                   highlightMaxLength: 8,
                                   highlightMaxNum: 3,
                                   highlightWindow: 0,
+                                  highlightPreTag: "<mark><b>",
+                                  highlightPostTag: "</b></mark>",
                                   group_size: 3,
                                   removeStopWords: false,
                                 } as SearchOptions;
@@ -1463,6 +1465,38 @@ const SearchForm = (props: {
                                   highlightWindow: parseInt(
                                     e.currentTarget.value,
                                   ),
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Highlight Pre Tag:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="text"
+                            value={tempSearchValues().highlightPreTag}
+                            onInput={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightPreTag: e.currentTarget.value,
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Highlight Post Tag:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="text"
+                            value={tempSearchValues().highlightPostTag}
+                            onInput={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  highlightPostTag: e.currentTarget.value,
                                 };
                               });
                             }}
