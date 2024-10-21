@@ -1049,7 +1049,7 @@ const SearchForm = (props: {
                                     field: "",
                                   },
                                   pageSize: 10,
-                                  getTotalPages: false,
+                                  getTotalPages: true,
                                   highlightStrategy: "exactmatch",
                                   correctTypos: false,
                                   oneTypoWordRangeMin: 5,
