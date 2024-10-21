@@ -513,8 +513,7 @@ export const GroupPage = (props: GroupPageProps) => {
     const curMetadatasWithVotes = chunkMetadatas();
     return curMetadatasWithVotes.map((m) => {
       return {
-        metadata: [m],
-        author: null,
+        chunk: m,
         score: 0,
       } as unknown as ScoreChunkDTO;
     });
