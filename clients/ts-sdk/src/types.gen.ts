@@ -395,6 +395,16 @@ export type ContentChunkMetadata = {
     weight: number;
 };
 
+/**
+ * Context options to use for the completion. If not specified, all options will default to false.
+ */
+export type ContextOptions = {
+    /**
+     * Include links in the context. If not specified, this defaults to false.
+     */
+    include_links?: (boolean) | null;
+};
+
 export type CountChunkQueryResponseBody = {
     count: number;
 };
@@ -532,6 +542,7 @@ export type CreateMessageReqPayload = {
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
      */
     concat_user_messages_query?: (boolean) | null;
+    context_options?: ((ContextOptions) | null);
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     llm_options?: ((LLMOptions) | null);
@@ -806,6 +817,7 @@ export type EditMessageReqPayload = {
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
      */
     concat_user_messages_query?: (boolean) | null;
+    context_options?: ((ContextOptions) | null);
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     llm_options?: ((LLMOptions) | null);
@@ -1808,6 +1820,7 @@ export type RegenerateMessageReqPayload = {
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
      */
     concat_user_messages_query?: (boolean) | null;
+    context_options?: ((ContextOptions) | null);
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     llm_options?: ((LLMOptions) | null);

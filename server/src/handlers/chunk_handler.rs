@@ -1,12 +1,12 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     escape_quotes, ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet,
-    ChunkMetadataWithScore, ConditionType, CountSearchMethod, DatasetAndOrgWithSubAndPlan,
-    DatasetConfiguration, GeoInfo, HighlightOptions, ImageConfig, IngestSpecificChunkMetadata,
-    Pool, QueryTypes, RagQueryEventClickhouse, RecommendType, RecommendationEventClickhouse,
-    RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
-    SearchQueryEventClickhouse, SlimChunkMetadataWithScore, SortByField, SortOptions, TypoOptions,
-    UnifiedId, UpdateSpecificChunkMetadata,
+    ChunkMetadataWithScore, ConditionType, ContextOptions, CountSearchMethod,
+    DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo, HighlightOptions, ImageConfig,
+    IngestSpecificChunkMetadata, Pool, QueryTypes, RagQueryEventClickhouse, RecommendType,
+    RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO,
+    SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore, SortByField, SortOptions,
+    TypoOptions, UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -2347,6 +2347,8 @@ pub struct GenerateOffChunksReqPayload {
     pub user_id: Option<String>,
     /// Configuration for sending images to the llm
     pub image_config: Option<ImageConfig>,
+    /// Context options to use for the completion. If not specified, all options will default to false.
+    pub context_options: Option<ContextOptions>,
 }
 
 /// RAG on Specified Chunks
@@ -2395,10 +2397,9 @@ pub async fn generate_off_chunks(
     };
 
     let chunk_ids = data.chunk_ids.clone();
-
     let prompt = data.prompt.clone();
-
     let stream_response = data.stream_response;
+    let context_options = data.context_options.clone();
 
     let mut chunks =
         get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool).await?;
@@ -2471,8 +2472,9 @@ pub async fn generate_off_chunks(
             .cmp(&data.chunk_ids.iter().position(|&id| id == b.id).unwrap())
     });
 
-    chunks.iter().enumerate().for_each(|(idx, bookmark)| {
-        let content = convert_html_to_text(&(bookmark.chunk_html.clone().unwrap_or_default()));
+    chunks.iter().enumerate().for_each(|(idx, chunk_metadata)| {
+        let content =
+            convert_html_to_text(&(chunk_metadata.chunk_html.clone().unwrap_or_default()));
         let first_2000_words = content
             .split_whitespace()
             .take(2000)
@@ -2480,13 +2482,26 @@ pub async fn generate_off_chunks(
             .join(" ");
 
         messages.push(ChatMessage::User {
-            content: ChatMessageContent::Text(format!("Doc {}: {}", idx + 1, first_2000_words)),
+            content: ChatMessageContent::Text(format!(
+                "Doc {}{}: {}",
+                idx + 1,
+                if context_options
+                    .as_ref()
+                    .is_some_and(|x| x.include_links.unwrap_or(false))
+                    && chunk_metadata.link.is_some()
+                {
+                    format!(" ({})", chunk_metadata.link.clone().unwrap_or_default())
+                } else {
+                    "".to_string()
+                },
+                first_2000_words
+            )),
             name: None,
         });
 
         if let Some(image_config) = &data.image_config {
             if image_config.use_images.unwrap_or(false) {
-                if let Some(image_urls) = bookmark.image_urls.clone() {
+                if let Some(image_urls) = chunk_metadata.image_urls.clone() {
                     let urls = image_urls
                         .iter()
                         .filter_map(|image| image.clone())

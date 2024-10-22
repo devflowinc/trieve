@@ -21,6 +21,7 @@ import { Topic } from "../../utils/apiTypes";
 import { HiOutlineAdjustmentsHorizontal } from "solid-icons/hi";
 import { FilterModal, Filters } from "../FilterModal";
 import { Popover, PopoverButton, PopoverPanel } from "terracotta";
+import { type ContextOptions } from "trieve-ts-sdk";
 
 export interface LayoutProps {
   setTopics: Setter<Topic[]>;
@@ -96,6 +97,8 @@ const MainLayout = (props: LayoutProps) => {
     createSignal<AbortController>(new AbortController());
   const [showFilterModal, setShowFilterModal] = createSignal<boolean>(false);
   const [searchType, setSearchType] = createSignal<string | null>("hybrid");
+  const [contextOptions, setContextOptions] =
+    createSignal<ContextOptions | null>(null);
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -232,6 +235,7 @@ const MainLayout = (props: LayoutProps) => {
           },
           use_group_search: useGroupSearch(),
           search_type: searchType(),
+          context_options: contextOptions(),
         }),
         signal: completionAbortController().signal,
       });
@@ -458,6 +462,31 @@ const MainLayout = (props: LayoutProps) => {
                       checked={concatUserMessagesQuery() ?? false}
                       onChange={(e) => {
                         setConcatUserMessagesQuery(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="context_options.include_links">
+                      Include links in context:
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="context_options.include_links"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={contextOptions()?.include_links ?? false}
+                      onChange={(e) => {
+                        setContextOptions((prev) => {
+                          if (!prev) {
+                            return {
+                              include_links: e.target.checked,
+                            };
+                          } else {
+                            return {
+                              ...prev,
+                              include_links: e.target.checked,
+                            } as ContextOptions;
+                          }
+                        });
                       }}
                     />
                   </div>

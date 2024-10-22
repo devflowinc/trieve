@@ -7559,6 +7559,17 @@
           "weight": 0.5
         }
       },
+      "ContextOptions": {
+        "type": "object",
+        "description": "Context options to use for the completion. If not specified, all options will default to false.",
+        "properties": {
+          "include_links": {
+            "type": "boolean",
+            "description": "Include links in the context such that model can construct source URLs. If not specified, this defaults to false.",
+            "nullable": true
+          }
+        }
+      },
       "CountChunkQueryResponseBody": {
         "type": "object",
         "required": [
@@ -8005,6 +8016,14 @@
           "concat_user_messages_query": {
             "type": "boolean",
             "description": "If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.",
+            "nullable": true
+          },
+          "context_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContextOptions"
+              }
+            ],
             "nullable": true
           },
           "filters": {
@@ -8684,6 +8703,14 @@
           "concat_user_messages_query": {
             "type": "boolean",
             "description": "If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.",
+            "nullable": true
+          },
+          "context_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContextOptions"
+              }
+            ],
             "nullable": true
           },
           "filters": {
@@ -11836,6 +11863,14 @@
           "concat_user_messages_query": {
             "type": "boolean",
             "description": "If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.",
+            "nullable": true
+          },
+          "context_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContextOptions"
+              }
+            ],
             "nullable": true
           },
           "filters": {
