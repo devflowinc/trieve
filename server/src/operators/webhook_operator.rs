@@ -3,12 +3,43 @@ use actix_web::web;
 use crate::{
     data::models::{DatasetConfiguration, Pool, RedisPool, UnifiedId},
     errors::ServiceError,
-    handlers::{chunk_handler::ChunkReqPayload, webhook_handler::ContentValue},
-    operators::{
-        chunk_operator::{create_chunk_metadata, get_row_count_for_organization_id_query},
-        dataset_operator::get_dataset_by_id_query,
-    },
+    handlers::chunk_handler::ChunkReqPayload,
+    operators::{chunk_operator::create_chunk_metadata, dataset_operator::get_dataset_by_id_query},
 };
+
+use super::chunk_operator::{delete_chunk_metadata_query, get_metadata_from_tracking_id_query};
+
+pub async fn delete_content<T: Into<ChunkReqPayload>>(
+    dataset_id: uuid::Uuid,
+    value: T,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    let chunk: ChunkReqPayload = value.into();
+    let tracking_id_inner = chunk.tracking_id.ok_or(ServiceError::BadRequest(
+        "Must provide a tracking_id to delete a chunk".to_string(),
+    ))?;
+
+    let full_dataset =
+        get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id), pool.clone()).await?;
+
+    let dataset_config = DatasetConfiguration::from_json(full_dataset.server_configuration.clone());
+
+    let chunk_metadata =
+        get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone()).await?;
+
+    let deleted_at = chrono::Utc::now().naive_utc();
+
+    delete_chunk_metadata_query(
+        vec![chunk_metadata.id],
+        deleted_at,
+        full_dataset,
+        pool,
+        dataset_config,
+    )
+    .await?;
+
+    Ok(())
+}
 
 pub async fn publish_content<T: Into<ChunkReqPayload>>(
     dataset_id: uuid::Uuid,
@@ -17,29 +48,6 @@ pub async fn publish_content<T: Into<ChunkReqPayload>>(
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     let chunk: ChunkReqPayload = value.into();
-
-    // TODO: Ensure that the chunk count is respected
-    // let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
-    // if unlimited == "false" {
-    //     let chunk_count = get_row_count_for_organization_id_query(
-    //         dataset_org_plan_sub.organization.organization.id,
-    //         pool.clone(),
-    //     )
-    //     .await?;
-    //
-    //     if chunk_count + chunks.len()
-    //         > dataset_org_plan_sub
-    //             .organization
-    //             .plan
-    //             .unwrap_or_default()
-    //             .chunk_count as usize
-    //     {
-    //         return Ok(HttpResponse::UpgradeRequired()
-    //             .json(json!({"message": "Must upgrade your plan to add more chunks"})));
-    //     }
-    //
-    //     timer.add("get dataset count");
-    // }
 
     let full_dataset =
         get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id), pool.clone()).await?;
@@ -63,7 +71,7 @@ pub async fn publish_content<T: Into<ChunkReqPayload>>(
         ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
     })?;
 
-    let pos_in_queue = redis::cmd("lpush")
+    let _ = redis::cmd("lpush")
         .arg("ingestion")
         .arg(&serialized_message)
         .query_async(&mut *redis_conn)

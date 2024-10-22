@@ -2,6 +2,11 @@ use std::str::FromStr;
 
 use crate::data::models::Pool;
 use crate::data::models::RedisPool;
+use crate::data::models::UnifiedId;
+use crate::middleware::auth_middleware::verify_member;
+use crate::operators::dataset_operator::get_dataset_and_organization_from_dataset_id_query;
+use crate::operators::user_operator::get_user_from_api_key_query;
+use crate::operators::webhook_operator::delete_content;
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -36,57 +41,46 @@ pub struct ContentValue {
     data: Map<String, Value>,
 }
 
-impl Into<ChunkReqPayload> for ContentValue {
-    fn into(self) -> ChunkReqPayload {
-        let mut chunk_req_payload = ChunkReqPayload::default();
-        chunk_req_payload.tracking_id = Some(self.id);
-
+impl From<ContentValue> for ChunkReqPayload {
+    fn from(content: ContentValue) -> Self {
         let mut body = String::new();
-        body.push_str(&self.name);
+        body.push_str(&content.name);
 
         let mut metadata = SerdeMap::new();
         let mut tags = Vec::new();
 
-        for (key, value) in self.data.iter() {
+        for (key, value) in content.data.iter() {
             match value {
                 Value::String(val) => {
                     body.push_str(&format!("\n{}", val));
                 }
-
                 Value::Array(val) => {
                     for item in val {
-                        match item {
-                            Value::String(val) => {
-                                tags.push(val.clone());
-                            }
-
-                            _ => {}
+                        if let Value::String(val) = item {
+                            tags.push(val.clone());
                         }
                     }
                 }
-
                 Value::Bool(val) => {
                     metadata.insert(key.clone(), serde_json::Value::Bool(*val));
                 }
-
                 Value::Number(val) => {
                     metadata.insert(key.clone(), serde_json::Value::Number(val.clone()));
                 }
-
                 Value::Object(val) => {
                     metadata.insert(key.clone(), serde_json::Value::Object(val.clone()));
                 }
-
                 _ => {}
             };
         }
 
-        chunk_req_payload.metadata = Some(metadata.into());
-        chunk_req_payload.chunk_html = Some(body);
-        chunk_req_payload.tag_set = Some(tags);
-        chunk_req_payload.upsert_by_tracking_id = Some(true);
-
-        return chunk_req_payload;
+        ChunkReqPayload {
+            tracking_id: Some(content.id),
+            metadata: Some(metadata.into()),
+            chunk_html: Some(body),
+            tag_set: Some(tags),
+            ..Default::default()
+        }
     }
 }
 
@@ -105,10 +99,10 @@ pub struct WebhookRequest {
 pub struct WebhookQueryParams {
     trieve_key: String,
     trieve_dataset: String,
-    model_id: String,
+    // model_id: String,
 }
 
-pub async fn builder_webhook(
+pub async fn builder_io_webhook(
     payload: web::Json<WebhookRequest>,
     query: web::Query<WebhookQueryParams>,
     redis_pool: web::Data<RedisPool>,
@@ -128,19 +122,31 @@ pub async fn builder_webhook(
         ServiceError::BadRequest(format!("Invalid dataset id: {}", query.trieve_dataset))
     })?;
 
-    // TODO: Ensure user has proper perms to for the dataset id
+    let dataset_and_org = get_dataset_and_organization_from_dataset_id_query(
+        UnifiedId::TrieveUuid(dataset_id),
+        None,
+        pool.clone(),
+    )
+    .await?;
 
-    log::info!("Webhook received: {:?}", payload);
-    log::info!("Query params: {:?}", query);
+    let (user, _) = get_user_from_api_key_query(&query.trieve_key, pool.clone()).await?;
+
+    if !verify_member(&user, &dataset_and_org.organization.organization.id) {
+        return Ok(HttpResponse::Forbidden().finish());
+    };
 
     match payload.operation {
         Operation::Publish => {
-            publish_content(dataset_id, payload.new_value, redis_pool, pool).await?;
+            publish_content(dataset_id, payload.new_value, redis_pool, pool).await?
         }
+        Operation::Delete => delete_content(dataset_id, payload.new_value, pool).await?,
+        Operation::Unpublish => delete_content(dataset_id, payload.new_value, pool).await?,
+        Operation::Archive => delete_content(dataset_id, payload.new_value, pool).await?,
 
-        _ => {
-            return Err(ServiceError::BadRequest("Operation not supported".to_string()).into());
+        Operation::ScheduledStart => {
+            publish_content(dataset_id, payload.new_value, redis_pool, pool).await?
         }
+        Operation::ScheduledEnd => delete_content(dataset_id, payload.new_value, pool).await?,
     }
 
     Ok(HttpResponse::Ok().json(WebhookRespose {
