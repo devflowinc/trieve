@@ -28,7 +28,7 @@ pub struct WebhookRequest {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct WebhookQueryParams {
     trieve_key: String,
     trieve_dataset: String,
