@@ -30,6 +30,7 @@ use openai_dive::v1::{
 };
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
+use ureq::json;
 
 use super::clickhouse_operator::{get_latency_from_header, EventQueue};
 use super::search_operator::{
@@ -645,21 +646,12 @@ pub async fn stream_response(
         .iter()
         .enumerate()
         .map(|(idx, chunk)| {
-            format!(
-                "Doc {}{}: {}",
-                idx + 1,
-                if create_message_req_payload
-                    .clone()
-                    .context_options
-                    .is_some_and(|x| x.include_links.unwrap_or(false))
-                    && chunk.link.is_some()
-                {
-                    format!(" ({})", chunk.link.clone().unwrap_or_default())
-                } else {
-                    "".to_string()
-                },
-                convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default()))
-            )
+            json!({
+                "doc": idx + 1,
+                "text": convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default())),
+                "link": chunk.link.clone().unwrap_or_default()
+            })
+            .to_string()
         })
         .collect::<Vec<String>>()
         .join("\n\n");
