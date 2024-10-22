@@ -1,10 +1,11 @@
 use std::str::FromStr;
 
+use crate::data::models::Pool;
+use crate::data::models::RedisPool;
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use ureq::SerdeMap;
-use uuid::Uuid;
 
 use crate::{errors::ServiceError, operators::webhook_operator::publish_content};
 
@@ -80,6 +81,11 @@ impl Into<ChunkReqPayload> for ContentValue {
             };
         }
 
+        chunk_req_payload.metadata = Some(metadata.into());
+        chunk_req_payload.chunk_html = Some(body);
+        chunk_req_payload.tag_set = Some(tags);
+        chunk_req_payload.upsert_by_tracking_id = Some(true);
+
         return chunk_req_payload;
     }
 }
@@ -105,6 +111,8 @@ pub struct WebhookQueryParams {
 pub async fn builder_webhook(
     payload: web::Json<WebhookRequest>,
     query: web::Query<WebhookQueryParams>,
+    redis_pool: web::Data<RedisPool>,
+    pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     // Ensure that the trieve_key and trieve_dataset are valid
     if query.trieve_key.is_empty() || query.trieve_dataset.is_empty() {
@@ -120,14 +128,14 @@ pub async fn builder_webhook(
         ServiceError::BadRequest(format!("Invalid dataset id: {}", query.trieve_dataset))
     })?;
 
-    // TODO: Ensure user has proper perms
+    // TODO: Ensure user has proper perms to for the dataset id
 
     log::info!("Webhook received: {:?}", payload);
     log::info!("Query params: {:?}", query);
 
     match payload.operation {
         Operation::Publish => {
-            publish_content(dataset_id, payload.new_value).await?;
+            publish_content(dataset_id, payload.new_value, redis_pool, pool).await?;
         }
 
         _ => {
