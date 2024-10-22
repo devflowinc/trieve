@@ -1,9 +1,8 @@
 import { Chunk, ChunkWithHighlights } from "../../utils/types";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { ArrowIcon } from "../icons";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
-import { useKeyboardNavigation } from "../../utils/hooks/useKeyboardNavigation";
 import { load } from "cheerio";
 
 type Props = {
@@ -14,7 +13,6 @@ type Props = {
 };
 
 export const Item = ({ item, requestID, index, className }: Props) => {
-  const { onUpOrDownClicked } = useKeyboardNavigation();
   const { props, trieveSDK } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -58,12 +56,12 @@ export const Item = ({ item, requestID, index, className }: Props) => {
   for (const heading of chunkHtmlHeadings) {
     descriptionHtml = descriptionHtml.replace(
       load(heading ?? "").text() || "",
-      "",
+      ""
     );
   }
   descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
   const [shownImage, setShownImage] = useState<string>(
-    item.chunk?.image_urls?.[0] || "",
+    item.chunk?.image_urls?.[0] || ""
   );
   const price = item.chunk.num_value
     ? ` - ${props.currencyPosition === "before" ? props.defaultCurrency : ""}${
@@ -90,7 +88,7 @@ export const Item = ({ item, requestID, index, className }: Props) => {
     case "DELETE":
       title = title.replace(
         "DELETE",
-        '<span class="delete-method">DELETE</span>',
+        '<span class="delete-method">DELETE</span>'
       );
       break;
     case "PATCH":
@@ -99,12 +97,6 @@ export const Item = ({ item, requestID, index, className }: Props) => {
     default:
       break;
   }
-
-  const checkForUpAndDown = (e: KeyboardEvent) => {
-    if (e.code === "ArrowDown" || e.code === "ArrowUp") {
-      onUpOrDownClicked(index, e.code);
-    }
-  };
 
   const getChunkPath = () => {
     const urlElements = item.chunk.link?.split("/").slice(3) ?? [];
@@ -115,13 +107,13 @@ export const Item = ({ item, requestID, index, className }: Props) => {
         .concat(
           item.chunk.metadata?.title ||
             item.chunk.metadata.summary ||
-            urlElements.slice(-1)[0],
+            urlElements.slice(-1)[0]
         )
         .map((word) =>
           word
             .split(" ")
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-            .join(" "),
+            .join(" ")
         )
         .join(" > ");
     } else {
@@ -131,7 +123,7 @@ export const Item = ({ item, requestID, index, className }: Props) => {
 
   const onResultClick = async (
     chunk: Chunk & { position: number },
-    requestID: string,
+    requestID: string
   ) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
@@ -147,22 +139,15 @@ export const Item = ({ item, requestID, index, className }: Props) => {
     }
   };
 
-  useEffect(() => {
-    itemRef.current?.addEventListener("keydown", checkForUpAndDown);
-    return () => {
-      itemRef.current?.removeEventListener("keydown", checkForUpAndDown);
-    };
-  }, []);
-
   const linkSuffix = firstHeadingId
     ? `#${firstHeadingId}`
     : `#:~:text=${encodeURIComponent(titleInnerText)}`;
 
   return (
-    <li>
+    <li key={item.chunk.id}>
       <Component
         ref={itemRef}
-        id={`trieve-search-item-${index}`}
+        id={`trieve-search-item-${index + 1}`}
         className={className ?? "item"}
         onClick={() =>
           onResultClick(
@@ -170,7 +155,7 @@ export const Item = ({ item, requestID, index, className }: Props) => {
               ...item.chunk,
               position: index,
             },
-            requestID,
+            requestID
           )
         }
         onMouseEnter={() => {
@@ -183,7 +168,8 @@ export const Item = ({ item, requestID, index, className }: Props) => {
           ? {
               href: `${item.chunk.link}${linkSuffix}`,
             }
-          : {})}>
+          : {})}
+      >
         <div>
           {props.type === "ecommerce" ? (
             item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
@@ -231,7 +217,8 @@ export const Item = ({ item, requestID, index, className }: Props) => {
                             if (variant.featured_image?.src) {
                               setShownImage(variant.featured_image?.src);
                             }
-                          }}>
+                          }}
+                        >
                           {variant.title}
                         </button>
                       ))}

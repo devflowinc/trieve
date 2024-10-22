@@ -21,13 +21,13 @@ export const Tags = () => {
       </ul>
     ) : (
       <ul className="commands">
-        <li>
+        <li key="enter-key-command">
           <kbd className="commands-key">
             <EnterKeyIcon />
           </kbd>
           <span className="label">to select</span>
         </li>
-        <li>
+        <li key="arrow-key-commands">
           <kbd className="commands-key">
             <ArrowDownKey />
           </kbd>
@@ -36,7 +36,7 @@ export const Tags = () => {
           </kbd>
           <span className="label">to navigate</span>
         </li>
-        <li>
+        <li key="esc-key-command">
           <kbd className="commands-key">
             <EscKeyIcon />
           </kbd>

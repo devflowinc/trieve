@@ -17,12 +17,13 @@ export default function ECommerce() {
   return (
     <>
       <div
-        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-          }`}
+        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
+          theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
+        }`}
       >
         <div className="absolute top-6 right-6">
           <ul>
-            <li>
+            <li key="theme">
               <button
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
               >
@@ -61,7 +62,8 @@ export default function ECommerce() {
               Search Results Component
             </h2>
             <h2 className="font-bold text-center py-8">
-              This was removed, see https://github.com/devflowinc/trieve/pull/2613
+              This was removed, see
+              https://github.com/devflowinc/trieve/pull/2613
             </h2>
           </>
         )}
