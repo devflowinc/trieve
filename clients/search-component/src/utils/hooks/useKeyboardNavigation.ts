@@ -2,7 +2,7 @@ import { startTransition, useEffect, useMemo } from "react";
 import { useModalState } from "./modal-context";
 
 export const useKeyboardNavigation = () => {
-  const { results, setOpen, props, open, inputRef } = useModalState();
+  const { setOpen, props, open, inputRef } = useModalState();
 
   const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
 
@@ -24,12 +24,43 @@ export const useKeyboardNavigation = () => {
 
       if (open && e.key === "Escape") {
         setOpen(false);
-      }
+      } else if (open) {
+        if (e.key == "ArrowDown") {
+          e.preventDefault();
+          e.stopPropagation();
 
-      // if (e.code === "ArrowDown" && inputRef.current === document.activeElement) {
-      //   document.getElementById(`trieve-search-item-0`)?.focus();
-      // }
-    }
+          const focusedElement = document.activeElement as HTMLElement;
+          const id = focusedElement.id;
+          console.log("focusedElement", focusedElement);
+
+          if (id && id.startsWith("trieve-search-item-")) {
+            const index = parseInt(id.split("-")[3]);
+            console.log("index", index);
+            document.getElementById(`trieve-search-item-${index + 1}`)?.focus();
+          }
+
+          if (!id || !id.startsWith("trieve-search-item-")) {
+            document.getElementById(`trieve-search-item-0`)?.focus();
+          }
+        } else if (e.key == "ArrowUp") {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const focusedElement = document.activeElement as HTMLElement;
+          const id = focusedElement.id;
+          if (id && id.startsWith("trieve-search-item-")) {
+            const index = parseInt(id.split("-")[3]);
+            if (index > 0) {
+              document
+                .getElementById(`trieve-search-item-${index - 1}`)
+                ?.focus();
+            } else {
+              inputRef.current?.focus();
+            }
+          }
+        }
+      }
+    };
   }, [open]);
 
   useEffect(() => {
@@ -38,23 +69,4 @@ export const useKeyboardNavigation = () => {
       document.removeEventListener("keydown", checkForInteractions);
     };
   }, [checkForInteractions]);
-
-  const onUpOrDownClicked = (index: number, code: string) => {
-    if (code === "ArrowDown") {
-      if (index < results.length - 1) {
-        document.getElementById(`trieve-search-item-${index + 1}`)?.focus();
-      } else {
-        document.getElementById(`trieve-search-item-0`)?.focus();
-      }
-    }
-
-    if (code === "ArrowUp") {
-      if (index > 0) {
-        document.getElementById(`trieve-search-item-${index - 1}`)?.focus();
-      } else {
-        inputRef.current?.focus();
-      }
-    }
-  };
-  return { onUpOrDownClicked };
 };

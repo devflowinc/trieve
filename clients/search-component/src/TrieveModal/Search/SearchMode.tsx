@@ -46,7 +46,8 @@ export const SearchMode = () => {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="search-icon">
+            className="search-icon"
+          >
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.3-4.3"></path>
           </svg>
@@ -68,7 +69,8 @@ export const SearchMode = () => {
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+            >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -82,7 +84,8 @@ export const SearchMode = () => {
                 onClick={refetchSuggestedQueries}
                 disabled={isLoadingSuggestedQueries}
                 className="suggested-query"
-                title="Refresh suggested queries">
+                title="Refresh suggested queries"
+              >
                 <ReloadIcon width="14" height="14" />
               </button>
               <p>Suggested Queries: </p>
@@ -97,7 +100,8 @@ export const SearchMode = () => {
                   key={q}
                   className={`suggested-query${
                     isLoadingSuggestedQueries ? " loading" : ""
-                  }`}>
+                  }`}
+                >
                   {q}
                 </button>
               ))}
@@ -108,10 +112,12 @@ export const SearchMode = () => {
 
       <ul className="trieve-elements-search">
         {results.length && props.chat ? (
-          <li>
+          <li key="chat">
             <button
+              id="trieve-search-item-0"
               className="item start-chat"
-              onClick={() => switchToChatAndAskQuestion(query)}>
+              onClick={() => switchToChatAndAskQuestion(query)}
+            >
               <div>
                 <AIIcon />
                 <div>
@@ -147,7 +153,7 @@ export const SearchMode = () => {
                     />
                   ))}
                 </div>
-              ),
+              )
             )
           : null}
         {query && !results.length && !loadingResults ? (
@@ -159,7 +165,8 @@ export const SearchMode = () => {
                 <a
                   className="no-results-help-link"
                   href={`${props.problemLink}No results found for query: ${query} on ${props.brandName}`}
-                  target="_blank">
+                  target="_blank"
+                >
                   Contact us
                 </a>
               </p>
@@ -176,7 +183,8 @@ export const SearchMode = () => {
           <a
             className="trieve-powered"
             href="https://trieve.ai"
-            target="_blank">
+            target="_blank"
+          >
             <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
             Powered by Trieve
           </a>
