@@ -2,7 +2,8 @@ use std::str::FromStr;
 
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
+use ureq::SerdeMap;
 use uuid::Uuid;
 
 use crate::{errors::ServiceError, operators::webhook_operator::publish_content};
@@ -31,12 +32,55 @@ pub struct ContentValue {
     id: String,
     name: String,
     model_id: String,
-    data: Value,
+    data: Map<String, Value>,
 }
 
 impl Into<ChunkReqPayload> for ContentValue {
     fn into(self) -> ChunkReqPayload {
-        todo!();
+        let mut chunk_req_payload = ChunkReqPayload::default();
+        chunk_req_payload.tracking_id = Some(self.id);
+
+        let mut body = String::new();
+        body.push_str(&self.name);
+
+        let mut metadata = SerdeMap::new();
+        let mut tags = Vec::new();
+
+        for (key, value) in self.data.iter() {
+            match value {
+                Value::String(val) => {
+                    body.push_str(&format!("\n{}", val));
+                }
+
+                Value::Array(val) => {
+                    for item in val {
+                        match item {
+                            Value::String(val) => {
+                                tags.push(val.clone());
+                            }
+
+                            _ => {}
+                        }
+                    }
+                }
+
+                Value::Bool(val) => {
+                    metadata.insert(key.clone(), serde_json::Value::Bool(*val));
+                }
+
+                Value::Number(val) => {
+                    metadata.insert(key.clone(), serde_json::Value::Number(val.clone()));
+                }
+
+                Value::Object(val) => {
+                    metadata.insert(key.clone(), serde_json::Value::Object(val.clone()));
+                }
+
+                _ => {}
+            };
+        }
+
+        return chunk_req_payload;
     }
 }
 
