@@ -5905,6 +5905,21 @@ pub struct ImageConfig {
     pub images_per_chunk: Option<usize>,
 }
 
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+/// Context options to use for the completion. If not specified, all options will default to false.
+pub struct ContextOptions {
+    /// Include links in the context. If not specified, this defaults to false.
+    pub include_links: Option<bool>,
+}
+
+impl Default for ContextOptions {
+    fn default() -> Self {
+        ContextOptions {
+            include_links: Some(false),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
 /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
 pub struct LLMOptions {
@@ -5996,6 +6011,20 @@ fn extract_sort_highlight_options(
     };
 
     (sort_options, highlight_options)
+}
+
+fn extract_context_options(other: &mut HashMap<String, Value>) -> Option<ContextOptions> {
+    let mut context_options = ContextOptions::default();
+
+    if let Some(value) = other.remove("include_links") {
+        context_options.include_links = serde_json::from_value(value).ok();
+    }
+
+    if context_options.include_links.is_none() {
+        None
+    } else {
+        Some(context_options)
+    }
 }
 
 fn extract_llm_options(other: &mut HashMap<String, Value>) -> Option<LLMOptions> {
@@ -6290,6 +6319,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
             pub use_group_search: Option<bool>,
+            pub context_options: Option<ContextOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6302,8 +6332,10 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             (None, None)
         };
         let llm_options = extract_llm_options(&mut helper.other);
+        let context_options = extract_context_options(&mut helper.other);
         let highlight_options = helper.highlight_options.or(extracted_highlight_options);
         let llm_options = helper.llm_options.or(llm_options);
+        let context_options = helper.context_options.or(context_options);
 
         Ok(CreateMessageReqPayload {
             new_message_content: helper.new_message_content,
@@ -6318,6 +6350,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             score_threshold: helper.score_threshold,
             llm_options,
             user_id: helper.user_id,
+            context_options,
         })
     }
 }
@@ -6340,6 +6373,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
             pub use_group_search: Option<bool>,
+            pub context_options: Option<ContextOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6352,8 +6386,10 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             (None, None)
         };
         let llm_options = extract_llm_options(&mut helper.other);
+        let context_options = extract_context_options(&mut helper.other);
         let highlight_options = helper.highlight_options.or(extracted_highlight_options);
         let llm_options = helper.llm_options.or(llm_options);
+        let context_options = helper.context_options.or(context_options);
 
         Ok(RegenerateMessageReqPayload {
             topic_id: helper.topic_id,
@@ -6367,6 +6403,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             score_threshold: helper.score_threshold,
             llm_options,
             user_id: helper.user_id,
+            context_options,
         })
     }
 }
@@ -6391,6 +6428,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub score_threshold: Option<f32>,
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
+            pub context_options: Option<ContextOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6403,8 +6441,10 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             (None, None)
         };
         let llm_options = extract_llm_options(&mut helper.other);
+        let context_options = extract_context_options(&mut helper.other);
         let highlight_options = helper.highlight_options.or(extracted_highlight_options);
         let llm_options = helper.llm_options.or(llm_options);
+        let context_options = helper.context_options.or(context_options);
 
         Ok(EditMessageReqPayload {
             topic_id: helper.topic_id,
@@ -6420,6 +6460,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             score_threshold: helper.score_threshold,
             user_id: helper.user_id,
             llm_options,
+            context_options,
         })
     }
 }

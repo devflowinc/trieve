@@ -646,8 +646,18 @@ pub async fn stream_response(
         .enumerate()
         .map(|(idx, chunk)| {
             format!(
-                "Doc {}: {}",
+                "Doc {}{}: {}",
                 idx + 1,
+                if create_message_req_payload
+                    .clone()
+                    .context_options
+                    .is_some_and(|x| x.include_links.unwrap_or(false))
+                    && chunk.link.is_some()
+                {
+                    format!(" ({})", chunk.link.clone().unwrap_or_default())
+                } else {
+                    "".to_string()
+                },
                 convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default()))
             )
         })

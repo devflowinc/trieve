@@ -4,8 +4,8 @@ use super::{
 };
 use crate::{
     data::models::{
-        self, ChunkMetadata, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions,
-        LLMOptions, Pool, RedisPool, SearchMethod, SuggestType,
+        self, ChunkMetadata, ContextOptions, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
+        HighlightOptions, LLMOptions, Pool, RedisPool, SearchMethod, SuggestType,
     },
     errors::ServiceError,
     get_env,
@@ -23,7 +23,6 @@ use crate::{
     },
 };
 use actix_web::{web, HttpResponse};
-
 use itertools::Itertools;
 use openai_dive::v1::{
     api::Client,
@@ -103,6 +102,8 @@ pub struct CreateMessageReqPayload {
     pub score_threshold: Option<f32>,
     /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
     pub llm_options: Option<LLMOptions>,
+    /// Context options to use for the completion. If not specified, all options will default to false.
+    pub context_options: Option<ContextOptions>,
 }
 
 /// Create message
@@ -318,6 +319,8 @@ pub struct RegenerateMessageReqPayload {
     pub llm_options: Option<LLMOptions>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
     pub user_id: Option<String>,
+    /// Context options to use for the completion. If not specified, all options will default to false.
+    pub context_options: Option<ContextOptions>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -348,6 +351,8 @@ pub struct EditMessageReqPayload {
     pub llm_options: Option<LLMOptions>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
     pub user_id: Option<String>,
+    /// Context options to use for the completion. If not specified, all options will default to false.
+    pub context_options: Option<ContextOptions>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -365,6 +370,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             score_threshold: data.score_threshold,
             llm_options: data.llm_options,
             user_id: data.user_id,
+            context_options: data.context_options,
         }
     }
 }
@@ -384,6 +390,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             score_threshold: data.score_threshold,
             llm_options: data.llm_options,
             user_id: data.user_id,
+            context_options: data.context_options,
         }
     }
 }

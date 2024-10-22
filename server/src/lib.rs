@@ -439,6 +439,7 @@ impl Modify for SecurityAddon {
             data::models::UserOrganization,
             data::models::QdrantSortBy,
             data::models::SortOptions,
+            data::models::ContextOptions,
             data::models::LLMOptions,
             data::models::ImageConfig,
             data::models::HighlightOptions,
