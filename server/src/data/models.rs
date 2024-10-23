@@ -1896,9 +1896,9 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
+    pub server_configuration: serde_json::Value,
     pub tracking_id: Option<String>,
     pub deleted: i32,
-    pub server_configuration: serde_json::Value,
 }
 
 impl Dataset {
@@ -6824,4 +6824,14 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
             }),
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[diesel(table_name = public_page_configuration)]
+pub struct PublicPageConfiguration {
+    pub id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub is_public: bool,
+    pub api_key: String,
+    pub created_at: chrono::NaiveDateTime,
 }
