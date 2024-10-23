@@ -58,6 +58,7 @@ pub struct SemanticBoost {
     /// Terms to embed in order to create the vector which is weighted summed with the chunk_html embedding vector
     pub phrase: String,
     /// Arbitrary float (positive or negative) specifying the multiplicate factor to apply before summing the phrase vector with the chunk_html embedding vector
+    #[serde(alias = "boost_factor")]
     pub distance_factor: f32,
 }
 
