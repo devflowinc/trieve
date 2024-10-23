@@ -7,7 +7,7 @@
     "dist/*",
     "dist/**/*"
   ],
-  "version": "0.0.47",
+  "version": "0.0.48",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
@@ -31,6 +31,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "esbuild": "^0.23.1",
     "esbuild-node-externals": "^1.14.0",
+    "esbuild-plugin-umd-wrapper": "^3.0.0",
     "esbuild-register": "^3.6.0",
     "eslint": "^9.10.0",
     "eslint-plugin-react": "^7.36.1",
