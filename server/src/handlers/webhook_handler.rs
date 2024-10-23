@@ -21,7 +21,7 @@ struct WebhookRespose {
     message: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Operation {
     Publish,
@@ -32,7 +32,7 @@ pub enum Operation {
     ScheduledEnd,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentValue {
     id: String,
@@ -84,7 +84,7 @@ impl From<ContentValue> for ChunkReqPayload {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WebhookRequest {
     model_name: String,
@@ -94,7 +94,7 @@ pub struct WebhookRequest {
     operation: Operation,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WebhookQueryParams {
     trieve_key: String,
