@@ -1,4 +1,4 @@
-import { FaSolidCheck } from "solid-icons/fa";
+import { FaRegularCircleQuestion, FaSolidCheck } from "solid-icons/fa";
 import { TbSelector } from "solid-icons/tb";
 import { createEffect, createSignal, For, JSX, Show } from "solid-js";
 import {
@@ -10,6 +10,7 @@ import {
 } from "terracotta";
 import createFuzzySearch from "@nozbe/microfuzz";
 import { cn } from "../utils";
+import { Tooltip } from "./Tooltip";
 
 interface SelectProps<T> {
   options: T[];
@@ -20,6 +21,8 @@ interface SelectProps<T> {
   class?: string;
   label?: JSX.Element;
   id?: string;
+  tooltipText?: string;
+  tooltipDirection?: "top" | "bottom" | "left" | "right";
 }
 
 export const Select = <T,>(props: SelectProps<T>) => {
@@ -54,7 +57,18 @@ export const Select = <T,>(props: SelectProps<T>) => {
 
   return (
     <>
-      <Show when={props.label}>{(label) => label()}</Show>
+      <div class="flex items-center gap-2">
+        <Show when={props.label}>{(label) => label()}</Show>
+        <Show when={props.tooltipText}>
+          {(tooltipText) => (
+            <Tooltip
+              tooltipText={tooltipText()}
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction={props.tooltipDirection}
+            />
+          )}
+        </Show>
+      </div>
       <Listbox
         class={cn(
           `bg-neutral-200/70 min-w-[100px] relative border rounded border-neutral-300`,

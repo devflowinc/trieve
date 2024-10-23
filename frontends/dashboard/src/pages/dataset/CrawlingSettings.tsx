@@ -1,30 +1,36 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { createMutation, createQuery } from "@tanstack/solid-query";
 import { Show, useContext, createMemo } from "solid-js";
 import { DatasetContext } from "../../contexts/DatasetContext";
 import { useTrieve } from "../../hooks/useTrieve";
-import { CrawlInterval, CrawlOptions } from "trieve-ts-sdk";
+import { CrawlInterval, CrawlOptions, ScrapeOptions } from "trieve-ts-sdk";
 import { createStore } from "solid-js/store";
-import { MultiStringInput, Select } from "shared/ui";
+import { MultiStringInput, Select, Tooltip } from "shared/ui";
 import { toTitleCase } from "../../analytics/utils/titleCase";
 import { Spacer } from "../../components/Spacer";
 import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../../components/ShowToasts";
 import { ErrorMsg, ValidateErrors, ValidateFn } from "../../utils/validation";
 import { cn } from "shared/utils";
+import { FaRegularCircleQuestion } from "solid-icons/fa";
 
 export const defaultCrawlOptions: CrawlOptions = {
   boost_titles: true,
   allow_external_links: false,
   ignore_sitemap: false,
   exclude_paths: [],
-  exclude_tags: [],
+  exclude_tags: ["navbar", "footer", "aside", "nav", "form"],
   include_paths: [],
   include_tags: [],
   interval: "daily",
   limit: 1000,
   max_depth: 10,
   site_url: "",
-  scrape_options: null,
+  scrape_options: {
+    group_variants: true,
+  } as ScrapeOptions,
 };
 
 export type FlatCrawlOptions = Omit<CrawlOptions, "scrape_options"> & {
@@ -114,6 +120,9 @@ export const flattenCrawlOptions = (
     return {
       ...options,
       type: undefined,
+      openapi_schema_url: (options.scrape_options as any)?.openapi_schema_url,
+      openapi_tag: (options.scrape_options as any)?.openapi_tag,
+      group_variants: (options.scrape_options as any)?.group_variants,
     };
   }
 };
@@ -133,6 +142,7 @@ export const CrawlingSettings = () => {
           datasetId: datasetId(),
         },
       );
+
       return result.crawl_options ?? null;
     },
   }));
@@ -154,6 +164,8 @@ export const CrawlingSettings = () => {
         type: "success",
         message: "Successfully updated crawl options",
       });
+
+      void crawlSettingsQuery.refetch();
     },
     onError() {
       createToast({
@@ -263,9 +275,16 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
 
       <div class="flex w-full items-stretch justify-between gap-4 pt-2">
         <div class="grow">
-          <label for="url" class="block">
-            Site URL
-          </label>
+          <div class="flex items-center gap-2">
+            <label for="url" class="block">
+              Site URL
+            </label>
+            <Tooltip
+              tooltipText="The URL of the site to start the crawl from"
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+          </div>
           <input
             name="url"
             value={options.site_url || ""}
@@ -287,97 +306,134 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             class="p-1"
             selected={options.interval || "daily"}
             label="Crawl Interval"
+            tooltipText="How often to crawl the site"
+            tooltipDirection="left"
           />
         </div>
       </div>
 
-      <div class="flex items-center gap-2 py-2 pt-4">
-        <label class="block">Boost Titles</label>
-        <input
-          checked={options.boost_titles || false}
-          onChange={(e) => {
-            setOptions("boost_titles", e.currentTarget.checked);
-          }}
-          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
-          type="checkbox"
-        />
+      <div class="flex items-center gap-3 py-2 pt-4">
+        <div class="flex items-center gap-2">
+          <Tooltip
+            tooltipText="Prioritize matches on titles in the search results"
+            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            direction="right"
+          />
+          <label class="block">Boost Titles</label>
+          <input
+            checked={options.boost_titles || false}
+            onChange={(e) => {
+              setOptions("boost_titles", e.currentTarget.checked);
+            }}
+            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            type="checkbox"
+          />
+        </div>
 
-        <label class="block pl-4">OpenAPI Spec?</label>
-        <input
-          onChange={(e) =>
-            setOptions((prev) => {
-              if (!e.currentTarget.checked) {
-                if (prev.type === "openapi") {
+        <div class="flex items-center gap-2 pl-4">
+          <Tooltip
+            tooltipText="Include an OpenAPI spec in the crawl for increased accuracy"
+            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            direction="right"
+          />
+          <label class="block">OpenAPI Spec?</label>
+          <input
+            onChange={(e) =>
+              setOptions((prev) => {
+                if (!e.currentTarget.checked) {
+                  if (prev.type === "openapi") {
+                    return {
+                      ...prev,
+                      type: undefined,
+                    };
+                  }
                   return {
                     ...prev,
-                    type: undefined,
                   };
-                }
-                return {
-                  ...prev,
-                };
-              } else {
-                return {
-                  ...prev,
-                  type: "openapi",
-                };
-              }
-            })
-          }
-          checked={isOpenAPI()}
-          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
-          type="checkbox"
-        />
-
-        <label class="block pl-4">Shopify?</label>
-        <input
-          onChange={(e) => {
-            setOptions((prev) => {
-              if (!e.currentTarget.checked) {
-                if (prev.type === "shopify") {
+                } else {
                   return {
                     ...prev,
-                    type: undefined,
+                    type: "openapi",
                   };
                 }
-                return {
-                  ...prev,
-                };
-              } else {
-                return {
-                  type: "shopify" as const,
-                };
-              }
-            });
-          }}
-          checked={isShopify()}
-          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
-          type="checkbox"
-        />
+              })
+            }
+            checked={isOpenAPI()}
+            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            type="checkbox"
+          />
+        </div>
+
+        <div class="flex items-center gap-2 pl-4">
+          <Tooltip
+            tooltipText="Check this if the site is a Shopify store"
+            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            direction="right"
+          />
+          <label class="block">Shopify?</label>
+          <input
+            onChange={(e) => {
+              setOptions((prev) => {
+                if (!e.currentTarget.checked) {
+                  if (prev.type === "shopify") {
+                    return {
+                      ...prev,
+                      type: undefined,
+                    };
+                  }
+                  return {
+                    ...prev,
+                  };
+                } else {
+                  return {
+                    type: "shopify" as const,
+                  };
+                }
+              });
+            }}
+            checked={isShopify()}
+            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            type="checkbox"
+          />
+        </div>
       </div>
 
-      <div class="flex items-center gap-2 py-2 pt-4">
-        <label class="block">Ignore Sitemap</label>
-        <input
-          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
-          type="checkbox"
-          disabled={isShopify()}
-          checked={options.ignore_sitemap ?? true}
-          onChange={(e) => {
-            setOptions("ignore_sitemap", e.currentTarget.checked);
-          }}
-        />
+      <div class="flex items-center gap-3 py-2 pt-4">
+        <div class="flex items-center gap-2">
+          <Tooltip
+            tooltipText="Ignore the sitemap.xml file, checkbox if the site does not have a sitemap or the sitemap is not accurate"
+            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            direction="right"
+          />
+          <label class="block">Ignore Sitemap</label>
+          <input
+            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            type="checkbox"
+            disabled={isShopify()}
+            checked={options.ignore_sitemap ?? true}
+            onChange={(e) => {
+              setOptions("ignore_sitemap", e.currentTarget.checked);
+            }}
+          />
+        </div>
 
-        <label class="block">Allow External Links</label>
-        <input
-          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
-          type="checkbox"
-          disabled={isShopify()}
-          checked={options.allow_external_links ?? false}
-          onChange={(e) => {
-            setOptions("allow_external_links", e.currentTarget.checked);
-          }}
-        />
+        <div class="flex items-center gap-2">
+          <Tooltip
+            tooltipText="Follow external links in the crawl. Example: if crawling the site trieve.ai, set this to true and add docs.trieve.ai to the include paths to crawl both the main site and the docs site."
+            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            direction="right"
+          />
+          <label class="block">Allow External Links</label>
+          <input
+            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            type="checkbox"
+            disabled={isShopify()}
+            checked={options.allow_external_links ?? false}
+            onChange={(e) => {
+              setOptions("allow_external_links", e.currentTarget.checked);
+            }}
+          />
+        </div>
       </div>
 
       <div class="flex items-center gap-2 py-2 pt-4">
@@ -396,9 +452,16 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
 
       <div classList={{ "flex gap-4 pt-2": true, "opacity-40": isShopify() }}>
         <div>
-          <label class="block" for="">
-            Page Limit
-          </label>
+          <div class="flex items-center gap-2">
+            <Tooltip
+              tooltipText="The maximum number of pages to crawl"
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+            <label class="block" for="">
+              Page Limit
+            </label>
+          </div>
           <input
             class="block max-w-[100px] rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             type="number"
@@ -411,9 +474,16 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Error error={errors.limit} />
         </div>
         <div>
-          <label class="block" for="">
-            Max Depth
-          </label>
+          <div class="flex items-center gap-2">
+            <Tooltip
+              tooltipText="The maximum depth to crawl"
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+            <label class="block" for="">
+              Max Depth
+            </label>
+          </div>
           <input
             disabled={isShopify()}
             value={options.max_depth || "0"}
@@ -463,10 +533,17 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         )}
       >
         <div class="">
-          <div>Include Paths</div>
+          <div class="flex items-center gap-2">
+            <Tooltip
+              tooltipText="If one or more include paths are specified, only pages with URL's that match at least one of the regex patterns will be crawled"
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+            <label>Include URL Regex's</label>
+          </div>
           <MultiStringInput
             disabled={isShopify()}
-            placeholder="/docs/*"
+            placeholder="https://example.com/include/*"
             addClass="bg-magenta-100/40 px-2 rounded text-sm border border-magenta-300/40"
             inputClass="w-full"
             addLabel="Add Path"
@@ -478,10 +555,17 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Error error={errors.include_paths} />
         </div>
         <div class="">
-          <div>Exclude Paths</div>
+          <div class="flex items-center gap-2">
+            <Tooltip
+              tooltipText="If one or more exclude paths are specified, pages with URL's that match at least one of the regex patterns will not be crawled (even if they match an include path)"
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+            <div>Exclude URL Regex's</div>
+          </div>
           <MultiStringInput
             disabled={isShopify()}
-            placeholder="/admin/*"
+            placeholder="https://example.com/exclude/*"
             addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
             addLabel="Add Path"
             onChange={(value) => {
@@ -492,7 +576,14 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Error error={errors.exclude_paths} />
         </div>
         <div class="">
-          <div>Include Query Selectors</div>
+          <div class="flex items-center gap-2">
+            <Tooltip
+              tooltipText="HTML for a page is parsed and all elements matching one or more of the include tags are assembled into a div fort the exclude query selectors to apply to. What is left is the content of the page to be indexed for search."
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+            <div>Include Query Selectors</div>
+          </div>
           <MultiStringInput
             disabled={isShopify()}
             placeholder="h1..."
@@ -506,7 +597,14 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Error error={errors.include_tags} />
         </div>
         <div class="">
-          <div>Exclude Query Selectors</div>
+          <div class="flex items-center gap-2">
+            <Tooltip
+              tooltipText="HTML for a page is parsed and all elements matching one or more of the exclude tags are removed from the page before indexing. Exclude selectors are applied after include selectors."
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+            <div>Exclude Query Selectors</div>
+          </div>
           <MultiStringInput
             disabled={isShopify()}
             placeholder="button..."
@@ -520,7 +618,14 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Error error={errors.exclude_tags} />
         </div>
         <div class="">
-          <div>Heading Remove Strings</div>
+          <div class="flex items-center gap-2">
+            <Tooltip
+              tooltipText="Once the page is parsed and separated into heading+body chunks, the heading remove strings are removed from the heading."
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+            <div>Heading Remove Strings</div>
+          </div>
           <MultiStringInput
             placeholder="#"
             addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
@@ -533,7 +638,14 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Error error={errors.heading_remove_strings} />
         </div>
         <div class="">
-          <div>Body Remove Strings</div>
+          <div class="flex items-center gap-2">
+            <Tooltip
+              tooltipText="Once the page is parsed and separated into heading+body chunks, the body remove strings are removed from the body."
+              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              direction="right"
+            />
+            <div>Body Remove Strings</div>
+          </div>
           <MultiStringInput
             placeholder="#"
             addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
