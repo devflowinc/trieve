@@ -292,6 +292,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::ChunkReturnTypes,
             handlers::chunk_handler::ScrollChunksReqPayload,
             handlers::chunk_handler::ScrollChunksResponseBody,
+            handlers::chunk_handler::V1RecommendChunksResponseBody,
             handlers::dataset_handler::TagsWithCount,
             handlers::dataset_handler::GetAllTagsReqPayload,
             handlers::dataset_handler::GetAllTagsResponse,

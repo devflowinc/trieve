@@ -57,7 +57,7 @@ pub async fn dataset_owns_group(
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema, Clone)]
-#[schema(example = json!({
+#[schema(title = "single", example = json!({
     "name": "Versions of Oversized T-Shirt",
     "description": "All versions and colorways of the oversized t-shirt",
     "tracking_id": "SNOVERSIZEDTSHIRT",
@@ -84,7 +84,7 @@ pub struct CreateSingleChunkGroupReqPayload {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-#[schema(example = json!([{
+#[schema(title = "batch", example = json!([{
     "name": "Versions of Oversized T-Shirt",
     "description": "All versions and colorways of the oversized t-shirt",
     "tracking_id": "SNOVERSIZEDTSHIRT",

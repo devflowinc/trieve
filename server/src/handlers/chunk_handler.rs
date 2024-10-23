@@ -71,6 +71,7 @@ pub struct ScoringOptions {
     pub semantic_boost: Option<SemanticBoost>,
 }
 
+/// Request payload for creating a new chunk
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone, Default)]
 #[schema(title = "single", example = json!({
     "chunk_html": "<p>Some HTML content</p>",
@@ -2010,13 +2011,17 @@ pub struct RecommendChunksResponseBody {
     pub chunks: Vec<ScoreChunk>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(title = "V1")]
+pub struct V1RecommendChunksResponseBody(pub Vec<ChunkMetadataWithScore>);
+
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendResponseTypes {
     #[schema(title = "V2")]
     V2(RecommendChunksResponseBody),
     #[schema(title = "V1")]
-    V1(Vec<ChunkMetadataWithScore>),
+    V1(V1RecommendChunksResponseBody),
 }
 
 /// Get Recommended Chunks

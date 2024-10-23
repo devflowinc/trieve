@@ -489,7 +489,7 @@ pub struct CTRDataRequestBody {
 
 /// Send CTR Data
 ///
-/// This route allows you to send CTR data to the system.
+/// This route allows you to send clickstream data to the system. Clickstream data is used to fine-tune the re-ranking of search results and recommendations.
 #[utoipa::path(
     put,
     path = "/analytics/ctr",
