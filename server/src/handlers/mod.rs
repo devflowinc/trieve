@@ -14,4 +14,3 @@ pub mod stripe_handler;
 pub mod topic_handler;
 pub mod user_handler;
 pub mod webhook_handler;
-pub mod page_handler;
