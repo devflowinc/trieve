@@ -31,7 +31,7 @@
           "Analytics"
         ],
         "summary": "Send CTR Data",
-        "description": "This route allows you to send CTR data to the system.",
+        "description": "This route allows you to send clickstream data to the system. Clickstream data is used to fine-tune the re-ranking of search results and recommendations.",
         "operationId": "send_ctr_data",
         "parameters": [
           {
@@ -6900,19 +6900,23 @@
         "properties": {
           "chunk_html": {
             "type": "string",
+            "description": "HTML content of the chunk, can also be an arbitrary string which is not HTML",
             "nullable": true
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Timestamp of the creation of the chunk"
           },
           "dataset_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the dataset which the chunk belongs to"
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the chunk, auto-generated uuid created by Trieve"
           },
           "image_urls": {
             "type": "array",
@@ -6920,10 +6924,12 @@
               "type": "string",
               "nullable": true
             },
+            "description": "Image URLs of the chunk, can be any list of strings. Used for image search and RAG.",
             "nullable": true
           },
           "link": {
             "type": "string",
+            "description": "Link to the chunk, should be a URL",
             "nullable": true
           },
           "location": {
@@ -6935,11 +6941,13 @@
             "nullable": true
           },
           "metadata": {
+            "description": "Metadata of the chunk, can be any JSON object",
             "nullable": true
           },
           "num_value": {
             "type": "number",
             "format": "double",
+            "description": "Numeric value of the chunk, can be any float. Can represent the most relevant numeric value of the chunk, such as a price, quantity in stock, rating, etc.",
             "nullable": true
           },
           "tag_set": {
@@ -6948,24 +6956,29 @@
               "type": "string",
               "nullable": true
             },
+            "description": "Tag set of the chunk, can be any list of strings. Used for tag-filtered searches.",
             "nullable": true
           },
           "time_stamp": {
             "type": "string",
             "format": "date-time",
+            "description": "Timestamp of the chunk, can be any timestamp. Specified by the user.",
             "nullable": true
           },
           "tracking_id": {
             "type": "string",
+            "description": "Tracking ID of the chunk, can be any string, determined by the user. Tracking ID's are unique identifiers for chunks within a dataset. They are designed to match the unique identifier of the chunk in the user's system.",
             "nullable": true
           },
           "updated_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Timestamp of the last update of the chunk"
           },
           "weight": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Weight of the chunk, can be any float. Used as a multiplier on a chunk's relevance score for ranking purposes."
           }
         },
         "example": {
@@ -7187,6 +7200,7 @@
       "ChunkReqPayload": {
         "type": "object",
         "title": "single",
+        "description": "Request payload for creating a new chunk",
         "properties": {
           "chunk_html": {
             "type": "string",
@@ -7565,7 +7579,7 @@
         "properties": {
           "include_links": {
             "type": "boolean",
-            "description": "Include links in the context such that model can construct source URLs. If not specified, this defaults to false.",
+            "description": "Include links in the context. If not specified, this defaults to false.",
             "nullable": true
           }
         }
@@ -8122,6 +8136,7 @@
       },
       "CreateSingleChunkGroupReqPayload": {
         "type": "object",
+        "title": "single",
         "properties": {
           "description": {
             "type": "string",
@@ -8608,6 +8623,7 @@
       },
       "DateRange": {
         "type": "object",
+        "description": "DateRange is a JSON object which can be used to filter chunks by a range of dates. This leverages the time_stamp field on chunks in your dataset. You can specify this if you want values in a certain range. You must provide ISO 8601 combined date and time without timezone.",
         "properties": {
           "gt": {
             "type": "string",
@@ -8804,6 +8820,7 @@
       },
       "EventAnalyticsFilter": {
         "type": "object",
+        "description": "Filter to apply to the events when querying for them",
         "properties": {
           "date_range": {
             "allOf": [
@@ -8850,6 +8867,8 @@
       },
       "EventData": {
         "type": "object",
+        "title": "EventData",
+        "description": "EventData represents a single analytics event",
         "required": [
           "id",
           "event_type",
@@ -8861,48 +8880,60 @@
         ],
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "string",
+            "description": "The time the event was created."
           },
           "dataset_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "The unique identifier for the dataset the event is associated with."
           },
           "event_name": {
-            "type": "string"
+            "type": "string",
+            "description": "The name of the event, e.g. \"Added to Cart\", \"Purchased\", \"Viewed Home Page\", \"Clicked\", \"Filter Clicked\"."
           },
           "event_type": {
-            "type": "string"
+            "type": "string",
+            "description": "The type of event, \"add_to_cart\", \"purchase\", \"view\", \"click\", \"filter_clicked\"."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "The unique identifier for the event"
           },
           "is_conversion": {
             "type": "boolean",
+            "description": "Whether the event is a conversion event.",
             "nullable": true
           },
           "items": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The items associated with the event. This could be a list of stringified json chunks for search events, or a list of items for add_to_cart, purchase, view, and click events."
           },
           "metadata": {
+            "description": "Additional metadata associated with the event. This can be custom data that is specific to the event.",
             "nullable": true
           },
           "request_id": {
             "type": "string",
+            "description": "The unique identifier for the request the event is associated with.",
             "nullable": true
           },
           "request_type": {
             "type": "string",
+            "description": "The type of request the event is associated with.",
             "nullable": true
           },
           "updated_at": {
-            "type": "string"
+            "type": "string",
+            "description": "The time the event was last updated."
           },
           "user_id": {
             "type": "string",
+            "description": "The user identifier associated with the event.",
             "nullable": true
           }
         },
@@ -8970,6 +9001,7 @@
         "oneOf": [
           {
             "type": "object",
+            "title": "View",
             "required": [
               "event_name",
               "items",
@@ -9014,6 +9046,7 @@
           },
           {
             "type": "object",
+            "title": "AddToCart",
             "required": [
               "event_name",
               "items",
@@ -9063,6 +9096,7 @@
           },
           {
             "type": "object",
+            "title": "Click",
             "required": [
               "event_name",
               "clicked_items",
@@ -9104,6 +9138,7 @@
           },
           {
             "type": "object",
+            "title": "Purchase",
             "required": [
               "event_name",
               "items",
@@ -9160,6 +9195,7 @@
           },
           {
             "type": "object",
+            "title": "FilterClicked",
             "required": [
               "event_name",
               "items",
@@ -9205,6 +9241,7 @@
           },
           {
             "type": "object",
+            "title": "Search",
             "required": [
               "query",
               "event_type"
@@ -9267,6 +9304,7 @@
           },
           {
             "type": "object",
+            "title": "RAG",
             "required": [
               "user_message",
               "event_type"
@@ -9324,6 +9362,7 @@
           },
           {
             "type": "object",
+            "title": "Recommendation",
             "required": [
               "event_type"
             ],
@@ -9653,6 +9692,14 @@
             },
             "description": "The ids of the chunks to be retrieved and injected into the context window for RAG."
           },
+          "context_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContextOptions"
+              }
+            ],
+            "nullable": true
+          },
           "frequency_penalty": {
             "type": "number",
             "format": "float",
@@ -9974,6 +10021,7 @@
       },
       "GetEventsResponseBody": {
         "type": "object",
+        "description": "Response body for the GetEvents endpoint",
         "required": [
           "events"
         ],
@@ -11474,10 +11522,7 @@
             "$ref": "#/components/schemas/RecommendChunksResponseBody"
           },
           {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChunkMetadataWithScore"
-            }
+            "$ref": "#/components/schemas/V1RecommendChunksResponseBody"
           }
         ]
       },
@@ -14871,6 +14916,12 @@
           "role": 2,
           "updated_at": "2021-01-01 00:00:00.000",
           "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3"
+        }
+      },
+      "V1RecommendChunksResponseBody": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ChunkMetadataWithScore"
         }
       },
       "WorkerEvent": {

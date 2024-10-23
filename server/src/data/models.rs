@@ -416,7 +416,7 @@ impl From<ChunkMetadata> for UpdateSpecificChunkMetadata {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[schema(example = json!({
+#[schema(title = "V2", example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "link": "https://trieve.ai",
     "created_at": "2021-01-01 00:00:00.000",
@@ -429,23 +429,36 @@ impl From<ChunkMetadata> for UpdateSpecificChunkMetadata {
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "weight": 0.5,
 }))]
-#[schema(title = "V2")]
 pub struct ChunkMetadata {
+    /// Unique identifier of the chunk, auto-generated uuid created by Trieve
     pub id: uuid::Uuid,
+    /// Link to the chunk, should be a URL
     pub link: Option<String>,
     #[serde(skip_serializing)]
     pub qdrant_point_id: uuid::Uuid,
+    /// Timestamp of the creation of the chunk
     pub created_at: chrono::NaiveDateTime,
+    /// Timestamp of the last update of the chunk
     pub updated_at: chrono::NaiveDateTime,
+    /// HTML content of the chunk, can also be an arbitrary string which is not HTML
     pub chunk_html: Option<String>,
+    /// Metadata of the chunk, can be any JSON object
     pub metadata: Option<serde_json::Value>,
+    /// Tracking ID of the chunk, can be any string, determined by the user. Tracking ID's are unique identifiers for chunks within a dataset. They are designed to match the unique identifier of the chunk in the user's system.
     pub tracking_id: Option<String>,
+    /// Timestamp of the chunk, can be any timestamp. Specified by the user.
     pub time_stamp: Option<NaiveDateTime>,
+    /// ID of the dataset which the chunk belongs to
     pub dataset_id: uuid::Uuid,
+    /// Weight of the chunk, can be any float. Used as a multiplier on a chunk's relevance score for ranking purposes.
     pub weight: f64,
+    /// Location of the chunk, can be any GeoInfo object. Used for location-filtered searches.
     pub location: Option<GeoInfo>,
+    /// Image URLs of the chunk, can be any list of strings. Used for image search and RAG.
     pub image_urls: Option<Vec<Option<String>>>,
+    /// Tag set of the chunk, can be any list of strings. Used for tag-filtered searches.
     pub tag_set: Option<Vec<Option<String>>>,
+    /// Numeric value of the chunk, can be any float. Can represent the most relevant numeric value of the chunk, such as a price, quantity in stock, rating, etc.
     pub num_value: Option<f64>,
 }
 
@@ -3359,6 +3372,7 @@ pub struct Range {
     pub lt: Option<RangeCondition>,
 }
 
+/// DateRange is a JSON object which can be used to filter chunks by a range of dates. This leverages the time_stamp field on chunks in your dataset. You can specify this if you want values in a certain range. You must provide ISO 8601 combined date and time without timezone.
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[schema(example = json!({
     "gte": "2021-01-01 00:00:00.000",
@@ -3367,13 +3381,13 @@ pub struct Range {
     "lt": "2021-01-01 00:00:00.000"
 }))]
 pub struct DateRange {
-    // gte is the lower bound of the range. This is inclusive.
+    // gte is ISO8601 time for the lower bound of the range. This is inclusive.
     pub gte: Option<String>,
-    // lte is the upper bound of the range. This is inclusive.
+    // lte is ISO8601 time for the upper bound of the range. This is inclusive.
     pub lte: Option<String>,
-    // gt is the lower bound of the range. This is exclusive.
+    // gt is ISO8601 time for the lower bound of the range. This is exclusive.
     pub gt: Option<String>,
-    // lt is the upper bound of the range. This is exclusive.
+    // lt is ISO8601 time for the upper bound of the range. This is exclusive.
     pub lt: Option<String>,
 }
 
@@ -4699,8 +4713,9 @@ pub struct PopularFiltersClickhouse {
     pub common_values: String,
 }
 
+/// EventData represents a single analytics event
 #[derive(Debug, ToSchema, Serialize, Deserialize, Clone)]
-#[schema(example = json!({
+#[schema(title = "EventData", example = json!({
     "event_type": "view",
     "event_name": "Viewed Home Page",
     "request_id": "00000000-0000-0000-0000-000000000000",
@@ -4714,17 +4729,29 @@ pub struct PopularFiltersClickhouse {
     "updated_at": "2021-08-10T00:00:00Z"
 }))]
 pub struct EventData {
+    /// The unique identifier for the event
     pub id: uuid::Uuid,
+    /// The type of event, "add_to_cart", "purchase", "view", "click", "filter_clicked".
     pub event_type: String,
+    /// The name of the event, e.g. "Added to Cart", "Purchased", "Viewed Home Page", "Clicked", "Filter Clicked".
     pub event_name: String,
+    /// The unique identifier for the request the event is associated with.
     pub request_id: Option<String>,
+    /// The type of request the event is associated with.
     pub request_type: Option<String>,
+    /// The items associated with the event. This could be a list of stringified json chunks for search events, or a list of items for add_to_cart, purchase, view, and click events.
     pub items: Vec<String>,
+    /// Additional metadata associated with the event. This can be custom data that is specific to the event.
     pub metadata: Option<serde_json::Value>,
+    /// The user identifier associated with the event.
     pub user_id: Option<String>,
+    /// Whether the event is a conversion event.
     pub is_conversion: Option<bool>,
+    /// The unique identifier for the dataset the event is associated with.
     pub dataset_id: uuid::Uuid,
+    /// The time the event was created.
     pub created_at: String,
+    /// The time the event was last updated.
     pub updated_at: String,
 }
 
@@ -5012,6 +5039,7 @@ impl From<EventDataClickhouse> for EventData {
     }
 }
 
+/// Filter to apply to the events when querying for them
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 #[schema(example = json!({
     "date_range": {
@@ -5161,6 +5189,7 @@ impl EventAnalyticsFilter {
     }
 }
 
+/// Response body for the GetEvents endpoint
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct GetEventsResponseBody {
     pub events: Vec<EventData>,
@@ -5671,6 +5700,7 @@ pub struct RequestInfo {
 #[serde(tag = "event_type")]
 pub enum EventTypes {
     #[display(fmt = "view")]
+    #[schema(title = "View")]
     View {
         /// The name of the event
         event_name: String,
@@ -5684,6 +5714,7 @@ pub enum EventTypes {
         metadata: Option<serde_json::Value>,
     },
     #[display(fmt = "add_to_cart")]
+    #[schema(title = "AddToCart")]
     AddToCart {
         /// The name of the event
         event_name: String,
@@ -5699,6 +5730,7 @@ pub enum EventTypes {
         is_conversion: Option<bool>,
     },
     #[display(fmt = "click")]
+    #[schema(title = "Click")]
     Click {
         /// The name of the event
         event_name: String,
@@ -5712,6 +5744,7 @@ pub enum EventTypes {
         is_conversion: Option<bool>,
     },
     #[display(fmt = "purchase")]
+    #[schema(title = "Purchase")]
     Purchase {
         /// The name of the event
         event_name: String,
@@ -5729,6 +5762,7 @@ pub enum EventTypes {
         is_conversion: Option<bool>,
     },
     #[display(fmt = "filter_clicked")]
+    #[schema(title = "FilterClicked")]
     FilterClicked {
         /// The name of the event
         event_name: String,
@@ -5742,6 +5776,7 @@ pub enum EventTypes {
         is_conversion: Option<bool>,
     },
     #[display(fmt = "search")]
+    #[schema(title = "Search")]
     Search {
         /// The search type: search, rag, or search_over_groups
         search_type: Option<ClickhouseSearchTypes>,
@@ -5762,6 +5797,7 @@ pub enum EventTypes {
     },
     #[display(fmt = "rag")]
     #[serde(rename = "rag")]
+    #[schema(title = "RAG")]
     RAG {
         /// The Type of RAG event: chosen_chunks, all_chunks
         rag_type: Option<ClickhouseRagTypes>,
@@ -5779,6 +5815,7 @@ pub enum EventTypes {
         user_id: Option<String>,
     },
     #[display(fmt = "recommendation")]
+    #[schema(title = "Recommendation")]
     Recommendation {
         /// The Type of Recommendation event: chunk, group
         recommendation_type: Option<ClickhouseRecommendationTypes>,

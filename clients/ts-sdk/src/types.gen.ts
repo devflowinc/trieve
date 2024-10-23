@@ -217,19 +217,58 @@ export type ChunkGroupAndFileId = {
 export type ChunkGroups = Array<ChunkGroup>;
 
 export type ChunkMetadata = {
+    /**
+     * HTML content of the chunk, can also be an arbitrary string which is not HTML
+     */
     chunk_html?: (string) | null;
+    /**
+     * Timestamp of the creation of the chunk
+     */
     created_at: string;
+    /**
+     * ID of the dataset which the chunk belongs to
+     */
     dataset_id: string;
+    /**
+     * Unique identifier of the chunk, auto-generated uuid created by Trieve
+     */
     id: string;
+    /**
+     * Image URLs of the chunk, can be any list of strings. Used for image search and RAG.
+     */
     image_urls?: Array<((string) | null)> | null;
+    /**
+     * Link to the chunk, should be a URL
+     */
     link?: (string) | null;
     location?: ((GeoInfo) | null);
+    /**
+     * Metadata of the chunk, can be any JSON object
+     */
     metadata?: unknown;
+    /**
+     * Numeric value of the chunk, can be any float. Can represent the most relevant numeric value of the chunk, such as a price, quantity in stock, rating, etc.
+     */
     num_value?: (number) | null;
+    /**
+     * Tag set of the chunk, can be any list of strings. Used for tag-filtered searches.
+     */
     tag_set?: Array<((string) | null)> | null;
+    /**
+     * Timestamp of the chunk, can be any timestamp. Specified by the user.
+     */
     time_stamp?: (string) | null;
+    /**
+     * Tracking ID of the chunk, can be any string, determined by the user. Tracking ID's are unique identifiers for chunks within a dataset. They are designed to match the unique identifier of the chunk in the user's system.
+     */
     tracking_id?: (string) | null;
+    /**
+     * Timestamp of the last update of the chunk
+     */
     updated_at: string;
+    /**
+     * Weight of the chunk, can be any float. Used as a multiplier on a chunk's relevance score for ranking purposes.
+     */
     weight: number;
 };
 
@@ -272,6 +311,9 @@ export type ChunkMetadataWithScore = {
     weight: number;
 };
 
+/**
+ * Request payload for creating a new chunk
+ */
 export type ChunkReqPayload = {
     /**
      * HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
@@ -783,6 +825,9 @@ export type DatasetUsageCount = {
     id: string;
 };
 
+/**
+ * DateRange is a JSON object which can be used to filter chunks by a range of dates. This leverages the time_stamp field on chunks in your dataset. You can specify this if you want values in a certain range. You must provide ISO 8601 combined date and time without timezone.
+ */
 export type DateRange = {
     gt?: (string) | null;
     gte?: (string) | null;
@@ -857,6 +902,9 @@ export type ErrorResponseBody = {
     message: string;
 };
 
+/**
+ * Filter to apply to the events when querying for them
+ */
 export type EventAnalyticsFilter = {
     date_range?: ((DateRange) | null);
     event_type?: ((EventTypesFilter) | null);
@@ -874,18 +922,57 @@ export type EventAnalyticsFilter = {
     user_id?: (string) | null;
 };
 
+/**
+ * EventData represents a single analytics event
+ */
 export type EventData = {
+    /**
+     * The time the event was created.
+     */
     created_at: string;
+    /**
+     * The unique identifier for the dataset the event is associated with.
+     */
     dataset_id: string;
+    /**
+     * The name of the event, e.g. "Added to Cart", "Purchased", "Viewed Home Page", "Clicked", "Filter Clicked".
+     */
     event_name: string;
+    /**
+     * The type of event, "add_to_cart", "purchase", "view", "click", "filter_clicked".
+     */
     event_type: string;
+    /**
+     * The unique identifier for the event
+     */
     id: string;
+    /**
+     * Whether the event is a conversion event.
+     */
     is_conversion?: (boolean) | null;
+    /**
+     * The items associated with the event. This could be a list of stringified json chunks for search events, or a list of items for add_to_cart, purchase, view, and click events.
+     */
     items: Array<(string)>;
+    /**
+     * Additional metadata associated with the event. This can be custom data that is specific to the event.
+     */
     metadata?: unknown;
+    /**
+     * The unique identifier for the request the event is associated with.
+     */
     request_id?: (string) | null;
+    /**
+     * The type of request the event is associated with.
+     */
     request_type?: (string) | null;
+    /**
+     * The time the event was last updated.
+     */
     updated_at: string;
+    /**
+     * The user identifier associated with the event.
+     */
     user_id?: (string) | null;
 };
 
@@ -1159,6 +1246,7 @@ export type GenerateOffChunksReqPayload = {
      * The ids of the chunks to be retrieved and injected into the context window for RAG.
      */
     chunk_ids: Array<(string)>;
+    context_options?: ((ContextOptions) | null);
     /**
      * Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Default is 0.7.
      */
@@ -1283,6 +1371,9 @@ export type GetEventsRequestBody = {
     page?: (number) | null;
 };
 
+/**
+ * Response body for the GetEvents endpoint
+ */
 export type GetEventsResponseBody = {
     events: Array<EventData>;
 };
@@ -1730,7 +1821,7 @@ export type RecommendGroupsResponseBody = {
     results: Array<SearchOverGroupsResults>;
 };
 
-export type RecommendResponseTypes = RecommendChunksResponseBody | Array<ChunkMetadataWithScore>;
+export type RecommendResponseTypes = RecommendChunksResponseBody | V1RecommendChunksResponseBody;
 
 /**
  * The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.
@@ -2774,6 +2865,8 @@ export type UserOrganization = {
     updated_at: string;
     user_id: string;
 };
+
+export type V1RecommendChunksResponseBody = Array<ChunkMetadataWithScore>;
 
 export type WorkerEvent = {
     created_at: string;
