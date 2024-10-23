@@ -1,11 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Public Page</title>
-  </head>
-  <body>
-    hi
-  </body>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://unpkg.com/trieve-search-component@0.0.49/dist/index.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400..900&amp;display=swap" rel="stylesheet">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://cdn.trieve.ai/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://cdn.trieve.ai/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://cdn.trieve.ai/favicon-16x16.png" />
+
+  <style>
+    body {
+      overflow: hidden;
+      font-family: 'Maven Pro', sans-serif;
+      line-height: 1.6;
+      margin: 2rem;
+    }
+
+    .basic {
+      display: flex;
+      position: relative;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+  </style>
+
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18",
+            "react-dom": "https://esm.sh/react-dom@18",
+            "react-dom/client": "https://esm.sh/react-dom@18/client",
+            "@thumbmarkjs/thumbmarkjs": "https://esm.sh/@thumbmarkjs/thumbmarkjs",
+            "trieve-ts-sdk": "https://esm.sh/trieve-ts-sdk",
+            "cheerio": "https://esm.sh/cheerio",
+            "react-markdown": "https://esm.sh/react-markdown",
+            "@r2wc/react-to-web-component": "https://esm.sh/@r2wc/react-to-web-component"
+        }
+    }
+  </script>
+
+  <script type="module">
+    import React, {useState} from 'react';
+    import ReactDOM from 'react-dom';
+
+    window.React = React;
+    window.ReactDOM = ReactDOM;
+
+    import {TrieveModalSearch} from 'https://unpkg.com/trieve-search-component@0.0.49/dist/index.esm.js';
+    window.TrieveModalSearch = TrieveModalSearch;
+  </script>
+
+  <script type="text/babel">
+    window.addEventListener('load', () => {
+      const root = document.getElementById('root');
+
+      const rootElement = window.ReactDOM.createRoot(document.getElementById("root"));
+
+      const App = () => {
+        return (
+          <div class="basic">
+            <p class="text">
+              Trieve Search Component
+            </p>
+            <window.TrieveModalSearch
+              datasetId="{{ datasetId }}"
+              apiKey="{{ apiKey }}"
+            />
+          </div>
+        );
+      }
+
+      rootElement.render(
+        <App />
+      )
+    });
+  </script>
+
+</head>
+
+<body>
+  <div id="root">
+  </div>
+  <pre>
+  </pre>
+</body>
+
 </html>
