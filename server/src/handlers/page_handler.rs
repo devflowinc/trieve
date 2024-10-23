@@ -1,7 +1,16 @@
+use crate::data::models::Pool;
+use serde::Deserialize;
 use actix_web::{web, HttpResponse};
 use minijinja::context;
 
 use crate::{data::models::Templates, operators::page_operator::get_page_by_dataset_id};
+
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicPageParams {
+    dataset_id: uuid::Uuid,
+}
 
 #[utoipa::path(
     get,
@@ -18,19 +27,30 @@ use crate::{data::models::Templates, operators::page_operator::get_page_by_datas
     ),
 )]
 pub async fn public_page(
-    dataset_id: web::Path<uuid::Uuid>,
+    page_params: web::Query<PublicPageParams>,
+    pool: web::Data<Pool>,
     templates: Templates<'_>,
 ) -> Result<HttpResponse, actix_web::Error> {
 
-    // get_page_by_dataset_id(dataset_id).await?;
+    let dataset_id = page_params.dataset_id;
 
-    let templ = templates.get_template("page.html").unwrap();
-    let response_body = templ
-        .render(context! {
-            datasetId => *dataset_id,
-            apiKey => "aaadd"
-        })
-        .unwrap();
+    let page = get_page_by_dataset_id(dataset_id, pool).await?;
 
-    Ok(HttpResponse::Ok().body(response_body))
+    if let Some(page) = page {
+        if page.is_public {
+            let templ = templates.get_template("page.html").unwrap();
+            let response_body = templ
+                .render(context! {
+                    datasetId => dataset_id,
+                    apiKey => page.api_key
+                })
+                .unwrap();
+
+            Ok(HttpResponse::Ok().body(response_body))
+        } else {
+            Ok(HttpResponse::Forbidden().finish())
+        }
+    } else {
+        Ok(HttpResponse::Forbidden().finish())
+    }
 }
