@@ -7760,12 +7760,6 @@
             "description": "How many pages to crawl, defaults to 1000",
             "nullable": true
           },
-          "max_depth": {
-            "type": "integer",
-            "format": "int32",
-            "description": "How many levels deep to crawl, defaults to 10",
-            "nullable": true
-          },
           "scrape_options": {
             "allOf": [
               {
@@ -7807,7 +7801,6 @@
           ],
           "interval": "daily",
           "limit": 1000,
-          "max_depth": 10,
           "site_url": "https://example.com"
         }
       },
@@ -9947,7 +9940,6 @@
             ],
             "interval": "daily",
             "limit": 1000,
-            "max_depth": 10,
             "site_url": "https://example.com"
           }
         }

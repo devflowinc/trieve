@@ -6659,7 +6659,6 @@ impl From<CrawlRequest> for CrawlRequestPG {
     "limit": 1000,
     "exclude_paths": ["https://example.com/exclude*"],
     "include_paths": ["https://example.com/include*"],
-    "max_depth": 10,
     "include_tags": ["h1", "p", "a", ".main-content"],
     "exclude_tags": ["#ad", "#footer"],
     "heading_remove_strings": ["Advertisement", "Sponsored"],
@@ -6677,8 +6676,6 @@ pub struct CrawlOptions {
     pub exclude_paths: Option<Vec<String>>,
     /// URL Patterns to include in the crawl
     pub include_paths: Option<Vec<String>>,
-    /// How many levels deep to crawl, defaults to 10
-    pub max_depth: Option<i32>,
     /// Specify the HTML tags, classes and ids to include in the response.
     pub include_tags: Option<Vec<String>>,
     /// Specify the HTML tags, classes and ids to exclude from the response.
@@ -6727,7 +6724,6 @@ impl CrawlOptions {
             exclude_tags: self.exclude_tags.clone().or(other.exclude_tags.clone()),
             include_paths: self.include_paths.clone().or(other.include_paths.clone()),
             exclude_paths: self.exclude_paths.clone().or(other.exclude_paths.clone()),
-            max_depth: self.max_depth.or(other.max_depth),
             ignore_sitemap: self.ignore_sitemap.or(other.ignore_sitemap),
             boost_titles: self.boost_titles.or(other.boost_titles),
             scrape_options: self.scrape_options.clone(),
@@ -6752,8 +6748,6 @@ pub struct FirecrawlCrawlRequest {
     pub exclude_paths: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub include_paths: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_depth: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ignore_sitemap: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -6783,7 +6777,6 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
             url: crawl_options.site_url,
             exclude_paths: crawl_options.exclude_paths,
             include_paths: crawl_options.include_paths,
-            max_depth: Some(crawl_options.max_depth.unwrap_or(10)),
             ignore_sitemap: crawl_options.ignore_sitemap,
             limit: Some(crawl_options.limit.unwrap_or(1000)),
             allow_external_links: crawl_options.allow_external_links,

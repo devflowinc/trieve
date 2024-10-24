@@ -535,10 +535,6 @@ export type CrawlOptions = {
      * How many pages to crawl, defaults to 1000
      */
     limit?: (number) | null;
-    /**
-     * How many levels deep to crawl, defaults to 10
-     */
-    max_depth?: (number) | null;
     scrape_options?: ((ScrapeOptions) | null);
     /**
      * The URL to crawl
