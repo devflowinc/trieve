@@ -6834,4 +6834,22 @@ pub struct PublicPageConfiguration {
     pub is_public: bool,
     pub api_key: String,
     pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl PublicPageConfiguration {
+    pub fn from_details(
+        dataset_id: uuid::Uuid,
+        is_public: bool,
+        api_key: String
+    ) -> Self {
+        PublicPageConfiguration {
+            id: uuid::Uuid::new_v4(),
+            dataset_id,
+            is_public,
+            api_key,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
 }

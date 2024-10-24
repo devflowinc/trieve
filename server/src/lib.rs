@@ -792,6 +792,12 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::put().to(handlers::dataset_handler::update_dataset))
                                 )
                                 .service(
+                                    web::resource("/visibility")
+                                    .route(
+                                        web::put().to(handlers::page_handler::set_dataset_visiblity)
+                                    )
+                                )
+                                .service(
                                     web::resource("/organization/{organization_id}").route(
                                         web::get().to(
                                             handlers::dataset_handler::get_datasets_from_organization,
