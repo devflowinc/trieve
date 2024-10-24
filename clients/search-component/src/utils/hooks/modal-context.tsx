@@ -29,6 +29,7 @@ type searchOptions = Omit<
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
+  baseUrl: string;
   onResultClick?: (chunk: Chunk) => void;
   theme?: "light" | "dark";
   searchOptions?: searchOptions;
@@ -63,6 +64,7 @@ export type ModalProps = {
 const defaultProps = {
   datasetId: "",
   apiKey: "",
+  baseUrl: "https://api.trieve.ai",
   defaultSearchMode: "search" as SearchModes,
   placeholder: "Search...",
   theme: "light" as "light" | "dark",
@@ -155,6 +157,7 @@ function ModalProvider({
   );
 
   const trieve = new TrieveSDK({
+    baseUrl: props.baseUrl,
     apiKey: props.apiKey,
     datasetId: props.datasetId,
   });

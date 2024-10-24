@@ -189,17 +189,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    public_page_configuration (id) {
-        id -> Uuid,
-        dataset_id -> Uuid,
-        is_public -> Bool,
-        api_key -> Text,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     stripe_invoices (id) {
         id -> Uuid,
         org_id -> Uuid,
@@ -307,7 +296,6 @@ diesel::joinable!(groups_from_files -> files (file_id));
 diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(organization_usage_counts -> organizations (org_id));
-diesel::joinable!(public_page_configuration -> datasets (dataset_id));
 diesel::joinable!(stripe_invoices -> organizations (org_id));
 diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
@@ -333,7 +321,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     messages,
     organization_usage_counts,
     organizations,
-    public_page_configuration,
     stripe_invoices,
     stripe_plans,
     stripe_subscriptions,
