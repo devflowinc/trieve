@@ -121,12 +121,30 @@ pub struct Sitemap {
     pub changefreq: String,
 }
 
+pub fn validate_crawl_options(crawl_options: &CrawlOptions) -> Result<CrawlOptions, ServiceError> {
+    if crawl_options.allow_external_links.is_some_and(|v| v)
+        && !crawl_options
+            .clone()
+            .include_paths
+            .unwrap_or_default()
+            .into_iter()
+            .any(|path| path != "*")
+    {
+        return Err(ServiceError::BadRequest(
+            "If allow_external_links is true, include_paths must contain at least one path that is not '*'".to_string(),
+        ));
+    }
+    Ok(crawl_options.clone())
+}
+
 pub async fn crawl(
     crawl_options: CrawlOptions,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     dataset_id: uuid::Uuid,
 ) -> Result<uuid::Uuid, ServiceError> {
+    validate_crawl_options(&crawl_options)?;
+
     let scrape_id = if let Some(ScrapeOptions::Shopify(_)) = crawl_options.scrape_options {
         uuid::Uuid::nil()
     } else {

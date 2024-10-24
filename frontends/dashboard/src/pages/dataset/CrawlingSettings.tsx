@@ -167,11 +167,12 @@ export const CrawlingSettings = () => {
 
       void crawlSettingsQuery.refetch();
     },
-    onError() {
+    onError(e) {
       createToast({
         title: "Error",
         type: "error",
-        message: "Failed to update crawl options",
+        message: `Failed to update crawl options: ${e.message}`,
+        timeout: 5000,
       });
     },
   }));
