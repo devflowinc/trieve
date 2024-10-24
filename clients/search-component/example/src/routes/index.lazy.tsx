@@ -40,8 +40,8 @@ export default function Home() {
             <TrieveModalSearch
               debounceMs={50}
               defaultSearchMode="search"
-              apiKey="tr-ZMwMAbZsIqqB2Ss4OTyPBe9hQEb5S0ov"
-              datasetId="e7ac9f62-1a01-41ad-8e37-4b0e0bfb8843"
+              apiKey="tr-zpPVGUq18FxOCmXgLfqGbmDOY4UMW00r"
+              datasetId="4538ad9f-47cf-44d4-8a14-7c111f9558a9"
               problemLink="mailto:help@trieve.ai?subject="
               theme={theme}
               tags={[

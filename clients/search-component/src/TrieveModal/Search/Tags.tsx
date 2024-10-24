@@ -3,11 +3,10 @@ import { ALL_TAG, useModalState } from "../../utils/hooks/modal-context";
 import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "../icons";
 
 export const Tags = () => {
-  const { props, mode, query, results, currentTag, setCurrentTag, tagCounts } =
-    useModalState();
+  const { props, mode, currentTag, setCurrentTag, tagCounts } = useModalState();
   return (
     mode === "search" &&
-    (props.tags?.length && (query || (query && !results.length)) ? (
+    (props.tags?.length ? (
       <ul className="tags">
         {[ALL_TAG, ...props.tags].map((tag, idx) => (
           <li className={currentTag === tag.tag ? "active" : ""} key={tag.tag}>

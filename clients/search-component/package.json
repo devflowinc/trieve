@@ -52,7 +52,6 @@
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.0.3",
     "@thumbmarkjs/thumbmarkjs": "^0.14.8",
-    "cheerio": "^1.0.0",
     "react-markdown": "^9.0.1",
     "trieve-ts-sdk": "*"
   },

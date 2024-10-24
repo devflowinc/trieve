@@ -572,7 +572,12 @@ body {
       background-color: var(--tv-zinc-50);
 
       .chunk-path {
-        @apply text-xs  text-gray-800 line-clamp-1 overflow-ellipsis;
+        color: var(--tv-zinc-600);
+        @apply text-xs  line-clamp-1 overflow-ellipsis;
+      }
+
+      .chunk-title {
+        @apply pb-0 text-base;
       }
 
       .post-method {
@@ -658,7 +663,7 @@ body {
 
       .description {
         color: var(--tv-zinc-600);
-        @apply font-normal text-xs m-0;
+        @apply font-normal text-sm m-0;
       }
     }
 
