@@ -195,6 +195,7 @@ diesel::table! {
         is_public -> Bool,
         api_key -> Text,
         created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
