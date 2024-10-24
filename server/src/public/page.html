@@ -70,9 +70,8 @@
               Trieve Search Component
             </p>
             <window.TrieveModalSearch
-              datasetId="{{ datasetId }}"
-              apiKey="{{ apiKey }}"
-              baseUrl="{{ baseUrl | safe }}"
+              {... {{ params | tojson }}
+                }
             />
           </div>
         );
