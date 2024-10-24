@@ -56,7 +56,7 @@ pub async fn public_page(
         let response_body = templ
             .render(context! {
                 datasetId => dataset_id,
-                baseUrl => base_server_url.clone(),
+                baseUrl => base_server_url,
                 apiKey => config.PUBLIC_DATASET.api_key
             })
             .unwrap();
