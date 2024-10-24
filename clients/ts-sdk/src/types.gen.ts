@@ -1648,7 +1648,6 @@ export type PopularFiltersResponse = {
 };
 
 export type PublicDatasetOptions = {
-    api_key: string;
     enabled: boolean;
 };
 

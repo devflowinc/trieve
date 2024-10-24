@@ -10900,13 +10900,9 @@
       "PublicDatasetOptions": {
         "type": "object",
         "required": [
-          "enabled",
-          "api_key"
+          "enabled"
         ],
         "properties": {
-          "api_key": {
-            "type": "string"
-          },
           "enabled": {
             "type": "boolean"
           }
