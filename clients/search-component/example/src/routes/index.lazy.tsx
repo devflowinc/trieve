@@ -116,6 +116,10 @@ export default function Home() {
               allowSwitchingModes={true}
               useGroupSearch={false}
               responsive={false}
+              searchOptions={{
+                use_autocomplete: false,
+                search_type: "fulltext",
+              }}
             />
 
             <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">
