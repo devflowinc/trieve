@@ -19,7 +19,7 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg py-2 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+    @apply animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg pt-1.5 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
 
@@ -607,10 +607,6 @@ body {
       svg {
         @apply shrink-0 w-8;
       }
-
-      /* &.hidden {
-        @apply hidden;
-      } */
 
       mark {
         @apply bg-inherit;
