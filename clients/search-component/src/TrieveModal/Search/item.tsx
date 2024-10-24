@@ -3,7 +3,6 @@ import React, { useRef, useState } from "react";
 import { ArrowIcon } from "../icons";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
-import { load } from "cheerio";
 
 type Props = {
   item: ChunkWithHighlights;
@@ -22,42 +21,43 @@ export const Item = ({ item, requestID, index, className }: Props) => {
   let descriptionHtml = item.highlights
     ? item.highlights.join("...")
     : item.chunk.chunk_html || "";
-  const $descriptionHtml = load(descriptionHtml);
-  $descriptionHtml("b").replaceWith(function () {
-    return $descriptionHtml(this).text();
+  const $descriptionHtml = document.createElement("div");
+  $descriptionHtml.innerHTML = descriptionHtml;
+  $descriptionHtml.querySelectorAll("b").forEach((b) => {
+    return b.replaceWith(b.textContent || "");
   });
-  descriptionHtml = $descriptionHtml.html() || "";
+  descriptionHtml = $descriptionHtml.innerHTML;
 
-  const openapiRequestVerb = load(item.chunk.chunk_html || "")
-    .root()
-    .find(".openapi-method")
-    .text();
+  const openapiRequestHtml = document.createElement("div");
+  openapiRequestHtml.innerHTML = item.chunk.chunk_html || "";
+  const openapiRequestVerb =
+    openapiRequestHtml.querySelector(".openapi-method")?.textContent;
 
-  const chunkHtmlHeadings = load(item.chunk.chunk_html || "")
-    .root()
-    .find("h1, h2, h3, h4, h5, h6")
-    .toArray();
+  const chunkHtmlHeadingsDiv = document.createElement("div");
+  chunkHtmlHeadingsDiv.innerHTML = item.chunk.chunk_html || "";
+  const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
+    "h1, h2, h3, h4, h5, h6"
+  );
 
-  const $firstHeading = load(chunkHtmlHeadings[0] ?? "");
-  const firstHeadingId = $firstHeading.html()?.match(/id="([^"]*)"/)?.[1];
-  const cleanFirstHeadingHtml = $firstHeading("*")
-    .not("mark")
-    .replaceWith(function () {
-      return $firstHeading(this).text();
-    });
+  const $firstHeading = chunkHtmlHeadings[0] ?? document.createElement("h1");
+  $firstHeading?.querySelectorAll(":not(mark)")?.forEach((tag) => {
+    return tag.replaceWith(tag.textContent || "");
+  });
+  const firstHeadingIdDiv = document.createElement("div");
+  firstHeadingIdDiv.innerHTML = $firstHeading.id;
+  const firstHeadingId = firstHeadingIdDiv.textContent;
+  const cleanFirstHeading = $firstHeading?.innerHTML;
 
-  const cleanFirstHeading = cleanFirstHeadingHtml.html()?.replace("#", "");
-  const titleInnerText = $firstHeading.text();
+  const titleInnerText = $firstHeading.textContent || "";
 
   descriptionHtml = descriptionHtml
     .replace(" </mark>", "</mark> ")
     .replace(cleanFirstHeading || "", "");
 
   for (const heading of chunkHtmlHeadings) {
-    descriptionHtml = descriptionHtml.replace(
-      load(heading ?? "").text() || "",
-      ""
-    );
+    const curHeadingText = heading.textContent;
+
+    descriptionHtml = descriptionHtml.replace(curHeadingText || "", "");
   }
   descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
   const [shownImage, setShownImage] = useState<string>(
@@ -68,12 +68,16 @@ export const Item = ({ item, requestID, index, className }: Props) => {
         item.chunk.num_value
       }${props.currencyPosition === "after" ? props.defaultCurrency : ""}`
     : "";
-  let title = `  ${
+  let title = `${
     cleanFirstHeading ||
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name
-  }  ${price}`;
+  }${price ? "  " + price : ""}`.replace("#", "");
+
+  if (!title.trim() || title == "undefined") {
+    return null;
+  }
 
   switch (openapiRequestVerb) {
     case "POST":
@@ -166,7 +170,11 @@ export const Item = ({ item, requestID, index, className }: Props) => {
         }}
         {...(item.chunk.link
           ? {
-              href: `${item.chunk.link}${linkSuffix}`,
+              href: `${
+                item.chunk.link.endsWith("/")
+                  ? item.chunk.link.slice(0, -1)
+                  : item.chunk.link
+              }${linkSuffix}`,
             }
           : {})}
       >
@@ -188,6 +196,7 @@ export const Item = ({ item, requestID, index, className }: Props) => {
                 <h6 className="chunk-path">{getChunkPath()}</h6>
               ) : null}
               <h4
+                className="chunk-title"
                 dangerouslySetInnerHTML={{
                   __html: title,
                 }}
