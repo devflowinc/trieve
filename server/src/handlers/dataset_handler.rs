@@ -10,6 +10,7 @@ use crate::{
     operators::{
         crawl_operator::{
             crawl, get_crawl_request_by_dataset_id_query, update_crawl_settings_for_dataset,
+            validate_crawl_options,
         },
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, get_dataset_by_id_query,
@@ -156,6 +157,10 @@ pub async fn create_dataset(
         }
     }
 
+    if let Some(crawl_options) = data.crawl_options.clone() {
+        validate_crawl_options(&crawl_options)?;
+    };
+
     let dataset = Dataset::from_details(
         data.dataset_name.clone(),
         org_id,
@@ -280,6 +285,10 @@ pub async fn update_dataset(
         return Err(ServiceError::BadRequest(
             "You must provide a dataset_id or tracking_id to update a dataset".to_string(),
         ));
+    };
+
+    if let Some(crawl_options) = data.crawl_options.clone() {
+        validate_crawl_options(&crawl_options)?;
     };
 
     if !verify_owner(&user, &curr_dataset.organization_id) {
