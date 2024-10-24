@@ -34,7 +34,7 @@ export const PublicPageSettings = () => {
         dataset_ids: [datasetId()],
         organization_ids: [selectedOrg().id],
         scopes: ApiRoutes["Search Component Routes"],
-      }
+      },
     });
 
     await trieve.fetch("/api/dataset", "put", {
@@ -47,7 +47,7 @@ export const PublicPageSettings = () => {
             api_key: response.api_key,
           },
         },
-      }
+      },
     });
 
     createToast({
