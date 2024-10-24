@@ -43,6 +43,7 @@ export const PublicPageSettings = () => {
         server_configuration: {
           PUBLIC_DATASET: {
             enabled: true,
+            // @ts-expect-error Object literal may only specify known properties, and 'api_key' does not exist in type 'PublicDatasetOptions'. [2353]
             api_key: response.api_key,
           },
         },
