@@ -1,5 +1,8 @@
 use crate::{
-    data::models::{DatasetConfiguration, Pool, UnifiedId}, errors::ServiceError, get_env, operators::dataset_operator::get_dataset_by_id_query
+    data::models::{DatasetConfiguration, Pool, UnifiedId},
+    errors::ServiceError,
+    get_env,
+    operators::dataset_operator::get_dataset_by_id_query,
 };
 use actix_web::{web, HttpResponse};
 use minijinja::context;
