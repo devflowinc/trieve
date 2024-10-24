@@ -29,4 +29,8 @@ export const defaultServerEnvsConfiguration: DatasetConfig = {
   BM25_B: 0.75,
   BM25_K: 1.2,
   BM25_AVG_LEN: 256,
+  PUBLIC_DATASET: {
+    enabled: false,
+    api_key: "",
+  },
 };
