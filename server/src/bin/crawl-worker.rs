@@ -320,7 +320,13 @@ async fn get_chunks_with_firecrawl(
                 })?;
         }
 
-        let page_link = page.metadata.source_url.clone().unwrap_or_default();
+        let page_link = page
+            .metadata
+            .source_url
+            .clone()
+            .unwrap_or_default()
+            .trim_end_matches("/")
+            .to_string();
         if page_link.is_empty() {
             println!(
                 "Error page source_url is not present for page_metadata: {:?}",
