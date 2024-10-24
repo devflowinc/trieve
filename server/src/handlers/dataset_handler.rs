@@ -330,7 +330,6 @@ pub async fn update_dataset(
         "limit": 1000,
         "exclude_paths": ["https://example.com/exclude"],
         "include_paths": ["https://example.com/include"],
-        "max_depth": 10,
         "include_tags": ["h1", "p", "a", ".main-content"],
         "exclude_tags": ["#ad", "#footer"],
     }

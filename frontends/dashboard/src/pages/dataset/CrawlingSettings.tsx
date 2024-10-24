@@ -26,7 +26,6 @@ export const defaultCrawlOptions: CrawlOptions = {
   include_tags: [],
   interval: "daily",
   limit: 1000,
-  max_depth: 10,
   site_url: "",
   scrape_options: {
     group_variants: true,
@@ -59,7 +58,6 @@ export const unflattenCrawlOptions = (
       include_tags: options.include_tags,
       interval: options.interval,
       limit: options.limit,
-      max_depth: options.max_depth,
       site_url: options.site_url,
       scrape_options: {
         type: "openapi",
@@ -77,7 +75,6 @@ export const unflattenCrawlOptions = (
       include_tags: options.include_tags,
       interval: options.interval,
       limit: options.limit,
-      max_depth: options.max_depth,
       site_url: options.site_url,
       scrape_options: {
         type: "shopify",
@@ -94,7 +91,6 @@ export const unflattenCrawlOptions = (
     include_tags: options.include_tags,
     interval: options.interval,
     limit: options.limit,
-    max_depth: options.max_depth,
     site_url: options.site_url,
     scrape_options: null,
   };
@@ -223,9 +219,6 @@ export const validateFlatCrawlOptions: ValidateFn<FlatCrawlOptions> = (
   if (value.type != "shopify") {
     if (!value.limit || value.limit <= 0) {
       errors.limit = "Limit must be greater than 0";
-    }
-    if (!value.max_depth) {
-      errors.max_depth = "Max depth must be greater than 0";
     }
     if (value.type === "openapi" && !value.openapi_schema_url) {
       errors.openapi_schema_url = "OpenAPI Schema URL is required";
@@ -473,28 +466,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             }}
           />
           <Error error={errors.limit} />
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <Tooltip
-              tooltipText="The maximum depth to crawl"
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
-            />
-            <label class="block" for="">
-              Max Depth
-            </label>
-          </div>
-          <input
-            disabled={isShopify()}
-            value={options.max_depth || "0"}
-            onInput={(e) => {
-              setOptions("max_depth", parseInt(e.currentTarget.value));
-            }}
-            class="block max-w-[100px] rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            type="number"
-          />
-          <Error error={errors.max_depth} />
         </div>
         <Show when={options.type === "openapi"}>
           <div class="grow">
