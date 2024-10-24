@@ -776,6 +776,7 @@ export type DatasetConfigurationDTO = {
      * The presence penalty to use
      */
     PRESENCE_PENALTY?: (number) | null;
+    PUBLIC_DATASET?: ((PublicDatasetOptions) | null);
     /**
      * The prompt to use for the RAG model
      */
@@ -1644,6 +1645,11 @@ export type PopularFilters = {
 
 export type PopularFiltersResponse = {
     popular_filters: Array<PopularFilters>;
+};
+
+export type PublicDatasetOptions = {
+    api_key: string;
+    enabled: boolean;
 };
 
 /**

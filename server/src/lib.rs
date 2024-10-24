@@ -490,6 +490,7 @@ impl Modify for SecurityAddon {
             data::models::ConditionType,
             data::models::HasIDCondition,
             data::models::DistanceMetric,
+            data::models::PublicDatasetOptions,
             data::models::Invitation,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
@@ -790,12 +791,6 @@ pub fn main() -> std::io::Result<()> {
                                             web::post().to(handlers::dataset_handler::create_dataset),
                                         )
                                         .route(web::put().to(handlers::dataset_handler::update_dataset))
-                                )
-                                .service(
-                                    web::resource("/visibility")
-                                    .route(
-                                        web::put().to(handlers::page_handler::set_dataset_visiblity)
-                                    )
                                 )
                                 .service(
                                     web::resource("/organization/{organization_id}").route(

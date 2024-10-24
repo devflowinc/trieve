@@ -8213,8 +8213,8 @@
           "created_at",
           "updated_at",
           "organization_id",
-          "deleted",
-          "server_configuration"
+          "server_configuration",
+          "deleted"
         ],
         "properties": {
           "created_at": {
@@ -8471,6 +8471,14 @@
             "type": "number",
             "format": "double",
             "description": "The presence penalty to use",
+            "nullable": true
+          },
+          "PUBLIC_DATASET": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicDatasetOptions"
+              }
+            ],
             "nullable": true
           },
           "RAG_PROMPT": {
@@ -10886,6 +10894,21 @@
             "items": {
               "$ref": "#/components/schemas/PopularFilters"
             }
+          }
+        }
+      },
+      "PublicDatasetOptions": {
+        "type": "object",
+        "required": [
+          "enabled",
+          "api_key"
+        ],
+        "properties": {
+          "api_key": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
           }
         }
       },

@@ -2074,6 +2074,7 @@ pub struct DatasetConfiguration {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct PublicDatasetOptions {
     pub enabled: bool,
+    #[serde(skip_serializing)]
     pub api_key: String,
 }
 
@@ -2559,6 +2560,10 @@ impl DatasetConfiguration {
             "SYSTEM_PROMPT": self.SYSTEM_PROMPT,
             "MAX_LIMIT": self.MAX_LIMIT,
             "MAX_TOKENS": self.MAX_TOKENS,
+            "PUBLIC_DATASET" : {
+                "enabled": self.PUBLIC_DATASET.enabled,
+                "api_key": self.PUBLIC_DATASET.api_key
+            }
         })
     }
 }
@@ -2651,12 +2656,16 @@ impl DatasetConfigurationDTO {
                 .unwrap_or(curr_dataset_config.SYSTEM_PROMPT),
             MAX_LIMIT: self.MAX_LIMIT.unwrap_or(curr_dataset_config.MAX_LIMIT),
             PUBLIC_DATASET: PublicDatasetOptions {
-                enabled: <std::option::Option<PublicDatasetOptions> as Clone>::clone(
-                    &self.PUBLIC_DATASET,
-                )
-                .map(|dataset| dataset.enabled)
-                .unwrap_or(false),
-                api_key: "".to_string(),
+                enabled: self
+                    .PUBLIC_DATASET
+                    .clone()
+                    .map(|dataset| dataset.enabled)
+                    .unwrap_or(curr_dataset_config.PUBLIC_DATASET.enabled),
+                api_key: self
+                    .PUBLIC_DATASET
+                    .clone()
+                    .map(|public_dataset| public_dataset.api_key)
+                    .unwrap_or(curr_dataset_config.PUBLIC_DATASET.api_key),
             },
         }
     }
@@ -6822,34 +6831,6 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
                 formats: Some(vec!["html".to_string(), "rawHtml".to_string()]),
                 wait_for: Some(1000),
             }),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
-#[diesel(table_name = public_page_configuration)]
-pub struct PublicPageConfiguration {
-    pub id: uuid::Uuid,
-    pub dataset_id: uuid::Uuid,
-    pub is_public: bool,
-    pub api_key: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl PublicPageConfiguration {
-    pub fn from_details(
-        dataset_id: uuid::Uuid,
-        is_public: bool,
-        api_key: String
-    ) -> Self {
-        PublicPageConfiguration {
-            id: uuid::Uuid::new_v4(),
-            dataset_id,
-            is_public,
-            api_key,
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
