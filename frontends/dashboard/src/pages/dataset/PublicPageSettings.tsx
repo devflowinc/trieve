@@ -7,7 +7,7 @@ import { useTrieve } from "../../hooks/useTrieve";
 import { createMemo } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
-import { Tooltip } from "../../../../shared/ui/Tooltip";
+import { Tooltip } from "shared/ui";
 
 export const PublicPageSettings = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -27,7 +27,6 @@ export const PublicPageSettings = () => {
     const name = `${datasetId()}-pregenerated-search-component`;
 
     const response = await trieve.fetch("/api/user/api_key", "post", {
-      datasetId: datasetId(),
       data: {
         name: name,
         role: 0,
