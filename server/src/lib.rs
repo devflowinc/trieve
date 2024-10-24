@@ -765,7 +765,7 @@ pub fn main() -> std::io::Result<()> {
                     .route(web::post().to(handlers::webhook_handler::builder_io_webhook))
                 )
                 .service(
-                    web::resource("/public_page")
+                    web::resource("/public_page/{dataset_id}")
                         .route(web::get().to(handlers::page_handler::public_page))
                 )
                 // everything under '/api/' route
