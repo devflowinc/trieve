@@ -493,7 +493,6 @@ const SearchForm = (props: {
                     class="flex items-center space-x-1 pb-1 text-sm"
                   >
                     <Tooltip
-                      direction="right"
                       body={
                         <div
                           classList={{

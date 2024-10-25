@@ -2,14 +2,11 @@ import { Show, createSignal, onCleanup, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { JSX } from "solid-js/jsx-runtime";
 
-export type TooltipDirection = "top" | "bottom" | "left" | "right";
-
 export interface TooltipProps {
   body?: JSX.Element;
   children?: JSX.Element;
   tooltipText: string;
   delay?: number;
-  direction?: TooltipDirection;
   tooltipClass?: string;
   unsetWidth?: boolean;
 }

@@ -80,7 +80,6 @@ export const PublicPageSettings = () => {
         <Tooltip
           tooltipText="Make a UI to display the search with our component. This is revertable"
           body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-          direction="right"
         />
       </div>
       <div class="mt-4 flex content-center items-center gap-1.5">

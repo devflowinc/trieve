@@ -64,7 +64,6 @@ export const Select = <T,>(props: SelectProps<T>) => {
             <Tooltip
               tooltipText={tooltipText()}
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction={props.tooltipDirection}
             />
           )}
         </Show>

@@ -276,7 +276,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             <Tooltip
               tooltipText="The URL of the site to start the crawl from"
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
             />
           </div>
           <input
@@ -311,7 +310,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Tooltip
             tooltipText="Prioritize matches on titles in the search results"
             body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-            direction="right"
           />
           <label class="block">Boost Titles</label>
           <input
@@ -328,7 +326,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Tooltip
             tooltipText="Include an OpenAPI spec in the crawl for increased accuracy"
             body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-            direction="right"
           />
           <label class="block">OpenAPI Spec?</label>
           <input
@@ -362,7 +359,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Tooltip
             tooltipText="Check this if the site is a Shopify store"
             body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-            direction="right"
           />
           <label class="block">Shopify?</label>
           <input
@@ -397,7 +393,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Tooltip
             tooltipText="Ignore the sitemap.xml file, checkbox if the site does not have a sitemap or the sitemap is not accurate"
             body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-            direction="right"
           />
           <label class="block">Ignore Sitemap</label>
           <input
@@ -415,7 +410,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <Tooltip
             tooltipText="Follow external links in the crawl. Example: if crawling the site trieve.ai, set this to true and add docs.trieve.ai to the include paths to crawl both the main site and the docs site."
             body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-            direction="right"
           />
           <label class="block">Allow External Links</label>
           <input
@@ -450,7 +444,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             <Tooltip
               tooltipText="The maximum number of pages to crawl"
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
             />
             <label class="block" for="">
               Page Limit
@@ -509,7 +502,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             <Tooltip
               tooltipText="If one or more include paths are specified, only pages with URL's that match at least one of the regex patterns will be crawled"
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
             />
             <label>Include URL Regex's</label>
           </div>
@@ -531,7 +523,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             <Tooltip
               tooltipText="If one or more exclude paths are specified, pages with URL's that match at least one of the regex patterns will not be crawled (even if they match an include path)"
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
             />
             <div>Exclude URL Regex's</div>
           </div>
@@ -552,7 +543,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             <Tooltip
               tooltipText="HTML for a page is parsed and all elements matching one or more of the include tags are assembled into a div fort the exclude query selectors to apply to. What is left is the content of the page to be indexed for search."
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
             />
             <div>Include Query Selectors</div>
           </div>
@@ -573,7 +563,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             <Tooltip
               tooltipText="HTML for a page is parsed and all elements matching one or more of the exclude tags are removed from the page before indexing. Exclude selectors are applied after include selectors."
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
             />
             <div>Exclude Query Selectors</div>
           </div>
@@ -594,7 +583,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             <Tooltip
               tooltipText="Once the page is parsed and separated into heading+body chunks, the heading remove strings are removed from the heading."
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
             />
             <div>Heading Remove Strings</div>
           </div>
@@ -614,7 +602,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             <Tooltip
               tooltipText="Once the page is parsed and separated into heading+body chunks, the body remove strings are removed from the body."
               body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-              direction="right"
             />
             <div>Body Remove Strings</div>
           </div>
