@@ -63,6 +63,8 @@ export type ModalProps = {
   defaultCurrency?: string;
   currencyPosition?: currencyPosition;
   responsive?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   debounceMs?: number;
 };
 
@@ -151,17 +153,17 @@ function ModalProvider({
   });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[] | GroupChunk[]>(
-    []
+    [],
   );
   const [requestID, setRequestID] = useState("");
   const [loadingResults, setLoadingResults] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(props.open ?? false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState(props.defaultSearchMode || "search");
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all"
+    props.tags?.find((t) => t.selected)?.tag || "all",
   );
 
   const trieve = new TrieveSDK({
@@ -176,6 +178,10 @@ function ModalProvider({
       ...onLoadProps,
     }));
   }, [onLoadProps]);
+
+  useEffect(() => {
+    props.onOpenChange?.(open);
+  }, [open]);
 
   const search = async (abortController: AbortController) => {
     if (!query) {
@@ -247,8 +253,8 @@ function ModalProvider({
               trieve: trieve,
               abortController,
               ...(tag.tag !== "all" && { tag: tag.tag }),
-            })
-          )
+            }),
+          ),
         );
         setTagCounts(numberOfRecords);
       } catch (e) {
@@ -304,8 +310,7 @@ function ModalProvider({
         currentTag,
         setCurrentTag,
         tagCounts,
-      }}
-    >
+      }}>
       {children}
     </ModalContext.Provider>
   );
