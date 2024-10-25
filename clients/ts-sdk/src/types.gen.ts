@@ -1649,7 +1649,29 @@ export type PopularFiltersResponse = {
 
 export type PublicDatasetOptions = {
     enabled: boolean;
+    extra_params?: ((PublicPageParameters) | null);
 };
+
+export type PublicPageParameters = {
+    accentColor?: (string) | null;
+    analytics?: (boolean) | null;
+    apiKey?: (string) | null;
+    baseUrl?: (string) | null;
+    brandLogoImgSrcUrl?: (string) | null;
+    brandName?: (string) | null;
+    chat?: (boolean) | null;
+    datasetId?: (string) | null;
+    defaultAiQuestions?: Array<(string)> | null;
+    defaultSearchQueries?: Array<(string)> | null;
+    placeholder?: (string) | null;
+    problemLink?: (string) | null;
+    responsive?: (boolean) | null;
+    searchOptions?: ((AutocompleteReqPayload) | null);
+    suggestedQueries?: (boolean) | null;
+    theme?: ((PublicPageTheme) | null);
+};
+
+export type PublicPageTheme = 'light' | 'dark';
 
 /**
  * Sort by lets you specify a method to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.
@@ -3984,6 +4006,15 @@ export type DeleteOrganizationData = {
 
 export type DeleteOrganizationResponse = (void);
 
+export type PublicPageData = {
+    /**
+     * The id of the organization you want to fetch.
+     */
+    datasetId: string;
+};
+
+export type PublicPageResponse = (unknown);
+
 export type CreateSetupCheckoutSessionData = {
     /**
      * The id of the organization to create setup checkout session for.
@@ -5386,6 +5417,25 @@ export type $OpenApiTs = {
                  * Service error relating to deleting the organization by id
                  */
                 400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/public_page/{dataset_id}': {
+        get: {
+            req: PublicPageData;
+            res: {
+                /**
+                 * Public Page associated to the dataset
+                 */
+                200: unknown;
+                /**
+                 * Service error relating to loading the public page
+                 */
+                400: ErrorResponseBody;
+                /**
+                 * Dataset not found
+                 */
+                404: ErrorResponseBody;
             };
         };
     };

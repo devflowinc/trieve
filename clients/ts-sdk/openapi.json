@@ -5238,6 +5238,51 @@
         ]
       }
     },
+    "/api/public_page/{dataset_id}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "operationId": "public_page",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "description": "The id of the organization you want to fetch.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public Page associated to the dataset"
+          },
+          "400": {
+            "description": "Service error relating to loading the public page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/stripe/checkout/setup/{organization_id}": {
       "post": {
         "tags": [
@@ -10905,8 +10950,107 @@
         "properties": {
           "enabled": {
             "type": "boolean"
+          },
+          "extra_params": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicPageParameters"
+              }
+            ],
+            "nullable": true
           }
         }
+      },
+      "PublicPageParameters": {
+        "type": "object",
+        "properties": {
+          "accentColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "analytics": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "apiKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "baseUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandLogoImgSrcUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandName": {
+            "type": "string",
+            "nullable": true
+          },
+          "chat": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "datasetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "defaultAiQuestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "defaultSearchQueries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "placeholder": {
+            "type": "string",
+            "nullable": true
+          },
+          "problemLink": {
+            "type": "string",
+            "nullable": true
+          },
+          "responsive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "searchOptions": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutocompleteReqPayload"
+              }
+            ],
+            "nullable": true
+          },
+          "suggestedQueries": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "theme": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicPageTheme"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "PublicPageTheme": {
+        "type": "string",
+        "enum": [
+          "light",
+          "dark"
+        ]
       },
       "QdrantSortBy": {
         "oneOf": [

@@ -62,12 +62,12 @@ pub struct PublicPageParameters {
     context_path = "/api",
     tag = "Public",
     responses(
-        (status = 200, description = "Public Page associated to the dataset", body = OrganizationWithSubAndPlan),
-        (status = 400, description = "Service error relating to finding the organization by id", body = ErrorResponseBody),
-        (status = 404, description = "Organization not found", body = ErrorResponseBody)
+        (status = 200, description = "Public Page associated to the dataset"),
+        (status = 400, description = "Service error relating to loading the public page", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("datasetId" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch."),
+        ("dataset_id" = uuid::Uuid, Path, description = "The id of the organization you want to fetch."),
     ),
 )]
 pub async fn public_page(
@@ -94,7 +94,7 @@ pub async fn public_page(
                     dataset_id: Some(dataset_id),
                     base_url: Some(base_server_url.to_string()),
                     api_key: Some(config.PUBLIC_DATASET.api_key),
-                    ..Default::default()
+                    ..config.PUBLIC_DATASET.extra_params.unwrap_or_default()
                 }
             })
             .unwrap();
