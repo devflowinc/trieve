@@ -8,6 +8,11 @@ import { createMemo } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, Tooltip } from "shared/ui";
+import { createStore } from "solid-js/store";
+
+export interface PublicDatasetOptions { }
+
+export const defaultCrawlOptions: PublicDatasetOptions = {};
 
 export const PublicPageSettings = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -22,12 +27,12 @@ export const PublicPageSettings = () => {
     return `${apiHost.slice(0, -4)}/public_page/${datasetId()}`;
   });
 
-  // const [publicEnbled, setPublicEnabled] = createSignal(true);
-
   const trieve = useTrieve();
 
   const publishDataset = async () => {
     const name = `${datasetId()}-pregenerated-search-component`;
+
+    const [extra_params, setExtraParams] = createStore(defaultCrawlOptions);
 
     const response = await trieve.fetch("/api/user/api_key", "post", {
       data: {
@@ -52,7 +57,7 @@ export const PublicPageSettings = () => {
               accentColor: "#FF00FF",
               brandName: "my marse",
               defaultAiQuestions: null,
-            }
+            },
           },
         },
       },
@@ -90,22 +95,195 @@ export const PublicPageSettings = () => {
           body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
         />
       </div>
-      <div class="mt-4 flex content-center items-center gap-1.5">
+      <div class="mt-4 flex content-center items-center gap-1.5 gap-x-3">
         <span class="font-medium">Published Url:</span>{" "}
         <a class="text-magenta-400" href={publicUrl()}>
           {publicUrl()}
         </a>
         <CopyButton size={15} text={publicUrl()} />
       </div>
+      <div class="mt-4 flex space-x-3">
+        <div class="grow">
+          <label class="block" for="">
+            Brand Logo Link
+          </label>
+          <input
+            placeholder="https://cdn.trieve.ai/favicon.ico"
+            value={""}
+            onInput={(e) => {
+              setMetadata("openapi_schema_url", e.currentTarget.value);
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+        <div class="grow">
+          <label class="block" for="">
+            Brand Name
+          </label>
+          <input
+            placeholder="https://example.com/openapi.json"
+            value={""}
+            onInput={(e) => {
+              setMetadata("openapi_schema_url", e.currentTarget.value);
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+        <div class="grow">
+          <label class="block" for="">
+            Color Theme
+          </label>
+          <input
+            placeholder="light"
+            value={""}
+            onInput={(e) => {
+              setMetadata("openapi_schema_url", e.currentTarget.value);
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+        <div class="grow">
+          <label class="block" for="">
+            Accent Coolor
+          </label>
+          <input
+            placeholder="#CB53EB"
+            value={""}
+            onInput={(e) => {
+              setMetadata("openapi_schema_url", e.currentTarget.value);
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+      </div>
 
-      <JsonInput
-        onValueChange={(j) => {
-          setErrorText("");
-          setMetadata(j);
-        }}
-        value={metadata}
-        onError={(e) => setErrorText(`Error in Metadata: ${e}`)}
-      />
+      <div class="mt-4 flex">
+        <div class="flex grow">
+          <div class="grow">
+            <label class="block" for="">
+              Problem Link
+            </label>
+            <input
+              placeholder="https://example.com/openapi.json"
+              value={""}
+              onInput={(e) => {
+                setMetadata("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+        </div>
+        <div class="grow grid grid-cols-2 ml-3 p-1.5 gap-1.5 items-center ">
+          <div class="flex gap-2">
+            <label class="block" for="">
+              Responsive View
+            </label>
+            <input
+              placeholder="Search..."
+              value={""}
+              type="checkbox"
+              onInput={(e) => {
+                setMetadata("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="flex gap-2">
+            <label class="block" for="">
+              Analytics
+            </label>
+            <input
+              placeholder="Search..."
+              value={""}
+              type="checkbox"
+              onInput={(e) => {
+                setMetadata("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="flex gap-2">
+            <label class="block" for="">
+              Enable Suggestions
+            </label>
+            <input
+              placeholder="Search..."
+              value={""}
+              type="checkbox"
+              onInput={(e) => {
+                setMetadata("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="flex gap-2">
+            <label class="block" for="">
+              Enable Chat
+            </label>
+            <input
+              placeholder="Search..."
+              value={""}
+              type="checkbox"
+              onInput={(e) => {
+                setMetadata("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 mt-4">
+        <div class="p-2">
+          <div> Search Options </div>
+          <JsonInput
+            onValueChange={(value) => { }}
+            value={() => metadata()}
+            onError={(error) => { }}
+          />
+        </div>
+        <div class="p-2 space-y-1.5">
+          <div class="grow">
+            <label class="block" for="">
+              Default Search Queries
+            </label>
+            <input
+              placeholder="https://example.com/openapi.json"
+              value={""}
+              onInput={(e) => {
+                setMetadata("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <label class="block" for="">
+              Default AI Questions
+            </label>
+            <input
+              placeholder="https://example.com/openapi.json"
+              value={""}
+              onInput={(e) => {
+                setMetadata("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <label class="block" for="">
+              Placeholder Text
+            </label>
+            <input
+              placeholder="Search..."
+              value={""}
+              onInput={(e) => {
+                setMetadata("openapi_schema_url", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
