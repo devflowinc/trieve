@@ -7,8 +7,8 @@ import React, {
 } from "react";
 import { Chunk, ChunkWithHighlights, GroupChunk } from "../types";
 import {
-  AutocompleteReqPayload,
   CountChunkQueryResponseBody,
+  SearchChunksReqPayload,
   TrieveSDK,
 } from "trieve-ts-sdk";
 import {
@@ -19,17 +19,22 @@ import {
 
 export const ALL_TAG = { tag: "all", label: "All", icon: null };
 
+type simpleSearchReqPayload = Omit<
+  SearchChunksReqPayload,
+  "query" | "highlight_options"
+>;
+type customAutoCompleteAddOn = {
+  use_autocomplete?: boolean;
+};
+
 type currencyPosition = "before" | "after";
 type ModalTypes = "ecommerce" | "docs";
 type SearchModes = "chat" | "search";
-type searchOptions = Omit<
-  Omit<AutocompleteReqPayload, "query">,
-  "highlight_options"
->;
+type searchOptions = simpleSearchReqPayload & customAutoCompleteAddOn;
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
-  baseUrl: string;
+  baseUrl?: string;
   onResultClick?: (chunk: Chunk) => void;
   theme?: "light" | "dark";
   searchOptions?: searchOptions;
@@ -69,7 +74,10 @@ const defaultProps = {
   placeholder: "Search...",
   theme: "light" as "light" | "dark",
   searchOptions: {
-    search_type: "fulltext",
+    use_autocomplete: true,
+    typo_options: {
+      correct_typos: true,
+    },
   } as searchOptions,
   analytics: true,
   chat: true,
@@ -143,7 +151,7 @@ function ModalProvider({
   });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[] | GroupChunk[]>(
-    [],
+    []
   );
   const [requestID, setRequestID] = useState("");
   const [loadingResults, setLoadingResults] = useState(false);
@@ -153,7 +161,7 @@ function ModalProvider({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all",
+    props.tags?.find((t) => t.selected)?.tag || "all"
   );
 
   const trieve = new TrieveSDK({
@@ -239,8 +247,8 @@ function ModalProvider({
               trieve: trieve,
               abortController,
               ...(tag.tag !== "all" && { tag: tag.tag }),
-            }),
-          ),
+            })
+          )
         );
         setTagCounts(numberOfRecords);
       } catch (e) {
@@ -296,7 +304,8 @@ function ModalProvider({
         currentTag,
         setCurrentTag,
         tagCounts,
-      }}>
+      }}
+    >
       {children}
     </ModalContext.Provider>
   );

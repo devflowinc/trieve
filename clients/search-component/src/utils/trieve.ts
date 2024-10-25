@@ -17,25 +17,53 @@ export const searchWithTrieve = async ({
   abortController?: AbortController;
   tag?: string;
 }) => {
-  const results = (await trieve.autocomplete(
-    {
-      query,
-      highlight_options: {
-        ...highlightOptions,
-        highlight_delimiters: ["?", ",", ".", "!", "\n"],
-      },
-      extend_results: true,
-      score_threshold: 2,
-      page_size: 20,
-      ...(tag && {
-        filters: {
-          must: [{ field: "tag_set", match_any: [tag] }],
+  let results;
+  if (searchOptions.use_autocomplete === true) {
+    results = (await trieve.autocomplete(
+      {
+        query,
+        highlight_options: {
+          ...highlightOptions,
+          highlight_delimiters: ["?", ",", ".", "!", "\n"],
         },
-      }),
-      ...searchOptions,
-    },
-    abortController?.signal,
-  )) as SearchResponseBody;
+        extend_results: true,
+        score_threshold: 2,
+        page_size: 20,
+        ...(tag && {
+          filters: {
+            must: [{ field: "tag_set", match_any: [tag] }],
+          },
+        }),
+        typo_options: {
+          correct_typos: true,
+        },
+        ...searchOptions,
+      },
+      abortController?.signal
+    )) as SearchResponseBody;
+  } else {
+    results = (await trieve.search(
+      {
+        query,
+        highlight_options: {
+          ...highlightOptions,
+          highlight_delimiters: ["?", ",", ".", "!", "\n"],
+        },
+        score_threshold: 2,
+        page_size: 20,
+        ...(tag && {
+          filters: {
+            must: [{ field: "tag_set", match_any: [tag] }],
+          },
+        }),
+        typo_options: {
+          correct_typos: true,
+        },
+        ...searchOptions,
+      },
+      abortController?.signal
+    )) as SearchResponseBody;
+  }
 
   const resultsWithHighlight = results.chunks.map((chunk) => {
     const c = chunk.chunk as unknown as Chunk;
@@ -86,7 +114,7 @@ export const groupSearchWithTrieve = async ({
       group_size: 3,
       ...searchOptions,
     },
-    abortController?.signal,
+    abortController?.signal
   );
 
   const resultsWithHighlight = results.results.map((group) => {
@@ -113,7 +141,7 @@ export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
 
   return Object.fromEntries(
-    Object.entries(obj).filter(([key]) => !keys.includes(key)),
+    Object.entries(obj).filter(([key]) => !keys.includes(key))
   );
 };
 
@@ -143,7 +171,7 @@ export const countChunks = async ({
       search_type: "fulltext",
       ...omit(searchOptions, ["search_type"]),
     },
-    abortController?.signal,
+    abortController?.signal
   );
   return results;
 };
@@ -185,7 +213,7 @@ export const getSuggestedQueries = async ({
       search_type: "semantic",
       context: "You are a user searching through a docs website",
     },
-    abortController?.signal,
+    abortController?.signal
   );
 };
 
@@ -202,7 +230,7 @@ export const getSuggestedQuestions = async ({
       search_type: "semantic",
       context: "You are a user searching through a docs website",
     },
-    abortController?.signal,
+    abortController?.signal
   );
 };
 
