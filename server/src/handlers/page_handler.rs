@@ -8,11 +8,12 @@ use crate::{
 use actix_web::{web, HttpResponse};
 use minijinja::context;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::data::models::Templates;
 
-#[derive(Serialize, Deserialize, Debug, Default)]
-enum PublicPageTheme {
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+pub enum PublicPageTheme {
     #[default]
     #[serde(rename = "light")]
     Light,
@@ -20,39 +21,39 @@ enum PublicPageTheme {
     Dark,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicPageParameters {
-    dataset_id: uuid::Uuid,
-    base_url: String,
-    api_key: String,
+    pub dataset_id: Option<uuid::Uuid>,
+    pub base_url: Option<String>,
+    pub api_key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    analytics: Option<bool>,
+    pub analytics: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    suggested_queries: Option<bool>,
+    pub suggested_queries: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    responsive: Option<bool>,
+    pub responsive: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    chat: Option<bool>,
+    pub chat: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    theme: Option<PublicPageTheme>,
+    pub theme: Option<PublicPageTheme>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    search_options: Option<AutocompleteReqPayload>,
-    // openKeyCombination: { key?: string; label?: string; ctrl?: boolean }[],
+    pub search_options: Option<AutocompleteReqPayload>,
+    //pub openKeyCombination: { key?: string; label?: string; ctrl?: boolean }[],
     #[serde(skip_serializing_if = "Option::is_none")]
-    brand_name: Option<String>,
+    pub brand_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    brand_logo_img_src_url: Option<String>,
+    pub brand_logo_img_src_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    problem_link: Option<String>,
+    pub problem_link: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    accent_color: Option<String>,
+    pub accent_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    placeholder: Option<String>,
+    pub placeholder: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    default_search_queries: Option<Vec<String>>,
+    pub default_search_queries: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    default_ai_questions: Option<Vec<String>>,
+    pub default_ai_questions: Option<Vec<String>>,
 }
 
 #[utoipa::path(
@@ -90,9 +91,9 @@ pub async fn public_page(
         let response_body = templ
             .render(context! {
                 params => PublicPageParameters {
-                    dataset_id,
-                    base_url: base_server_url.to_string(),
-                    api_key: config.PUBLIC_DATASET.api_key,
+                    dataset_id: Some(dataset_id),
+                    base_url: Some(base_server_url.to_string()),
+                    api_key: Some(config.PUBLIC_DATASET.api_key),
                     ..Default::default()
                 }
             })

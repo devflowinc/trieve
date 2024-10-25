@@ -14,6 +14,7 @@ use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGro
 use crate::handlers::message_handler::{
     CreateMessageReqPayload, EditMessageReqPayload, RegenerateMessageReqPayload,
 };
+use crate::handlers::page_handler::PublicPageParameters;
 use crate::operators::analytics_operator::{
     CTRRecommendationsWithClicksResponse, CTRRecommendationsWithoutClicksResponse,
     CTRSearchQueryWithClicksResponse, CTRSearchQueryWithoutClicksResponse, HeadQueryResponse,
@@ -2076,6 +2077,7 @@ pub struct PublicDatasetOptions {
     pub enabled: bool,
     #[serde(skip_serializing)]
     pub api_key: String,
+    pub extra_params: Option<PublicPageParameters>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -2202,8 +2204,10 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             SYSTEM_PROMPT: dto.SYSTEM_PROMPT.unwrap_or("You are a helpful assistant".to_string()),
             MAX_LIMIT: dto.MAX_LIMIT.unwrap_or(10000),
             PUBLIC_DATASET: PublicDatasetOptions {
-                enabled: dto.PUBLIC_DATASET.map(|public_dataset| public_dataset.enabled).unwrap_or(false),
-                api_key: "".to_string()
+                enabled: dto.PUBLIC_DATASET.clone().map(|public_dataset| public_dataset.clone().enabled).unwrap_or(false),
+                api_key: "".to_string(),
+                extra_params: dto.PUBLIC_DATASET.map(|public_dataset| public_dataset.extra_params)
+                .unwrap_or_default()
             },
         }
     }
@@ -2243,6 +2247,12 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             PUBLIC_DATASET: Some(PublicDatasetOptions {
                 enabled: config.PUBLIC_DATASET.enabled,
                 api_key: "".to_string(),
+                extra_params: config.PUBLIC_DATASET.extra_params.map(|params| {
+                    PublicPageParameters {
+                        api_key: None,
+                        ..params
+                    }
+                }),
             }),
         }
     }
@@ -2281,7 +2291,8 @@ impl Default for DatasetConfiguration {
             MAX_LIMIT: 10000,
             PUBLIC_DATASET: PublicDatasetOptions {
                 enabled: false,
-                api_key: "".to_string()
+                api_key: "".to_string(),
+                extra_params: None,
             },
         }
     }
@@ -2291,6 +2302,12 @@ impl DatasetConfiguration {
     pub fn from_json(configuration_json: serde_json::Value) -> Self {
         let default_config = json!({});
         let binding = configuration_json.clone();
+
+        let extra_params: Option<PublicPageParameters> = configuration_json
+            .pointer("/PUBLIC_DATASET/extra_params")
+            .map(|value| serde_json::from_value(value.clone()).ok())
+            .flatten();
+
         let configuration = binding
             .as_object()
             .unwrap_or(default_config.as_object().unwrap());
@@ -2528,11 +2545,14 @@ impl DatasetConfiguration {
             PUBLIC_DATASET: PublicDatasetOptions {
                 enabled: configuration_json.pointer("/PUBLIC_DATASET/enabled").unwrap_or(&json!(false)).as_bool().unwrap_or(false),
                 api_key: configuration_json.pointer("/PUBLIC_DATASET/api_key").unwrap_or(&json!("")).as_str().unwrap_or("").to_string(),
+                extra_params
             }
         }
     }
 
     pub fn to_json(&self) -> serde_json::Value {
+        let extra_params_json = serde_json::to_value(self.PUBLIC_DATASET.clone().extra_params).ok();
+
         json!({
             "LLM_BASE_URL": self.LLM_BASE_URL,
             "LLM_API_KEY": self.LLM_API_KEY,
@@ -2562,7 +2582,8 @@ impl DatasetConfiguration {
             "MAX_TOKENS": self.MAX_TOKENS,
             "PUBLIC_DATASET" : {
                 "enabled": self.PUBLIC_DATASET.enabled,
-                "api_key": self.PUBLIC_DATASET.api_key
+                "api_key": self.PUBLIC_DATASET.api_key,
+                "extra_params": extra_params_json
             }
         })
     }
@@ -2573,6 +2594,16 @@ impl DatasetConfigurationDTO {
         &self,
         curr_dataset_config: DatasetConfiguration,
     ) -> DatasetConfiguration {
+        let page_parameters_self = self
+            .PUBLIC_DATASET
+            .clone()
+            .map(|public_dataset| public_dataset.extra_params.unwrap_or_default())
+            .unwrap_or_default();
+        let page_parameters_curr = curr_dataset_config
+            .PUBLIC_DATASET
+            .extra_params
+            .unwrap_or_default();
+
         DatasetConfiguration {
             LLM_BASE_URL: self
                 .LLM_BASE_URL
@@ -2666,6 +2697,52 @@ impl DatasetConfigurationDTO {
                     .clone()
                     .map(|public_dataset| public_dataset.api_key)
                     .unwrap_or(curr_dataset_config.PUBLIC_DATASET.api_key),
+                extra_params: Some(PublicPageParameters {
+                    dataset_id: page_parameters_self
+                        .dataset_id
+                        .or(page_parameters_curr.dataset_id),
+                    base_url: page_parameters_self
+                        .base_url
+                        .or(page_parameters_curr.base_url),
+                    api_key: page_parameters_self
+                        .api_key
+                        .or(page_parameters_curr.api_key),
+                    analytics: page_parameters_self
+                        .analytics
+                        .or(page_parameters_curr.analytics),
+                    suggested_queries: page_parameters_self
+                        .suggested_queries
+                        .or(page_parameters_curr.suggested_queries),
+                    responsive: page_parameters_self
+                        .responsive
+                        .or(page_parameters_curr.responsive),
+                    chat: page_parameters_self.chat.or(page_parameters_curr.chat),
+                    theme: page_parameters_self.theme.or(page_parameters_curr.theme),
+                    search_options: page_parameters_self
+                        .search_options
+                        .or(page_parameters_curr.search_options),
+                    brand_name: page_parameters_self
+                        .brand_name
+                        .or(page_parameters_curr.brand_name),
+                    brand_logo_img_src_url: page_parameters_self
+                        .brand_logo_img_src_url
+                        .or(page_parameters_curr.brand_logo_img_src_url),
+                    problem_link: page_parameters_self
+                        .problem_link
+                        .or(page_parameters_curr.problem_link),
+                    accent_color: page_parameters_self
+                        .accent_color
+                        .or(page_parameters_curr.accent_color),
+                    placeholder: page_parameters_self
+                        .placeholder
+                        .or(page_parameters_curr.placeholder),
+                    default_search_queries: page_parameters_self
+                        .default_search_queries
+                        .or(page_parameters_curr.default_search_queries),
+                    default_ai_questions: page_parameters_self
+                        .default_ai_questions
+                        .or(page_parameters_curr.default_ai_questions),
+                }),
             },
         }
     }
