@@ -9,6 +9,13 @@
   <link rel="apple-touch-icon" sizes="180x180" href="https://cdn.trieve.ai/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="https://cdn.trieve.ai/favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="https://cdn.trieve.ai/favicon-16x16.png" />
+  <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css">
+  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+
+  <!-- and it's easy to individually load additional languages -->
+  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/go.min.js"></script>
+
+  <script>hljs.highlightAll();</script>
 
   <style>
     body {
@@ -65,15 +72,15 @@
 
       const App = () => {
         return (
-          <div class="basic">
+          <>
             <p class="text">
               Trieve Search Component
             </p>
             <window.TrieveModalSearch
-              {... {{ params | tojson }}
+              {... {{ params | tojson}}
                 }
             />
-          </div>
+          </>
         );
       }
 
@@ -86,10 +93,26 @@
 </head>
 
 <body>
-  <div id="root">
+  <div class="basic">
+    <div id="root">
+    </div>
+    <pre>
+      <code class="language-jsx">
+        import {TrieveModalSearch} from 'trieve-search-component';
+
+        const App = () => {
+        return (
+        <div class="basic">
+          <p class="text">
+            Trieve Search Component
+          </p>
+          \<TrieveModalSearch {... {{ params | tojson}} } />
+        </div>
+        );
+        }
+      </code>
+    </pre>
   </div>
-  <pre>
-  </pre>
 </body>
 
 </html>
