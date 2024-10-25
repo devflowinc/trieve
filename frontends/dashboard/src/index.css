@@ -68,3 +68,13 @@ pre.shiki {
     @apply text-zinc-600;
   }
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

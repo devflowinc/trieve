@@ -10,14 +10,14 @@ div.tox.tox-tinymce {
   outline: 1px solid red;
 }
 
-mark > div > * {
+mark>div>* {
   background-color: #ff0;
   color: #000;
   font-weight: bolder;
   width: fit-content;
 }
 
-mark > p {
+mark>p {
   background-color: #ff0;
   color: #000;
   font-weight: bolder;
@@ -70,4 +70,15 @@ code {
 
 #score-chunk-html a {
   text-decoration: underline;
+
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
