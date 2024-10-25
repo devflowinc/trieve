@@ -150,7 +150,7 @@ export const ApiKeys = () => {
           </div>
         </Show>
         <Show when={(apiKeysQuery.data?.length || -1) > 0}>
-          <div class="inline-block min-w-full overflow-hidden rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
+          <div class="inline-block min-w-full overflow-x-auto rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
             <Show when={table()}>
               {(table) => <TanStackTable table={table()} />}
             </Show>
