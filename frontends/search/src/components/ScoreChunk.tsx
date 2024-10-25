@@ -277,7 +277,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     </A>
                   }
                   tooltipText="Open chunk to test recommendations for similar chunks"
-                  direction="left"
                 />
               </Show>
               <Show when={currentUserRole() > 0}>
@@ -292,7 +291,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     </A>
                   }
                   tooltipText="Edit chunk"
-                  direction="left"
                 />
               </Show>
               <Show when={currentUserRole() > 0}>
@@ -311,7 +309,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     </button>
                   }
                   tooltipText="Delete chunk"
-                  direction="left"
                 />
               </Show>
 

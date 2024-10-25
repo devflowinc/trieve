@@ -233,7 +233,6 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                 <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                               }
                               tooltipText="If selected, we will pre-fill the dataset with a random selection of Y-Combinator companies so you can immediately test the product."
-                              direction="right"
                             />
                           </label>
                           <div class="mt-4 sm:col-span-2 sm:mt-0">
@@ -273,7 +272,6 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                           }
                           tooltipText="Change your default embedding model and distance metric."
-                          direction="right"
                         />
                       </button>
                       <Show when={showAdvanced()}>
@@ -289,7 +287,6 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
                                 tooltipText="Dense vector models are used for semantic search. jina-base-en provides the best balance of latency and relevance quality. Only change this if you have a specific requirement. Custom models are supported on the enterprise plan."
-                                direction="right"
                               />
                             </label>
                             <select
@@ -351,7 +348,6 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
                                 tooltipText="Cosine will almost always be best. Only change if you are confident that your data is unique and requires a different metric."
-                                direction="right"
                               />
                             </label>
                             <select
@@ -403,7 +399,6 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
                                 tooltipText="Sparse vector models are used for fulltext search. In contrast to keyword bm25, fulltext is aware of the most important terms in your query. Currently only splade-v3 is offered."
-                                direction="right"
                               />
                             </label>
                             <p
@@ -434,7 +429,6 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                   <FaRegularCircleQuestion class="h-4 w-4 text-black" />
                                 }
                                 tooltipText="BM25 is used for keyword search. It is enabled on all datasets by default."
-                                direction="right"
                               />
                             </label>
                             <p

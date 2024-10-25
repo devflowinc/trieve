@@ -40,7 +40,6 @@ export const GeneralServerSettings = (props: {
                   Embedding Model
                 </label>
                 <Tooltip
-                  direction="right"
                   body={<AiOutlineInfoCircle />}
                   tooltipText="Embedding Model is only editable on creation"
                 />
@@ -74,7 +73,6 @@ export const GeneralServerSettings = (props: {
                   Embedding Query Prefix
                 </label>
                 <Tooltip
-                  direction="right"
                   body={<AiOutlineInfoCircle />}
                   tooltipText="For some embedding models, the training data includes query prefixes. The default for Jina is 'Search for: '. You can experiment with different values."
                 />
@@ -105,7 +103,6 @@ export const GeneralServerSettings = (props: {
                   Distance Metric
                 </label>
                 <Tooltip
-                  direction="right"
                   body={<AiOutlineInfoCircle />}
                   tooltipText="Distance Metric is only editable on creation"
                 />
@@ -187,7 +184,6 @@ export const GeneralServerSettings = (props: {
                   Max Count Limit
                 </label>
                 <Tooltip
-                  direction="right"
                   body={<AiOutlineInfoCircle />}
                   tooltipText="Sets the maximum limit when counting chunks, applies to search and count routes in the API to prevent DDOS attacks on the server."
                 />
@@ -298,7 +294,6 @@ export const GeneralServerSettings = (props: {
                   Indexed Only
                 </label>
                 <Tooltip
-                  direction="right"
                   body={<AiOutlineInfoCircle />}
                   tooltipText="If enabled, only indexed documents will be returned in search results."
                 />

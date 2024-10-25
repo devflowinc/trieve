@@ -257,7 +257,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                 </PopoverButton>
               }
               tooltipText="Manage Groups For This Chunk"
-              direction="left"
             />
           </div>
           <Show

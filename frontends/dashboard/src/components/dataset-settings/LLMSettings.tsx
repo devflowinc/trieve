@@ -66,7 +66,6 @@ export const LLMSettings = (props: {
                     LLM API Key
                   </label>
                   <Tooltip
-                    direction="right"
                     body={<AiOutlineInfoCircle />}
                     tooltipText="LLM API Key cannot be viewed after you set it"
                   />

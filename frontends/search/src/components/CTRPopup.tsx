@@ -22,7 +22,6 @@ export const CTRPopup = (props: Props) => {
               </PopoverButton>
             }
             tooltipText="Register event"
-            direction="left"
           />
           <Transition
             show={isOpen()}
