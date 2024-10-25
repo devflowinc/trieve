@@ -8,14 +8,16 @@ use std::sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
-    data::models::{self, DatasetConfiguration},
+    data::models::{self, DatasetConfiguration, UnifiedId},
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
+        chunk_operator::bulk_delete_chunks_query,
         clickhouse_operator::{ClickHouseEvent, EventQueue},
         dataset_operator::{
-            clear_dataset_query, delete_dataset_by_id_query,
-            get_deleted_dataset_by_unifiedid_query, DeleteMessage,
+            clear_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
+            get_deleted_dataset_by_unifiedid_query, ChunkDeleteMessage, DatasetDeleteMessage,
+            DeleteMessage,
         },
         organization_operator::{
             delete_actual_organization_query, get_soft_deleted_datasets_for_organization,
@@ -233,44 +235,25 @@ async fn delete_worker(
         let delete_worker_message: DeleteMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
-        let dataset_result = get_deleted_dataset_by_unifiedid_query(
-            models::UnifiedId::TrieveUuid(delete_worker_message.dataset_id),
-            web_pool.clone(),
-        )
-        .await;
-        let dataset = match dataset_result {
-            Ok(dataset) => dataset,
-            Err(err) => {
-                let _ = readd_error_to_queue(
-                    delete_worker_message,
-                    err.clone(),
-                    event_queue.clone(),
+        match delete_worker_message {
+            DeleteMessage::DatasetDelete(delete_worker_message) => {
+                if let Err(err) = delete_or_clear_dataset(
+                    web_pool.clone(),
+                    clickhouse_client.clone(),
                     redis_pool.clone(),
+                    delete_worker_message.clone(),
+                    event_queue.clone(),
                 )
-                .await;
-                log::error!("Failed to get dataset; likely does not exist: {:?}", err);
-                transaction.finish();
-                continue;
-            }
-        };
-        let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
-
-        if delete_worker_message.empty_dataset {
-            log::info!("Clearing dataset {:?}", delete_worker_message.dataset_id);
-            match clear_dataset_query(
-                delete_worker_message.dataset_id,
-                delete_worker_message.deleted_at,
-                web_pool.clone(),
-                event_queue.clone(),
-                dataset_config.clone(),
-            )
-            .await
-            {
-                Ok(_) => {
-                    log::info!(
-                        "Cleared all chunks for dataset: {:?}",
-                        delete_worker_message.dataset_id
-                    );
+                .await
+                {
+                    let _ = readd_error_to_queue(
+                        DeleteMessage::DatasetDelete(delete_worker_message),
+                        err,
+                        event_queue.clone(),
+                        redis_pool.clone(),
+                    )
+                    .await;
+                } else {
                     let _ = redis::cmd("LREM")
                         .arg("delete_dataset_processing")
                         .arg(1)
@@ -279,105 +262,173 @@ async fn delete_worker(
                             &mut *redis_connection,
                         )
                         .await;
-
-                    continue;
                 }
-                Err(err) => {
-                    log::error!("Failed to clear all chunks for dataset: {:?}", err);
-
+            }
+            DeleteMessage::ChunkDelete(chunk_delete_message) => {
+                if let Err(err) =
+                    bulk_delete_chunks(web_pool.clone(), chunk_delete_message.clone()).await
+                {
                     let _ = readd_error_to_queue(
-                        delete_worker_message,
+                        DeleteMessage::ChunkDelete(chunk_delete_message),
                         err,
                         event_queue.clone(),
                         redis_pool.clone(),
                     )
                     .await;
-                    continue;
+                } else {
+                    let _ = redis::cmd("LREM")
+                        .arg("delete_dataset_processing")
+                        .arg(1)
+                        .arg(serialized_message)
+                        .query_async::<redis::aio::MultiplexedConnection, usize>(
+                            &mut *redis_connection,
+                        )
+                        .await;
                 }
             }
         }
 
-        log::info!("Deleting dataset {:?}", delete_worker_message.dataset_id);
+        transaction.finish();
+    }
+}
 
-        match delete_dataset_by_id_query(
+pub async fn delete_or_clear_dataset(
+    web_pool: actix_web::web::Data<models::Pool>,
+    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
+    redis_pool: actix_web::web::Data<models::RedisPool>,
+    delete_worker_message: DatasetDeleteMessage,
+    event_queue: actix_web::web::Data<EventQueue>,
+) -> Result<(), ServiceError> {
+    let dataset = get_deleted_dataset_by_unifiedid_query(
+        models::UnifiedId::TrieveUuid(delete_worker_message.dataset_id),
+        web_pool.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(format!("Failed to get dataset: {:?}", err)))?;
+
+    let mut redis_connection = redis_pool.get().await.map_err(|err| {
+        ServiceError::BadRequest(format!("Failed to get redis connection: {:?}", err))
+    })?;
+
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
+
+    if delete_worker_message.empty_dataset {
+        log::info!("Clearing dataset {:?}", delete_worker_message.dataset_id);
+        clear_dataset_query(
             delete_worker_message.dataset_id,
             delete_worker_message.deleted_at,
             web_pool.clone(),
-            clickhouse_client.clone(),
             event_queue.clone(),
             dataset_config.clone(),
         )
         .await
-        {
-            Ok(dataset) => {
-                log::info!("Deleted Dataset: {:?}", delete_worker_message.dataset_id);
+        .map_err(|err| {
+            log::error!("Failed to clear dataset: {:?}", err);
+            err
+        })?;
 
-                let _ = redis::cmd("LREM")
-                    .arg("delete_dataset_processing")
-                    .arg(1)
-                    .arg(serialized_message)
-                    .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
-                    .await;
+        log::info!(
+            "Cleared all chunks for dataset: {:?}",
+            delete_worker_message.dataset_id
+        );
 
-                if redis_connection
-                    .sismember("deleted_organizations", dataset.organization_id.to_string())
-                    .await
-                    .unwrap_or(false)
-                {
-                    match get_soft_deleted_datasets_for_organization(
-                        dataset.organization_id,
-                        web_pool.clone(),
-                    )
-                    .await
-                    {
-                        Ok(datasets) => {
-                            if datasets.is_empty() {
-                                match delete_actual_organization_query(
-                                    dataset.organization_id,
-                                    web_pool.clone(),
-                                )
-                                .await
-                                {
-                                    Ok(_) => {
-                                        log::info!(
-                                            "Deleted Organization: {:?}",
-                                            dataset.organization_id
-                                        );
-
-                                        let _ = redis_connection
-                                            .srem::<&str, std::string::String, usize>("deleted_organizations", dataset.organization_id.to_string())
-                                            .await
-                                            .map_err(|err| log::error!("Failed to remove organization from deleted organizations: {:?}", err));
-                                    }
-                                    Err(err) => {
-                                        log::error!("Failed to delete organization: {:?}", err);
-                                        continue;
-                                    }
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            log::error!("Failed to get datasets for organization: {:?}", err);
-                            continue;
-                        }
-                    }
-                }
-            }
-            Err(err) => {
-                log::error!("Failed to delete dataset: {:?}", err);
-
-                let _ = readd_error_to_queue(
-                    delete_worker_message,
-                    err,
-                    event_queue.clone(),
-                    redis_pool.clone(),
-                )
-                .await;
-            }
-        };
-
-        transaction.finish();
+        return Ok(());
     }
+
+    log::info!("Deleting dataset {:?}", delete_worker_message.dataset_id);
+
+    let dataset = delete_dataset_by_id_query(
+        delete_worker_message.dataset_id,
+        delete_worker_message.deleted_at,
+        web_pool.clone(),
+        clickhouse_client.clone(),
+        event_queue.clone(),
+        dataset_config.clone(),
+    )
+    .await
+    .map_err(|err| {
+        log::error!("Failed to delete dataset: {:?}", err);
+        err
+    })?;
+
+    log::info!("Deleted Dataset: {:?}", delete_worker_message.dataset_id);
+
+    if redis_connection
+        .sismember("deleted_organizations", dataset.organization_id.to_string())
+        .await
+        .unwrap_or(false)
+    {
+        let datasets =
+            get_soft_deleted_datasets_for_organization(dataset.organization_id, web_pool.clone())
+                .await
+                .map_err(|err| {
+                    log::error!("Failed to get datasets for organization: {:?}", err);
+                    err
+                })?;
+
+        if datasets.is_empty() {
+            delete_actual_organization_query(dataset.organization_id, web_pool.clone())
+                .await
+                .map_err(|err| {
+                    log::error!("Failed to delete organization: {:?}", err);
+                    err
+                })?;
+
+            log::info!("Deleted Organization: {:?}", dataset.organization_id);
+
+            let _ = redis_connection
+                .srem::<&str, std::string::String, usize>(
+                    "deleted_organizations",
+                    dataset.organization_id.to_string(),
+                )
+                .await
+                .map_err(|err| {
+                    log::error!(
+                        "Failed to remove organization from deleted organizations: {:?}",
+                        err
+                    )
+                });
+            return Ok(());
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn bulk_delete_chunks(
+    web_pool: actix_web::web::Data<models::Pool>,
+    chunk_delete_message: ChunkDeleteMessage,
+) -> Result<(), ServiceError> {
+    log::info!(
+        "Bulk deleting chunks for dataset: {:?}",
+        chunk_delete_message.dataset_id
+    );
+    let dataset = get_dataset_by_id_query(
+        UnifiedId::TrieveUuid(chunk_delete_message.dataset_id),
+        web_pool.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(format!("Failed to get dataset: {:?}", err)))?;
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
+
+    bulk_delete_chunks_query(
+        chunk_delete_message.filter,
+        chunk_delete_message.dataset_id,
+        dataset_config,
+        web_pool.clone(),
+    )
+    .await
+    .map_err(|err| {
+        log::error!("Failed to bulk delete chunks: {:?}", err);
+        err
+    })?;
+
+    log::info!(
+        "Bulk deleted chunks for dataset: {:?}",
+        chunk_delete_message.dataset_id
+    );
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(redis_pool, event_queue))]
@@ -391,7 +442,7 @@ pub async fn readd_error_to_queue(
         ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
     })?;
 
-    payload.attempt_number += 1;
+    payload.increment_attempt_number();
 
     let mut redis_conn = redis_pool
         .get()
@@ -405,7 +456,7 @@ pub async fn readd_error_to_queue(
         .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
         .await;
 
-    if payload.attempt_number == 3 {
+    if payload.attempt_number() == 3 {
         log::error!("Failed to insert data 3 times quitting {:?}", error);
 
         let mut redis_conn = redis_pool
@@ -423,7 +474,7 @@ pub async fn readd_error_to_queue(
         event_queue
             .send(ClickHouseEvent::WorkerEvent(
                 models::WorkerEvent::from_details(
-                    payload.dataset_id,
+                    payload.dataset_id(),
                     models::EventType::DatasetDeleteFailed {
                         error: error.to_string(),
                     },
@@ -450,7 +501,7 @@ pub async fn readd_error_to_queue(
     log::error!(
         "Failed to insert data, re-adding {:?} retry: {:?}",
         error,
-        payload.attempt_number
+        payload.attempt_number()
     );
 
     redis::cmd("lpush")

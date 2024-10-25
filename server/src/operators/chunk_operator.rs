@@ -3,14 +3,14 @@ use crate::data::models::{
     ChunkMetadataTypes, ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags,
     IngestSpecificChunkMetadata, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
-use crate::handlers::chunk_handler::UploadIngestionMessage;
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
+use crate::handlers::chunk_handler::{ChunkFilter, UploadIngestionMessage};
 use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
-    delete_points_from_qdrant, get_qdrant_collection_from_dataset_config,
+    delete_points_from_qdrant, get_qdrant_collection_from_dataset_config, scroll_dataset_points,
 };
 use crate::{
     data::models::{ChunkMetadata, Pool},
@@ -34,6 +34,7 @@ use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 use super::group_operator::create_groups_query;
+use super::search_operator::assemble_qdrant_filter;
 
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_metadatas_from_point_ids(
@@ -600,6 +601,82 @@ pub async fn get_metadata_from_tracking_ids_query(
         .collect();
 
     Ok(chunk_metadatas)
+}
+
+pub async fn bulk_delete_chunks_query(
+    filter: ChunkFilter,
+    dataset_id: uuid::Uuid,
+    dataset_config: DatasetConfiguration,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let filter = assemble_qdrant_filter(Some(filter), None, None, dataset_id, pool.clone()).await?;
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
+    let mut conn = pool
+        .clone()
+        .get()
+        .await
+        .expect("Failed to get connection to db");
+    let mut offset: Option<uuid::Uuid> = None;
+    let mut first_iteration = true;
+
+    while offset.is_some() || first_iteration {
+        let (point_ids, offset_id) =
+            scroll_dataset_points(100, offset, None, dataset_config.clone(), filter.clone())
+                .await?;
+
+        log::info!("Deleting {:?} chunks with point_ids", point_ids.len());
+
+        let transaction_result = conn
+            .transaction::<_, diesel::result::Error, _>(|conn| {
+                async move {
+                    {
+                        // if there were no collisions, just delete the chunk_metadata without issue
+                        let deleted_chunks = diesel::delete(
+                            chunk_metadata_columns::chunk_metadata
+                                .filter(
+                                    chunk_metadata_columns::qdrant_point_id
+                                        .eq_any(point_ids.clone()),
+                                )
+                                .filter(chunk_metadata_columns::dataset_id.eq(dataset_id)),
+                        )
+                        .returning(chunk_metadata_columns::id)
+                        .get_results::<uuid::Uuid>(conn)
+                        .await?;
+
+                        diesel::delete(
+                            chunk_group_bookmarks_columns::chunk_group_bookmarks.filter(
+                                chunk_group_bookmarks_columns::chunk_metadata_id
+                                    .eq_any(deleted_chunks.clone()),
+                            ),
+                        )
+                        .execute(conn)
+                        .await?;
+
+                        Ok(point_ids)
+                    }
+                }
+                .scope_boxed()
+            })
+            .await;
+
+        match transaction_result {
+            Ok(point_ids) => {
+                delete_points_from_qdrant(point_ids, qdrant_collection.clone()).await?;
+            }
+            Err(e) => {
+                log::error!("Failed to delete chunks: {:?}", e);
+                return Err(ServiceError::BadRequest(
+                    "Failed to delete chunks".to_string(),
+                ));
+            }
+        }
+        offset = offset_id;
+        first_iteration = false;
+    }
+    Ok(())
 }
 
 /// Only inserts, does not try to upsert data

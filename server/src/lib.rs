@@ -187,6 +187,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::autocomplete,
         handlers::chunk_handler::get_chunks_by_ids,
         handlers::chunk_handler::scroll_dataset_chunks,
+        handlers::chunk_handler::bulk_delete_chunk,
         handlers::dataset_handler::get_all_tags,
         handlers::user_handler::update_user,
         handlers::user_handler::set_user_api_key,
@@ -291,6 +292,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::SemanticBoost,
             handlers::chunk_handler::ScoringOptions,
             handlers::chunk_handler::ChunkReturnTypes,
+            handlers::chunk_handler::BulkDeleteChunkPayload,
             handlers::chunk_handler::ScrollChunksReqPayload,
             handlers::chunk_handler::ScrollChunksResponseBody,
             handlers::chunk_handler::V1RecommendChunksResponseBody,
@@ -904,7 +906,8 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("")
                                         .route(web::post().to(handlers::chunk_handler::create_chunk))
-                                        .route(web::put().to(handlers::chunk_handler::update_chunk)),
+                                        .route(web::put().to(handlers::chunk_handler::update_chunk))
+                                        .route(web::delete().to(handlers::chunk_handler::bulk_delete_chunk)),
                                 )
                                 .service(web::resource("/recommend").route(
                                     web::post().to(handlers::chunk_handler::get_recommended_chunks),

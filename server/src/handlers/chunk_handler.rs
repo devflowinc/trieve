@@ -14,7 +14,9 @@ use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue};
-use crate::operators::dataset_operator::get_dataset_usage_query;
+use crate::operators::dataset_operator::{
+    get_dataset_usage_query, ChunkDeleteMessage, DeleteMessage,
+};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
     point_ids_exists_in_qdrant, recommend_qdrant_query, scroll_dataset_points,
@@ -439,7 +441,7 @@ pub async fn create_chunk(
 
 /// Delete Chunk
 ///
-/// Delete a chunk by its id. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Delete a chunk by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
     path = "/chunk/{chunk_id}",
@@ -483,9 +485,66 @@ pub async fn delete_chunk(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct BulkDeleteChunkPayload {
+    /// Filter to apply to the chunks to delete
+    pub filter: ChunkFilter,
+}
+
+/// Bulk Delete Chunks
+///
+/// Delete multiple chunks using a filter. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+#[tracing::instrument(skip(redis_pool))]
+#[utoipa::path(
+    delete,
+    path = "/chunk",
+    context_path = "/api",
+    tag = "Chunk",
+    request_body(content = BulkDeleteChunkPayload, description = "JSON request payload to speicy a filter to bulk delete chunks", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the chunk with the id specified was deleted"),
+        (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn bulk_delete_chunk(
+    chunk_filter: web::Json<BulkDeleteChunkPayload>,
+    redis_pool: web::Data<RedisPool>,
+    _user: AdminOnly,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let message = ChunkDeleteMessage {
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        attempt_number: 0,
+        filter: chunk_filter.into_inner().filter,
+    };
+
+    let serialized_message = serde_json::to_string(&DeleteMessage::ChunkDelete(message))
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    redis::cmd("lpush")
+        .arg("delete_dataset_queue")
+        .arg(&serialized_message)
+        .query_async::<_, ()>(&mut *redis_conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
 /// Delete Chunk By Tracking Id
 ///
-/// Delete a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+/// Delete a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
     delete,
     path = "/chunk/tracking_id/{tracking_id}",
@@ -1562,7 +1621,7 @@ pub async fn scroll_dataset_chunks(
         None => None,
     };
 
-    let qdrant_point_ids = scroll_dataset_points(
+    let (qdrant_point_ids, _) = scroll_dataset_points(
         data.page_size.unwrap_or(10),
         qdrant_point_id_of_offset_chunk,
         data.sort_by.clone(),
