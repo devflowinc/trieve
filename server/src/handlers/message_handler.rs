@@ -789,7 +789,7 @@ pub async fn get_suggested_queries(
                         assemble_qdrant_filter(filters, None, None, dataset_id, pool.clone())
                             .await?;
 
-                    let qdrant_point_ids = scroll_dataset_points(
+                    let (qdrant_point_ids, _) = scroll_dataset_points(
                         10,
                         Some(chunk.qdrant_point_id),
                         None,

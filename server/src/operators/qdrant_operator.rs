@@ -1890,17 +1890,17 @@ pub async fn update_group_tag_sets_in_qdrant_query(
 
 pub async fn scroll_dataset_points(
     limit: u64,
-    qdrant_point_id: Option<uuid::Uuid>,
+    offset: Option<uuid::Uuid>,
     sort_by: Option<SortByField>,
     dataset_config: DatasetConfiguration,
     filter: Filter,
-) -> Result<Vec<uuid::Uuid>, ServiceError> {
+) -> Result<(Vec<uuid::Uuid>, Option<uuid::Uuid>), ServiceError> {
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
     let mut scroll_points_params = ScrollPointsBuilder::new(qdrant_collection);
 
     scroll_points_params = scroll_points_params.limit(limit as u32);
 
-    if let Some(offset_id) = qdrant_point_id {
+    if let Some(offset_id) = offset {
         scroll_points_params = scroll_points_params.offset(offset_id.to_string());
     };
 
@@ -1943,5 +1943,13 @@ pub async fn scroll_dataset_points(
         })
         .collect::<Vec<uuid::Uuid>>();
 
-    Ok(point_ids)
+    Ok((
+        point_ids,
+        qdrant_point_ids
+            .next_page_offset
+            .map(|point| match point.point_id_options {
+                Some(PointIdOptions::Uuid(id)) => uuid::Uuid::parse_str(&id).unwrap(),
+                _ => uuid::Uuid::nil(),
+            }),
+    ))
 }

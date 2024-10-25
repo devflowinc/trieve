@@ -3,6 +3,7 @@ use crate::data::models::{
     Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
     WordDataset,
 };
+use crate::handlers::chunk_handler::ChunkFilter;
 use crate::handlers::dataset_handler::{GetDatasetsPagination, TagsWithCount};
 use crate::operators::clickhouse_operator::ClickHouseEvent;
 use crate::operators::qdrant_operator::{
@@ -208,11 +209,47 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DeleteMessage {
+pub struct DatasetDeleteMessage {
     pub dataset_id: uuid::Uuid,
     pub attempt_number: usize,
     pub deleted_at: chrono::NaiveDateTime,
     pub empty_dataset: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ChunkDeleteMessage {
+    pub dataset_id: uuid::Uuid,
+    pub attempt_number: usize,
+    pub filter: ChunkFilter,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum DeleteMessage {
+    DatasetDelete(DatasetDeleteMessage),
+    ChunkDelete(ChunkDeleteMessage),
+}
+
+impl DeleteMessage {
+    pub fn dataset_id(&self) -> uuid::Uuid {
+        match self {
+            DeleteMessage::DatasetDelete(message) => message.dataset_id,
+            DeleteMessage::ChunkDelete(message) => message.dataset_id,
+        }
+    }
+
+    pub fn attempt_number(&self) -> usize {
+        match self {
+            DeleteMessage::DatasetDelete(message) => message.attempt_number,
+            DeleteMessage::ChunkDelete(message) => message.attempt_number,
+        }
+    }
+
+    pub fn increment_attempt_number(&mut self) {
+        match self {
+            DeleteMessage::DatasetDelete(message) => message.attempt_number += 1,
+            DeleteMessage::ChunkDelete(message) => message.attempt_number += 1,
+        }
+    }
 }
 
 #[tracing::instrument(skip(pool))]
@@ -249,15 +286,15 @@ pub async fn soft_delete_dataset_by_id_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let message = DeleteMessage {
+    let message = DatasetDeleteMessage {
         dataset_id: id,
         attempt_number: 0,
         deleted_at: chrono::Utc::now().naive_utc(),
         empty_dataset: false,
     };
 
-    let serialized_message =
-        serde_json::to_string(&message).map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let serialized_message = serde_json::to_string(&DeleteMessage::DatasetDelete(message))
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     redis::cmd("lpush")
         .arg("delete_dataset_queue")
@@ -284,15 +321,15 @@ pub async fn clear_dataset_by_dataset_id_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let message = DeleteMessage {
+    let message = DatasetDeleteMessage {
         dataset_id: id,
         attempt_number: 0,
         deleted_at: chrono::Utc::now().naive_utc(),
         empty_dataset: true,
     };
 
-    let serialized_message =
-        serde_json::to_string(&message).map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let serialized_message = serde_json::to_string(&DeleteMessage::DatasetDelete(message))
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     redis::cmd("lpush")
         .arg("delete_dataset_queue")
