@@ -14,7 +14,7 @@ interface ResultCardProps {
 }
 
 const usefulMetadataSchema = z.object({
-  id: z.string(),
+  id: z.union([z.string(), z.number()]),
   chunk_html: z.string(),
   tracking_id: z.string().nullish(),
   weight: z.number().nullish(),
@@ -23,26 +23,21 @@ const usefulMetadataSchema = z.object({
 
 export const ResultCard = (props: ResultCardProps) => {
   const metadata = createMemo(() => {
-    if (isGroupScoreChunkDTO(props.result)) {
-      const parseResult = usefulMetadataSchema.safeParse(
-        props?.result?.metadata?.at(0)?.metadata?.at(0),
-      );
-      if (parseResult.success) {
-        return parseResult.data;
-      } else {
-        console.error("Failed to parse metadata: ", parseResult.error);
-        return null;
+    try {
+      if (isGroupScoreChunkDTO(props.result) || isScoreChunkDTO(props.result)) {
+        const parseResult = usefulMetadataSchema.safeParse(
+          props?.result?.metadata?.at(0),
+        );
+        if (parseResult.success) {
+          return parseResult.data;
+        } else {
+          console.error("Failed to parse metadata: ", parseResult.error);
+          return null;
+        }
       }
-    } else if (isScoreChunkDTO(props.result)) {
-      const parseResult = usefulMetadataSchema.safeParse(
-        props?.result?.metadata?.at(0),
-      );
-      if (parseResult.success) {
-        return parseResult.data;
-      } else {
-        console.error("Failed to parse metadata: ", parseResult.error);
-        return null;
-      }
+    } catch (e) {
+      console.error(e);
+      return null;
     }
   });
 
