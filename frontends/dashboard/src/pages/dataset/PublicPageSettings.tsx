@@ -1,4 +1,4 @@
-import { useContext } from "solid-js";
+import { createSignal, useContext } from "solid-js";
 import { createToast } from "../../components/ShowToasts";
 import { ApiRoutes } from "../../components/Routes";
 import { DatasetContext } from "../../contexts/DatasetContext";
@@ -7,16 +7,19 @@ import { useTrieve } from "../../hooks/useTrieve";
 import { createMemo } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
-import { Tooltip } from "shared/ui";
+import { JsonInput, Tooltip } from "shared/ui";
 
 export const PublicPageSettings = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
+
+  const [errorText, setErrorText] = createSignal("");
+  const [metadata, setMetadata] = createSignal({});
 
   const { datasetId } = useContext(DatasetContext);
   const { selectedOrg } = useContext(UserContext);
 
   const publicUrl = createMemo(() => {
-    return `${apiHost.slice(0, -4)}/public_page?datasetId=${datasetId()}`;
+    return `${apiHost.slice(0, -4)}/public_page/${datasetId()}`;
   });
 
   // const [publicEnbled, setPublicEnabled] = createSignal(true);
@@ -45,6 +48,11 @@ export const PublicPageSettings = () => {
             enabled: true,
             // @ts-expect-error Object literal may only specify known properties, and 'api_key' does not exist in type 'PublicDatasetOptions'. [2353]
             api_key: response.api_key,
+            extra_params: {
+              accentColor: "#FF00FF",
+              brandName: "my marse",
+              defaultAiQuestions: null,
+            }
           },
         },
       },
@@ -89,6 +97,15 @@ export const PublicPageSettings = () => {
         </a>
         <CopyButton size={15} text={publicUrl()} />
       </div>
+
+      <JsonInput
+        onValueChange={(j) => {
+          setErrorText("");
+          setMetadata(j);
+        }}
+        value={metadata}
+        onError={(e) => setErrorText(`Error in Metadata: ${e}`)}
+      />
     </div>
   );
 };

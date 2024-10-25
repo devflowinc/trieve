@@ -250,9 +250,12 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_all_events,
         handlers::analytics_handler::get_event_by_id,
         handlers::metrics_handler::get_metrics,
+        handlers::page_handler::public_page
     ),
     components(
         schemas(
+            handlers::page_handler::PublicPageTheme,
+            handlers::page_handler::PublicPageParameters,
             handlers::auth_handler::AuthQuery,
             handlers::topic_handler::CreateTopicReqPayload,
             handlers::topic_handler::CloneTopicReqPayload,
