@@ -9,6 +9,7 @@ import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, Tooltip } from "shared/ui";
 import { createStore } from "solid-js/store";
+import { PublicPageParameters } from "trieve-ts-sdk";
 
 export interface PublicDatasetOptions { }
 
@@ -17,8 +18,7 @@ export const defaultCrawlOptions: PublicDatasetOptions = {};
 export const PublicPageSettings = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
-  const [errorText, setErrorText] = createSignal("");
-  const [metadata, setMetadata] = createSignal({});
+  const [extra_params, setExtraParams] = createStore<PublicPageParameters>({});
 
   const { datasetId } = useContext(DatasetContext);
   const { selectedOrg } = useContext(UserContext);
@@ -31,8 +31,6 @@ export const PublicPageSettings = () => {
 
   const publishDataset = async () => {
     const name = `${datasetId()}-pregenerated-search-component`;
-
-    const [extra_params, setExtraParams] = createStore(defaultCrawlOptions);
 
     const response = await trieve.fetch("/api/user/api_key", "post", {
       data: {
@@ -54,9 +52,7 @@ export const PublicPageSettings = () => {
             // @ts-expect-error Object literal may only specify known properties, and 'api_key' does not exist in type 'PublicDatasetOptions'. [2353]
             api_key: response.api_key,
             extra_params: {
-              accentColor: "#FF00FF",
-              brandName: "my marse",
-              defaultAiQuestions: null,
+              ...extra_params
             },
           },
         },
@@ -111,7 +107,7 @@ export const PublicPageSettings = () => {
             placeholder="https://cdn.trieve.ai/favicon.ico"
             value={""}
             onInput={(e) => {
-              setMetadata("openapi_schema_url", e.currentTarget.value);
+              setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
@@ -124,7 +120,7 @@ export const PublicPageSettings = () => {
             placeholder="https://example.com/openapi.json"
             value={""}
             onInput={(e) => {
-              setMetadata("openapi_schema_url", e.currentTarget.value);
+              setExtraParams("brandName", e.currentTarget.value);
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
@@ -137,7 +133,7 @@ export const PublicPageSettings = () => {
             placeholder="light"
             value={""}
             onInput={(e) => {
-              setMetadata("openapi_schema_url", e.currentTarget.value);
+              setExtraParams("theme", e.currentTarget.value);
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
@@ -150,7 +146,7 @@ export const PublicPageSettings = () => {
             placeholder="#CB53EB"
             value={""}
             onInput={(e) => {
-              setMetadata("openapi_schema_url", e.currentTarget.value);
+              setExtraParams("accentColor", e.currentTarget.value);
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
@@ -167,7 +163,7 @@ export const PublicPageSettings = () => {
               placeholder="https://example.com/openapi.json"
               value={""}
               onInput={(e) => {
-                setMetadata("openapi_schema_url", e.currentTarget.value);
+                setExtraParams("problemLink", e.currentTarget.value);
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -183,7 +179,7 @@ export const PublicPageSettings = () => {
               value={""}
               type="checkbox"
               onInput={(e) => {
-                setMetadata("openapi_schema_url", e.currentTarget.value);
+                setExtraParams("responsive", e.currentTarget.value);
               }}
               class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -197,7 +193,7 @@ export const PublicPageSettings = () => {
               value={""}
               type="checkbox"
               onInput={(e) => {
-                setMetadata("openapi_schema_url", e.currentTarget.value);
+                setExtraParams("analytics", e.currentTarget.value);
               }}
               class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -211,7 +207,7 @@ export const PublicPageSettings = () => {
               value={""}
               type="checkbox"
               onInput={(e) => {
-                setMetadata("openapi_schema_url", e.currentTarget.value);
+                setExtraParams("suggestedQueries", e.currentTarget.value);
               }}
               class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -225,7 +221,7 @@ export const PublicPageSettings = () => {
               value={""}
               type="checkbox"
               onInput={(e) => {
-                setMetadata("openapi_schema_url", e.currentTarget.value);
+                setExtraParams("chat", e.currentTarget.value);
               }}
               class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -237,8 +233,12 @@ export const PublicPageSettings = () => {
         <div class="p-2">
           <div> Search Options </div>
           <JsonInput
-            onValueChange={(value) => { }}
-            value={() => metadata()}
+            onValueChange={(value) => {
+              setExtraParams("searchOptions", value);
+            }}
+            value={() => {
+              return extra_params?.searchOptions || {}
+            }}
             onError={(error) => { }}
           />
         </div>
@@ -251,7 +251,7 @@ export const PublicPageSettings = () => {
               placeholder="https://example.com/openapi.json"
               value={""}
               onInput={(e) => {
-                setMetadata("openapi_schema_url", e.currentTarget.value);
+                setExtraParams("defaultSearchQueries", e.currentTarget.value);
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -264,7 +264,7 @@ export const PublicPageSettings = () => {
               placeholder="https://example.com/openapi.json"
               value={""}
               onInput={(e) => {
-                setMetadata("openapi_schema_url", e.currentTarget.value);
+                setExtraParams("defaultAiQuestions", e.currentTarget.value);
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -277,7 +277,7 @@ export const PublicPageSettings = () => {
               placeholder="Search..."
               value={""}
               onInput={(e) => {
-                setMetadata("openapi_schema_url", e.currentTarget.value);
+                setExtraParams("placeholder", e.currentTarget.value);
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -287,3 +287,6 @@ export const PublicPageSettings = () => {
     </div>
   );
 };
+function useDatasetServerConfig() {
+  throw new Error("Function not implemented.");
+}
