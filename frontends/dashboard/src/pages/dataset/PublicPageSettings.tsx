@@ -1,4 +1,4 @@
-import { createSignal, useContext } from "solid-js";
+import { useContext } from "solid-js";
 import { createToast } from "../../components/ShowToasts";
 import { ApiRoutes } from "../../components/Routes";
 import { DatasetContext } from "../../contexts/DatasetContext";
@@ -105,7 +105,7 @@ export const PublicPageSettings = () => {
           </label>
           <input
             placeholder="https://cdn.trieve.ai/favicon.ico"
-            value={""}
+            value={extra_params.brandLogoImgSrcUrl || ""}
             onInput={(e) => {
               setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
             }}
@@ -117,8 +117,8 @@ export const PublicPageSettings = () => {
             Brand Name
           </label>
           <input
-            placeholder="https://example.com/openapi.json"
-            value={""}
+            placeholder="Trieve"
+            value={extra_params.brandName || ""}
             onInput={(e) => {
               setExtraParams("brandName", e.currentTarget.value);
             }}
@@ -131,9 +131,9 @@ export const PublicPageSettings = () => {
           </label>
           <input
             placeholder="light"
-            value={""}
+            value={extra_params.theme || ""}
             onInput={(e) => {
-              setExtraParams("theme", e.currentTarget.value);
+              setExtraParams("theme", e.currentTarget.value === "dark" ? "dark" : "light");
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
@@ -144,7 +144,7 @@ export const PublicPageSettings = () => {
           </label>
           <input
             placeholder="#CB53EB"
-            value={""}
+            value={extra_params.accentColor || ""}
             onInput={(e) => {
               setExtraParams("accentColor", e.currentTarget.value);
             }}
@@ -160,8 +160,8 @@ export const PublicPageSettings = () => {
               Problem Link
             </label>
             <input
-              placeholder="https://example.com/openapi.json"
-              value={""}
+              placeholder="mailto:humans@trieve.ai"
+              value={extra_params.problemLink || ""}
               onInput={(e) => {
                 setExtraParams("problemLink", e.currentTarget.value);
               }}
@@ -175,11 +175,10 @@ export const PublicPageSettings = () => {
               Responsive View
             </label>
             <input
-              placeholder="Search..."
-              value={""}
+              checked={extra_params.responsive || false}
               type="checkbox"
               onInput={(e) => {
-                setExtraParams("responsive", e.currentTarget.value);
+                setExtraParams("responsive", e.currentTarget.value === "true");
               }}
               class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -189,11 +188,10 @@ export const PublicPageSettings = () => {
               Analytics
             </label>
             <input
-              placeholder="Search..."
-              value={""}
+              checked={extra_params.analytics || true}
               type="checkbox"
-              onInput={(e) => {
-                setExtraParams("analytics", e.currentTarget.value);
+              onChange={(e) => {
+                setExtraParams("analytics", e.currentTarget.checked);
               }}
               class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -204,10 +202,10 @@ export const PublicPageSettings = () => {
             </label>
             <input
               placeholder="Search..."
-              value={""}
+              checked={extra_params.suggestedQueries || true}
               type="checkbox"
-              onInput={(e) => {
-                setExtraParams("suggestedQueries", e.currentTarget.value);
+              onChange={(e) => {
+                setExtraParams("suggestedQueries", e.currentTarget.checked);
               }}
               class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -218,10 +216,10 @@ export const PublicPageSettings = () => {
             </label>
             <input
               placeholder="Search..."
-              value={""}
+              checked={extra_params.chat || true}
               type="checkbox"
-              onInput={(e) => {
-                setExtraParams("chat", e.currentTarget.value);
+              onChange={(e) => {
+                setExtraParams("chat", e.currentTarget.checked);
               }}
               class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -239,7 +237,7 @@ export const PublicPageSettings = () => {
             value={() => {
               return extra_params?.searchOptions || {}
             }}
-            onError={(error) => { }}
+            onError={(_) => { }}
           />
         </div>
         <div class="p-2 space-y-1.5">
@@ -287,6 +285,3 @@ export const PublicPageSettings = () => {
     </div>
   );
 };
-function useDatasetServerConfig() {
-  throw new Error("Function not implemented.");
-}
