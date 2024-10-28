@@ -2076,7 +2076,8 @@ pub struct DatasetConfiguration {
 pub struct PublicDatasetOptions {
     pub enabled: bool,
     #[serde(skip_serializing)]
-    pub api_key: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
     pub extra_params: Option<PublicPageParameters>,
 }
 
@@ -2205,7 +2206,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             MAX_LIMIT: dto.MAX_LIMIT.unwrap_or(10000),
             PUBLIC_DATASET: PublicDatasetOptions {
                 enabled: dto.PUBLIC_DATASET.clone().map(|public_dataset| public_dataset.clone().enabled).unwrap_or(false),
-                api_key: "".to_string(),
+                api_key: Some("".to_string()),
                 extra_params: dto.PUBLIC_DATASET.map(|public_dataset| public_dataset.extra_params)
                 .unwrap_or_default()
             },
@@ -2246,7 +2247,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             MAX_LIMIT: Some(config.MAX_LIMIT),
             PUBLIC_DATASET: Some(PublicDatasetOptions {
                 enabled: config.PUBLIC_DATASET.enabled,
-                api_key: "".to_string(),
+                api_key: None,
                 extra_params: config.PUBLIC_DATASET.extra_params.map(|params| {
                     PublicPageParameters {
                         api_key: None,
@@ -2291,7 +2292,7 @@ impl Default for DatasetConfiguration {
             MAX_LIMIT: 10000,
             PUBLIC_DATASET: PublicDatasetOptions {
                 enabled: false,
-                api_key: "".to_string(),
+                api_key: Some("".to_string()),
                 extra_params: None,
             },
         }
@@ -2544,7 +2545,7 @@ impl DatasetConfiguration {
                 .and_then(|v| v.as_u64()),
             PUBLIC_DATASET: PublicDatasetOptions {
                 enabled: configuration_json.pointer("/PUBLIC_DATASET/enabled").unwrap_or(&json!(false)).as_bool().unwrap_or(false),
-                api_key: configuration_json.pointer("/PUBLIC_DATASET/api_key").unwrap_or(&json!("")).as_str().unwrap_or("").to_string(),
+                api_key: Some(configuration_json.pointer("/PUBLIC_DATASET/api_key").unwrap_or(&json!("")).as_str().unwrap_or("").to_string()),
                 extra_params
             }
         }
