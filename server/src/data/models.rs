@@ -2306,8 +2306,7 @@ impl DatasetConfiguration {
 
         let extra_params: Option<PublicPageParameters> = configuration_json
             .pointer("/PUBLIC_DATASET/extra_params")
-            .map(|value| serde_json::from_value(value.clone()).ok())
-            .flatten();
+            .and_then(|value| serde_json::from_value(value.clone()).ok());
 
         let configuration = binding
             .as_object()
