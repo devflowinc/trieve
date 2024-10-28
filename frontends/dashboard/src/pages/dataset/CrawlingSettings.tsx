@@ -618,8 +618,8 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
       </div>
       <Spacer h={18} />
-      <div class="flex justify-end">
-        <button class="rounded border-magenta-200/80 bg-magenta-100 px-3 py-2 font-medium shadow hover:shadow-md">
+      <div class="mt-5 flex justify-start">
+        <button class="self-start rounded-md bg-magenta-400 px-5 py-2 text-white">
           Save
         </button>
       </div>
