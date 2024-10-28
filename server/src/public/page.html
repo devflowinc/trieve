@@ -98,18 +98,60 @@
     </div>
     <pre>
       <code class="language-jsx">
-        import {TrieveModalSearch} from 'trieve-search-component';
+import {TrieveModalSearch} from 'trieve-search-component';
+import 'trieve-search-component/dist/index.css';
 
-        const App = () => {
-        return (
-        <div class="basic">
-          <p class="text">
-            Trieve Search Component
-          </p>
-          \<TrieveModalSearch {... {{ params | tojson}} } />
-        </div>
-        );
-        }
+const App = () => {
+  return (
+    &lt;TrieveModalSearch 
+        {% if params.apiKey -%}
+        apiKey="{{ params.apiKey }}"
+        {% endif -%}
+        {% if params.baseUrl -%}
+        baseUrl="{{ params.baseUrl }}"
+        {% endif -%}
+        {% if params.suggestedQueries -%}
+        suggestedQueries={{ params.suggestedQueries }}
+        {% endif -%}
+        {% if params.analytics -%}
+        analytics={{ params.analytics }}
+        {% endif -%}
+        {% if params.responsive -%}
+        responsive={{ params.responsive }}
+        {% endif -%}
+        {% if params.chat -%}
+        chat="{{ params.chat}}"
+        {% endif -%}
+        {% if params.theme -%}
+        theme="{{ params.theme }}"
+        {% endif -%}
+        {% if params.search_options -%}
+        search_options={{ params.searchOptions }}
+        {% endif -%}
+        {% if params.brandLogoImgSrcUrl -%}
+        brandLogoImgSrcUrl="{{ params.brandLogoImgSrcUrl }}"
+        {% endif -%}
+        {% if params.brandName -%}
+        brandName="{{ params.brandName }}"
+        {% endif -%}
+        {% if params.problemLink -%}
+        problemLink="{{ params.problemLink }}"
+        {% endif -%}
+        {% if params.brandColor -%}
+        brandColor="{{ params.brandColor }}"
+        {% endif -%}
+        {% if params.placeholder -%}
+        placeholder="{{ params.placeholder }}"
+        {% endif -%}
+        {% if params.defaultSearchQueries -%}
+        defaultSearchQueries={{ params.defaultSearchQueries }}
+        {% endif -%}
+        {% if params.defaultAiQueestions -%}
+        defaultAiQueestions={{ params.defaultAiQuestions }}
+        {% endif -%}
+          /&gt;
+  );
+}
       </code>
     </pre>
   </div>
