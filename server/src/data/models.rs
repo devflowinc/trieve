@@ -2604,6 +2604,18 @@ impl DatasetConfigurationDTO {
             .extra_params
             .unwrap_or_default();
 
+        let mut public_dataset_api_key = self
+            .PUBLIC_DATASET
+            .clone()
+            .map(|public_dataset| public_dataset.api_key)
+            .clone()
+            .unwrap_or_default();
+
+        if public_dataset_api_key.is_none() {
+            public_dataset_api_key = curr_dataset_config.PUBLIC_DATASET.api_key;
+        }
+        println!("public_dataset {:?}", public_dataset_api_key);
+
         DatasetConfiguration {
             LLM_BASE_URL: self
                 .LLM_BASE_URL
@@ -2692,11 +2704,7 @@ impl DatasetConfigurationDTO {
                     .clone()
                     .map(|dataset| dataset.enabled)
                     .unwrap_or(curr_dataset_config.PUBLIC_DATASET.enabled),
-                api_key: self
-                    .PUBLIC_DATASET
-                    .clone()
-                    .map(|public_dataset| public_dataset.api_key)
-                    .unwrap_or(curr_dataset_config.PUBLIC_DATASET.api_key),
+                api_key: public_dataset_api_key,
                 extra_params: Some(PublicPageParameters {
                     dataset_id: page_parameters_self
                         .dataset_id
