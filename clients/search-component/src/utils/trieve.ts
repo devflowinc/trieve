@@ -2,6 +2,14 @@ import { SearchResponseBody, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk, GroupSearchResults, Props, SearchResults } from "./types";
 import { highlightOptions, highlightText } from "./highlight";
 
+export const omit = (obj: object | null | undefined, keys: string[]) => {
+  if (!obj) return obj;
+
+  return Object.fromEntries(
+    Object.entries(obj).filter(([key]) => !keys.includes(key))
+  );
+};
+
 export const searchWithTrieve = async ({
   trieve,
   query,
@@ -27,7 +35,11 @@ export const searchWithTrieve = async ({
           highlight_delimiters: ["?", ",", ".", "!", "\n"],
         },
         extend_results: true,
-        score_threshold: 2,
+        score_threshold:
+          (searchOptions.search_type ?? "fulltext") === "fulltext" ||
+          searchOptions.search_type == "bm25"
+            ? 2
+            : 0.3,
         page_size: 20,
         ...(tag && {
           filters: {
@@ -37,7 +49,8 @@ export const searchWithTrieve = async ({
         typo_options: {
           correct_typos: true,
         },
-        ...searchOptions,
+        search_type: searchOptions.search_type ?? "fulltext",
+        ...omit(searchOptions, ["use_autocomplete"]),
       },
       abortController?.signal
     )) as SearchResponseBody;
@@ -49,7 +62,11 @@ export const searchWithTrieve = async ({
           ...highlightOptions,
           highlight_delimiters: ["?", ",", ".", "!", "\n"],
         },
-        score_threshold: 2,
+        score_threshold:
+          (searchOptions.search_type ?? "fulltext") === "fulltext" ||
+          searchOptions.search_type == "bm25"
+            ? 2
+            : 0.3,
         page_size: 20,
         ...(tag && {
           filters: {
@@ -59,7 +76,8 @@ export const searchWithTrieve = async ({
         typo_options: {
           correct_typos: true,
         },
-        ...searchOptions,
+        search_type: searchOptions.search_type ?? "fulltext",
+        ...omit(searchOptions, ["use_autocomplete"]),
       },
       abortController?.signal
     )) as SearchResponseBody;
@@ -104,7 +122,11 @@ export const groupSearchWithTrieve = async ({
         ...highlightOptions,
         highlight_delimiters: ["?", ",", ".", "!", "\n"],
       },
-      score_threshold: 2,
+      score_threshold:
+        (searchOptions.search_type ?? "fulltext") === "fulltext" ||
+        searchOptions.search_type == "bm25"
+          ? 2
+          : 0.3,
       page_size: 20,
       ...(tag && {
         filters: {
@@ -112,7 +134,8 @@ export const groupSearchWithTrieve = async ({
         },
       }),
       group_size: 3,
-      ...searchOptions,
+      search_type: searchOptions.search_type ?? "fulltext",
+      ...omit(searchOptions, ["use_autocomplete"]),
     },
     abortController?.signal
   );
@@ -137,14 +160,6 @@ export const groupSearchWithTrieve = async ({
   } as unknown as GroupSearchResults;
 };
 
-export const omit = (obj: object | null | undefined, keys: string[]) => {
-  if (!obj) return obj;
-
-  return Object.fromEntries(
-    Object.entries(obj).filter(([key]) => !keys.includes(key))
-  );
-};
-
 export const countChunks = async ({
   trieve,
   query,
@@ -161,7 +176,11 @@ export const countChunks = async ({
   const results = await trieve.countChunksAboveThreshold(
     {
       query,
-      score_threshold: 2,
+      score_threshold:
+        (searchOptions?.search_type ?? "fulltext") === "fulltext" ||
+        searchOptions?.search_type == "bm25"
+          ? 2
+          : 0.3,
       limit: 10000,
       ...(tag && {
         filters: {
@@ -234,6 +253,6 @@ export const getSuggestedQuestions = async ({
   );
 };
 
-export const sendFeedBack = async ({ trieve }: { trieve: TrieveSDK }) => {
+export const sendFeedback = async ({ trieve }: { trieve: TrieveSDK }) => {
   return trieve;
 };
