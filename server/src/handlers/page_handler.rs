@@ -24,8 +24,11 @@ pub enum PublicPageTheme {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicPageParameters {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dataset_id: Option<uuid::Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub base_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub api_key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub analytics: Option<bool>,
@@ -93,7 +96,7 @@ pub async fn public_page(
                 params => PublicPageParameters {
                     dataset_id: Some(dataset_id),
                     base_url: Some(base_server_url.to_string()),
-                    api_key: Some(config.PUBLIC_DATASET.api_key),
+                    api_key: Some(config.PUBLIC_DATASET.api_key.unwrap_or_default()),
                     ..config.PUBLIC_DATASET.extra_params.unwrap_or_default()
                 }
             })

@@ -1,4 +1,4 @@
-import { useContext } from "solid-js";
+import { createSignal, createEffect, Show, useContext } from "solid-js";
 import { createToast } from "../../components/ShowToasts";
 import { ApiRoutes } from "../../components/Routes";
 import { DatasetContext } from "../../contexts/DatasetContext";
@@ -19,6 +19,7 @@ export const PublicPageSettings = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [extra_params, setExtraParams] = createStore<PublicPageParameters>({});
+  const [isPublic, setisPublic] = createSignal<boolean>(false);
 
   const { datasetId } = useContext(DatasetContext);
   const { selectedOrg } = useContext(UserContext);
@@ -29,31 +30,31 @@ export const PublicPageSettings = () => {
 
   const trieve = useTrieve();
 
-  const publishDataset = async () => {
-    const name = `${datasetId()}-pregenerated-search-component`;
+  createEffect(() => {
+    fetchDataset();
+  });
 
-    const response = await trieve.fetch("/api/user/api_key", "post", {
-      data: {
-        name: name,
-        role: 0,
-        dataset_ids: [datasetId()],
-        organization_ids: [selectedOrg().id],
-        scopes: ApiRoutes["Search Component Routes"],
-      },
-    });
+  const fetchDataset = () => {
+    void trieve
+      .fetch("/api/dataset/{dataset_id}", "get", {
+        datasetId: datasetId(),
+      })
+      .then((dataset) => {
+        setisPublic(dataset.server_configuration?.PUBLIC_DATASET.enabled);
+        setExtraParams(
+          dataset.server_configuration?.PUBLIC_DATASET.extra_params,
+        );
+      });
+  };
 
+  const unpublishDataset = async () => {
     await trieve.fetch("/api/dataset", "put", {
       organizationId: selectedOrg().id,
       data: {
         dataset_id: datasetId(),
         server_configuration: {
           PUBLIC_DATASET: {
-            enabled: true,
-            // @ts-expect-error Object literal may only specify known properties, and 'api_key' does not exist in type 'PublicDatasetOptions'. [2353]
-            api_key: response.api_key,
-            extra_params: {
-              ...extra_params
-            },
+            enabled: false,
           },
         },
       },
@@ -61,8 +62,70 @@ export const PublicPageSettings = () => {
 
     createToast({
       type: "info",
-      title: `Created API key for ${datasetId()} named ${name}`,
+      title: `Made dataset ${datasetId()} private`,
     });
+
+    setisPublic(false);
+  };
+
+  const publishDataset = async () => {
+    const name = `${datasetId()}-pregenerated-search-component`;
+    if (!isPublic()) {
+      const response = await trieve.fetch("/api/user/api_key", "post", {
+        data: {
+          name: name,
+          role: 0,
+          dataset_ids: [datasetId()],
+          organization_ids: [selectedOrg().id],
+          scopes: ApiRoutes["Search Component Routes"],
+        },
+      });
+
+      await trieve.fetch("/api/dataset", "put", {
+        organizationId: selectedOrg().id,
+        data: {
+          dataset_id: datasetId(),
+          server_configuration: {
+            PUBLIC_DATASET: {
+              enabled: true,
+              // @ts-expect-error Object literal may only specify known properties, and 'api_key' does not exist in type 'PublicDatasetOptions'. [2353]
+              api_key: response.api_key,
+              extra_params: {
+                ...extra_params,
+              },
+            },
+          },
+        },
+      });
+
+      createToast({
+        type: "info",
+        title: `Created API key for ${datasetId()} named ${name}`,
+      });
+    } else {
+      await trieve.fetch("/api/dataset", "put", {
+        organizationId: selectedOrg().id,
+        data: {
+          dataset_id: datasetId(),
+          server_configuration: {
+            PUBLIC_DATASET: {
+              enabled: true,
+              extra_params: {
+                ...extra_params,
+              },
+            },
+          },
+        },
+      });
+
+      createToast({
+        type: "info",
+        title: `Updated Public settings for ${name}`,
+      });
+    }
+
+    setExtraParams(extra_params);
+    setisPublic(true);
   };
 
   return (
@@ -77,211 +140,240 @@ export const PublicPageSettings = () => {
           </p>
         </div>
       </div>
-      <div class="flex items-center space-x-2">
-        <button
-          onClick={() => {
-            void publishDataset();
-          }}
-          class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
-        >
-          Publish Dataset
-        </button>
-        <Tooltip
-          tooltipText="Make a UI to display the search with our component. This is revertable"
-          body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-        />
-      </div>
-      <div class="mt-4 flex content-center items-center gap-1.5 gap-x-3">
-        <span class="font-medium">Published Url:</span>{" "}
-        <a class="text-magenta-400" href={publicUrl()}>
-          {publicUrl()}
-        </a>
-        <CopyButton size={15} text={publicUrl()} />
-      </div>
-      <div class="mt-4 flex space-x-3">
-        <div class="grow">
-          <label class="block" for="">
-            Brand Logo Link
-          </label>
-          <input
-            placeholder="https://cdn.trieve.ai/favicon.ico"
-            value={extra_params.brandLogoImgSrcUrl || ""}
-            onInput={(e) => {
-              setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
+      <Show when={!isPublic()}>
+        <div class="flex items-center space-x-2">
+          <button
+            onClick={() => {
+              void publishDataset();
             }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
+          >
+            Publish Dataset
+          </button>
+          <Tooltip
+            tooltipText="Make a UI to display the search with our component. This is revertable"
+            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
           />
         </div>
-        <div class="grow">
-          <label class="block" for="">
-            Brand Name
-          </label>
-          <input
-            placeholder="Trieve"
-            value={extra_params.brandName || ""}
-            onInput={(e) => {
-              setExtraParams("brandName", e.currentTarget.value);
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
+      </Show>
+      <Show when={isPublic()}>
+        <div class="mt-4 flex content-center items-center gap-1.5 gap-x-3">
+          <span class="font-medium">Published Url:</span>{" "}
+          <a class="text-magenta-400" href={publicUrl()}>
+            {publicUrl()}
+          </a>
+          <CopyButton size={15} text={publicUrl()} />
         </div>
-        <div class="grow">
-          <label class="block" for="">
-            Color Theme
-          </label>
-          <input
-            placeholder="light"
-            value={extra_params.theme || ""}
-            onInput={(e) => {
-              setExtraParams("theme", e.currentTarget.value === "dark" ? "dark" : "light");
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
+        <div class="mt-4 flex space-x-3">
+          <div class="grow">
+            <label class="block" for="">
+              Brand Logo Link
+            </label>
+            <input
+              placeholder="https://cdn.trieve.ai/favicon.ico"
+              value={extra_params.brandLogoImgSrcUrl || ""}
+              onInput={(e) => {
+                setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <label class="block" for="">
+              Brand Name
+            </label>
+            <input
+              placeholder="Trieve"
+              value={extra_params.brandName || ""}
+              onInput={(e) => {
+                setExtraParams("brandName", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <label class="block" for="">
+              Color Theme
+            </label>
+            <input
+              placeholder="light"
+              value={extra_params.theme || ""}
+              onInput={(e) => {
+                setExtraParams(
+                  "theme",
+                  e.currentTarget.value === "dark" ? "dark" : "light",
+                );
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <label class="block" for="">
+              Accent Coolor
+            </label>
+            <input
+              placeholder="#CB53EB"
+              value={extra_params.accentColor || ""}
+              onInput={(e) => {
+                setExtraParams("accentColor", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
         </div>
-        <div class="grow">
-          <label class="block" for="">
-            Accent Coolor
-          </label>
-          <input
-            placeholder="#CB53EB"
-            value={extra_params.accentColor || ""}
-            onInput={(e) => {
-              setExtraParams("accentColor", e.currentTarget.value);
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
-        </div>
-      </div>
 
-      <div class="mt-4 flex">
-        <div class="flex grow">
-          <div class="grow">
-            <label class="block" for="">
-              Problem Link
-            </label>
-            <input
-              placeholder="mailto:humans@trieve.ai"
-              value={extra_params.problemLink || ""}
-              onInput={(e) => {
-                setExtraParams("problemLink", e.currentTarget.value);
-              }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
+        <div class="mt-4 flex">
+          <div class="flex grow">
+            <div class="grow">
+              <label class="block" for="">
+                Problem Link
+              </label>
+              <input
+                placeholder="mailto:humans@trieve.ai"
+                value={extra_params.problemLink || ""}
+                onInput={(e) => {
+                  setExtraParams("problemLink", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+          </div>
+          <div class="ml-3 grid grow grid-cols-2 items-center gap-1.5 p-1.5">
+            <div class="flex gap-2">
+              <label class="block" for="">
+                Responsive View
+              </label>
+              <input
+                checked={extra_params.responsive || false}
+                type="checkbox"
+                onInput={(e) => {
+                  setExtraParams(
+                    "responsive",
+                    e.currentTarget.value === "true",
+                  );
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="flex gap-2">
+              <label class="block" for="">
+                Analytics
+              </label>
+              <input
+                checked={extra_params.analytics || true}
+                type="checkbox"
+                onChange={(e) => {
+                  setExtraParams("analytics", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="flex gap-2">
+              <label class="block" for="">
+                Enable Suggestions
+              </label>
+              <input
+                placeholder="Search..."
+                checked={extra_params.suggestedQueries || true}
+                type="checkbox"
+                onChange={(e) => {
+                  setExtraParams("suggestedQueries", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="flex gap-2">
+              <label class="block" for="">
+                Enable Chat
+              </label>
+              <input
+                placeholder="Search..."
+                checked={extra_params.chat || true}
+                type="checkbox"
+                onChange={(e) => {
+                  setExtraParams("chat", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
           </div>
         </div>
-        <div class="grow grid grid-cols-2 ml-3 p-1.5 gap-1.5 items-center ">
-          <div class="flex gap-2">
-            <label class="block" for="">
-              Responsive View
-            </label>
-            <input
-              checked={extra_params.responsive || false}
-              type="checkbox"
-              onInput={(e) => {
-                setExtraParams("responsive", e.currentTarget.value === "true");
-              }}
-              class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-          <div class="flex gap-2">
-            <label class="block" for="">
-              Analytics
-            </label>
-            <input
-              checked={extra_params.analytics || true}
-              type="checkbox"
-              onChange={(e) => {
-                setExtraParams("analytics", e.currentTarget.checked);
-              }}
-              class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-          <div class="flex gap-2">
-            <label class="block" for="">
-              Enable Suggestions
-            </label>
-            <input
-              placeholder="Search..."
-              checked={extra_params.suggestedQueries || true}
-              type="checkbox"
-              onChange={(e) => {
-                setExtraParams("suggestedQueries", e.currentTarget.checked);
-              }}
-              class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-          <div class="flex gap-2">
-            <label class="block" for="">
-              Enable Chat
-            </label>
-            <input
-              placeholder="Search..."
-              checked={extra_params.chat || true}
-              type="checkbox"
-              onChange={(e) => {
-                setExtraParams("chat", e.currentTarget.checked);
-              }}
-              class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-        </div>
-      </div>
 
-      <div class="grid grid-cols-2 mt-4">
-        <div class="p-2">
-          <div> Search Options </div>
-          <JsonInput
-            onValueChange={(value) => {
-              setExtraParams("searchOptions", value);
-            }}
-            value={() => {
-              return extra_params?.searchOptions || {}
-            }}
-            onError={(_) => { }}
-          />
+        <div class="mt-4 grid grid-cols-2">
+          <div class="p-2">
+            <div> Search Options </div>
+            <JsonInput
+              onValueChange={(value) => {
+                setExtraParams("searchOptions", value);
+              }}
+              value={() => {
+                return extra_params?.searchOptions || {};
+              }}
+              onError={(_) => { }}
+            />
+          </div>
+          <div class="space-y-1.5 p-2">
+            <div class="grow">
+              <label class="block" for="">
+                Default Search Queries
+              </label>
+              <input
+                placeholder="https://example.com/openapi.json"
+                value={""}
+                onInput={(e) => {
+                  setExtraParams("defaultSearchQueries", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="grow">
+              <label class="block" for="">
+                Default AI Questions
+              </label>
+              <input
+                placeholder="https://example.com/openapi.json"
+                value={""}
+                onInput={(e) => {
+                  setExtraParams("defaultAiQuestions", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="grow">
+              <label class="block" for="">
+                Placeholder Text
+              </label>
+              <input
+                placeholder="Search..."
+                value={""}
+                onInput={(e) => {
+                  setExtraParams("placeholder", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+          </div>
         </div>
-        <div class="p-2 space-y-1.5">
-          <div class="grow">
-            <label class="block" for="">
-              Default Search Queries
-            </label>
-            <input
-              placeholder="https://example.com/openapi.json"
-              value={""}
-              onInput={(e) => {
-                setExtraParams("defaultSearchQueries", e.currentTarget.value);
-              }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-          <div class="grow">
-            <label class="block" for="">
-              Default AI Questions
-            </label>
-            <input
-              placeholder="https://example.com/openapi.json"
-              value={""}
-              onInput={(e) => {
-                setExtraParams("defaultAiQuestions", e.currentTarget.value);
-              }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-          <div class="grow">
-            <label class="block" for="">
-              Placeholder Text
-            </label>
-            <input
-              placeholder="Search..."
-              value={""}
-              onInput={(e) => {
-                setExtraParams("placeholder", e.currentTarget.value);
-              }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
+
+        <div class="space-x-1.5">
+          <button
+            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
+            onClick={() => {
+              publishDataset();
+            }}
+          >
+            Save
+          </button>
+          <button
+            class="inline-flex justify-center rounded-md border-2 border-magenta-500 px-3 py-2 text-sm font-semibold text-magenta-500 shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
+            onClick={() => {
+              unpublishDataset();
+            }}
+          >
+            Make Private
+          </button>
         </div>
-      </div>
+      </Show>
     </div>
   );
 };
