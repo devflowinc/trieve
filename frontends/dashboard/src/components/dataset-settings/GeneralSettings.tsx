@@ -149,33 +149,6 @@ export const GeneralServerSettings = (props: {
 
           <div class="mt-6 grid grid-cols-4 gap-6">
             <div class="col-span-4 sm:col-span-2">
-              <label
-                for="nRetreivalsToInclude"
-                class="block text-sm font-medium leading-6"
-              >
-                Documents to include for RAG
-              </label>
-              <input
-                name="nRetreivalsToInclude"
-                type="number"
-                placeholder="something"
-                id="linesBeforeShowMore"
-                class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={props.serverConfig().N_RETRIEVALS_TO_INCLUDE?.toString()}
-                onChange={(e) =>
-                  props.setServerConfig((prev) => {
-                    return {
-                      ...prev,
-                      N_RETRIEVALS_TO_INCLUDE: parseFloat(
-                        e.currentTarget.value,
-                      ),
-                    };
-                  })
-                }
-              />
-            </div>
-
-            <div class="col-span-4 sm:col-span-2">
               <div class="flex flex-row items-center gap-2">
                 <label
                   for="maxLimit"
