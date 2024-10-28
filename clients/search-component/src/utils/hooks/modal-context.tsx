@@ -77,6 +77,7 @@ const defaultProps = {
   theme: "light" as "light" | "dark",
   searchOptions: {
     use_autocomplete: true,
+    search_type: "fulltext",
     typo_options: {
       correct_typos: true,
     },
@@ -153,7 +154,7 @@ function ModalProvider({
   });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ChunkWithHighlights[] | GroupChunk[]>(
-    [],
+    []
   );
   const [requestID, setRequestID] = useState("");
   const [loadingResults, setLoadingResults] = useState(false);
@@ -163,7 +164,7 @@ function ModalProvider({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all",
+    props.tags?.find((t) => t.selected)?.tag || "all"
   );
 
   const trieve = new TrieveSDK({
@@ -253,8 +254,8 @@ function ModalProvider({
               trieve: trieve,
               abortController,
               ...(tag.tag !== "all" && { tag: tag.tag }),
-            }),
-          ),
+            })
+          )
         );
         setTagCounts(numberOfRecords);
       } catch (e) {
@@ -310,7 +311,8 @@ function ModalProvider({
         currentTag,
         setCurrentTag,
         tagCounts,
-      }}>
+      }}
+    >
       {children}
     </ModalContext.Provider>
   );
