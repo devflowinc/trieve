@@ -11,7 +11,7 @@ import { JsonInput, Tooltip } from "shared/ui";
 import { createStore } from "solid-js/store";
 import { PublicPageParameters } from "trieve-ts-sdk";
 
-export interface PublicDatasetOptions { }
+export interface PublicDatasetOptions {}
 
 export const defaultCrawlOptions: PublicDatasetOptions = {};
 
@@ -40,8 +40,12 @@ export const PublicPageSettings = () => {
         datasetId: datasetId(),
       })
       .then((dataset) => {
+        // @ts-expect-error Property 'PUBLIC_DATASET' does not exist on type '{}'. [2339]
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         setisPublic(dataset.server_configuration?.PUBLIC_DATASET.enabled);
         setExtraParams(
+          // @ts-expect-error Property 'PUBLIC_DATASET' does not exist on type '{}'. [2339]
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
           dataset.server_configuration?.PUBLIC_DATASET.extra_params,
         );
       });
@@ -304,12 +308,13 @@ export const PublicPageSettings = () => {
             <div> Search Options </div>
             <JsonInput
               onValueChange={(value) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 setExtraParams("searchOptions", value);
               }}
               value={() => {
                 return extra_params?.searchOptions || {};
               }}
-              onError={(_) => { }}
+              onError={(_) => {}}
             />
           </div>
           <div class="space-y-1.5 p-2">
@@ -359,7 +364,7 @@ export const PublicPageSettings = () => {
           <button
             class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
             onClick={() => {
-              publishDataset();
+              void publishDataset();
             }}
           >
             Save
@@ -367,7 +372,7 @@ export const PublicPageSettings = () => {
           <button
             class="inline-flex justify-center rounded-md border-2 border-magenta-500 px-3 py-2 text-sm font-semibold text-magenta-500 shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
             onClick={() => {
-              unpublishDataset();
+              void unpublishDataset();
             }}
           >
             Make Private
