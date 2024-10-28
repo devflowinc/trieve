@@ -2,8 +2,6 @@ import { TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
 import { useState } from "react";
 import { IconMoon, IconNext, IconPrevious, IconSun } from "../Icons";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/")({
@@ -130,12 +128,6 @@ export default function Home() {
                 search_type: "fulltext",
               }}
             />
-
-            <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">
-              <SyntaxHighlighter language={"jsx"} style={nightOwl}>
-                {`<TrieveModalSearch trieve={trieve} theme="${theme}" /> `}
-              </SyntaxHighlighter>
-            </div>
           </>
         ) : (
           <>

@@ -28,7 +28,6 @@
     "@types/eslint__js": "^8.42.3",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
-    "@types/react-syntax-highlighter": "^15.5.13",
     "esbuild": "^0.23.1",
     "esbuild-node-externals": "^1.14.0",
     "esbuild-plugin-umd-wrapper": "^3.0.0",

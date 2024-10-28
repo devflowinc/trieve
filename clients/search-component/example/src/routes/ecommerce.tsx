@@ -2,8 +2,6 @@ import { TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
 import { useState } from "react";
 import { IconMoon, IconNext, IconPrevious, IconSun } from "../Icons";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -49,12 +47,6 @@ export default function ECommerce() {
               defaultCurrency="$"
               currencyPosition="before"
             />
-
-            <div className="mt-8 text-sm rounded overflow-hidden max-w-[100vw]">
-              <SyntaxHighlighter language={"jsx"} style={nightOwl}>
-                {`<TrieveModalSearch trieve={trieve} theme="${theme}" /> `}
-              </SyntaxHighlighter>
-            </div>
           </>
         ) : (
           <>
