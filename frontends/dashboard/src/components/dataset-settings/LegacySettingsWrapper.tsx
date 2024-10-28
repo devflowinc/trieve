@@ -140,7 +140,7 @@ export const LegacySettingsWrapper = (props: { page: SettingsPage }) => {
           })}
         </div>
         <button
-          class="mt-4 self-end rounded-md bg-magenta-400 px-2 py-1 text-white"
+          class="mt-1 self-start rounded-md bg-magenta-400 px-5 py-2 text-white"
           onClick={() => {
             onSave();
           }}
