@@ -11,6 +11,14 @@ export const Route = createLazyFileRoute("/")({
 });
 
 export default function Home() {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const datasetId = import.meta.env.VITE_DATASET_ID;
+  const apiKey = import.meta.env.VITE_API_KEY;
+  const brandName = import.meta.env.VITE_BRAND_NAME;
+  const brandLogoSrcUrl = import.meta.env.VITE_BRAND_LOGO_SRC_URL;
+  const brandColor = import.meta.env.VITE_ACCENT_COLOR;
+  const problemLink = import.meta.env.VITE_PROBLEM_LINK;
+
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
   return (
@@ -40,9 +48,10 @@ export default function Home() {
             <TrieveModalSearch
               debounceMs={50}
               defaultSearchMode="search"
-              apiKey="tr-zpPVGUq18FxOCmXgLfqGbmDOY4UMW00r"
-              datasetId="4538ad9f-47cf-44d4-8a14-7c111f9558a9"
-              problemLink="mailto:help@trieve.ai?subject="
+              apiKey={apiKey}
+              baseUrl={baseUrl}
+              datasetId={datasetId}
+              problemLink={problemLink}
               theme={theme}
               tags={[
                 {
@@ -110,9 +119,9 @@ export default function Home() {
                 "How to perform autocomplete search?",
                 "How do I install the TS SDK?",
               ]}
-              brandLogoImgSrcUrl="https://cdn.trieve.ai/trieve-logo.png"
-              brandName="Trieve"
-              brandColor="#b557c5"
+              brandLogoImgSrcUrl={brandLogoSrcUrl}
+              brandName={brandName}
+              brandColor={brandColor}
               allowSwitchingModes={true}
               useGroupSearch={false}
               responsive={false}

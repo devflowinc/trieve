@@ -77,6 +77,7 @@ declare module "solid-js" {
 | -------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | datasetId            | string                                                                                         | ''                                         |
 | apiKey               | string                                                                                         | ''                                         |
+| baseUrl              | string                                                                                         | "https://api.trieve.ai"                    |
 | chat                 | boolean                                                                                        | true                                       |
 | analytics            | boolean                                                                                        | true                                       |
 | placeholder          | string                                                                                         | "Search..."                                |
@@ -90,8 +91,8 @@ declare module "solid-js" {
 | defaultAiQuestions   | string[]                                                                                       | []                                         |
 | brandLogoImgSrcUrl   | string                                                                                         | null                                       |
 | brandName            | string                                                                                         | null                                       |
+| brand Color          | string                                                                                         | #CB53EB                                    |
 | problemLink          | string                                                                                         | null                                       |
-| accentColor          | string                                                                                         | #CB53EB                                    |
 | responsive           | boolean                                                                                        | false                                      |
 
 ### Search Results
