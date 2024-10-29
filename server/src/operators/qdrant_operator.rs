@@ -15,16 +15,16 @@ use actix_web::web;
 use itertools::Itertools;
 use qdrant_client::{
     qdrant::{
-        group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
-        quantization_config::Quantization, query, BinaryQuantization, CreateCollectionBuilder,
-        CreateFieldIndexCollectionBuilder, DeleteFieldIndexCollectionBuilder, DeletePointsBuilder,
-        Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, OrderBy, PayloadIndexParams,
-        PointId, PointStruct, PrefetchQuery, QuantizationConfig, Query, QueryBatchPoints,
-        QueryPoints, RecommendPointGroups, RecommendPoints, RecommendStrategy, RetrievedPoint,
-        ScrollPointsBuilder, SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints,
-        SetPayloadPointsBuilder, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
-        TextIndexParams, TokenizerType, UpsertPointsBuilder, Value, Vector, VectorInput,
-        VectorParams, VectorParamsMap, VectorsConfig, WithPayloadSelector, WithVectorsSelector,
+        group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization, query,
+        BinaryQuantization, CreateCollectionBuilder, CreateFieldIndexCollectionBuilder,
+        DeleteFieldIndexCollectionBuilder, DeletePointsBuilder, Distance, FieldType, Filter,
+        GetPointsBuilder, HnswConfigDiff, OrderBy, PointId, PointStruct, PrefetchQuery,
+        QuantizationConfig, Query, QueryBatchPoints, QueryPoints, RecommendPointGroups,
+        RecommendPoints, RecommendStrategy, RetrievedPoint, ScrollPointsBuilder, SearchBatchPoints,
+        SearchParams, SearchPointGroups, SearchPoints, SetPayloadPointsBuilder, SparseIndexConfig,
+        SparseVectorConfig, SparseVectorParams, TextIndexParamsBuilder, TokenizerType,
+        UpsertPointsBuilder, UuidIndexParamsBuilder, Value, Vector, VectorInput, VectorParams,
+        VectorParamsMap, VectorsConfig, WithPayloadSelector, WithVectorsSelector,
     },
     Payload, Qdrant,
 };
@@ -292,11 +292,19 @@ pub async fn create_new_qdrant_collection_query(
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
         qdrant_client
-            .create_field_index(CreateFieldIndexCollectionBuilder::new(
-                collection_name.clone(),
-                "dataset_id",
-                FieldType::Keyword,
-            ))
+            .create_field_index(
+                CreateFieldIndexCollectionBuilder::new(
+                    collection_name.clone(),
+                    "dataset_id",
+                    FieldType::Uuid,
+                )
+                .field_index_params(
+                    UuidIndexParamsBuilder::default()
+                        .is_tenant(true)
+                        .on_disk(false)
+                        .build(),
+                ),
+            )
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
@@ -343,14 +351,14 @@ pub async fn create_new_qdrant_collection_query(
                     "content",
                     FieldType::Text,
                 )
-                .field_index_params(PayloadIndexParams {
-                    index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
-                        tokenizer: TokenizerType::Prefix as i32,
-                        min_token_len: Some(2),
-                        max_token_len: Some(10),
-                        lowercase: Some(true),
-                    })),
-                }),
+                .field_index_params(
+                    TextIndexParamsBuilder::new(TokenizerType::Prefix)
+                        .min_token_len(2)
+                        .max_token_len(10)
+                        .lowercase(true)
+                        .on_disk(false),
+                )
+                .build(),
             )
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
