@@ -2717,7 +2717,7 @@ async fn cross_encoder_for_groups(
                 .metadata
                 .clone()
                 .get(0)
-                .expect("Metadata should have one element")
+                .expect("Group should have at least one chunk")
                 .clone()
         })
         .collect_vec();
@@ -2748,18 +2748,6 @@ async fn cross_encoder_for_groups(
             .partial_cmp(&a.metadata[0].score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-
-    group_results = group_results
-        .into_iter()
-        .map(|mut group| {
-            group.metadata = group
-                .metadata
-                .into_iter()
-                .sorted_by(|a, b| b.score.partial_cmp(&a.score).unwrap())
-                .collect();
-            group
-        })
-        .collect_vec();
 
     Ok(group_results)
 }
@@ -2916,11 +2904,6 @@ pub async fn hybrid_search_over_groups(
                 .map(|m| m.score)
                 .unwrap_or(0.0)
                 >= score_threshold.into()
-        });
-        reranked_chunks.iter_mut().for_each(|group_score_chunk| {
-            group_score_chunk
-                .metadata
-                .retain(|metadata| metadata.score >= score_threshold.into())
         });
     }
 
