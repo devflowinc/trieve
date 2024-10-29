@@ -1,0 +1,9 @@
+/node_modules
+/src
+/public
+
+.env
+
+tailwind.config.ts
+tsconfig.json
+tsup.config.ts
