@@ -7,7 +7,7 @@ import { useTrieve } from "../../hooks/useTrieve";
 import { createMemo } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
-import { JsonInput, Tooltip } from "shared/ui";
+import { JsonInput, MultiStringInput, Tooltip } from "shared/ui";
 import { createStore } from "solid-js/store";
 import { PublicPageParameters } from "trieve-ts-sdk";
 
@@ -18,7 +18,7 @@ export const defaultCrawlOptions: PublicDatasetOptions = {};
 export const PublicPageSettings = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
-  const [extra_params, setExtraParams] = createStore<PublicPageParameters>({});
+  const [extraParams, setExtraParams] = createStore<PublicPageParameters>({});
   const [isPublic, setisPublic] = createSignal<boolean>(false);
 
   const { datasetId } = useContext(DatasetContext);
@@ -95,7 +95,7 @@ export const PublicPageSettings = () => {
               // @ts-expect-error Object literal may only specify known properties, and 'api_key' does not exist in type 'PublicDatasetOptions'. [2353]
               api_key: response.api_key,
               extra_params: {
-                ...extra_params,
+                ...extraParams,
               },
             },
           },
@@ -115,7 +115,7 @@ export const PublicPageSettings = () => {
             PUBLIC_DATASET: {
               enabled: true,
               extra_params: {
-                ...extra_params,
+                ...extraParams,
               },
             },
           },
@@ -128,7 +128,7 @@ export const PublicPageSettings = () => {
       });
     }
 
-    setExtraParams(extra_params);
+    setExtraParams(extraParams);
     setisPublic(true);
   };
 
@@ -175,7 +175,7 @@ export const PublicPageSettings = () => {
             </label>
             <input
               placeholder="https://cdn.trieve.ai/favicon.ico"
-              value={extra_params.brandLogoImgSrcUrl || ""}
+              value={extraParams.brandLogoImgSrcUrl || ""}
               onInput={(e) => {
                 setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
               }}
@@ -188,7 +188,7 @@ export const PublicPageSettings = () => {
             </label>
             <input
               placeholder="Trieve"
-              value={extra_params.brandName || ""}
+              value={extraParams.brandName || ""}
               onInput={(e) => {
                 setExtraParams("brandName", e.currentTarget.value);
               }}
@@ -201,7 +201,7 @@ export const PublicPageSettings = () => {
             </label>
             <input
               placeholder="light"
-              value={extra_params.theme || ""}
+              value={extraParams.theme || ""}
               onInput={(e) => {
                 setExtraParams(
                   "theme",
@@ -217,7 +217,7 @@ export const PublicPageSettings = () => {
             </label>
             <input
               placeholder="#CB53EB"
-              value={extra_params.accentColor || ""}
+              value={extraParams.accentColor || ""}
               onInput={(e) => {
                 setExtraParams("accentColor", e.currentTarget.value);
               }}
@@ -234,7 +234,7 @@ export const PublicPageSettings = () => {
               </label>
               <input
                 placeholder="mailto:humans@trieve.ai"
-                value={extra_params.problemLink || ""}
+                value={extraParams.problemLink || ""}
                 onInput={(e) => {
                   setExtraParams("problemLink", e.currentTarget.value);
                 }}
@@ -248,13 +248,10 @@ export const PublicPageSettings = () => {
                 Responsive View
               </label>
               <input
-                checked={extra_params.responsive || false}
+                checked={extraParams.responsive || false}
                 type="checkbox"
                 onInput={(e) => {
-                  setExtraParams(
-                    "responsive",
-                    e.currentTarget.value === "true",
-                  );
+                  setExtraParams("responsive", e.currentTarget.checked);
                 }}
                 class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
@@ -264,7 +261,7 @@ export const PublicPageSettings = () => {
                 Analytics
               </label>
               <input
-                checked={extra_params.analytics || true}
+                checked={extraParams.analytics || true}
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("analytics", e.currentTarget.checked);
@@ -278,7 +275,7 @@ export const PublicPageSettings = () => {
               </label>
               <input
                 placeholder="Search..."
-                checked={extra_params.suggestedQueries || true}
+                checked={extraParams.suggestedQueries || true}
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("suggestedQueries", e.currentTarget.checked);
@@ -292,7 +289,7 @@ export const PublicPageSettings = () => {
               </label>
               <input
                 placeholder="Search..."
-                checked={extra_params.chat || true}
+                checked={extraParams.chat || true}
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("chat", e.currentTarget.checked);
@@ -308,11 +305,10 @@ export const PublicPageSettings = () => {
             <div> Search Options </div>
             <JsonInput
               onValueChange={(value) => {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 setExtraParams("searchOptions", value);
               }}
               value={() => {
-                return extra_params?.searchOptions || {};
+                return extraParams?.searchOptions || {};
               }}
               onError={(_) => {}}
             />
@@ -322,29 +318,37 @@ export const PublicPageSettings = () => {
               <label class="block" for="">
                 Default Search Queries
               </label>
-              <input
-                placeholder="https://example.com/openapi.json"
-                value={""}
-                onInput={(e) => {
-                  setExtraParams("defaultSearchQueries", e.currentTarget.value);
+              <MultiStringInput
+                placeholder={`What is ${
+                  extraParams["brandName"] || "Trieve"
+                }?...`}
+                value={extraParams.defaultSearchQueries || []}
+                onChange={(e) => {
+                  setExtraParams("defaultSearchQueries", e);
                 }}
-                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                addLabel="Add Example"
+                addClass="text-sm"
+                inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
-            <div class="grow">
+            <div class="grow pt-2">
               <label class="block" for="">
                 Default AI Questions
               </label>
-              <input
-                placeholder="https://example.com/openapi.json"
-                value={""}
-                onInput={(e) => {
-                  setExtraParams("defaultAiQuestions", e.currentTarget.value);
+              <MultiStringInput
+                placeholder={`What is ${
+                  extraParams["brandName"] || "Trieve"
+                }?...`}
+                value={extraParams.defaultAiQuestions || []}
+                onChange={(e) => {
+                  setExtraParams("defaultAiQuestions", e);
                 }}
-                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                addLabel="Add Example"
+                addClass="text-sm"
+                inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
-            <div class="grow">
+            <div class="grow pt-2">
               <label class="block" for="">
                 Placeholder Text
               </label>
