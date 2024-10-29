@@ -76,7 +76,7 @@ terraform.rc
 
 embedding-server/data/*
 .turbo
-*/dist/**
+**/dist/**
 */.vite
 data/*
 clients/ts-sdk/dist
