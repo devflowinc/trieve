@@ -12,7 +12,11 @@ pub fn get_smtp_creds() -> Credentials {
 }
 
 #[tracing::instrument]
-pub fn send_email(html_email_body: String, to_address: String) -> Result<(), ServiceError> {
+pub fn send_email(
+    html_email_body: String,
+    to_address: String,
+    subject: Option<String>,
+) -> Result<(), ServiceError> {
     let smtp_relay = get_env!("SMTP_RELAY", "SMTP_RELAY should be set");
     let smtp_email_address = get_env!("SMTP_EMAIL_ADDRESS", "SMTP_EMAIL_ADDRESS should be set");
 
@@ -25,7 +29,7 @@ pub fn send_email(html_email_body: String, to_address: String) -> Result<(), Ser
     let email = Message::builder()
         .from(smtp_email_address.parse().expect("Invalid email address"))
         .to(to_address.parse().expect("Invalid email address"))
-        .subject("Trieve Sign Up Invitation")
+        .subject(subject.unwrap_or("Trieve Sign Up Invitation".to_string()))
         .header(ContentType::TEXT_HTML)
         .body(html_email_body)
         .expect("Failed to create email");

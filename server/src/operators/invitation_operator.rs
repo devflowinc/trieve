@@ -68,7 +68,7 @@ pub async fn send_invitation(
         invitation.email
     );
 
-    send_email(sg_email_content, invitation.email)
+    send_email(sg_email_content, invitation.email, None)
 }
 
 #[tracing::instrument]
@@ -83,7 +83,7 @@ pub async fn send_invitation_for_existing_user(
         email
     );
 
-    send_email(sg_email_content, email)
+    send_email(sg_email_content, email, None)
 }
 
 #[tracing::instrument(skip(pool))]
