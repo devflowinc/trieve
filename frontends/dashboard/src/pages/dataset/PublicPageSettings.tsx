@@ -213,7 +213,7 @@ export const PublicPageSettings = () => {
           </div>
           <div class="grow">
             <label class="block" for="">
-              Accent Coolor
+              Accent Color
             </label>
             <input
               placeholder="#CB53EB"
