@@ -92,6 +92,10 @@ export type BatchQueuedChunkResponse = {
     pos_in_queue: number;
 };
 
+export type BulkDeleteChunkPayload = {
+    filter: ChunkFilter;
+};
+
 export type CTRAnalytics = {
     filter?: ((SearchAnalyticsFilter) | null);
     type: 'search_ctr_metrics';
@@ -1666,9 +1670,57 @@ export type PublicPageParameters = {
     placeholder?: (string) | null;
     problemLink?: (string) | null;
     responsive?: (boolean) | null;
-    searchOptions?: ((AutocompleteReqPayload) | null);
+    searchOptions?: ((PublicPageSearchOptions) | null);
     suggestedQueries?: (boolean) | null;
     theme?: ((PublicPageTheme) | null);
+};
+
+export type PublicPageSearchOptions = {
+    /**
+     * Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
+     */
+    content_only?: (boolean) | null;
+    filters?: ((ChunkFilter) | null);
+    /**
+     * Get total page count for the query accounting for the applied filters. Defaults to false, but can be set to true when the latency penalty is acceptable (typically 50-200ms).
+     */
+    get_total_pages?: (boolean) | null;
+    /**
+     * Page of chunks to fetch. Page is 1-indexed.
+     */
+    page?: (number) | null;
+    /**
+     * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+     */
+    page_size?: (number) | null;
+    /**
+     * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+     */
+    remove_stop_words?: (boolean) | null;
+    /**
+     * Set score_threshold to a float to filter out chunks with a score below the threshold for cosine distance metric. For Manhattan Distance, Euclidean Distance, and Dot Product, it will filter out scores above the threshold distance. This threshold applies before weight and bias modifications. If not specified, this defaults to no threshold. A threshold of 0 will default to no threshold.
+     */
+    score_threshold?: (number) | null;
+    scoring_options?: ((ScoringOptions) | null);
+    search_type?: ((SearchMethod) | null);
+    /**
+     * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
+     */
+    slim_chunks?: (boolean) | null;
+    sort_options?: ((SortOptions) | null);
+    typo_options?: ((TypoOptions) | null);
+    /**
+     * Enables autocomplete on the search modal.
+     */
+    use_autocomplete?: (boolean) | null;
+    /**
+     * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+     */
+    use_quote_negated_terms?: (boolean) | null;
+    /**
+     * User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+     */
+    user_id?: (string) | null;
 };
 
 export type PublicPageTheme = 'light' | 'dark';
@@ -3098,6 +3150,19 @@ export type UpdateChunkData = {
 
 export type UpdateChunkResponse = (void);
 
+export type BulkDeleteChunkData = {
+    /**
+     * JSON request payload to speicy a filter to bulk delete chunks
+     */
+    requestBody: BulkDeleteChunkPayload;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type BulkDeleteChunkResponse = (void);
+
 export type AutocompleteData = {
     /**
      * JSON request payload to semantically search for chunks (chunks)
@@ -4429,6 +4494,19 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to to updating chunk, likely due to conflicting tracking_id
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+        delete: {
+            req: BulkDeleteChunkData;
+            res: {
+                /**
+                 * Confirmation that the chunk with the id specified was deleted
+                 */
+                204: void;
+                /**
+                 * Service error relating to finding a chunk by tracking_id
                  */
                 400: ErrorResponseBody;
             };
