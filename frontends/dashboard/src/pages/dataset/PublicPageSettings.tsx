@@ -24,6 +24,7 @@ export const PublicPageSettings = () => {
     string | null
   >(null);
   const [isPublic, setisPublic] = createSignal<boolean>(false);
+  const [hasLoaded, setHasLoaded] = createSignal(false);
 
   const { datasetId } = useContext(DatasetContext);
   const { selectedOrg } = useContext(UserContext);
@@ -52,6 +53,7 @@ export const PublicPageSettings = () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
           dataset.server_configuration?.PUBLIC_DATASET.extra_params,
         );
+        setHasLoaded(true);
       });
   };
 
@@ -164,7 +166,7 @@ export const PublicPageSettings = () => {
           />
         </div>
       </Show>
-      <Show when={isPublic()}>
+      <Show when={isPublic() && hasLoaded()}>
         <div class="mt-4 flex content-center items-center gap-1.5 gap-x-3">
           <span class="font-medium">Published Url:</span>{" "}
           <a class="text-magenta-400" href={publicUrl()}>
