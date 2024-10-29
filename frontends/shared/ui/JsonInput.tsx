@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Accessor, createEffect, onCleanup, onMount } from "solid-js";
 import "jsoneditor/dist/jsoneditor.min.css";
 import JSONEditor from "jsoneditor";

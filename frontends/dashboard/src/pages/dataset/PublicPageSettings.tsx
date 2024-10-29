@@ -10,6 +10,7 @@ import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, MultiStringInput, Tooltip } from "shared/ui";
 import { createStore } from "solid-js/store";
 import { PublicPageParameters } from "trieve-ts-sdk";
+import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
 
 export interface PublicDatasetOptions {}
 
@@ -19,6 +20,9 @@ export const PublicPageSettings = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [extraParams, setExtraParams] = createStore<PublicPageParameters>({});
+  const [searchOptionsError, setSearchOptionsError] = createSignal<
+    string | null
+  >(null);
   const [isPublic, setisPublic] = createSignal<boolean>(false);
 
   const { datasetId } = useContext(DatasetContext);
@@ -300,76 +304,89 @@ export const PublicPageSettings = () => {
           </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-2">
-          <div class="p-2">
-            <div> Search Options </div>
-            <JsonInput
-              onValueChange={(value) => {
-                setExtraParams("searchOptions", value);
+        <div class="p-2">
+          <div> Search Options </div>
+          <JsonInput
+            onValueChange={(value) => {
+              const result = publicPageSearchOptionsSchema.safeParse(value);
+
+              if (result.success) {
+                setExtraParams("searchOptions", result.data);
+                setSearchOptionsError(null);
+              } else {
+                setSearchOptionsError(
+                  result.error.errors.at(0)?.message ||
+                    "Invalid Search Options",
+                );
+              }
+            }}
+            value={() => {
+              return extraParams?.searchOptions || {};
+            }}
+            onError={(message) => {
+              setSearchOptionsError(message);
+            }}
+          />
+          <Show when={searchOptionsError()}>
+            <div class="text-red-500">{searchOptionsError()}</div>
+          </Show>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-4">
+          <div class="grow">
+            <label class="block" for="">
+              Default Search Queries
+            </label>
+            <MultiStringInput
+              placeholder={`What is ${
+                extraParams["brandName"] || "Trieve"
+              }?...`}
+              value={extraParams.defaultSearchQueries || []}
+              onChange={(e) => {
+                setExtraParams("defaultSearchQueries", e);
               }}
-              value={() => {
-                return extraParams?.searchOptions || {};
-              }}
-              onError={(_) => {}}
+              addLabel="Add Example"
+              addClass="text-sm"
+              inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
-          <div class="space-y-1.5 p-2">
-            <div class="grow">
-              <label class="block" for="">
-                Default Search Queries
-              </label>
-              <MultiStringInput
-                placeholder={`What is ${
-                  extraParams["brandName"] || "Trieve"
-                }?...`}
-                value={extraParams.defaultSearchQueries || []}
-                onChange={(e) => {
-                  setExtraParams("defaultSearchQueries", e);
-                }}
-                addLabel="Add Example"
-                addClass="text-sm"
-                inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="grow pt-2">
-              <label class="block" for="">
-                Default AI Questions
-              </label>
-              <MultiStringInput
-                placeholder={`What is ${
-                  extraParams["brandName"] || "Trieve"
-                }?...`}
-                value={extraParams.defaultAiQuestions || []}
-                onChange={(e) => {
-                  setExtraParams("defaultAiQuestions", e);
-                }}
-                addLabel="Add Example"
-                addClass="text-sm"
-                inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="grow pt-2">
-              <label class="block" for="">
-                Placeholder Text
-              </label>
-              <input
-                placeholder="Search..."
-                value={""}
-                onInput={(e) => {
-                  setExtraParams("placeholder", e.currentTarget.value);
-                }}
-                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
+          <div class="grow">
+            <label class="block" for="">
+              Default AI Questions
+            </label>
+            <MultiStringInput
+              placeholder={`What is ${
+                extraParams["brandName"] || "Trieve"
+              }?...`}
+              value={extraParams.defaultAiQuestions || []}
+              onChange={(e) => {
+                setExtraParams("defaultAiQuestions", e);
+              }}
+              addLabel="Add Example"
+              addClass="text-sm"
+              inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <label class="block">Placeholder Text</label>
+            <input
+              placeholder="Search..."
+              value={""}
+              onInput={(e) => {
+                setExtraParams("placeholder", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
           </div>
         </div>
 
-        <div class="space-x-1.5">
+        <div class="space-x-1.5 pt-4">
           <button
-            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
+            class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:opacity-40"
             onClick={() => {
               void publishDataset();
             }}
+            disabled={searchOptionsError() !== null}
           >
             Save
           </button>

@@ -372,6 +372,7 @@ impl Modify for SecurityAddon {
             data::models::EventTypes,
             operators::chunk_operator::HighlightStrategy,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
+            handlers::page_handler::PublicPageSearchOptions,
             data::models::DateRange,
             data::models::FieldCondition,
             data::models::Range,
