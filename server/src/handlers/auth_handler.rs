@@ -66,7 +66,7 @@ pub async fn timeout_15secs(
             let _ = send_email(
                 email_body,
                 "webmaster@trieve.ai".to_string(),
-                Some("Alert: Request timeout | Need to scale".to_string()),
+                Some(format!("🤖🤖 Request timeout {} 🤖🤖", path)),
             );
             Err(actix_web::error::ErrorRequestTimeout("Trieve is currently under extended load and we are working to autoscale. If you continue facing this issue, please send an email to humans@trieve.ai with 'request timeout' in the subject line and we will get back to you as soon as possible.".to_string()))
         }
