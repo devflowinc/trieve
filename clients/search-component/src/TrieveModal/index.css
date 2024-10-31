@@ -19,7 +19,8 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow fixed top-[50%] left-[50%] max-h-[80vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] -translate-y-[50%] rounded-lg pt-1.5 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+    @apply animate-contentShow fixed top-[calc(40%-40vh)] sm:top-[calc(40%-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] rounded-lg pt-1.5 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
 
@@ -37,12 +38,12 @@ body {
       @apply h-full;
 
       .chat-outer-wrapper {
-        @apply overflow-auto sm:max-h-[67vh] max-h-[87vh];
+        @apply overflow-auto sm:max-h-[50vh] max-h-[87vh];
       }
     }
 
     &.chat-modal-mobile {
-      @apply flex flex-col h-full max-h-[100vh] sm:h-fit w-full sm:max-h-[80vh] sm:w-[90vw] rounded-none sm:rounded-lg;
+      @apply flex flex-col h-full max-h-[100vh] sm:h-fit w-full sm:max-h-[60vh] sm:w-[90vw] rounded-none sm:rounded-lg;
 
       .chat-outer-wrapper {
         @apply justify-between w-full h-full m-0 sm:mt-12;
@@ -276,7 +277,7 @@ body {
       }
 
       .system {
-        @apply mt-2 sm:mt-8 mb-5 items-center sm:max-w-[46vw] overflow-ellipsis;
+        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[calc(100vw)] sm:max-w-[calc(550px-120px)];
 
         p {
           @apply pb-1;
@@ -287,7 +288,7 @@ body {
         }
 
         pre {
-          @apply my-4 max-w-fit;
+          @apply my-4 overflow-x-scroll bg-zinc-100 dark:bg-zinc-800 p-4 rounded-md;
         }
 
         ul {
