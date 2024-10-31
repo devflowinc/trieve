@@ -7,7 +7,7 @@
     "dist/*",
     "dist/**/*"
   ],
-  "version": "0.0.56",
+  "version": "0.0.58",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
