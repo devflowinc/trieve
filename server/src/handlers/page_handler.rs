@@ -1,17 +1,22 @@
+use std::env;
+
 use crate::{
     data::models::{DatasetConfiguration, Pool, SearchMethod, SortOptions, TypoOptions, UnifiedId},
     errors::ServiceError,
     get_env,
     operators::dataset_operator::get_dataset_by_id_query,
 };
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use minijinja::context;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::data::models::Templates;
 
-use super::chunk_handler::{ChunkFilter, ScoringOptions};
+use super::{
+    auth_handler::LoggedUser,
+    chunk_handler::{ChunkFilter, ScoringOptions},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 pub enum PublicPageTheme {
@@ -157,6 +162,7 @@ pub async fn public_page(
     dataset_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     templates: Templates<'_>,
+    req: HttpRequest,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = dataset_id.into_inner();
 
@@ -169,10 +175,16 @@ pub async fn public_page(
         "Server hostname for OpenID provider must be set"
     );
 
+    let logged_in = req.extensions().get::<LoggedUser>().is_some();
+    let dashboard_url =
+        env::var("ADMIN_DASHBOARD_URL").unwrap_or("https://dashboard.trieve.ai".to_string());
+
     if config.PUBLIC_DATASET.enabled {
         let templ = templates.get_template("page.html").unwrap();
         let response_body = templ
             .render(context! {
+                logged_in,
+                dashboard_url,
                 params => PublicPageParameters {
                     dataset_id: Some(dataset_id),
                     base_url: Some(base_server_url.to_string()),

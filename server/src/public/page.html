@@ -22,10 +22,7 @@
       overflow: hidden;
       font-family: 'Maven Pro', sans-serif;
       line-height: 1.6;
-      margin: 2rem;
-    }
-
-    .basic {
+      position: relative;
       display: flex;
       position: relative;
       align-items: center;
@@ -34,6 +31,35 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+    }
+
+    .corner-logo {
+      max-width: 120px;
+      max-height: 80px;
+      position: fixed;
+      top: 0.8rem;
+      left: 0.8rem;
+    }
+
+    .dev-back-button {
+      background-color: #f5f5f5;
+      border-radius: 0.5rem;
+      border: 1px solid #e5e5e5;
+      color: black;
+      padding: 0.3rem;
+      font-size: 0.8rem;
+      position: fixed;
+      top: 0.5rem;
+      left: 0.5rem;
+      text-decoration: none;
+    }
+
+    .basic {
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
     }
   </style>
 
@@ -93,6 +119,13 @@
 </head>
 
 <body>
+    {% if logged_in %}
+    <a class="dev-back-button" href="{{dashboard_url}}/dataset/{{params.datasetId}}/public-page">Back To Dashboard</a>
+    {% else %}
+    <a href="https://trieve.ai">
+      <img class="corner-logo" src="{{params.brandLogoImgSrcUrl|safe if (params.brandLogoImgSrcUrl is defined and params.brandLogoImgSrcUrl) else 'https://cdn.trieve.ai/trieve-logo.png'|safe}}"></img>
+    </a>
+{% endif %}
   <div class="basic">
     <div id="root">
     </div>
