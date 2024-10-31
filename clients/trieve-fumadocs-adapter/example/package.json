@@ -1,0 +1,31 @@
+{
+  "name": "fumadocs-test",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "next build && node ./update-index.mjs",
+    "dev": "next dev",
+    "start": "next start",
+    "postinstall": "fumadocs-mdx"
+  },
+  "dependencies": {
+    "fumadocs-core": "^14.1.0",
+    "fumadocs-mdx": "11.1.0",
+    "fumadocs-ui": "^14.1.0",
+    "next": "15.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "trieve-fumadocs-adapter": "1.2.1",
+    "trieve-ts-sdk": "^0.0.14"
+  },
+  "devDependencies": {
+    "@types/mdx": "^2.0.13",
+    "@types/node": "22.8.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3"
+  }
+}

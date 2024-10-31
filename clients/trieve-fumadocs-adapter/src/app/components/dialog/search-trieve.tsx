@@ -11,6 +11,7 @@ import { TrieveSDK } from "trieve-ts-sdk";
 import { useTrieveSearch } from "../../search/client";
 import React from "react";
 import { useOnChange } from "fumadocs-core/utils/use-on-change";
+import { RootProvider } from "fumadocs-ui/provider";
 
 export interface TrieveSearchDialogProps extends SharedProps {
   trieveClient: TrieveSDK;
@@ -54,29 +55,31 @@ export default function TrieveSearchDialog({
   });
 
   return (
-    <SearchDialog
-      search={search}
-      onSearchChange={setSearch}
-      results={query.data ?? []}
-      isLoading={query.isLoading}
-      {...props}
-      footer={
-        tags ? (
-          <>
-            <TagsList
-              tag={tag}
-              onTagChange={setTag}
-              items={tags}
-              allowClear={allowClear}>
-              {showTrieve ? <TrieveTitle /> : null}
-            </TagsList>
-            {props.footer}
-          </>
-        ) : (
-          props.footer
-        )
-      }
-    />
+    <RootProvider>
+      <SearchDialog
+        search={search}
+        onSearchChange={setSearch}
+        results={query.data ?? []}
+        isLoading={query.isLoading}
+        {...props}
+        footer={
+          tags ? (
+            <>
+              <TagsList
+                tag={tag}
+                onTagChange={setTag}
+                items={tags}
+                allowClear={allowClear}>
+                {showTrieve ? <TrieveTitle /> : null}
+              </TagsList>
+              {props.footer}
+            </>
+          ) : (
+            props.footer
+          )
+        }
+      />
+    </RootProvider>
   );
 }
 
