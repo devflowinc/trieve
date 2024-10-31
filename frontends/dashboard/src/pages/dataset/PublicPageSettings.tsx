@@ -7,7 +7,7 @@ import { useTrieve } from "../../hooks/useTrieve";
 import { createMemo } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
-import { JsonInput, MultiStringInput, Tooltip } from "shared/ui";
+import { JsonInput, MultiStringInput, Select, Tooltip } from "shared/ui";
 import { createStore } from "solid-js/store";
 import { PublicPageParameters } from "trieve-ts-sdk";
 import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
@@ -205,17 +205,17 @@ export const PublicPageSettings = () => {
             <label class="block" for="">
               Color Theme
             </label>
-            <input
-              placeholder="light"
-              value={extraParams.theme || ""}
-              onInput={(e) => {
-                setExtraParams(
-                  "theme",
-                  e.currentTarget.value === "dark" ? "dark" : "light",
-                );
+            <Select
+              display={(option) =>
+                option.replace(/^\w/, (c) => c.toUpperCase())
+              }
+              onSelected={(option) => {
+                setExtraParams("theme", option as "light" | "dark");
               }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
+              class="bg-white py-1"
+              selected={extraParams.theme || "light"}
+              options={["light", "dark"]}
+            ></Select>
           </div>
           <div class="grow">
             <label class="block" for="">
