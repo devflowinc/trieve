@@ -19,7 +19,7 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow fixed top-[calc(40%-40vh)] sm:top-[calc(40%-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] rounded-lg pt-1.5 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+    @apply animate-contentShow fixed top-[calc(40%-40vh)] sm:top-[calc(40vh-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] rounded-lg pt-1.5 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
 
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
