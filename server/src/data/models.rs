@@ -3139,12 +3139,32 @@ pub struct DatasetTags {
     pub tag: String,
 }
 
+impl DatasetTags {
+    pub fn from_details(dataset_id: uuid::Uuid, tag: String) -> Self {
+        DatasetTags {
+            id: uuid::Uuid::new_v4(),
+            dataset_id,
+            tag,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone)]
 #[diesel(table_name = chunk_metadata_tags)]
 pub struct ChunkMetadataTags {
     pub id: uuid::Uuid,
     pub chunk_metadata_id: uuid::Uuid,
     pub tag_id: uuid::Uuid,
+}
+
+impl ChunkMetadataTags {
+    pub fn from_details(chunk_metadata_id: uuid::Uuid, tag_id: uuid::Uuid) -> Self {
+        ChunkMetadataTags {
+            id: uuid::Uuid::new_v4(),
+            chunk_metadata_id,
+            tag_id,
+        }
+    }
 }
 
 #[derive(Debug)]

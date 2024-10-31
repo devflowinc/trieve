@@ -23,7 +23,6 @@ import {
   SearchWithinGroupReqPayload,
   SearchWithinGroupResponseBody,
   UpdateChunkGroupReqPayload,
-  UpdateGroupByTrackingIDReqPayload,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
@@ -158,34 +157,6 @@ export async function updateGroup(
     "put",
     {
       data,
-      datasetId: this.datasetId,
-    },
-    signal
-  );
-}
-
-/**
- * date a chunk_group with the given tracking id. Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
- * 
- * Example:
- * ```js
- *const data = await trieve.updateGroupByTrackingId({
-  tracking_id: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
-});
- * ```
- */
-export async function updateGroupByTrackingId(
-  /** @hidden */
-  this: TrieveSDK,
-  data: UpdateGroupByTrackingIDReqPayload,
-  signal?: AbortSignal
-) {
-  return this.trieve.fetch(
-    "/api/chunk_group/tracking_id/{tracking_id}",
-    "put",
-    {
-      data,
-      trackingId: data.tracking_id,
       datasetId: this.datasetId,
     },
     signal

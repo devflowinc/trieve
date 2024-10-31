@@ -2150,7 +2150,7 @@
           "Chunk Group"
         ],
         "summary": "Search Over Groups",
-        "description": "This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model. Compatible with semantic, fulltext, or hybrid search modes.",
+        "description": "This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the top chunk of each group will be re-ranked using scores from a cross encoder model. Compatible with semantic, fulltext, or hybrid search modes.",
         "operationId": "search_over_groups",
         "parameters": [
           {
@@ -2590,70 +2590,6 @@
             }
           }
         },
-        "security": [
-          {
-            "ApiKey": [
-              "admin"
-            ]
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "Chunk Group"
-        ],
-        "summary": "Update Group by Tracking ID",
-        "description": "Update a chunk_group with the given tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
-        "operationId": "update_group_by_tracking_id",
-        "parameters": [
-          {
-            "name": "TR-Dataset",
-            "in": "header",
-            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "tracking_id",
-            "in": "path",
-            "description": "Tracking id of the chunk_group to update",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "JSON request payload to update a chunkGroup",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateGroupByTrackingIDReqPayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Confirmation that the chunkGroup was updated"
-          },
-          "400": {
-            "description": "Service error relating to updating the chunkGroup",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "deprecated": true,
         "security": [
           {
             "ApiKey": [
