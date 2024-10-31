@@ -3505,23 +3505,6 @@ export type AddChunkToGroupByTrackingIdData = {
 
 export type AddChunkToGroupByTrackingIdResponse = (void);
 
-export type UpdateGroupByTrackingIdData = {
-    /**
-     * JSON request payload to update a chunkGroup
-     */
-    requestBody: UpdateGroupByTrackingIDReqPayload;
-    /**
-     * Tracking id of the chunk_group to update
-     */
-    trackingId: string;
-    /**
-     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
-     */
-    trDataset: string;
-};
-
-export type UpdateGroupByTrackingIdResponse = (void);
-
 export type DeleteGroupByTrackingIdData = {
     /**
      * Delete the chunks within the group
@@ -4847,19 +4830,6 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error related to adding the chunk group by tracking_id
-                 */
-                400: ErrorResponseBody;
-            };
-        };
-        put: {
-            req: UpdateGroupByTrackingIdData;
-            res: {
-                /**
-                 * Confirmation that the chunkGroup was updated
-                 */
-                204: void;
-                /**
-                 * Service error relating to updating the chunkGroup
                  */
                 400: ErrorResponseBody;
             };

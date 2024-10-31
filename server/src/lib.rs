@@ -206,7 +206,6 @@ impl Modify for SecurityAddon {
         handlers::group_handler::get_groups_for_chunks,
         handlers::group_handler::get_group_by_tracking_id,
         handlers::group_handler::delete_group_by_tracking_id,
-        handlers::group_handler::update_group_by_tracking_id,
         handlers::group_handler::add_chunk_to_group_by_tracking_id,
         handlers::group_handler::get_chunks_in_group_by_tracking_id,
         handlers::group_handler::search_within_group,

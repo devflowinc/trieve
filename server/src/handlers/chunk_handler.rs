@@ -603,33 +603,33 @@ pub async fn delete_chunk_by_tracking_id(
 }))]
 pub struct UpdateChunkReqPayload {
     /// Id of the chunk you want to update. You can provide either the chunk_id or the tracking_id. If both are provided, the chunk_id will be used.
-    chunk_id: Option<uuid::Uuid>,
+    pub chunk_id: Option<uuid::Uuid>,
     /// Tracking_id of the chunk you want to update. This is required to match an existing chunk.
-    tracking_id: Option<String>,
+    pub tracking_id: Option<String>,
     /// Tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them. If no tag_set is provided, the existing tag_set will be used.
-    tag_set: Option<Vec<String>>,
+    pub tag_set: Option<Vec<String>>,
     /// Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
-    link: Option<String>,
+    pub link: Option<String>,
     ///Num value is an arbitrary numerical value that can be used to filter chunks. This is useful for when you want to filter chunks by numerical value. If no num_value is provided, the existing num_value will be used.
-    num_value: Option<f64>,
+    pub num_value: Option<f64>,
     /// HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
-    chunk_html: Option<String>,
+    pub chunk_html: Option<String>,
     /// The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. If no metadata is provided, the existing metadata will be used.
-    metadata: Option<serde_json::Value>,
+    pub metadata: Option<serde_json::Value>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results. If no time_stamp is provided, the existing time_stamp will be used.
-    time_stamp: Option<String>,
+    pub time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
-    weight: Option<f64>,
+    pub weight: Option<f64>,
     /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
-    group_ids: Option<Vec<uuid::Uuid>>,
+    pub group_ids: Option<Vec<uuid::Uuid>>,
     /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
-    group_tracking_ids: Option<Vec<String>>,
+    pub group_tracking_ids: Option<Vec<String>>,
     /// Location is a GeoInfo object which lets you specify a latitude and longitude which can be used later to filter results.
-    location: Option<GeoInfo>,
+    pub location: Option<GeoInfo>,
     /// Image urls are a list of urls to images that are associated with the chunk. This is useful for when you want to associate images with a chunk. If no image_urls are provided, the existing image_urls will be used.
-    image_urls: Option<Vec<String>>,
+    pub image_urls: Option<Vec<String>>,
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
-    convert_html_to_text: Option<bool>,
+    pub convert_html_to_text: Option<bool>,
     ///  Full text boost is useful for when you want to boost certain phrases in the fulltext (SPLADE) and BM25 search results. I.e. making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
     #[serde(alias = "boost_phrase")]
     pub fulltext_boost: Option<FullTextBoost>,
