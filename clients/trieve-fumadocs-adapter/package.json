@@ -1,6 +1,6 @@
 {
   "name": "trieve-fumadocs-adapter",
-  "version": "1.1.1",
+  "version": "1.2.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,17 +13,17 @@
     "package.json"
   ],
   "exports": {
-    "/components/dialog/search": {
-      "require": "./dist/components/dialog/search-trieve.mjs",
-      "types": "./dist/components/dialog/search-trieve.d.ts"
+    "./components/dialog/search": {
+      "import": "./dist/components/dialog/search-trieve.mjs",
+      "types": "./dist/components/dialog/search-trieve.d.mts"
     },
-    "/search/sync": {
-      "require": "./dist/search/sync.mjs",
-      "types": "./dist/search/sync.d.ts"
+    "./search/sync": {
+      "import": "./dist/search/sync.mjs",
+      "types": "./dist/search/sync.d.mts"
     },
-    "/search/trieve": {
-      "require": "./dist/search/trieve.mjs",
-      "types": "./dist/search/trieve.d.ts"
+    "./search/trieve": {
+      "import": "./dist/search/trieve.mjs",
+      "types": "./dist/search/trieve.d.mts"
     }
   },
   "main": "./dist/index.js",
