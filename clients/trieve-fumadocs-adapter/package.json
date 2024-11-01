@@ -1,6 +1,6 @@
 {
   "name": "trieve-fumadocs-adapter",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

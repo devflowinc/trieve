@@ -2225,9 +2225,19 @@ pub async fn get_recommended_chunks(
         )
     }
 
-    if positive_qdrant_ids.is_empty() && negative_qdrant_ids.is_empty() {
+    if positive_qdrant_ids.is_empty()
+        && data.strategy == Some(RecommendationStrategy::AverageVector)
+    {
         return Err(
-            ServiceError::BadRequest("Positive chunk ids could not be found".to_string()).into(),
+            ServiceError::BadRequest(
+                "Positive chunk ids could not be found, must return at least 1 positive id for average vector strategy".to_string()
+            ).into(),
+        );
+    } else if positive_qdrant_ids.is_empty() && negative_qdrant_ids.is_empty() {
+        return Err(
+            ServiceError::BadRequest(
+                "No positive or negative chunk ids could be found. At least one positive or negative id must be provided.".to_string()
+            ).into(),
         );
     }
 

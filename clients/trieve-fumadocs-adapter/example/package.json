@@ -15,7 +15,7 @@
     "next": "15.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "trieve-fumadocs-adapter": "1.2.1",
+    "trieve-fumadocs-adapter": "../dist",
     "trieve-ts-sdk": "^0.0.14"
   },
   "devDependencies": {

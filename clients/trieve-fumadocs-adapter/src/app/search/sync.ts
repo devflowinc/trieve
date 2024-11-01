@@ -1,7 +1,9 @@
 import { ChunkReqPayload, TrieveSDK } from "trieve-ts-sdk";
 import { DocumentRecord } from "fumadocs-core/search/algolia";
 
-export async function sync(trieve: TrieveSDK, pages: DocumentRecord[]) {
+export type TrieveDocument = DocumentRecord;
+
+export async function sync(trieve: TrieveSDK, pages: TrieveDocument[]) {
   // Clear Dataset Chunks
   await trieve.trieve.fetch(
     `/api/dataset/clear/${trieve.datasetId}` as `/api/dataset/clear/{dataset_id}`,
@@ -23,7 +25,7 @@ export async function sync(trieve: TrieveSDK, pages: DocumentRecord[]) {
   }
 }
 
-function toTrievePayload(page: DocumentRecord) {
+function toTrievePayload(page: TrieveDocument) {
   let id = 0;
   const chunks: ChunkReqPayload[] = [];
   const scannedHeadings = new Set();

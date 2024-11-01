@@ -1,4 +1,7 @@
 @import "./TrieveModal/index.css";
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 .sr-only[aria-hidden="true"] {
   position: absolute;
