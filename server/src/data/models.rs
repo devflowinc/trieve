@@ -2750,6 +2750,24 @@ impl DatasetConfigurationDTO {
                     default_ai_questions: page_parameters_self
                         .default_ai_questions
                         .or(page_parameters_curr.default_ai_questions),
+                    allow_switching_modes: page_parameters_self
+                        .allow_switching_modes
+                        .or(page_parameters_curr.allow_switching_modes),
+                    currency_position: page_parameters_self
+                        .currency_position
+                        .or(page_parameters_curr.currency_position),
+                    debounce_ms: page_parameters_self
+                        .debounce_ms
+                        .or(page_parameters_curr.debounce_ms),
+                    default_currency: page_parameters_self
+                        .default_currency
+                        .or(page_parameters_curr.default_currency),
+                    default_search_mode: page_parameters_self
+                        .default_search_mode
+                        .or(page_parameters_curr.default_search_mode),
+                    use_group_search: page_parameters_self
+                        .use_group_search
+                        .or(page_parameters_curr.use_group_search),
                 }),
             },
         }

@@ -142,6 +142,18 @@ pub struct PublicPageParameters {
     pub default_search_queries: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_ai_questions: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_search_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub use_group_search: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_switching_modes: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_currency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub currency_position: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub debounce_ms: Option<i32>,
 }
 
 #[utoipa::path(

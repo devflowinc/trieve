@@ -1658,14 +1658,19 @@ export type PublicDatasetOptions = {
 
 export type PublicPageParameters = {
     accentColor?: (string) | null;
+    allowSwitchingModes?: (boolean) | null;
     analytics?: (boolean) | null;
     apiKey?: (string) | null;
     baseUrl?: (string) | null;
     brandLogoImgSrcUrl?: (string) | null;
     brandName?: (string) | null;
     chat?: (boolean) | null;
+    currencyPosition?: (string) | null;
     datasetId?: (string) | null;
+    debounceMs?: (number) | null;
     defaultAiQuestions?: Array<(string)> | null;
+    defaultCurrency?: (string) | null;
+    defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
     placeholder?: (string) | null;
     problemLink?: (string) | null;
@@ -1673,6 +1678,7 @@ export type PublicPageParameters = {
     searchOptions?: ((PublicPageSearchOptions) | null);
     suggestedQueries?: (boolean) | null;
     theme?: ((PublicPageTheme) | null);
+    useGroupSearch?: (boolean) | null;
 };
 
 export type PublicPageSearchOptions = {

@@ -10968,6 +10968,10 @@
             "type": "string",
             "nullable": true
           },
+          "allowSwitchingModes": {
+            "type": "boolean",
+            "nullable": true
+          },
           "analytics": {
             "type": "boolean",
             "nullable": true
@@ -10992,9 +10996,18 @@
             "type": "boolean",
             "nullable": true
           },
+          "currencyPosition": {
+            "type": "string",
+            "nullable": true
+          },
           "datasetId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "debounceMs": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           },
           "defaultAiQuestions": {
@@ -11002,6 +11015,14 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultSearchMode": {
+            "type": "string",
             "nullable": true
           },
           "defaultSearchQueries": {
@@ -11041,6 +11062,10 @@
                 "$ref": "#/components/schemas/PublicPageTheme"
               }
             ],
+            "nullable": true
+          },
+          "useGroupSearch": {
+            "type": "boolean",
             "nullable": true
           }
         }
