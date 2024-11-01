@@ -19,7 +19,7 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow fixed top-[calc(40%-40vh)] sm:top-[calc(40vh-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] rounded-lg pt-1.5 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+    @apply animate-contentShow fixed top-[calc(40%-40vh)] sm:top-[calc(40vh-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] rounded-lg shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
 
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
@@ -82,7 +82,7 @@ body {
     }
 
     .clear-query {
-      @apply flex items-center justify-end mt-2 absolute top-1.5 right-2 z-30 font-medium;
+      @apply flex items-center justify-end mt-2 absolute top-1.5 right-6 z-30 font-medium;
 
       > .clear-query-icon {
         @apply w-5 h-5 fill-current;
@@ -90,7 +90,7 @@ body {
     }
 
     .mode-switch-wrapper {
-      @apply flex items-center justify-end mt-2 absolute top-2.5 right-7 z-30 font-medium;
+      @apply flex items-center justify-end mt-2 absolute top-0.5 right-7 z-30 font-medium;
 
       /* apply hidden if both .search and .has-query are present */
       &.search.has-query {
@@ -145,7 +145,7 @@ body {
     }
 
     .trieve-footer {
-      @apply sticky items-center bottom-0;
+      @apply sticky pl-1 pr-3 items-center bottom-0;
       background-color: var(--tv-zinc-50);
       border-color: var(--tv-zinc-200);
 
@@ -330,7 +330,7 @@ body {
     }
 
     .suggested-queries-wrapper {
-      @apply flex gap-2 items-center flex-wrap;
+      @apply flex gap-2 items-center flex-wrap px-5;
 
       > p {
         @apply text-xs;
@@ -506,16 +506,6 @@ body {
         @apply flex items-center;
       }
 
-      &::after {
-        @apply absolute h-[17px] w-full z-50 block -bottom-[17px] bg-gradient-to-b;
-        background-color: linear-gradient(
-          var(--tv-zinc-50),
-          var(--tv-zinc-50),
-          rgba(0, 0, 0, 0)
-        );
-        content: "";
-      }
-
       .search-icon {
         @apply absolute z-[51] left-2;
         color: var(--tv-zinc-400);
@@ -539,7 +529,7 @@ body {
     }
 
     input {
-      @apply block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset outline-none sm:text-sm sm:leading-6 pl-8 pr-2 h-12 z-10 relative;
+      @apply block w-full rounded-t-md border-0 py-1.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset outline-none sm:text-sm sm:leading-6 pl-8 pr-2 h-12 z-10 relative;
       color: var(--tv-zinc-900);
       background-color: var(--tv-zinc-50);
       border: 1px solid var(--tv-zinc-300);
@@ -561,15 +551,16 @@ body {
       }
     }
     ul {
-      @apply mt-4;
-
       &:not(.chat-ul) {
-        @apply overflow-y-auto overflow-x-hidden max-h-[420px] mt-4 mx-0 px-0;
+        @apply overflow-y-auto overflow-x-hidden max-h-[420px] mx-0 px-0;
+        &:not(.trieve-elements-search) {
+          @apply mt-4 
+        }
       }
     }
 
     .item {
-      @apply select-none cursor-pointer py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
+      @apply select-none cursor-pointer py-2 px-5 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
       background-color: var(--tv-zinc-50);
 
       .chunk-path {
