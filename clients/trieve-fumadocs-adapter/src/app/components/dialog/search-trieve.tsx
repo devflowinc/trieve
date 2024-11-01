@@ -64,18 +64,21 @@ export default function TrieveSearchDialog({
         {...props}
         footer={
           tags ? (
-            <>
+            <div className="flex items-center justify-between">
               <TagsList
                 tag={tag}
                 onTagChange={setTag}
                 items={tags}
-                allowClear={allowClear}>
-                {showTrieve ? <TrieveTitle /> : null}
-              </TagsList>
+                allowClear={allowClear}
+              />
               {props.footer}
-            </>
+              {showTrieve ? <TrieveTitle /> : null}
+            </div>
           ) : (
-            props.footer
+            <>
+              {props.footer}
+              {showTrieve ? <TrieveTitle /> : null}
+            </>
           )
         }
       />
@@ -85,7 +88,7 @@ export default function TrieveSearchDialog({
 
 function TrieveTitle(): React.ReactNode {
   return (
-    <a href="https://trieve.ai/?ref=assistant-ui" target="_blank">
+    <a href="https://trieve.ai" target="_blank">
       <div className="text-muted-foreground text-end text-xs">
         Powered by <span className="font-semibold">Trieve.ai</span>
       </div>
