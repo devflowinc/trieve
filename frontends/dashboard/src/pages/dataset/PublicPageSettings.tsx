@@ -162,7 +162,7 @@ export const PublicPageSettings = () => {
           </button>
           <Tooltip
             tooltipText="Make a UI to display the search with our component. This is revertable"
-            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
           />
         </div>
       </Show>
@@ -176,9 +176,15 @@ export const PublicPageSettings = () => {
         </div>
         <div class="mt-4 flex space-x-3">
           <div class="grow">
-            <label class="block" for="">
-              Brand Logo Link
-            </label>
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Brand Logo Link
+              </label>
+              <Tooltip
+                tooltipText="URL for your brand's logo that will be displayed in the search component"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
             <input
               placeholder="https://cdn.trieve.ai/favicon.ico"
               value={extraParams.brandLogoImgSrcUrl || ""}
@@ -189,9 +195,15 @@ export const PublicPageSettings = () => {
             />
           </div>
           <div class="grow">
-            <label class="block" for="">
-              Brand Name
-            </label>
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Brand Name
+              </label>
+              <Tooltip
+                tooltipText="Your brand name that will be displayed in the search component"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
             <input
               placeholder="Trieve"
               value={extraParams.brandName || ""}
@@ -202,9 +214,15 @@ export const PublicPageSettings = () => {
             />
           </div>
           <div class="grow">
-            <label class="block" for="">
-              Color Theme
-            </label>
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Color Theme
+              </label>
+              <Tooltip
+                tooltipText="Choose between light and dark mode for the search component"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
             <Select
               display={(option) =>
                 option.replace(/^\w/, (c) => c.toUpperCase())
@@ -215,12 +233,18 @@ export const PublicPageSettings = () => {
               class="bg-white py-1"
               selected={extraParams.theme || "light"}
               options={["light", "dark"]}
-            ></Select>
+            />
           </div>
           <div class="grow">
-            <label class="block" for="">
-              Accent Color
-            </label>
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Accent Color
+              </label>
+              <Tooltip
+                tooltipText="Hex color code for the main accent color in the search component"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
             <input
               placeholder="#CB53EB"
               value={extraParams.accentColor || ""}
@@ -235,9 +259,15 @@ export const PublicPageSettings = () => {
         <div class="mt-4 flex">
           <div class="flex grow">
             <div class="grow">
-              <label class="block" for="">
-                Problem Link
-              </label>
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Problem Link
+                </label>
+                <Tooltip
+                  tooltipText="Contact link for users to report issues (e.g. mailto: or support URL)"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
               <input
                 placeholder="mailto:humans@trieve.ai"
                 value={extraParams.problemLink || ""}
@@ -250,9 +280,15 @@ export const PublicPageSettings = () => {
           </div>
           <div class="ml-3 grid grow grid-cols-2 items-center gap-1.5 p-1.5">
             <div class="flex gap-2">
-              <label class="block" for="">
-                Responsive View
-              </label>
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Responsive View
+                </label>
+                <Tooltip
+                  tooltipText="Enable responsive layout for different screen sizes"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
               <input
                 checked={extraParams.responsive || false}
                 type="checkbox"
@@ -263,9 +299,15 @@ export const PublicPageSettings = () => {
               />
             </div>
             <div class="flex gap-2">
-              <label class="block" for="">
-                Analytics
-              </label>
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Analytics
+                </label>
+                <Tooltip
+                  tooltipText="Collect analytics for searches on the page"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
               <input
                 checked={extraParams.analytics || true}
                 type="checkbox"
@@ -276,9 +318,15 @@ export const PublicPageSettings = () => {
               />
             </div>
             <div class="flex gap-2">
-              <label class="block" for="">
-                Enable Suggestions
-              </label>
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Enable Suggestions
+                </label>
+                <Tooltip
+                  tooltipText="Show search suggestions as users type"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
               <input
                 placeholder="Search..."
                 checked={extraParams.suggestedQueries || true}
@@ -290,9 +338,15 @@ export const PublicPageSettings = () => {
               />
             </div>
             <div class="flex gap-2">
-              <label class="block" for="">
-                Enable Chat
-              </label>
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Enable Chat
+                </label>
+                <Tooltip
+                  tooltipText="Enable RAG Chat in the component"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
               <input
                 placeholder="Search..."
                 checked={extraParams.chat || true}
@@ -336,9 +390,15 @@ export const PublicPageSettings = () => {
 
         <div class="mt-4 grid grid-cols-2 gap-4">
           <div class="grow">
-            <label class="block" for="">
-              Default Search Queries
-            </label>
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Default Search Queries
+              </label>
+              <Tooltip
+                tooltipText="Example search queries to show users"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
             <MultiStringInput
               placeholder={`What is ${
                 extraParams["brandName"] || "Trieve"
@@ -353,9 +413,15 @@ export const PublicPageSettings = () => {
             />
           </div>
           <div class="grow">
-            <label class="block" for="">
-              Default AI Questions
-            </label>
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Default AI Questions
+              </label>
+              <Tooltip
+                tooltipText="Example AI questions to show in the RAG chat"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
             <MultiStringInput
               placeholder={`What is ${
                 extraParams["brandName"] || "Trieve"
@@ -370,7 +436,13 @@ export const PublicPageSettings = () => {
             />
           </div>
           <div class="grow">
-            <label class="block">Placeholder Text</label>
+            <div class="flex items-center gap-1">
+              <label class="block">Placeholder Text</label>
+              <Tooltip
+                tooltipText="Text shown in the search box before user input"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
             <input
               placeholder="Search..."
               value={""}
