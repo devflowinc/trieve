@@ -54,7 +54,7 @@ body {
     }
 
     .trieve-elements-search {
-      @apply pr-2;
+      @apply pr-2 ;
 
       .item-group-container {
         @apply border-b border-gray-300 mb-5;
@@ -82,7 +82,7 @@ body {
     }
 
     .clear-query {
-      @apply flex items-center justify-end mt-2 absolute top-1.5 right-6 z-30 font-medium;
+      @apply flex items-center justify-end mt-2 absolute top-1.5 right-2 z-30 font-medium;
 
       > .clear-query-icon {
         @apply w-5 h-5 fill-current;
@@ -90,7 +90,7 @@ body {
     }
 
     .mode-switch-wrapper {
-      @apply flex items-center justify-end mt-2 absolute top-0.5 right-7 z-30 font-medium;
+      @apply flex items-center justify-end mt-2 absolute top-0.5 right-2 z-30 font-medium;
 
       /* apply hidden if both .search and .has-query are present */
       &.search.has-query {
@@ -140,12 +140,12 @@ body {
       }
     }
     .chat-footer-wrapper {
-      @apply sticky -bottom-2 pt-1 flex flex-col gap-2;
+      @apply sticky bottom-0 flex flex-col;
       background-color: var(--tv-zinc-50);
     }
 
     .trieve-footer {
-      @apply sticky pl-1 pr-3 items-center bottom-0;
+      @apply sticky pl-0.5 pr-3 items-center bottom-0;
       background-color: var(--tv-zinc-50);
       border-color: var(--tv-zinc-200);
 
@@ -153,13 +153,21 @@ body {
         @apply border-t;
       }
 
+      &.chat {
+        @apply pb-2;
+      }
+
       .bottom-row {
         @apply flex justify-between;
 
         button {
-          @apply px-2 text-sm py-1;
+          @apply px-2 text-sm py-1 rounded-md;
           color: var(--tv-zinc-700);
           border-color: var(--tv-zinc-300);
+
+          &.clear-button {
+            @apply border ml-2;
+          }
 
           &:hover {
             color: var(--tv-zinc-950);
@@ -330,7 +338,7 @@ body {
     }
 
     .suggested-queries-wrapper {
-      @apply flex gap-2 items-center flex-wrap px-5;
+      @apply flex gap-2 items-center flex-wrap px-5 mb-2;
 
       > p {
         @apply text-xs;
@@ -380,7 +388,7 @@ body {
     }
 
     .chat-outer-wrapper {
-      @apply flex flex-col mt-12;
+      @apply flex flex-col mt-12 px-5;
 
       .ai-message {
         .message-wrapper {
@@ -550,6 +558,13 @@ body {
           rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
     }
+
+    .chat-footer-wrapper {
+      input {
+        @apply rounded-none mb-0;
+      }
+    }
+
     ul {
       &:not(.chat-ul) {
         @apply overflow-y-auto overflow-x-hidden max-h-[420px] mx-0 px-0;
