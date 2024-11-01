@@ -453,8 +453,164 @@ export const PublicPageSettings = () => {
             />
           </div>
         </div>
+        <details class="mb-4 mt-4">
+          <summary class="cursor-pointer text-sm font-medium">
+            Advanced Settings
+          </summary>
+          <div class="mt-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Default Currency
+                  </label>
+                  <Tooltip
+                    tooltipText="Set the default currency for pricing display"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  placeholder="USD"
+                  value={extraParams.defaultCurrency || ""}
+                  onInput={(e) => {
+                    setExtraParams("defaultCurrency", e.currentTarget.value);
+                  }}
+                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
 
-        <div class="space-x-1.5 pt-4">
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Currency Position
+                  </label>
+                  <Tooltip
+                    tooltipText="Position of currency symbol (prefix/suffix)"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <Select
+                  display={(option) => option}
+                  onSelected={(option) => {
+                    setExtraParams(
+                      "currencyPosition",
+                      option as "prefix" | "suffix",
+                    );
+                  }}
+                  class="bg-white py-1"
+                  selected={extraParams.currencyPosition || "prefix"}
+                  options={["prefix", "suffix"]}
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Default Search Mode
+                  </label>
+                  <Tooltip
+                    tooltipText="Set the initial search mode"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <Select
+                  display={(option) => option}
+                  onSelected={(option) => {
+                    setExtraParams("defaultSearchMode", option);
+                  }}
+                  class="bg-white py-1"
+                  selected={extraParams.defaultSearchMode || "semantic"}
+                  options={["semantic", "fulltext", "hybrid"]}
+                />
+              </div>
+
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Debounce (ms)
+                  </label>
+                  <Tooltip
+                    tooltipText="Delay before search triggers after typing"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="number"
+                  placeholder="300"
+                  value={extraParams.debounceMs || 300}
+                  onInput={(e) => {
+                    setExtraParams(
+                      "debounceMs",
+                      parseInt(e.currentTarget.value),
+                    );
+                  }}
+                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Allow Switching Modes
+                  </label>
+                  <Tooltip
+                    tooltipText="Enable users to switch between search modes"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="checkbox"
+                  checked={extraParams.allowSwitchingModes || false}
+                  onChange={(e) => {
+                    setExtraParams(
+                      "allowSwitchingModes",
+                      e.currentTarget.checked,
+                    );
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Use Group Search
+                  </label>
+                  <Tooltip
+                    tooltipText="Enable grouped search results"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="checkbox"
+                  checked={extraParams.useGroupSearch || false}
+                  onChange={(e) => {
+                    setExtraParams("useGroupSearch", e.currentTarget.checked);
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div class="space-x-1.5">
           <button
             class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:opacity-40"
             onClick={() => {

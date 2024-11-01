@@ -182,6 +182,24 @@ const App = () => {
         {% if params.defaultAiQuestions -%}
         defaultAiQuestions={{ params.defaultAiQuestions }}
         {% endif -%}
+        {% if params.defaultSearchMode -%}
+        defaultSearchMode="{{ params.defaultSearchMode }}"
+        {% endif -%}
+        {% if params.useGroupSearch -%}
+        useGroupSearch={{ params.useGroupSearch }}
+        {% endif -%}
+        {% if params.allowSwitchingModes -%}
+        allowSwitchingModes={{ params.allowSwitchingModes }}
+        {% endif -%}
+        {% if params.defaultCurrency -%}
+        defaultCurrency="{{ params.defaultCurrency }}"
+        {% endif -%}
+        {% if params.currencyPosition -%}
+        currencyPosition="{{ params.currencyPosition }}"
+        {% endif -%}
+        {% if params.debounceMs -%}
+        debounceMs={{ params.debounceMs }}
+        {% endif -%}
           /&gt;
   );
 }
