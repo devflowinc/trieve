@@ -55,7 +55,8 @@ pub async fn timeout_15secs(
         })
         .collect::<Vec<String>>();
 
-    let base_server_url = std::env::var("BASE_SERVER_URL").unwrap_or_else(|_| "https://api.trieve.ai".to_string());
+    let base_server_url =
+        std::env::var("BASE_SERVER_URL").unwrap_or_else(|_| "https://api.trieve.ai".to_string());
 
     match tokio::time::timeout(std::time::Duration::from_secs(15), next.call(service_req)).await {
         Ok(res) => res,
@@ -68,7 +69,10 @@ pub async fn timeout_15secs(
             let _ = send_email(
                 email_body,
                 "webmaster@trieve.ai".to_string(),
-                Some(format!("🤖🤖 {} Request timeout {} 🤖🤖", base_server_url, path)),
+                Some(format!(
+                    "🤖🤖 {} Request timeout {} 🤖🤖",
+                    base_server_url, path
+                )),
             );
             Err(actix_web::error::ErrorRequestTimeout("Trieve is currently under extended load and we are working to autoscale. If you continue facing this issue, please send an email to humans@trieve.ai with 'request timeout' in the subject line and we will get back to you as soon as possible.".to_string()))
         }
