@@ -445,7 +445,7 @@ export const PublicPageSettings = () => {
             </div>
             <input
               placeholder="Search..."
-              value={""}
+              value={extraParams.placeholder || ""}
               onInput={(e) => {
                 setExtraParams("placeholder", e.currentTarget.value);
               }}
