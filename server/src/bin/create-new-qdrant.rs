@@ -26,6 +26,11 @@ async fn main() -> Result<(), ServiceError> {
         .collect::<Option<Vec<u64>>>()
         .unwrap_or(vec![384, 512, 768, 1024, 1536, 3072]);
 
+    let shard_number: u32 = std::env::var("QDRANT_SHARD_COUNT")
+        .unwrap_or("3".to_string())
+        .parse()
+        .unwrap_or(3);
+
     create_new_qdrant_collection_query(
         Some(&qdrant_url),
         Some(&qdrant_api_key),
@@ -33,6 +38,7 @@ async fn main() -> Result<(), ServiceError> {
         false,
         replication_factor,
         vector_sizes,
+        shard_number,
     )
     .await?;
     Ok(())
