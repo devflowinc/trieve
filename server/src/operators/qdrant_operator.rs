@@ -78,6 +78,7 @@ pub async fn create_new_qdrant_collection_query(
     recreate_indexes: bool,
     replication_factor: u32,
     accepted_vectors: Vec<u64>,
+    shard_number: u32,
 ) -> Result<(), ServiceError> {
     let qdrant_client = get_qdrant_connection(qdrant_url, qdrant_api_key).await?;
 
@@ -187,7 +188,8 @@ pub async fn create_new_qdrant_collection_query(
                                 ..Default::default()
                             })
                             .write_consistency_factor(1)
-                            .replication_factor(replication_factor),
+                            .replication_factor(replication_factor)
+                            .shard_number(shard_number),
                     )
                     .await
                     .map_err(|err| {
