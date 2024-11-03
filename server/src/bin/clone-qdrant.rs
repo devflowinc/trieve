@@ -36,7 +36,7 @@ async fn main() -> Result<(), ServiceError> {
         .parse::<u64>()
         .unwrap_or(200);
 
-    let mut offset = Some(uuid::Uuid::nil().to_string());
+    let mut offset = Some(std::env::var("OFFSET_ID").unwrap_or(uuid::Uuid::nil().to_string()));
 
     while let Some(cur_offset) = offset {
         let original_qdrant_connection = Qdrant::from_url(&origin_qdrant_url)
