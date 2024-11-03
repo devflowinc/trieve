@@ -2,6 +2,7 @@ use qdrant_client::{
     qdrant::{PointStruct, UpsertPointsBuilder},
     Qdrant,
 };
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
     errors::ServiceError, operators::qdrant_operator::scroll_qdrant_collection_ids_custom_url,
 };
@@ -9,6 +10,15 @@ use trieve_server::{
 #[tokio::main]
 async fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();
+
+    tracing_subscriber::Registry::default()
+        .with(
+            tracing_subscriber::fmt::layer().with_filter(
+                EnvFilter::from_default_env()
+                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+            ),
+        )
+        .init();
 
     let origin_qdrant_url =
         std::env::var("ORIGIN_QDRANT_URL").expect("ORIGIN_QDRANT_URL is not set");
