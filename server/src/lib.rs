@@ -616,6 +616,12 @@ pub fn main() -> std::io::Result<()> {
             .parse()
             .unwrap_or(2);
 
+        let shard_number: u32 = std::env::var("QDRANT_SHARD_COUNT")
+            .unwrap_or("3".to_string())
+            .parse()
+            .unwrap_or(3);
+
+
         let vector_sizes: Vec<u64> = std::env::var("VECTOR_SIZES")
             .unwrap_or("384,512,768,1024,1536,3072".to_string())
             .split(',')
@@ -629,7 +635,7 @@ pub fn main() -> std::io::Result<()> {
 
         if std::env::var("CREATE_QDRANT_COLLECTIONS").unwrap_or("true".to_string()) != "false" {
             log::info!("Creating qdrant collections");
-            let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes)
+            let _ = create_new_qdrant_collection_query(None, None, quantize_vectors, false, replication_factor, vector_sizes, shard_number)
                 .await
                 .map_err(|err| {
                     log::error!("Failed to create new qdrant collection: {:?}", err);
