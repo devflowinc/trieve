@@ -1924,10 +1924,10 @@ touch@^3.1.0:
   resolved "https://registry.yarnpkg.com/touch/-/touch-3.1.1.tgz#097a23d7b161476435e5c1344a95c0f75b4a5694"
   integrity sha512-r0eojU4bI8MnHr8c5bNo7lJDdI2qXlWWJk6a9EAFG7vbhTjElYhBVS3/miuE0uOuoLdb8Mc/rVfsmm6eo5o9GA==
 
-trieve-search-component@^0.0.60:
-  version "0.0.60"
-  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.60.tgz#144ffcd5b4e4105b818d47d49029374aea3666d3"
-  integrity sha512-/3SdKvtaAQ0VvqtgpnCnbkJAJ8Lykmi6+pj+Phahzw1FKOjtQbGHRLbx7TpM/oKemMfV7FRDK9EULWJT83Feww==
+trieve-search-component@^0.0.65:
+  version "0.0.65"
+  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.0.65.tgz#cd50be833c4b0d532f1910bdbd6eb10dc44dc0ae"
+  integrity sha512-9xTXOg9BH55eZIxnmintaXGfHBdL/97BouNBdTezNOWv6evBkQjuvNvIfp3D235BMI9Q8906QM0l8uml6e9OJg==
   dependencies:
     "@r2wc/react-to-web-component" "^2.0.3"
     "@thumbmarkjs/thumbmarkjs" "^0.14.8"
