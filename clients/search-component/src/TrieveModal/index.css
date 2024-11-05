@@ -158,7 +158,7 @@ body {
       }
 
       .bottom-row {
-        @apply flex justify-between;
+        @apply flex justify-between items-center;
 
         button {
           @apply px-2 text-sm py-1 rounded-md;
@@ -176,7 +176,7 @@ body {
       }
 
       .commands {
-        @apply hidden sm:flex text-xs grow gap-4 m-0 pt-1;
+        @apply hidden sm:flex text-xs grow gap-4 m-0 py-2 pl-2;
 
         > li {
           @apply flex items-center gap-1;
@@ -569,7 +569,9 @@ body {
       &:not(.chat-ul) {
         @apply overflow-y-auto overflow-x-hidden max-h-[420px] mx-0 px-0;
         &:not(.trieve-elements-search) {
-          @apply mt-4 
+          &:not(.commands) {
+            @apply mt-4;
+          }
         }
       }
     }
