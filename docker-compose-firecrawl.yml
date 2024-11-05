@@ -2,18 +2,20 @@ name: firecrawl
 services:
   # Firecrawl services
   playwright-service:
-    image: trieve/playwright-service-ts:latest
+    image: trieve/puppeteer-service-ts:v0.0.6
     environment:
       - PORT=3000
       - PROXY_SERVER=${PROXY_SERVER}
       - PROXY_USERNAME=${PROXY_USERNAME}
       - PROXY_PASSWORD=${PROXY_PASSWORD}
       - BLOCK_MEDIA=${BLOCK_MEDIA}
+      - MAX_CONCURRENCY=${MAX_CONCURRENCY}
+      - TWOCAPTCHA_TOKEN=${TWOCAPTCHA_TOKEN}
     networks:
       - backend
 
   firecrawl-api:
-    image: trieve/firecrawl:v0.0.42
+    image: trieve/firecrawl:v0.0.46
     networks:
       - backend
     environment:
@@ -24,7 +26,6 @@ services:
       - NUM_WORKERS_PER_QUEUE=${NUM_WORKERS_PER_QUEUE}
       - BULL_AUTH_KEY=${BULL_AUTH_KEY}
       - TEST_API_KEY=${TEST_API_KEY}
-      - SCRAPING_BEE_API_KEY=${SCRAPING_BEE_API_KEY}
       - HOST=${HOST:-0.0.0.0}
       - SELF_HOSTED_WEBHOOK_URL=${SELF_HOSTED_WEBHOOK_URL}
       - LOGGING_LEVEL=${LOGGING_LEVEL}
@@ -37,7 +38,7 @@ services:
     command: ["pnpm", "run", "start:production"]
 
   firecrawl-worker:
-    image: trieve/firecrawl:v0.0.42
+    image: trieve/firecrawl:v0.0.46
     networks:
       - backend
     environment:

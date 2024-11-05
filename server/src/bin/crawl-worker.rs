@@ -311,13 +311,8 @@ async fn get_chunks_with_firecrawl(
         };
 
         if page.metadata.status_code != Some(200) {
-            log::error!("Error getting page metadata for chunk: {:?}", page.metadata);
-            update_crawl_status(scrape_request.id, CrawlStatus::Failed, pool.clone())
-                .await
-                .map_err(|e| {
-                    log::error!("Error updating crawl status: {:?}", e);
-                    ServiceError::InternalServerError("Error updating crawl status".to_string())
-                })?;
+            log::error!("Error getting metadata for page: {:?}", page.metadata);
+            continue;
         }
 
         let page_link = page

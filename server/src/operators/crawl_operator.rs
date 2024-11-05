@@ -24,8 +24,6 @@ pub struct IngestResult {
     pub status: Status,
     pub completed: u32,
     pub total: u32,
-    #[serde(rename = "creditsUsed")]
-    pub credits_used: u32,
     #[serde(rename = "expiresAt")]
     pub expires_at: String,
     pub next: Option<String>,
@@ -542,7 +540,6 @@ pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestRes
             status: resp.status,
             completed: resp.completed,
             total: resp.total,
-            credits_used: resp.credits_used,
             expires_at: resp.expires_at,
             next: None,
             data: Some(collected_docs),
