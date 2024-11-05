@@ -19,7 +19,7 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow fixed top-[calc(40%-40vh)] sm:top-[calc(40vh-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] rounded-lg pt-1.5 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+    @apply animate-contentShow fixed top-[calc(40%-30vh)] sm:top-[calc(40vh-225px)] left-[50%] w-[90vw] sm:max-w-[550px] -translate-x-[50%] rounded-lg pt-1.5 px-5 shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
 
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
@@ -43,7 +43,7 @@ body {
     }
 
     &.chat-modal-mobile {
-      @apply flex flex-col h-full max-h-[100vh] sm:h-fit w-full sm:max-h-[60vh] sm:w-[90vw] rounded-none sm:rounded-lg;
+      @apply flex flex-col h-full top-0 sm:top-[calc(40vh-225px)] pt-4 max-h-[100vh] sm:h-fit w-full sm:w-[90vw] rounded-none sm:rounded-lg;
 
       .chat-outer-wrapper {
         @apply justify-between w-full h-full m-0 sm:mt-12;
@@ -569,12 +569,12 @@ body {
     }
 
     .item {
-      @apply select-none cursor-pointer py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg;
+      @apply select-none cursor-pointer py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg overflow-ellipsis;
       background-color: var(--tv-zinc-50);
 
       .chunk-path {
         color: var(--tv-zinc-600);
-        @apply text-xs  line-clamp-1 overflow-ellipsis;
+        @apply text-xs line-clamp-1 overflow-ellipsis;
       }
 
       .chunk-title {
@@ -602,7 +602,7 @@ body {
       }
 
       h4 {
-        @apply overflow-hidden whitespace-nowrap text-ellipsis max-w-[450px];
+        @apply overflow-hidden whitespace-nowrap text-ellipsis max-w-[calc(90vw-45px)] sm:max-w-[450px];
       }
 
       svg {
@@ -619,10 +619,10 @@ body {
       }
 
       &.start-chat {
-        @apply items-center flex;
+        @apply items-center flex max-w-[calc(90vw-70px)] sm:max-w-none;
 
         h4 {
-          @apply pl-0 pt-0;
+          @apply pl-0 pt-0 max-w-[calc(90vw-120px)] sm:max-w-[400px];
 
           span {
             color: var(--tv-prop-brand-color);

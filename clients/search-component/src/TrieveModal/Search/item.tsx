@@ -243,7 +243,7 @@ export const Item = ({ item, requestID, index, className }: Props) => {
               }}
             />
           )}
-          <ArrowIcon className={!isHovered ? "hidden" : ""} />
+          <ArrowIcon className={!isHovered ? "text-transparent" : ""} />
         </div>
       </Component>
     </li>
