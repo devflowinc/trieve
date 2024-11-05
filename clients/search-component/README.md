@@ -92,7 +92,7 @@ declare module "solid-js" {
 | brandLogoImgSrcUrl   | string                                                                                         | null                                       |
 | brandName            | string                                                                                         | null                                       |
 | brand Color          | string                                                                                         | #CB53EB                                    |
-| problemLink          | string                                                                                         | null                                       |
+| problemLink          | string (example: "mailto:help@trieve.ai?subject=")                                             | null                                       |
 | responsive           | boolean                                                                                        | false                                      |
 
 ### Search Results
