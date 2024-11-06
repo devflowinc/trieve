@@ -1,13 +1,27 @@
-import { startTransition, useEffect, useMemo } from "react";
+import { startTransition, useEffect, useMemo, useRef } from "react";
 import { useModalState } from "./modal-context";
 
 export const useKeyboardNavigation = () => {
   const { setOpen, props, open, inputRef } = useModalState();
 
   const keyCombo = props.openKeyCombination || [{ ctrl: true }, { key: "k" }];
+  const lastButtonInteraction = useRef<number>(0);
+
+  // Check if interaction was within last 10 seconds
+  const isWithinTimeWindow = () => {
+    if (lastButtonInteraction.current === 0) {
+      return true;
+    }
+    return Date.now() - lastButtonInteraction.current >= 10;
+  };
 
   const checkForInteractions = useMemo(() => {
     return (e: KeyboardEvent) => {
+      if (!isWithinTimeWindow()) {
+        return;
+      }
+      lastButtonInteraction.current = Date.now();
+
       if (!open) {
         const hasCtrl = keyCombo.find((k) => k.ctrl);
         if ((hasCtrl && (e.metaKey || e.ctrlKey)) || !hasCtrl) {
