@@ -1657,11 +1657,11 @@ export type PublicDatasetOptions = {
 };
 
 export type PublicPageParameters = {
-    accentColor?: (string) | null;
     allowSwitchingModes?: (boolean) | null;
     analytics?: (boolean) | null;
     apiKey?: (string) | null;
     baseUrl?: (string) | null;
+    brandColor?: (string) | null;
     brandLogoImgSrcUrl?: (string) | null;
     brandName?: (string) | null;
     chat?: (boolean) | null;
