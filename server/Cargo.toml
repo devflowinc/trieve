@@ -73,6 +73,10 @@ path = "src/bin/crawl-worker.rs"
 name = "crawl-cron-job"
 path = "src/bin/crawl-cron-job.rs"
 
+[[bin]]
+name = "test-pdf-chunking"
+path = "src/bin/test-pdf-chunking.rs"
+
 [dependencies]
 actix-identity = { version = "0.7.1" }
 actix-session = { version = "0.9.0", features = [
@@ -178,6 +182,8 @@ oas3 = "0.10.0"
 sanitize_html = "0.8.1"
 minijinja-embed = "2.2.0"
 minijinja = { version = "2.2.0", features = ["loader", "json"] }
+pdf2image = "0.1.2"
+image = {version = "0.25.5", features = ['png']}
 
 
 [build-dependencies]

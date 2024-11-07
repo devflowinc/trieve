@@ -13,6 +13,7 @@ pub mod message_operator;
 pub mod model_operator;
 pub mod organization_operator;
 pub mod parse_operator;
+pub mod pdf_chunk_operator;
 pub mod qdrant_operator;
 pub mod search_operator;
 pub mod stripe_operator;
