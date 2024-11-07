@@ -25,8 +25,8 @@
   },
   "peerDependencies": {
     "@docusaurus/core": "^2.0.0 || ^3.0.0",
-    "react": "^17 || ^18",
-    "react-dom": "^17 || ^18"
+    "react": "^17 || ^18 || ^19.0.0-rc",
+    "react-dom": "^17 || ^18 || ^19.0.0-rc"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.4.0",
