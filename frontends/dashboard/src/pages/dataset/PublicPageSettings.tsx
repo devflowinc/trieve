@@ -238,7 +238,7 @@ export const PublicPageSettings = () => {
           <div class="grow">
             <div class="flex items-center gap-1">
               <label class="block" for="">
-                Accent Color
+                Brand Color
               </label>
               <Tooltip
                 tooltipText="Hex color code for the main accent color in the search component"
@@ -247,9 +247,9 @@ export const PublicPageSettings = () => {
             </div>
             <input
               placeholder="#CB53EB"
-              value={extraParams.accentColor || ""}
+              value={extraParams.brandColor || ""}
               onInput={(e) => {
-                setExtraParams("accentColor", e.currentTarget.value);
+                setExtraParams("brandColor", e.currentTarget.value);
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -527,8 +527,8 @@ export const PublicPageSettings = () => {
                     setExtraParams("defaultSearchMode", option);
                   }}
                   class="bg-white py-1"
-                  selected={extraParams.defaultSearchMode || "semantic"}
-                  options={["semantic", "fulltext", "hybrid"]}
+                  selected={extraParams.defaultSearchMode || "search"}
+                  options={["search", "chat"]}
                 />
               </div>
 

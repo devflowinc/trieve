@@ -135,7 +135,7 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub problem_link: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub accent_color: Option<String>,
+    pub brand_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

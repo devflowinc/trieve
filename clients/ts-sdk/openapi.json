@@ -10964,10 +10964,6 @@
       "PublicPageParameters": {
         "type": "object",
         "properties": {
-          "accentColor": {
-            "type": "string",
-            "nullable": true
-          },
           "allowSwitchingModes": {
             "type": "boolean",
             "nullable": true
@@ -10981,6 +10977,10 @@
             "nullable": true
           },
           "baseUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandColor": {
             "type": "string",
             "nullable": true
           },

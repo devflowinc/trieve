@@ -2738,9 +2738,9 @@ impl DatasetConfigurationDTO {
                     problem_link: page_parameters_self
                         .problem_link
                         .or(page_parameters_curr.problem_link),
-                    accent_color: page_parameters_self
-                        .accent_color
-                        .or(page_parameters_curr.accent_color),
+                    brand_color: page_parameters_self
+                        .brand_color
+                        .or(page_parameters_curr.brand_color),
                     placeholder: page_parameters_self
                         .placeholder
                         .or(page_parameters_curr.placeholder),
