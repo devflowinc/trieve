@@ -17,6 +17,7 @@ use crate::{get_env, ServiceError};
 
 const CHUNK_SYSTEM_PROMPT: &str = "You are an image transcription and chunking tool. You need to transcribe the text in the image, but separate it based on paragraph, heading etc. Return the chunks as a json array. Each chunk should be written as as markdown. Each chunk should not exceed more than 50 words";
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct PDFChunk {
     content: String,
@@ -27,7 +28,7 @@ fn get_data_url_from_image(img: DynamicImage) -> Result<String, ServiceError> {
     let mut encoded = Vec::new();
 
     let png_encoder = PngEncoder::new(&mut encoded);
-    let _ = png_encoder
+    png_encoder
         .write_image(
             img.as_bytes(),
             img.width(),
@@ -40,7 +41,7 @@ fn get_data_url_from_image(img: DynamicImage) -> Result<String, ServiceError> {
     let encoded = base64::prelude::BASE64_STANDARD.encode(encoded);
     let prefix = "data:image/png;base64,";
     let final_encoded = format!("{prefix}{encoded}");
-    return Ok(final_encoded);
+    Ok(final_encoded)
 }
 
 fn get_default_openai_client() -> Client {
@@ -52,16 +53,14 @@ fn get_default_openai_client() -> Client {
     )
     .into();
 
-    let client = Client {
+    Client {
         headers: None,
         project: None,
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
         base_url,
         organization: None,
-    };
-
-    client
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -183,10 +182,7 @@ pub async fn chunk_pdf(pdf_path: PathBuf) -> Result<Vec<PDFChunk>, ServiceError>
 
     for (page, page_image) in pages.into_iter().enumerate() {
         let client = client.clone();
-        join_set.spawn(async move {
-            let chunk = get_chunks_from_image(page_image, page, client).await;
-            chunk
-        });
+        join_set.spawn(async move { get_chunks_from_image(page_image, page, client).await });
     }
 
     let mut chunk_results = Vec::with_capacity(page_count);

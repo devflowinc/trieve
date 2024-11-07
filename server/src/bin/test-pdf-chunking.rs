@@ -1,5 +1,6 @@
 use std::env;
 
+#[allow(clippy::print_stdout)]
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
