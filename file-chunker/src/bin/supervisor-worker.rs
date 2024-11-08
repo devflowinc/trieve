@@ -17,6 +17,11 @@ use std::sync::{
 async fn main() {
     dotenvy::dotenv().ok();
 
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
+        .init();
+
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
         .unwrap_or("2".to_string())
@@ -82,6 +87,8 @@ async fn main() {
     let redis_connection =
         opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
+    log::info!("Starting supervisor worker");
+
     process_task_with_retry!(
         redis_connection,
         &clickhouse_client.clone(),
@@ -113,7 +120,6 @@ pub async fn chunk_pdf(
     let all_pages = doc.get_pages();
     let max_page_num = *all_pages.iter().last().unwrap().0;
     let pages_per_doc = 10;
-    let mut chunked_pdfs = Vec::new();
 
     // Calculate how many documents we'll create
     let num_docs = (max_page_num as f64 / pages_per_doc as f64).ceil() as u32;
@@ -133,6 +139,11 @@ pub async fn chunk_pdf(
             new_doc.delete_pages(&pages_to_delete);
         }
 
+        new_doc.prune_objects();
+        new_doc.delete_zero_length_streams();
+        new_doc.renumber_objects();
+        new_doc.compress();
+
         let file_name = format!("{}_part_{}.pdf", task.task_id, i + 1);
         let mut buffer = Vec::new();
         new_doc
@@ -141,32 +152,23 @@ pub async fn chunk_pdf(
 
         let bucket = get_aws_bucket()?;
         bucket
-            .put_object(file_name.clone(), decoded_file_data.as_slice())
+            .put_object(file_name.clone(), buffer.as_slice())
             .await
             .map_err(|e| {
                 log::error!("Could not upload file to S3 {:?}", e);
                 ServiceError::BadRequest("Could not upload file to S3".to_string())
             })?;
 
-        chunked_pdfs.push(file_name)
-    }
+        let task = models::ChunkingTask {
+            task_id: task.task_id,
+            file_name: file_name.clone(),
+            attempt_number: 0,
+        };
 
-    let chunking_tasks = chunked_pdfs
-        .iter()
-        .map(|file_name| {
-            let task = models::ChunkingTask {
-                task_id: task.task_id,
-                file_name: file_name.clone(),
-                attempt_number: 0,
-            };
+        let chunking_task = serde_json::to_string(&task).map_err(|_e| {
+            ServiceError::BadRequest("Failed to serialize chunking task".to_string())
+        })?;
 
-            serde_json::to_string(&task).map_err(|_e| {
-                ServiceError::BadRequest("Failed to serialize chunking task".to_string())
-            })
-        })
-        .collect::<Result<Vec<String>, ServiceError>>()?;
-
-    for chunking_task in chunking_tasks {
         let pos_in_queue = redis::cmd("lpush")
             .arg("files_to_chunk")
             .arg(&chunking_task)
