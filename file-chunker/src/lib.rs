@@ -1,8 +1,20 @@
-use actix_web::{middleware::Logger, web, App, HttpServer};
+use actix_web::{
+    middleware::Logger,
+    web::{self, PayloadConfig},
+    App, HttpServer,
+};
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
+use errors::custom_json_error_handler;
 use routes::{create_task::create_task, get_task::get_task};
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
+use utoipa_actix_web::AppExt;
+use utoipa_redoc::{Redoc, Servable};
 
 pub mod errors;
+pub mod middleware;
 pub mod models;
 pub mod operators;
 pub mod routes;
@@ -31,6 +43,39 @@ macro_rules! get_env {
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
+
+    #[derive(OpenApi)]
+    #[openapi(info(
+        title = "Trieve File Chunker API",
+        description = "Trieve File Chunke OpenAPI Specification. This document describes all of the operations available through the Trieve File Chunke API.",
+        contact(
+            name = "Trieve Team",
+            url = "https://trieve.ai",
+            email = "developers@trieve.ai",
+        ),
+        license(
+            name = "BSL",
+            url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
+        ),
+        version = "0.1.0",
+    ), 
+    modifiers(&SecurityAddon),
+    tags(
+        (name = "Task", description = "Task operations. Allow you to interact with tasks."),
+    ))]
+    struct ApiDoc;
+
+    struct SecurityAddon;
+
+    impl Modify for SecurityAddon {
+        fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+            let components = openapi.components.as_mut().unwrap(); // we can unwrap safely since there already is components registered.
+            components.add_security_scheme(
+                "api_key",
+                SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
+            )
+        }
+    }
 
     env_logger::builder()
         .target(env_logger::Target::Stdout)
@@ -74,6 +119,10 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create redis pool");
 
+    let json_cfg = web::JsonConfig::default()
+        .limit(134200000)
+        .error_handler(custom_json_error_handler);
+
     HttpServer::new(move || {
         App::new()
             .wrap(actix_cors::Cors::permissive())
@@ -84,10 +133,20 @@ pub async fn main() -> std::io::Result<()> {
                     .exclude("/api/health")
                     .exclude("/metrics"),
             )
+            .wrap(middleware::api_key_middleware::RequireApiKey)
+            .into_utoipa_app()
+            .openapi(ApiDoc::openapi())
+            .app_data(json_cfg.clone())
+            .app_data(PayloadConfig::new(134200000))
             .app_data(web::Data::new(redis_pool.clone()))
             .app_data(web::Data::new(clickhouse_client.clone()))
-            .service(create_task)
-            .service(get_task)
+            .service(
+                utoipa_actix_web::scope("/api/task").configure(|config| {
+                    config.service(create_task).service(get_task);
+                }),
+            )
+            .openapi_service(|api| Redoc::with_url("/redoc", api))
+            .into_app()
     })
     .bind(("127.0.0.1", 8081))?
     .run()
