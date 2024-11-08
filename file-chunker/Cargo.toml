@@ -1,0 +1,43 @@
+[package]
+name = "file-chunker"
+version = "0.1.0"
+edition = "2021"
+default-run = "file-chunker"
+
+[[bin]]
+name = "file-chunker"
+path = "src/main.rs"
+
+[[bin]]
+name = "file-worker"
+path = "src/bin/file-worker.rs"
+
+
+[dependencies]
+actix-web = "4.9.0"
+serde = "1.0.214"
+serde_json = "1.0.132"
+utoipa = "5.2.0"
+uuid = { version = "1", features = ["v4", "serde"] }
+log = "0.4"
+rust-s3 = "0.35.1"
+derive_more = { version = "1.0.0", features = ["display"] }
+dotenvy = "0.15.7"
+signal-hook = "0.3.17"
+redis = { version = "0.27.5", features = ["tokio-rustls-comp", "aio"] }
+bb8-redis = "0.17.0"
+tokio = "1.41.0"
+lazy_static = "1.5.0"
+actix-cors = "0.7.0"
+reqwest = "0.12.9"
+clickhouse = { version = "0.13.1", features = ["time"] }
+chm = "0.1.17"
+lopdf = "0.34.0"
+base64 = "0.22.1"
+pdf2image = "0.1.2"
+image = "0.25.5"
+openai_dive = "0.6.6"
+
+[features]
+default = []
+runtime-env = []

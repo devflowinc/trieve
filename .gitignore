@@ -18,7 +18,7 @@ story_html.zip
 testing.ipynb
 output.json
 temp.json
-analytics/analytics-server/target
+**/target
 server/target
 server/images
 server/tantivy
@@ -92,4 +92,6 @@ server/migrations/2024-07-26-165058_move_config_to_table/down.sql
 server/migrations/2024-07-26-165058_move_config_to_table/up.sql
 dist/**
 
+
 clients/python-sdk/dist
+file-chunker/ch_migrations/chm.toml
