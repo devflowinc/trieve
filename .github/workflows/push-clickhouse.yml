@@ -43,7 +43,7 @@ jobs:
             type=raw,latest
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           # platforms: linux/amd64,linux/arm64
           context: analytics/clickhouse/

@@ -49,11 +49,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           # platforms: linux/amd64,linux/arm64
-          cache-from: type=registry,ref=trieve/buildcache:chat
-          cache-to: type=registry,ref=trieve/buildcache:chat,mode=max
           file: frontends/chat/Dockerfile
           context: .
           push: true
@@ -91,11 +89,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           # platforms: linux/amd64,linux/arm64
-          cache-from: type=registry,ref=trieve/buildcache:search
-          cache-to: type=registry,ref=trieve/buildcache:search,mode=max
           file: frontends/search/Dockerfile
           context: .
           push: true
@@ -133,11 +129,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           # platforms: linux/amd64,linux/arm64
-          cache-from: type=registry,ref=trieve/buildcache:dashboard
-          cache-to: type=registry,ref=trieve/buildcache:dashboard,mode=max
           file: frontends/dashboard/Dockerfile
           context: .
           push: true

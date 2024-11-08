@@ -53,11 +53,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:server-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:server-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.server
           push: true
@@ -102,11 +100,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:ingest-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:ingest-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.ingestion-worker
           push: true
@@ -150,11 +146,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:delete_worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.delete-worker
           push: true
@@ -199,11 +193,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:file_worker-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:file_worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.file-worker
           push: true
@@ -247,11 +239,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:group_worker-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:group_worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.group-worker
           push: true
@@ -295,11 +285,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:clone_qdrant-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:clone_qdrant-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.clone-qdrant
           push: true
@@ -343,11 +331,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:sync_qdrant-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:sync_qdrant-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.sync-qdrant
           push: true
@@ -391,11 +377,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:bm25-queue-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:bm25-queue-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.queue-bm25
           push: true
@@ -439,11 +423,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:reindex-worker-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:reindex-worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.reindex-worker
           push: true
@@ -487,11 +469,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:word-id-cronjob-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:word-id-cronjob-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.word-id-cronjob
           push: true
@@ -535,11 +515,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:word-worker-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:word-worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.word-worker
           push: true
@@ -583,11 +561,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:bktree-worker-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:bktree-worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.bktree-worker
           push: true
@@ -631,11 +607,9 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=trieve/buildcache:crawl-worker-${{matrix.runner}}
-          cache-to: type=registry,ref=trieve/buildcache:crawl-worker-${{matrix.runner}},mode=max
           context: server/
           file: ./server/Dockerfile.crawl-worker
           push: true
@@ -679,11 +653,9 @@ jobs:
               type=sha
 
         - name: Build and push Docker image
-          uses: docker/build-push-action@v5
+          uses: useblacksmith/build-push-action@v1.0.0-beta
           with:
             platforms: ${{ matrix.platform }}
-            cache-from: type=registry,ref=trieve/buildcache:crawl-cron-job-${{matrix.runner}}
-            cache-to: type=registry,ref=trieve/buildcache:crawl-cron-job-${{matrix.runner}},mode=max
             context: server/
             file: ./server/Dockerfile.crawl-cron-job
             push: true
@@ -727,11 +699,9 @@ jobs:
               type=sha
 
         - name: Build and push Docker image
-          uses: docker/build-push-action@v5
+          uses: useblacksmith/build-push-action@v1.0.0-beta
           with:
             platforms: ${{ matrix.platform }}
-            cache-from: type=registry,ref=trieve/buildcache:dittofeed-sync-worker-${{matrix.runner}}
-            cache-to: type=registry,ref=trieve/buildcache:dittofeed-sync-worker-${{matrix.runner}},mode=max
             context: server/
             file: ./server/Dockerfile.dittofeed-sync-worker
             push: true
