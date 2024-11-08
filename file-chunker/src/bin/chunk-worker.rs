@@ -105,12 +105,6 @@ pub async fn chunk_sub_pdf(
     task: ChunkingTask,
     clickhouse_client: clickhouse::Client,
 ) -> Result<(), file_chunker::errors::ServiceError> {
-    update_task_status(
-        task.task_id,
-        FileTaskStatus::ChunkingFile,
-        &clickhouse_client,
-    )
-    .await?;
     let bucket = get_aws_bucket()?;
     let file_data = bucket
         .get_object(task.file_name.clone())
@@ -142,7 +136,21 @@ pub async fn chunk_sub_pdf(
         ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
     })?;
 
-    update_task_status(task.task_id, FileTaskStatus::Completed, &clickhouse_client).await?;
+    let prev_task =
+        file_chunker::operators::clickhouse::get_task(task.task_id, &clickhouse_client).await?;
+
+    let pages_processed = prev_task.pages_processed + 1;
+
+    if pages_processed == prev_task.pages {
+        update_task_status(task.task_id, FileTaskStatus::Completed, &clickhouse_client).await?;
+    } else {
+        update_task_status(
+            task.task_id,
+            FileTaskStatus::ChunkingFile(result.len() as u32 + prev_task.chunks, pages_processed),
+            &clickhouse_client,
+        )
+        .await?;
+    }
 
     Ok(())
 }

@@ -1166,6 +1166,7 @@ dependencies = [
  "derive_more 1.0.0",
  "dotenvy",
  "env_logger",
+ "futures",
  "image",
  "lazy_static",
  "log",
@@ -1180,6 +1181,8 @@ dependencies = [
  "signal-hook",
  "tokio",
  "utoipa",
+ "utoipa-actix-web",
+ "utoipa-redoc",
  "uuid",
 ]
 
@@ -3565,6 +3568,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "utoipa-actix-web"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7eda9c23c05af0fb812f6a177514047331dac4851a2c8e9c4b895d6d826967f"
+dependencies = [
+ "actix-service",
+ "actix-web",
+ "utoipa",
+]
+
+[[package]]
 name = "utoipa-gen"
 version = "5.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3572,7 +3586,21 @@ checksum = "5629efe65599d0ccd5d493688cbf6e03aa7c1da07fe59ff97cf5977ed0637f66"
 dependencies = [
  "proc-macro2",
  "quote",
+ "regex",
  "syn 2.0.87",
+ "uuid",
+]
+
+[[package]]
+name = "utoipa-redoc"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9218304bba9a0ea5e92085b0a427ccce5fd56eaaf6436d245b7578e6a95787e1"
+dependencies = [
+ "actix-web",
+ "serde",
+ "serde_json",
+ "utoipa",
 ]
 
 [[package]]

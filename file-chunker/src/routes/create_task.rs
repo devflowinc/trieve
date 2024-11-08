@@ -2,11 +2,28 @@ use actix_web::{post, web, HttpResponse};
 use s3::creds::time::OffsetDateTime;
 
 use crate::{
-    errors::ServiceError,
+    errors::{ErrorResponseBody, ServiceError},
     models::{self, CreateFileTaskResponse, FileTask, FileTaskStatus, RedisPool},
 };
 
-#[post("/task/create")]
+/// Create a new File Task
+///
+/// This endpoint creates a new task to chunk a file. The task is added to a queue in Redis for processing.
+#[utoipa::path(
+    post,
+    path = "/task/create",
+    tag = "Task",
+    context_path = "/api",
+    request_body(content = models::UploadFileReqPayload, description = "JSON request payload to create a new task", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON response payload containing the created chunk", body = models::CreateFileTaskResponse),
+        (status = 400, description = "Error typically due to deserialization issues", body = ErrorResponseBody),
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
+#[post("/create")]
 async fn create_task(
     req: web::Json<models::UploadFileReqPayload>,
     redis_pool: web::Data<RedisPool>,
@@ -14,6 +31,9 @@ async fn create_task(
 ) -> Result<HttpResponse, actix_web::Error> {
     let clickhouse_task = models::FileTaskClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
+        pages: 0,
+        chunks: 0,
+        pages_processed: 0,
         status: "CREATED".to_string(),
         created_at: OffsetDateTime::now_utc(),
     };
