@@ -1,6 +1,6 @@
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
-use routes::create_task::create_task;
+use routes::{create_task::create_task, get_task::get_task};
 
 pub mod errors;
 pub mod models;
@@ -31,6 +31,12 @@ macro_rules! get_env {
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
+
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
+        .init();
+
     let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");
 
     let args = SetupArgs {
@@ -81,6 +87,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(redis_pool.clone()))
             .app_data(web::Data::new(clickhouse_client.clone()))
             .service(create_task)
+            .service(get_task)
     })
     .bind(("127.0.0.1", 8081))?
     .run()

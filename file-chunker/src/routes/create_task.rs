@@ -14,16 +14,16 @@ async fn create_task(
 ) -> Result<HttpResponse, actix_web::Error> {
     let clickhouse_task = models::FileTaskClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
-        status: "CREATED_TASK".to_string(),
+        status: "CREATED".to_string(),
         created_at: OffsetDateTime::now_utc(),
     };
 
-    crate::operators::clickhouse::insert_task(clickhouse_task, &clickhouse_client)
+    crate::operators::clickhouse::insert_task(clickhouse_task.clone(), &clickhouse_client)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let task = FileTask {
-        task_id: uuid::Uuid::new_v4(),
+        task_id: clickhouse_task.id.parse().unwrap(),
         upload_file_data: req.into_inner(),
         attempt_number: 0,
     };
@@ -37,7 +37,7 @@ async fn create_task(
         .map_err(|_| ServiceError::BadRequest("Failed to Serialize FileTask".to_string()))?;
 
     let pos_in_queue = redis::cmd("lpush")
-        .arg("file_to_process")
+        .arg("files_to_process")
         .arg(&serialized_message)
         .query_async::<String>(&mut *redis_conn)
         .await
