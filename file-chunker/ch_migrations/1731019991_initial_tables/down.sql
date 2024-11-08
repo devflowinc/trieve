@@ -1,2 +1,2 @@
-DELETE TABLE IF EXISTS file_chunks;
-DELETE TABLE IF EXISTS file_tasks;
+DROP TABLE IF EXISTS file_chunks;
+DROP TABLE IF EXISTS file_tasks;

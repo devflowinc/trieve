@@ -31,7 +31,7 @@ pub async fn update_task_status(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<(), ServiceError> {
     let query = format!(
-        "UPDATE file_tasks SET status = '{status}' WHERE id = '{task_id}'",
+        "ALTER TABLE file_tasks UPDATE status = '{status}' WHERE id = '{task_id}'",
         status = status,
         task_id = task_id
     );
@@ -46,4 +46,25 @@ pub async fn update_task_status(
         })?;
 
     Ok(())
+}
+
+pub async fn get_task(
+    task_id: uuid::Uuid,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<FileTaskClickhouse, ServiceError> {
+    let query = format!(
+        "SELECT * FROM file_tasks WHERE id = '{task_id}'",
+        task_id = task_id
+    );
+
+    let task = clickhouse_client
+        .query(&query)
+        .fetch_one()
+        .await
+        .map_err(|err| {
+            log::error!("Failed to get task {:?}", err);
+            ServiceError::BadRequest("Failed to get task".to_string())
+        })?;
+
+    Ok(task)
 }
