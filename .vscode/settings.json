@@ -2,7 +2,10 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
-  "rust-analyzer.linkedProjects": ["./server/Cargo.toml"],
+  "rust-analyzer.linkedProjects": [
+    "./server/Cargo.toml",
+    "./file-chunker/Cargo.toml"
+  ],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "rust-analyzer.server.path": "~/.cargo/bin/rust-analyzer",
   "python.analysis.typeCheckingMode": "basic",

@@ -20,10 +20,13 @@ use trieve_server::handlers::chunk_handler::{
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
-    insert_chunk_metadata_query, update_chunk_metadata_query,
+    get_row_count_for_organization_id_query, insert_chunk_metadata_query,
+    update_chunk_metadata_query,
 };
 use trieve_server::operators::clickhouse_operator::{ClickHouseEvent, EventQueue};
-use trieve_server::operators::dataset_operator::get_dataset_by_id_query;
+use trieve_server::operators::dataset_operator::{
+    get_dataset_and_organization_from_dataset_id_query, get_dataset_by_id_query,
+};
 use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
 use trieve_server::operators::model_operator::{
     get_bm25_embeddings, get_dense_vector, get_dense_vectors, get_sparse_vectors,
@@ -415,6 +418,34 @@ pub async fn bulk_upload_chunks(
         "precomputing_data_before_insert",
         "precomputing some important data before insert",
     );
+
+    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
+    if unlimited == "false" {
+        let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
+            models::UnifiedId::TrieveUuid(payload.dataset_id),
+            None,
+            web_pool.clone(),
+        )
+        .await?;
+
+        let chunk_count = get_row_count_for_organization_id_query(
+            dataset_org_plan_sub.organization.organization.id,
+            web_pool.clone(),
+        )
+        .await?;
+
+        if chunk_count + payload.ingestion_messages.len()
+            > dataset_org_plan_sub
+                .organization
+                .plan
+                .unwrap_or_default()
+                .chunk_count as usize
+        {
+            return Err(ServiceError::BadRequest(
+                "Chunk count exceeds plan limit".to_string(),
+            ));
+        }
+    }
 
     // Being blocked out because it is difficult to create multiple split_avg embeddings in batch
     let split_average_being_used = payload

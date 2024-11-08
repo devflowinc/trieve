@@ -1,0 +1,2 @@
+DELETE TABLE IF EXISTS file_chunks;
+DELETE TABLE IF EXISTS file_tasks;
