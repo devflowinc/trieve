@@ -14,10 +14,11 @@ path = "src/bin/file-worker.rs"
 
 
 [dependencies]
+utoipa = { version = "5.2.0", features = ["actix_extras", "uuid", "chrono"] }
+utoipa-redoc = { version = "5.0.0", features = ["actix-web"] }
 actix-web = "4.9.0"
 serde = "1.0.214"
 serde_json = "1.0.132"
-utoipa = "5.2.0"
 uuid = { version = "1", features = ["v4", "serde"] }
 log = "0.4"
 rust-s3 = "0.35.1"
@@ -38,6 +39,8 @@ pdf2image = "0.1.2"
 image = "0.25.5"
 openai_dive = "0.6.6"
 env_logger = "0.11.5"
+utoipa-actix-web = "0.1.2"
+futures = "0.3.31"
 
 [features]
 default = []

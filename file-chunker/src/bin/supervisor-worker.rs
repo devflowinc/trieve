@@ -110,13 +110,6 @@ pub async fn chunk_pdf(
     let doc = lopdf::Document::load_mem(decoded_file_data.as_slice())
         .map_err(|_e| ServiceError::BadRequest("Could not load pdf".to_string()))?;
 
-    update_task_status(
-        task.task_id,
-        FileTaskStatus::ProcessingFile,
-        &clickhouse_client,
-    )
-    .await?;
-
     let all_pages = doc.get_pages();
     let max_page_num = *all_pages.iter().last().unwrap().0;
     let pages_per_doc = 10;
@@ -144,7 +137,7 @@ pub async fn chunk_pdf(
         new_doc.renumber_objects();
         new_doc.compress();
 
-        let file_name = format!("{}_part_{}.pdf", task.task_id, i + 1);
+        let file_name = format!("{}part{}.pdf", task.task_id, i + 1);
         let mut buffer = Vec::new();
         new_doc
             .save_to(&mut buffer)
@@ -162,6 +155,7 @@ pub async fn chunk_pdf(
         let task = models::ChunkingTask {
             task_id: task.task_id,
             file_name: file_name.clone(),
+            sub_page_number: i,
             attempt_number: 0,
         };
 
@@ -179,5 +173,11 @@ pub async fn chunk_pdf(
         log::info!("Added chunking task to queue: {:?}", pos_in_queue);
     }
 
+    update_task_status(
+        task.task_id,
+        FileTaskStatus::ProcessingFile(num_docs),
+        &clickhouse_client,
+    )
+    .await?;
     Ok(())
 }
