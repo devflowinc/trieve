@@ -37,6 +37,7 @@ base64 = "0.22.1"
 pdf2image = "0.1.2"
 image = "0.25.5"
 openai_dive = "0.6.6"
+env_logger = "0.11.5"
 
 [features]
 default = []

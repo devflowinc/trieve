@@ -20,6 +20,11 @@ use signal_hook::consts::SIGTERM;
 async fn main() {
     dotenvy::dotenv().ok();
 
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
+        .init();
+
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
         .unwrap_or("2".to_string())
@@ -85,6 +90,8 @@ async fn main() {
     let redis_connection =
         opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
+    log::info!("Starting chunking worker");
+
     process_task_with_retry!(
         redis_connection,
         &clickhouse_client.clone(),
@@ -116,14 +123,15 @@ pub async fn chunk_sub_pdf(
         .to_vec();
 
     let result = chunk_pdf(file_data, task.task_id.to_string()).await?;
+    log::info!("Got {} chunks for {:?}", result.len(), task.task_id);
 
     let mut chunk_inserter = clickhouse_client.insert("file_chunks").map_err(|e| {
         log::error!("Error inserting recommendations: {:?}", e);
         ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
     })?;
 
-    for chunk in result {
-        chunk_inserter.write(&chunk).await.map_err(|e| {
+    for chunk in &result {
+        chunk_inserter.write(chunk).await.map_err(|e| {
             log::error!("Error inserting recommendations: {:?}", e);
             ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
         })?;
