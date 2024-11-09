@@ -90,7 +90,8 @@ const defaultProps = {
   type: "docs" as ModalTypes,
   useGroupSearch: false,
   allowSwitchingModes: true,
-  currencyPosition: "after" as currencyPosition,
+  defaultCurrency: "$",
+  currencyPosition: "before" as currencyPosition,
   responsive: false,
   debounceMs: 0,
 };
@@ -141,13 +142,13 @@ const ModalContext = createContext<{
   setContextProps: () => {},
 });
 
-function ModalProvider({
+const ModalProvider = ({
   children,
   onLoadProps,
 }: {
   children: React.ReactNode;
   onLoadProps: ModalProps;
-}) {
+}) => {
   const [props, setProps] = useState<ModalProps>({
     ...defaultProps,
     ...onLoadProps,
@@ -316,7 +317,7 @@ function ModalProvider({
       {children}
     </ModalContext.Provider>
   );
-}
+};
 
 function useModalState() {
   const context = useContext(ModalContext);

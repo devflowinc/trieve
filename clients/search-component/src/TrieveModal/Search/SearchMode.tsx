@@ -1,11 +1,16 @@
 import React, { Suspense } from "react";
-import { Item } from "./item";
+import { DocsItem } from "./DocsItem";
 import { AIIcon, ArrowIcon, ReloadIcon } from "../icons";
 import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { Tags } from "./Tags";
 import { useChatState } from "../../utils/hooks/chat-context";
-import { isChunksWithHighlights } from "../../utils/types";
+import {
+  ChunkWithHighlights,
+  GroupChunk,
+  isChunksWithHighlights,
+} from "../../utils/types";
+import { ProductItem } from "./ProductItem";
 
 export const SearchMode = () => {
   const {
@@ -19,12 +24,71 @@ export const SearchMode = () => {
     open,
     mode,
   } = useModalState();
+
   const {
     suggestedQueries,
     refetchSuggestedQueries,
     isLoadingSuggestedQueries,
   } = useSuggestedQueries();
+
   const { switchToChatAndAskQuestion } = useChatState();
+
+  const getItemComponent = (
+    result: ChunkWithHighlights | GroupChunk,
+    index: number
+  ) => {
+    const chunkOrGroup = isChunksWithHighlights(result);
+    const ecommerce = props.type == "ecommerce";
+    if (chunkOrGroup && ecommerce) {
+      return (
+        <ProductItem
+          item={result}
+          index={index}
+          requestID={requestID}
+          key={result.chunk.id}
+        />
+      );
+    } else if (!chunkOrGroup && ecommerce) {
+      return (
+        <div key={index} className="item-group-container">
+          <p className="item-group-name">{result.group.name}</p>
+          {result.chunks.map((chunk, index) => (
+            <ProductItem
+              item={chunk}
+              index={index}
+              requestID={requestID}
+              key={chunk.chunk.id}
+              className="item group"
+            />
+          ))}
+        </div>
+      );
+    } else if (chunkOrGroup) {
+      return (
+        <DocsItem
+          item={result}
+          index={index}
+          requestID={requestID}
+          key={result.chunk.id}
+        />
+      );
+    } else {
+      return (
+        <div key={index} className="item-group-container">
+          <p className="item-group-name">{result.group.name}</p>
+          {result.chunks.map((chunk, index) => (
+            <DocsItem
+              item={chunk}
+              index={index}
+              requestID={requestID}
+              key={chunk.chunk.id}
+              className="item group"
+            />
+          ))}
+        </div>
+      );
+    }
+  };
 
   React.useEffect(() => {
     if (mode == "search" && open) {
@@ -110,9 +174,9 @@ export const SearchMode = () => {
         )}
       </div>
 
-      <ul className="trieve-elements-search">
+      <ul className={`trieve-elements-${props.type}`}>
         {results.length && props.chat ? (
-          <li key="chat">
+          <li className="start-chat-li" key="chat">
             <button
               id="trieve-search-item-0"
               className="item start-chat"
@@ -122,9 +186,12 @@ export const SearchMode = () => {
                 <AIIcon />
                 <div>
                   <h4>
-                    Can you tell me about <span>{query}</span>
+                    {props.type == "docs"
+                      ? "Can you tell me about "
+                      : "Can you help me find "}
+                    <span>{query}</span>
                   </h4>
-                  <p className="description">Use AI to answer your question</p>
+                  <p className="description">Use AI to discover items</p>
                 </div>
               </div>
               <ArrowIcon />
@@ -132,29 +199,7 @@ export const SearchMode = () => {
           </li>
         ) : null}
         {results.length
-          ? results.map((result, index) =>
-              isChunksWithHighlights(result) ? (
-                <Item
-                  item={result}
-                  index={index}
-                  requestID={requestID}
-                  key={result.chunk.id}
-                />
-              ) : (
-                <div key={index} className="item-group-container">
-                  <p className="item-group-name">{result.group.name}</p>
-                  {result.chunks.map((chunk, index) => (
-                    <Item
-                      item={chunk}
-                      index={index}
-                      requestID={requestID}
-                      key={chunk.chunk.id}
-                      className="item group"
-                    />
-                  ))}
-                </div>
-              )
-            )
+          ? results.map((result, index) => getItemComponent(result, index))
           : null}
         {query && !results.length && !loadingResults ? (
           <div className="no-results">
