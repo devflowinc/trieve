@@ -9,7 +9,7 @@ use crate::{
             get_invitations_for_organization_query, send_invitation,
             send_invitation_for_existing_user,
         },
-        organization_operator::get_org_from_id_query,
+        organization_operator::get_org_users_by_id_query,
         user_operator::add_existing_user_to_org,
     },
 };
@@ -93,8 +93,21 @@ pub async fn post_invitation(
         ));
     }
 
+    let user_in_org =
+        get_org_users_by_id_query(org_with_plan_and_sub.organization.id, pool.clone())
+            .await?
+            .iter()
+            .find(|user| user.email == email)
+            .cloned();
+
+    if let Some(user) = user_in_org {
+        return Err(ServiceError::BadRequest(format!(
+            "User with email {} is already in the organization",
+            user.email
+        )));
+    }
+
     let existing_user_role = invitation_data.user_role;
-    let organization = get_org_from_id_query(existing_user_org_id, pool.clone()).await?;
     let added_user_to_org = add_existing_user_to_org(
         email.clone(),
         existing_user_org_id,
@@ -105,8 +118,23 @@ pub async fn post_invitation(
     .await?;
 
     if added_user_to_org {
-        send_invitation_for_existing_user(email.clone(), organization.organization.name).await?;
+        send_invitation_for_existing_user(email.clone(), org_with_plan_and_sub.organization.name)
+            .await?;
         return Ok(HttpResponse::NoContent().finish());
+    }
+
+    let org_invitations =
+        get_invitations_for_organization_query(existing_user_org_id, pool.clone())
+            .await?
+            .iter()
+            .find(|inv| inv.email == email)
+            .cloned();
+
+    if let Some(inv) = org_invitations {
+        return Err(ServiceError::BadRequest(format!(
+            "User with email {} has already been invited",
+            inv.email
+        )));
     }
 
     let invitation = create_invitation(
@@ -122,7 +150,7 @@ pub async fn post_invitation(
     send_invitation(
         invitation.registration_url,
         invitation.invitation,
-        organization.organization.name,
+        org_with_plan_and_sub.organization.name,
     )
     .await?;
 
