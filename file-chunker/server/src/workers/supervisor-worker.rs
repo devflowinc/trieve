@@ -132,11 +132,6 @@ pub async fn chunk_pdf(
             new_doc.delete_pages(&pages_to_delete);
         }
 
-        new_doc.prune_objects();
-        new_doc.delete_zero_length_streams();
-        new_doc.renumber_objects();
-        new_doc.compress();
-
         let file_name = format!("{}part{}.pdf", task.task_id, i + 1);
         let mut buffer = Vec::new();
         new_doc

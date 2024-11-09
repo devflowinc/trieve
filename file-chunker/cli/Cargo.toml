@@ -1,0 +1,10 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+base64 = "0.22.1"
+clap = { version = "4.5.20", features = ["derive", "env"] }
+serde_json = "1.0.132"
+ureq = { version = "2.10.1", features = ["json"] }
