@@ -275,7 +275,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             </label>
             <Tooltip
               tooltipText="The URL of the site to start the crawl from"
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
           </div>
           <input
@@ -307,27 +307,27 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
 
       <div class="flex items-center gap-3 py-2 pt-4">
         <div class="flex items-center gap-2">
+          <label class="block">Boost Titles</label>
           <Tooltip
             tooltipText="Prioritize matches on titles in the search results"
-            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
           />
-          <label class="block">Boost Titles</label>
           <input
             checked={options.boost_titles || false}
             onChange={(e) => {
               setOptions("boost_titles", e.currentTarget.checked);
             }}
-            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
           />
         </div>
 
         <div class="flex items-center gap-2 pl-4">
+          <label class="block">OpenAPI Spec?</label>
           <Tooltip
             tooltipText="Include an OpenAPI spec in the crawl for increased accuracy"
-            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
           />
-          <label class="block">OpenAPI Spec?</label>
           <input
             onChange={(e) =>
               setOptions((prev) => {
@@ -350,17 +350,17 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
               })
             }
             checked={isOpenAPI()}
-            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
           />
         </div>
 
         <div class="flex items-center gap-2 pl-4">
+          <label class="block">Shopify?</label>
           <Tooltip
             tooltipText="Check this if the site is a Shopify store"
-            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
           />
-          <label class="block">Shopify?</label>
           <input
             onChange={(e) => {
               setOptions((prev) => {
@@ -382,7 +382,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
               });
             }}
             checked={isShopify()}
-            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
           />
         </div>
@@ -390,13 +390,13 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
 
       <div class="flex items-center gap-3 py-2 pt-4">
         <div class="flex items-center gap-2">
+          <label class="block">Ignore Sitemap</label>
           <Tooltip
             tooltipText="Ignore the sitemap.xml file, checkbox if the site does not have a sitemap or the sitemap is not accurate"
-            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
           />
-          <label class="block">Ignore Sitemap</label>
           <input
-            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
             disabled={isShopify()}
             checked={options.ignore_sitemap ?? true}
@@ -407,13 +407,13 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
 
         <div class="flex items-center gap-2">
+          <label class="block">Allow External Links</label>
           <Tooltip
             tooltipText="Follow external links in the crawl. Example: if crawling the site trieve.ai, set this to true and add docs.trieve.ai to the include paths to crawl both the main site and the docs site."
-            body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+            body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
           />
-          <label class="block">Allow External Links</label>
           <input
-            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
             disabled={isShopify()}
             checked={options.allow_external_links ?? false}
@@ -432,7 +432,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
               setOptions("group_variants", e.currentTarget.checked)
             }
             checked={!!options.group_variants}
-            class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
           />
         </Show>
@@ -441,13 +441,13 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
       <div classList={{ "flex gap-4 pt-2": true, "opacity-40": isShopify() }}>
         <div>
           <div class="flex items-center gap-2">
-            <Tooltip
-              tooltipText="The maximum number of pages to crawl"
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
-            />
             <label class="block" for="">
               Page Limit
             </label>
+            <Tooltip
+              tooltipText="The maximum number of pages to crawl"
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+            />
           </div>
           <input
             class="block max-w-[100px] rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
@@ -499,11 +499,11 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
       >
         <div class="">
           <div class="flex items-center gap-2">
+            <label>Include URL Regex's</label>
             <Tooltip
               tooltipText="If one or more include paths are specified, only pages with URL's that match at least one of the regex patterns will be crawled"
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
-            <label>Include URL Regex's</label>
           </div>
           <MultiStringInput
             disabled={isShopify()}
@@ -520,11 +520,11 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
         <div class="">
           <div class="flex items-center gap-2">
+            <div>Exclude URL Regex's</div>
             <Tooltip
               tooltipText="If one or more exclude paths are specified, pages with URL's that match at least one of the regex patterns will not be crawled (even if they match an include path)"
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
-            <div>Exclude URL Regex's</div>
           </div>
           <MultiStringInput
             disabled={isShopify()}
@@ -540,11 +540,11 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
         <div class="">
           <div class="flex items-center gap-2">
+            <div>Include Query Selectors</div>
             <Tooltip
               tooltipText="HTML for a page is parsed and all elements matching one or more of the include tags are assembled into a div fort the exclude query selectors to apply to. What is left is the content of the page to be indexed for search."
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
-            <div>Include Query Selectors</div>
           </div>
           <MultiStringInput
             disabled={isShopify()}
@@ -560,11 +560,11 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
         <div class="">
           <div class="flex items-center gap-2">
+            <div>Exclude Query Selectors</div>
             <Tooltip
               tooltipText="HTML for a page is parsed and all elements matching one or more of the exclude tags are removed from the page before indexing. Exclude selectors are applied after include selectors."
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
-            <div>Exclude Query Selectors</div>
           </div>
           <MultiStringInput
             disabled={isShopify()}
@@ -580,11 +580,11 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
         <div class="">
           <div class="flex items-center gap-2">
+            <div>Heading Remove Strings</div>
             <Tooltip
               tooltipText="Once the page is parsed and separated into heading+body chunks, the heading remove strings are removed from the heading."
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
-            <div>Heading Remove Strings</div>
           </div>
           <MultiStringInput
             placeholder="#"
@@ -599,11 +599,11 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
         <div class="">
           <div class="flex items-center gap-2">
+            <div>Body Remove Strings</div>
             <Tooltip
               tooltipText="Once the page is parsed and separated into heading+body chunks, the body remove strings are removed from the body."
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
-            <div>Body Remove Strings</div>
           </div>
           <MultiStringInput
             placeholder="#"
