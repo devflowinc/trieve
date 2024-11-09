@@ -10,8 +10,17 @@ export const Route = createFileRoute("/ecommerce")({
 });
 
 export default function ECommerce() {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const datasetId = import.meta.env.VITE_DATASET_ID;
+  const apiKey = import.meta.env.VITE_API_KEY;
+  const brandName = import.meta.env.VITE_BRAND_NAME;
+  const brandLogoSrcUrl = import.meta.env.VITE_BRAND_LOGO_SRC_URL;
+  const brandColor = import.meta.env.VITE_ACCENT_COLOR;
+  const problemLink = import.meta.env.VITE_PROBLEM_LINK;
+
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
+
   return (
     <>
       <div
@@ -39,13 +48,21 @@ export default function ECommerce() {
             <TrieveModalSearch
               type="ecommerce"
               defaultSearchMode="search"
-              apiKey="tr-IzHXaZ89aELJXk0RkP1oIgqA6GFLGInG"
-              datasetId="78c10935-12ad-4431-bb0f-3d9929262861"
-              brandLogoImgSrcUrl="https://www.zedlabz.com/cdn/shop/t/2/assets/zedlabz-logo-retina.png?v=156539475513264331071650193684"
-              brandName="ZedLabs"
-              brandColor="#204364"
-              defaultCurrency="$"
+              apiKey={apiKey}
+              baseUrl={baseUrl}
+              datasetId={datasetId}
+              problemLink={problemLink}
+              brandLogoImgSrcUrl={brandLogoSrcUrl}
+              brandName={brandName}
+              brandColor={brandColor}
+              allowSwitchingModes={true}
+              useGroupSearch={false}
+              responsive={false}
               currencyPosition="before"
+              searchOptions={{
+                use_autocomplete: false,
+                search_type: "fulltext",
+              }}
             />
           </>
         ) : (

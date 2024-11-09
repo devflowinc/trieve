@@ -11,7 +11,12 @@ type Props = {
   className?: string;
 };
 
-export const Item = ({ item, requestID, index, className }: Props) => {
+// TODO
+// if (variant.featured_image?.src) {
+//   setShownImage(variant.featured_image?.src);
+// }
+
+export const ProductItem = ({ item, requestID, index, className }: Props) => {
   const { props, trieveSDK } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,11 +33,6 @@ export const Item = ({ item, requestID, index, className }: Props) => {
   });
   descriptionHtml = $descriptionHtml.innerHTML;
 
-  const openapiRequestHtml = document.createElement("div");
-  openapiRequestHtml.innerHTML = item.chunk.chunk_html || "";
-  const openapiRequestVerb =
-    openapiRequestHtml.querySelector(".openapi-method")?.textContent;
-
   const chunkHtmlHeadingsDiv = document.createElement("div");
   chunkHtmlHeadingsDiv.innerHTML = item.chunk.chunk_html || "";
   const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
@@ -45,10 +45,7 @@ export const Item = ({ item, requestID, index, className }: Props) => {
   });
   const firstHeadingIdDiv = document.createElement("div");
   firstHeadingIdDiv.innerHTML = $firstHeading.id;
-  const firstHeadingId = firstHeadingIdDiv.textContent;
   const cleanFirstHeading = $firstHeading?.innerHTML;
-
-  const titleInnerText = $firstHeading.textContent || "";
 
   descriptionHtml = descriptionHtml
     .replace(" </mark>", "</mark> ")
@@ -64,42 +61,21 @@ export const Item = ({ item, requestID, index, className }: Props) => {
     item.chunk?.image_urls?.[0] || ""
   );
   const price = item.chunk.num_value
-    ? ` - ${props.currencyPosition === "before" ? props.defaultCurrency : ""}${
-        item.chunk.num_value
-      }${props.currencyPosition === "after" ? props.defaultCurrency : ""}`
+    ? ` - ${
+        props.currencyPosition === "before" ? props.defaultCurrency ?? "$" : ""
+      }${item.chunk.num_value}${
+        props.currencyPosition === "after" ? props.defaultCurrency ?? "$" : ""
+      }`
     : "";
-  let title = `${
+  const title = `${
     cleanFirstHeading ||
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name
-  }${price ? "  " + price : ""}`.replace("#", "");
+  }${price ? "  " + price : ""}`;
 
   if (!title.trim() || title == "undefined") {
     return null;
-  }
-
-  switch (openapiRequestVerb) {
-    case "POST":
-      title = title.replace("POST", '<span class="post-method">POST</span>');
-      break;
-    case "GET":
-      title = title.replace("GET", '<span class="get-method">GET</span>');
-      break;
-    case "PUT":
-      title = title.replace("PUT", '<span class="put-method">PUT</span>');
-      break;
-    case "DELETE":
-      title = title.replace(
-        "DELETE",
-        '<span class="delete-method">DELETE</span>'
-      );
-      break;
-    case "PATCH":
-      title = title.replace("PATCH", '<span class="patch-method">PATCH</span>');
-      break;
-    default:
-      break;
   }
 
   const getChunkPath = () => {
@@ -143,16 +119,12 @@ export const Item = ({ item, requestID, index, className }: Props) => {
     }
   };
 
-  const linkSuffix = firstHeadingId
-    ? `#${firstHeadingId}`
-    : `#:~:text=${encodeURIComponent(titleInnerText)}`;
-
   return (
     <li key={item.chunk.id}>
       <Component
         ref={itemRef}
         id={`trieve-search-item-${index + 1}`}
-        className={className ?? "item"}
+        className={className ?? "item product"}
         onClick={() =>
           onResultClick(
             {
@@ -168,28 +140,18 @@ export const Item = ({ item, requestID, index, className }: Props) => {
         onMouseLeave={() => {
           setIsHovered(false);
         }}
-        {...(item.chunk.link
-          ? {
-              href: `${
-                item.chunk.link.endsWith("/")
-                  ? item.chunk.link.slice(0, -1)
-                  : item.chunk.link
-              }${linkSuffix}`,
-            }
-          : {})}
+        href={item.chunk.link ?? ""}
       >
         <div>
-          {props.type === "ecommerce" ? (
-            item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
-              <img src={shownImage} className="ecommerce-featured-image" />
-            ) : (
-              <div className="ecommerce-featured-image">
-                {props.brandLogoImgSrcUrl ? (
-                  <img src={props.brandLogoImgSrcUrl} />
-                ) : null}
-              </div>
-            )
-          ) : null}
+          {item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
+            <img src={shownImage} className="ecommerce-featured-image" />
+          ) : (
+            <div className="ecommerce-featured-image">
+              {props.brandLogoImgSrcUrl ? (
+                <img src={props.brandLogoImgSrcUrl} />
+              ) : null}
+            </div>
+          )}
           {title ? (
             <div>
               {props.type === "docs" ? (
@@ -207,34 +169,32 @@ export const Item = ({ item, requestID, index, className }: Props) => {
                   __html: descriptionHtml,
                 }}
               />
-              {props.type === "ecommerce" ? (
-                <>
-                  {item.chunk.metadata?.variants?.length > 1 ? (
-                    <div className="variants">
-                      <span className="variants-title">Variants:</span>
-                      {(
-                        item.chunk.metadata.variants as unknown as {
-                          featured_image: { src: string };
-                          title: string;
-                        }[]
-                      )?.map((variant) => (
-                        <button
-                          onClick={(ev) => {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                            ev.nativeEvent.stopImmediatePropagation();
-                            if (variant.featured_image?.src) {
-                              setShownImage(variant.featured_image?.src);
-                            }
-                          }}
-                        >
-                          {variant.title}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
+              <>
+                {item.chunk.metadata?.variants?.length > 1 ? (
+                  <div className="variants">
+                    <span className="variants-title">Variants:</span>
+                    {(
+                      item.chunk.metadata.variants as unknown as {
+                        featured_image: { src: string };
+                        title: string;
+                      }[]
+                    )?.map((variant) => (
+                      <button
+                        onClick={(ev) => {
+                          ev.preventDefault();
+                          ev.stopPropagation();
+                          ev.nativeEvent.stopImmediatePropagation();
+                          if (variant.featured_image?.src) {
+                            setShownImage(variant.featured_image?.src);
+                          }
+                        }}
+                      >
+                        {variant.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </>
             </div>
           ) : (
             <p
