@@ -6653,6 +6653,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
             typo_options: Option<TypoOptions>,
+            sort_options: Option<SortOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6679,6 +6680,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             slim_chunks: helper.slim_chunks,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             typo_options: helper.typo_options,
+            sort_options: helper.sort_options,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
         })
