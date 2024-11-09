@@ -63,7 +63,7 @@ export const Select = <T,>(props: SelectProps<T>) => {
           {(tooltipText) => (
             <Tooltip
               tooltipText={tooltipText()}
-              body={<FaRegularCircleQuestion class="h-4 w-4 text-black" />}
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
           )}
         </Show>
