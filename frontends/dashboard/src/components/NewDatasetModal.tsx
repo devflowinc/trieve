@@ -230,7 +230,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             Fill with Example Data
                             <Tooltip
                               body={
-                                <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                               }
                               tooltipText="If selected, we will pre-fill the dataset with a random selection of Y-Combinator companies so you can immediately test the product."
                             />
@@ -269,7 +269,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                         Configuration
                         <Tooltip
                           body={
-                            <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                            <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                           }
                           tooltipText="Change your default embedding model and distance metric."
                         />
@@ -284,7 +284,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               Dense Vector Embedding Model{" "}
                               <Tooltip
                                 body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                  <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                                 }
                                 tooltipText="Dense vector models are used for semantic search. jina-base-en provides the best balance of latency and relevance quality. Only change this if you have a specific requirement. Custom models are supported on the enterprise plan."
                               />
@@ -345,7 +345,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               Distance Metric
                               <Tooltip
                                 body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                  <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                                 }
                                 tooltipText="Cosine will almost always be best. Only change if you are confident that your data is unique and requires a different metric."
                               />
@@ -396,7 +396,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               Sparse Vector Model{" "}
                               <Tooltip
                                 body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                  <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                                 }
                                 tooltipText="Sparse vector models are used for fulltext search. In contrast to keyword bm25, fulltext is aware of the most important terms in your query. Currently only splade-v3 is offered."
                               />
@@ -426,7 +426,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               BM25{" "}
                               <Tooltip
                                 body={
-                                  <FaRegularCircleQuestion class="h-4 w-4 text-black" />
+                                  <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                                 }
                                 tooltipText="BM25 is used for keyword search. It is enabled on all datasets by default."
                               />
@@ -516,7 +516,7 @@ const BM25Settings = (props: {
           onChange={(e) => {
             props.setConfig("BM25_ENABLED", e.currentTarget.checked);
           }}
-          class="h-4 w-4 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+          class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
           type="checkbox"
         />
       </div>
