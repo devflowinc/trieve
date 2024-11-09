@@ -1,4 +1,4 @@
-/target
+**/target
 tantivy-recovery/target
 *.env
 .env.docker

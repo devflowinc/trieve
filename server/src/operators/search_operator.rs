@@ -1697,6 +1697,159 @@ pub fn rerank_chunks(
     reranked_chunks
 }
 
+#[tracing::instrument]
+pub fn rerank_groups(
+    groups: Vec<GroupScoreChunk>,
+    sort_by: Option<SortByField>,
+    tag_weights: Option<HashMap<String, f32>>,
+    use_weights: Option<bool>,
+    query_location: Option<GeoInfoWithBias>,
+) -> Vec<GroupScoreChunk> {
+    let mut reranked_groups = Vec::new();
+    if use_weights.unwrap_or(true) {
+        groups.into_iter().for_each(|mut group| {
+            let first_chunk = group.metadata.get_mut(0).unwrap();
+            if first_chunk.metadata[0].metadata().weight == 0.0 {
+                first_chunk.score *= 1.0;
+            } else {
+                first_chunk.score *= first_chunk.metadata[0].metadata().weight;
+            }
+            reranked_groups.push(group);
+        });
+    } else {
+        reranked_groups = groups;
+    }
+
+    if query_location.is_some() && query_location.unwrap().bias > 0.0 {
+        let info_with_bias = query_location.unwrap();
+        let query_location = info_with_bias.location;
+        let location_bias = info_with_bias.bias;
+        let distances = reranked_groups
+            .iter()
+            .filter_map(|group| group.metadata[0].metadata[0].metadata().location)
+            .map(|location| query_location.haversine_distance_to(&location));
+        let max_distance = distances.clone().max_by(|a, b| a.partial_cmp(b).unwrap());
+        let min_distance = distances.clone().min_by(|a, b| a.partial_cmp(b).unwrap());
+        let max_score = reranked_groups
+            .iter()
+            .map(|group| group.metadata[0].score)
+            .max_by(|a, b| a.partial_cmp(b).unwrap());
+        let min_score = reranked_groups
+            .iter()
+            .map(|group| group.metadata[0].score)
+            .min_by(|a, b| a.partial_cmp(b).unwrap());
+
+        reranked_groups = reranked_groups
+            .iter_mut()
+            .map(|group| {
+                let first_chunk = group.metadata.get_mut(0).unwrap();
+                let normalized_distance = (first_chunk.metadata[0]
+                    .metadata()
+                    .location
+                    .map(|location| query_location.haversine_distance_to(&location))
+                    .unwrap_or(0.0)
+                    - min_distance.unwrap_or(0.0))
+                    / (max_distance.unwrap_or(1.0) - min_distance.unwrap_or(0.0));
+                let normalized_chunk_score = (first_chunk.score - min_score.unwrap_or(0.0))
+                    / (max_score.unwrap_or(1.0) - min_score.unwrap_or(0.0));
+                first_chunk.score = (normalized_chunk_score * (1.0 - location_bias))
+                    + (location_bias * (1.0 - normalized_distance));
+                group.clone()
+            })
+            .collect::<Vec<GroupScoreChunk>>();
+    }
+
+    if let Some(tag_weights) = tag_weights {
+        reranked_groups = reranked_groups
+            .iter_mut()
+            .map(|group| {
+                let first_chunk = group.metadata.get_mut(0).unwrap();
+                let mut tag_score = 1.0;
+                for (tag, weight) in tag_weights.iter() {
+                    if let Some(metadata) = first_chunk.metadata.get(0) {
+                        if let Some(metadata_tags) = metadata.metadata().tag_set {
+                            if metadata_tags.contains(&Some(tag.clone())) {
+                                tag_score *= weight;
+                            }
+                        }
+                    }
+                }
+                first_chunk.score *= tag_score as f64;
+                group.clone()
+            })
+            .collect::<Vec<GroupScoreChunk>>();
+    }
+    reranked_groups.sort_by(|a, b| {
+        let a_first_chunk = a.metadata.get(0).unwrap();
+        let b_first_chunk = b.metadata.get(0).unwrap();
+
+        b_first_chunk
+            .score
+            .partial_cmp(&a_first_chunk.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    if let Some(sort_by) = sort_by {
+        match sort_by.field.as_str() {
+            "time_stamp" => {
+                if sort_by.direction.is_some_and(|dir| dir == SortOrder::Asc) {
+                    reranked_groups.sort_by(|a, b| {
+                        let a_first_chunk = a.metadata.get(0).unwrap();
+                        let b_first_chunk = b.metadata.get(0).unwrap();
+                        a_first_chunk.metadata[0]
+                            .metadata()
+                            .time_stamp
+                            .partial_cmp(&b_first_chunk.metadata[0].metadata().time_stamp)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                } else {
+                    reranked_groups.sort_by(|a, b| {
+                        let a_first_chunk = a.metadata.get(0).unwrap();
+                        let b_first_chunk = b.metadata.get(0).unwrap();
+                        b_first_chunk.metadata[0]
+                            .metadata()
+                            .time_stamp
+                            .partial_cmp(&a_first_chunk.metadata[0].metadata().time_stamp)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                }
+            }
+            "num_value" => {
+                if sort_by.direction.is_some_and(|dir| dir == SortOrder::Asc) {
+                    reranked_groups.sort_by(|a, b| {
+                        let a_first_chunk = a.metadata.get(0).unwrap();
+                        let b_first_chunk = b.metadata.get(0).unwrap();
+                        a_first_chunk.metadata[0]
+                            .metadata()
+                            .num_value
+                            .partial_cmp(&b_first_chunk.metadata[0].metadata().num_value)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                } else {
+                    reranked_groups.sort_by(|a, b| {
+                        let a_first_chunk = a.metadata.get(0).unwrap();
+                        let b_first_chunk = b.metadata.get(0).unwrap();
+                        b_first_chunk.metadata[0]
+                            .metadata()
+                            .num_value
+                            .partial_cmp(&a_first_chunk.metadata[0].metadata().num_value)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                }
+            }
+            _ => {
+                log::error!("Unsupported sort_by field: {}", sort_by.field);
+                sentry::capture_message(
+                    &format!("Unsupported sort_by field: {}", sort_by.field),
+                    sentry::Level::Error,
+                );
+            }
+        }
+    }
+
+    reranked_groups
+}
+
 async fn get_qdrant_vector(
     search_type: SearchMethod,
     parsed_query: ParsedQueryTypes,
@@ -2525,6 +2678,14 @@ pub async fn semantic_search_over_groups(
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
 
+    let sort_by = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
+            QdrantSortBy::Field(field) => Some(field.clone()),
+            _ => None,
+        },
+        _ => None,
+    };
+
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
         match parsed_query {
@@ -2600,6 +2761,23 @@ pub async fn semantic_search_over_groups(
         })
         .collect();
 
+    result_chunks.group_chunks = rerank_groups(
+        result_chunks.group_chunks,
+        sort_by,
+        data.sort_options
+            .as_ref()
+            .map(|d| d.tag_weights.clone())
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.use_weights)
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.location_bias)
+            .unwrap_or_default(),
+    );
+
     timer.add("fetched from postgres");
 
     //TODO: rerank for groups
@@ -2632,6 +2810,14 @@ pub async fn full_text_search_over_groups(
 
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
+
+    let sort_by = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
+            QdrantSortBy::Field(field) => Some(field.clone()),
+            _ => None,
+        },
+        _ => None,
+    };
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
@@ -2695,6 +2881,23 @@ pub async fn full_text_search_over_groups(
                 .cloned()
         })
         .collect();
+
+    result_groups_with_chunk_hits.group_chunks = rerank_groups(
+        result_groups_with_chunk_hits.group_chunks,
+        sort_by,
+        data.sort_options
+            .as_ref()
+            .map(|d| d.tag_weights.clone())
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.use_weights)
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.location_bias)
+            .unwrap_or_default(),
+    );
 
     timer.add("fetched from postgres");
 
@@ -2798,6 +3001,14 @@ pub async fn hybrid_search_over_groups(
         dense_embedding_vectors_future,
         sparse_embedding_vector_future
     )?;
+
+    let sort_by = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
+            QdrantSortBy::Field(field) => Some(field.clone()),
+            _ => None,
+        },
+        _ => None,
+    };
 
     timer.add("computed dense embedding");
 
@@ -2908,6 +3119,23 @@ pub async fn hybrid_search_over_groups(
     }
 
     reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
+
+    reranked_chunks = rerank_groups(
+        reranked_chunks,
+        sort_by,
+        data.sort_options
+            .as_ref()
+            .map(|d| d.tag_weights.clone())
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.use_weights)
+            .unwrap_or_default(),
+        data.sort_options
+            .as_ref()
+            .map(|d| d.location_bias)
+            .unwrap_or_default(),
+    );
 
     let result_chunks = DeprecatedSearchOverGroupsResponseBody {
         group_chunks: reranked_chunks,
