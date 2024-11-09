@@ -9,8 +9,12 @@ name = "file-chunker"
 path = "src/main.rs"
 
 [[bin]]
-name = "file-worker"
-path = "src/bin/file-worker.rs"
+name = "supervisor-worker"
+path = "src/workers/supervisor-worker.rs"
+
+[[bin]]
+name = "chunk-worker"
+path = "src/workers/chunk-worker.rs"
 
 
 [dependencies]
