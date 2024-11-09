@@ -1654,6 +1654,8 @@ pub struct SearchOverGroupsReqPayload {
     pub slim_chunks: Option<bool>,
     /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
     pub use_quote_negated_terms: Option<bool>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
     /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be
     /// preserved.
     pub remove_stop_words: Option<bool>,
