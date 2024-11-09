@@ -2838,7 +2838,7 @@ impl Organization {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, ToSchema, Clone)]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "email": "trieve@trieve.ai",
