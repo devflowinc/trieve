@@ -6,7 +6,7 @@ import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
 
 export const ChatMode = () => {
-  const { setMode, modalRef, open, mode } = useModalState();
+  const { props, setMode, modalRef, open, setOpen, mode } = useModalState();
   const {
     askQuestion,
     messages,
@@ -28,6 +28,28 @@ export const ChatMode = () => {
   return (
     <Suspense>
       <div className="chat-outer-wrapper" ref={modalRef}>
+        <div
+          className={`close-modal-button ${props.type}`}
+          onClick={() => setOpen(false)}
+        >
+          <svg
+            className="close-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+          <span>Close</span>
+        </div>
         <div className="system-information-wrapper">
           <div className="ai-message">
             <div className="chat-modal-wrapper">

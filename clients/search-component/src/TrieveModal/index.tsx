@@ -20,56 +20,60 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB",
+      props.brandColor ?? "#CB53EB"
     );
 
     // depending on the theme, set the background color of ::-webkit-scrollbar-thumb for #trieve-search-modal
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)",
+        "var(--tv-zinc-700)"
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)",
+        "var(--tv-zinc-300)"
       );
     }
   }, [props.brandColor]);
 
   return (
     <>
-      <OpenModalButton setOpen={() => {
-        startTransition(() => {
-          setOpen(true)
-          setMode(props.defaultSearchMode || "search");
-        })
-      }} />
-      {open &&
+      <OpenModalButton
+        setOpen={() => {
+          startTransition(() => {
+            setOpen(true);
+            setMode(props.defaultSearchMode || "search");
+          });
+        }}
+      />
+      {open && (
         <>
           <div
             onClick={() => {
-              setOpen(false)
+              setOpen(false);
             }}
-            id="trieve-search-modal-overlay"></div>
+            id="trieve-search-modal-overlay"
+          ></div>
           <div
             id="trieve-search-modal"
-            className={
-              (mode === "chat" ? "chat-modal-mobile " : " ") +
-              (props.theme === "dark" ? "dark " : "")
-            }>
+            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${
+              props.theme === "dark" ? "dark " : ""
+            } ${props.type}`.trim()}
+          >
             {props.allowSwitchingModes && <ModeSwitch />}
             <div style={{ display: mode === "search" ? "block" : "none" }}>
               <SearchMode />
             </div>
             <div
               className={mode === "chat" ? " chat-container" : " "}
-              style={{ display: mode === "chat" ? "block" : "none" }}>
+              style={{ display: mode === "chat" ? "block" : "none" }}
+            >
               <ChatMode />
             </div>
           </div>
         </>
-      }
+      )}
     </>
   );
 };
