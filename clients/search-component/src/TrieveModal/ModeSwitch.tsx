@@ -2,10 +2,14 @@ import * as React from "react";
 import { useModalState } from "../utils/hooks/modal-context";
 
 export const ModeSwitch = () => {
-  const { mode, setMode, query } = useModalState();
+  const { props, mode, setMode, query } = useModalState();
 
   return (
-    <div className={`mode-switch-wrapper ${mode}${query ? " has-query" : ""}`}>
+    <div
+      className={`mode-switch-wrapper ${mode} ${query ? "has-query " : ""}${
+        props.type
+      }`.trim()}
+    >
       <div>
         <button
           className={mode === "search" ? "active" : ""}

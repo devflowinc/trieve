@@ -19,6 +19,7 @@ export const SearchMode = () => {
     loadingResults,
     query,
     setQuery,
+    setOpen,
     requestID,
     inputRef,
     open,
@@ -98,6 +99,28 @@ export const SearchMode = () => {
 
   return (
     <Suspense fallback={<div className="hidden"> </div>}>
+      <div
+        className={`close-modal-button ${props.type}`}
+        onClick={() => setOpen(false)}
+      >
+        <svg
+          className="close-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+        <span>Close</span>
+      </div>
       <div className="input-wrapper">
         <div className="input-flex">
           <svg
@@ -120,6 +143,7 @@ export const SearchMode = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={props.placeholder || "Search for anything"}
+            className={`search-input ${props.type}`}
           />
 
           <button className="clear-query" onClick={() => setQuery("")}>
@@ -142,7 +166,7 @@ export const SearchMode = () => {
           </button>
         </div>
         {props.suggestedQueries && (!query || (query && !results.length)) && (
-          <div className="suggested-queries-wrapper">
+          <div className={`suggested-queries-wrapper ${props.type}`}>
             <>
               <button
                 onClick={refetchSuggestedQueries}

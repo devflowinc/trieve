@@ -65,7 +65,7 @@ body {
     }
 
     .trieve-elements-ecommerce {
-      @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 px-5 py-2;
+      @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mt-0.5 py-2;
       
       > li.start-chat-li {
         @apply col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5;
@@ -132,6 +132,10 @@ body {
           }
         }
       }
+    }
+
+    .mode-switch-wrapper.ecommerce {
+      @apply top-[2.625rem] right-6;
     }
 
     ul.tags {
@@ -349,10 +353,6 @@ body {
       }
     }
 
-    .close-modal-button {
-      @apply absolute top-4 right-4 cursor-pointer;
-    }
-
     .suggested-queries-wrapper {
       @apply flex gap-2 items-center flex-wrap px-5 mb-2;
 
@@ -360,6 +360,10 @@ body {
         @apply text-xs;
         color: var(--tv-zinc-600);
       }
+    }
+
+    .suggested-queries-wrapper.ecommerce {
+      @apply pl-0;
     }
 
     .suggested-query {
@@ -522,6 +526,18 @@ body {
       }
     }
 
+    .close-modal-button:not(.ecommerce) {
+      @apply hidden;
+    }
+
+    .close-modal-button.ecommerce {
+      @apply w-full flex justify-end text-xs items-center absolute top-0 right-1.5 p-2 gap-0.5 cursor-pointer;
+
+      > .close-icon {
+        @apply w-4 h-4 fill-current;
+      }
+    }
+
     .input-wrapper {
       @apply sticky top-0 z-10 flex flex-col gap-2;
       background-color: var(--bg-color);
@@ -573,6 +589,10 @@ body {
           var(--tv-prop-brand-color) 0px 0px 1px inset,
           rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       }
+    }
+
+    input.search-input.ecommerce {
+      @apply rounded-md;
     }
 
     .chat-footer-wrapper {
@@ -910,6 +930,14 @@ body {
         }
       }
     }
+  }
+
+  #trieve-search-modal.ecommerce {
+    @apply top-0 max-w-full w-screen pt-10 px-4;
+  }
+
+  #trieve-search-modal.chat-modal-mobile.ecommerce {
+    @apply top-0 max-w-full w-screen pt-0 px-4;
   }
 }
 
