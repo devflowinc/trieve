@@ -40,7 +40,8 @@ export const ChatMessage = ({
                   ? `${props.brandColor}18`
                   : "#CB53EB18",
                 color: props.brandColor ?? "#CB53EB",
-              }}>
+              }}
+            >
               User
             </p>
           </span>
@@ -67,7 +68,8 @@ export const ChatMessage = ({
                   ? `${props.brandColor}18`
                   : "#CB53EB18",
                 color: props.brandColor ?? "#CB53EB",
-              }}>
+              }}
+            >
               AI assistant
             </p>
           </span>
@@ -97,103 +99,104 @@ export const Message = ({
         </div>
       ) : null}
       {message.type === "system" && message.text != "Loading..." ? (
-        <div className={`system ${props.type}`}>
+        <div className="system">
+          {message.additional && props.type === "ecommerce" && (
+            <div className="additional-image-links">
+              {message.additional
+                .filter(
+                  (chunk) =>
+                    (chunk.metadata.heading ||
+                      chunk.metadata.title ||
+                      chunk.metadata.page_title) &&
+                    chunk.link &&
+                    chunk.image_urls?.length &&
+                    chunk.num_value,
+                )
+                .map((chunk) => ({
+                  title:
+                    chunk.metadata.heading ||
+                    chunk.metadata.title ||
+                    chunk.metadata.page_title,
+                  link: chunk.link,
+                  imageUrl: (chunk.image_urls ?? [])[0],
+                  price: chunk.num_value,
+                }))
+                .filter(
+                  (item, index, array) =>
+                    array.findIndex(
+                      (arrayItem) => arrayItem.title === item.title,
+                    ) === index && item.title,
+                )
+                .map((item, index) => (
+                  <a
+                    key={index}
+                    href={item.link ?? ""}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      src={item.imageUrl ?? ""}
+                      alt={item.title}
+                      className="ecommerce-featured-image-chat"
+                    />
+                    <div className="ecomm-details">
+                      <p className="ecomm-item-title">{item.title}</p>
+                      <p
+                        className="ecomm-item-price"
+                        style={{
+                          color: props.brandColor ?? "#CB53EB",
+                        }}
+                      >
+                        ${item.price}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+            </div>
+          )}
           <Markdown
             components={{
               code: (props) => {
                 const { children } = props || {};
                 if (!children) return null;
-                return (
-                  children?.toString()
-                );
+                return children?.toString();
               },
             }}
-            key={idx}>
+            key={idx}
+          >
             {message.text}
           </Markdown>
           <div>
-            {message.additional ? (
-              props.type === "ecommerce" ? (
-                <div className="additional-image-links">
-                  {message.additional
-                    .filter(
-                      (chunk) =>
-                        (chunk.metadata.heading ||
-                          chunk.metadata.title ||
-                          chunk.metadata.page_title) &&
-                        chunk.link &&
-                        chunk.image_urls?.length &&
-                        chunk.num_value,
-                    )
-                    .map((chunk) => ({
-                      title:
+            {message.additional
+              ? props.type !== "ecommerce" && (
+                  <div className="additional-links">
+                    {message.additional
+                      .filter(
+                        (chunk) =>
+                          (chunk.metadata.heading ||
+                            chunk.metadata.title ||
+                            chunk.metadata.page_title) &&
+                          chunk.link,
+                      )
+                      .map((chunk) => [
                         chunk.metadata.heading ||
-                        chunk.metadata.title ||
-                        chunk.metadata.page_title,
-                      link: chunk.link,
-                      imageUrl: (chunk.image_urls ?? [])[0],
-                      price: chunk.num_value,
-                    }))
-                    .filter(
-                      (item, index, array) =>
-                        array.findIndex(
-                          (arrayItem) => arrayItem.title === item.title,
-                        ) === index && item.title,
-                    )
-                    .map((item, index) => (
-                      <a
-                        key={index}
-                        href={item.link ?? ""}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <img
-                          src={item.imageUrl ?? ""}
-                          alt={item.title}
-                          className="ecommerce-featured-image-chat"
-                        />
-                        <div className="ecomm-details">
-                          <p className="ecomm-item-title">{item.title}</p>
-                          <p
-                            className="ecomm-item-price"
-                            style={{
-                              color: props.brandColor ?? "#CB53EB",
-                            }}>
-                            ${item.price}
-                          </p>
-                        </div>
-                      </a>
-                    ))}
-                </div>
-              ) : (
-                <div className="additional-links">
-                  {message.additional
-                    .filter(
-                      (chunk) =>
-                        (chunk.metadata.heading ||
                           chunk.metadata.title ||
-                          chunk.metadata.page_title) &&
+                          chunk.metadata.page_title,
                         chunk.link,
-                    )
-                    .map((chunk) => [
-                      chunk.metadata.heading ||
-                        chunk.metadata.title ||
-                        chunk.metadata.page_title,
-                      chunk.link,
-                    ])
-                    .filter(
-                      (link, index, array) =>
-                        array.findIndex((item) => item[0] === link[0]) ===
-                          index && link[0],
-                    )
-                    .map((link, index) => (
-                      <a key={index} href={link[1] as string} target="_blank">
-                        {link[0]}
-                      </a>
-                    ))}
-                </div>
-              )
-            ) : null}
+                      ])
+                      .filter(
+                        (link, index, array) =>
+                          array.findIndex((item) => item[0] === link[0]) ===
+                            index && link[0],
+                      )
+                      .map((link, index) => (
+                        <a key={index} href={link[1] as string} target="_blank">
+                          {link[0]}
+                        </a>
+                      ))}
+                  </div>
+                )
+              : null}
             <div className="feedback-wrapper">
               <span className="spacer"></span>
               <div className="feedback-icons">
@@ -202,7 +205,8 @@ export const Message = ({
                   onClick={() => {
                     rateChatCompletion(true, message.queryId);
                     setPositive(true);
-                  }}>
+                  }}
+                >
                   <ThumbsUpIcon />
                 </button>
                 <button
@@ -210,7 +214,8 @@ export const Message = ({
                   onClick={() => {
                     rateChatCompletion(false, message.queryId);
                     setPositive(false);
-                  }}>
+                  }}
+                >
                   <ThumbsDownIcon />
                 </button>
               </div>

@@ -276,7 +276,7 @@ body {
       }
 
       .additional-image-links {
-        @apply grid grid-cols-3 gap-2 mt-4;
+        @apply grid grid-cols-3 gap-2 mt-4 mb-4;
 
         a {
           @apply rounded px-2 text-xs py-1 line-clamp-2 overflow-ellipsis grid-rows-2 w-fit;
@@ -319,7 +319,7 @@ body {
       }
 
       .system {
-        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[100vw] sm:max-w-[330px];
+        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[100vw] sm:max-w-[530px];
 
         p {
           @apply pb-1;
