@@ -313,7 +313,7 @@ body {
       }
 
       .system {
-        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[100vw] sm:max-w-[530px];
+        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[100vw] sm:max-w-[330px];
 
         p {
           @apply pb-1;
