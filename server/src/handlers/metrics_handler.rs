@@ -1,6 +1,6 @@
 use crate::{data::models::RedisPool, errors::ServiceError};
 use actix_web::{web, HttpResponse};
-use prometheus::{Encoder, Error, Gauge, Registry};
+use prometheus::{opts, register_gauge_vec, Encoder, Error, Gauge, GaugeVec, Registry};
 
 #[derive(Clone, Debug)]
 pub struct Metrics {
@@ -15,6 +15,7 @@ pub struct Metrics {
     pub group_update_processing_gauge: Gauge,
     pub pgbulk_queue_gauge: Gauge,
     pub pgbulk_processing_gauge: Gauge,
+    pub api_error_gauge: GaugeVec,
 }
 
 impl Metrics {
@@ -67,6 +68,12 @@ impl Metrics {
         )?;
         registry.register(Box::new(group_update_processing_gauge.clone()))?;
 
+        let api_error_gauge = register_gauge_vec!(
+            opts!("tr_api_errors", "number of errors"),
+            &["error_code", "method", "route", "base_url"]
+        )?;
+        registry.register(Box::new(api_error_gauge.clone()))?;
+
         Ok(Metrics {
             registry,
             ingest_queue_gauge,
@@ -79,7 +86,15 @@ impl Metrics {
             delete_processing_gauge,
             ingest_processing_gauge,
             group_update_processing_gauge,
+            api_error_gauge,
         })
+    }
+
+    pub fn register_error(&self, error_code: u16, method: String, route: String, base_url: String) {
+        // register error
+        self.api_error_gauge
+            .with_label_values(&[&error_code.to_string(), &method, &route, &base_url])
+            .inc();
     }
 
     pub async fn update_queue_gauges(
