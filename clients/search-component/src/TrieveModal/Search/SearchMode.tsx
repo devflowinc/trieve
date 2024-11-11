@@ -100,7 +100,7 @@ export const SearchMode = () => {
   return (
     <Suspense fallback={<div className="hidden"> </div>}>
       <div
-        className={`close-modal-button ${props.type}`}
+        className={`close-modal-button search ${props.type}`}
         onClick={() => setOpen(false)}
       >
         <svg

@@ -29,7 +29,7 @@ export const ChatMode = () => {
     <Suspense>
       <div className="chat-outer-wrapper" ref={modalRef}>
         <div
-          className={`close-modal-button ${props.type}`}
+          className={`close-modal-button chat ${props.type}`}
           onClick={() => setOpen(false)}
         >
           <svg

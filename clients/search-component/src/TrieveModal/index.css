@@ -46,7 +46,7 @@ body {
       @apply flex flex-col h-full top-0 sm:top-[calc(40vh-225px)] pt-4 max-h-[100vh] sm:h-fit w-full sm:w-[90vw] rounded-none sm:rounded-lg;
 
       .chat-outer-wrapper {
-        @apply justify-between w-full h-full m-0 sm:mt-12;
+        @apply justify-between w-full h-full mt-10 sm:mt-12;
       }
       .system-information-wrapper {
         @apply sm:mb-8;
@@ -112,7 +112,6 @@ body {
     .mode-switch-wrapper {
       @apply flex items-center justify-end mt-2 absolute top-0.5 right-2 z-30 font-medium;
 
-      /* apply hidden if both .search and .has-query are present */
       &.search.has-query {
         @apply hidden;
       }
@@ -138,10 +137,14 @@ body {
       }
     }
 
-    .mode-switch-wrapper.ecommerce {
+    .mode-switch-wrapper.ecommerce.search {
       @apply top-[2.625rem];
 
       right: calc(max(calc(50vw - 36rem), 1.25rem) + 0.5rem);
+    }
+
+    .mode-switch-wrapper.ecommerce.chat {
+      @apply right-[4.5rem] -top-0.5;
     }
 
     ul.tags {
@@ -543,13 +546,12 @@ body {
     }
 
     .close-modal-button.ecommerce {
-      @apply w-full flex justify-end text-xs items-center absolute top-0 right-1.5 p-2 gap-0.5 cursor-pointer;
+      @apply w-full flex justify-end text-xs items-center absolute top-1 right-1.5 p-2 gap-0.5 cursor-pointer;
 
       > .close-icon {
         @apply w-4 h-4 fill-current;
       }
     }
-
     .input-wrapper {
       @apply sticky top-0 z-10 flex flex-col gap-2;
       background-color: var(--bg-color);
