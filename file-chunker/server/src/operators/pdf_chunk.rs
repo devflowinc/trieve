@@ -90,8 +90,8 @@ fn crop_image(img: DynamicImage, box_: &PdlaBox) -> DynamicImage {
     let w = w.min(img.width() - x);
     let h = h.min(img.height() - y);
 
-    let cropped = img.crop_imm(x, y, w, h);
-    cropped
+    
+    img.crop_imm(x, y, w, h)
 }
 
 async fn get_chunk_from_image(
@@ -162,7 +162,7 @@ async fn get_chunk_from_image(
         id: uuid::Uuid::new_v4().to_string(),
         task_id: task_id.clone(),
         content,
-        metadata: chunk_metadata_string(&box_),
+        metadata: chunk_metadata_string(box_),
         created_at: OffsetDateTime::now_utc(),
     })
 }
@@ -269,13 +269,13 @@ pub async fn chunk_pdf(
 
     let mut results: Vec<ChunkClickhouse> = vec![];
 
-    for (_, box_) in bounds.iter().enumerate() {
+    for box_ in bounds.iter() {
         let task_id = task_id.clone();
         let chunk = match box_.token_type {
             PdlaTokenType::Text => {
                 if box_.text.is_none() {
                     // Treat as picture
-                    let crop = crop_image(pages[box_.page_number as usize - 1].clone(), box_);
+                    let crop = crop_image(pages[box_.page_number - 1].clone(), box_);
                     let result = get_chunk_from_image(crop, task_id, client.clone(), box_).await;
                     result?
                 } else {
@@ -290,7 +290,7 @@ pub async fn chunk_pdf(
             }
 
             PdlaTokenType::Picture | PdlaTokenType::Table => {
-                let crop = crop_image(pages[box_.page_number as usize - 1].clone(), box_);
+                let crop = crop_image(pages[box_.page_number - 1].clone(), box_);
                 let result = get_chunk_from_image(crop, task_id, client.clone(), box_).await;
                 result?
             }
