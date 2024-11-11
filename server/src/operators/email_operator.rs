@@ -29,7 +29,7 @@ pub fn send_email(
     let email = Message::builder()
         .from(smtp_email_address.parse().expect("Invalid email address"))
         .to(to_address.parse().expect("Invalid email address"))
-        .subject(subject.unwrap_or("Trieve Sign Up Invitation".to_string()))
+        .subject(subject.unwrap_or("You have been invited to join a Trieve organization!".to_string()))
         .header(ContentType::TEXT_HTML)
         .body(html_email_body)
         .expect("Failed to create email");
