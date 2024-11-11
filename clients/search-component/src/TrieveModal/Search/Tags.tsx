@@ -19,7 +19,7 @@ export const Tags = () => {
         ))}
       </ul>
     ) : (
-      <ul className="commands">
+      <ul className={`commands ${props.type}`}>
         <li key="enter-key-command">
           <kbd className="commands-key">
             <EnterKeyIcon />

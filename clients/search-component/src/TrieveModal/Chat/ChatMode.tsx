@@ -88,7 +88,7 @@ export const ChatMode = () => {
             />
           </form>
         </div>
-        <div className={`trieve-footer chat`}>
+        <div className={`trieve-footer chat ${props.type}`}>
           <div className="bottom-row">
             {messages.length ? (
               <button

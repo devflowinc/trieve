@@ -177,7 +177,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
                 <h6 className="chunk-path">{getChunkPath()}</h6>
               ) : null}
               <h4
-                className="chunk-title"
+                className={`chunk-title ${props.type}`}
                 dangerouslySetInnerHTML={{
                   __html: title,
                 }}

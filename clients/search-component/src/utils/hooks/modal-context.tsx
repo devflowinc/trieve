@@ -27,10 +27,10 @@ type customAutoCompleteAddOn = {
   use_autocomplete?: boolean;
 };
 
-type currencyPosition = "before" | "after";
-type ModalTypes = "ecommerce" | "docs";
-type SearchModes = "chat" | "search";
-type searchOptions = simpleSearchReqPayload & customAutoCompleteAddOn;
+export type currencyPosition = "before" | "after";
+export type ModalTypes = "ecommerce" | "docs";
+export type SearchModes = "chat" | "search";
+export type searchOptions = simpleSearchReqPayload & customAutoCompleteAddOn;
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
@@ -200,6 +200,7 @@ const ModalProvider = ({
           trieve: trieve,
           abortController,
           ...(currentTag !== "all" && { tag: currentTag }),
+          type: props.type,
         });
 
         setResults(results.groups);
@@ -211,6 +212,7 @@ const ModalProvider = ({
           trieve: trieve,
           abortController,
           ...(currentTag !== "all" && { tag: currentTag }),
+          type: props.type,
         });
         setResults(results.chunks);
         setRequestID(results.requestID);

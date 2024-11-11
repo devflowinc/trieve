@@ -121,7 +121,7 @@ export const SearchMode = () => {
         </svg>
         <span>Close</span>
       </div>
-      <div className="input-wrapper">
+      <div className={`input-wrapper ${props.type}`}>
         <div className="input-flex">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -242,10 +242,10 @@ export const SearchMode = () => {
             )}
           </div>
         ) : query && !results.length && loadingResults ? (
-          <p className="no-results-loading">Searching...</p>
+          <p className={`no-results-loading ${props.type}`}>Searching...</p>
         ) : null}
       </ul>
-      <div className={`trieve-footer search`}>
+      <div className={`trieve-footer search ${props.type}`}>
         <div className="bottom-row">
           <Tags />
           <span className="spacer" />

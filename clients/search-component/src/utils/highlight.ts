@@ -16,7 +16,7 @@ export function highlightText(
   }
 }
 
-export const highlightOptions = {
+export const defaultHighlightOptions = {
   highlight_delimiters: ["?", ",", ".", "!", "↵"],
   highlight_max_length: 3,
   highlight_max_num: 1,
