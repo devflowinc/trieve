@@ -94,12 +94,16 @@ export const Message = ({
   return (
     <div>
       {message.text == "Loading..." ? (
-        <div className="system">
+        <div
+          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
+        >
           <LoadingIcon className="loading" />
         </div>
       ) : null}
       {message.type === "system" && message.text != "Loading..." ? (
-        <div className="system">
+        <div
+          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
+        >
           {message.additional && props.type === "ecommerce" && (
             <div className="additional-image-links">
               {message.additional
