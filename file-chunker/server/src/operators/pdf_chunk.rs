@@ -1,7 +1,6 @@
+use crate::{errors::ServiceError, get_env, models::ChunkClickhouse};
 use base64::Engine;
-
 use image::{codecs::png::PngEncoder, ImageEncoder};
-
 use openai_dive::v1::{
     api::Client,
     resources::chat::{
@@ -9,13 +8,9 @@ use openai_dive::v1::{
         ChatMessageContent, ChatMessageImageContentPart, ImageUrlType, JsonSchemaBuilder,
     },
 };
-
 use pdf2image::{image::DynamicImage, PDF};
-
 use s3::creds::time::OffsetDateTime;
 use serde::Deserialize;
-
-use crate::{errors::ServiceError, get_env, models::ChunkClickhouse};
 
 const CHUNK_SYSTEM_PROMPT: &str = "You are an image transcription and chunking tool. You need to transcribe the text in the image, but separate it based on paragraph, heading etc. Return the chunks as a json array. Each chunk should be written as as markdown. Each chunk should not exceed more than 50 words";
 
@@ -45,7 +40,7 @@ fn get_data_url_from_image(img: DynamicImage) -> Result<String, ServiceError> {
 }
 
 fn get_default_openai_client() -> Client {
-    let base_url = "https://openrouter.ai/api/v1".to_string();
+    let base_url = get_env!("LLM_BASE_URL", "LLM_BASE_URL should be set").into();
 
     let llm_api_key: String = get_env!(
         "LLM_API_KEY",
@@ -64,7 +59,6 @@ fn get_default_openai_client() -> Client {
 }
 
 #[derive(Debug, Deserialize)]
-
 struct ChatResponse {
     pub chunks: Vec<String>,
 }
@@ -75,7 +69,7 @@ async fn get_chunks_from_image(
     task_id: String,
     client: Client,
 ) -> Result<Vec<ChunkClickhouse>, ServiceError> {
-    // Convert img to dataurl format
+    let llm_model: String = get_env!("LLM_MODEL", "LLM_MODEL should be set").into();
 
     let data_url = get_data_url_from_image(img)?;
 
@@ -113,7 +107,7 @@ async fn get_chunks_from_image(
     });
 
     let params = ChatCompletionParametersBuilder::default()
-        .model("gpt-4o-mini")
+        .model(llm_model)
         .messages(messages)
         .response_format(ChatCompletionResponseFormat::JsonSchema(
             JsonSchemaBuilder::default()
