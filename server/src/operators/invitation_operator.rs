@@ -57,12 +57,16 @@ pub async fn send_invitation(
     org_name: String,
 ) -> Result<(), ServiceError> {
     let sg_email_content = format!(
-        "You have been invited to join a Trieve organization: <b>{}</b>. <br/>
-         Please click on the link below to register. <br/>
-         <a href=\"{}\">
-         {}</a><br/><br/><br/>Cheers,<br/> The Trieve Team<br/>This email is intended for {}, if this isn't you, please let us know at 
-         <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>",
+        "Hello,<br/><br/>
+        You have been invited to join the Trieve organization: <strong>{}</strong>.<br/><br/>
+        To get started, simply click <a href=\"{}\">here</a> or use the link below to register and activate your account:<br/>
+        <a href=\"{}\">{}</a><br/><br/>
+        We look forward to having you on board!<br/><br/>
+        Cheers,<br/>
+        The Trieve Team<br/>
+        <i>This email is intended for {}. If you encounter any issues or did not expect this invitation, please reach out to us directly at <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>.</i>",
         org_name,
+        inv_url,
         inv_url,
         inv_url.split('?').collect::<Vec<&str>>().get(0).unwrap_or(&""),
         invitation.email
@@ -78,7 +82,7 @@ pub async fn send_invitation_for_existing_user(
 ) -> Result<(), ServiceError> {
     let sg_email_content = format!(
         "You've been added to a Trieve organization: <b>{}</b>. <br/><br/><br/>Cheers,
-        <br/> The Trieve Team<br/>This email is intended for {}, if this isn't you, please let us know at <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>",
+        <br/> The Trieve Team<br/><i>This email is intended for {}. If you encounter any issues or did not expect this invitation, please reach out to us directly at <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>.</i>",
         org_name,
         email
     );
