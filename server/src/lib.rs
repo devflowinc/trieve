@@ -28,7 +28,6 @@ use diesel_async::pooled_connection::ManagerConfig;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
-use handlers::auth_handler::timeout_15secs;
 use minijinja::Environment;
 use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
@@ -714,7 +713,8 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(clickhouse_client.clone()))
                 .app_data(web::Data::new(metrics.clone()))
                 .wrap(sentry_actix::Sentry::new())
-                .wrap(from_fn(timeout_15secs))
+                .wrap(from_fn(middleware::timeout_middleware::timeout_15secs))
+                .wrap(from_fn(middleware::metrics_middleware::error_logging_middleware))
                 .wrap(middleware::api_version::ApiVersionCheckFactory)
                 .wrap(middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
