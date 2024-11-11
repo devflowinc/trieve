@@ -1,6 +1,7 @@
 import { SearchResponseBody, TrieveSDK } from "trieve-ts-sdk";
 import { Chunk, GroupSearchResults, Props, SearchResults } from "./types";
-import { highlightOptions, highlightText } from "./highlight";
+import { defaultHighlightOptions, highlightText } from "./highlight";
+import { ModalTypes } from "./hooks/modal-context";
 
 export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
@@ -18,12 +19,14 @@ export const searchWithTrieve = async ({
   },
   abortController,
   tag,
+  type,
 }: {
   trieve: TrieveSDK;
   query: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
   tag?: string;
+  type?: ModalTypes;
 }) => {
   let results;
   if (searchOptions.use_autocomplete === true) {
@@ -31,8 +34,9 @@ export const searchWithTrieve = async ({
       {
         query,
         highlight_options: {
-          ...highlightOptions,
+          ...defaultHighlightOptions,
           highlight_delimiters: ["?", ",", ".", "!", "\n"],
+          highlight_window: type === "ecommerce" ? 5 : 10,
         },
         extend_results: true,
         score_threshold:
@@ -59,8 +63,9 @@ export const searchWithTrieve = async ({
       {
         query,
         highlight_options: {
-          ...highlightOptions,
+          ...defaultHighlightOptions,
           highlight_delimiters: ["?", ",", ".", "!", "\n"],
+          highlight_window: type === "ecommerce" ? 5 : 10,
         },
         score_threshold:
           (searchOptions.search_type ?? "fulltext") === "fulltext" ||
@@ -108,19 +113,22 @@ export const groupSearchWithTrieve = async ({
   },
   abortController,
   tag,
+  type,
 }: {
   trieve: TrieveSDK;
   query: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
   tag?: string;
+  type?: ModalTypes;
 }) => {
   const results = await trieve.searchOverGroups(
     {
       query,
       highlight_options: {
-        ...highlightOptions,
+        ...defaultHighlightOptions,
         highlight_delimiters: ["?", ",", ".", "!", "\n"],
+        highlight_window: type === "ecommerce" ? 5 : 10,
       },
       score_threshold:
         (searchOptions.search_type ?? "fulltext") === "fulltext" ||

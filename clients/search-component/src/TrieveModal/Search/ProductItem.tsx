@@ -1,6 +1,5 @@
 import { Chunk, ChunkWithHighlights } from "../../utils/types";
 import React, { useRef, useState } from "react";
-import { ArrowIcon } from "../icons";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
 
@@ -11,17 +10,11 @@ type Props = {
   className?: string;
 };
 
-// TODO
-// if (variant.featured_image?.src) {
-//   setShownImage(variant.featured_image?.src);
-// }
-
 export const ProductItem = ({ item, requestID, index, className }: Props) => {
   const { props, trieveSDK } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
-  const [isHovered, setIsHovered] = useState(false);
 
   let descriptionHtml = item.highlights
     ? item.highlights.join("...")
@@ -61,7 +54,7 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
     item.chunk?.image_urls?.[0] || ""
   );
   const price = item.chunk.num_value
-    ? ` - ${
+    ? `${
         props.currencyPosition === "before" ? props.defaultCurrency ?? "$" : ""
       }${item.chunk.num_value}${
         props.currencyPosition === "after" ? props.defaultCurrency ?? "$" : ""
@@ -72,7 +65,7 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name
-  }${price ? "  " + price : ""}`;
+  }`;
 
   if (!title.trim() || title == "undefined") {
     return null;
@@ -134,17 +127,13 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
             requestID
           )
         }
-        onMouseEnter={() => {
-          setIsHovered(true);
-        }}
-        onMouseLeave={() => {
-          setIsHovered(false);
-        }}
         href={item.chunk.link ?? ""}
       >
         <div>
           {item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
-            <img src={shownImage} className="ecommerce-featured-image" />
+            <div className="ecommerce-featured-image">
+              <img src={shownImage} />
+            </div>
           ) : (
             <div className="ecommerce-featured-image">
               {props.brandLogoImgSrcUrl ? (
@@ -158,11 +147,12 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
                 <h6 className="chunk-path">{getChunkPath()}</h6>
               ) : null}
               <h4
-                className="chunk-title"
+                className={`chunk-title ${props.type}`}
                 dangerouslySetInnerHTML={{
                   __html: title,
                 }}
               />
+              <h6 className="chunk-price">{price}</h6>
               <p
                 className="description"
                 dangerouslySetInnerHTML={{
@@ -203,7 +193,6 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
               }}
             />
           )}
-          <ArrowIcon className={!isHovered ? "text-transparent" : ""} />
         </div>
       </Component>
     </li>

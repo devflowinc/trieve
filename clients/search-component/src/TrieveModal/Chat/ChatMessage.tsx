@@ -97,7 +97,7 @@ export const Message = ({
         </div>
       ) : null}
       {message.type === "system" && message.text != "Loading..." ? (
-        <div className="system">
+        <div className={`system ${props.type}`}>
           <Markdown
             components={{
               code: (props) => {
@@ -145,7 +145,8 @@ export const Message = ({
                         key={index}
                         href={item.link ?? ""}
                         target="_blank"
-                        rel="noopener noreferrer">
+                        rel="noopener noreferrer"
+                      >
                         <img
                           src={item.imageUrl ?? ""}
                           alt={item.title}
