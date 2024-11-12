@@ -31,7 +31,7 @@ export type GroupSearchResults = {
 };
 
 export function isChunksWithHighlights(
-  result: ChunkWithHighlights | GroupChunk
+  result: ChunkWithHighlights | GroupChunk[]
 ): result is ChunkWithHighlights {
   return (result as ChunkWithHighlights).highlights !== undefined;
 }
