@@ -1,6 +1,6 @@
 use crate::{data::models::RedisPool, errors::ServiceError};
 use actix_web::{web, HttpResponse};
-use prometheus::{opts, register_gauge_vec, Encoder, Error, Gauge, GaugeVec, Registry};
+use prometheus::{opts, register_counter_vec, CounterVec, Encoder, Error, Gauge, Registry};
 
 #[derive(Clone, Debug)]
 pub struct Metrics {
@@ -15,7 +15,7 @@ pub struct Metrics {
     pub group_update_processing_gauge: Gauge,
     pub pgbulk_queue_gauge: Gauge,
     pub pgbulk_processing_gauge: Gauge,
-    pub api_error_gauge: GaugeVec,
+    pub api_error_gauge: CounterVec,
 }
 
 impl Metrics {
@@ -68,8 +68,8 @@ impl Metrics {
         )?;
         registry.register(Box::new(group_update_processing_gauge.clone()))?;
 
-        let api_error_gauge = register_gauge_vec!(
-            opts!("tr_api_errors", "number of errors"),
+        let api_error_gauge = register_counter_vec!(
+            opts!("tr_api_request_errors", "number of api request errors"),
             &["error_code", "method", "route", "base_url"]
         )?;
         registry.register(Box::new(api_error_gauge.clone()))?;
