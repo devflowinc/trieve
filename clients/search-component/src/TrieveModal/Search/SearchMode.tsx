@@ -36,7 +36,7 @@ export const SearchMode = () => {
   const { switchToChatAndAskQuestion } = useChatState();
 
   const getItemComponent = (
-    result: ChunkWithHighlights | GroupChunk,
+    result: ChunkWithHighlights | GroupChunk[],
     index: number
   ) => {
     const chunkOrGroup = isChunksWithHighlights(result);
@@ -70,8 +70,8 @@ export const SearchMode = () => {
     } else {
       return (
         <div key={index} className="item-group-container">
-          <p className="item-group-name">{result.group.name}</p>
-          {result.chunks.map((chunk, index) => (
+          <p className="item-group-name">{result[0].group.name}</p>
+          {result[0].chunks.map((chunk, index) => (
             <DocsItem
               item={chunk}
               index={index}
