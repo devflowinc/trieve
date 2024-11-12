@@ -53,46 +53,56 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
   const [shownImage, setShownImage] = useState<string>(
     item.chunk?.image_urls?.[0] || ""
   );
-  const price = item.chunk.num_value
-    ? `${
-        props.currencyPosition === "before" ? props.defaultCurrency ?? "$" : ""
-      }${item.chunk.num_value}${
-        props.currencyPosition === "after" ? props.defaultCurrency ?? "$" : ""
-      }`
-    : "";
-  const title = `${
-    cleanFirstHeading ||
+
+  const title = `${cleanFirstHeading ||
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name
-  }`;
+    }`;
+
+  const formatPrice = (price: number | null | undefined) => {
+    return price
+      ? `${props.currencyPosition === "before" ? props.defaultCurrency ?? "$" : ""
+      }${price}${props.currencyPosition === "after" ? props.defaultCurrency ?? "$" : ""
+      }`
+      : ""
+  };
+
+
+  const formatedPrice = formatPrice(item.chunk.num_value);
+
+  let priceMin = item.chunk.num_value ?? 0;
+  let priceMax = item.chunk.num_value ?? 0;
+
+  if (item.chunk.metadata?.variants?.length > 1) {
+    for (const variant of item.chunk.metadata.variants as unknown as {
+      price: number;
+    }[]) {
+      if (variant.price) {
+        if (variant.price < priceMin) {
+          priceMin = variant.price;
+        }
+
+        if (variant.price > priceMax) {
+          priceMax = variant.price;
+        }
+      }
+      if (variant.price) {
+        if (variant.price < priceMin) {
+          priceMin = variant.price;
+        }
+
+        if (variant.price > priceMax) {
+          priceMax = variant.price;
+        }
+      }
+    }
+  }
+  const formatedPriceRange = `${formatPrice(priceMin)} - ${formatPrice(priceMax)}`;
 
   if (!title.trim() || title == "undefined") {
     return null;
   }
-
-  const getChunkPath = () => {
-    const urlElements = item.chunk.link?.split("/").slice(3) ?? [];
-    if (urlElements?.length > 1) {
-      return urlElements
-        .slice(0, -1)
-        .map((word) => word.replace(/-/g, " "))
-        .concat(
-          item.chunk.metadata?.title ||
-            item.chunk.metadata.summary ||
-            urlElements.slice(-1)[0]
-        )
-        .map((word) =>
-          word
-            .split(" ")
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-            .join(" ")
-        )
-        .join(" > ");
-    } else {
-      return item.chunk.metadata?.title ? item.chunk.metadata.title : "";
-    }
-  };
 
   const onResultClick = async (
     chunk: Chunk & { position: number },
@@ -143,16 +153,15 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
           )}
           {title ? (
             <div>
-              {props.type === "docs" ? (
-                <h6 className="chunk-path">{getChunkPath()}</h6>
-              ) : null}
               <h4
                 className={`chunk-title ${props.type}`}
                 dangerouslySetInnerHTML={{
                   __html: title,
                 }}
               />
-              <h6 className="chunk-price">{price}</h6>
+              <h6 className="chunk-price">
+                {priceMin !== priceMax ? formatedPriceRange : formatedPrice}
+              </h6>
               <p
                 className="description"
                 dangerouslySetInnerHTML={{

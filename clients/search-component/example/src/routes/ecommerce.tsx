@@ -17,6 +17,7 @@ export default function ECommerce() {
   const brandLogoSrcUrl = import.meta.env.VITE_BRAND_LOGO_SRC_URL;
   const brandColor = import.meta.env.VITE_ACCENT_COLOR;
   const problemLink = import.meta.env.VITE_PROBLEM_LINK;
+  const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -56,7 +57,7 @@ export default function ECommerce() {
               brandName={brandName}
               brandColor={brandColor}
               allowSwitchingModes={true}
-              useGroupSearch={false}
+              useGroupSearch={useGroupSearch}
               responsive={false}
               currencyPosition="before"
               searchOptions={{
