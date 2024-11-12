@@ -11,6 +11,7 @@ import {
   isChunksWithHighlights,
 } from "../../utils/types";
 import { ProductItem } from "./ProductItem";
+import { ProductGroupItem } from "./ProductGroupItem";
 
 export const SearchMode = () => {
   const {
@@ -51,18 +52,11 @@ export const SearchMode = () => {
       );
     } else if (!chunkOrGroup && ecommerce) {
       return (
-        <div key={index} className="item-group-container">
-          <p className="item-group-name">{result.group.name}</p>
-          {result.chunks.map((chunk, index) => (
-            <ProductItem
-              item={chunk}
-              index={index}
-              requestID={requestID}
-              key={chunk.chunk.id}
-              className="item group"
-            />
-          ))}
-        </div>
+        <ProductGroupItem
+          group={result}
+          index={index}
+          requestID={requestID}
+        />
       );
     } else if (chunkOrGroup) {
       return (
