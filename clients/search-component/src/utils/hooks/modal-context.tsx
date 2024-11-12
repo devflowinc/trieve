@@ -193,7 +193,7 @@ const ModalProvider = ({
 
     try {
       setLoadingResults(true);
-      if (props.type === "docs" && props.useGroupSearch) {
+      if (props.useGroupSearch) {
         const results = await groupSearchWithTrieve({
           query: query,
           searchOptions: props.searchOptions,
