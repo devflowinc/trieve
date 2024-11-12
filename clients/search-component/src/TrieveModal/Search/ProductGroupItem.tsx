@@ -5,14 +5,15 @@ import { GroupChunk } from "../../utils/types";
 
 type Props = {
   requestID: string;
-  group: GroupChunk;
+  // Group of Groups (with subvariants)
+  group: GroupChunk[];
   index: number;
 }
 
 export const ProductGroupItem = ({ index, group, requestID }: Props) => {
 
   const [groupItemIndex] = useState(0);
-  const selectedItem = useMemo(() => group.chunks[groupItemIndex], [groupItemIndex]);
+  const selectedItem = useMemo(() => group[groupItemIndex].chunks[0], [groupItemIndex]);
 
   return (
     <ProductItem

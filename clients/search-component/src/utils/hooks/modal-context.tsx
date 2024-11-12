@@ -101,9 +101,9 @@ const ModalContext = createContext<{
   trieveSDK: TrieveSDK;
   query: string;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
-  results: ChunkWithHighlights[] | GroupChunk[];
+  results: ChunkWithHighlights[] | GroupChunk[][];
   setResults: React.Dispatch<
-    React.SetStateAction<ChunkWithHighlights[] | GroupChunk[]>
+    React.SetStateAction<ChunkWithHighlights[] | GroupChunk[][]>
   >;
   requestID: string;
   setRequestID: React.Dispatch<React.SetStateAction<string>>;
@@ -154,7 +154,7 @@ const ModalProvider = ({
     ...onLoadProps,
   });
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ChunkWithHighlights[] | GroupChunk[]>(
+  const [results, setResults] = useState<ChunkWithHighlights[] | GroupChunk[][]>(
     []
   );
   const [requestID, setRequestID] = useState("");
@@ -203,7 +203,19 @@ const ModalProvider = ({
           type: props.type,
         });
 
-        setResults(results.groups);
+        // join similar groups
+        // add to hashmap
+        const groupMap = new Map<string, GroupChunk[]>();
+        results.groups.forEach((group) => {
+          const title = group.chunks[0].chunk.metadata?.title;
+          if (groupMap.has(title)) {
+            groupMap.get(title)?.push(group);
+          } else {
+            groupMap.set(title, [group]);
+          }
+        });
+
+        setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
       } else {
         const results = await searchWithTrieve({
