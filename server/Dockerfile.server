@@ -27,6 +27,7 @@ RUN apt-get update -y; \
     libssl-dev \
     libpq-dev \
     ca-certificates \
+    curl \
     ; \
     mkdir -p /app/tmp
 
@@ -35,5 +36,7 @@ COPY ./ch_migrations /app/ch_migrations
 COPY ./src/public/ /app/src/public
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 
+RUN curl -fsSL https://github.com/subtrace/subtrace/releases/download/b119/subtrace-linux-amd64 -o subtrace
+RUN chmod +x subtrace
 EXPOSE 8090
-ENTRYPOINT ["/app/trieve-server"]
+ENTRYPOINT ["./subtrace", "run", "--", "/app/trieve-server"]
