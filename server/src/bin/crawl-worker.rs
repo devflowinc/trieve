@@ -452,7 +452,11 @@ async fn get_chunks_with_firecrawl(
             }
         }
 
-        let chunked_html = chunk_html(&page_html.clone(), &scrape_request.crawl_options);
+        let chunked_html = chunk_html(
+            &page_html.clone(),
+            scrape_request.crawl_options.heading_remove_strings.clone(),
+            scrape_request.crawl_options.body_remove_strings.clone(),
+        );
 
         for chunk in chunked_html {
             let heading = chunk.0.last().unwrap_or(&String::new()).clone();

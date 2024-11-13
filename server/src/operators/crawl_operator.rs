@@ -602,7 +602,11 @@ pub fn get_tags(url: String) -> Vec<String> {
     Vec::new()
 }
 
-pub fn chunk_html(html: &str, crawl_options: &CrawlOptions) -> Vec<(Vec<String>, String)> {
+pub fn chunk_html(
+    html: &str,
+    heading_remove_strings: Option<Vec<String>>,
+    body_remove_strings: Option<Vec<String>>,
+) -> Vec<(Vec<String>, String)> {
     let re = Regex::new(r"(?i)<h[1-6].*?>").unwrap();
     let mut chunks = Vec::new();
     let mut current_chunk = String::new();
@@ -656,14 +660,14 @@ pub fn chunk_html(html: &str, crawl_options: &CrawlOptions) -> Vec<(Vec<String>,
             let mut headings_text = headings.last().unwrap_or(&String::new()).clone();
             let mut content = content.clone();
 
-            if let Some(heading_remove_strings) = &crawl_options.heading_remove_strings {
+            if let Some(heading_remove_strings) = &heading_remove_strings {
                 heading_remove_strings.iter().for_each(|remove_string| {
                     headings_text = headings_text.replace(remove_string, "");
                 });
                 headings.pop();
                 headings.push(headings_text);
             }
-            if let Some(body_remove_strings) = &crawl_options.body_remove_strings {
+            if let Some(body_remove_strings) = &body_remove_strings {
                 body_remove_strings.iter().for_each(|remove_string| {
                     content = content.replace(remove_string, "");
                 });
