@@ -218,7 +218,7 @@ export async function ragOnChunkReader(
       Authorization: `Bearer ${this.trieve.apiKey}`,
     },
     body: JSON.stringify(props),
-    signal
+    signal,
   });
 
   const reader = response.body?.getReader();
@@ -265,7 +265,7 @@ export async function ragOnChunkReaderWithQueryId(
       Authorization: `Bearer ${this.trieve.apiKey}`,
     },
     body: JSON.stringify(props),
-    signal
+    signal,
   });
 
   const reader = response.body?.getReader();
@@ -278,7 +278,7 @@ export async function ragOnChunkReaderWithQueryId(
 
   return {
     reader,
-    queryId
+    queryId,
   };
 }
 

@@ -85,17 +85,20 @@ interface TrieveOpts {
   apiKey?: string;
   baseUrl: string;
   debug?: boolean;
+  organizationId?: string;
 }
 
 export class TrieveFetchClient {
   apiKey?: string;
   baseUrl: string;
   debug: boolean = false;
+  organizationId?: string;
 
   constructor(opts: TrieveOpts) {
     this.apiKey = opts.apiKey;
     this.baseUrl = opts.baseUrl;
     this.debug = opts.debug || false;
+    this.organizationId = opts.organizationId;
   }
 
   async fetch<
@@ -144,6 +147,10 @@ export class TrieveFetchClient {
         ) {
           pathParams[key] = value.toLocaleString();
         }
+      }
+
+      if (!headers["TR-Organization"] && this.organizationId) {
+        headers["TR-Organization"] = this.organizationId;
       }
     }
 
