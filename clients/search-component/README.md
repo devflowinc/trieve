@@ -117,6 +117,17 @@ declare module "solid-js" {
 <trieve-search apiKey="<your trieve apiKey>" datasetId="<your trieve datasetId" />
 ```
 
+#### Usage with Vanilla JS
+```javascript
+    import { renderToDiv } from 'trieve-search-component';
+    const root = document.getElementById('root');
+    renderToDiv(root, {
+      apiKey: "<Your Trieve Api Key>"
+      datasetId: "<Your Trieve Dataset Id>"
+       // ... other props
+    })
+```
+
 #### Props
 
 | Name          | Type                                                                                           | Default                     |
