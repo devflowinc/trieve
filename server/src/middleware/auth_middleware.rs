@@ -1,7 +1,14 @@
 use crate::{
-    data::models::{Pool, RedisPool, SlimUser, UnifiedId, User, UserApiKey, UserRole},
+    data::models::{
+        ApiKeyRequestParams, Pool, RedisPool, SlimUser, UnifiedId, User, UserApiKey, UserRole,
+    },
     errors::ServiceError,
-    handlers::auth_handler::{AdminOnly, LoggedUser, OrganizationRole, OwnerOnly},
+    handlers::{
+        auth_handler::{AdminOnly, LoggedUser, OrganizationRole, OwnerOnly},
+        chunk_handler::{AutocompleteReqPayload, SearchChunksReqPayload},
+        group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload},
+        message_handler::CreateMessageReqPayload,
+    },
     operators::{
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
         organization_operator::{
@@ -15,8 +22,10 @@ use actix_identity::Identity;
 use actix_web::{
     dev::{forward_ready, Payload, Service, ServiceRequest, ServiceResponse, Transform},
     http::header::HeaderMap,
-    web, Error, FromRequest, HttpMessage, HttpRequest,
+    web::{self, Json},
+    Error, FromRequest, HttpMessage,
 };
+use core::error;
 use futures_util::future::LocalBoxFuture;
 use redis::AsyncCommands;
 use sentry::Transaction;
@@ -53,12 +62,11 @@ where
 
             let get_user_span = transaction.start_child("get_user", "Getting user");
 
-            let (http_req, pl) = req.parts_mut();
-            let mut user = get_user(http_req, pl, transaction.clone(), pool.clone()).await;
+            let mut user = get_user(&mut req, transaction.clone(), pool.clone()).await;
             let mut api_key = None;
             if user.is_none() {
                 (user, api_key) =
-                    auth_with_api_key(http_req, transaction.clone(), pool.clone()).await?;
+                    auth_with_api_key(&mut req, transaction.clone(), pool.clone()).await?;
             }
 
             if let Some(user) = user.clone() {
@@ -205,14 +213,14 @@ where
 }
 
 async fn get_user(
-    req: &HttpRequest,
-    pl: &mut Payload,
+    req: &mut ServiceRequest,
     tx: Transaction,
     pool: web::Data<Pool>,
 ) -> Option<LoggedUser> {
     let get_user_from_identity_span =
         tx.start_child("get_user_from_identity", "Getting user from identity");
-    if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
+    let (http_req, pl) = req.parts_mut();
+    if let Ok(identity) = Identity::from_request(http_req, pl).into_inner() {
         if let Ok(user_json) = identity.id() {
             if let Ok(user) = serde_json::from_str::<User>(&user_json) {
                 let redis_pool = req.app_data::<web::Data<RedisPool>>().unwrap().to_owned();
@@ -310,7 +318,7 @@ fn get_org_id_from_headers(headers: &HeaderMap) -> Option<String> {
 }
 
 async fn auth_with_api_key(
-    req: &HttpRequest,
+    req: &mut ServiceRequest,
     tx: Transaction,
     pool: web::Data<Pool>,
 ) -> Result<(Option<LoggedUser>, Option<UserApiKey>), ServiceError> {
@@ -339,19 +347,73 @@ async fn auth_with_api_key(
 
         let get_user_from_api_key_span =
             tx.start_child("get_user_from_api_key", "Getting user from api key");
+
         //TODO: Cache the api key in redis
         if let Ok((user, api_key)) =
             get_user_from_api_key_query(authen_header.as_str(), pool.clone()).await
         {
+            if let Some(ref api_key_params) = api_key.params {
+                let params = serde_json::from_value(api_key_params.clone()).unwrap();
+                insert_api_key_payload(req, params).await.map_err(|_| {
+                    ServiceError::BadRequest("Could not insert api key payload".to_string())
+                })?;
+            }
             return Ok((Some(user), Some(api_key)));
         }
 
         get_user_from_api_key_span.finish();
     }
 
-    //TODO: Add path scoped api key using the path field of `HTTPRequest` struct
-
     Ok((None, None))
+}
+
+fn bytes_to_payload(buf: web::Bytes) -> Payload {
+    let (_, mut pl) = actix_http::h1::Payload::create(true);
+    pl.unread_data(buf);
+    Payload::from(pl)
+}
+
+pub async fn insert_api_key_payload(
+    req: &mut ServiceRequest,
+    api_key_params: ApiKeyRequestParams,
+) -> Result<(), Box<dyn error::Error>> {
+    match req.path() {
+        "/api/chunk/autocomplete" => {
+            let body = req.extract::<Json<AutocompleteReqPayload>>().await?;
+            let new_body = api_key_params.combine_with_autocomplete(body.into_inner());
+            let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
+            req.set_payload(bytes_to_payload(body_bytes.into()));
+        }
+        "/api/chunk/search" => {
+            let body = req.extract::<Json<SearchChunksReqPayload>>().await?;
+            log::info!("api_key_req_params: {:?}", api_key_params);
+            let new_body = api_key_params.combine_with_search_chunks(body.into_inner());
+            log::info!("new_body: {:?}", new_body);
+            let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
+            req.set_payload(bytes_to_payload(body_bytes.into()));
+        }
+        "/api/chunk_group/group_oriented_search" => {
+            let body = req.extract::<Json<SearchOverGroupsReqPayload>>().await?;
+            let new_body = api_key_params.combine_with_search_over_groups(body.into_inner());
+            let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
+            req.set_payload(bytes_to_payload(body_bytes.into()));
+        }
+        "/api/chunk_group/search" => {
+            let body = req.extract::<Json<SearchWithinGroupReqPayload>>().await?;
+            let new_body = api_key_params.combine_with_search_within_group(body.into_inner());
+            let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
+            req.set_payload(bytes_to_payload(body_bytes.into()));
+        }
+        "/api/message" => {
+            let body = req.extract::<Json<CreateMessageReqPayload>>().await?;
+            let new_body = api_key_params.combine_with_create_message(body.into_inner());
+            let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
+            req.set_payload(bytes_to_payload(body_bytes.into()));
+        }
+        _ => {}
+    };
+
+    Ok(())
 }
 
 pub struct AuthMiddlewareFactory;

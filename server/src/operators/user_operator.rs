@@ -5,9 +5,12 @@ use crate::data::models::{
 use crate::{
     data::models::{Pool, User},
     errors::ServiceError,
+    handlers::user_handler::SetUserApiKeyRequest,
 };
 use actix_web::{web, HttpRequest};
 use argon2::Config;
+use chrono::NaiveDateTime;
+use dateparser::DateTimeUtc;
 use diesel::prelude::*;
 use diesel_async::{scoped_futures::ScopedFutureExt, AsyncConnection, RunQueryDsl};
 use once_cell::sync::Lazy;
@@ -237,11 +240,7 @@ pub fn hash_function(password: &str) -> String {
 #[tracing::instrument(skip(pool))]
 pub async fn set_user_api_key_query(
     user_id: uuid::Uuid,
-    name: String,
-    role: ApiKeyRole,
-    dataset_ids: Option<Vec<uuid::Uuid>>,
-    organization_ids: Option<Vec<uuid::Uuid>>,
-    scopes: Option<Vec<String>>,
+    data: SetUserApiKeyRequest,
     pool: web::Data<Pool>,
 ) -> Result<String, ServiceError> {
     let raw_api_key = generate_api_key();
@@ -251,14 +250,26 @@ pub async fn set_user_api_key_query(
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
+    let expiry = {
+        data.expires_at
+            .clone()
+            .and_then(|ts| -> Option<NaiveDateTime> {
+                ts.parse::<DateTimeUtc>()
+                    .ok()
+                    .map(|date| date.0.naive_utc())
+            })
+    };
+
     let api_key_struct = UserApiKey::from_details(
         user_id,
         hashed_api_key.clone(),
-        name,
-        role,
-        dataset_ids,
-        organization_ids,
-        scopes,
+        data.name,
+        data.role.into(),
+        data.dataset_ids,
+        data.organization_ids,
+        data.scopes,
+        data.default_params,
+        expiry,
     );
 
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
@@ -295,6 +306,11 @@ pub async fn get_user_from_api_key_query(
             )
             .inner_join(user_api_key_columns::user_api_key)
             .filter(user_api_key_columns::blake3_hash.eq(api_key_hash.clone()))
+            .filter(
+                user_api_key_columns::expires_at
+                    .is_null()
+                    .or(user_api_key_columns::expires_at.ge(diesel::dsl::now.nullable())),
+            )
             .filter(organization_columns::deleted.eq(0))
             .select((
                 User::as_select(),
@@ -348,6 +364,11 @@ pub async fn get_user_from_api_key_query(
                     ))
                     .inner_join(user_api_key_columns::user_api_key)
                     .filter(user_api_key_columns::api_key_hash.eq(argon2_hash.clone()))
+                    .filter(
+                        user_api_key_columns::expires_at
+                            .is_null()
+                            .or(user_api_key_columns::expires_at.ge(diesel::dsl::now.nullable())),
+                    )
                     .filter(organization_columns::deleted.eq(0))
                     .select((
                         User::as_select(),
@@ -604,6 +625,8 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         api_key_hash,
         "default".to_string(),
         ApiKeyRole::ReadAndWrite,
+        None,
+        None,
         None,
         None,
         None,
