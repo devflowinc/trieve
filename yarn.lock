@@ -6116,6 +6116,11 @@ react-markdown@^9.0.1:
     unist-util-visit "^5.0.0"
     vfile "^6.0.0"
 
+react-snap-carousel@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/react-snap-carousel/-/react-snap-carousel-0.5.0.tgz#c1caa781b1fbae6113bcd0c7d444fd1e59c01835"
+  integrity sha512-AmrvBD2xV5HkI011+WzBQKvJv9sBGXR/biJ2g25qctm51m3cxq2oQHMYgZeihwVnmCBJS/h4FKkMp0+B/hMdmQ==
+
 react@^18.3.1:
   version "18.3.1"
   resolved "https://registry.yarnpkg.com/react/-/react-18.3.1.tgz#49ab892009c53933625bd16b2533fc754cab2891"
