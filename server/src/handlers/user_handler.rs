@@ -1,6 +1,6 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{OrganizationWithSubAndPlan, Pool, RedisPool, UserRole},
+    data::models::{ApiKeyRequestParams, OrganizationWithSubAndPlan, Pool, RedisPool, UserRole},
     errors::ServiceError,
     operators::user_operator::{
         delete_user_api_keys_query, get_user_api_keys_query, get_user_by_id_query,
@@ -116,6 +116,10 @@ pub struct SetUserApiKeyRequest {
     pub organization_ids: Option<Vec<uuid::Uuid>>,
     /// The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, ["GET /api/dataset", "POST /api/dataset"].
     pub scopes: Option<Vec<String>>,
+    /// The expiration date of the api key. If not provided, the api key will not expire. This should be provided in UTC time.
+    pub expires_at: Option<String>,
+    /// The default parameters which will be used when the api key is used. If not provided, the api key will not have default parameters.
+    pub default_params: Option<ApiKeyRequestParams>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -147,19 +151,9 @@ pub async fn set_user_api_key(
     data: web::Json<SetUserApiKeyRequest>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let role = data.role;
-
-    let new_api_key = set_user_api_key_query(
-        user.id,
-        data.name.clone(),
-        role.into(),
-        data.dataset_ids.clone(),
-        data.organization_ids.clone(),
-        data.scopes.clone(),
-        pool,
-    )
-    .await
-    .map_err(|_err| ServiceError::BadRequest("Failed to set new API key for user".into()))?;
+    let new_api_key = set_user_api_key_query(user.id, data.into_inner(), pool)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed to set new API key for user".into()))?;
 
     Ok(HttpResponse::Ok().json(SetUserApiKeyResponse {
         api_key: new_api_key,

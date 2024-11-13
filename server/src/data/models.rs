@@ -3216,6 +3216,152 @@ impl From<ApiKeyRole> for i32 {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+pub struct ApiKeyRequestParams {
+    /// Can be either "semantic", "fulltext", "hybrid", or "bm25". Default behavior varies by endpoint.
+    pub search_type: Option<SearchMethod>,
+    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+    pub page_size: Option<u64>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata.
+    pub filters: Option<ChunkFilter>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set.
+    pub highlight_options: Option<HighlightOptions>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    pub score_threshold: Option<f32>,
+    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks.
+    pub slim_chunks: Option<bool>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively.
+    pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words will be removed. Queries that are entirely stop words will be preserved.
+    pub remove_stop_words: Option<bool>,
+    /// Options for handling typos in the search query
+    pub typo_options: Option<TypoOptions>,
+}
+
+impl ApiKeyRequestParams {
+    pub fn combine_with_create_message(
+        self,
+        payload: CreateMessageReqPayload,
+    ) -> CreateMessageReqPayload {
+        CreateMessageReqPayload {
+            new_message_content: payload.new_message_content,
+            topic_id: payload.topic_id,
+            user_id: payload.user_id,
+            highlight_options: self.highlight_options.or(payload.highlight_options),
+            search_type: self.search_type.or(payload.search_type),
+            use_group_search: payload.use_group_search,
+            concat_user_messages_query: payload.concat_user_messages_query,
+            search_query: payload.search_query,
+            page_size: self.page_size.or(payload.page_size),
+            filters: self.filters.or(payload.filters),
+            score_threshold: self.score_threshold.or(payload.score_threshold),
+            llm_options: payload.llm_options,
+            context_options: payload.context_options,
+        }
+    }
+
+    pub fn combine_with_search_chunks(
+        self,
+        payload: SearchChunksReqPayload,
+    ) -> SearchChunksReqPayload {
+        SearchChunksReqPayload {
+            search_type: self.search_type.unwrap_or(payload.search_type),
+            query: payload.query,
+            page: payload.page,
+            page_size: self.page_size.or(payload.page_size),
+            get_total_pages: payload.get_total_pages,
+            filters: self.filters.or(payload.filters),
+            sort_options: payload.sort_options,
+            scoring_options: payload.scoring_options,
+            highlight_options: self.highlight_options.or(payload.highlight_options),
+            score_threshold: self.score_threshold.or(payload.score_threshold),
+            slim_chunks: self.slim_chunks.or(payload.slim_chunks),
+            content_only: payload.content_only,
+            use_quote_negated_terms: self
+                .use_quote_negated_terms
+                .or(payload.use_quote_negated_terms),
+            remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
+            user_id: payload.user_id,
+            typo_options: self.typo_options.or(payload.typo_options),
+        }
+    }
+
+    pub fn combine_with_autocomplete(
+        self,
+        payload: AutocompleteReqPayload,
+    ) -> AutocompleteReqPayload {
+        AutocompleteReqPayload {
+            search_type: self.search_type.unwrap_or(payload.search_type),
+            extend_results: payload.extend_results,
+            query: payload.query,
+            page_size: self.page_size.or(payload.page_size),
+            filters: self.filters.or(payload.filters),
+            sort_options: payload.sort_options,
+            scoring_options: payload.scoring_options,
+            highlight_options: self.highlight_options.or(payload.highlight_options),
+            score_threshold: self.score_threshold.or(payload.score_threshold),
+            slim_chunks: self.slim_chunks.or(payload.slim_chunks),
+            content_only: payload.content_only,
+            use_quote_negated_terms: self
+                .use_quote_negated_terms
+                .or(payload.use_quote_negated_terms),
+            remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
+            user_id: payload.user_id,
+            typo_options: self.typo_options.or(payload.typo_options),
+        }
+    }
+
+    pub fn combine_with_search_over_groups(
+        self,
+        payload: SearchOverGroupsReqPayload,
+    ) -> SearchOverGroupsReqPayload {
+        SearchOverGroupsReqPayload {
+            search_type: self.search_type.unwrap_or(payload.search_type),
+            query: payload.query,
+            page: payload.page,
+            page_size: self.page_size.or(payload.page_size),
+            get_total_pages: payload.get_total_pages,
+            filters: self.filters.or(payload.filters),
+            highlight_options: self.highlight_options.or(payload.highlight_options),
+            score_threshold: self.score_threshold.or(payload.score_threshold),
+            group_size: payload.group_size,
+            slim_chunks: self.slim_chunks.or(payload.slim_chunks),
+            use_quote_negated_terms: self
+                .use_quote_negated_terms
+                .or(payload.use_quote_negated_terms),
+            remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
+            user_id: payload.user_id,
+            typo_options: self.typo_options.or(payload.typo_options),
+        }
+    }
+
+    pub fn combine_with_search_within_group(
+        self,
+        payload: SearchWithinGroupReqPayload,
+    ) -> SearchWithinGroupReqPayload {
+        SearchWithinGroupReqPayload {
+            query: payload.query,
+            page: payload.page,
+            page_size: self.page_size.or(payload.page_size),
+            get_total_pages: payload.get_total_pages,
+            filters: self.filters.or(payload.filters),
+            group_id: payload.group_id,
+            group_tracking_id: payload.group_tracking_id,
+            search_type: self.search_type.unwrap_or(payload.search_type),
+            sort_options: payload.sort_options,
+            highlight_options: self.highlight_options.or(payload.highlight_options),
+            score_threshold: self.score_threshold.or(payload.score_threshold),
+            slim_chunks: self.slim_chunks.or(payload.slim_chunks),
+            content_only: payload.content_only,
+            use_quote_negated_terms: self
+                .use_quote_negated_terms
+                .or(payload.use_quote_negated_terms),
+            remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
+            user_id: payload.user_id,
+            typo_options: self.typo_options.or(payload.typo_options),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[schema(example = json!({
@@ -3241,9 +3387,12 @@ pub struct UserApiKey {
     pub dataset_ids: Option<Vec<Option<String>>>,
     pub organization_ids: Option<Vec<Option<String>>>,
     pub scopes: Option<Vec<Option<String>>>,
+    pub params: Option<serde_json::Value>,
+    pub expires_at: Option<chrono::NaiveDateTime>,
 }
 
 impl UserApiKey {
+    #[allow(clippy::too_many_arguments)]
     pub fn from_details(
         user_id: uuid::Uuid,
         blake3_hash: String,
@@ -3252,6 +3401,8 @@ impl UserApiKey {
         dataset_ids: Option<Vec<uuid::Uuid>>,
         organization_ids: Option<Vec<uuid::Uuid>>,
         scopes: Option<Vec<String>>,
+        params: Option<ApiKeyRequestParams>,
+        expires_at: Option<chrono::NaiveDateTime>,
     ) -> Self {
         UserApiKey {
             id: uuid::Uuid::new_v4(),
@@ -3267,6 +3418,12 @@ impl UserApiKey {
             organization_ids: organization_ids
                 .map(|ids| ids.into_iter().map(|id| Some(id.to_string())).collect()),
             scopes: scopes.map(|scopes| scopes.into_iter().map(Some).collect()),
+            params: if params.is_some() {
+                serde_json::to_value(params).ok()
+            } else {
+                None
+            },
+            expires_at,
         }
     }
 }
