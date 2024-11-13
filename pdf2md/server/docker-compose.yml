@@ -70,14 +70,6 @@ services:
     networks:
       - app-network
 
-  pdla:
-    image: huridocs/pdf-document-layout-analysis:v0.0.19
-    ports:
-      - "5060:5060"
-    entrypoint: ./start.sh
-    networks:
-      - app-network
-
 networks:
   app-network:
     driver: bridge

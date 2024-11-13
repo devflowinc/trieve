@@ -42,16 +42,15 @@ pub async fn update_task_status(
                 task_id = task_id
             )
         }
-        FileTaskStatus::ChunkingFile(chunks, _) => {
+        FileTaskStatus::ChunkingFile(pages) => {
             format!(
-                "ALTER TABLE file_tasks UPDATE 
+                "ALTER TABLE file_tasks UPDATE
                     status = '{status}', 
-                    chunks = {chunks},
-                    pages_processed = pages_processed + 1
+                    pages_processed = pages_processed + {pages}
                 WHERE id = '{task_id}'",
                 status = status,
-                chunks = chunks,
-                task_id = task_id
+                task_id = task_id,
+                pages = pages
             )
         }
         _ => {
@@ -92,7 +91,7 @@ pub async fn get_task(
     Ok(task)
 }
 
-pub async fn get_task_chunks(
+pub async fn get_task_pages(
     task: FileTaskClickhouse,
     limit: Option<u32>,
     offset_id: Option<uuid::Uuid>,
@@ -103,7 +102,7 @@ pub async fn get_task_chunks(
 
         log::info!("offset id {:?}", offset_id);
 
-        let chunks: Vec<ChunkClickhouse> = clickhouse_client
+        let pages: Vec<ChunkClickhouse> = clickhouse_client
             .query(
                 "SELECT ?fields FROM file_chunks WHERE task_id = ? AND id > ? ORDER BY id LIMIT ?",
             )
@@ -113,12 +112,13 @@ pub async fn get_task_chunks(
             .fetch_all()
             .await
             .map_err(|err| {
-                log::error!("Failed to get chunks {:?}", err);
-                ServiceError::BadRequest("Failed to get chunks".to_string())
+                log::error!("Failed to get pages {:?}", err);
+                ServiceError::BadRequest("Failed to get pages".to_string())
             })?;
 
-        return Ok(GetTaskResponse::new_with_chunks(task, chunks));
+        return Ok(GetTaskResponse::new_with_pages(task, pages));
     }
 
     Ok(GetTaskResponse::new(task))
 }
+

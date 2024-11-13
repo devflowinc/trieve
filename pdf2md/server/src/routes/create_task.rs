@@ -8,7 +8,7 @@ use crate::{
 
 /// Create a new File Task
 ///
-/// This endpoint creates a new task to chunk a file. The task is added to a queue in Redis for processing.
+/// This endpoint creates a new task to convert a file to markdown. The task is added to a queue in Redis for processing.
 #[utoipa::path(
     post,
     path = "/task/create",
@@ -16,7 +16,7 @@ use crate::{
     context_path = "/api",
     request_body(content = models::UploadFileReqPayload, description = "JSON request payload to create a new task", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON response payload containing the created chunk", body = models::CreateFileTaskResponse),
+        (status = 200, description = "JSON response payload containing the created task", body = models::CreateFileTaskResponse),
         (status = 400, description = "Error typically due to deserialization issues", body = ErrorResponseBody),
     ),
     security(
@@ -32,7 +32,6 @@ async fn create_task(
     let clickhouse_task = models::FileTaskClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
         pages: 0,
-        chunks: 0,
         pages_processed: 0,
         status: "CREATED".to_string(),
         created_at: OffsetDateTime::now_utc(),

@@ -36,7 +36,7 @@ impl TaskMessage for FileTask {
 pub struct ChunkingTask {
     pub task_id: uuid::Uuid,
     pub file_name: String,
-    pub sub_page_number: u32,
+    pub page_range: (u32, u32),
     pub attempt_number: u8,
 }
 
@@ -69,7 +69,6 @@ pub struct UploadFileReqPayload {
 pub struct FileTaskClickhouse {
     pub id: String,
     pub pages: u32,
-    pub chunks: u32,
     pub pages_processed: u32,
     pub status: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
@@ -118,10 +117,9 @@ pub struct GetTaskResponse {
     pub id: String,
     pub total_document_pages: u32,
     pub pages_processed: u32,
-    pub chunks_processed: u32,
     pub status: String,
     pub created_at: String,
-    pub chunks: Option<Vec<Chunk>>,
+    pub pages: Option<Vec<Chunk>>,
     pub pagination_token: Option<String>,
 }
 
@@ -131,23 +129,21 @@ impl GetTaskResponse {
             id: task.id.clone(),
             total_document_pages: task.pages,
             pages_processed: task.pages_processed,
-            chunks_processed: task.chunks,
             status: task.status,
             created_at: task.created_at.to_string(),
             pagination_token: None,
-            chunks: None,
+            pages: None,
         }
     }
-    pub fn new_with_chunks(task: FileTaskClickhouse, chunks: Vec<ChunkClickhouse>) -> Self {
+    pub fn new_with_pages(task: FileTaskClickhouse, pages: Vec<ChunkClickhouse>) -> Self {
         Self {
             id: task.id.clone(),
             total_document_pages: task.pages,
             pages_processed: task.pages_processed,
-            chunks_processed: task.chunks,
             status: task.status,
             created_at: task.created_at.to_string(),
-            pagination_token: chunks.last().map(|c| c.id.clone()),
-            chunks: Some(chunks.into_iter().map(Chunk::from).collect()),
+            pagination_token: pages.last().map(|c| c.id.clone()),
+            pages: Some(pages.into_iter().map(Chunk::from).collect()),
         }
     }
 }
@@ -158,8 +154,8 @@ pub enum FileTaskStatus {
     Created,
     #[display("Processing {_0} pages")]
     ProcessingFile(u32),
-    #[display("Processed {_0} chunks from {_1} pages")]
-    ChunkingFile(u32, u32),
+    #[display("Processed {_0} pages")]
+    ChunkingFile(u32),
     #[display("Completed")]
     Completed,
     #[display("Failed")]
@@ -167,16 +163,9 @@ pub enum FileTaskStatus {
 }
 
 impl FileTaskStatus {
-    pub fn get_chunks_processed(&self) -> Option<u32> {
-        match self {
-            FileTaskStatus::ChunkingFile(chunks, _) => Some(*chunks),
-            _ => None,
-        }
-    }
-
     pub fn get_pages_processed(&self) -> Option<u32> {
         match self {
-            FileTaskStatus::ChunkingFile(_, pages) => Some(*pages),
+            FileTaskStatus::ChunkingFile(pages) => Some(*pages),
             _ => None,
         }
     }
@@ -189,18 +178,13 @@ impl From<String> for FileTaskStatus {
             "Completed" => FileTaskStatus::Completed,
             "Failed" => FileTaskStatus::Failed,
             _ => {
-                // Try to parse processing or chunking status
-                if let Some(chunks_str) = s
+                // Try to parse processing or pageing status
+                if let Some(pages) = s
                     .strip_prefix("Processed ")
                     .and_then(|s| s.strip_suffix(" pages"))
                 {
-                    let parts: Vec<&str> = chunks_str.split(" chunks from ").collect();
-                    if parts.len() == 2 {
-                        if let (Ok(chunks), Ok(pages)) =
-                            (parts[0].parse::<u32>(), parts[1].parse::<u32>())
-                        {
-                            return FileTaskStatus::ChunkingFile(chunks, pages);
-                        }
+                    if let Ok(pages) = pages.parse::<u32>() {
+                        return FileTaskStatus::ChunkingFile(pages);
                     }
                 } else if let Some(pages) = s
                     .strip_prefix("Processing ")

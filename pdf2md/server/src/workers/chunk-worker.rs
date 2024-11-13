@@ -116,23 +116,23 @@ pub async fn chunk_sub_pdf(
         .as_slice()
         .to_vec();
 
-    let result = chunk_pdf(file_data, task.task_id.to_string()).await?;
-    log::info!("Got {} chunks for {:?}", result.len(), task.task_id);
+    let result = chunk_pdf(file_data, task.task_id.to_string(), task.page_range).await?;
+    log::info!("Got {} pages for {:?}", result.len(), task.task_id);
 
-    let mut chunk_inserter = clickhouse_client.insert("file_chunks").map_err(|e| {
+    let mut page_inserter = clickhouse_client.insert("file_chunks").map_err(|e| {
         log::error!("Error inserting recommendations: {:?}", e);
         ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
     })?;
 
-    for chunk in &result {
-        chunk_inserter.write(chunk).await.map_err(|e| {
-            log::error!("Error inserting recommendations: {:?}", e);
+    for page in &result {
+        page_inserter.write(page).await.map_err(|e| {
+            log::error!("Error inserting task: {:?}", e);
             ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
         })?;
     }
 
-    chunk_inserter.end().await.map_err(|e| {
-        log::error!("Error inserting recommendations: {:?}", e);
+    page_inserter.end().await.map_err(|e| {
+        log::error!("Error inserting task: {:?}", e);
         ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
     })?;
 
@@ -146,7 +146,7 @@ pub async fn chunk_sub_pdf(
     } else {
         update_task_status(
             task.task_id,
-            FileTaskStatus::ChunkingFile(result.len() as u32 + prev_task.chunks, pages_processed),
+            FileTaskStatus::ChunkingFile(result.len() as u32 + prev_task.pages_processed),
             &clickhouse_client,
         )
         .await?;
