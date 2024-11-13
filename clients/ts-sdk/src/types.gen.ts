@@ -375,7 +375,7 @@ export type ChunkReqPayload = {
      */
     tracking_id?: (string) | null;
     /**
-     * Upsert when a chunk with the same tracking_id exists. By default this is false, and the request will fail if a chunk with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.
+     * Upsert when a chunk with the same tracking_id exists. By default this is false, and chunks will be ignored if another with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.
      */
     upsert_by_tracking_id?: (boolean) | null;
     /**
@@ -560,13 +560,36 @@ export type CreateBatchChunkGroupReqPayload = Array<CreateSingleChunkGroupReqPay
 
 export type CreateBatchChunkReqPayload = Array<ChunkReqPayload>;
 
+export type CreateBatchDataset = {
+    /**
+     * Name of the dataset.
+     */
+    dataset_name: string;
+    server_configuration?: ((DatasetConfigurationDTO) | null);
+    /**
+     * Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
+     */
+    tracking_id?: (string) | null;
+};
+
 export type CreateChunkGroupReqPayloadEnum = CreateSingleChunkGroupReqPayload | CreateBatchChunkGroupReqPayload;
 
 export type CreateChunkGroupResponseEnum = ChunkGroup | ChunkGroups;
 
 export type CreateChunkReqPayloadEnum = ChunkReqPayload | CreateBatchChunkReqPayload;
 
-export type CreateDatasetRequest = {
+export type CreateDatasetBatchReqPayload = {
+    /**
+     * List of datasets to create
+     */
+    datasets: Array<CreateBatchDataset>;
+    /**
+     * Upsert when a dataset with one of the specified tracking_ids already exists. By default this is false and specified datasets with a tracking_id that already exists in the org will not be ignored. If true, the existing dataset will be updated with the new dataset's details.
+     */
+    upsert?: (boolean) | null;
+};
+
+export type CreateDatasetReqPayload = {
     crawl_options?: ((CrawlOptions) | null);
     /**
      * Name of the dataset.
@@ -675,13 +698,37 @@ export type CreateTopicReqPayload = {
 };
 
 export type Dataset = {
+    /**
+     * Timestamp of the creation of the dataset
+     */
     created_at: string;
+    /**
+     * Flag to indicate if the dataset has been deleted. Deletes are handled async after the flag is set so as to avoid expensive search index compaction.
+     */
     deleted: number;
+    /**
+     * Unique identifier of the dataset, auto-generated uuid created by Trieve
+     */
     id: string;
+    /**
+     * Name of the dataset
+     */
     name: string;
+    /**
+     * Unique identifier of the organization that owns the dataset
+     */
     organization_id: string;
+    /**
+     * Configuration of the dataset for RAG, embeddings, BM25, etc.
+     */
     server_configuration: unknown;
+    /**
+     * Tracking ID of the dataset, can be any string, determined by the user. Tracking ID's are unique identifiers for datasets within an organization. They are designed to match the unique identifier of the dataset in the user's system.
+     */
     tracking_id?: (string) | null;
+    /**
+     * Timestamp of the last update of the dataset
+     */
     updated_at: string;
 };
 
@@ -825,6 +872,11 @@ export type DatasetUsageCount = {
     dataset_id: string;
     id: string;
 };
+
+/**
+ * Datasets
+ */
+export type Datasets = Array<Dataset>;
 
 /**
  * DateRange is a JSON object which can be used to filter chunks by a range of dates. This leverages the time_stamp field on chunks in your dataset. You can specify this if you want values in a certain range. You must provide ISO 8601 combined date and time without timezone.
@@ -1324,7 +1376,13 @@ export type GetAllTagsReqPayload = {
 };
 
 export type GetAllTagsResponse = {
+    /**
+     * List of tags with the number of chunks in the dataset with that tag.
+     */
     tags: Array<TagsWithCount>;
+    /**
+     * Total number of unique tags in the dataset.
+     */
     total: number;
 };
 
@@ -2613,7 +2671,13 @@ export type SuggestedQueriesResponse = {
 };
 
 export type TagsWithCount = {
+    /**
+     * Number of chunks in the dataset with that tag
+     */
     count: number;
+    /**
+     * Content of the tag
+     */
     tag: string;
 };
 
@@ -2805,7 +2869,7 @@ export type UpdateChunkReqPayload = {
     weight?: (number) | null;
 };
 
-export type UpdateDatasetRequest = {
+export type UpdateDatasetReqPayload = {
     crawl_options?: ((CrawlOptions) | null);
     /**
      * The id of the dataset you want to update.
@@ -3630,7 +3694,7 @@ export type CreateDatasetData = {
     /**
      * JSON request payload to create a new dataset
      */
-    requestBody: CreateDatasetRequest;
+    requestBody: CreateDatasetReqPayload;
     /**
      * The organization id to use for the request
      */
@@ -3643,7 +3707,7 @@ export type UpdateDatasetData = {
     /**
      * JSON request payload to update a dataset
      */
-    requestBody: UpdateDatasetRequest;
+    requestBody: UpdateDatasetReqPayload;
     /**
      * The organization id to use for the request
      */
@@ -3651,6 +3715,19 @@ export type UpdateDatasetData = {
 };
 
 export type UpdateDatasetResponse = (Dataset);
+
+export type BatchCreateDatasetsData = {
+    /**
+     * JSON request payload to bulk create datasets
+     */
+    requestBody: CreateDatasetBatchReqPayload;
+    /**
+     * The organization id to use for the request
+     */
+    trOrganization: string;
+};
+
+export type BatchCreateDatasetsResponse = (Datasets);
 
 export type ClearDatasetData = {
     /**
@@ -4983,6 +5060,21 @@ export type $OpenApiTs = {
                  * Dataset not found
                  */
                 404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/dataset/batch_create_datasets': {
+        post: {
+            req: BatchCreateDatasetsData;
+            res: {
+                /**
+                 * Page of tags requested with all tags and the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset
+                 */
+                200: Datasets;
+                /**
+                 * Service error relating to finding items by tag
+                 */
+                400: ErrorResponseBody;
             };
         };
     };

@@ -5,6 +5,7 @@ import * as topicMethods from "./topic/index";
 import * as messageMethods from "./message/index";
 import * as fileMethods from "./file/index";
 import * as eventsMethods from "./events/index";
+import * as datasetsMethods from "./datasets/index";
 
 export default {
   ...chunkMethods,
@@ -14,4 +15,5 @@ export default {
   ...messageMethods,
   ...fileMethods,
   ...eventsMethods,
+  ...datasetsMethods,
 };
