@@ -3124,7 +3124,7 @@
           "Dataset"
         ],
         "summary": "Create Dataset",
-        "description": "Auth'ed user must be an owner of the organization to create a dataset.",
+        "description": "Dataset will be created in the org specified via the TR-Organization header. Auth'ed user must be an owner of the organization to create a dataset.",
         "operationId": "create_dataset",
         "parameters": [
           {
@@ -3143,7 +3143,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateDatasetRequest"
+                "$ref": "#/components/schemas/CreateDatasetReqPayload"
               }
             }
           },
@@ -3203,7 +3203,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateDatasetRequest"
+                "$ref": "#/components/schemas/UpdateDatasetReqPayload"
               }
             }
           },
@@ -3232,6 +3232,68 @@
           },
           "404": {
             "description": "Dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/dataset/batch_create_datasets": {
+      "post": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Batch Create Datasets",
+        "description": "Datasets will be created in the org specified via the TR-Organization header. Auth'ed user must be an owner of the organization to create datasets. If a tracking_id is ignored due to it already existing on the org, the response will not contain a dataset with that tracking_id and it can be assumed that a dataset with the missing tracking_id already exists.",
+        "operationId": "batch_create_datasets",
+        "parameters": [
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to bulk create datasets",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDatasetBatchReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Page of tags requested with all tags and the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Datasets"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to finding items by tag",
             "content": {
               "application/json": {
                 "schema": {
@@ -7351,7 +7413,7 @@
           },
           "upsert_by_tracking_id": {
             "type": "boolean",
-            "description": "Upsert when a chunk with the same tracking_id exists. By default this is false, and the request will fail if a chunk with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.",
+            "description": "Upsert when a chunk with the same tracking_id exists. By default this is false, and chunks will be ignored if another with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.",
             "nullable": true
           },
           "weight": {
@@ -7961,6 +8023,31 @@
           }
         ]
       },
+      "CreateBatchDataset": {
+        "type": "object",
+        "required": [
+          "dataset_name"
+        ],
+        "properties": {
+          "dataset_name": {
+            "type": "string",
+            "description": "Name of the dataset."
+          },
+          "server_configuration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DatasetConfigurationDTO"
+              }
+            ],
+            "nullable": true
+          },
+          "tracking_id": {
+            "type": "string",
+            "description": "Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.",
+            "nullable": true
+          }
+        }
+      },
       "CreateChunkGroupReqPayloadEnum": {
         "oneOf": [
           {
@@ -7991,7 +8078,27 @@
           }
         ]
       },
-      "CreateDatasetRequest": {
+      "CreateDatasetBatchReqPayload": {
+        "type": "object",
+        "required": [
+          "datasets"
+        ],
+        "properties": {
+          "datasets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateBatchDataset"
+            },
+            "description": "List of datasets to create"
+          },
+          "upsert": {
+            "type": "boolean",
+            "description": "Upsert when a dataset with one of the specified tracking_ids already exists. By default this is false and specified datasets with a tracking_id that already exists in the org will not be ignored. If true, the existing dataset will be updated with the new dataset's details.",
+            "nullable": true
+          }
+        }
+      },
+      "CreateDatasetReqPayload": {
         "type": "object",
         "required": [
           "dataset_name"
@@ -8264,31 +8371,40 @@
         "properties": {
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Timestamp of the creation of the dataset"
           },
           "deleted": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "description": "Flag to indicate if the dataset has been deleted. Deletes are handled async after the flag is set so as to avoid expensive search index compaction."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the dataset, auto-generated uuid created by Trieve"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Name of the dataset"
           },
           "organization_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the organization that owns the dataset"
           },
-          "server_configuration": {},
+          "server_configuration": {
+            "description": "Configuration of the dataset for RAG, embeddings, BM25, etc."
+          },
           "tracking_id": {
             "type": "string",
+            "description": "Tracking ID of the dataset, can be any string, determined by the user. Tracking ID's are unique identifiers for datasets within an organization. They are designed to match the unique identifier of the dataset in the user's system.",
             "nullable": true
           },
           "updated_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Timestamp of the last update of the dataset"
           }
         },
         "example": {
@@ -8666,6 +8782,13 @@
           "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3"
         }
+      },
+      "Datasets": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Dataset"
+        },
+        "description": "Datasets"
       },
       "DateRange": {
         "type": "object",
@@ -9903,11 +10026,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TagsWithCount"
-            }
+            },
+            "description": "List of tags with the number of chunks in the dataset with that tag."
           },
           "total": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Total number of unique tags in the dataset."
           }
         }
       },
@@ -14495,10 +14620,12 @@
         "properties": {
           "count": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Number of chunks in the dataset with that tag"
           },
           "tag": {
-            "type": "string"
+            "type": "string",
+            "description": "Content of the tag"
           }
         }
       },
@@ -14909,7 +15036,7 @@
           "weight": 0.5
         }
       },
-      "UpdateDatasetRequest": {
+      "UpdateDatasetReqPayload": {
         "type": "object",
         "properties": {
           "crawl_options": {

@@ -6,7 +6,7 @@
   "files": [
     "dist"
   ],
-  "version": "0.0.14",
+  "version": "0.0.17",
   "license": "MIT",
   "scripts": {
     "lint": "eslint 'src/**/*.ts'",
