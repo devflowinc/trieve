@@ -3,20 +3,16 @@ const { options } = require("./build");
 
 const main = async () => {
   let ctx1 = await context({
-    ...options,
-    outfile: "./dist/index.esm.js",
+    entryPoints: ["src/index.tsx"],
+    treeShaking: true,
+    outdir: "./dist",
+    sourcemap: true,
+    splitting: true,
+    bundle: true,
+    minify: false,
     format: "esm",
-    target: ["esnext", "node12.22.0"],
+    target: ["es2020"],
   });
-
-  let ctx2 = await context({
-    ...options,
-    format: "cjs",
-    outfile: "./dist/index.cjs.js",
-    target: ["esnext", "node12.22.0"],
-  });
-
-  await ctx2.watch();
 };
 
 main();
