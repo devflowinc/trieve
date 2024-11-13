@@ -19,9 +19,10 @@ export class TrieveSDK {
     organizationId?: string;
   }) {
     this.trieve = new TrieveFetchClient({
-      apiKey: apiKey,
-      baseUrl: baseUrl,
-      debug: debug,
+      apiKey,
+      baseUrl,
+      debug,
+      organizationId,
     });
     this.datasetId = datasetId;
     this.organizationId = organizationId;
