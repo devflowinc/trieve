@@ -283,14 +283,14 @@ body {
       }
 
       .additional-image-links {
-        @apply grid grid-cols-3 gap-2 mt-4 mb-4;
+        @apply gap-2 mt-4 mb-4 flex flex-row;
 
         a {
           @apply hover:bg-zinc-200 text-zinc-700 hover:text-zinc-950 rounded px-2 text-xs py-1 line-clamp-2 overflow-ellipsis grid-rows-2 w-fit;
         }
 
         .ecomm-details {
-          @apply flex gap-1 items-center;
+          @apply flex gap-1 items-center text-center flex-col;
         }
 
         .ecomm-item-title {

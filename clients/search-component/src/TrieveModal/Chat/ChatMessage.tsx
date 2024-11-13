@@ -11,6 +11,7 @@ import {
 import { Chunk } from "../../utils/types";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
+import { Carousel } from "./Carousel";
 
 type Message = {
   queryId: string | null;
@@ -92,71 +93,72 @@ export const Message = ({
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const { props } = useModalState();
 
+  const ecommerceItems = message.additional
+    ?.filter(
+      (chunk) =>
+        (chunk.metadata.heading ||
+          chunk.metadata.title ||
+          chunk.metadata.page_title) &&
+        chunk.link &&
+        chunk.image_urls?.length &&
+        chunk.num_value,
+    )
+    .map((chunk) => ({
+      title:
+        chunk.metadata.heading ||
+        chunk.metadata.title ||
+        chunk.metadata.page_title,
+      link: chunk.link,
+      imageUrl: (chunk.image_urls ?? [])[0],
+      price: chunk.num_value,
+    }))
+    .filter(
+      (item, index, array) =>
+        array.findIndex((arrayItem) => arrayItem.title === item.title) ===
+          index && item.title,
+    )
+    .map((item, index) => (
+      <a
+        key={index}
+        href={item.link ?? ""}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img
+          src={item.imageUrl ?? ""}
+          alt={item.title}
+          className="ecommerce-featured-image-chat"
+        />
+        <div className="ecomm-details">
+          <p className="ecomm-item-title">{item.title}</p>
+          <p
+            className="ecomm-item-price"
+            style={{
+              color: props.brandColor ?? "#CB53EB",
+            }}
+          >
+            ${item.price}
+          </p>
+        </div>
+      </a>
+    ));
+
   return (
     <div>
-      {message.text == "Loading..." ? (
+      {message.text === "Loading..." ? (
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
         >
           <LoadingIcon className="loading" />
         </div>
       ) : null}
-      {message.type === "system" && message.text != "Loading..." ? (
+      {message.type === "system" && message.text !== "Loading..." ? (
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
         >
           {message.additional && props.type === "ecommerce" && (
             <div className="additional-image-links">
-              {message.additional
-                .filter(
-                  (chunk) =>
-                    (chunk.metadata.heading ||
-                      chunk.metadata.title ||
-                      chunk.metadata.page_title) &&
-                    chunk.link &&
-                    chunk.image_urls?.length &&
-                    chunk.num_value
-                )
-                .map((chunk) => ({
-                  title:
-                    chunk.metadata.heading ||
-                    chunk.metadata.title ||
-                    chunk.metadata.page_title,
-                  link: chunk.link,
-                  imageUrl: (chunk.image_urls ?? [])[0],
-                  price: chunk.num_value,
-                }))
-                .filter(
-                  (item, index, array) =>
-                    array.findIndex(
-                      (arrayItem) => arrayItem.title === item.title
-                    ) === index && item.title
-                )
-                .map((item, index) => (
-                  <a
-                    key={index}
-                    href={item.link ?? ""}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <img
-                      src={item.imageUrl ?? ""}
-                      alt={item.title}
-                      className="ecommerce-featured-image-chat"
-                    />
-                    <div className="ecomm-details">
-                      <p className="ecomm-item-title">{item.title}</p>
-                      <p
-                        className="ecomm-item-price"
-                        style={{
-                          color: props.brandColor ?? "#CB53EB",
-                        }}
-                      >
-                        ${item.price}
-                      </p>
-                    </div>
-                  </a>
-                ))}
+              <Carousel>{ecommerceItems}</Carousel>
             </div>
           )}
           <Markdown
