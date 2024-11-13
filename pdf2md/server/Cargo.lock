@@ -1174,6 +1174,7 @@ dependencies = [
  "openai_dive",
  "pdf2image",
  "redis",
+ "regex",
  "reqwest",
  "rust-s3",
  "serde",
