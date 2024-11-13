@@ -1420,6 +1420,49 @@
         ]
       }
     },
+    "/api/chunk/split": {
+      "post": {
+        "tags": [
+          "Chunk"
+        ],
+        "summary": "Split HTML Content into Chunks",
+        "description": "This endpoint receives a single html string and splits it into chunks based on the headings and\nbody content. The headings are split based on headding html tags. chunk_html has a maximum size\nof 256Kb.",
+        "operationId": "split_html_content",
+        "requestBody": {
+          "description": "JSON request payload to perform RAG on some chunks (chunks)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChunkHtmlContentReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "This will be a JSON response of the chunks split from the HTML content with the headings and body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SplitHtmlResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload too large, if the HTML contnet is greater than 256Kb",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chunk/suggestions": {
       "post": {
         "tags": [
@@ -6994,6 +7037,46 @@
           }
         ]
       },
+      "ChunkHtmlContentReqPayload": {
+        "type": "object",
+        "required": [
+          "chunk_html"
+        ],
+        "properties": {
+          "body_remove_strings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Text strings to remove from body when creating chunks for each page",
+            "nullable": true
+          },
+          "chunk_html": {
+            "type": "string",
+            "description": "The HTML content to be split into chunks"
+          },
+          "heading_remove_strings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Text strings to remove from headings when creating chunks for each page",
+            "nullable": true
+          }
+        },
+        "example": {
+          "body_remove_strings": [
+            "Warning:",
+            "Note:"
+          ],
+          "chunk_html": "",
+          "heading_remove_strings": [
+            "###",
+            "##",
+            "#"
+          ]
+        }
+      },
       "ChunkMetadata": {
         "type": "object",
         "title": "V2",
@@ -7485,6 +7568,34 @@
             "type": "integer",
             "format": "int32"
           }
+        }
+      },
+      "ChunkedContent": {
+        "type": "object",
+        "required": [
+          "headings",
+          "body"
+        ],
+        "properties": {
+          "body": {
+            "type": "string",
+            "description": "The body of the content"
+          },
+          "headings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The headings of the content in order of when they appear"
+          }
+        },
+        "example": {
+          "body": "This is the body of the content",
+          "headings": [
+            "Title Heading",
+            "Sub Heading 1",
+            "Last SubHeading"
+          ]
         }
       },
       "ClickhouseRagTypes": {
@@ -14387,6 +14498,40 @@
           "desc",
           "asc"
         ]
+      },
+      "SplitHtmlResponse": {
+        "type": "object",
+        "required": [
+          "chunks"
+        ],
+        "properties": {
+          "chunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChunkedContent"
+            }
+          }
+        },
+        "example": {
+          "chunks": [
+            {
+              "body": "This is the body of the content",
+              "headings": [
+                "Title Heading",
+                "Sub Heading 1",
+                "Sub Sub Heading 1"
+              ]
+            },
+            {
+              "body": "This is the body of the content",
+              "headings": [
+                "Title Heading",
+                "Sub Heading 1",
+                "Sub Sub Heading 2"
+              ]
+            }
+          ]
+        }
       },
       "StripeInvoice": {
         "type": "object",

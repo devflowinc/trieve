@@ -220,6 +220,21 @@ export type ChunkGroupAndFileId = {
 
 export type ChunkGroups = Array<ChunkGroup>;
 
+export type ChunkHtmlContentReqPayload = {
+    /**
+     * Text strings to remove from body when creating chunks for each page
+     */
+    body_remove_strings?: Array<(string)> | null;
+    /**
+     * The HTML content to be split into chunks
+     */
+    chunk_html: string;
+    /**
+     * Text strings to remove from headings when creating chunks for each page
+     */
+    heading_remove_strings?: Array<(string)> | null;
+};
+
 export type ChunkMetadata = {
     /**
      * HTML content of the chunk, can also be an arbitrary string which is not HTML
@@ -389,6 +404,17 @@ export type ChunkReturnTypes = ChunkMetadata | ChunkMetadataStringTagSet;
 export type ChunkWithPosition = {
     chunk_id: string;
     position: number;
+};
+
+export type ChunkedContent = {
+    /**
+     * The body of the content
+     */
+    body: string;
+    /**
+     * The headings of the content in order of when they appear
+     */
+    headings: Array<(string)>;
 };
 
 export type ClickhouseRagTypes = 'chosen_chunks' | 'all_chunks';
@@ -2616,6 +2642,10 @@ export type SortOptions = {
 
 export type SortOrder = 'desc' | 'asc';
 
+export type SplitHtmlResponse = {
+    chunks: Array<ChunkedContent>;
+};
+
 export type StripeInvoice = {
     created_at: string;
     hosted_invoice_url: string;
@@ -3309,6 +3339,15 @@ export type SearchChunksData = {
 };
 
 export type SearchChunksResponse = (SearchResponseTypes);
+
+export type SplitHtmlContentData = {
+    /**
+     * JSON request payload to perform RAG on some chunks (chunks)
+     */
+    requestBody: ChunkHtmlContentReqPayload;
+};
+
+export type SplitHtmlContentResponse = (SplitHtmlResponse);
 
 export type GetSuggestedQueriesData = {
     /**
@@ -4650,6 +4689,21 @@ export type $OpenApiTs = {
                  * Service error relating to searching
                  */
                 400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/chunk/split': {
+        post: {
+            req: SplitHtmlContentData;
+            res: {
+                /**
+                 * This will be a JSON response of the chunks split from the HTML content with the headings and body
+                 */
+                200: SplitHtmlResponse;
+                /**
+                 * Payload too large, if the HTML contnet is greater than 256Kb
+                 */
+                413: ErrorResponseBody;
             };
         };
     };

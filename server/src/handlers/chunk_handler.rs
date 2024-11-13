@@ -14,6 +14,7 @@ use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue};
+use crate::operators::crawl_operator;
 use crate::operators::dataset_operator::{
     get_dataset_usage_query, ChunkDeleteMessage, DeleteMessage,
 };
@@ -2819,6 +2820,97 @@ pub async fn generate_off_chunks(
     Ok(HttpResponse::Ok()
         .insert_header(("TR-QueryID", query_id.to_string()))
         .streaming(completion_stream))
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "chunk_html": "",
+    "heading_remove_strings": ["###", "##", "#"],
+    "body_remove_strings": ["Warning:", "Note:"]
+}))]
+pub struct ChunkHtmlContentReqPayload {
+    /// The HTML content to be split into chunks
+    pub chunk_html: String,
+    /// Text strings to remove from headings when creating chunks for each page
+    pub heading_remove_strings: Option<Vec<String>>,
+    /// Text strings to remove from body when creating chunks for each page
+    pub body_remove_strings: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "chunks": [
+        {
+            "headings": ["Title Heading", "Sub Heading 1", "Sub Sub Heading 1"],
+            "body": "This is the body of the content"
+        },
+        {
+            "headings": ["Title Heading", "Sub Heading 1", "Sub Sub Heading 2"],
+            "body": "This is the body of the content"
+        }
+        // ...
+    ]
+}))]
+pub struct SplitHtmlResponse {
+    pub chunks: Vec<ChunkedContent>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "headings": ["Title Heading", "Sub Heading 1", "Last SubHeading"],
+    "body": "This is the body of the content"
+}))]
+pub struct ChunkedContent {
+    /// The headings of the content in order of when they appear
+    pub headings: Vec<String>,
+    /// The body of the content
+    pub body: String,
+}
+
+/// Split HTML Content into Chunks
+///
+/// This endpoint receives a single html string and splits it into chunks based on the headings and
+/// body content. The headings are split based on headding html tags. chunk_html has a maximum size
+/// of 256Kb.
+#[utoipa::path(
+    post,
+    path = "/chunk/split",
+    context_path = "/api",
+    tag = "Chunk",
+    request_body(content = ChunkHtmlContentReqPayload, description = "JSON request payload to perform RAG on some chunks (chunks)", content_type = "application/json"),
+    responses(
+        (
+            status = 200, description = "This will be a JSON response of the chunks split from the HTML content with the headings and body",
+            body = SplitHtmlResponse,
+        ),
+        (
+            status = 413, description = "Payload too large, if the HTML contnet is greater than 256Kb",
+            body = ErrorResponseBody,
+        ),
+    ),
+)]
+#[tracing::instrument]
+pub async fn split_html_content(
+    body: web::Json<ChunkHtmlContentReqPayload>,
+) -> Result<HttpResponse, ServiceError> {
+    if body.chunk_html.bytes().len() >= 262_144 {
+        return Err(ServiceError::PayloadTooLarge(
+            "The HTML content is too large".to_string(),
+        ));
+    }
+
+    let chunked_content = crawl_operator::chunk_html(
+        &body.chunk_html,
+        body.heading_remove_strings.clone(),
+        body.body_remove_strings.clone(),
+    );
+
+    Ok(HttpResponse::Ok().json(SplitHtmlResponse {
+        chunks: chunked_content
+            .into_iter()
+            .map(|(headings, body)| ChunkedContent { headings, body })
+            .collect(),
+    }))
 }
 
 pub fn check_completion_param_validity(

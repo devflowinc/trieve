@@ -175,6 +175,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::create_chunk,
         handlers::chunk_handler::update_chunk,
         handlers::chunk_handler::delete_chunk,
+        handlers::chunk_handler::split_html_content,
         handlers::chunk_handler::get_recommended_chunks,
         handlers::chunk_handler::update_chunk_by_tracking_id,
         handlers::chunk_handler::search_chunks,
@@ -274,6 +275,9 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::SearchResponseTypes,
             handlers::chunk_handler::CreateBatchChunkReqPayload,
             handlers::chunk_handler::SingleQueuedChunkResponse,
+            handlers::chunk_handler::ChunkHtmlContentReqPayload,
+            handlers::chunk_handler::SplitHtmlResponse,
+            handlers::chunk_handler::ChunkedContent,
             handlers::chunk_handler::BatchQueuedChunkResponse,
             handlers::chunk_handler::ReturnQueuedChunk,
             handlers::chunk_handler::RecommendChunksResponseBody,
@@ -928,6 +932,11 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::post().to(handlers::chunk_handler::create_chunk))
                                         .route(web::put().to(handlers::chunk_handler::update_chunk))
                                         .route(web::delete().to(handlers::chunk_handler::bulk_delete_chunk)),
+                                )
+                                .service(
+                                    web::resource("split").route(
+                                        web::post().to(handlers::chunk_handler::split_html_content),
+                                    ),
                                 )
                                 .service(web::resource("/recommend").route(
                                     web::post().to(handlers::chunk_handler::get_recommended_chunks),

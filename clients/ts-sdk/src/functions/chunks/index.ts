@@ -6,6 +6,7 @@
 
 import {
   AutocompleteReqPayload,
+  ChunkHtmlContentReqPayload,
   CountChunksReqPayload,
   CreateChunkReqPayloadEnum,
   DeleteChunkByTrackingIdData,
@@ -580,6 +581,33 @@ export async function getChunksByTrackingIds(
     {
       data: props,
       datasetId: this.datasetId,
+    },
+    signal
+  );
+}
+
+/**
+ * Function that splits an html string into chunks.
+ * The html string will be split into chunks based on the number of characters in the string and header tags. 
+ *
+ * Example:
+ * ```js
+ *const data = await trieve.splitChunkHtml({
+ *    chunk_html: "<p>Some HTML content</p>",
+ *});
+ * ```
+ */
+export async function splitChunkHtml(
+  /** @hidden */
+  this: TrieveSDK,
+  props: ChunkHtmlContentReqPayload,
+  signal?: AbortSignal
+) {
+  return this.trieve.fetch(
+    "/api/chunk/split",
+    "post",
+    {
+      data: props,
     },
     signal
   );
