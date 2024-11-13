@@ -30,9 +30,15 @@ import {
   FaSolidChevronDown,
 } from "solid-icons/fa";
 import { Item, MultiSelect } from "./MultiSelect";
-import { Tooltip } from "shared/ui";
+import { JsonInput, Tooltip } from "shared/ui";
 import { ApiRoutes, RouteScope } from "./Routes";
 import { Organization } from "trieve-ts-sdk";
+import { z } from "zod";
+import {
+  chunkFilterSchema,
+  searchMethodEnum,
+  typoOptionsSchema,
+} from "../analytics/utils/schemas/autocomplete";
 
 export const ApiKeyGenerateModal = (props: {
   openModal: Accessor<boolean>;
@@ -51,11 +57,29 @@ export const ApiKeyGenerateModal = (props: {
   const [selectedOrgs, setSelectedOrgs] = createSignal<Organization[]>([]);
   const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<Item[]>([]);
   const [selectedRoutes, setSelectedRoutes] = createSignal<Item[]>([]);
-
+  const [defaultParams, setDefaultParams] =
+    createSignal<Record<string, unknown>>();
+  const [searchOptionsError, setSearchOptionsError] = createSignal<
+    string | null
+  >(null);
+  const [expiresAt, setExpiresAt] = createSignal<string | null>(null);
   const availableRoutes = Object.keys(ApiRoutes).map((item, index) => ({
     id: `${index}`,
     name: item,
   }));
+
+  const defaultParamsSchema = z
+    .object({
+      filters: chunkFilterSchema.nullish(),
+      page_size: z.number().nullish(),
+      remove_stop_words: z.boolean().nullish(),
+      score_threshold: z.number().nullish(),
+      search_type: searchMethodEnum.nullish(),
+      slim_chunks: z.boolean().nullish(),
+      typo_options: typoOptionsSchema.nullish(),
+      use_quote_negated_terms: z.boolean().nullish(),
+    })
+    .strict();
 
   const [datasetsAndUsages] = createResource(
     selectedOrgs,
@@ -113,6 +137,8 @@ export const ApiKeyGenerateModal = (props: {
                 .map((route) => ApiRoutes[route.name as RouteScope])
                 .flat()
             : undefined,
+        default_params: defaultParams(),
+        expires_at: expiresAt() + " 00:00:00",
       }),
       // eslint-disable-next-line solid/reactivity
     }).then((res) => {
@@ -277,6 +303,22 @@ export const ApiKeyGenerateModal = (props: {
                               for="organization"
                               class="block text-sm font-medium leading-6"
                             >
+                              Expires:
+                            </label>
+                            <input
+                              type="date"
+                              class="block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-inset focus:ring-neutral-900/20 sm:text-sm sm:leading-6"
+                              value={expiresAt() ?? undefined}
+                              onInput={(e) =>
+                                setExpiresAt(e.currentTarget.value)
+                              }
+                            />
+                          </div>
+                          <div class="flex items-center space-x-2">
+                            <label
+                              for="organization"
+                              class="block text-sm font-medium leading-6"
+                            >
                               Organizations:
                             </label>
                             <MultiSelect
@@ -318,6 +360,59 @@ export const ApiKeyGenerateModal = (props: {
                               }}
                             />
                           </div>
+                        </DisclosurePanel>
+                      </Disclosure>
+                      <Disclosure defaultOpen={false} as="div" class="py-2">
+                        <DisclosureButton
+                          as="div"
+                          class="flex w-full justify-between rounded-l py-2 text-left text-sm focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75"
+                        >
+                          {({ isOpen }): JSX.Element => (
+                            <>
+                              <div class="flex items-center gap-x-2">
+                                <span class="font-medium">Default Params</span>
+                                <Tooltip
+                                  body={<FaRegularCircleQuestion />}
+                                  tooltipText="You can set default params to be used with the API key. These params will be used as default values when the API key is used to access the API."
+                                />
+                              </div>
+                              <FaSolidChevronDown
+                                class={`${
+                                  isOpen() ? "rotate-180 transform" : ""
+                                } h-4 w-4`}
+                                title={isOpen() ? "Close" : "Open"}
+                              />
+                            </>
+                          )}
+                        </DisclosureButton>
+                        <DisclosurePanel class="space-y-2 pb-2 pt-1">
+                          <JsonInput
+                            onValueChange={(value) => {
+                              const result =
+                                defaultParamsSchema.safeParse(value);
+
+                              if (result.success) {
+                                setDefaultParams(result.data);
+                                setSearchOptionsError(null);
+                              } else {
+                                setSearchOptionsError(
+                                  result.error.errors.at(0)?.message ||
+                                    "Invalid Search Options",
+                                );
+                              }
+                            }}
+                            value={() => {
+                              return defaultParams()?.searchOptions;
+                            }}
+                            onError={(message) => {
+                              setSearchOptionsError(message);
+                            }}
+                          />
+                          <Show when={searchOptionsError()}>
+                            <div class="text-red-500">
+                              {searchOptionsError()}
+                            </div>
+                          </Show>
                         </DisclosurePanel>
                       </Disclosure>
                     </div>

@@ -1,7 +1,12 @@
 import { PublicPageParameters, SearchChunksReqPayload } from "trieve-ts-sdk";
 import { z } from "zod";
 
-const searchMethodEnum = z.enum(["fulltext", "semantic", "hybrid", "bm25"]);
+export const searchMethodEnum = z.enum([
+  "fulltext",
+  "semantic",
+  "hybrid",
+  "bm25",
+]);
 
 const typoRangeSchema = z
   .object({
@@ -11,7 +16,7 @@ const typoRangeSchema = z
   })
   .nullish();
 
-const typoOptionsSchema = z.object({
+export const typoOptionsSchema = z.object({
   correct_typos: z.boolean().nullish(),
   disable_on_word: z.array(z.string()).nullish(),
   one_typo_word_range: typoRangeSchema,
@@ -21,7 +26,7 @@ const typoOptionsSchema = z.object({
 
 const conditionTypeSchema = z.any(); // Define proper schema if needed
 
-const chunkFilterSchema = z.object({
+export const chunkFilterSchema = z.object({
   jsonb_prefilter: z.boolean().nullish(),
   must: z.array(conditionTypeSchema).nullish(),
   must_not: z.array(conditionTypeSchema).nullish(),

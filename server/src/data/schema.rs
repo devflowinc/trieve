@@ -253,6 +253,8 @@ diesel::table! {
         dataset_ids -> Nullable<Array<Nullable<Text>>>,
         organization_ids -> Nullable<Array<Nullable<Text>>>,
         scopes -> Nullable<Array<Nullable<Text>>>,
+        params -> Nullable<Jsonb>,
+        expires_at -> Nullable<Timestamp>,
     }
 }
 
