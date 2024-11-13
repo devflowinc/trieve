@@ -221,6 +221,7 @@ impl Modify for SecurityAddon {
         handlers::organization_handler::get_organization_users,
         handlers::organization_handler::update_all_org_dataset_configs,
         handlers::dataset_handler::create_dataset,
+        handlers::dataset_handler::batch_create_datasets,
         handlers::dataset_handler::update_dataset,
         handlers::dataset_handler::delete_dataset,
         handlers::dataset_handler::delete_dataset_by_tracking_id,
@@ -302,6 +303,7 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::GetAllTagsReqPayload,
             handlers::dataset_handler::GetAllTagsResponse,
             handlers::dataset_handler::GetCrawlOptionsResponse,
+            handlers::dataset_handler::Datasets,
             handlers::group_handler::RecommendGroupsReqPayload,
             handlers::group_handler::RecommendGroupsResponse,
             handlers::group_handler::SearchWithinGroupReqPayload,
@@ -344,8 +346,10 @@ impl Modify for SecurityAddon {
             operators::search_operator::SearchOverGroupsResults,
             operators::search_operator::SearchOverGroupsResponseBody,
             operators::search_operator::SearchOverGroupsResponseTypes,
-            handlers::dataset_handler::CreateDatasetRequest,
-            handlers::dataset_handler::UpdateDatasetRequest,
+            handlers::dataset_handler::CreateDatasetReqPayload,
+            handlers::dataset_handler::CreateBatchDataset,
+            handlers::dataset_handler::CreateDatasetBatchReqPayload,
+            handlers::dataset_handler::UpdateDatasetReqPayload,
             handlers::dataset_handler::GetDatasetsPagination,
             data::models::DatasetConfigurationDTO,
             handlers::chunk_handler::CrawlOpenAPIOptions,
@@ -804,6 +808,11 @@ pub fn main() -> std::io::Result<()> {
                                             web::post().to(handlers::dataset_handler::create_dataset),
                                         )
                                         .route(web::put().to(handlers::dataset_handler::update_dataset))
+                                )
+                                .service(
+                                    web::resource("/batch_create_datasets").route(
+                                        web::post().to(handlers::dataset_handler::batch_create_datasets),
+                                    )
                                 )
                                 .service(
                                     web::resource("/organization/{organization_id}").route(

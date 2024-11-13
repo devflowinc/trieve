@@ -18,6 +18,7 @@ use clickhouse::Row;
 use diesel::dsl::count;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
+use diesel::upsert::excluded;
 use diesel_async::RunQueryDsl;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -52,6 +53,57 @@ pub async fn create_dataset_query(
         })?;
 
     Ok(new_dataset)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn create_datasets_query(
+    datasets: Vec<Dataset>,
+    upsert: Option<bool>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<Dataset>, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let created_or_upserted_datasets: Vec<Dataset> = if upsert.unwrap_or(false) {
+        diesel::insert_into(datasets_columns::datasets)
+            .values(&datasets)
+            .on_conflict((
+                datasets_columns::tracking_id,
+                datasets_columns::organization_id,
+            ))
+            .do_update()
+            .set((
+                datasets_columns::name.eq(excluded(datasets_columns::name)),
+                datasets_columns::server_configuration
+                    .eq(excluded(datasets_columns::server_configuration)),
+            ))
+            .get_results::<Dataset>(&mut conn)
+            .await
+            .map_err(|err| {
+                log::error!("Could not create dataset batch: {}", err);
+                ServiceError::BadRequest(
+                    "Could not create dataset batch due to pg error".to_string(),
+                )
+            })?
+    } else {
+        diesel::insert_into(datasets_columns::datasets)
+            .values(&datasets)
+            .on_conflict_do_nothing()
+            .get_results::<Dataset>(&mut conn)
+            .await
+            .map_err(|err| {
+                log::error!("Could not create dataset batch: {}", err);
+                ServiceError::BadRequest(
+                    "Could not create dataset batch due to pg error".to_string(),
+                )
+            })?
+    };
+
+    Ok(created_or_upserted_datasets)
 }
 
 #[tracing::instrument(skip(pool))]
