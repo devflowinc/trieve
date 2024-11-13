@@ -1,5 +1,4 @@
 import React, { useEffect, lazy, startTransition } from "react";
-import r2wc from "@r2wc/react-to-web-component";
 const SearchMode = lazy(() => import("./Search/SearchMode"));
 const ChatMode = lazy(() => import("./Chat/ChatMode"));
 
@@ -12,6 +11,7 @@ import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
 import { ModeSwitch } from "./ModeSwitch";
 import { OpenModalButton } from "./OpenModalButton";
 import { ChatProvider } from "../utils/hooks/chat-context";
+import r2wc from "@r2wc/react-to-web-component";
 
 const Modal = () => {
   useKeyboardNavigation();
@@ -20,19 +20,19 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB"
+      props.brandColor ?? "#CB53EB",
     );
 
     // depending on the theme, set the background color of ::-webkit-scrollbar-thumb for #trieve-search-modal
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)"
+        "var(--tv-zinc-700)",
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)"
+        "var(--tv-zinc-300)",
       );
     }
   }, [props.brandColor]);

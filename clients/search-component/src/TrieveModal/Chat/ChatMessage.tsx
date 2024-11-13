@@ -6,7 +6,6 @@ import {
   ThumbsUpIcon,
   UserIcon,
 } from "../icons";
-import Markdown from "react-markdown";
 import { Chunk } from "../../utils/types";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
@@ -90,6 +89,8 @@ export const Message = ({
   const { rateChatCompletion } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const { props } = useModalState();
+
+  const Markdown = React.lazy(() => import("react-markdown"));
 
   return (
     <div>
