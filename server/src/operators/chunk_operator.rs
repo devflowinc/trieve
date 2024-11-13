@@ -1364,6 +1364,7 @@ pub async fn delete_chunk_metadata_query(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
     let mut conn = pool.get().await.map_err(|_e| {
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;

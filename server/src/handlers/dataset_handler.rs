@@ -13,9 +13,9 @@ use crate::{
             validate_crawl_options,
         },
         dataset_operator::{
-            clear_dataset_by_dataset_id_query, create_dataset_query, get_dataset_by_id_query,
-            get_dataset_usage_query, get_datasets_by_organization_id, get_tags_in_dataset_query,
-            soft_delete_dataset_by_id_query, update_dataset_query,
+            clear_dataset_by_dataset_id_query, create_dataset_query, create_datasets_query,
+            get_dataset_by_id_query, get_dataset_usage_query, get_datasets_by_organization_id,
+            get_tags_in_dataset_query, soft_delete_dataset_by_id_query, update_dataset_query,
         },
         dittofeed_operator::{
             send_ditto_event, DittoDatasetCreated, DittoTrackProperties, DittoTrackRequest,
@@ -99,7 +99,7 @@ impl FromRequest for OrganizationWithSubAndPlan {
         "MAX_LIMIT": 10000
     }
 }))]
-pub struct CreateDatasetRequest {
+pub struct CreateDatasetReqPayload {
     /// Name of the dataset.
     pub dataset_name: String,
     /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
@@ -112,13 +112,13 @@ pub struct CreateDatasetRequest {
 
 /// Create Dataset
 ///
-/// Auth'ed user must be an owner of the organization to create a dataset.
+/// Dataset will be created in the org specified via the TR-Organization header. Auth'ed user must be an owner of the organization to create a dataset.
 #[utoipa::path(
     post,
     path = "/dataset",
     context_path = "/api",
     tag = "Dataset",
-    request_body(content = CreateDatasetRequest, description = "JSON request payload to create a new dataset", content_type = "application/json"),
+    request_body(content = CreateDatasetReqPayload, description = "JSON request payload to create a new dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Dataset created successfully", body = Dataset),
         (status = 400, description = "Service error relating to creating the dataset", body = ErrorResponseBody),
@@ -132,7 +132,7 @@ pub struct CreateDatasetRequest {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn create_dataset(
-    data: web::Json<CreateDatasetRequest>,
+    data: web::Json<CreateDatasetReqPayload>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     org_with_sub_and_plan: OrganizationWithSubAndPlan,
@@ -234,7 +234,7 @@ pub async fn create_dataset(
         "MAX_LIMIT": 10000
     }
 }))]
-pub struct UpdateDatasetRequest {
+pub struct UpdateDatasetReqPayload {
     /// The id of the dataset you want to update.
     pub dataset_id: Option<uuid::Uuid>,
     /// The tracking ID of the dataset you want to update.
@@ -257,7 +257,7 @@ pub struct UpdateDatasetRequest {
     path = "/dataset",
     context_path = "/api",
     tag = "Dataset",
-    request_body(content = UpdateDatasetRequest, description = "JSON request payload to update a dataset", content_type = "application/json"),
+    request_body(content = UpdateDatasetReqPayload, description = "JSON request payload to update a dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Dataset updated successfully", body = Dataset),
         (status = 400, description = "Service error relating to updating the dataset", body = ErrorResponseBody),
@@ -272,7 +272,7 @@ pub struct UpdateDatasetRequest {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn update_dataset(
-    data: web::Json<UpdateDatasetRequest>,
+    data: web::Json<UpdateDatasetReqPayload>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
@@ -700,13 +700,17 @@ pub struct GetAllTagsReqPayload {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Queryable)]
 pub struct TagsWithCount {
+    /// Content of the tag
     pub tag: String,
+    /// Number of chunks in the dataset with that tag
     pub count: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct GetAllTagsResponse {
+    /// List of tags with the number of chunks in the dataset with that tag.
     pub tags: Vec<TagsWithCount>,
+    /// Total number of unique tags in the dataset.
     pub total: i64,
 }
 
@@ -750,4 +754,74 @@ pub async fn get_all_tags(
         tags: items.0,
         total: items.1,
     }))
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct CreateBatchDataset {
+    /// Name of the dataset.
+    pub dataset_name: String,
+    /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
+    pub tracking_id: Option<String>,
+    /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
+    pub server_configuration: Option<DatasetConfigurationDTO>,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct CreateDatasetBatchReqPayload {
+    /// List of datasets to create
+    pub datasets: Vec<CreateBatchDataset>,
+    /// Upsert when a dataset with one of the specified tracking_ids already exists. By default this is false and specified datasets with a tracking_id that already exists in the org will not be ignored. If true, the existing dataset will be updated with the new dataset's details.
+    pub upsert: Option<bool>,
+}
+
+/// Datasets
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct Datasets(Vec<Dataset>);
+
+/// Batch Create Datasets
+///
+/// Datasets will be created in the org specified via the TR-Organization header. Auth'ed user must be an owner of the organization to create datasets. If a tracking_id is ignored due to it already existing on the org, the response will not contain a dataset with that tracking_id and it can be assumed that a dataset with the missing tracking_id already exists.
+#[utoipa::path(
+    post,
+    path = "/dataset/batch_create_datasets",
+    context_path = "/api",
+    tag = "Dataset",
+    request_body(content = CreateDatasetBatchReqPayload, description = "JSON request payload to bulk create datasets", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Page of tags requested with all tags and the number of chunks in the dataset with that tag plus the total number of unique tags for the whole datset", body = Datasets),
+        (status = 400, description = "Service error relating to finding items by tag", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["owner"]),
+    )
+)]
+pub async fn batch_create_datasets(
+    data: web::Json<CreateDatasetBatchReqPayload>,
+    _user: OwnerOnly,
+    pool: web::Data<Pool>,
+    org_with_sub_and_plan: OrganizationWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let datasets = data
+        .datasets
+        .iter()
+        .map(|d| {
+            Dataset::from_details(
+                d.dataset_name.clone(),
+                org_with_sub_and_plan.organization.id,
+                d.tracking_id.clone(),
+                d.server_configuration
+                    .clone()
+                    .map(|c| c.into())
+                    .unwrap_or_default(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let created_or_upserted_datasets =
+        create_datasets_query(datasets, data.upsert, pool.clone()).await?;
+
+    Ok(HttpResponse::Ok().json(created_or_upserted_datasets))
 }

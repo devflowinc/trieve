@@ -1892,13 +1892,21 @@ pub struct DatasetEventCount {
 }))]
 #[diesel(table_name = datasets)]
 pub struct Dataset {
+    /// Unique identifier of the dataset, auto-generated uuid created by Trieve
     pub id: uuid::Uuid,
+    /// Name of the dataset
     pub name: String,
+    /// Timestamp of the creation of the dataset
     pub created_at: chrono::NaiveDateTime,
+    /// Timestamp of the last update of the dataset
     pub updated_at: chrono::NaiveDateTime,
+    /// Unique identifier of the organization that owns the dataset
     pub organization_id: uuid::Uuid,
+    /// Configuration of the dataset for RAG, embeddings, BM25, etc.
     pub server_configuration: serde_json::Value,
+    /// Tracking ID of the dataset, can be any string, determined by the user. Tracking ID's are unique identifiers for datasets within an organization. They are designed to match the unique identifier of the dataset in the user's system.
     pub tracking_id: Option<String>,
+    /// Flag to indicate if the dataset has been deleted. Deletes are handled async after the flag is set so as to avoid expensive search index compaction.
     pub deleted: i32,
 }
 
