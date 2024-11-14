@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <link rel="stylesheet" href="https://unpkg.com/trieve-search-component@0.0.65/dist/index.css" />
+  <link rel="stylesheet" href="https://unpkg.com/trieve-search-component@0.1.1/dist/index.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400..900&amp;display=swap" rel="stylesheet">
@@ -98,6 +98,9 @@ const App = () => {
         {% endif -%}
         {% if params.baseUrl -%}
         baseUrl="{{ params.baseUrl }}"
+        {% endif -%}
+        {% if params.type -%}
+        type="{{ params.type }}"
         {% endif -%}
         {% if params.suggestedQueries -%}
         suggestedQueries={{ params.suggestedQueries }}

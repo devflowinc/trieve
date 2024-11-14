@@ -1820,6 +1820,7 @@ export type PublicPageParameters = {
     searchOptions?: ((PublicPageSearchOptions) | null);
     suggestedQueries?: (boolean) | null;
     theme?: ((PublicPageTheme) | null);
+    type?: (string) | null;
     useGroupSearch?: (boolean) | null;
 };
 
