@@ -11,6 +11,7 @@ import { JsonInput, MultiStringInput, Select, Tooltip } from "shared/ui";
 import { createStore } from "solid-js/store";
 import { PublicPageParameters } from "trieve-ts-sdk";
 import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
+import { FiExternalLink } from "solid-icons/fi";
 
 export interface PublicDatasetOptions {}
 
@@ -167,12 +168,19 @@ export const PublicPageSettings = () => {
         </div>
       </Show>
       <Show when={isPublic() && hasLoaded()}>
-        <div class="mt-4 flex content-center items-center gap-1.5 gap-x-3">
+        <div class="mt-4 flex content-center items-center gap-1.5 gap-x-2.5">
           <span class="font-medium">Published Url:</span>{" "}
           <a class="text-magenta-400" href={publicUrl()}>
             {publicUrl()}
           </a>
           <CopyButton size={15} text={publicUrl()} />
+          <a
+            class="cursor-pointer text-sm text-gray-500 hover:text-magenta-400"
+            href={publicUrl()}
+            target="_blank"
+          >
+            <FiExternalLink />
+          </a>
         </div>
         <div class="mt-4 flex space-x-3">
           <div class="grow">
