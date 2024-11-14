@@ -63,60 +63,15 @@
     }
   </style>
 
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18",
-            "react-dom": "https://esm.sh/react-dom@18",
-            "react-dom/client": "https://esm.sh/react-dom@18/client",
-            "@thumbmarkjs/thumbmarkjs": "https://esm.sh/@thumbmarkjs/thumbmarkjs",
-            "trieve-ts-sdk": "https://esm.sh/trieve-ts-sdk",
-            "cheerio": "https://esm.sh/cheerio",
-            "react-markdown": "https://esm.sh/react-markdown",
-            "@r2wc/react-to-web-component": "https://esm.sh/@r2wc/react-to-web-component"
-        }
-    }
-  </script>
-
-  <script type="module">
-    import React, {useState} from 'react';
-    import ReactDOM from 'react-dom';
-
-    window.React = React;
-    window.ReactDOM = ReactDOM;
-
-    import {TrieveModalSearch} from 'https://unpkg.com/trieve-search-component@0.0.65/dist/index.esm.js';
-    window.TrieveModalSearch = TrieveModalSearch;
-  </script>
-
-  <script type="text/babel">
+  <script  type="module">
+    import { renderToDiv } from 'https://unpkg.com/trieve-search-component@0.1.1/dist/index.js';
     window.addEventListener('load', () => {
       const root = document.getElementById('root');
-
-      const rootElement = window.ReactDOM.createRoot(document.getElementById("root"));
-
-      const App = () => {
-        return (
-          <>
-            <p class="text">
-              Trieve Search Component
-            </p>
-            <window.TrieveModalSearch
-              open={true}
-              {... {{ params | tojson}}
-                }
-            />
-          </>
-        );
-      }
-
-      rootElement.render(
-        <App />
-      )
+      renderToDiv(root,{
+        ... {{params | tojson}}
+      })
     });
   </script>
-
 </head>
 
 <body>
