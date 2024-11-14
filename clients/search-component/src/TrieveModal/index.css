@@ -34,6 +34,10 @@ body {
       background-color: var(--tv-prop-scrollbar-thumb-color);
     }
 
+    .search-container {
+      @apply rounded-lg;
+    }
+
     .chat-container {
       @apply h-full;
 
@@ -553,11 +557,11 @@ body {
       }
     }
     .input-wrapper {
-      @apply sticky top-0 z-10 flex flex-col gap-2;
+      @apply sticky top-0 z-10 flex flex-col gap-2 rounded-t-lg;
       background-color: var(--bg-color);
 
       .input-flex {
-        @apply flex items-center;
+        @apply flex items-center rounded-t-lg;
       }
 
       .search-icon {
@@ -587,25 +591,17 @@ body {
     }
 
     input {
-      @apply block w-full rounded-t-md border-0 py-1.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset outline-none sm:text-sm sm:leading-6 pl-8 pr-2 h-12 z-10 relative;
+      @apply block w-full rounded-t-lg border-[1px] py-1.5 shadow-sm ring-0 outline-none sm:text-sm sm:leading-6 pl-8 pr-2 h-12 z-10 relative;
       color: var(--tv-zinc-900);
       background-color: var(--tv-zinc-50);
       border: 1px solid var(--tv-zinc-300);
-      box-shadow:
-        rgb(255, 255, 255) 0px 0px 0px 0px inset,
-        var(--tv-zinc-300) 0px 0px 1px inset,
-        rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
       &::placeholder {
         color: var(--tv-zinc-400);
       }
 
       &:focus {
-        outline: none;
-        border: 1px solid var(--tv-prop-brand-color);
-        box-shadow:
-          rgb(255, 255, 255) 0px 0px 0px 0px inset,
-          var(--tv-prop-brand-color) 0px 0px 1px inset,
-          rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+        border: 1.5px solid var(--tv-prop-brand-color);
+        transform: translateY(-0.1px) scale(1.0006);
       }
     }
 
