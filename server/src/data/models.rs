@@ -4,11 +4,11 @@ use super::schema::*;
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::analytics_handler::CTRDataRequestBody;
-use crate::handlers::chunk_handler::CrawlInterval;
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CrawlOpenAPIOptions, FullTextBoost, ParsedQuery,
     ScoringOptions, SearchChunksReqPayload, SemanticBoost,
 };
+use crate::handlers::chunk_handler::{CrawlInterval, ScrollChunksReqPayload};
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload};
 use crate::handlers::message_handler::{
@@ -3285,6 +3285,18 @@ impl ApiKeyRequestParams {
             remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
             user_id: payload.user_id,
             typo_options: self.typo_options.or(payload.typo_options),
+        }
+    }
+
+    pub fn combine_with_scroll_chunks(
+        self,
+        payload: ScrollChunksReqPayload,
+    ) -> ScrollChunksReqPayload {
+        ScrollChunksReqPayload {
+            page_size: self.page_size.or(payload.page_size),
+            filters: self.filters.or(payload.filters),
+            offset_chunk_id: payload.offset_chunk_id,
+            sort_by: payload.sort_by,
         }
     }
 
