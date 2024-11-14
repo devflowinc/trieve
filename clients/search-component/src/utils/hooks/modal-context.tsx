@@ -185,6 +185,20 @@ const ModalProvider = ({
     props.onOpenChange?.(open);
   }, [open]);
 
+  // Use TAB to alternate modes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (open && e.key === "Tab") {
+        e.preventDefault();
+        setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]); // Only re-run if open state changes
+
   const search = async (abortController: AbortController) => {
     if (!query) {
       setResults([]);
