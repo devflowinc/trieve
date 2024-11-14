@@ -357,6 +357,49 @@ export const PublicPageSettings = () => {
                 class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
+            <div class="flex gap-2">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Ecommerce Mode
+                </label>
+                <Tooltip
+                  tooltipText="Use the component in ecommerce mode"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                placeholder="Search..."
+                checked={extraParams.type === "ecommerce" || false}
+                type="checkbox"
+                onChange={(e) => {
+                  setExtraParams(
+                    "type",
+                    e.currentTarget.checked ? "ecommerce" : "docs",
+                  );
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="flex gap-2">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Use Grouping
+                </label>
+                <Tooltip
+                  tooltipText="Use search over groups instead of chunk-level search"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                placeholder="Search..."
+                checked={extraParams.useGroupSearch || true}
+                type="checkbox"
+                onChange={(e) => {
+                  setExtraParams("useGroupSearch", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
           </div>
         </div>
 

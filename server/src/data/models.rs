@@ -2720,6 +2720,7 @@ impl DatasetConfigurationDTO {
                     base_url: page_parameters_self
                         .base_url
                         .or(page_parameters_curr.base_url),
+                    r#type: page_parameters_self.r#type.or(page_parameters_curr.r#type),
                     api_key: page_parameters_self
                         .api_key
                         .or(page_parameters_curr.api_key),

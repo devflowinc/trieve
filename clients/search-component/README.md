@@ -78,6 +78,8 @@ declare module "solid-js" {
 | datasetId            | string                                                                                         | ''                                         |
 | apiKey               | string                                                                                         | ''                                         |
 | baseUrl              | string                                                                                         | "https://api.trieve.ai"                    |
+| type                 | "docs" | "ecommerce"                                                                           | "docs"                                     |
+| useGroupSearch       | boolean                                                                                        | false                                      | 
 | chat                 | boolean                                                                                        | true                                       |
 | analytics            | boolean                                                                                        | true                                       |
 | placeholder          | string                                                                                         | "Search..."                                |
