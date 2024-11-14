@@ -82,7 +82,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         const decoder = new TextDecoder();
         const newText = decoder.decode(value);
         textInStream += newText;
-        const [text, jsonData] = textInStream.split("||");
+        const [jsonData, text] = textInStream.split("||");
         let json;
         try {
           json = JSON.parse(jsonData);
@@ -124,7 +124,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         topic_id: id || currentTopic,
         new_message_content: question || currentQuestion,
         llm_options: {
-          completion_first: true,
+          completion_first: false,
         },
         page_size: 5,
       },

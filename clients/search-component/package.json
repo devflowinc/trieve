@@ -49,10 +49,10 @@
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.0.3",
     "@thumbmarkjs/thumbmarkjs": "^0.14.8",
-    "react-markdown": "^9.0.1",
-    "trieve-ts-sdk": "*",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "trieve-ts-sdk": "^0.0.28"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0-rc",

@@ -1,4 +1,6 @@
-import * as React from "react";
+import React, { lazy } from "react";
+const Markdown = lazy(() => import("react-markdown"));
+
 import {
   AIIcon,
   LoadingIcon,
@@ -90,8 +92,6 @@ export const Message = ({
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const { props } = useModalState();
 
-  const Markdown = React.lazy(() => import("react-markdown"));
-
   return (
     <div>
       {message.text == "Loading..." ? (
@@ -115,7 +115,7 @@ export const Message = ({
                       chunk.metadata.page_title) &&
                     chunk.link &&
                     chunk.image_urls?.length &&
-                    chunk.num_value,
+                    chunk.num_value
                 )
                 .map((chunk) => ({
                   title:
@@ -129,8 +129,8 @@ export const Message = ({
                 .filter(
                   (item, index, array) =>
                     array.findIndex(
-                      (arrayItem) => arrayItem.title === item.title,
-                    ) === index && item.title,
+                      (arrayItem) => arrayItem.title === item.title
+                    ) === index && item.title
                 )
                 .map((item, index) => (
                   <a
@@ -181,7 +181,7 @@ export const Message = ({
                           (chunk.metadata.heading ||
                             chunk.metadata.title ||
                             chunk.metadata.page_title) &&
-                          chunk.link,
+                          chunk.link
                       )
                       .map((chunk) => [
                         chunk.metadata.heading ||
@@ -192,7 +192,7 @@ export const Message = ({
                       .filter(
                         (link, index, array) =>
                           array.findIndex((item) => item[0] === link[0]) ===
-                            index && link[0],
+                            index && link[0]
                       )
                       .map((link, index) => (
                         <a key={index} href={link[1] as string} target="_blank">
