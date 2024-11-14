@@ -3216,6 +3216,8 @@ impl From<ApiKeyRole> for i32 {
         }
     }
 }
+
+/// The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct ApiKeyRequestParams {
     /// Can be either "semantic", "fulltext", "hybrid", or "bm25". Default behavior varies by endpoint.
