@@ -57,7 +57,7 @@ const styles = {
 } satisfies Record<string, CSSProperties>;
 
 export const Carousel = ({ children }: { children: React.ReactNode }) => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(1);
 
   const scrollRef = useRef<HTMLUListElement>(null);
