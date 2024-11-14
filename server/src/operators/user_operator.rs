@@ -5,7 +5,7 @@ use crate::data::models::{
 use crate::{
     data::models::{Pool, User},
     errors::ServiceError,
-    handlers::user_handler::SetUserApiKeyRequest,
+    handlers::user_handler::CreateApiKeyReqPayload,
 };
 use actix_web::{web, HttpRequest};
 use argon2::Config;
@@ -238,9 +238,9 @@ pub fn hash_function(password: &str) -> String {
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn set_user_api_key_query(
+pub async fn create_user_api_key_query(
     user_id: uuid::Uuid,
-    data: SetUserApiKeyRequest,
+    data: CreateApiKeyReqPayload,
     pool: web::Data<Pool>,
 ) -> Result<String, ServiceError> {
     let raw_api_key = generate_api_key();

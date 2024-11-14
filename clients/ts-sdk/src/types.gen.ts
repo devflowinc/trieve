@@ -13,6 +13,36 @@ export type AddChunkToGroupReqPayload = {
     chunk_tracking_id?: (string) | null;
 };
 
+/**
+ * The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.
+ */
+export type ApiKeyRequestParams = {
+    filters?: ((ChunkFilter) | null);
+    highlight_options?: ((HighlightOptions) | null);
+    /**
+     * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+     */
+    page_size?: (number) | null;
+    /**
+     * If true, stop words will be removed. Queries that are entirely stop words will be preserved.
+     */
+    remove_stop_words?: (boolean) | null;
+    /**
+     * Set score_threshold to a float to filter out chunks with a score below the threshold.
+     */
+    score_threshold?: (number) | null;
+    search_type?: ((SearchMethod) | null);
+    /**
+     * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks.
+     */
+    slim_chunks?: (boolean) | null;
+    typo_options?: ((TypoOptions) | null);
+    /**
+     * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively.
+     */
+    use_quote_negated_terms?: (boolean) | null;
+};
+
 export type ApiKeyRespBody = {
     created_at: string;
     dataset_ids?: Array<(string)> | null;
@@ -582,6 +612,41 @@ export type CrawlShopifyOptions = {
     group_variants?: (boolean) | null;
 };
 
+export type CreateApiKeyReqPayload = {
+    /**
+     * The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.
+     */
+    dataset_ids?: Array<(string)> | null;
+    default_params?: ((ApiKeyRequestParams) | null);
+    /**
+     * The expiration date of the api key. If not provided, the api key will not expire. This should be provided in UTC time.
+     */
+    expires_at?: (string) | null;
+    /**
+     * The name which will be assigned to the new api key.
+     */
+    name: string;
+    /**
+     * The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.
+     */
+    organization_ids?: Array<(string)> | null;
+    /**
+     * The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1.
+     */
+    role: number;
+    /**
+     * The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, ["GET /api/dataset", "POST /api/dataset"].
+     */
+    scopes?: Array<(string)> | null;
+};
+
+export type CreateApiKeyResponse = {
+    /**
+     * The api key which was created. This is the value which should be used in the Authorization header.
+     */
+    api_key: string;
+};
+
 export type CreateBatchChunkGroupReqPayload = Array<CreateSingleChunkGroupReqPayload>;
 
 export type CreateBatchChunkReqPayload = Array<ChunkReqPayload>;
@@ -919,13 +984,6 @@ export type DeleteTopicData = {
      * The id of the topic to target.
      */
     topic_id: string;
-};
-
-export type DeleteUserApiKeyRequest = {
-    /**
-     * The id of the api key to delete.
-     */
-    api_key_id: string;
 };
 
 export type DeprecatedSearchOverGroupsResponseBody = {
@@ -2506,36 +2564,6 @@ export type SemanticBoost = {
     phrase: string;
 };
 
-export type SetUserApiKeyRequest = {
-    /**
-     * The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.
-     */
-    dataset_ids?: Array<(string)> | null;
-    /**
-     * The name which will be assigned to the new api key.
-     */
-    name: string;
-    /**
-     * The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.
-     */
-    organization_ids?: Array<(string)> | null;
-    /**
-     * The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1.
-     */
-    role: number;
-    /**
-     * The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, ["GET /api/dataset", "POST /api/dataset"].
-     */
-    scopes?: Array<(string)> | null;
-};
-
-export type SetUserApiKeyResponse = {
-    /**
-     * The api key which was created. This is the value which should be used in the Authorization header.
-     */
-    api_key: string;
-};
-
 export type SingleQueuedChunkResponse = {
     chunk_metadata: ChunkMetadata;
     /**
@@ -2961,7 +2989,7 @@ export type UpdateTopicReqPayload = {
     topic_id: string;
 };
 
-export type UpdateUserOrgRoleData = {
+export type UpdateUserOrgRoleReqPayload = {
     /**
      * Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
      */
@@ -4315,19 +4343,23 @@ export type UpdateUserData = {
     /**
      * JSON request payload to update user information for the auth'ed user
      */
-    requestBody: UpdateUserOrgRoleData;
+    requestBody: UpdateUserOrgRoleReqPayload;
+    /**
+     * The organization id to use for the request
+     */
+    trOrganization: string;
 };
 
 export type UpdateUserResponse = (void);
 
-export type SetUserApiKeyData = {
+export type CreateUserApiKeyData = {
     /**
      * JSON request payload to create a new user api key
      */
-    requestBody: SetUserApiKeyRequest;
+    requestBody: CreateApiKeyReqPayload;
 };
 
-export type SetUserApiKeyResponse2 = (SetUserApiKeyResponse);
+export type CreateUserApiKeyResponse = (CreateApiKeyResponse);
 
 export type DeleteUserApiKeyData = {
     /**
@@ -5818,12 +5850,12 @@ export type $OpenApiTs = {
     };
     '/api/user/api_key': {
         post: {
-            req: SetUserApiKeyData;
+            req: CreateUserApiKeyData;
             res: {
                 /**
                  * JSON body representing the api_key for the user
                  */
-                200: SetUserApiKeyResponse;
+                200: CreateApiKeyResponse;
                 /**
                  * Service error relating to creating api_key for the user
                  */

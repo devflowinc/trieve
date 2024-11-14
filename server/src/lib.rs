@@ -191,7 +191,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::bulk_delete_chunk,
         handlers::dataset_handler::get_all_tags,
         handlers::user_handler::update_user,
-        handlers::user_handler::set_user_api_key,
+        handlers::user_handler::create_user_api_key,
         handlers::user_handler::delete_user_api_key,
         handlers::group_handler::search_over_groups,
         handlers::group_handler::get_recommended_groups,
@@ -332,10 +332,9 @@ impl Modify for SecurityAddon {
             handlers::analytics_handler::RateQueryRequest,
             handlers::group_handler::AddChunkToGroupReqPayload,
             handlers::group_handler::RecommendGroupsResponseBody,
-            handlers::user_handler::UpdateUserOrgRoleData,
-            handlers::user_handler::SetUserApiKeyRequest,
-            handlers::user_handler::SetUserApiKeyResponse,
-            handlers::user_handler::DeleteUserApiKeyRequest,
+            handlers::user_handler::UpdateUserOrgRoleReqPayload,
+            handlers::user_handler::CreateApiKeyReqPayload,
+            handlers::user_handler::CreateApiKeyResponse,
             operators::group_operator::GroupsForChunk,
             handlers::file_handler::UploadFileReqPayload,
             handlers::file_handler::UploadFileResult,
@@ -995,7 +994,7 @@ pub fn main() -> std::io::Result<()> {
                                 )
                                 .service(
                                     web::resource("/api_key")
-                                        .route(web::post().to(handlers::user_handler::set_user_api_key))
+                                        .route(web::post().to(handlers::user_handler::create_user_api_key))
                                         .route(web::get().to(handlers::user_handler::get_user_api_keys))
                                 )
                                 .service(

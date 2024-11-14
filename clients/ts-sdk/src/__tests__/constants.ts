@@ -5,6 +5,7 @@ export const GROUP_EXAMPLE_TRACKING_ID = "1234";
 export const TRIEVE = new TrieveSDK({
   apiKey: "tr-mKHF9sstPHQHcCbh6Qk6Uw54hx7uwDGU",
   datasetId: "6cba9148-9cbb-417a-a955-93ea749ef27c",
+  organizationId: "de73679c-707f-4fc2-853e-994c910d944c",
 });
 export const EXAMPLE_TOPIC_ID = "f85984e1-7818-4971-b300-2f462fe1a5a2";
 export const EXAMPLE_MESSAGE_ID = "48d0d2ef-3bfa-4124-8625-3c625ffa45a6";

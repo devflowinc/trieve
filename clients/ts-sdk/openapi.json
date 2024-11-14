@@ -5980,15 +5980,27 @@
         "tags": [
           "User"
         ],
-        "summary": "Update User",
-        "description": "Update a user's information. If the user_id is not provided, the auth'ed user will be updated. If the user_id is provided, the role of the auth'ed user or api key must be an admin (1) or owner (2) of the organization.",
+        "summary": "Update User Org Role",
+        "description": "Update a user's information for the org specified via header. If the user_id is not provided, the auth'ed user will be updated. If the user_id is provided, the role of the auth'ed user or api key must be an admin (1) or owner (2) of the organization.",
         "operationId": "update_user",
+        "parameters": [
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
           "description": "JSON request payload to update user information for the auth'ed user",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserOrgRoleData"
+                "$ref": "#/components/schemas/UpdateUserOrgRoleReqPayload"
               }
             }
           },
@@ -6023,15 +6035,15 @@
         "tags": [
           "User"
         ],
-        "summary": "Set User Api Key",
+        "summary": "Create User Api Key",
         "description": "Create a new api key for the auth'ed user. Successful response will contain the newly created api key. If a write role is assigned the api key will have permission level of the auth'ed user who calls this endpoint.",
-        "operationId": "set_user_api_key",
+        "operationId": "create_user_api_key",
         "requestBody": {
           "description": "JSON request payload to create a new user api key",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetUserApiKeyRequest"
+                "$ref": "#/components/schemas/CreateApiKeyReqPayload"
               }
             }
           },
@@ -6043,7 +6055,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SetUserApiKeyResponse"
+                  "$ref": "#/components/schemas/CreateApiKeyResponse"
                 }
               }
             }
@@ -6171,6 +6183,72 @@
           "chunk_tracking_id": {
             "type": "string",
             "description": "Tracking Id of the chunk to make a member of the group.",
+            "nullable": true
+          }
+        }
+      },
+      "ApiKeyRequestParams": {
+        "type": "object",
+        "description": "The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.",
+        "properties": {
+          "filters": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChunkFilter"
+              }
+            ],
+            "nullable": true
+          },
+          "highlight_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HighlightOptions"
+              }
+            ],
+            "nullable": true
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.",
+            "nullable": true,
+            "minimum": 0
+          },
+          "remove_stop_words": {
+            "type": "boolean",
+            "description": "If true, stop words will be removed. Queries that are entirely stop words will be preserved.",
+            "nullable": true
+          },
+          "score_threshold": {
+            "type": "number",
+            "format": "float",
+            "description": "Set score_threshold to a float to filter out chunks with a score below the threshold.",
+            "nullable": true
+          },
+          "search_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SearchMethod"
+              }
+            ],
+            "nullable": true
+          },
+          "slim_chunks": {
+            "type": "boolean",
+            "description": "Set slim_chunks to true to avoid returning the content and chunk_html of the chunks.",
+            "nullable": true
+          },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
+              }
+            ],
+            "nullable": true
+          },
+          "use_quote_negated_terms": {
+            "type": "boolean",
+            "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively.",
             "nullable": true
           }
         }
@@ -8034,6 +8112,75 @@
           }
         }
       },
+      "CreateApiKeyReqPayload": {
+        "type": "object",
+        "required": [
+          "name",
+          "role"
+        ],
+        "properties": {
+          "dataset_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.",
+            "nullable": true
+          },
+          "default_params": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApiKeyRequestParams"
+              }
+            ],
+            "nullable": true
+          },
+          "expires_at": {
+            "type": "string",
+            "description": "The expiration date of the api key. If not provided, the api key will not expire. This should be provided in UTC time.",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "The name which will be assigned to the new api key."
+          },
+          "organization_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.",
+            "nullable": true
+          },
+          "role": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1."
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, [\"GET /api/dataset\", \"POST /api/dataset\"].",
+            "nullable": true
+          }
+        }
+      },
+      "CreateApiKeyResponse": {
+        "type": "object",
+        "required": [
+          "api_key"
+        ],
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "description": "The api key which was created. This is the value which should be used in the Authorization header."
+          }
+        }
+      },
       "CreateBatchChunkGroupReqPayload": {
         "type": "array",
         "items": {
@@ -8939,19 +9086,6 @@
             "type": "string",
             "format": "uuid",
             "description": "The id of the topic to target."
-          }
-        }
-      },
-      "DeleteUserApiKeyRequest": {
-        "type": "object",
-        "required": [
-          "api_key_id"
-        ],
-        "properties": {
-          "api_key_id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The id of the api key to delete."
           }
         }
       },
@@ -14019,62 +14153,6 @@
           }
         }
       },
-      "SetUserApiKeyRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "role"
-        ],
-        "properties": {
-          "dataset_ids": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "description": "The name which will be assigned to the new api key."
-          },
-          "organization_ids": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.",
-            "nullable": true
-          },
-          "role": {
-            "type": "integer",
-            "format": "int32",
-            "description": "The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1."
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, [\"GET /api/dataset\", \"POST /api/dataset\"].",
-            "nullable": true
-          }
-        }
-      },
-      "SetUserApiKeyResponse": {
-        "type": "object",
-        "required": [
-          "api_key"
-        ],
-        "properties": {
-          "api_key": {
-            "type": "string",
-            "description": "The api key which was created. This is the value which should be used in the Authorization header."
-          }
-        }
-      },
       "SingleQueuedChunkResponse": {
         "type": "object",
         "required": [
@@ -15318,7 +15396,7 @@
           }
         }
       },
-      "UpdateUserOrgRoleData": {
+      "UpdateUserOrgRoleReqPayload": {
         "type": "object",
         "required": [
           "role"
