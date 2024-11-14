@@ -5,7 +5,7 @@ use crate::{
     errors::ServiceError,
     handlers::{
         auth_handler::{AdminOnly, LoggedUser, OrganizationRole, OwnerOnly},
-        chunk_handler::{AutocompleteReqPayload, SearchChunksReqPayload},
+        chunk_handler::{AutocompleteReqPayload, ScrollChunksReqPayload, SearchChunksReqPayload},
         group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload},
         message_handler::CreateMessageReqPayload,
     },
@@ -407,6 +407,12 @@ pub async fn insert_api_key_payload(
         "/api/message" => {
             let body = req.extract::<Json<CreateMessageReqPayload>>().await?;
             let new_body = api_key_params.combine_with_create_message(body.into_inner());
+            let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
+            req.set_payload(bytes_to_payload(body_bytes.into()));
+        }
+        "/api/chunks/scroll" => {
+            let body = req.extract::<Json<ScrollChunksReqPayload>>().await?;
+            let new_body = api_key_params.combine_with_scroll_chunks(body.into_inner());
             let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
             req.set_payload(bytes_to_payload(body_bytes.into()));
         }
