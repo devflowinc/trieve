@@ -11434,6 +11434,10 @@
             ],
             "nullable": true
           },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
           "useGroupSearch": {
             "type": "boolean",
             "nullable": true
