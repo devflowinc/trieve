@@ -610,6 +610,7 @@ pub fn main() -> std::io::Result<()> {
             .await
             .expect("Failed to create redis pool");
 
+        log::info!("Connecting to OIDC");
         let oidc_client = build_oidc_client().await;
 
         let quantize_vectors = std::env::var("QUANTIZE_VECTORS")
