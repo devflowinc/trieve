@@ -413,6 +413,7 @@ pub async fn bulk_delete_chunks(
 
     bulk_delete_chunks_query(
         chunk_delete_message.filter,
+        chunk_delete_message.deleted_at,
         chunk_delete_message.dataset_id,
         dataset_config,
         web_pool.clone(),

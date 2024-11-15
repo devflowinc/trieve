@@ -273,6 +273,7 @@ pub struct ChunkDeleteMessage {
     pub dataset_id: uuid::Uuid,
     pub attempt_number: usize,
     pub filter: ChunkFilter,
+    pub deleted_at: chrono::NaiveDateTime,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
