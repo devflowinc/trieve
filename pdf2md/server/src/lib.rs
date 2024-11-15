@@ -31,6 +31,18 @@ macro_rules! get_env {
         ENV_VAR.as_str()
     }};
 }
+#[macro_export]
+#[cfg(feature = "runtime-env")]
+macro_rules! get_env {
+    ($name:expr, $message:expr) => {{
+        lazy_static::lazy_static! {
+            static ref ENV_VAR: String = {
+                std::env::var($name).expect($message)
+            };
+        }
+        ENV_VAR.as_str()
+    }};
+}
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
