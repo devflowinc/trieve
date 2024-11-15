@@ -10,7 +10,7 @@ pub fn poll_task(task_id: &str, base_url: &str, api_key: &str) {
 
         if (response["status"] == "Completed"
             || response["total_document_pages"].as_i64() != Some(0))
-            && response["chunks"].as_array() != Some(&vec![])
+            && response["pages"].as_array() != Some(&vec![])
         {
             println!("{}", response);
             break;
