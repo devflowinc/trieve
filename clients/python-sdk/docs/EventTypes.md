@@ -9,12 +9,28 @@ Name | Type | Description | Notes
 **event_type** | **str** |  | 
 **items** | **Dict[str, str]** | The filter items that were clicked in a hashmap ie. {filter_name: filter_value} where filter_name is filter_type::field_name | 
 **metadata** | **object** | Any other metadata associated with the event | [optional] 
-**request_id** | **str** | The request id of the event to associate it with a request | [optional] 
-**user_id** | **str** | The user id of the user who clicked the items | [optional] 
+**request** | [**RequestInfo**](RequestInfo.md) |  | [optional] 
+**user_id** | **str** | The user id of the user who made the recommendation | [optional] 
 **is_conversion** | **bool** | Whether the event is a conversion event | [optional] 
-**clicked_items** | [**ChunksWithPositions**](ChunksWithPositions.md) |  | 
+**clicked_items** | [**ChunkWithPosition**](ChunkWithPosition.md) |  | 
 **currency** | **str** | The currency of the purchase | [optional] 
 **value** | **float** | The value of the purchase | [optional] 
+**latency** | **float** | Latency of the search | [optional] 
+**query** | **str** | The search query | 
+**query_rating** | [**SearchQueryRating**](SearchQueryRating.md) |  | [optional] 
+**request_params** | **object** | The request params of the recommendation | [optional] 
+**results** | **List[object]** | The results of the Recommendation event | [optional] 
+**search_type** | [**ClickhouseSearchTypes**](ClickhouseSearchTypes.md) |  | [optional] 
+**top_score** | **float** | Top score of the recommendation | [optional] 
+**llm_response** | **str** | The response from the LLM | [optional] 
+**rag_type** | [**ClickhouseRagTypes**](ClickhouseRagTypes.md) |  | [optional] 
+**search_id** | **str** | The search id to associate the RAG event with a search | [optional] 
+**user_message** | **str** | The user message | 
+**negative_ids** | **List[str]** | Negative ids used for the recommendation | [optional] 
+**negative_tracking_ids** | **List[str]** | Negative tracking ids used for the recommendation | [optional] 
+**positive_ids** | **List[str]** | Positive ids used for the recommendation | [optional] 
+**positive_tracking_ids** | **List[str]** | Positive tracking ids used for the recommendation | [optional] 
+**recommendation_type** | [**ClickhouseRecommendationTypes**](ClickhouseRecommendationTypes.md) |  | [optional] 
 
 ## Example
 

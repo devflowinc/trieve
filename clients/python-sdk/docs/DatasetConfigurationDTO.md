@@ -26,6 +26,7 @@ Name | Type | Description | Notes
 **message_to_query_prompt** | **str** | The prompt to use for converting a message to a query | [optional] 
 **n_retrievals_to_include** | **int** | The number of retrievals to include with the RAG model | [optional] 
 **presence_penalty** | **float** | The presence penalty to use | [optional] 
+**public_dataset** | [**PublicDatasetOptions**](PublicDatasetOptions.md) |  | [optional] 
 **rag_prompt** | **str** | The prompt to use for the RAG model | [optional] 
 **reranker_base_url** | **str** | The base URL for the reranker API | [optional] 
 **semantic_enabled** | **bool** | Whether to use semantic search | [optional] 

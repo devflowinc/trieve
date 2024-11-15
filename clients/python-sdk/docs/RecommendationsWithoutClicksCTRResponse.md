@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **negative_tracking_ids** | **List[str]** |  | [optional] 
 **positive_ids** | **List[str]** |  | [optional] 
 **positive_tracking_ids** | **List[str]** |  | [optional] 
+**request_id** | **str** |  | 
 
 ## Example
 

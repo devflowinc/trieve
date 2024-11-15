@@ -1,6 +1,6 @@
 # SemanticBoost
 
-Distance phrase is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of \"iphone\" 25% closer to the term \"flagship\" by using the distance phrase \"flagship\" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
+Semantic boosting moves the dense vector of the chunk in the direction of the distance phrase for semantic search. I.e. you can force a cluster by moving every chunk for a PDF closer to its title or push a chunk with a chunk_html of \"iphone\" 25% closer to the term \"flagship\" by using the distance phrase \"flagship\" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
 
 ## Properties
 

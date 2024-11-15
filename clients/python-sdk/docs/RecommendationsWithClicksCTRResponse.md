@@ -5,13 +5,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**clicked_chunks** | [**List[ChunkMetadata]**](ChunkMetadata.md) |  | 
+**clicked_chunk** | [**ChunkMetadataWithPosition**](ChunkMetadataWithPosition.md) |  | 
 **created_at** | **str** |  | 
 **negative_ids** | **List[str]** |  | [optional] 
 **negative_tracking_ids** | **List[str]** |  | [optional] 
-**positions** | **List[int]** |  | 
 **positive_ids** | **List[str]** |  | [optional] 
 **positive_tracking_ids** | **List[str]** |  | [optional] 
+**request_id** | **str** |  | 
+**results** | **List[object]** |  | 
 
 ## Example
 

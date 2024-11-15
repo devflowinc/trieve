@@ -5,10 +5,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**clicked_chunks** | [**List[ChunkMetadata]**](ChunkMetadata.md) |  | 
+**clicked_chunk** | [**ChunkMetadataWithPosition**](ChunkMetadataWithPosition.md) |  | 
 **created_at** | **str** |  | 
-**positions** | **List[int]** |  | 
 **query** | **str** |  | 
+**request_id** | **str** |  | 
+**results** | **List[object]** |  | 
 
 ## Example
 

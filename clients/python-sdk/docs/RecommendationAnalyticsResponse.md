@@ -6,6 +6,18 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **queries** | [**List[RecommendationEvent]**](RecommendationEvent.md) |  | 
+**created_at** | **str** |  | 
+**dataset_id** | **str** |  | 
+**id** | **str** |  | 
+**negative_ids** | **List[str]** |  | 
+**negative_tracking_ids** | **List[str]** |  | 
+**positive_ids** | **List[str]** |  | 
+**positive_tracking_ids** | **List[str]** |  | 
+**recommendation_type** | [**ClickhouseRecommendationTypes**](ClickhouseRecommendationTypes.md) |  | 
+**request_params** | **object** |  | 
+**results** | **List[object]** |  | 
+**top_score** | **float** |  | 
+**user_id** | **str** |  | 
 
 ## Example
 
