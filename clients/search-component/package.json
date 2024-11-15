@@ -1,5 +1,5 @@
 {
-  "name": "trieve-search-component",
+  "name": "fast-trieve-search-component",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -7,7 +7,17 @@
     "dist/*",
     "dist/**/*"
   ],
-  "version": "0.1.0",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs.js"
+    },
+    "./vanilla": {
+      "import": "./dist/vanilla/index.esm.js",
+      "require": "./dist/vanilla/index.cjs.js"
+    }
+  },
+  "version": "0.6.0",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
@@ -49,8 +59,6 @@
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.0.3",
     "@thumbmarkjs/thumbmarkjs": "^0.14.8",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
     "react-snap-carousel": "^0.5.0",
     "trieve-ts-sdk": "*"
