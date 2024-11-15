@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{
-    self, ChunkMetadata, DatasetConfiguration, QdrantPayload, UnifiedId, WorkerEvent,
+    self, ChunkBoost, ChunkMetadata, DatasetConfiguration, QdrantPayload, UnifiedId, WorkerEvent,
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -20,7 +20,7 @@ use trieve_server::handlers::chunk_handler::{
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
-    get_row_count_for_organization_id_query, insert_chunk_metadata_query,
+    get_row_count_for_organization_id_query, insert_chunk_boost, insert_chunk_metadata_query,
     update_chunk_metadata_query,
 };
 use trieve_server::operators::clickhouse_operator::{ClickHouseEvent, EventQueue};
@@ -1019,6 +1019,22 @@ async fn upload_chunk(
             web_pool.clone(),
         )
         .await?;
+
+        if payload.chunk.fulltext_boost.is_some() || payload.chunk.semantic_boost.is_some() {
+            insert_chunk_boost(web_pool.clone(), {
+                ChunkBoost {
+                    chunk_id: inserted_chunk.id,
+                    fulltext_boost_phrase: payload.chunk.fulltext_boost.clone().map(|x| x.phrase),
+                    fulltext_boost_factor: payload.chunk.fulltext_boost.map(|x| x.boost_factor),
+                    semantic_boost_phrase: payload.chunk.semantic_boost.clone().map(|x| x.phrase),
+                    semantic_boost_factor: payload
+                        .chunk
+                        .semantic_boost
+                        .map(|x| x.distance_factor as f64),
+                }
+            })
+            .await?;
+        }
 
         insert_tx.finish();
 

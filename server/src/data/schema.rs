@@ -1,6 +1,16 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    chunk_boosts (chunk_id) {
+        chunk_id -> Uuid,
+        fulltext_boost_phrase -> Nullable<Text>,
+        fulltext_boost_factor -> Nullable<Float8>,
+        semantic_boost_phrase -> Nullable<Text>,
+        semantic_boost_factor -> Nullable<Float8>,
+    }
+}
+
+diesel::table! {
     chunk_group (id) {
         id -> Uuid,
         name -> Text,
@@ -281,6 +291,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(chunk_boosts -> chunk_metadata (chunk_id));
 diesel::joinable!(chunk_group -> datasets (dataset_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_group (group_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
@@ -307,6 +318,7 @@ diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    chunk_boosts,
     chunk_group,
     chunk_group_bookmarks,
     chunk_metadata,

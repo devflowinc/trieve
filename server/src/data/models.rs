@@ -5035,6 +5035,16 @@ pub struct ChunkData {
     pub semantic_boost: Option<SemanticBoost>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
+#[diesel(table_name = chunk_boosts)]
+pub struct ChunkBoost {
+    pub chunk_id: uuid::Uuid,
+    pub fulltext_boost_phrase: Option<String>,
+    pub fulltext_boost_factor: Option<f64>,
+    pub semantic_boost_phrase: Option<String>,
+    pub semantic_boost_factor: Option<f64>,
+}
+
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
 #[schema(example = json!({
     "search_type": "search",

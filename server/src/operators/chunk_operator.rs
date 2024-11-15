@@ -1,7 +1,7 @@
 use crate::data::models::{
-    uuid_between, ChunkData, ChunkGroup, ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags,
-    ChunkMetadataTypes, ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags,
-    IngestSpecificChunkMetadata, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
+    uuid_between, ChunkBoost, ChunkData, ChunkGroup, ChunkGroupBookmark, ChunkMetadataTable,
+    ChunkMetadataTags, ChunkMetadataTypes, ContentChunkMetadata, Dataset, DatasetConfiguration,
+    DatasetTags, IngestSpecificChunkMetadata, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::handlers::chunk_handler::{ChunkFilter, UploadIngestionMessage};
@@ -816,6 +816,58 @@ pub async fn bulk_insert_chunk_metadata_query(
         })
         .collect::<Vec<ChunkData>>();
 
+    use crate::data::schema::chunk_boosts::dsl as chunk_boosts_columns;
+
+    // Insert the fulltext and semantic boosts
+    let boosts_to_insert = insertion_data
+        .iter()
+        .filter_map(|chunk_data| {
+            if chunk_data.fulltext_boost.is_none() && chunk_data.semantic_boost.is_none() {
+                return None;
+            }
+            return Some(ChunkBoost {
+                chunk_id: chunk_data.chunk_metadata.id,
+                fulltext_boost_phrase: chunk_data
+                    .fulltext_boost
+                    .as_ref()
+                    .map(|boost| boost.phrase.clone()),
+                fulltext_boost_factor: chunk_data
+                    .fulltext_boost
+                    .as_ref()
+                    .map(|boost| boost.boost_factor),
+                semantic_boost_phrase: chunk_data
+                    .semantic_boost
+                    .as_ref()
+                    .map(|boost| boost.phrase.clone()),
+                semantic_boost_factor: chunk_data
+                    .semantic_boost
+                    .as_ref()
+                    .map(|boost| boost.distance_factor as f64),
+            });
+        })
+        .collect::<Vec<ChunkBoost>>();
+
+    diesel::insert_into(chunk_boosts_columns::chunk_boosts)
+        .values(boosts_to_insert)
+        .on_conflict((chunk_boosts_columns::chunk_id,))
+        .do_update()
+        .set((
+            chunk_boosts_columns::fulltext_boost_phrase
+                .eq(excluded(chunk_boosts_columns::fulltext_boost_phrase)),
+            chunk_boosts_columns::fulltext_boost_factor
+                .eq(excluded(chunk_boosts_columns::fulltext_boost_factor)),
+            chunk_boosts_columns::semantic_boost_phrase
+                .eq(excluded(chunk_boosts_columns::semantic_boost_phrase)),
+            chunk_boosts_columns::semantic_boost_factor
+                .eq(excluded(chunk_boosts_columns::semantic_boost_factor)),
+        ))
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to create chunk boosts {:}", e);
+            ServiceError::InternalServerError("Failed to create chunk boosts".to_string())
+        })?;
+
     let chunk_group_bookmarks_to_insert: Vec<ChunkGroupBookmark> = insertion_data
         .clone()
         .iter()
@@ -1133,6 +1185,26 @@ pub async fn insert_chunk_metadata_query(
     }
 
     Ok(chunk_data)
+}
+
+pub async fn insert_chunk_boost(
+    pool: web::Data<Pool>,
+    chunk_boost: ChunkBoost,
+) -> Result<ChunkBoost, ServiceError> {
+    use crate::data::schema::chunk_boosts::dsl as chunk_boosts_columns;
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+    diesel::insert_into(chunk_boosts_columns::chunk_boosts)
+        .values(&chunk_boost)
+        .on_conflict_do_nothing()
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to insert chunk boost {:}", e);
+            ServiceError::BadRequest("Failed to insert chunk boost".to_string())
+        })?;
+    Ok(chunk_boost)
 }
 
 #[tracing::instrument(skip(pool))]
