@@ -121,13 +121,15 @@ declare module "solid-js" {
 
 #### Usage with Vanilla JS
 ```javascript
-    import { renderToDiv } from 'trieve-search-component';
-    const root = document.getElementById('root');
-    renderToDiv(root, {
-      apiKey: "<Your Trieve Api Key>"
-      datasetId: "<Your Trieve Dataset Id>"
-       // ... other props
-    })
+import "trieve-search-component/styles";
+import { renderToDiv } from 'trieve-search-component/vanilla';
+
+const root = document.getElementById('root');
+renderToDiv(root, {
+  apiKey: "<Your Trieve Api Key>"
+  datasetId: "<Your Trieve Dataset Id>"
+   // ... other props
+})
 ```
 
 #### Props
