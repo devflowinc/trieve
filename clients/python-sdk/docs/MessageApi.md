@@ -88,7 +88,7 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | This will be a JSON response of a string containing the LLM&#39;s generated inference. Response if not streaming. |  -  |
+**200** | This will be a JSON response of a string containing the LLM&#39;s generated inference. Response if not streaming. |  * TR-QueryID - Query ID that is used for tracking analytics <br>  |
 **400** | Service error relating to getting a chat completion |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -168,7 +168,7 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | This will be a HTTP stream, check the chat or search UI for an example how to process this |  -  |
+**200** | This will be a HTTP stream, check the chat or search UI for an example how to process this |  * TR-QueryID - Query ID that is used for tracking analytics <br>  |
 **400** | Service error relating to getting a chat completion |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -332,7 +332,7 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | This will be a JSON response of a string containing the LLM&#39;s generated inference. Response if not streaming. |  -  |
+**200** | This will be a JSON response of a string containing the LLM&#39;s generated inference. Response if not streaming. |  * TR-QueryID - Query ID that is used for tracking analytics <br>  |
 **400** | Service error relating to getting a chat completion |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -414,7 +414,7 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | This will be a JSON response of a string containing the LLM&#39;s generated inference. Response if not streaming. |  -  |
+**200** | This will be a JSON response of a string containing the LLM&#39;s generated inference. Response if not streaming. |  * TR-QueryID - Query ID that is used for tracking analytics <br>  |
 **400** | Service error relating to getting a chat completion |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

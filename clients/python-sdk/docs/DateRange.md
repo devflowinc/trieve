@@ -1,5 +1,6 @@
 # DateRange
 
+DateRange is a JSON object which can be used to filter chunks by a range of dates. This leverages the time_stamp field on chunks in your dataset. You can specify this if you want values in a certain range. You must provide ISO 8601 combined date and time without timezone.
 
 ## Properties
 

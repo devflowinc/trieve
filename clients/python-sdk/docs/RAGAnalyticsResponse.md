@@ -8,6 +8,16 @@ Name | Type | Description | Notes
 **queries** | [**List[RagQueryEvent]**](RagQueryEvent.md) |  | 
 **total_queries** | **int** |  | 
 **usage_points** | [**List[UsageGraphPoint]**](UsageGraphPoint.md) |  | 
+**created_at** | **str** |  | 
+**dataset_id** | **str** |  | 
+**id** | **str** |  | 
+**llm_response** | **str** |  | 
+**query_rating** | [**SearchQueryRating**](SearchQueryRating.md) |  | [optional] 
+**rag_type** | [**ClickhouseRagTypes**](ClickhouseRagTypes.md) |  | 
+**results** | **List[object]** |  | 
+**search_id** | **str** |  | 
+**user_id** | **str** |  | 
+**user_message** | **str** |  | 
 
 ## Example
 

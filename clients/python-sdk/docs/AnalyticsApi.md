@@ -4,16 +4,100 @@ All URIs are relative to *https://api.trieve.ai*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**get_all_events**](AnalyticsApi.md#get_all_events) | **POST** /api/analytics/events/all | Get All User Events
 [**get_cluster_analytics**](AnalyticsApi.md#get_cluster_analytics) | **POST** /api/analytics/search/cluster | Get Cluster Analytics
-[**get_ctr_analytics**](AnalyticsApi.md#get_ctr_analytics) | **POST** /api/analytics/ctr | Get CTR Analytics
+[**get_ctr_analytics**](AnalyticsApi.md#get_ctr_analytics) | **POST** /api/analytics/events/ctr | Get CTR Analytics
+[**get_event_by_id**](AnalyticsApi.md#get_event_by_id) | **GET** /api/analytics/events/{event_id} | Get User Event By ID
 [**get_rag_analytics**](AnalyticsApi.md#get_rag_analytics) | **POST** /api/analytics/rag | Get RAG Analytics
 [**get_recommendation_analytics**](AnalyticsApi.md#get_recommendation_analytics) | **POST** /api/analytics/recommendations | Get Recommendation Analytics
 [**get_search_analytics**](AnalyticsApi.md#get_search_analytics) | **POST** /api/analytics/search | Get Search Analytics
 [**get_top_datasets**](AnalyticsApi.md#get_top_datasets) | **POST** /api/analytics/top | Get Top Datasets
 [**send_ctr_data**](AnalyticsApi.md#send_ctr_data) | **PUT** /api/analytics/ctr | Send CTR Data
-[**send_event_data**](AnalyticsApi.md#send_event_data) | **PUT** /api/analytics/events | Send Event Data
-[**set_query_rating**](AnalyticsApi.md#set_query_rating) | **PUT** /api/analytics/search | Rate Query
+[**send_event_data**](AnalyticsApi.md#send_event_data) | **PUT** /api/analytics/events | Send User Event Data
+[**set_rag_query_rating**](AnalyticsApi.md#set_rag_query_rating) | **PUT** /api/analytics/rag | Rate RAG
+[**set_search_query_rating**](AnalyticsApi.md#set_search_query_rating) | **PUT** /api/analytics/search | Rate Search
 
+
+# **get_all_events**
+> GetEventsResponseBody get_all_events(get_events_request_body)
+
+Get All User Events
+
+This route allows you to view all user events.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.get_events_request_body import GetEventsRequestBody
+from trieve_py_client.models.get_events_response_body import GetEventsResponseBody
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.AnalyticsApi(api_client)
+    get_events_request_body = trieve_py_client.GetEventsRequestBody() # GetEventsRequestBody | JSON request payload to filter the events
+
+    try:
+        # Get All User Events
+        api_response = api_instance.get_all_events(get_events_request_body)
+        print("The response of AnalyticsApi->get_all_events:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AnalyticsApi->get_all_events: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **get_events_request_body** | [**GetEventsRequestBody**](GetEventsRequestBody.md)| JSON request payload to filter the events | 
+
+### Return type
+
+[**GetEventsResponseBody**](GetEventsResponseBody.md)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | The events for the request |  -  |
+**400** | Service error relating to getting events |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_cluster_analytics**
 > ClusterAnalyticsResponse get_cluster_analytics(tr_dataset, cluster_analytics)
@@ -178,6 +262,88 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | The CTR analytics for the dataset |  -  |
 **400** | Service error relating to getting CTR analytics |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_event_by_id**
+> EventData get_event_by_id(tr_dataset, event_id)
+
+Get User Event By ID
+
+This route allows you to view an user event by its ID. You can pass in any type of event and get the details for that event.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.event_data import EventData
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.AnalyticsApi(api_client)
+    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+    event_id = 'event_id_example' # str | The event id to use for the request
+
+    try:
+        # Get User Event By ID
+        api_response = api_instance.get_event_by_id(tr_dataset, event_id)
+        print("The response of AnalyticsApi->get_event_by_id:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AnalyticsApi->get_event_by_id: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
+ **event_id** | **str**| The event id to use for the request | 
+
+### Return type
+
+[**EventData**](EventData.md)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | The event for the request |  -  |
+**400** | Service error relating to getting an event |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -431,7 +597,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_top_datasets**
-> List[TopDatasetsResponse] get_top_datasets(get_top_datasets_request_body)
+> List[TopDatasetsResponse] get_top_datasets(tr_organization, get_top_datasets_request_body)
 
 Get Top Datasets
 
@@ -469,11 +635,12 @@ configuration.api_key['ApiKey'] = os.environ["API_KEY"]
 with trieve_py_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = trieve_py_client.AnalyticsApi(api_client)
+    tr_organization = 'tr_organization_example' # str | The organization id to use for the request
     get_top_datasets_request_body = trieve_py_client.GetTopDatasetsRequestBody() # GetTopDatasetsRequestBody | JSON request payload to filter the top datasets
 
     try:
         # Get Top Datasets
-        api_response = api_instance.get_top_datasets(get_top_datasets_request_body)
+        api_response = api_instance.get_top_datasets(tr_organization, get_top_datasets_request_body)
         print("The response of AnalyticsApi->get_top_datasets:\n")
         pprint(api_response)
     except Exception as e:
@@ -487,6 +654,7 @@ with trieve_py_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+ **tr_organization** | **str**| The organization id to use for the request | 
  **get_top_datasets_request_body** | [**GetTopDatasetsRequestBody**](GetTopDatasetsRequestBody.md)| JSON request payload to filter the top datasets | 
 
 ### Return type
@@ -516,7 +684,7 @@ Name | Type | Description  | Notes
 
 Send CTR Data
 
-This route allows you to send CTR data to the system.
+This route allows you to send clickstream data to the system. Clickstream data is used to fine-tune the re-ranking of search results and recommendations.
 
 ### Example
 
@@ -594,9 +762,9 @@ void (empty response body)
 # **send_event_data**
 > send_event_data(tr_dataset, event_types)
 
-Send Event Data
+Send User Event Data
 
-This route allows you to send event data to the system.
+This route allows you to send user event data to the system.
 
 ### Example
 
@@ -633,7 +801,7 @@ with trieve_py_client.ApiClient(configuration) as api_client:
     event_types = trieve_py_client.EventTypes() # EventTypes | JSON request payload to send event data
 
     try:
-        # Send Event Data
+        # Send User Event Data
         api_instance.send_event_data(tr_dataset, event_types)
     except Exception as e:
         print("Exception when calling AnalyticsApi->send_event_data: %s\n" % e)
@@ -671,12 +839,12 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **set_query_rating**
-> set_query_rating(tr_dataset, rate_query_request)
+# **set_rag_query_rating**
+> set_rag_query_rating(tr_dataset, rate_query_request)
 
-Rate Query
+Rate RAG
 
-This route allows you to Rate a query.
+This route allows you to Rate a RAG query.
 
 ### Example
 
@@ -710,13 +878,13 @@ with trieve_py_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = trieve_py_client.AnalyticsApi(api_client)
     tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
-    rate_query_request = trieve_py_client.RateQueryRequest() # RateQueryRequest | JSON request payload to rate a query
+    rate_query_request = trieve_py_client.RateQueryRequest() # RateQueryRequest | JSON request payload to rate a RAG query
 
     try:
-        # Rate Query
-        api_instance.set_query_rating(tr_dataset, rate_query_request)
+        # Rate RAG
+        api_instance.set_rag_query_rating(tr_dataset, rate_query_request)
     except Exception as e:
-        print("Exception when calling AnalyticsApi->set_query_rating: %s\n" % e)
+        print("Exception when calling AnalyticsApi->set_rag_query_rating: %s\n" % e)
 ```
 
 
@@ -727,7 +895,7 @@ with trieve_py_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
- **rate_query_request** | [**RateQueryRequest**](RateQueryRequest.md)| JSON request payload to rate a query | 
+ **rate_query_request** | [**RateQueryRequest**](RateQueryRequest.md)| JSON request payload to rate a RAG query | 
 
 ### Return type
 
@@ -746,8 +914,88 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | The query was successfully rated |  -  |
-**400** | Service error relating to rating a query |  -  |
+**204** | The RAG query was successfully rated |  -  |
+**400** | Service error relating to rating a RAG query |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **set_search_query_rating**
+> set_search_query_rating(tr_dataset, rate_query_request)
+
+Rate Search
+
+This route allows you to Rate a search query.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.rate_query_request import RateQueryRequest
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.AnalyticsApi(api_client)
+    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+    rate_query_request = trieve_py_client.RateQueryRequest() # RateQueryRequest | JSON request payload to rate a search query
+
+    try:
+        # Rate Search
+        api_instance.set_search_query_rating(tr_dataset, rate_query_request)
+    except Exception as e:
+        print("Exception when calling AnalyticsApi->set_search_query_rating: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
+ **rate_query_request** | [**RateQueryRequest**](RateQueryRequest.md)| JSON request payload to rate a search query | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**204** | The search query was successfully rated |  -  |
+**400** | Service error relating to rating a search query |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

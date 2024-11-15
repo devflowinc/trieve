@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**search_id** | **str** |  | 
+**request_id** | **str** |  | 
 **type** | **str** |  | 
 
 ## Example

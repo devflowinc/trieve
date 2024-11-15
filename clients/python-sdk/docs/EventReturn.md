@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**event_types** | **List[str]** |  | 
 **events** | [**List[WorkerEvent]**](WorkerEvent.md) |  | 
 **page_count** | **int** |  | 
 

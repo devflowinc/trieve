@@ -20,7 +20,6 @@ Method | HTTP request | Description
 [**search_over_groups**](ChunkGroupApi.md#search_over_groups) | **POST** /api/chunk_group/group_oriented_search | Search Over Groups
 [**search_within_group**](ChunkGroupApi.md#search_within_group) | **POST** /api/chunk_group/search | Search Within Group
 [**update_chunk_group**](ChunkGroupApi.md#update_chunk_group) | **PUT** /api/chunk_group | Update Group
-[**update_group_by_tracking_id**](ChunkGroupApi.md#update_group_by_tracking_id) | **PUT** /api/chunk_group/tracking_id/{tracking_id} | Update Group by Tracking ID
 
 
 # **add_chunk_to_group**
@@ -1114,7 +1113,7 @@ void (empty response body)
 
 Search Over Groups
 
-This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using scores from a cross encoder model. Compatible with semantic, fulltext, or hybrid search modes.
+This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the top chunk of each group will be re-ranked using scores from a cross encoder model. Compatible with semantic, fulltext, or hybrid search modes.
 
 ### Example
 
@@ -1336,88 +1335,6 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
  **update_chunk_group_req_payload** | [**UpdateChunkGroupReqPayload**](UpdateChunkGroupReqPayload.md)| JSON request payload to update a chunkGroup | 
-
-### Return type
-
-void (empty response body)
-
-### Authorization
-
-[ApiKey](../README.md#ApiKey)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**204** | Confirmation that the chunkGroup was updated |  -  |
-**400** | Service error relating to updating the chunkGroup |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **update_group_by_tracking_id**
-> update_group_by_tracking_id(tr_dataset, tracking_id, update_group_by_tracking_id_req_payload)
-
-Update Group by Tracking ID
-
-Update a chunk_group with the given tracking id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
-
-### Example
-
-* Api Key Authentication (ApiKey):
-
-```python
-import trieve_py_client
-from trieve_py_client.models.update_group_by_tracking_id_req_payload import UpdateGroupByTrackingIDReqPayload
-from trieve_py_client.rest import ApiException
-from pprint import pprint
-
-# Defining the host is optional and defaults to https://api.trieve.ai
-# See configuration.py for a list of all supported configuration parameters.
-configuration = trieve_py_client.Configuration(
-    host = "https://api.trieve.ai"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure API key authorization: ApiKey
-configuration.api_key['ApiKey'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['ApiKey'] = 'Bearer'
-
-# Enter a context with an instance of the API client
-with trieve_py_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = trieve_py_client.ChunkGroupApi(api_client)
-    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
-    tracking_id = 'tracking_id_example' # str | Tracking id of the chunk_group to update
-    update_group_by_tracking_id_req_payload = trieve_py_client.UpdateGroupByTrackingIDReqPayload() # UpdateGroupByTrackingIDReqPayload | JSON request payload to update a chunkGroup
-
-    try:
-        # Update Group by Tracking ID
-        api_instance.update_group_by_tracking_id(tr_dataset, tracking_id, update_group_by_tracking_id_req_payload)
-    except Exception as e:
-        print("Exception when calling ChunkGroupApi->update_group_by_tracking_id: %s\n" % e)
-```
-
-
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
- **tracking_id** | **str**| Tracking id of the chunk_group to update | 
- **update_group_by_tracking_id_req_payload** | [**UpdateGroupByTrackingIDReqPayload**](UpdateGroupByTrackingIDReqPayload.md)| JSON request payload to update a chunkGroup | 
 
 ### Return type
 

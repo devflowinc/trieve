@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **created_at** | **str** |  | 
 **query** | **str** |  | 
+**request_id** | **str** |  | 
 
 ## Example
 

@@ -8,8 +8,10 @@ Name | Type | Description | Notes
 **created_at** | **str** |  | 
 **dataset_id** | **str** |  | 
 **id** | **str** |  | 
-**rag_type** | **str** |  | 
-**results** | [**List[ChunkMetadataStringTagSet]**](ChunkMetadataStringTagSet.md) |  | 
+**llm_response** | **str** |  | 
+**query_rating** | [**SearchQueryRating**](SearchQueryRating.md) |  | [optional] 
+**rag_type** | [**ClickhouseRagTypes**](ClickhouseRagTypes.md) |  | 
+**results** | **List[object]** |  | 
 **search_id** | **str** |  | 
 **user_id** | **str** |  | 
 **user_message** | **str** |  | 

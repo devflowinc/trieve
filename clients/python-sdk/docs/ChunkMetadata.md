@@ -5,20 +5,20 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**chunk_html** | **str** |  | [optional] 
-**created_at** | **datetime** |  | 
-**dataset_id** | **str** |  | 
-**id** | **str** |  | 
-**image_urls** | **List[Optional[str]]** |  | [optional] 
-**link** | **str** |  | [optional] 
+**chunk_html** | **str** | HTML content of the chunk, can also be an arbitrary string which is not HTML | [optional] 
+**created_at** | **datetime** | Timestamp of the creation of the chunk | 
+**dataset_id** | **str** | ID of the dataset which the chunk belongs to | 
+**id** | **str** | Unique identifier of the chunk, auto-generated uuid created by Trieve | 
+**image_urls** | **List[Optional[str]]** | Image URLs of the chunk, can be any list of strings. Used for image search and RAG. | [optional] 
+**link** | **str** | Link to the chunk, should be a URL | [optional] 
 **location** | [**GeoInfo**](GeoInfo.md) |  | [optional] 
-**metadata** | **object** |  | [optional] 
-**num_value** | **float** |  | [optional] 
-**tag_set** | **List[Optional[str]]** |  | [optional] 
-**time_stamp** | **datetime** |  | [optional] 
-**tracking_id** | **str** |  | [optional] 
-**updated_at** | **datetime** |  | 
-**weight** | **float** |  | 
+**metadata** | **object** | Metadata of the chunk, can be any JSON object | [optional] 
+**num_value** | **float** | Numeric value of the chunk, can be any float. Can represent the most relevant numeric value of the chunk, such as a price, quantity in stock, rating, etc. | [optional] 
+**tag_set** | **List[Optional[str]]** | Tag set of the chunk, can be any list of strings. Used for tag-filtered searches. | [optional] 
+**time_stamp** | **datetime** | Timestamp of the chunk, can be any timestamp. Specified by the user. | [optional] 
+**tracking_id** | **str** | Tracking ID of the chunk, can be any string, determined by the user. Tracking ID&#39;s are unique identifiers for chunks within a dataset. They are designed to match the unique identifier of the chunk in the user&#39;s system. | [optional] 
+**updated_at** | **datetime** | Timestamp of the last update of the chunk | 
+**weight** | **float** | Weight of the chunk, can be any float. Used as a multiplier on a chunk&#39;s relevance score for ranking purposes. | 
 
 ## Example
 

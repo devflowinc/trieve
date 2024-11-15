@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **type** | **str** |  | 
 **sort_by** | [**SearchSortBy**](SearchSortBy.md) |  | [optional] 
 **sort_order** | [**SortOrder**](SortOrder.md) |  | [optional] 
+**request_id** | **str** |  | 
 
 ## Example
 

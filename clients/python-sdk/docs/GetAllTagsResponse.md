@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**tags** | [**List[TagsWithCount]**](TagsWithCount.md) |  | 
-**total** | **int** |  | 
+**tags** | [**List[TagsWithCount]**](TagsWithCount.md) | List of tags with the number of chunks in the dataset with that tag. | 
+**total** | **int** | Total number of unique tags in the dataset. | 
 
 ## Example
 

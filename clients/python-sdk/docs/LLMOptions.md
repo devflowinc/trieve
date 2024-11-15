@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **completion_first** | **bool** | Completion first decides whether the stream should contain the stream of the completion response or the chunks first. Default is false. Keep in mind that || is used to separate the chunks from the completion response. If || is in the completion then you may want to split on ||{ instead. | [optional] 
 **frequency_penalty** | **float** | Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model&#39;s likelihood to repeat the same line verbatim. Default is 0.7. | [optional] 
+**image_config** | [**ImageConfig**](ImageConfig.md) |  | [optional] 
 **max_tokens** | **int** | The maximum number of tokens to generate in the chat completion. Default is None. | [optional] 
 **presence_penalty** | **float** | Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model&#39;s likelihood to talk about new topics. Default is 0.7. | [optional] 
 **stop_tokens** | **List[str]** | Stop tokens are up to 4 sequences where the API will stop generating further tokens. Default is None. | [optional] 
