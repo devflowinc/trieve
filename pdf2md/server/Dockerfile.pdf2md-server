@@ -1,7 +1,7 @@
 FROM rust:1.81-slim-bookworm AS chef
 # We only pay the installation cost once, 
 # it will be cached from the second build onwards
-RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev g++ curl
+RUN apt-get update -y && apt-get -y install pkg-config libssl-dev g++ curl
 RUN cargo install cargo-chef 
 WORKDIR app
 
@@ -12,10 +12,10 @@ RUN cargo chef prepare  --recipe-path recipe.json
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --recipe-path recipe.json --bin "trieve-server"
+RUN cargo chef cook --release --recipe-path recipe.json --bin "pdf2md-server"
 # Build application
 COPY . .
-RUN cargo build --release --features "runtime-env" --bin "trieve-server"
+RUN cargo build --release --features "runtime-env" --bin "pdf2md-server"
 
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
@@ -25,15 +25,12 @@ RUN apt-get update -y; \
     pkg-config \
     build-essential\
     libssl-dev \
-    libpq-dev \
     ca-certificates \
     ; \
     mkdir -p /app/tmp
 
-COPY ./migrations/ /app/migrations
 COPY ./ch_migrations /app/ch_migrations
-COPY ./src/public/ /app/src/public
-COPY --from=builder /app/target/release/trieve-server /app/trieve-server
+COPY --from=builder /app/target/release/pdf2md-server /app/pdf2md-server
 
 EXPOSE 8090
-ENTRYPOINT ["/app/trieve-server"]
+ENTRYPOINT ["/app/pdf2md-server"]

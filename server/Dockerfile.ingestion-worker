@@ -17,7 +17,7 @@ RUN cargo chef cook --release --recipe-path recipe.json --bin "ingestion-worker"
 COPY . .
 RUN cargo build --release --features "runtime-env" --bin "ingestion-worker"
 
-FROM debian:bookworm-slim as runtime
+FROM debian:bookworm-slim AS runtime
 RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates 
 WORKDIR /app
 COPY ./migrations/ /app/migrations
