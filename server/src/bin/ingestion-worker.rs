@@ -21,7 +21,7 @@ use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
     get_row_count_for_organization_id_query, insert_chunk_boost, insert_chunk_metadata_query,
-    update_chunk_metadata_query,
+    update_chunk_boost_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::clickhouse_operator::{ClickHouseEvent, EventQueue};
 use trieve_server::operators::dataset_operator::{
@@ -1021,7 +1021,7 @@ async fn upload_chunk(
         .await?;
 
         if payload.chunk.fulltext_boost.is_some() || payload.chunk.semantic_boost.is_some() {
-            insert_chunk_boost(web_pool.clone(), {
+            insert_chunk_boost(
                 ChunkBoost {
                     chunk_id: inserted_chunk.id,
                     fulltext_boost_phrase: payload.chunk.fulltext_boost.clone().map(|x| x.phrase),
@@ -1031,8 +1031,9 @@ async fn upload_chunk(
                         .chunk
                         .semantic_boost
                         .map(|x| x.distance_factor as f64),
-                }
-            })
+                },
+                web_pool.clone(),
+            )
             .await?;
         }
 
@@ -1155,7 +1156,7 @@ async fn update_chunk(
         true => {
             let embedding = get_dense_vector(
                 content.to_string(),
-                payload.semantic_boost,
+                payload.semantic_boost.clone(),
                 "doc",
                 dataset_config.clone(),
             )
@@ -1187,7 +1188,7 @@ async fn update_chunk(
         && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true"
     {
         let vecs = get_bm25_embeddings(
-            vec![(content, payload.fulltext_boost)],
+            vec![(content, payload.fulltext_boost.clone())],
             dataset_config.BM25_AVG_LEN,
             dataset_config.BM25_B,
             dataset_config.BM25_K,
@@ -1250,6 +1251,21 @@ async fn update_chunk(
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    }
+
+    // If boosts are changed, reflect changes to chunk_boosts table
+    if payload.fulltext_boost.is_some() || payload.semantic_boost.is_some() {
+        update_chunk_boost_query(
+            ChunkBoost {
+                chunk_id: payload.chunk_metadata.id,
+                fulltext_boost_phrase: payload.fulltext_boost.clone().map(|x| x.phrase),
+                fulltext_boost_factor: payload.fulltext_boost.map(|x| x.boost_factor),
+                semantic_boost_phrase: payload.semantic_boost.clone().map(|x| x.phrase),
+                semantic_boost_factor: payload.semantic_boost.map(|x| x.distance_factor as f64),
+            },
+            web_pool,
+        )
+        .await?;
     }
 
     Ok(())

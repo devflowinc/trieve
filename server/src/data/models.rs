@@ -5045,6 +5045,26 @@ pub struct ChunkBoost {
     pub semantic_boost_factor: Option<f64>,
 }
 
+#[derive(AsChangeset)]
+#[diesel(table_name = chunk_boosts)]
+pub struct ChunkBoostChangeset {
+    fulltext_boost_phrase: Option<String>,
+    fulltext_boost_factor: Option<f64>,
+    semantic_boost_phrase: Option<String>,
+    semantic_boost_factor: Option<f64>,
+}
+
+impl From<ChunkBoost> for ChunkBoostChangeset {
+    fn from(chunk_boost: ChunkBoost) -> Self {
+        ChunkBoostChangeset {
+            fulltext_boost_phrase: chunk_boost.fulltext_boost_phrase,
+            fulltext_boost_factor: chunk_boost.fulltext_boost_factor,
+            semantic_boost_phrase: chunk_boost.semantic_boost_phrase,
+            semantic_boost_factor: chunk_boost.semantic_boost_factor,
+        }
+    }
+}
+
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
 #[schema(example = json!({
     "search_type": "search",
