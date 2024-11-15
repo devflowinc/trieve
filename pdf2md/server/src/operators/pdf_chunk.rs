@@ -1,4 +1,9 @@
-use crate::{errors::ServiceError, get_env, models::ChunkClickhouse};
+use crate::{
+    errors::ServiceError,
+    get_env,
+    models::{ChunkClickhouse, ChunkingTask},
+    operators::clickhouse::insert_page,
+};
 use base64::Engine;
 use image::{codecs::png::PngEncoder, ImageEncoder};
 use openai_dive::v1::{
@@ -65,7 +70,7 @@ async fn get_pages_from_image(
     img: DynamicImage,
     prev_md_doc: Option<String>,
     page: u32,
-    task_id: String,
+    task_id: uuid::Uuid,
     client: Client,
 ) -> Result<ChunkClickhouse, ServiceError> {
     let llm_model: String = get_env!("LLM_MODEL", "LLM_MODEL should be set").into();
@@ -137,7 +142,7 @@ async fn get_pages_from_image(
 
     Ok(ChunkClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
-        task_id: task_id.clone(),
+        task_id: task_id.to_string().clone(),
         content: format_markdown(&content),
         metadata: serde_json::json!({
             "page": page,
@@ -159,8 +164,9 @@ fn format_markdown(text: &str) -> String {
 
 pub async fn chunk_pdf(
     data: Vec<u8>,
-    task_id: String,
+    task: ChunkingTask,
     page_range: (u32, u32),
+    clickhouse_client: &clickhouse::Client,
 ) -> Result<Vec<ChunkClickhouse>, ServiceError> {
     let pdf = PDF::from_bytes(data)
         .map_err(|_| ServiceError::BadRequest("Failed to open PDF file".to_string()))?;
@@ -179,11 +185,12 @@ pub async fn chunk_pdf(
             page_image,
             prev_md_doc,
             page_num,
-            task_id.clone(),
+            task.task_id,
             client.clone(),
         )
         .await?;
         prev_md_doc = Some(page.content.clone());
+        insert_page(task.clone(), page.clone(), clickhouse_client).await?;
         log::info!("Page {} processed", page_num);
 
         result_pages.push(page);

@@ -7,11 +7,8 @@ use chm::tools::migrations::{run_pending_migrations, SetupArgs};
 use file_chunker::{
     errors::ServiceError,
     get_env,
-    models::{ChunkingTask, FileTaskStatus},
-    operators::{
-        clickhouse::update_task_status, pdf_chunk::chunk_pdf, redis::listen_to_redis,
-        s3::get_aws_bucket,
-    },
+    models::ChunkingTask,
+    operators::{pdf_chunk::chunk_pdf, redis::listen_to_redis, s3::get_aws_bucket},
     process_task_with_retry,
 };
 use signal_hook::consts::SIGTERM;
@@ -116,41 +113,8 @@ pub async fn chunk_sub_pdf(
         .as_slice()
         .to_vec();
 
-    let result = chunk_pdf(file_data, task.task_id.to_string(), task.page_range).await?;
+    let result = chunk_pdf(file_data, task.clone(), task.page_range, &clickhouse_client).await?;
     log::info!("Got {} pages for {:?}", result.len(), task.task_id);
-
-    let mut page_inserter = clickhouse_client.insert("file_chunks").map_err(|e| {
-        log::error!("Error inserting recommendations: {:?}", e);
-        ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
-    })?;
-
-    for page in &result {
-        page_inserter.write(page).await.map_err(|e| {
-            log::error!("Error inserting task: {:?}", e);
-            ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
-        })?;
-    }
-
-    page_inserter.end().await.map_err(|e| {
-        log::error!("Error inserting task: {:?}", e);
-        ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
-    })?;
-
-    let prev_task =
-        file_chunker::operators::clickhouse::get_task(task.task_id, &clickhouse_client).await?;
-
-    let pages_processed = prev_task.pages_processed + 1;
-
-    if pages_processed == prev_task.pages {
-        update_task_status(task.task_id, FileTaskStatus::Completed, &clickhouse_client).await?;
-    } else {
-        update_task_status(
-            task.task_id,
-            FileTaskStatus::ChunkingFile(result.len() as u32 + prev_task.pages_processed),
-            &clickhouse_client,
-        )
-        .await?;
-    }
 
     Ok(())
 }
