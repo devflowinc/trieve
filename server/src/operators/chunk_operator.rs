@@ -1,7 +1,8 @@
 use crate::data::models::{
-    uuid_between, ChunkBoost, ChunkData, ChunkGroup, ChunkGroupBookmark, ChunkMetadataTable,
-    ChunkMetadataTags, ChunkMetadataTypes, ContentChunkMetadata, Dataset, DatasetConfiguration,
-    DatasetTags, IngestSpecificChunkMetadata, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
+    uuid_between, ChunkBoost, ChunkBoostChangeset, ChunkData, ChunkGroup, ChunkGroupBookmark,
+    ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes, ContentChunkMetadata, Dataset,
+    DatasetConfiguration, DatasetTags, IngestSpecificChunkMetadata, SlimChunkMetadata,
+    SlimChunkMetadataTable, UnifiedId,
 };
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::handlers::chunk_handler::{ChunkFilter, UploadIngestionMessage};
@@ -1187,9 +1188,10 @@ pub async fn insert_chunk_metadata_query(
     Ok(chunk_data)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn insert_chunk_boost(
-    pool: web::Data<Pool>,
     chunk_boost: ChunkBoost,
+    pool: web::Data<Pool>,
 ) -> Result<ChunkBoost, ServiceError> {
     use crate::data::schema::chunk_boosts::dsl as chunk_boosts_columns;
     let mut conn = pool.get().await.map_err(|_e| {
@@ -1433,6 +1435,34 @@ pub async fn update_chunk_metadata_query(
             ))
         }
     }
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn update_chunk_boost_query(
+    chunk_boost: ChunkBoost,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::chunk_boosts::dsl as chunk_boosts_columns;
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    // Create a changeset based on which fields are present
+    let changes: ChunkBoostChangeset = chunk_boost.clone().into();
+
+    diesel::update(
+        chunk_boosts_columns::chunk_boosts
+            .filter(chunk_boosts_columns::chunk_id.eq(chunk_boost.chunk_id)),
+    )
+    .set(&changes)
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update chunk boost {:}", e);
+        ServiceError::BadRequest("Failed to update chunk boost".to_string())
+    })?;
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(pool))]
