@@ -1,17 +1,23 @@
 # CrawlOptions
 
+Options for setting up the crawl which will populate the dataset.
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**allow_external_links** | **bool** | Option for allowing the crawl to follow links to external websites. | [optional] 
+**body_remove_strings** | **List[str]** | Text strings to remove from body when creating chunks for each page | [optional] 
+**boost_titles** | **bool** | Boost titles such that keyword matches in titles are prioritized in search results. Strongly recommended to leave this on. Defaults to true. | [optional] 
 **exclude_paths** | **List[str]** | URL Patterns to exclude from the crawl | [optional] 
 **exclude_tags** | **List[str]** | Specify the HTML tags, classes and ids to exclude from the response. | [optional] 
+**heading_remove_strings** | **List[str]** | Text strings to remove from headings when creating chunks for each page | [optional] 
+**ignore_sitemap** | **bool** | Ignore the website sitemap when crawling, defaults to true. | [optional] 
 **include_paths** | **List[str]** | URL Patterns to include in the crawl | [optional] 
 **include_tags** | **List[str]** | Specify the HTML tags, classes and ids to include in the response. | [optional] 
 **interval** | [**CrawlInterval**](CrawlInterval.md) |  | [optional] 
-**limit** | **int** | How many pages to crawl, defaults to 20 | [optional] 
-**max_depth** | **int** | How many levels deep to crawl, defaults to 2 | [optional] 
+**limit** | **int** | How many pages to crawl, defaults to 1000 | [optional] 
+**scrape_options** | [**ScrapeOptions**](ScrapeOptions.md) |  | [optional] 
 **site_url** | **str** | The URL to crawl | [optional] 
 
 ## Example

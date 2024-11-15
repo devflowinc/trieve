@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**created_at** | **datetime** |  | 
 **email** | **str** |  | 
 **id** | **str** |  | 
 **name** | **str** |  | [optional] 

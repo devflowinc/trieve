@@ -7,7 +7,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **app_url** | **str** | The url of the app that the user will be directed to in order to set their password. Usually admin.trieve.ai, but may differ for local dev or self-hosted setups. | 
 **email** | **str** | The email of the user to invite. Must be a valid email as they will be sent an email to register. | 
-**organization_id** | **str** | The id of the organization to invite the user to. | 
 **redirect_uri** | **str** | The url that the user will be redirected to after setting their password. | 
 **user_role** | **int** | The role the user will have in the organization. 0 &#x3D; User, 1 &#x3D; Admin, 2 &#x3D; Owner. | 
 

@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **sort_order** | [**SortOrder**](SortOrder.md) |  | [optional] 
 **type** | **str** |  | 
 **granularity** | [**Granularity**](Granularity.md) |  | [optional] 
+**request_id** | **str** |  | 
 
 ## Example
 

@@ -4,11 +4,95 @@ All URIs are relative to *https://api.trieve.ai*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**clone_topic**](TopicApi.md#clone_topic) | **POST** /api/topic/clone | Clone Topic
 [**create_topic**](TopicApi.md#create_topic) | **POST** /api/topic | Create Topic
 [**delete_topic**](TopicApi.md#delete_topic) | **DELETE** /api/topic/{topic_id} | Delete Topic
 [**get_all_topics_for_owner_id**](TopicApi.md#get_all_topics_for_owner_id) | **GET** /api/topic/owner/{owner_id} | Get All Topics for Owner ID
 [**update_topic**](TopicApi.md#update_topic) | **PUT** /api/topic | Update Topic
 
+
+# **clone_topic**
+> Topic clone_topic(tr_dataset, clone_topic_req_payload)
+
+Clone Topic
+
+Create a new chat topic from a `topic_id`. The new topic will be attched to the owner_id and act as a coordinator for conversation message history of gen-AI chat sessions. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.clone_topic_req_payload import CloneTopicReqPayload
+from trieve_py_client.models.topic import Topic
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.TopicApi(api_client)
+    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+    clone_topic_req_payload = trieve_py_client.CloneTopicReqPayload() # CloneTopicReqPayload | JSON request payload to create chat topic
+
+    try:
+        # Clone Topic
+        api_response = api_instance.clone_topic(tr_dataset, clone_topic_req_payload)
+        print("The response of TopicApi->clone_topic:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling TopicApi->clone_topic: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
+ **clone_topic_req_payload** | [**CloneTopicReqPayload**](CloneTopicReqPayload.md)| JSON request payload to create chat topic | 
+
+### Return type
+
+[**Topic**](Topic.md)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | The JSON response payload containing the created topic |  -  |
+**400** | Topic name empty or a service error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **create_topic**
 > Topic create_topic(tr_dataset, create_topic_req_payload)

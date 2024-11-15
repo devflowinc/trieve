@@ -5,14 +5,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_at** | **datetime** |  | 
-**deleted** | **int** |  | 
-**id** | **str** |  | 
-**name** | **str** |  | 
-**organization_id** | **str** |  | 
-**server_configuration** | **object** |  | 
-**tracking_id** | **str** |  | [optional] 
-**updated_at** | **datetime** |  | 
+**created_at** | **datetime** | Timestamp of the creation of the dataset | 
+**deleted** | **int** | Flag to indicate if the dataset has been deleted. Deletes are handled async after the flag is set so as to avoid expensive search index compaction. | 
+**id** | **str** | Unique identifier of the dataset, auto-generated uuid created by Trieve | 
+**name** | **str** | Name of the dataset | 
+**organization_id** | **str** | Unique identifier of the organization that owns the dataset | 
+**server_configuration** | **object** | Configuration of the dataset for RAG, embeddings, BM25, etc. | 
+**tracking_id** | **str** | Tracking ID of the dataset, can be any string, determined by the user. Tracking ID&#39;s are unique identifiers for datasets within an organization. They are designed to match the unique identifier of the dataset in the user&#39;s system. | [optional] 
+**updated_at** | **datetime** | Timestamp of the last update of the dataset | 
 
 ## Example
 

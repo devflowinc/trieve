@@ -1,5 +1,6 @@
 # CrawlInterval
 
+Interval at which specified site should be re-scraped
 
 ## Properties
 

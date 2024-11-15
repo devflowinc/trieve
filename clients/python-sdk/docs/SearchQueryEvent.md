@@ -10,10 +10,10 @@ Name | Type | Description | Notes
 **id** | **str** |  | 
 **latency** | **float** |  | 
 **query** | **str** |  | 
-**query_rating** | **str** |  | 
+**query_rating** | [**SearchQueryRating**](SearchQueryRating.md) |  | [optional] 
 **request_params** | **object** |  | 
 **results** | **List[object]** |  | 
-**search_type** | **str** |  | 
+**search_type** | [**ClickhouseSearchTypes**](ClickhouseSearchTypes.md) |  | 
 **top_score** | **float** |  | 
 **user_id** | **str** |  | 
 

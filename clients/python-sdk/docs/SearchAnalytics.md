@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **threshold** | **float** |  | [optional] 
 **sort_by** | [**SearchSortBy**](SearchSortBy.md) |  | [optional] 
 **sort_order** | [**SortOrder**](SortOrder.md) |  | [optional] 
-**search_id** | **str** |  | 
+**request_id** | **str** |  | 
 
 ## Example
 

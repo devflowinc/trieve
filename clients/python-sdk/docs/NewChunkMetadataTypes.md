@@ -5,18 +5,18 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_at** | **datetime** |  | 
-**dataset_id** | **str** |  | 
+**created_at** | **datetime** | Timestamp of the creation of the chunk | 
+**dataset_id** | **str** | ID of the dataset which the chunk belongs to | 
 **id** | **str** |  | 
 **image_urls** | **List[Optional[str]]** |  | [optional] 
-**link** | **str** |  | [optional] 
+**link** | **str** | Link to the chunk, should be a URL | [optional] 
 **location** | [**GeoInfo**](GeoInfo.md) |  | [optional] 
-**metadata** | **object** |  | [optional] 
+**metadata** | **object** | Metadata of the chunk, can be any JSON object | [optional] 
 **num_value** | **float** |  | [optional] 
-**tag_set** | **List[Optional[str]]** |  | [optional] 
+**tag_set** | **List[Optional[str]]** | Tag set of the chunk, can be any list of strings. Used for tag-filtered searches. | [optional] 
 **time_stamp** | **datetime** |  | [optional] 
 **tracking_id** | **str** |  | [optional] 
-**updated_at** | **datetime** |  | 
+**updated_at** | **datetime** | Timestamp of the last update of the chunk | 
 **weight** | **float** |  | 
 **chunk_html** | **str** |  | [optional] 
 

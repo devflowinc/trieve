@@ -6,7 +6,6 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **name** | **str** | The new name of the organization. If not provided, the name will not be updated. | [optional] 
-**organization_id** | **str** | The id of the organization to update. | 
 
 ## Example
 

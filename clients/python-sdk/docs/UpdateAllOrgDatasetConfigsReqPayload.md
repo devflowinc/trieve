@@ -6,7 +6,6 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **dataset_config** | **object** | The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values. | 
-**organization_id** | **str** | The id of the organization to update the dataset configurations for. | 
 
 ## Example
 

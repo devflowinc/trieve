@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**count** | **int** |  | 
-**tag** | **str** |  | 
+**count** | **int** | Number of chunks in the dataset with that tag | 
+**tag** | **str** | Content of the tag | 
 
 ## Example
 
