@@ -7,21 +7,21 @@ pub mod operators;
 #[command(author, version)]
 #[command(
     name = "tr-chunk",
-    about = "Trieve File Chunker CLI - CLI for Trieve File Chunker",
-    long_about = "Trieve File Chunker CLI is a CLI for the Trieve File Chunker. 
+    about = "PDF2MD CLI - CLI for PDF2MD",
+    long_about = "PDF2MD CLI is a CLI for the PDF2MD. 
     
-    It allows you to interact with the Trieve File Chunker from the command line by creating and polling tasks."
+    It allows you to interact with the PDF2MD from the command line by creating and polling tasks."
 )]
 #[command(arg_required_else_help(true))]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
-    /// The base URL of the Trieve File Chunker server
+    /// The base URL of the PDF2MD server
     #[arg(
         short,
         long,
-        env = "TRIEVE_FILE_CHUNKER_BASE_URL",
+        env = "PDF2MD_BASE_URL",
         default_value = "http://localhost:8081"
     )]
     base_url: String,
@@ -30,7 +30,7 @@ struct Cli {
     #[arg(
         short,
         long,
-        env = "TRIEVE_FILE_CHUNKER_API_KEY",
+        env = "PDF2MD_API_KEY",
         default_value = "admin"
     )]
     api_key: String,

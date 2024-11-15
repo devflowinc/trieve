@@ -1,10 +1,5 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
-
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
-use file_chunker::{
+use pdf2md_server::{
     errors::ServiceError,
     get_env,
     models::ChunkingTask,
@@ -12,6 +7,10 @@ use file_chunker::{
     process_task_with_retry,
 };
 use signal_hook::consts::SIGTERM;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 #[tokio::main]
 async fn main() {
@@ -101,7 +100,7 @@ async fn main() {
 pub async fn chunk_sub_pdf(
     task: ChunkingTask,
     clickhouse_client: clickhouse::Client,
-) -> Result<(), file_chunker::errors::ServiceError> {
+) -> Result<(), pdf2md_server::errors::ServiceError> {
     let bucket = get_aws_bucket()?;
     let file_data = bucket
         .get_object(task.file_name.clone())
@@ -115,6 +114,39 @@ pub async fn chunk_sub_pdf(
 
     let result = chunk_pdf(file_data, task.clone(), task.page_range, &clickhouse_client).await?;
     log::info!("Got {} pages for {:?}", result.len(), task.task_id);
+
+    let mut page_inserter = clickhouse_client.insert("file_chunks").map_err(|e| {
+        log::error!("Error inserting recommendations: {:?}", e);
+        ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
+    })?;
+
+    for page in &result {
+        page_inserter.write(page).await.map_err(|e| {
+            log::error!("Error inserting task: {:?}", e);
+            ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
+        })?;
+    }
+
+    page_inserter.end().await.map_err(|e| {
+        log::error!("Error inserting task: {:?}", e);
+        ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
+    })?;
+
+    let prev_task =
+        pdf2md_server::operators::clickhouse::get_task(task.task_id, &clickhouse_client).await?;
+
+    let pages_processed = prev_task.pages_processed + 1;
+
+    if pages_processed == prev_task.pages {
+        update_task_status(task.task_id, FileTaskStatus::Completed, &clickhouse_client).await?;
+    } else {
+        update_task_status(
+            task.task_id,
+            FileTaskStatus::ChunkingFile(result.len() as u32 + prev_task.pages_processed),
+            &clickhouse_client,
+        )
+        .await?;
+    }
 
     Ok(())
 }

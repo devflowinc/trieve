@@ -1154,40 +1154,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "file-chunker"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-web",
- "base64",
- "bb8-redis",
- "chm",
- "clickhouse 0.13.1",
- "derive_more 1.0.0",
- "dotenvy",
- "env_logger",
- "futures",
- "image",
- "lazy_static",
- "log",
- "lopdf",
- "openai_dive",
- "pdf2image",
- "redis",
- "regex",
- "reqwest",
- "rust-s3",
- "serde",
- "serde_json",
- "signal-hook",
- "tokio",
- "utoipa",
- "utoipa-actix-web",
- "utoipa-redoc",
- "uuid",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2374,6 +2340,40 @@ dependencies = [
  "image",
  "rayon",
  "thiserror",
+]
+
+[[package]]
+name = "pdf2md-server"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-web",
+ "base64",
+ "bb8-redis",
+ "chm",
+ "clickhouse 0.13.1",
+ "derive_more 1.0.0",
+ "dotenvy",
+ "env_logger",
+ "futures",
+ "image",
+ "lazy_static",
+ "log",
+ "lopdf",
+ "openai_dive",
+ "pdf2image",
+ "redis",
+ "regex",
+ "reqwest",
+ "rust-s3",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tokio",
+ "utoipa",
+ "utoipa-actix-web",
+ "utoipa-redoc",
+ "uuid",
 ]
 
 [[package]]

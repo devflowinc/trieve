@@ -38,8 +38,8 @@ pub async fn main() -> std::io::Result<()> {
 
     #[derive(OpenApi)]
     #[openapi(info(
-        title = "Trieve File Chunker API",
-        description = "Trieve File Chunke OpenAPI Specification. This document describes all of the operations available through the Trieve File Chunke API.",
+        title = "PDF2MD API",
+        description = "PDF2MD OpenAPI Specification. This document describes all of the operations available through the PDF2MD API.",
         contact(
             name = "Trieve Team",
             url = "https://trieve.ai",
@@ -49,7 +49,7 @@ pub async fn main() -> std::io::Result<()> {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.1.0",
+        version = "0.0.0",
     ), 
     modifiers(&SecurityAddon),
     tags(

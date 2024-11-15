@@ -1,11 +1,11 @@
 [package]
-name = "file-chunker"
+name = "pdf2md-server"
 version = "0.1.0"
 edition = "2021"
-default-run = "file-chunker"
+default-run = "pdf2md-server"
 
 [[bin]]
-name = "file-chunker"
+name = "pdf2md-server"
 path = "src/main.rs"
 
 [[bin]]

@@ -1,3 +1,3 @@
 fn main() -> std::io::Result<()> {
-    file_chunker::main()
+    pdf2md_server::main()
 }
