@@ -3347,6 +3347,7 @@ impl ApiKeyRequestParams {
             remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
             user_id: payload.user_id,
             typo_options: self.typo_options.or(payload.typo_options),
+            sort_options: payload.sort_options,
         }
     }
 
@@ -6645,7 +6646,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             page_size: Option<u64>,
             get_total_pages: Option<bool>,
             filters: Option<ChunkFilter>,
-            group_size: Option<u32>,
+            group_size: Option<u64>,
             highlight_options: Option<HighlightOptions>,
             score_threshold: Option<f32>,
             slim_chunks: Option<bool>,
@@ -6660,12 +6661,13 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
 
         let mut helper = Helper::deserialize(deserializer)?;
 
-        let (_, extracted_highlight_options) = if !helper.other.is_empty() {
+        let (extract_sort_options, extracted_highlight_options) = if !helper.other.is_empty() {
             extract_sort_highlight_options(&mut helper.other)
         } else {
             (None, None)
         };
         let highlight_options = helper.highlight_options.or(extracted_highlight_options);
+        let sort_options = helper.sort_options.or(extract_sort_options);
 
         Ok(SearchOverGroupsReqPayload {
             search_type: helper.search_type,
@@ -6680,7 +6682,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             slim_chunks: helper.slim_chunks,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             typo_options: helper.typo_options,
-            sort_options: helper.sort_options,
+            sort_options,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
         })

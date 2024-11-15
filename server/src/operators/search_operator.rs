@@ -10,14 +10,15 @@ use super::model_operator::{
     cross_encoder, get_bm25_embeddings, get_dense_vector, get_sparse_vector,
 };
 use super::qdrant_operator::{
-    count_qdrant_query, search_over_groups_query, GroupSearchResults, QdrantSearchQuery, VectorType,
+    count_qdrant_query, search_over_groups_qdrant_query, GroupSearchResults, QdrantSearchQuery,
+    VectorType,
 };
 use super::typo_operator::correct_query;
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
     ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
     HasIDCondition, QdrantSortBy, QueryTypes, ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO,
-    SearchMethod, SlimChunkMetadata, SortByField, SortBySearchType, SortOrder, UnifiedId,
+    SearchMethod, SlimChunkMetadata, SortByField, SortBySearchType, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
@@ -286,6 +287,7 @@ pub struct RetrievePointQuery {
     sort_by: Option<SortByField>,
     rerank_by: Option<SortBySearchType>,
     filter: Option<ChunkFilter>,
+    group_size: Option<u64>,
 }
 
 impl RetrievePointQuery {
@@ -354,6 +356,7 @@ impl RetrievePointQuery {
                             rerank_by: Box::new(None),
                             sort_by: None,
                             filter: filter.clone(),
+                            group_size: None,
                         })
                     }
                     ReRankOptions::Semantic => {
@@ -382,6 +385,7 @@ impl RetrievePointQuery {
                             rerank_by: Box::new(None),
                             sort_by: None,
                             filter: filter.clone(),
+                            group_size: None,
                         })
                     }
                     ReRankOptions::BM25 => {
@@ -411,6 +415,7 @@ impl RetrievePointQuery {
                             rerank_by: Box::new(None),
                             sort_by: None,
                             filter: filter.clone(),
+                            group_size: None,
                         })
                     }
                     ReRankOptions::CrossEncoder => None,
@@ -429,6 +434,7 @@ impl RetrievePointQuery {
             rerank_by: Box::new(rerank_query),
             sort_by: self.sort_by,
             filter: filter.clone(),
+            group_size: self.group_size,
         })
     }
 }
@@ -1000,62 +1006,50 @@ pub struct SearchOverGroupsQueryResult {
     pub total_chunk_pages: i64,
 }
 
-#[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool))]
 pub async fn retrieve_group_qdrant_points_query(
-    vector: VectorType,
+    qdrant_searches: Vec<QdrantSearchQuery>,
     page: u64,
     get_total_pages: bool,
-    filters: Option<ChunkFilter>,
-    limit: u64,
-    score_threshold: Option<f32>,
-    group_size: u32,
-    parsed_query: ParsedQueryTypes,
-    dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
     config: &DatasetConfiguration,
 ) -> Result<SearchOverGroupsQueryResult, ServiceError> {
-    let page = if page == 0 { 1 } else { page };
-    let parsed_query = match parsed_query {
-        ParsedQueryTypes::Single(parsed_query) => Some(parsed_query),
-        ParsedQueryTypes::Multi(_) => None,
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child(
+                "Qdrant Group Points Query",
+                "retrieve_group_qdrant_points_query",
+            )
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "Qdrant Group Points Query",
+                "retrieve_group_qdrant_points_query",
+            );
+            sentry::start_transaction(ctx).into()
+        }
     };
-
-    let filter = assemble_qdrant_filter(
-        filters.clone(),
-        parsed_query
-            .as_ref()
-            .map(|query| query.quote_words.clone())
-            .clone()
-            .flatten(),
-        parsed_query
-            .as_ref()
-            .map(|query| query.negated_words.clone())
-            .clone()
-            .flatten(),
-        dataset_id,
-        pool,
-    )
-    .await?;
-
-    let (point_ids, count) = search_over_groups_query(
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+    let page = if page == 0 { 1 } else { page };
+    let (point_ids, count) = search_over_groups_qdrant_query(
         page,
-        filter.clone(),
-        limit,
-        score_threshold,
-        group_size,
-        vector.clone(),
+        qdrant_searches.clone(),
         config.clone(),
         get_total_pages,
     )
     .await?;
 
+    let limit = qdrant_searches
+        .iter()
+        .map(|query| query.limit)
+        .min()
+        .unwrap_or(10);
+
     let pages = (count as f64 / limit as f64).ceil() as i64;
 
     Ok(SearchOverGroupsQueryResult {
         search_results: point_ids,
-        corrected_query: None,
         total_chunk_pages: pages,
+        corrected_query: None,
     })
 }
 
@@ -1562,7 +1556,6 @@ pub async fn retrieve_chunks_from_point_ids(
 #[tracing::instrument]
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
-    sort_by: Option<SortByField>,
     tag_weights: Option<HashMap<String, f32>>,
     use_weights: Option<bool>,
     query_location: Option<GeoInfoWithBias>,
@@ -1644,63 +1637,12 @@ pub fn rerank_chunks(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    if let Some(sort_by) = sort_by {
-        match sort_by.field.as_str() {
-            "time_stamp" => {
-                if sort_by.direction.is_some_and(|dir| dir == SortOrder::Asc) {
-                    reranked_chunks.sort_by(|a, b| {
-                        a.metadata[0]
-                            .metadata()
-                            .time_stamp
-                            .partial_cmp(&b.metadata[0].metadata().time_stamp)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                } else {
-                    reranked_chunks.sort_by(|a, b| {
-                        b.metadata[0]
-                            .metadata()
-                            .time_stamp
-                            .partial_cmp(&a.metadata[0].metadata().time_stamp)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                }
-            }
-            "num_value" => {
-                if sort_by.direction.is_some_and(|dir| dir == SortOrder::Asc) {
-                    reranked_chunks.sort_by(|a, b| {
-                        a.metadata[0]
-                            .metadata()
-                            .num_value
-                            .partial_cmp(&b.metadata[0].metadata().num_value)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                } else {
-                    reranked_chunks.sort_by(|a, b| {
-                        b.metadata[0]
-                            .metadata()
-                            .num_value
-                            .partial_cmp(&a.metadata[0].metadata().num_value)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                }
-            }
-            _ => {
-                log::error!("Unsupported sort_by field: {}", sort_by.field);
-                sentry::capture_message(
-                    &format!("Unsupported sort_by field: {}", sort_by.field),
-                    sentry::Level::Error,
-                );
-            }
-        }
-    }
-
     reranked_chunks
 }
 
 #[tracing::instrument]
 pub fn rerank_groups(
     groups: Vec<GroupScoreChunk>,
-    sort_by: Option<SortByField>,
     tag_weights: Option<HashMap<String, f32>>,
     use_weights: Option<bool>,
     query_location: Option<GeoInfoWithBias>,
@@ -1788,64 +1730,6 @@ pub fn rerank_groups(
             .partial_cmp(&a_first_chunk.score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-
-    if let Some(sort_by) = sort_by {
-        match sort_by.field.as_str() {
-            "time_stamp" => {
-                if sort_by.direction.is_some_and(|dir| dir == SortOrder::Asc) {
-                    reranked_groups.sort_by(|a, b| {
-                        let a_first_chunk = a.metadata.get(0).unwrap();
-                        let b_first_chunk = b.metadata.get(0).unwrap();
-                        a_first_chunk.metadata[0]
-                            .metadata()
-                            .time_stamp
-                            .partial_cmp(&b_first_chunk.metadata[0].metadata().time_stamp)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                } else {
-                    reranked_groups.sort_by(|a, b| {
-                        let a_first_chunk = a.metadata.get(0).unwrap();
-                        let b_first_chunk = b.metadata.get(0).unwrap();
-                        b_first_chunk.metadata[0]
-                            .metadata()
-                            .time_stamp
-                            .partial_cmp(&a_first_chunk.metadata[0].metadata().time_stamp)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                }
-            }
-            "num_value" => {
-                if sort_by.direction.is_some_and(|dir| dir == SortOrder::Asc) {
-                    reranked_groups.sort_by(|a, b| {
-                        let a_first_chunk = a.metadata.get(0).unwrap();
-                        let b_first_chunk = b.metadata.get(0).unwrap();
-                        a_first_chunk.metadata[0]
-                            .metadata()
-                            .num_value
-                            .partial_cmp(&b_first_chunk.metadata[0].metadata().num_value)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                } else {
-                    reranked_groups.sort_by(|a, b| {
-                        let a_first_chunk = a.metadata.get(0).unwrap();
-                        let b_first_chunk = b.metadata.get(0).unwrap();
-                        b_first_chunk.metadata[0]
-                            .metadata()
-                            .num_value
-                            .partial_cmp(&a_first_chunk.metadata[0].metadata().num_value)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                }
-            }
-            _ => {
-                log::error!("Unsupported sort_by field: {}", sort_by.field);
-                sentry::capture_message(
-                    &format!("Unsupported sort_by field: {}", sort_by.field),
-                    sentry::Level::Error,
-                );
-            }
-        }
-    }
 
     reranked_groups
 }
@@ -2062,6 +1946,7 @@ pub async fn search_chunks_query(
         sort_by: sort_by.clone(),
         rerank_by: rerank_by.clone(),
         filter: data.filters.clone(),
+        group_size: None,
     }
     .into_qdrant_query(parsed_query, dataset.id, None, config, pool.clone())
     .await?;
@@ -2109,7 +1994,6 @@ pub async fn search_chunks_query(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
-        sort_by,
         data.sort_options
             .as_ref()
             .map(|d| d.tag_weights.clone())
@@ -2187,7 +2071,7 @@ pub async fn search_hybrid_chunks(
         .unwrap_or(None);
 
     let dense_query_vector_future = get_dense_vector(
-        data.query.clone().to_single_query()?,
+        parsed_query.query.clone(),
         semantic_boost,
         "query",
         dataset_config.clone(),
@@ -2217,6 +2101,7 @@ pub async fn search_hybrid_chunks(
             rerank_by: rerank_by.clone(),
             limit: data.page_size.unwrap_or(10),
             filter: data.filters.clone(),
+            group_size: None,
         }
         .into_qdrant_query(
             ParsedQueryTypes::Single(parsed_query.clone()),
@@ -2233,6 +2118,7 @@ pub async fn search_hybrid_chunks(
             rerank_by: rerank_by.clone(),
             limit: data.page_size.unwrap_or(10),
             filter: data.filters.clone(),
+            group_size: None,
         }
         .into_qdrant_query(
             ParsedQueryTypes::Single(parsed_query.clone()),
@@ -2278,7 +2164,6 @@ pub async fn search_hybrid_chunks(
 
             rerank_chunks(
                 cross_encoder_results,
-                sort_by,
                 data.sort_options
                     .as_ref()
                     .map(|d| d.tag_weights.clone())
@@ -2399,6 +2284,7 @@ pub async fn search_groups_query(
         sort_by: sort_by.clone(),
         rerank_by: rerank_by.clone(),
         filter: data.filters.clone(),
+        group_size: None,
     }
     .into_qdrant_query(parsed_query, dataset.id, None, config, pool.clone())
     .await?;
@@ -2444,7 +2330,6 @@ pub async fn search_groups_query(
 
     result_chunks.score_chunks = rerank_chunks(
         rerank_chunks_input,
-        sort_by,
         data.sort_options
             .as_ref()
             .map(|d| d.tag_weights.clone())
@@ -2527,6 +2412,7 @@ pub async fn search_hybrid_groups(
             rerank_by: rerank_by.clone(),
             limit: data.page_size.unwrap_or(10),
             filter: data.filters.clone(),
+            group_size: None,
         }
         .into_qdrant_query(
             ParsedQueryTypes::Single(parsed_query.clone()),
@@ -2543,6 +2429,7 @@ pub async fn search_hybrid_groups(
             rerank_by: rerank_by.clone(),
             limit: data.page_size.unwrap_or(10),
             filter: data.filters.clone(),
+            group_size: None,
         }
         .into_qdrant_query(
             ParsedQueryTypes::Single(parsed_query.clone()),
@@ -2597,7 +2484,6 @@ pub async fn search_hybrid_groups(
             .await?;
             let score_chunks = rerank_chunks(
                 cross_encoder_results,
-                sort_by,
                 data.sort_options
                     .as_ref()
                     .map(|d| d.tag_weights.clone())
@@ -2628,7 +2514,6 @@ pub async fn search_hybrid_groups(
 
             rerank_chunks(
                 cross_encoder_results,
-                sort_by,
                 data.sort_options
                     .as_ref()
                     .map(|d| d.tag_weights.clone())
@@ -2663,8 +2548,8 @@ pub async fn search_hybrid_groups(
     })
 }
 
-#[tracing::instrument(skip(timer, pool, redis_pool))]
-pub async fn semantic_search_over_groups(
+#[tracing::instrument(skip(timer, pool))]
+pub async fn search_over_groups_query(
     mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQueryTypes,
     pool: web::Data<Pool>,
@@ -2673,18 +2558,10 @@ pub async fn semantic_search_over_groups(
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
-    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
+    timer.add("start to create dense embedding vector");
 
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
-
-    let sort_by = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
-        Some(Some(sort_by)) => match sort_by {
-            QdrantSortBy::Field(field) => Some(field.clone()),
-            _ => None,
-        },
-        _ => None,
-    };
 
     if let Some(options) = &data.typo_options {
         timer.add("start correcting query");
@@ -2713,29 +2590,41 @@ pub async fn semantic_search_over_groups(
         timer.add("corrected query");
     }
 
-    timer.add("start to create dense embedding vector");
-
-    let embedding_vector = get_qdrant_vector(
-        data.clone().search_type,
-        parsed_query.clone(),
-        None,
-        &dataset_config.clone(),
-    )
-    .await?;
+    let vector =
+        get_qdrant_vector(data.clone().search_type, parsed_query.clone(), None, config).await?;
 
     timer.add("computed dense embedding");
 
+    let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
+            QdrantSortBy::Field(field) => (Some(field.clone()), None),
+            QdrantSortBy::SearchType(search_type) => (None, Some(search_type)),
+        },
+        _ => (None, None),
+    };
+
+    let qdrant_query = RetrievePointQuery {
+        vector,
+        score_threshold: if rerank_by.clone().map(|r| r.rerank_type)
+            == Some(ReRankOptions::CrossEncoder)
+        {
+            None
+        } else {
+            data.score_threshold
+        },
+        limit: data.page_size.unwrap_or(10),
+        sort_by: sort_by.clone(),
+        rerank_by: rerank_by.clone(),
+        filter: data.filters.clone(),
+        group_size: data.group_size,
+    }
+    .into_qdrant_query(parsed_query, dataset.id, None, config, pool.clone())
+    .await?;
+
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
-        embedding_vector,
+        vec![qdrant_query],
         data.page.unwrap_or(1),
         data.get_total_pages.unwrap_or(false),
-        data.filters.clone(),
-        data.page_size.unwrap_or(10),
-        data.score_threshold,
-        data.group_size.unwrap_or(3),
-        parsed_query,
-        dataset.id,
-        pool.clone(),
         config,
     )
     .await?;
@@ -2761,9 +2650,10 @@ pub async fn semantic_search_over_groups(
         })
         .collect();
 
+    timer.add("fetched from postgres");
+
     result_chunks.group_chunks = rerank_groups(
         result_chunks.group_chunks,
-        sort_by,
         data.sort_options
             .as_ref()
             .map(|d| d.tag_weights.clone())
@@ -2778,133 +2668,9 @@ pub async fn semantic_search_over_groups(
             .unwrap_or_default(),
     );
 
-    timer.add("fetched from postgres");
-
-    //TODO: rerank for groups
     result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
     Ok(result_chunks)
-}
-
-#[tracing::instrument(skip(timer, pool, redis_pool))]
-pub async fn full_text_search_over_groups(
-    mut data: SearchOverGroupsReqPayload,
-    parsed_query: ParsedQueryTypes,
-    pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
-    dataset: Dataset,
-    config: &DatasetConfiguration,
-    timer: &mut Timer,
-) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
-    timer.add("start to get sparse vector");
-
-    let embedding_vector = get_qdrant_vector(
-        data.clone().search_type,
-        parsed_query.clone(),
-        None,
-        &config.clone(),
-    )
-    .await?;
-
-    timer.add("computed sparse vector");
-
-    let mut parsed_query = parsed_query.clone();
-    let mut corrected_query = None;
-
-    let sort_by = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
-        Some(Some(sort_by)) => match sort_by {
-            QdrantSortBy::Field(field) => Some(field.clone()),
-            _ => None,
-        },
-        _ => None,
-    };
-
-    if let Some(options) = &data.typo_options {
-        timer.add("start correcting query");
-        match parsed_query {
-            ParsedQueryTypes::Single(ref mut query) => {
-                let typo_corrected_query =
-                    correct_query(query.clone(), dataset.id, redis_pool.clone(), options).await?;
-                if typo_corrected_query.corrected {
-                    corrected_query.clone_from(&typo_corrected_query.query);
-                }
-                *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
-                data.query = QueryTypes::Single(query.query.clone());
-            }
-            ParsedQueryTypes::Multi(ref mut queries) => {
-                for (query, _) in queries {
-                    let typo_corrected_query =
-                        correct_query(query.clone(), dataset.id, redis_pool.clone(), options)
-                            .await?;
-                    if typo_corrected_query.corrected {
-                        corrected_query.clone_from(&typo_corrected_query.query);
-                    }
-                    *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
-                }
-            }
-        }
-        timer.add("corrected query");
-    }
-
-    let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
-        embedding_vector,
-        data.page.unwrap_or(1),
-        data.get_total_pages.unwrap_or(false),
-        data.filters.clone(),
-        data.page_size.unwrap_or(10),
-        data.score_threshold,
-        data.group_size.unwrap_or(3),
-        parsed_query,
-        dataset.id,
-        pool.clone(),
-        config,
-    )
-    .await?;
-
-    timer.add("fetched from qdrant");
-
-    let mut result_groups_with_chunk_hits = retrieve_chunks_for_groups(
-        search_over_groups_qdrant_result.clone(),
-        &data,
-        pool.clone(),
-    )
-    .await?;
-
-    result_groups_with_chunk_hits.group_chunks = search_over_groups_qdrant_result
-        .search_results
-        .iter()
-        .filter_map(|search_result| {
-            result_groups_with_chunk_hits
-                .group_chunks
-                .iter()
-                .find(|group| group.group_id == search_result.group_id)
-                .cloned()
-        })
-        .collect();
-
-    result_groups_with_chunk_hits.group_chunks = rerank_groups(
-        result_groups_with_chunk_hits.group_chunks,
-        sort_by,
-        data.sort_options
-            .as_ref()
-            .map(|d| d.tag_weights.clone())
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.use_weights)
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.location_bias)
-            .unwrap_or_default(),
-    );
-
-    timer.add("fetched from postgres");
-
-    //TODO: rerank for groups
-    result_groups_with_chunk_hits.corrected_query = corrected_query.map(|c| c.query);
-
-    Ok(result_groups_with_chunk_hits)
 }
 
 async fn cross_encoder_for_groups(
@@ -2955,7 +2721,7 @@ async fn cross_encoder_for_groups(
     Ok(group_results)
 }
 
-#[tracing::instrument(skip(timer, pool, redis_pool))]
+#[tracing::instrument(skip(timer, pool))]
 pub async fn hybrid_search_over_groups(
     mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
@@ -2966,6 +2732,8 @@ pub async fn hybrid_search_over_groups(
     timer: &mut Timer,
 ) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
+
+    timer.add("start to create dense embedding vector and sparse vector");
 
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
@@ -2985,8 +2753,6 @@ pub async fn hybrid_search_over_groups(
         timer.add("corrected query");
     }
 
-    timer.add("start to create dense embedding vector and sparse vector");
-
     let dense_embedding_vectors_future = get_dense_vector(
         data.query.clone().to_single_query()?,
         None,
@@ -3002,73 +2768,70 @@ pub async fn hybrid_search_over_groups(
         sparse_embedding_vector_future
     )?;
 
-    let sort_by = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
-        Some(Some(sort_by)) => match sort_by {
-            QdrantSortBy::Field(field) => Some(field.clone()),
-            _ => None,
-        },
-        _ => None,
-    };
-
     timer.add("computed dense embedding");
 
-    let semantic_future = retrieve_group_qdrant_points_query(
-        VectorType::Dense(dense_vector),
-        data.page.unwrap_or(1),
-        data.get_total_pages.unwrap_or(false),
-        data.filters.clone(),
-        data.page_size.unwrap_or(10),
-        None,
-        data.group_size.unwrap_or(3),
-        ParsedQueryTypes::Single(parsed_query.clone()),
-        dataset.id,
-        pool.clone(),
-        config,
-    );
-
-    let full_text_future = retrieve_group_qdrant_points_query(
-        VectorType::SpladeSparse(sparse_vector),
-        data.page.unwrap_or(1),
-        data.get_total_pages.unwrap_or(false),
-        data.filters.clone(),
-        data.page_size.unwrap_or(10),
-        None,
-        data.group_size.unwrap_or(3),
-        ParsedQueryTypes::Single(parsed_query.clone()),
-        dataset.id,
-        pool.clone(),
-        config,
-    );
-
-    let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
-
-    let semantic_results = semantic_results?;
-
-    let full_text_results = full_text_results?;
-
-    let combined_results = semantic_results
-        .clone()
-        .search_results
-        .iter()
-        .zip(full_text_results.search_results.iter())
-        .flat_map(|(x, y)| vec![x.clone(), y.clone()])
-        .unique_by(|chunk| chunk.group_id)
-        .collect::<Vec<GroupSearchResults>>();
-
-    let combined_search_chunk_query_results = SearchOverGroupsQueryResult {
-        search_results: combined_results,
-        corrected_query: None,
-        total_chunk_pages: semantic_results.total_chunk_pages,
+    let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
+            QdrantSortBy::Field(field) => (Some(field.clone()), None),
+            QdrantSortBy::SearchType(search_type) => (None, Some(search_type)),
+        },
+        _ => (None, None),
     };
 
-    timer.add("fetched from qdrant");
-
-    let combined_result_chunks = retrieve_chunks_for_groups(
-        combined_search_chunk_query_results.clone(),
-        &data,
-        pool.clone(),
+    let qdrant_queries = vec![
+        RetrievePointQuery {
+            vector: VectorType::Dense(dense_vector),
+            score_threshold: None,
+            sort_by: sort_by.clone(),
+            rerank_by: rerank_by.clone(),
+            limit: data.page_size.unwrap_or(10),
+            filter: data.filters.clone(),
+            group_size: data.group_size,
+        }
+        .into_qdrant_query(
+            ParsedQueryTypes::Single(parsed_query.clone()),
+            dataset.id,
+            None,
+            config,
+            pool.clone(),
+        )
+        .await?,
+        RetrievePointQuery {
+            vector: VectorType::SpladeSparse(sparse_vector),
+            score_threshold: None,
+            sort_by: sort_by.clone(),
+            rerank_by: rerank_by.clone(),
+            limit: data.page_size.unwrap_or(10),
+            filter: data.filters.clone(),
+            group_size: data.group_size,
+        }
+        .into_qdrant_query(
+            ParsedQueryTypes::Single(parsed_query.clone()),
+            dataset.id,
+            None,
+            config,
+            pool.clone(),
+        )
+        .await?,
+    ];
+    let mut qdrant_results = retrieve_group_qdrant_points_query(
+        qdrant_queries,
+        data.page.unwrap_or(1),
+        data.get_total_pages.unwrap_or(false),
+        config,
     )
     .await?;
+
+    qdrant_results.search_results = qdrant_results
+        .search_results
+        .iter()
+        .unique_by(|group| group.group_id)
+        .cloned()
+        .collect();
+    timer.add("fetched from qdrant");
+
+    let combined_result_chunks =
+        retrieve_chunks_for_groups(qdrant_results.clone(), &data, pool.clone()).await?;
 
     timer.add("fetched from postgres");
 
@@ -3092,7 +2855,7 @@ pub async fn hybrid_search_over_groups(
 
         cross_encoder_results
             .iter()
-            .chain(split_results.iter().skip(1).flat_map(|chunk| chunk.iter()))
+            .chain(split_results.get(1).unwrap().iter())
             .cloned()
             .collect::<Vec<GroupScoreChunk>>()
     } else {
@@ -3108,21 +2871,16 @@ pub async fn hybrid_search_over_groups(
     timer.add("reranking");
 
     if let Some(score_threshold) = data.score_threshold {
-        reranked_chunks.retain(|group_score_chunk| {
-            group_score_chunk
+        reranked_chunks.retain(|chunk| chunk.metadata[0].score >= score_threshold.into());
+        reranked_chunks.iter_mut().for_each(|chunk| {
+            chunk
                 .metadata
-                .get(0)
-                .map(|m| m.score)
-                .unwrap_or(0.0)
-                >= score_threshold.into()
+                .retain(|metadata| metadata.score >= score_threshold.into())
         });
     }
 
-    reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
-
     reranked_chunks = rerank_groups(
         reranked_chunks,
-        sort_by,
         data.sort_options
             .as_ref()
             .map(|d| d.tag_weights.clone())
@@ -3139,8 +2897,8 @@ pub async fn hybrid_search_over_groups(
 
     let result_chunks = DeprecatedSearchOverGroupsResponseBody {
         group_chunks: reranked_chunks,
+        total_chunk_pages: qdrant_results.total_chunk_pages,
         corrected_query: corrected_query.map(|c| c.query),
-        total_chunk_pages: combined_search_chunk_query_results.total_chunk_pages,
     };
 
     Ok(result_chunks)
@@ -3215,6 +2973,7 @@ pub async fn autocomplete_chunks_query(
             rerank_by: rerank_by.clone(),
             limit: data.page_size.unwrap_or(10),
             filter: data.filters.clone(),
+            group_size: None,
         }
         .into_qdrant_query(
             ParsedQueryTypes::Single(parsed_query.clone()),
@@ -3241,6 +3000,7 @@ pub async fn autocomplete_chunks_query(
                 rerank_by: rerank_by.clone(),
                 limit: data.page_size.unwrap_or(10),
                 filter: data.filters.clone(),
+                group_size: None,
             }
             .into_qdrant_query(
                 ParsedQueryTypes::Single(parsed_query.clone()),
@@ -3283,7 +3043,6 @@ pub async fn autocomplete_chunks_query(
 
     let mut reranked_chunks = rerank_chunks(
         before_increase.to_vec(),
-        sort_by.clone(),
         data.sort_options
             .as_ref()
             .map(|d| d.tag_weights.clone())
@@ -3299,7 +3058,6 @@ pub async fn autocomplete_chunks_query(
     );
     reranked_chunks.extend(rerank_chunks(
         after_increase.to_vec(),
-        sort_by,
         data.sort_options
             .as_ref()
             .map(|d| d.tag_weights.clone())
@@ -3347,6 +3105,7 @@ pub async fn count_chunks_query(
         rerank_by: None,
         limit: data.limit.unwrap_or(100000_u64),
         filter: data.filters.clone(),
+        group_size: None,
     }
     .into_qdrant_query(parsed_query, dataset.id, None, config, pool.clone())
     .await?;
