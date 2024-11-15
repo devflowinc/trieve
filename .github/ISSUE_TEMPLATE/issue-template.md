@@ -13,11 +13,7 @@ assignees: ''
 
 ### Target(s)
 
-<replace w/ one or more of the following options: `server`, `search`, `chat`>
-
-### Requirement to close
-
-<please describe what is required to close this issue here>
+<replace w/ name of the service(s) which are associated with this issue>
 
 ### Community channels
 
