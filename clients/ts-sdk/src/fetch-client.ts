@@ -174,7 +174,11 @@ export class TrieveFetchClient {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${await response.text()}`);
+      throw new Error(
+        `HTTP error! status: ${await response.text()} \nPayload ${JSON.stringify(
+          requestBody
+        )} \nroute: ${method} ${this.baseUrl + updatedPath}`
+      );
     }
     let responseObject: unknown;
 

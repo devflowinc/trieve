@@ -6,7 +6,6 @@ export const TRIEVE = new TrieveSDK({
   apiKey: "tr-mKHF9sstPHQHcCbh6Qk6Uw54hx7uwDGU",
   datasetId: "6cba9148-9cbb-417a-a955-93ea749ef27c",
   organizationId: "de73679c-707f-4fc2-853e-994c910d944c",
-  debug: true,
 });
 
 // export const TRIEVELOCAL = new TrieveSDK({
