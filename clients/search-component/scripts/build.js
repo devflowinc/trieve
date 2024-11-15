@@ -15,7 +15,7 @@ const doBuild = async () => {
   });
 
   const vanillaJsBuild = await build({
-    entryPoints: ["src/vanilla.tsx"],
+    entryPoints: ["src/vanilla/index.tsx"],
     treeShaking: true,
     outdir: "./dist/vanilla/",
     sourcemap: false,
