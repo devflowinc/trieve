@@ -28,7 +28,7 @@ macro_rules! process_task_with_retry {
                         log::error!("Task processing failed: {:?}", err);
 
                         // Requeue the failed task
-                        if let Err(requeue_err) = file_chunker::operators::redis::readd_to_queue(
+                        if let Err(requeue_err) = pdf2md_server::operators::redis::readd_to_queue(
                             task,
                             err,
                             $queue_name,

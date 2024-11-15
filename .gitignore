@@ -94,4 +94,4 @@ dist/**
 
 
 clients/python-sdk/dist
-file-chunker/ch_migrations/chm.toml
+pdf2md/ch_migrations/chm.toml
