@@ -605,6 +605,7 @@ pub async fn get_metadata_from_tracking_ids_query(
 
 pub async fn bulk_delete_chunks_query(
     filter: ChunkFilter,
+    deleted_at: chrono::NaiveDateTime,
     dataset_id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
@@ -629,40 +630,48 @@ pub async fn bulk_delete_chunks_query(
 
         log::info!("Deleting {:?} chunks with point_ids", point_ids.len());
 
-        let transaction_result = conn
+        let deleted_point_ids = conn
             .transaction::<_, diesel::result::Error, _>(|conn| {
                 async move {
                     {
-                        // if there were no collisions, just delete the chunk_metadata without issue
-                        let deleted_chunks = diesel::delete(
+                        let deleted_ids_uuids: Vec<(uuid::Uuid, uuid::Uuid)> = diesel::delete(
                             chunk_metadata_columns::chunk_metadata
                                 .filter(
                                     chunk_metadata_columns::qdrant_point_id
                                         .eq_any(point_ids.clone()),
                                 )
-                                .filter(chunk_metadata_columns::dataset_id.eq(dataset_id)),
+                                .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+                                .filter(chunk_metadata_columns::created_at.le(deleted_at)),
                         )
-                        .returning(chunk_metadata_columns::id)
-                        .get_results::<uuid::Uuid>(conn)
+                        .returning((
+                            chunk_metadata_columns::id,
+                            chunk_metadata_columns::qdrant_point_id,
+                        ))
+                        .get_results::<(uuid::Uuid, uuid::Uuid)>(conn)
                         .await?;
 
+                        let (deleted_ids, deleted_point_ids): (Vec<uuid::Uuid>, Vec<uuid::Uuid>) =
+                            deleted_ids_uuids.into_iter().unzip();
+
                         diesel::delete(
-                            chunk_group_bookmarks_columns::chunk_group_bookmarks.filter(
-                                chunk_group_bookmarks_columns::chunk_metadata_id
-                                    .eq_any(deleted_chunks.clone()),
-                            ),
+                            chunk_group_bookmarks_columns::chunk_group_bookmarks
+                                .filter(
+                                    chunk_group_bookmarks_columns::chunk_metadata_id
+                                        .eq_any(deleted_ids.clone()),
+                                )
+                                .filter(chunk_group_bookmarks_columns::created_at.le(deleted_at)),
                         )
                         .execute(conn)
                         .await?;
 
-                        Ok(point_ids)
+                        Ok(deleted_point_ids)
                     }
                 }
                 .scope_boxed()
             })
             .await;
 
-        match transaction_result {
+        match deleted_point_ids {
             Ok(point_ids) => {
                 delete_points_from_qdrant(point_ids, qdrant_collection.clone()).await?;
             }

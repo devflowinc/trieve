@@ -527,6 +527,7 @@ pub async fn bulk_delete_chunk(
         dataset_id: dataset_org_plan_sub.dataset.id,
         attempt_number: 0,
         filter: chunk_filter.into_inner().filter,
+        deleted_at: chrono::Utc::now().naive_utc(),
     };
 
     let serialized_message = serde_json::to_string(&DeleteMessage::ChunkDelete(message))
