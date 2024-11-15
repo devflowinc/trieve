@@ -34,8 +34,6 @@ describe("User Tests", async () => {
     newTrieve.deleteChunkByTrackingId({
       trackingId: "1234",
     });
-
-    trieve.deleteUserApiKey(apiKeyResponse.api_key);
   });
 
   test("create an expired api key and verify it does not work", async () => {
@@ -72,8 +70,6 @@ describe("User Tests", async () => {
     }
 
     expect(errorOccurred).toBe(true);
-
-    trieve.deleteUserApiKey(apiKeyResponse.api_key);
   });
 
   test("create an api key with a filter for test and verify it excludes chunks without the tag", async () => {
@@ -135,7 +131,5 @@ describe("User Tests", async () => {
     newTrieve.deleteChunkByTrackingId({
       trackingId: "1234",
     });
-
-    trieve.deleteUserApiKey(apiKeyResponse.api_key);
   });
 });
