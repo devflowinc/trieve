@@ -1,3 +1,9 @@
+/**
+ * This includes all the functions you can use to communicate with our user endpoint
+ *
+ * @module User Methods
+ */
+
 import { TrieveSDK } from "../../sdk";
 import {
   CreateApiKeyReqPayload,

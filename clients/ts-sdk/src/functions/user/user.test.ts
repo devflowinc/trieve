@@ -95,7 +95,6 @@ describe("User Tests", async () => {
     expectTypeOf(apiKeyResponse).toEqualTypeOf<CreateApiKeyResponse>();
 
     const newTrieve = new TrieveSDK({
-      baseUrl: "http://localhost:8090",
       apiKey: apiKeyResponse.api_key,
       datasetId: trieve.datasetId,
     });
