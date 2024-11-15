@@ -34,8 +34,7 @@ use ureq::json;
 
 use super::clickhouse_operator::{get_latency_from_header, EventQueue};
 use super::search_operator::{
-    full_text_search_over_groups, hybrid_search_over_groups, search_chunks_query,
-    search_hybrid_chunks, semantic_search_over_groups,
+    hybrid_search_over_groups, search_chunks_query, search_hybrid_chunks, search_over_groups_query,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -358,20 +357,8 @@ pub async fn get_rag_chunks_query(
                 )
                 .await?
             }
-            SearchMethod::FullText => {
-                full_text_search_over_groups(
-                    search_groups_data.clone(),
-                    ParsedQueryTypes::Single(parsed_query),
-                    pool.clone(),
-                    redis_pool,
-                    dataset.clone(),
-                    &dataset_config,
-                    &mut search_timer,
-                )
-                .await?
-            }
             _ => {
-                semantic_search_over_groups(
+                search_over_groups_query(
                     search_groups_data.clone(),
                     ParsedQueryTypes::Single(parsed_query),
                     pool.clone(),
