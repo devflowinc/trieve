@@ -154,9 +154,9 @@ const ModalProvider = ({
     ...onLoadProps,
   });
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ChunkWithHighlights[] | GroupChunk[][]>(
-    []
-  );
+  const [results, setResults] = useState<
+    ChunkWithHighlights[] | GroupChunk[][]
+  >([]);
   const [requestID, setRequestID] = useState("");
   const [loadingResults, setLoadingResults] = useState(false);
   const [open, setOpen] = useState(props.open ?? false);
@@ -165,7 +165,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all"
+    props.tags?.find((t) => t.selected)?.tag || "all",
   );
 
   const trieve = new TrieveSDK({
@@ -188,8 +188,12 @@ const ModalProvider = ({
   // Use TAB to alternate modes
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (open && e.key === "Tab") {
-        e.preventDefault();
+      if (
+        open &&
+        e.ctrlKey &&
+        e.key === "Tab" &&
+        props.allowSwitchingModes !== false
+      ) {
         setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
       }
     };
@@ -197,7 +201,7 @@ const ModalProvider = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open]); // Only re-run if open state changes
+  }, [open, props.allowSwitchingModes]);
 
   const search = async (abortController: AbortController) => {
     if (!query) {
@@ -283,8 +287,8 @@ const ModalProvider = ({
               trieve: trieve,
               abortController,
               ...(tag.tag !== "all" && { tag: tag.tag }),
-            })
-          )
+            }),
+          ),
         );
         setTagCounts(numberOfRecords);
       } catch (e) {
