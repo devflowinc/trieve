@@ -12,6 +12,7 @@ const main = async () => {
     minify: false,
     format: "esm",
     target: ["es2020"],
+    external: ["react", "react-dom"],
   });
 };
 
