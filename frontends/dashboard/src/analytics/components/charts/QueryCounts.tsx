@@ -1,12 +1,12 @@
-import { SearchTypeCount } from "shared/types";
+import { DateRangeFilter, SearchTypeCount } from "shared/types";
 import { createSignal, For, Show, useContext } from "solid-js";
 import { createQuery } from "@tanstack/solid-query";
 import { getQueryCounts } from "../../api/analytics";
 import { toTitleCase } from "../../utils/titleCase";
-import { Select } from "shared/ui";
-import { DateRangeOption, dateRanges } from "../FilterBar";
+import { DateRangePicker } from "shared/ui";
 import { CTRSummary } from "./CTRSummary";
 import { DatasetContext } from "../../../contexts/DatasetContext";
+import { subDays } from "date-fns";
 
 const displaySearchType = (type: SearchTypeCount["search_type"]) => {
   switch (type) {
@@ -27,14 +27,15 @@ const displaySearchType = (type: SearchTypeCount["search_type"]) => {
 
 export const QueryCounts = () => {
   const dataset = useContext(DatasetContext);
-  const [dateSelection, setDateSelection] = createSignal<DateRangeOption>(
-    dateRanges[2],
-  );
+
+  const [dateRange, setDateRange] = createSignal<DateRangeFilter>({
+    gt: subDays(new Date(), 7),
+  });
 
   const queryCountsQuery = createQuery(() => ({
-    queryKey: ["queryCounts", { gt_date: dateSelection().date }],
+    queryKey: ["queryCounts", { filter: dateRange }],
     queryFn: () => {
-      return getQueryCounts(dateSelection().date, dataset.datasetId());
+      return getQueryCounts(dateRange(), dataset.datasetId());
     },
   }));
 
@@ -48,14 +49,9 @@ export const QueryCounts = () => {
           </div>
         </div>
         <div>
-          <Select
-            class="min-w-[80px] !bg-white"
-            display={(s) => s.label}
-            selected={dateSelection()}
-            onSelected={(e) => {
-              setDateSelection(e);
-            }}
-            options={dateRanges}
+          <DateRangePicker
+            value={dateRange()}
+            onChange={(e) => setDateRange(e)}
           />
         </div>
       </div>
@@ -91,9 +87,7 @@ export const QueryCounts = () => {
       </Show>
       <CTRSummary
         filter={{
-          date_range: {
-            gt: dateSelection().date,
-          },
+          date_range: dateRange(),
         }}
       />
     </div>
