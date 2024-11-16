@@ -33,6 +33,7 @@ bb8-redis = "0.17.0"
 tokio = "1.41.1"
 lazy_static = "1.5.0"
 actix-cors = "0.7.0"
+actix-files = "0.6.6"
 reqwest = "0.12.9"
 clickhouse = { version = "0.13.1", features = ["time"] }
 chm = "0.1.17"

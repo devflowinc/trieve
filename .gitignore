@@ -95,3 +95,5 @@ dist/**
 
 clients/python-sdk/dist
 pdf2md/ch_migrations/chm.toml
+pdf2md/server/assets/client
+pdf2md/server/static/client

@@ -1,3 +1,5 @@
+use std::{env, os};
+
 use crate::{
     errors::{ErrorResponseBody, ServiceError},
     Templates,
@@ -17,27 +19,15 @@ use minijinja::context;
 )]
 #[get("/")]
 pub async fn public_page(templates: Templates<'_>) -> Result<HttpResponse, ServiceError> {
+    let is_dev = env::var("DEV_MODE")
+        .unwrap_or("false".to_string())
+        .eq("true");
     let templ = templates.get_template("demo-ui.html").unwrap();
-    let response_body = templ.render(context! {}).unwrap();
+    let response_body = templ
+        .render(context! {
+            is_dev => is_dev
+        })
+        .unwrap();
 
     Ok(HttpResponse::Ok().body(response_body))
-}
-
-#[utoipa::path(
-    get,
-    path = "/static/{file_name}",
-    context_path = "/static",
-    tag = "UI",
-    responses(
-        (status = 200, description = "File"),
-        (status = 400, description = "Service error relating to getting the file", body = ErrorResponseBody),
-    ),
-  )]
-#[get("/{file_name}")]
-pub async fn static_files(file_name: web::Path<String>) -> Result<HttpResponse, ServiceError> {
-    let sanitized_file_name = file_name.replace("..", "");
-    let file = std::fs::read_to_string(format!("./static/{}", sanitized_file_name))
-        .map_err(|_| ServiceError::InternalServerError("Failed to read file".to_string()))?;
-
-    Ok(HttpResponse::Ok().body(file))
 }

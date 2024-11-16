@@ -148,14 +148,12 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(jinja_env))
             .app_data(web::Data::new(redis_pool.clone()))
             .app_data(web::Data::new(clickhouse_client.clone()))
+            .default_service(actix_files::Files
+                ::new("/static", "." ).show_files_listing()
+            )
             .service(
                 utoipa_actix_web::scope("/api/task").configure(|config| {
                     config.service(create_task).service(get_task);
-                }),
-            )
-            .service(
-                utoipa_actix_web::scope("/static").configure(|config| {
-                    config.service(jinja_templates::static_files);
                 }),
             )
             .service(
