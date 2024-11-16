@@ -1,5 +1,6 @@
 use crate::{
     errors::{ErrorResponseBody, ServiceError},
+    middleware::api_key_middleware::ApiKey,
     models::{self, GetTaskRequest},
 };
 use actix_web::{get, web, HttpResponse};
@@ -30,6 +31,7 @@ async fn get_task(
     task_id: web::Path<uuid::Uuid>,
     data: web::Query<GetTaskRequest>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    _api_key: ApiKey,
 ) -> Result<HttpResponse, ServiceError> {
     let task_id = task_id.into_inner();
     let task = crate::operators::clickhouse::get_task(task_id, &clickhouse_client).await?;
