@@ -140,7 +140,7 @@ pub async fn main() -> std::io::Result<()> {
                     .exclude("/api/health")
                     .exclude("/metrics"),
             )
-            .wrap(middleware::api_key_middleware::RequireApiKey)
+            .wrap(middleware::api_key_middleware::ApiKey)
             .into_utoipa_app()
             .openapi(ApiDoc::openapi())
             .app_data(json_cfg.clone())
@@ -154,7 +154,14 @@ pub async fn main() -> std::io::Result<()> {
                 }),
             )
             .service(
-                jinja_templates::public_page
+                utoipa_actix_web::scope("/static").configure(|config| {
+                    config.service(jinja_templates::static_files);
+                }),
+            )
+            .service(
+                utoipa_actix_web::scope("").configure(|config| {
+                    config.service(jinja_templates::public_page);
+                }),
             )
             .openapi_service(|api| Redoc::with_url("/redoc", api))
             .into_app()
