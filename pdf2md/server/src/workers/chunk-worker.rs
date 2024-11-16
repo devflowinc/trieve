@@ -1,5 +1,5 @@
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
-use file_chunker::{
+use pdf2md_server::{
     errors::ServiceError,
     get_env,
     models::ChunkingTask,
@@ -100,7 +100,7 @@ async fn main() {
 pub async fn chunk_sub_pdf(
     task: ChunkingTask,
     clickhouse_client: clickhouse::Client,
-) -> Result<(), file_chunker::errors::ServiceError> {
+) -> Result<(), pdf2md_server::errors::ServiceError> {
     let bucket = get_aws_bucket()?;
     let file_data = bucket
         .get_object(task.file_name.clone())

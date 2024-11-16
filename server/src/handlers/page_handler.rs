@@ -1,5 +1,8 @@
-use std::env;
-
+use super::{
+    auth_handler::LoggedUser,
+    chunk_handler::{ChunkFilter, ScoringOptions},
+};
+use crate::data::models::Templates;
 use crate::{
     data::models::{DatasetConfiguration, Pool, SearchMethod, SortOptions, TypoOptions, UnifiedId},
     errors::ServiceError,
@@ -9,14 +12,8 @@ use crate::{
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use minijinja::context;
 use serde::{Deserialize, Serialize};
+use std::env;
 use utoipa::ToSchema;
-
-use crate::data::models::Templates;
-
-use super::{
-    auth_handler::LoggedUser,
-    chunk_handler::{ChunkFilter, ScoringOptions},
-};
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 pub enum PublicPageTheme {
