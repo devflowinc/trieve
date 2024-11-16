@@ -1,16 +1,26 @@
+import { subHours } from "date-fns/subHours";
 import { Card } from "../components/charts/Card";
 import { HeadQueries } from "../components/charts/HeadQueries";
 import { QueryCounts } from "../components/charts/QueryCounts";
 import { SearchUsageGraph } from "../components/charts/SearchUsageGraph";
 import { CTRInfoPanel } from "../components/CTRInfoPanel";
-import {
-  SimpleTimeRangeSelector,
-  useSimpleTimeRange,
-} from "../components/SimpleTimeRangeSelector";
+import { DateRangeFilter } from "shared/types";
+import { createSignal } from "solid-js";
+import { DateRangePicker } from "shared/ui";
+import { Granularity } from "trieve-ts-sdk";
 
 export const AnalyticsOverviewPage = () => {
-  const rpsDate = useSimpleTimeRange();
-  const headQueriesDate = useSimpleTimeRange();
+  const [rpsDateRange, setRpsDateRange] = createSignal<DateRangeFilter>({
+    gt: subHours(new Date(), 1),
+  });
+
+  const [rpsGranularity, setRpsGranularity] =
+    createSignal<Granularity>("minute");
+
+  const [headQueriesDate, setHeadQueriesDate] = createSignal<DateRangeFilter>({
+    gt: subHours(new Date(), 1),
+  });
+
   return (
     <>
       <div class="grid grid-cols-2 items-start gap-2">
@@ -23,9 +33,11 @@ export const AnalyticsOverviewPage = () => {
         <Card
           title="Requests Per Second"
           controller={
-            <SimpleTimeRangeSelector
-              setDateOption={rpsDate.setDateOption}
-              dateOption={rpsDate.dateOption()}
+            <DateRangePicker
+              onChange={(e) => setRpsDateRange(e)}
+              value={rpsDateRange()}
+              initialSelectedPresetId={3}
+              onGranularitySuggestion={(e) => setRpsGranularity(e)}
             />
           }
           class="flex flex-col justify-between px-4"
@@ -33,17 +45,18 @@ export const AnalyticsOverviewPage = () => {
         >
           <SearchUsageGraph
             params={{
-              filter: rpsDate.filter(),
-              granularity: rpsDate.granularity(),
+              filter: { date_range: rpsDateRange() },
+              granularity: rpsGranularity(),
             }}
           />
         </Card>
 
         <Card
           controller={
-            <SimpleTimeRangeSelector
-              setDateOption={headQueriesDate.setDateOption}
-              dateOption={headQueriesDate.dateOption()}
+            <DateRangePicker
+              onChange={(e) => setHeadQueriesDate(e)}
+              initialSelectedPresetId={3}
+              value={headQueriesDate()}
             />
           }
           title="Head Queries"
@@ -52,7 +65,7 @@ export const AnalyticsOverviewPage = () => {
         >
           <HeadQueries
             params={{
-              filter: headQueriesDate.filter(),
+              filter: { date_range: headQueriesDate() },
             }}
           />
         </Card>

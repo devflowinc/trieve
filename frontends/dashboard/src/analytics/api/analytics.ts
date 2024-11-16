@@ -19,6 +19,7 @@ import {
   UsageGraphResponse,
   RecommendationEvent,
   EventData,
+  DateRangeFilter,
 } from "shared/types";
 import { transformAnalyticsFilter } from "../utils/formatDate";
 
@@ -257,7 +258,7 @@ export const getNoResultQueries = async (
 };
 
 export const getQueryCounts = async (
-  gt_date: Date,
+  dateRange: DateRangeFilter,
   datasetId: string,
 ): Promise<SearchTypeCount[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
@@ -265,9 +266,7 @@ export const getQueryCounts = async (
     method: "POST",
     body: JSON.stringify({
       filter: transformAnalyticsFilter({
-        date_range: {
-          gt: gt_date,
-        },
+        date_range: dateRange,
       }),
       type: "count_queries",
     }),
