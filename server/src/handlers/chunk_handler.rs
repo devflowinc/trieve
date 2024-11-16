@@ -2870,7 +2870,7 @@ pub struct ChunkedContent {
 /// Split HTML Content into Chunks
 ///
 /// This endpoint receives a single html string and splits it into chunks based on the headings and
-/// body content. The headings are split based on headding html tags. chunk_html has a maximum size
+/// body content. The headings are split based on heading html tags. chunk_html has a maximum size
 /// of 256Kb.
 #[utoipa::path(
     post,
