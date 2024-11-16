@@ -1,36 +1,43 @@
 use crate::{
     errors::{ErrorResponseBody, ServiceError},
-    get_env, Templates,
+    Templates,
 };
-use actix_web::{get, HttpResponse};
+use actix_web::{get, web, HttpResponse};
 use minijinja::context;
 
 #[utoipa::path(
   get,
-  path = "/public_page/{dataset_id}",
-  context_path = "/api",
-  tag = "Public",
+  path = "/",
+  context_path = "/",
+  tag = "UI",
   responses(
-      (status = 200, description = "Public Page associated to the dataset"),
+      (status = 200, description = "UI meant for public consumption"),
       (status = 400, description = "Service error relating to loading the public page", body = ErrorResponseBody),
   ),
-  params(
-      ("dataset_id" = uuid::Uuid, Path, description = "The id of the organization you want to fetch."),
-  ),
 )]
-#[get("")]
+#[get("/")]
 pub async fn public_page(templates: Templates<'_>) -> Result<HttpResponse, ServiceError> {
-    let base_server_url = get_env!(
-        "BASE_SERVER_URL",
-        "Server hostname for OpenID provider must be set"
-    );
-
-    let templ = templates.get_template("page.html").unwrap();
-    let response_body = templ
-        .render(context! {
-            base_server_url,
-        })
-        .unwrap();
+    let templ = templates.get_template("demo-ui.html").unwrap();
+    let response_body = templ.render(context! {}).unwrap();
 
     Ok(HttpResponse::Ok().body(response_body))
+}
+
+#[utoipa::path(
+    get,
+    path = "/static/{file_name}",
+    context_path = "/static",
+    tag = "UI",
+    responses(
+        (status = 200, description = "File"),
+        (status = 400, description = "Service error relating to getting the file", body = ErrorResponseBody),
+    ),
+  )]
+#[get("/{file_name}")]
+pub async fn static_files(file_name: web::Path<String>) -> Result<HttpResponse, ServiceError> {
+    let sanitized_file_name = file_name.replace("..", "");
+    let file = std::fs::read_to_string(format!("./static/{}", sanitized_file_name))
+        .map_err(|_| ServiceError::InternalServerError("Failed to read file".to_string()))?;
+
+    Ok(HttpResponse::Ok().body(file))
 }

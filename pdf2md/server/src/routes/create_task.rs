@@ -1,5 +1,6 @@
 use crate::{
     errors::{ErrorResponseBody, ServiceError},
+    middleware::api_key_middleware::ApiKey,
     models::{self, CreateFileTaskResponse, FileTask, FileTaskStatus, RedisPool},
 };
 use actix_web::{post, web, HttpResponse};
@@ -27,6 +28,7 @@ async fn create_task(
     req: web::Json<models::UploadFileReqPayload>,
     redis_pool: web::Data<RedisPool>,
     clickhouse_client: web::Data<clickhouse::Client>,
+    _api_key: ApiKey,
 ) -> Result<HttpResponse, actix_web::Error> {
     let clickhouse_task = models::FileTaskClickhouse {
         id: uuid::Uuid::new_v4().to_string(),

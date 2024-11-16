@@ -29,7 +29,9 @@ RUN apt-get update -y; \
     ; \
     mkdir -p /app/tmp
 
+
 COPY ./ch_migrations /app/ch_migrations
+COPY --from=builder /app/static /app/static
 COPY --from=builder /app/target/release/pdf2md-server /app/pdf2md-server
 
 EXPOSE 8090
