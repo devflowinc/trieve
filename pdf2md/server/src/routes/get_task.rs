@@ -1,9 +1,8 @@
-use actix_web::{get, web, HttpResponse};
-
 use crate::{
     errors::{ErrorResponseBody, ServiceError},
     models::{self, GetTaskRequest},
 };
+use actix_web::{get, web, HttpResponse};
 
 /// Retieve a File Task by ID
 ///
