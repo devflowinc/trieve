@@ -4,9 +4,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400..900&amp;display=swap"
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
       rel="stylesheet"
     />
+    <script
+      defer
+      data-domain="pdf2md.trieve.ai"
+      src="https://plausible.trieve.ai/js/script.js"
+    ></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -24,11 +31,145 @@
       sizes="16x16"
       href="https://cdn.trieve.ai/favicon-16x16.png"
     />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:title" content="Trieve HN Discovery (No JS)" />
+    <meta property="og:site_name" content="PDF2MD by trieve.ai" />
+    <meta property="og:url" content="https://pdf2md.trieve.ai" />
+    <meta
+      property="og:description"
+      content="Open Source PDF to Markdown Converter using Vision Large Language Models like GPT-4o"
+    />
+    <meta property="og:image" content="https://cdn.trieve.ai/trieve-og.png" />
+    <title>Trieve PDF2MD</title>
     <link rel="stylesheet" href="/static/output.css" />
   </head>
+
   <body>
     <div class="basic">
-      <div id="root"><p class="bg-blue-500">Hello World</p></div>
+      <header class="bg-white">
+        <nav
+          class="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8 flex-wrap"
+          aria-label="Global"
+        >
+          <a class="flex items-center" href="https://trieve.ai" target="_blank">
+            <span
+              class="self-center text-lg md:text-2xl font-medium whitespace-nowrap"
+            >
+              <img
+                src="https://cdn.trieve.ai/trieve-logo.png"
+                alt="Trieve logo"
+                class="h-12 w-12 inline"
+              />
+              Trieve PDF2MD
+            </span>
+          </a>
+          <div class="flex gap-x-4 gap-y-6 lg:gap-x-12 flex-wrap">
+            <a
+              href="mailto:humans@trieve.ai"
+              class="text-sm/6 font-semibold text-gray-900"
+              target="_blank"
+            >
+              humans@trieve.ai
+            </a>
+            <a
+              href="https://cal.com/nick.k"
+              class="text-sm/6 font-semibold text-gray-900"
+              target="_blank"
+            >
+              Meet With Sales
+            </a>
+            <a
+              href="https://github.com/devflowinc/trieve/tree/main/pdf2md/self-hosting.md"
+              class="text-sm/6 font-semibold text-gray-900"
+              target="_blank"
+            >
+              Self-Host Free
+            </a>
+            <a
+              href="https://x.com/trieveai"
+              class="text-sm/6 font-semibold text-gray-900"
+              target="_blank"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-brand-x"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M4 4l11.733 16h4.267l-11.733 -16z" />
+                <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" />
+              </svg>
+            </a>
+            <a
+              href="https://linkedin.com/company/trieveai"
+              class="text-sm/6 font-semibold text-gray-900"
+              target="_blank"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-brand-linkedin"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8 11v5" />
+                <path d="M8 8v.01" />
+                <path d="M12 16v-5" />
+                <path d="M16 16v-3a2 2 0 1 0 -4 0" />
+                <path
+                  d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4z"
+                />
+              </svg>
+            </a>
+            <a
+              href="https://discord.gg/E9sPRZqpDT"
+              class="text-sm/6 font-semibold text-gray-900"
+              target="_blank"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-brand-discord"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8 12a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
+                <path d="M14 12a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
+                <path
+                  d="M15.5 17c0 1 1.5 3 2 3c1.5 0 2.833 -1.667 3.5 -3c.667 -1.667 .5 -5.833 -1.5 -11.5c-1.457 -1.015 -3 -1.34 -4.5 -1.5l-.972 1.923a11.913 11.913 0 0 0 -4.053 0l-.975 -1.923c-1.5 .16 -3.043 .485 -4.5 1.5c-2 5.667 -2.167 9.833 -1.5 11.5c.667 1.333 2 3 3.5 3c.5 0 2 -2 2 -3"
+                />
+                <path d="M7 16.5c3.5 1 6.5 1 10 0" />
+              </svg>
+            </a>
+            <a href="https://github.com/devflowinc/trieve" target="_blank">
+              <img
+                alt="GitHub Repo stars"
+                src="https://img.shields.io/github/stars/devflowinc/trieve?style=for-the-badge&label=star%20us&labelColor=%23111827&color=%23a33eb5&logo=github"
+              />
+            </a>
+          </div>
+        </nav>
+      </header>
+      <div id="root"></div>
     </div>
   </body>
 </html>
