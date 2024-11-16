@@ -1,11 +1,9 @@
 use actix_web::{
-    middleware::Logger,
-    web::{self, PayloadConfig},
-    App, HttpServer,
+    middleware::Logger, web::{self, PayloadConfig}, App, HttpServer
 };
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
 use errors::custom_json_error_handler;
-use routes::{create_task::create_task, get_task::get_task};
+use routes::{create_task::create_task, get_task::get_task, jinja_templates};
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
     Modify, OpenApi,
@@ -43,6 +41,8 @@ macro_rules! get_env {
         ENV_VAR.as_str()
     }};
 }
+
+pub type Templates<'a> = web::Data<minijinja::Environment<'a>>;
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
@@ -128,6 +128,9 @@ pub async fn main() -> std::io::Result<()> {
         .error_handler(custom_json_error_handler);
 
     HttpServer::new(move || {
+        let mut jinja_env = minijinja::Environment::new();
+        minijinja_embed::load_templates!(&mut jinja_env);
+
         App::new()
             .wrap(actix_cors::Cors::permissive())
             .wrap(
@@ -142,12 +145,16 @@ pub async fn main() -> std::io::Result<()> {
             .openapi(ApiDoc::openapi())
             .app_data(json_cfg.clone())
             .app_data(PayloadConfig::new(134200000))
+            .app_data(web::Data::new(jinja_env))
             .app_data(web::Data::new(redis_pool.clone()))
             .app_data(web::Data::new(clickhouse_client.clone()))
             .service(
                 utoipa_actix_web::scope("/api/task").configure(|config| {
                     config.service(create_task).service(get_task);
                 }),
+            )
+            .service(
+                jinja_templates::public_page
             )
             .openapi_service(|api| Redoc::with_url("/redoc", api))
             .into_app()
