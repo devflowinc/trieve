@@ -182,17 +182,6 @@ pub async fn upload_file_handler(
 
     bucket_upload_span.finish();
 
-    let file_size_mb = (decoded_file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
-
-    create_file_query(
-        file_id,
-        file_size_mb,
-        upload_file_data.clone(),
-        dataset_org_plan_sub.dataset.id,
-        pool.clone(),
-    )
-    .await?;
-
     let message = FileWorkerMessage {
         file_id,
         dataset_id: dataset_org_plan_sub.dataset.id,

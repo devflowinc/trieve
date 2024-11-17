@@ -252,7 +252,7 @@ async fn file_worker(
                     .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
                     .await;
             }
-            Ok(None) => {
+            Ok(_) => {
                 log::info!(
                     "File was uploaded with specification to not create chunks for it: {:?}",
                     file_worker_message.file_id
