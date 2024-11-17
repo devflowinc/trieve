@@ -230,14 +230,8 @@ impl EventQueue {
     }
 
     pub async fn send(&self, event: ClickHouseEvent) {
-        match &self.sender {
-            Some(sender) => {
-                sender.send(event).await.unwrap();
-            }
-            None => {
-                log::error!("EventQueue sender not initialized");
-                sentry::capture_message("EventQueue sender not initialized", sentry::Level::Error);
-            }
+        if let Some(sender) = &self.sender {
+            sender.send(event).await.unwrap();
         }
     }
 }
