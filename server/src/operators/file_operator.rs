@@ -94,7 +94,9 @@ pub async fn create_file_query(
         .values(&new_file)
         .get_result(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Could not create file, try again".to_string()))?;
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not create file {:?}", err))
+        })?;
 
     Ok(created_file)
 }
