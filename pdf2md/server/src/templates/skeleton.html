@@ -42,6 +42,10 @@
     <meta property="og:image" content="https://cdn.trieve.ai/trieve-og.png" />
     <title>Trieve PDF2MD</title>
     <link rel="stylesheet" href="/static/output.css" />
+    <script>
+      window.TRIEVE_API_KEY = "{{trieve_api_key}}";
+    </script>
+    <script src="/static/pdf2md.js" defer></script>
   </head>
 
   <body>
@@ -52,7 +56,11 @@
           class="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8 flex-wrap"
           aria-label="Global"
         >
-          <a class="flex items-center" href="https://trieve.ai" target="_blank">
+          <a
+            class="flex items-center hover:text-magenta-500"
+            href="https://trieve.ai"
+            target="_blank"
+          >
             <span
               class="self-center text-lg md:text-2xl font-medium whitespace-nowrap"
             >
@@ -67,28 +75,28 @@
           <div class="flex gap-x-4 gap-y-6 lg:gap-x-12 flex-wrap">
             <a
               href="mailto:humans@trieve.ai"
-              class="text-sm/6 font-semibold text-gray-900"
+              class="text-sm/6 font-semibold text-gray-900 hover:text-magenta-500"
               target="_blank"
             >
               humans@trieve.ai
             </a>
             <a
               href="https://cal.com/nick.k"
-              class="text-sm/6 font-semibold text-gray-900"
+              class="text-sm/6 font-semibold text-gray-900 hover:text-magenta-500"
               target="_blank"
             >
               Meet With Sales
             </a>
             <a
               href="https://github.com/devflowinc/trieve/tree/main/pdf2md/self-hosting.md"
-              class="text-sm/6 font-semibold text-gray-900"
+              class="text-sm/6 font-semibold text-gray-900 hover:text-magenta-500"
               target="_blank"
             >
               Self-Host Free
             </a>
             <a
               href="https://x.com/trieveai"
-              class="text-sm/6 font-semibold text-gray-900"
+              class="text-sm/6 font-semibold text-gray-900 hover:text-magenta-500"
               target="_blank"
             >
               <svg
@@ -110,7 +118,7 @@
             </a>
             <a
               href="https://linkedin.com/company/trieveai"
-              class="text-sm/6 font-semibold text-gray-900"
+              class="text-sm/6 font-semibold text-gray-900 hover:text-magenta-500"
               target="_blank"
             >
               <svg
@@ -137,7 +145,7 @@
             </a>
             <a
               href="https://discord.gg/E9sPRZqpDT"
-              class="text-sm/6 font-semibold text-gray-900"
+              class="text-sm/6 font-semibold text-gray-900 hover:text-magenta-500"
               target="_blank"
             >
               <svg

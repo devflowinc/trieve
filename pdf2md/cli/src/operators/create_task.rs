@@ -4,7 +4,7 @@ pub fn create_task(file: &str, base_url: &str, api_key: &str) {
     let file = std::fs::read(file).expect("Failed to read file");
     let file = base64::prelude::BASE64_STANDARD.encode(file);
 
-    let request = ureq::post(format!("{}/api/task/create", base_url).as_str())
+    let request = ureq::post(format!("{}/api/task", base_url).as_str())
         .set("Content-Type", "application/json")
         .set("Authorization", api_key)
         .send_json(serde_json::json!({
