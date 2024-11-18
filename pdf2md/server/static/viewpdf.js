@@ -1,5 +1,3 @@
-let { pdfjsViewer } = globalThis;
-//
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.mjs";
 
@@ -35,7 +33,7 @@ page.render(renderContext);
 
 const container = document.getElementById("viewerContainer");
 
-const pdfViewer = new pdfjsViewer.PDFViewer({
-  container,
-  eventBus,
-});
+setTimeout(async () => {
+  const page = await pdf.getPage(2);
+  page.render(renderContext);
+}, 3000);

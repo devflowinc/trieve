@@ -566,6 +566,10 @@ video {
   border-width: 0;
 }
 
+.absolute {
+  position: absolute;
+}
+
 .relative {
   position: relative;
 }
@@ -776,6 +780,14 @@ video {
 .text-magenta-600 {
   --tw-text-opacity: 1;
   color: rgb(125 48 139 / var(--tw-text-opacity));
+}
+
+.outline {
+  outline-style: solid;
+}
+
+.outline-red-500 {
+  outline-color: #ef4444;
 }
 
 .focus-within\:outline-none:focus-within {
