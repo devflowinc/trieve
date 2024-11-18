@@ -1,39 +1,67 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.mjs";
 
-const loadingTask = pdfjsLib.getDocument(window.pdf_url);
-const pdf = await loadingTask.promise;
-//
-// Fetch the first page
-//
-const page = await pdf.getPage(1);
-const scale = 1;
-const viewport = page.getViewport({ scale });
-// Support HiDPI-screens.
-const outputScale = window.devicePixelRatio || 1;
+let currentPage = 1;
+let totalPages;
+let pdf;
 
-const canvas = document.getElementById("the-canvas");
-const context = canvas.getContext("2d");
+async function loadPDF() {
+  const loadingTask = pdfjsLib.getDocument(window.pdf_url);
+  pdf = await loadingTask.promise;
+  totalPages = pdf.numPages;
+  renderPage(currentPage);
+}
 
-canvas.width = Math.floor(viewport.width * outputScale);
-canvas.height = Math.floor(viewport.height * outputScale);
-canvas.style.width = Math.floor(viewport.width) + "px";
-canvas.style.height = Math.floor(viewport.height) + "px";
+async function renderPage(pageNumber) {
+  // Fetch the page
+  const page = await pdf.getPage(pageNumber);
+  const scale = 1;
+  const viewport = page.getViewport({ scale });
 
-const transform =
-  outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+  // Support HiDPI-screens.
+  const outputScale = window.devicePixelRatio || 1;
+  const canvas = document.getElementById("the-canvas");
+  const context = canvas.getContext("2d");
 
-const renderContext = {
-  canvasContext: context,
-  transform,
-  viewport,
-};
+  canvas.width = Math.floor(viewport.width * outputScale);
+  canvas.height = Math.floor(viewport.height * outputScale);
+  canvas.style.width = Math.floor(viewport.width) + "px";
+  canvas.style.height = Math.floor(viewport.height) + "px";
 
-page.render(renderContext);
+  const transform =
+    outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
 
-const container = document.getElementById("viewerContainer");
+  const renderContext = {
+    canvasContext: context,
+    transform,
+    viewport,
+  };
 
-setTimeout(async () => {
-  const page = await pdf.getPage(2);
-  page.render(renderContext);
-}, 3000);
+  await page.render(renderContext).promise;
+}
+
+function previousPage() {
+  if (currentPage <= 1) return;
+  currentPage--;
+  renderPage(currentPage);
+}
+
+function nextPage() {
+  if (currentPage >= totalPages) return;
+  currentPage++;
+  renderPage(currentPage);
+}
+
+// Add keyboard event listener
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") {
+    console.log("left");
+    previousPage();
+  } else if (e.key === "ArrowRight") {
+    console.log("right");
+    nextPage();
+  }
+});
+
+// Initial load
+loadPDF();
