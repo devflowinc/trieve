@@ -158,7 +158,7 @@ pub async fn main() -> std::io::Result<()> {
                     .exclude("/api/health")
                     .exclude("/metrics"),
             )
-            .wrap(middleware::api_key_middleware::ApiKey)
+            .wrap(middleware::api_key_middleware::ApiKeyMiddlewareFactory)
             .into_utoipa_app()
             .openapi(ApiDoc::openapi())
             .app_data(json_cfg.clone())

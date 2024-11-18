@@ -1,6 +1,6 @@
 use crate::{
     errors::{ErrorResponseBody, ServiceError},
-    Templates,
+    get_env, Templates,
 };
 use actix_web::{get, web, HttpResponse};
 use minijinja::context;
@@ -18,7 +18,12 @@ use minijinja::context;
 #[get("/")]
 pub async fn public_page(templates: Templates<'_>) -> Result<HttpResponse, ServiceError> {
     let templ = templates.get_template("demo-ui.html").unwrap();
-    let response_body = templ.render(context! {}).unwrap();
+    let trieve_api_key = get_env!("API_KEY", "API_KEY should be set");
+    let response_body = templ
+        .render(context! {
+            trieve_api_key
+        })
+        .unwrap();
 
     Ok(HttpResponse::Ok().body(response_body))
 }

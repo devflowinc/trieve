@@ -4,7 +4,10 @@ use actix_web::{
     FromRequest, HttpMessage, HttpRequest,
 };
 use futures::future::LocalBoxFuture;
-use std::future::{self, ready, Ready};
+use std::{
+    future::{ready, Ready},
+    rc::Rc,
+};
 
 #[derive(Clone, Debug)]
 pub struct ApiKey;
@@ -24,24 +27,29 @@ impl FromRequest for ApiKey {
     }
 }
 
-impl<S, B> Transform<S, ServiceRequest> for ApiKey
+pub struct ApiKeyMiddlewareFactory;
+
+impl<S, B> Transform<S, ServiceRequest> for ApiKeyMiddlewareFactory
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
     S::Future: 'static,
+    B: 'static,
 {
     type Response = ServiceResponse<B>;
     type Error = actix_web::Error;
-    type Transform = ApiKeyMiddleware<S>;
     type InitError = ();
+    type Transform = ApiKeyMiddleware<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        future::ready(Ok(ApiKeyMiddleware { service }))
+        ready(Ok(ApiKeyMiddleware {
+            service: Rc::new(service),
+        }))
     }
 }
 
 pub struct ApiKeyMiddleware<S> {
-    service: S,
+    service: Rc<S>,
 }
 
 impl<S, B> Service<ServiceRequest> for ApiKeyMiddleware<S>
@@ -67,7 +75,7 @@ where
             .get("Authorization")
             .is_some_and(|v| v == api_key)
         {
-            req.extensions_mut().insert(api_key);
+            req.extensions_mut().insert(ApiKey);
         }
 
         let future = self.service.call(req);
