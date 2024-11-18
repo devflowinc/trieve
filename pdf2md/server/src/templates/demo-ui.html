@@ -1,5 +1,10 @@
-{% extends "skeleton.html" %} {% block body %}
-<div class="flex justify-center items-center h-[75vh] px-4">
+{% extends "skeleton.html" %} {% block scripts %}
+<script src="/static/pdf2md.js" defer></script>
+{% endblock %} {% block body %}
+<div
+  id="upload-form-container"
+  class="flex justify-center h-[75vh] items-center px-4"
+>
   <form class="max-w-md mx-auto">
     <div class="text-center">
       <h2
@@ -49,5 +54,73 @@
       </div>
     </div>
   </form>
+</div>
+<div class="flow-root">
+  <div class="mt-10 sm:mt-14 md:mt-24 hidden"></div>
+</div>
+<div
+  id="task-status-table-container"
+  class="mt-12 sm:mt-24 md:mt-50 max-w-7xl mx-auto hidden px-8"
+>
+  <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+    <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+      <table class="min-w-full divide-y divide-gray-300">
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+            >
+              Task ID
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              File Name
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Status
+            </th>
+            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
+              <span class="sr-only">View</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr>
+            <td
+              class="task-id whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0"
+            >
+              Lindsay Walton
+            </td>
+            <td
+              class="task-file-name whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+            >
+              Front-end Developer
+            </td>
+            <td
+              class="task-status whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+            >
+              lindsay.walton@example.com
+            </td>
+            <td
+              class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0"
+            >
+              <button
+                href="#"
+                class="task-view-button text-magenta-600 hover:text-magenta-900"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 {% endblock %}

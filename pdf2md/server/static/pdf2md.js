@@ -1,3 +1,12 @@
+const upsertTaskToStorage = (task) => {
+  const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+  const filteredTasks = tasks.filter((t) => t.task_id !== task.task_id);
+  filteredTasks.unshift(task);
+  localStorage.setItem("tasks", JSON.stringify(filteredTasks));
+
+  updateTaskStatusTable();
+};
+
 const fileUploadInput = document.getElementById("file-upload");
 
 fileUploadInput.addEventListener("change", (event) => {
@@ -9,11 +18,12 @@ fileUploadInput.addEventListener("change", (event) => {
 
   const reader = new FileReader();
   reader.onload = (event) => {
-    const base64 = event.target.result;
-    console.log(base64);
+    const file_name = file.name;
+    const base64_file = event.target.result;
 
     const formData = {
-      base64_file: base64,
+      file_name,
+      base64_file,
     };
 
     fetch("/api/task", {
@@ -26,7 +36,7 @@ fileUploadInput.addEventListener("change", (event) => {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log(data);
+        upsertTaskToStorage(data);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -35,3 +45,30 @@ fileUploadInput.addEventListener("change", (event) => {
 
   reader.readAsDataURL(file);
 });
+
+const updateTaskStatusTable = () => {
+  const tableContainer = document.getElementById("task-status-table-container");
+  const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+  const tbody = tableContainer.querySelector("tbody");
+  const firstRow = tbody.querySelector("tr");
+  tbody.innerHTML = "";
+  const htmlRows = tasks.map((task) => {
+    const row = firstRow.cloneNode(true);
+    row.querySelector(".task-id").innerText = task.task_id;
+    row.querySelector(".task-file-name").innerText = task.file_name;
+    row.querySelector(".task-status").innerText = task.status;
+    row.querySelector(".task-status").classList.add(`status-${task.status}`);
+    return row;
+  });
+  htmlRows.forEach((row) => tbody.appendChild(row));
+
+  if (htmlRows.length) {
+    tableContainer.classList.remove("hidden");
+    tableContainer.classList.add("flow-root");
+    const formContainer = document.getElementById("upload-form-container");
+    formContainer.classList.remove("h-[75vh]");
+    formContainer.classList.add(...["mt-10", "sm:mt-14", "md:mt-24"]);
+  }
+};
+
+updateTaskStatusTable();
