@@ -4510,18 +4510,6 @@ class ChunkGroupApi:
         :return: Returns the result object.
         """  # noqa: E501
 
-        print("serializing search_within_group")
-
-        _param = self._search_within_group_serialize(
-            tr_dataset=tr_dataset,
-            search_within_group_req_payload=search_within_group_req_payload,
-            x_api_version=x_api_version,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
-        )
-
         payload = self.api_client.sanitize_for_serialization(search_within_group_req_payload)
 
         url = "https://api.trieve.ai/api/chunk_group/search"
