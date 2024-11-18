@@ -11,7 +11,7 @@ use s3::creds::time::OffsetDateTime;
 /// This endpoint creates a new task to convert a file to markdown. The task is added to a queue in Redis for processing.
 #[utoipa::path(
     post,
-    path = "/task/create",
+    path = "/task",
     tag = "Task",
     context_path = "/api",
     request_body(content = models::UploadFileReqPayload, description = "JSON request payload to create a new task", content_type = "application/json"),
@@ -23,7 +23,7 @@ use s3::creds::time::OffsetDateTime;
         ("api_key" = [])
     )
 )]
-#[post("/create")]
+#[post("")]
 async fn create_task(
     req: web::Json<models::UploadFileReqPayload>,
     redis_pool: web::Data<RedisPool>,
